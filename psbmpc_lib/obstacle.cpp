@@ -22,7 +22,7 @@
 
 
 #include "obstacle.h"
-#include "kalman.h"
+#include "kf.h"
 #include "iostream" 
 
 /****************************************************************************************
@@ -46,20 +46,20 @@ Obstacle::Obstacle(
 
 	int n_samp = T / dt;
 
-	x.resize(n_samp);
-	y.resize(n_samp);
-	V_x.resize(n_samp);
-	V_y.resize(n_samp);
+	x_p.resize(n_samp);
+	y_p.resize(n_samp);
+	V_x_p.resize(n_samp);
+	V_y_p.resize(n_samp);
 
 	double psi = xs(2);
-	x(0) = xs(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	y(0) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	x_p(0) = xs(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	y_p(0) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
 
-	V_x(0) = xs(3) * cos(psi) - xs(4) * sin(psi); 
-	V_y(0) = xs(3) * sin(psi) + xs(4) * cos(psi); 
+	V_x_p(0) = xs(3) * cos(psi) - xs(4) * sin(psi); 
+	V_y_p(0) = xs(3) * sin(psi) + xs(4) * cos(psi); 
 
 	Eigen::Vector4d xs_0;
-	xs_0 << x(0), y(0), V_x(0), V_y(0);
+	xs_0 << x_p(0), y_p(0), V_x_p(0), V_y_p(0);
 
 	kf = new KF(xs_0, id, dt, 0.0);
 
@@ -83,6 +83,7 @@ Obstacle::Obstacle(
 *****************************************************************************************/
 Obstacle::~Obstacle(){
 	delete kf;
+	delete mrou;
 }
 
 
