@@ -19,15 +19,20 @@
 *
 *****************************************************************************************/
 
-namespace Utilities 
-{
-	enum Axis 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+#include "Eigen/Dense"
+
+enum Axis 
 	{
 		Roll,
 		Pitch,
 		Yaw
-	}
-
+	};
+namespace Utilities 
+{
 	inline double wrap_angle_to_pmpi(const double angle) 
 	{
 		double a = fmod(angle, 2 * M_PI);
@@ -51,6 +56,7 @@ namespace Utilities
 		return diff;
 	}
 
+/*
 	inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d v, const double angle)
 	{
 		Eigen::Vector2d v_temp;
@@ -58,7 +64,7 @@ namespace Utilities
 		v_temp(2) = v(1) * sin(angle) - v(2) * cos(angle);
 		return v_temp;
 	}
-
+*/
 	inline void rotate_vector_2D(Eigen::Vector2d &v, const double angle)
 	{
 		Eigen::Vector2d v_temp;

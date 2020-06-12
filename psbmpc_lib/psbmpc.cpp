@@ -17,16 +17,16 @@
 *
 *****************************************************************************************/
 
-
-#include "psb_mpc.h"
+#include "utilities.h"
+#include "psbmpc.h"
 #include "iostream"
-
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
-
+#endif
 #define DEG2RAD M_PI / 180.0f
 #define RAD2DEG 180.0f / M_PI
+
 
 /****************************************************************************************
 *  Name     : PSBMPC
@@ -58,14 +58,14 @@ PSBMPC::~PSBMPC(){
 }
 
 /****************************************************************************************
-*  Name     : get_par
+*  Name     : get_<type>par
 *  Function : Returns parameter with index <index>, overloaded for different data types
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-int PSBMPC::get_par(
-	const index																// In: Index of parameter to return (Must be of int type)
-	)
+int PSBMPC::get_ipar(
+	const int index															// In: Index of parameter to return (Must be of int type)
+	) const
 {
 	switch(index){
 		case i_ipar_n_M 				: return n_M; 
@@ -74,9 +74,9 @@ int PSBMPC::get_par(
 	}
 };
 	
-double PSBMPC::get_par(
-	const index																// In: Index of parameter to return (Must be of double type)
-	)
+double PSBMPC::get_dpar(
+	const int index															// In: Index of parameter to return (Must be of double type)
+	) const
 {
 	switch(index){
 		case i_dpar_T 					: return T; 
@@ -88,8 +88,8 @@ double PSBMPC::get_par(
 		case i_dpar_K_coll 				: return K_coll;
 		case i_dpar_kappa 				: return kappa;
 		case i_dpar_kappa_TC 			: return kappa_TC;
-		case i_dpar_K_u_m 				: return K_u_m;
-		case i_dpar_K_du_m 				: return K_du_m;
+		case i_dpar_K_u 				: return K_u;
+		case i_dpar_K_du 				: return K_du;
 		case i_dpar_K_chi_strb 			: return K_chi_strb;
 		case i_dpar_K_dchi_strb 		: return K_dchi_strb;
 		case i_dpar_K_chi_port 			: return K_chi_port;
@@ -107,9 +107,9 @@ double PSBMPC::get_par(
 	}
 };
 
-std::vector<Eigen::VectorXd> PSBMPC::get_par(
-	const index																// In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
-	)
+std::vector<Eigen::VectorXd> PSBMPC::get_mpar(
+	const int index															// In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
+	) const
 {
 	switch (index){
 		case i_mpar_u_offsets			: return u_offsets; 
@@ -127,7 +127,7 @@ std::vector<Eigen::VectorXd> PSBMPC::get_par(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::set_par(
-	const index, 															// In: Index of parameter to set
+	const int index, 														// In: Index of parameter to set
 	const int value 														// In: Value to set for parameter
 	)
 {
@@ -143,7 +143,7 @@ void PSBMPC::set_par(
 }
 
 void PSBMPC::set_par(
-	const index, 															// In: Index of parameter to set
+	const int index, 														// In: Index of parameter to set
 	const double value 														// In: Value to set for parameter
 	)
 {
@@ -155,8 +155,8 @@ void PSBMPC::set_par(
 				T = value;
 				int n_samples = T / dt;
 
-				asv->resize_trajectory(n_samples);
-				for (int j = 0; j < old_obstacles_.size(); j++)
+				ownship->resize_trajectory(n_samples);
+				for (int j = 0; j < old_obstacles.size(); j++)
 				{
 					old_obstacles[j]->resize_trajectories(n_samples);
 				}
@@ -170,9 +170,9 @@ void PSBMPC::set_par(
 				dt = value;
 				int n_samples = T / dt;
 
-				asv->resize_trajectory(n_samples);
+				ownship->resize_trajectory(n_samples);
 
-				for (int j = 0; j < old_obstacles_.size(); j++)
+				for (int j = 0; j < old_obstacles.size(); j++)
 				{
 					old_obstacles[j]->resize_trajectories(n_samples);
 				}			
@@ -191,8 +191,8 @@ void PSBMPC::set_par(
 			case i_dpar_K_coll 				: K_coll = value;
 			case i_dpar_kappa 				: kappa = value;
 			case i_dpar_kappa_TC 			: kappa_TC = value;
-			case i_dpar_K_u_m 				: K_u_m = value;
-			case i_dpar_K_du_m 				: K_du_m = value;
+			case i_dpar_K_u 				: K_u = value;
+			case i_dpar_K_du 				: K_du = value;
 			case i_dpar_K_chi_strb 			: K_chi_strb = value;
 			case i_dpar_K_dchi_strb 		: K_dchi_strb = value;
 			case i_dpar_K_chi_port 			: K_chi_port = value;
@@ -213,7 +213,7 @@ void PSBMPC::set_par(
 }
 
 void PSBMPC::set_par(
-	const index, 															// In: Index of parameter to set
+	const int index,														// In: Index of parameter to set
 	const std::vector<Eigen::VectorXd> value 								// In: Value to set for parameter
 	)
 {
@@ -252,19 +252,19 @@ void PSBMPC::set_par(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::get_optimal_offsets(									
+void PSBMPC::calculate_optimal_offsets(									
 	double &u_opt, 															// Out: Optimal surge offset
 	double &chi_opt, 														// Out: Optimal course offset
 	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// Out: Predicted optimal ownship trajectory
 	Eigen::Matrix<double,-1,-1> &obstacle_status,							// Out: Status on obstacles
-	Eigen::Matrix<double,-1,1> &colav_status								// Out: status on the COLAV system
+	Eigen::Matrix<double,-1, 1> &colav_status,								// Out: status on the COLAV system
 	const double u_d, 														// In: Surge reference
 	const double psi_d, 													// In: Heading reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
+	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
 	const Eigen::Matrix<double, 9, -1> &obstacle_states, 					// In: Dynamic obstacle states 
 	const std::vector<Eigen::Matrix<double, 4, 4>> &obstacle_covariances, 	// In: Dynamic obstacle covariances
-	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
+	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
 	)
 {
 	Eigen::VectorXd id_0, rb_0, d_0i, COG_0, SOG_0;
@@ -340,7 +340,7 @@ void PSBMPC::initialize_par_limits()
 	dpar_low[i_dpar_T] = 60.0;
 	dpar_low[i_dpar_T_static] = 10.0;
 	dpar_low[i_dpar_dt] = 0.001;
-	dpar_low[i_dpar_dt_p] = 0.001;
+	dpar_low[i_dpar_p_step] = 0.001;
 
 	dpar_low[i_dpar_d_safe] = 20.0;
 	dpar_low[i_dpar_d_close] = d_safe; 			
@@ -372,7 +372,7 @@ void PSBMPC::initialize_pars()
 	reset_control_behavior();
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
-	for (int M = 0; M < n_M, M++)
+	for (int M = 0; M < n_M; M++)
 	{
 		if (M == 0)
 		{
@@ -395,11 +395,11 @@ void PSBMPC::initialize_pars()
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
 	}
 	u_m_last = 1;
-	Chi_m_last = 0;
+	chi_m_last = 0;
 
-	cpe_method = 2D;
+	cpe_method = CE;
 	prediction_method = ERK1;
-	guidance_strategy = LOS;
+	guidance_method = LOS;
 
 	T = 300.0; 	      // 400.0, 300.0, 240 (sim/Euler)
 	dt = 5.0;		      // 5.0, 0.5 (sim/Euler)
@@ -513,20 +513,20 @@ void PSBMPC::predict_trajectories_jointly()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-bool determine_colav_active(
+bool PSBMPC::determine_colav_active(
 	const Eigen::Matrix<double, 6, 1> xs, 									// In: Ownship state
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
 	bool colav_active = false;
-	double d_0i;
+	Eigen::Vector2d d_0i;
 	for (int i = 0; i < new_obstacles.size(); i++)
 	{
-		d_0i(0) = new_obstacles->get_xs()(0) - xs(0);
-		d_0i(1) = new_obstacles->get_xs()(1) - xs(1);
+		d_0i(0) = new_obstacles[i]->get_xs()(0) - xs(0);
+		d_0i(1) = new_obstacles[i]->get_xs()(1) - xs(1);
 		if (d_0i.norm() < d_init) colav_active = true;
 	}
-	colav_active ||= n_static_obst > 0;
+	colav_active = colav_active || n_static_obst > 0;
 
 	return colav_active;
 }
@@ -538,8 +538,12 @@ bool determine_colav_active(
 *  Modified :
 *****************************************************************************************/
 ST PSBMPC::determine_situation_type(
-	const Eigen::VectorXd& xs_A,											// In: State vector of vessel A 
-	const Eigen::VectorXd& xs_B 											// In: State vector of vessel B
+	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A (the ownship)
+	const double psi_A, 													// In: Heading of vessel A
+	const Eigen::Vector2d &v_B, 												// In: (NE) Velocity vector of vessel B (the obstacle)
+	const double psi_B, 													// In: Heading of vessel B
+	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
+	const double d_AB 														// In: Distance from vessel A to vessel B
 	)
 {
 	ST st = A;
@@ -555,7 +559,7 @@ ST PSBMPC::determine_situation_type(
 bool PSBMPC::determine_COLREGS_violation(
 	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A (the ownship)
 	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d &v_B 												// In: (NE) Velocity vector of vessel B (the obstacle)
+	const Eigen::Vector2d &v_B, 												// In: (NE) Velocity vector of vessel B (the obstacle)
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double d_AB 														// In: Distance from vessel A to vessel B
@@ -578,13 +582,13 @@ bool PSBMPC::determine_COLREGS_violation(
 
 	B_is_starboard = atan2(L_AB(1), L_AB(0)) > psi_A;
 
-	is_close = d_AB.norm() <= d_close;
+	is_close = d_AB <= d_close;
 
 	is_passed = (v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()	&& // Vessel A's perspective	
 				!A_is_overtaken) 									||
 				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() && // Vessel B's perspective	
 				!B_is_overtaken) 									&&
-				d_AB.norm() > d_safe;
+				d_AB > d_safe;
 
 	is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() &&
 				 v_A.norm() > 0.25										&&
@@ -610,11 +614,12 @@ bool PSBMPC::determine_COLREGS_violation(
 	bool is_close, is_passed, is_head_on, is_crossing;
 
 	Eigen::Vector2d v_A, v_B, d_AB, L_AB;
-	if (xs_A.size() == 6) { double psi_A = xs_A[2]; Utilities::rotate_vector_2D(v_A, psi_A); }
-	else 				  { double psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs(2); v_A(1) = xs(3); }
+	double psi_A, psi_B;
+	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); Utilities::rotate_vector_2D(v_A, psi_A); }
+	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
 	
-	if (xs_B.size() == 6) { double psi_B = xs_B[2]; Utilities::rotate_vector_2D(v_B, psi_B); }
-	else 				  { double psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs(2); v_B(1) = xs(3); }
+	if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); Utilities::rotate_vector_2D(v_B, psi_B); }
+	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
 
 	d_AB(0) = xs_B(0) - xs_A(0);
 	d_AB(1) = xs_B(1) - xs_A(1);
@@ -663,14 +668,14 @@ bool PSBMPC::determine_COLREGS_violation(
 bool PSBMPC::determine_transitional_cost_indicator(
 	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A (the ownship)
 	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d &v_B 												// In: (NE) Velocity vector of vessel B (the obstacle)
+	const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B (the obstacle)
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-	const int i 															// In: Index of obstacle
+	const int i, 															// In: Index of obstacle
 	const double chi_m 														// In: Candidate course offset currently followed
 	)
 {
-	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC;
+	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 
 	// Obstacle on starboard side
 	S_TC = atan2(L_AB(1), L_AB(0)) > psi_A;
@@ -681,42 +686,42 @@ bool PSBMPC::determine_transitional_cost_indicator(
 	// For ownship overtaking the obstacle: Check if obstacle is on opposite side of 
 	// ownship to what was observed at t0
 	if (!S_TC_0(i)) { O_TC = O_TC_0(i) && S_TC; }
-	else { O_TC = O_TC_0 && !S_TC; };
+	else { O_TC = O_TC_0(i) && !S_TC; };
 
 	// For obstacle overtaking the ownship: Check if ownship is on opposite side of 
 	// obstacle to what was observed at t0
 	if (!S_i_TC_0(i)) { Q_TC = Q_TC_0(i) && S_i_TC; }
-	else { Q_TC = Q_TC_0 && !S_i_TC; };
+	else { Q_TC = Q_TC_0(i) && !S_i_TC; };
 
 	// For crossing: Check if obstacle is on opposite side of ownship to what was
 	// observed at t0
-	X_TC = X_TC_0(i) && S_TC_0 && S_TC && (chi_m < 0);
+	X_TC = X_TC_0(i) && S_TC_0(i) && S_TC && (chi_m < 0);
 
 	// This is not mentioned in article, but also implemented here..
 	// Transitional cost only valid by going from having obstacle on port side at
 	// t0, to starboard side at time t
 	if (!S_TC_0(i)) { H_TC = H_TC_0(i) && S_TC; }
 	else { H_TC = false; }
-	H_TC &&= !X_TC;
+	H_TC = H_TC && !X_TC;
 
 	return O_TC || Q_TC || X_TC || H_TC;
 }
 
 bool PSBMPC::determine_transitional_cost_indicator(
 	const Eigen::VectorXd& xs_A,											// In: State vector of vessel A (the ownship)
-	const Eigen::VectorXd& xs_B 											// In: State vector of vessel B (the obstacle)
-	const int i 															// In: Index of obstacle
+	const Eigen::VectorXd& xs_B, 											// In: State vector of vessel B (the obstacle)
+	const int i, 															// In: Index of obstacle
 	const double chi_m 														// In: Candidate course offset currently followed
 	)
 {
-	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC;
-
+	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
+	double psi_A, psi_B;
 	Eigen::Vector2d v_A, v_B, d_AB, L_AB;
-	if (xs_A.size() == 6) { double psi_A = xs_A[2]; Utilities::rotate_vector_2D(v_A, psi_A); }
-	else 				  { double psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs(2); v_A(1) = xs(3); }
+	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); Utilities::rotate_vector_2D(v_A, psi_A); }
+	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
 	
-	if (xs_B.size() == 6) { double psi_B = xs_B[2]; Utilities::rotate_vector_2D(v_B, psi_B); }
-	else 				  { double psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs(2); v_B(1) = xs(3); }
+	if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); Utilities::rotate_vector_2D(v_B, psi_B); }
+	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
 
 	d_AB(0) = xs_B(0) - xs_A(0);
 	d_AB(1) = xs_B(1) - xs_A(1);
@@ -731,23 +736,23 @@ bool PSBMPC::determine_transitional_cost_indicator(
 	// For ownship overtaking the obstacle: Check if obstacle is on opposite side of 
 	// ownship to what was observed at t0
 	if (!S_TC_0(i)) { O_TC = O_TC_0(i) && S_TC; }
-	else { O_TC = O_TC_0 && !S_TC; };
+	else { O_TC = O_TC_0(i) && !S_TC; };
 
 	// For obstacle overtaking the ownship: Check if ownship is on opposite side of 
 	// obstacle to what was observed at t0
 	if (!S_i_TC_0(i)) { Q_TC = Q_TC_0(i) && S_i_TC; }
-	else { Q_TC = Q_TC_0 && !S_i_TC; };
+	else { Q_TC = Q_TC_0(i) && !S_i_TC; };
 
 	// For crossing: Check if obstacle is on opposite side of ownship to what was
 	// observed at t0
-	X_TC = X_TC_0(i) && S_TC_0 && S_TC && (chi_m < 0);
+	X_TC = X_TC_0(i) && S_TC_0(i) && S_TC && (chi_m < 0);
 
 	// This is not mentioned in article, but also implemented here..
 	// Transitional cost only valid by going from having obstacle on port side at
 	// t0, to starboard side at time t
 	if (!S_TC_0(i)) { H_TC = H_TC_0(i) && S_TC; }
 	else { H_TC = false; }
-	H_TC &&= !X_TC;
+	H_TC = H_TC && !X_TC;
 
 	return O_TC || Q_TC || X_TC || H_TC;
 }
@@ -768,9 +773,9 @@ void PSBMPC::update_transitional_variables(
 	bool is_close, is_passed;
 
 	Eigen::Vector2d v_A, v_B, psi_A, psi_B, d_AB, L_AB;
-	v_A(0) = ownship_state(3);
-	v_A(1) = ownship_state(4);
-	double psi_A = Utilities::wrap_to_pmpi(ownship_state[2]);
+	v_A(0) = xs(3);
+	v_A(1) = xs(4);
+	double psi_A = Utilities::wrap_to_pmpi(xs[2]);
 	Utilities::rotate_vector_2D(v_A, psi_A);
 
 	int n_obst = new_obstacles.size();
@@ -843,7 +848,7 @@ void PSBMPC::update_transitional_variables(
 double PSBMPC::calculate_total_cost(
 	const Eigen::VectorXd offset_sequence, 
 	const Eigen::VectorXd maneuver_times, 
-	const int k, 
+	const int k 
 	)
 {
 	double cost = 0;
@@ -871,8 +876,8 @@ double PSBMPC::calculate_collision_cost(
 
 void PSBMPC::calculate_collision_cost(
 	Eigen::VectorXd& cost,													// Out: Collision cost
-	const Eigen::Matrix<2, -1>& v_1, 										// In: Velocity v_1
-	const Eigen::Matrix<2, -1>& v_2 										// In: Velocity v_2
+	const Eigen::Matrix<double, 2, -1>& v_1, 										// In: Velocity v_1
+	const Eigen::Matrix<double, 2, -1>& v_2 										// In: Velocity v_2
 	)
 {
 	int n_samples = v_1.cols();
@@ -980,7 +985,7 @@ bool PSBMPC::determine_if_behind(
     n << -v_diff[1], v_diff[0];
     n = n / n.norm() * distance_to_line;
 
-    return (determine_if_on_segment(v1 + n, p_1, v_2 + n));
+    return (determine_if_on_segment(v_1 + n, p_1, v_2 + n));
 }
 
 /****************************************************************************************
@@ -1004,7 +1009,7 @@ bool PSBMPC::determine_if_lines_intersect(
     int o_4 = find_triplet_orientation(p_2, q_2, q_1);
 
     // General case
-    if (o_1 != o_2 && o_3 != o4)
+    if (o_1 != o_2 && o_3 != o_4)
         return true;
 
     // Special Cases
@@ -1059,7 +1064,7 @@ double PSBMPC::distance_to_static_obstacle(
 {
     double d2line = distance_from_point_to_line(p, v_1, v_2);
 
-    if (check_if_behind(p, v_1, v_2, d2line) || check_if_behind(p, v_2, v_1, d2line)) return d2line;
+    if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line)) return d2line;
     else return std::min((v_1-p).norm(),(v_2-p).norm());
 }
 
@@ -1076,7 +1081,7 @@ void PSBMPC::update_obstacles(
 	) 			
 {
 
-	int n_obst_old = old_obstacles.rows();
+	int n_obst_old = old_obstacles.size();
 	int n_obst_new = obstacle_states.rows();
 
 	bool obstacle_exist;
@@ -1085,9 +1090,9 @@ void PSBMPC::update_obstacles(
 		obstacle_exist = false;
 		for (int j = 0; j < n_obst_old; j++)
 		{
-			if ((double)old_obstacles->get_id() == obstacle_states(8, i))
+			if ((double)old_obstacles[j]->get_id() == obstacle_states(8, i))
 			{
-				old_obstacles->set_duration_lost(0.0);
+				old_obstacles[j]->reset_duration_lost();
 
 				new_obstacles.push_back(old_obstacles[j]);
 
@@ -1108,10 +1113,10 @@ void PSBMPC::update_obstacles(
 	{
 		for (int j = 0; j < old_obstacles.size(); j++)
 		{
-			old_obstacles->increment_duration_lost(dt * p_step);
+			old_obstacles[j]->increment_duration_lost(dt * p_step);
 
-			if (old_obstacles->get_duration_tracked() >= T_tracked_limit &&
-				(old_obstacles->get_duration_lost() < T_lost_limit || old_obstacles-get_P()(0,0) <= 5.0))
+			if (old_obstacles[j]->get_duration_tracked() >= T_tracked_limit &&
+				(old_obstacles[j]->get_duration_lost() < T_lost_limit || old_obstacles[j]->get_P()(0,0) <= 5.0))
 			{
 				new_obstacles.push_back(old_obstacles[j]);
 			}

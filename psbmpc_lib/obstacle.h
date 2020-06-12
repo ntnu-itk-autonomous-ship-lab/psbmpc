@@ -25,8 +25,8 @@
 
 #include <vector>
 #include "Eigen/Dense"
-
-#include "ekf.h"
+#include "mrou.h"
+#include "kf.h"
 
 class Obstacle {
 private:
@@ -56,19 +56,27 @@ public:
 
 	MROU* mrou;
 
-	Obstacle(const Eigen::Vector4d &xs, const std::vector<Eigen::Matrix4d> &P, const bool filter_on, const double t);
+	Obstacle(const Eigen::VectorXd &xs, const std::vector<Eigen::Matrix4d> &P, const bool filter_on, const double t);
 
-	Eigen::VectorXd get_xs() const { return xs_upd; };
+	Eigen::Vector4d get_xs() const { return xs_upd; };
 
 	Eigen::Matrix4d get_P() const { return P_upd; };
 
-	void resize_trajectories(const int n_samples);
+	double get_duration_tracked() const { return duration_tracked; };
 
-	void predict_independent_trajectories(const double T, const double dt);
+	void reset_duration_tracked() { duration_tracked = 0.0; };
+
+	double get_duration_lost() const { return duration_lost; };
+
+	void reset_duration_lost() { duration_lost = 0.0; };
 
 	void increment_duration_tracked(const double dt) { duration_tracked += dt; };
 
 	void increment_duration_lost(const double dt) { duration_lost += dt; };
+
+	void resize_trajectories(const int n_samples);
+
+	void predict_independent_trajectories(const double T, const double dt);
 };
 
 #endif

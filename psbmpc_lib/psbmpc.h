@@ -44,10 +44,11 @@ enum ST {
 	F 														// Give-way in Crossing 	(ST = CR, GW)
 };			
 
-// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" for more information on CPE
+// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" or 
+// "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
 enum CPE_Method {
-	2D,														// Consider positional uncertainty only
-	4D														// Consider uncertainty in both position and velocity along piece-wise linear segments 
+	CE,														// Consider positional uncertainty only in Cross-Entropy method
+	MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments 
 };
 
 enum Prediction_Method {
@@ -93,7 +94,7 @@ private:
 
 	double T, T_static, dt, p_step;
 	double t_ts;
-	double d_safe, d_close;
+	double d_safe, d_close, d_init;
 	double K_coll;
 	double phi_AH, phi_OT, phi_HO, phi_CR;
 	double kappa, kappa_TC;
@@ -138,6 +139,7 @@ private:
 		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
 		const double d_AB);
+
 	bool determine_COLREGS_violation(const Eigen::VectorXd& xs_A, const Eigen::VectorXd& xs_B);
 
 	bool determine_transitional_cost_indicator(
@@ -158,6 +160,7 @@ private:
 		const Eigen::Vector2d &L_AB, 
 		const double d_AB,
 		const int i);
+
 	void update_transitional_variables(const Eigen::VectorXd& xs_A, const Eigen::VectorXd& xs_B, const int i);
 
 
@@ -165,16 +168,16 @@ private:
 
 	double calculate_collision_cost(const Eigen::Vector2d v_1, const Eigen::Vector2d v_2);
 
-	void calculate_collision_cost(Eigen::VectorXd &cost, const Eigen::Matrix<2, -1> &v_1, const Eigen::Matrix<2, -1> &v_2);
+	void calculate_collision_cost(Eigen::VectorXd &cost, const Eigen::Matrix<double, 2, -1> &v_1, const Eigen::Matrix<double, 2, -1> &v_2);
 
 	// Methods dealing with control deviation cost
 	double calculate_control_deviation_cost(const Eigen::VectorXd &offset_sequence);
 
 	double Delta_u(const double u_1, const double u_2) const 		{ return K_du * fabs(u_1 - u_2); }
 
-	double K_chi(const double chi) const 							{ if (chi > 0) return K_chi_strb * chi**2 else return K_chi_port * chi**2; };
+	double K_chi(const double chi) const 							{ if (chi > 0) return K_chi_strb * pow(chi, 2); else return K_chi_port * pow(chi, 2); };
 
-	double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return K_dchi_strb * fabs(chi_1 - chi_2)**2 else return K_dchi_port * fabs(chi_1 - chi_2)**2; };
+	double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	// Methods dealing with geographical constraints
 	double calculate_grounding_cost();
@@ -185,7 +188,7 @@ private:
 
     bool determine_if_behind(const Eigen::Vector2d p_1, const Eigen::Vector2d v_1, const Eigen::Vector2d v_2, const double d_to_line);                         
 
-    bool determine_if_line_intersect(const Eigen::Vector2d p_1, const Eigen::Vector2d q_1, const Eigen::Vector2d p_2, const Eigen::Vector2d q_2);   
+    bool determine_if_lines_intersect(const Eigen::Vector2d p_1, const Eigen::Vector2d q_1, const Eigen::Vector2d p_2, const Eigen::Vector2d q_2);   
 
     double distance_from_point_to_line(const Eigen::Vector2d p, const Eigen::Vector2d q_1, const Eigen::Vector2d q_2);                  
 
@@ -204,25 +207,25 @@ public:
 
 	Prediction_Method get_prediction_method() const { return prediction_method; };
 
-	Guidance_Strategy get_guidance_method() const { return guidance_methody; };
+	Guidance_Method get_guidance_method() const { return guidance_method; };
 
-	void set_cpe_method(CPE_Method cpe_method) 						{ if (cpe_method >= 2D && cpe_method <= 4D) this->cpe_method = cpe_method; };
+	void set_cpe_method(CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
 
-	void set_prediction_method(Prediction_Method prediction_method) { if(prediction_method >= Linear && prediction_method <= EKF4) this->prediction_method = prediction_method; };
+	void set_prediction_method(Prediction_Method prediction_method) { if(prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
 
 	void set_guidance_method(Guidance_Method guidance_method) 		{ if(guidance_method >= LOS && guidance_method <= HH) this->guidance_method = guidance_method; };
 
-	int get_par(const index) const;
+	int get_ipar(const int index) const;
 	
-	double get_par(const index) const;
+	double get_dpar(const int index) const;
 
-	std::vector<Eigen::VectorXd> get_par(const index) const;
+	std::vector<Eigen::VectorXd> get_mpar(const int index) const;
 
-	void set_par(const index, const int value);
+	void set_par(const int index, const int value);
 
-	void set_par(const index, const double value);
+	void set_par(const int index, const double value);
 
-	void set_par(const index, const std::vector<Eigen::VectorXd> value);
+	void set_par(const int index, const std::vector<Eigen::VectorXd> value);
 
 	bool get_obstacle_filter_status() const { return obstacle_filter_on; };
 
@@ -236,7 +239,7 @@ public:
 		Eigen::Matrix<double, -1, 1> &colav_status,
 		const double u_d, 
 		const double psi_d, 
-		const Eigen::Matrix<double,2, -1> &waypoints,
+		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::VectorXd &ownship_state,
 		const Eigen::Matrix<double, 9, -1> &obstacle_states, 
 		const std::vector<Eigen::Matrix<double, 4, 4>> &obstacle_covariances,
