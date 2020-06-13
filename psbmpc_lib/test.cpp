@@ -3,7 +3,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "matplotlib/matplotlibcpp.h"
+#include "Matplotlib/matplotlibcpp.h"
 #include "kf.h"
 #include "ownship.h"
 #include <iostream>
