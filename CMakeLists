@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.10)
+
+# set the project name and version
+project(PSBMPC_testing VERSION 1.0)
+
+# add the executable
+add_executable(PSBMPC_testing psbmpc_test.cxx)
+
+target_include_directories(PSBMPC_testing PUBLIC
+			   "${PROJECT_BINARY_DIR}"
+			   )
+

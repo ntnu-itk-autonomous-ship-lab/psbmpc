@@ -3,7 +3,9 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/home/trymte/Desktop/psbmpc/**",
+                "/usr/include/python3.6/"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
