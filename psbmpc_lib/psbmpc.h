@@ -51,20 +51,6 @@ enum CPE_Method {
 	MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments 
 };
 
-enum Prediction_Method {
-	Linear,													// Linear prediction
-	ERK1, 													// Explicit Runge Kutta 1 = Eulers method
-	ERK4 													// Explicit Runge Kutta of fourth order, not implemented.
-};
-
-
-enum Guidance_Method {
-	LOS, 													// Line-of-sight		
-	WPP,													// WP-Pursuit
-	CH, 													// Course Hold
-	HH 														// Heading Hold
-};
-
 
 class PSBMPC
 {

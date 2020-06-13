@@ -24,16 +24,29 @@
 #ifndef _Ownship_H_
 #define _Ownship_H_
 
+#include "utilities.h"
 #include <vector>
 #include <cmath>
 #include "Eigen/Dense"
 #include <string>
 
+enum Prediction_Method {
+	Linear,													// Linear prediction
+	ERK1, 													// Explicit Runge Kutta 1 = Eulers method
+	ERK4 													// Explicit Runge Kutta of fourth order, not implemented.
+};
+
+
+enum Guidance_Method {
+	LOS, 													// Line-of-sight		
+	WPP,													// WP-Pursuit
+	CH, 													// Course Hold
+	HH 														// Heading Hold
+};
+
 class Ownship
 {
 	private:
-
-	Eigen::Matrix<double, 6, -1> trajectory;
 
 	Eigen::Vector3d tau;
 	Eigen::Matrix3d M_inv;
@@ -72,7 +85,7 @@ class Ownship
 	// Guidance parameters
 	double e_int, e_int_max; 
 	double R_a;
-	double LOS_LA, LOS_K_i;
+	double LOS_LD, LOS_K_i;
 
 	int wp_counter;
 
@@ -91,9 +104,9 @@ class Ownship
 	// Calculates the offsets according to the position of the GPS receiver
 	void calculate_position_offsets();
 
-	inline void Cvv(const Eigen::Vector3d v);
+	inline void update_Cvv(const Eigen::Vector3d nu);
 
-	inline void Dvv(const Eigen::Vector3d v);
+	inline void update_Dvv(const Eigen::Vector3d nu);
 
 	void update_guidance_references(
 		double &u_d, 
@@ -112,23 +125,22 @@ class Ownship
 
 	Eigen::VectorXd predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
-	void resize_trajectory(const int n_samples);
-
 	void predict_trajectory(
-		const Eigen::VectorXd offset_sequence, 
-		const double u_d, 
-		const double psi_d, 
+		Eigen::Matrix<double, 6, -1> &trajectory,
+		const Eigen::VectorXd offset_sequence,
+		const Eigen::VectorXd maneuver_times,
+		const double u_d,
+		const double psi_d,
 		const Eigen::Matrix<double, 2, -1> &waypoints,
+		const Prediction_Method prediction_method,
+		const Guidance_Method guidance_method,
 		const double T,
-		const double dt, 
-		const Guidance_Method guidance_method);
+		const double dt
+	);
 
-	// Must assess how to parameterize this trajectory, should it be public or private? 
-	Eigen::Matrix<double, 6, -1> get_trajectory() const { return trajectory; };
+	double get_length() const { return l; };
 
-	double get_length() const { return l};
-
-	double get_width() const { return w};
+	double get_width() const { return w; };
 
 };
 

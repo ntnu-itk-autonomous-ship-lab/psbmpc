@@ -32,15 +32,15 @@
 *  Modified :
 *****************************************************************************************/
 Obstacle::Obstacle(
-	const Eigen::Matrix<double,10,1>& xs, 						// In: Obstacle state [x, y, V_x, V_y, A, B, C, D, id]
-	const Eigen::Matrix<double,10,1>& P, 						// In: Obstacle state [x, y, V_x, V_y, A, B, C, D, id]
+	const Eigen::VectorXd& xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, id]
+	const Eigen::Matrix4d& P, 									// In: Obstacle covariance
 	const bool filter_on, 										// In: Boolean determining whether KF should be used or not
 	const double T, 											// In: Prediction horizon
-	const double dt, 											// In: Sampling interval
+	const double dt 											// In: Sampling interval
 	) : 
-	id(xs(9)), filter_on(filter_on), 
-	l(xs(5) + xs(6)), w(xs(7) + xs(8)), 
-	x_offset(xs(5) - xs(6)), y_offset(xs(7) - xs(8)),
+	id(xs_aug(9)), filter_on(filter_on), 
+	l(xs_aug(5) + xs_aug(6)), w(xs_aug(7) + xs_aug(8)), 
+	x_offset(xs_aug(5) - xs_aug(6)), y_offset(xs_aug(7) - xs_aug(8)),
 	duration_tracked(0.0), duration_lost(0.0)
 	{
 
@@ -51,19 +51,23 @@ Obstacle::Obstacle(
 	V_x_p.resize(n_samp);
 	V_y_p.resize(n_samp);
 
-	double psi = xs(2);
-	x_p(0) = xs(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	y_p(0) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	P_p.resize(n_samp);
 
-	V_x_p(0) = xs(3) * cos(psi) - xs(4) * sin(psi); 
-	V_y_p(0) = xs(3) * sin(psi) + xs(4) * cos(psi); 
+	double psi = xs_aug(2);
+	x_p(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	y_p(0) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+
+	V_x_p(0) = xs_aug(3) * cos(psi) - xs_aug(4) * sin(psi); 
+	V_y_p(0) = xs_aug(3) * sin(psi) + xs_aug(4) * cos(psi); 
+
+	P_p[0] = P;
 
 	Eigen::Vector4d xs_0;
 	xs_0 << x_p(0), y_p(0), V_x_p(0), V_y_p(0);
 
 	kf = new KF(xs_0, id, dt, 0.0);
 
-	if (filter_on) {
+	if(filter_on) {
 
 		kf->update(xs_0, duration_lost, dt);
 

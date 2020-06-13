@@ -37,8 +37,6 @@
 *****************************************************************************************/
 Ownship::Ownship()
 {
-	resize_trajectory(1);
-
 	tau = Eigen::Vector3d::Zero();
 
 	// Model parameters
@@ -77,9 +75,9 @@ Ownship::Ownship()
 	N_rrr = -3224.0;
 
 	Eigen::Matrix3d M_tot;
-	M_tot << M - X_udot, 0, 0,
-	        0, M-Y_vdot, -Y_rdot,
-	        0, -Y_rdot, I_z-N_rdot;
+	M_tot << m - X_udot, 0, 0,
+	        0, m - Y_vdot, -Y_rdot,
+	        0, -Y_rdot, I_z - N_rdot;
 	M_inv = M_tot.inverse();
 
 	//Force limits
@@ -126,7 +124,7 @@ Eigen::VectorXd Ownship::predict(
 	Eigen::Vector3d eta, nu;
 	eta(0) = xs_old(0);
 	eta(1) = xs_old(1);
-	eta(2) = Utilities::wrap_to_pmpi(xs_old(2));
+	eta(2) = Utilities::wrap_angle_to_pmpi(xs_old(2));
 
 	nu(0) = xs_old(3);
 	nu(1) = xs_old(4);
@@ -138,7 +136,7 @@ Eigen::VectorXd Ownship::predict(
 		{
 			// Straight line trajectory with the current heading and surge speed
 			eta = eta + dt * Utilities::rotate_vector_3D(nu, eta(2), Yaw);
-			eta(2) = Utilities::wrap_to_pmpi(xs_old(2)); 
+			eta(2) = Utilities::wrap_angle_to_pmpi(xs_old(2)); 
 			nu(0) = nu(0);
 			nu(1) = 0;
 			nu(2) = 0;
@@ -151,11 +149,13 @@ Eigen::VectorXd Ownship::predict(
 		}
 		case ERK1 : 
 		{
+			update_Cvv(nu); 
+			update_Dvv(nu);
 			eta = eta + dt * Utilities::rotate_vector_3D(nu, eta(2), Yaw);
-			nu  = nu  + dt * M_inv * (- Cvv(nu) - Dvv(nu) + tau);
+			nu  = nu  + dt * M_inv * (- Cvv - Dvv + tau);
 			xs_new(0) = eta(0); 
 			xs_new(1) = eta(1); 
-			xs_new(2) = Utilities::wrap_to_pmpi(eta(2));
+			xs_new(2) = Utilities::wrap_angle_to_pmpi(eta(2));
 			xs_new(3) = nu(0);  
 			xs_new(4) = nu(1);  
 			xs_new(5) = nu(2);
@@ -167,18 +167,6 @@ Eigen::VectorXd Ownship::predict(
 		}
 	}
 }
-/****************************************************************************************
-*  Name     : resize_trajectory
-*  Function : Resize trajectory  to the new number of samples n_samples 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-void Ownship::resize_trajectory(
-	const int n_samples												// In: Updated number of samples in trajectory
-	)	
-{
-	trajectory.resize(6, n_samples);
-}
 
 /****************************************************************************************
 *  Name     : predict_trajectory
@@ -188,23 +176,24 @@ void Ownship::resize_trajectory(
 *  Modified :
 *****************************************************************************************/
 void Ownship::predict_trajectory(
-	Eigen::Matrix<double, 6, -1> &trajectory, 						// Out: Predicted ownship trajectory
+	Eigen::Matrix<double, 6, -1> &trajectory, 					// In/out: Predicted ownship trajectory
 	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference
 	const double psi_d, 											// In: Heading reference
 	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Ownship waypoints
 	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
-	const Guidance_Strategy guidance_method, 						// In: Type of guidance to be used
+	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
 	const double T,													// In: Prediction horizon
 	const double dt 												// In: Prediction time step
 	)
 {
 	int n_samples = T / dt;
 	
-	resize_trajectory(n_samples);
+	trajectory.resize(6, n_samples);
+
 	wp_counter = 0;
-	man_count = 0;
+	int man_count = 0;
 	double u_m = 1, u_d_p = u_d;
 	double chi_m = 0, psi_d_p = psi_d;
 	Eigen::Matrix<double, 6, 1> xs = trajectory.block<6, 1>(0, 0);
@@ -217,15 +206,14 @@ void Ownship::predict_trajectory(
 			if (man_count < maneuver_times.size()) man_count += 1;
 		}  
 
-		update_guidance_references(u_d_p, psi_d_p, waypoints, xs, dt, guidance_method);
+		update_guidance_references(u_d_p, psi_d_p, waypoints, xs, k, dt, guidance_method);
 
-		update_ctrl_inputs(u_m * u_d_p, chi_m + psi_d_p, k);
+		update_ctrl_input(u_m * u_d_p, chi_m + psi_d_p, xs);
 
 		xs = predict(xs, dt, prediction_method);
 		trajectory.block<6, 1>(0, k) = xs;
 	}
 }
-
 
 
 /****************************************************************************************
@@ -250,7 +238,7 @@ void Ownship::calculate_position_offsets(){
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-inline void Ownship::Cvv(
+inline void Ownship::update_Cvv(
 	const Eigen::Vector3d nu 									// In: BODY velocity vector nu = [u, v, r]^T				
 	)
 {
@@ -266,7 +254,7 @@ inline void Ownship::Cvv(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-inline void Ownship::Dvv(
+inline void Ownship::update_Dvv(
 	const Eigen::Vector3d nu 									// In: BODY velocity vector nu = [u, v, r]^T
 	)
 {
@@ -286,9 +274,9 @@ void Ownship::update_guidance_references(
 	double &psi_d,												// Out: Heading reference (set equal to course reference, compensating for crab angle through LOS_K_i if at all..)
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
 	const Eigen::Matrix<double, 6, 1> &xs, 						// In: Ownship state
-	const int k 												// In: Time step index		
-	const double dt 											// In: Time step
-	const Guidance_Method guidance_method,						// In: Type of guidance used	
+	const int k, 												// In: Time step index		
+	const double dt, 											// In: Time step
+	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
 {
 	int n_wps = waypoints.cols();
@@ -342,7 +330,7 @@ void Ownship::update_guidance_references(
 			std::cout << "This guidance method does not exist or is not implemented" << std::endl;
 		}
 	}
-	psi_d = Utilities::wrap_to_pmpi(psi_d);
+	psi_d = Utilities::wrap_angle_to_pmpi(psi_d);
 }
 
 /****************************************************************************************
@@ -351,13 +339,13 @@ void Ownship::update_guidance_references(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ownship::update_ctrl_inputs(
+void Ownship::update_ctrl_input(
 	const double u_d,											// In: Surge reference
 	const double psi_d, 										// In: Heading reference
-	const Eigen::Matrix<double, 6, 1> &xs, 						// In: State
+	const Eigen::Matrix<double, 6, 1> &xs 						// In: State
 	)
 {
-	double Fx = Cvv[0] + Dvv[0] + Kp_u * M * (u_d - xs(3));
+	double Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
 
 	double Fy = (Kp_psi * I_z ) * ((psi_d - xs(2)) - Kd_psi * xs(5));
     Fy *= 1.0 / l_r;

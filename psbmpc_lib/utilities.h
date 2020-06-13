@@ -56,7 +56,7 @@ namespace Utilities
 		return diff;
 	}
 
-/*
+
 	inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d v, const double angle)
 	{
 		Eigen::Vector2d v_temp;
@@ -64,7 +64,8 @@ namespace Utilities
 		v_temp(2) = v(1) * sin(angle) - v(2) * cos(angle);
 		return v_temp;
 	}
-*/
+
+/*
 	inline void rotate_vector_2D(Eigen::Vector2d &v, const double angle)
 	{
 		Eigen::Vector2d v_temp;
@@ -72,6 +73,7 @@ namespace Utilities
 		v_temp(2) = v(1) * sin(angle) - v(2) * cos(angle);
 		v = v_temp;
 	}	
+*/
 
 	inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3d v, const double angle, const Axis axis)
 	{
@@ -100,6 +102,7 @@ namespace Utilities
 		return v_temp;
 	}
 
+/*
 	inline void rotate_vector_3D(Eigen::Vector3d &v, const double angle, const Axis axis)
 	{
 		Eigen::Vector3d v_temp;
@@ -126,4 +129,5 @@ namespace Utilities
 		}
 		v = v_temp;
 	}
+*/
 }
