@@ -50,13 +50,15 @@ private:
 
 	double duration_tracked, duration_lost;
 
+	bool filter_on;
+
 public:
 
 	KF* kf;
 
 	MROU* mrou;
 
-	Obstacle(const Eigen::VectorXd &xs, const std::vector<Eigen::Matrix4d> &P, const bool filter_on, const double t);
+	Obstacle(const Eigen::VectorXd &xs_aug, const Eigen::Matrix4d &P, const bool filter_on, const double T, const double dt);
 
 	Eigen::Vector4d get_xs() const { return xs_upd; };
 
