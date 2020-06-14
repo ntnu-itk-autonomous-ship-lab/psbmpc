@@ -282,14 +282,12 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 
-	
+	update_transitional_variables(ownship_state);
 
 	initialize_prediction(ownship_state);
 
 	for (int i = 0; i < n_obst; i++)
 	{
-		
-		update_transitional_variables(ownship_state);
 		new_obstacles[i]->predict_independent_trajectories(T, dt);
 	}
 
@@ -777,7 +775,7 @@ void PSBMPC::update_transitional_variables(
 	Eigen::Vector2d v_A, v_B, psi_A, psi_B, d_AB, L_AB;
 	v_A(0) = xs(3);
 	v_A(1) = xs(4);
-	double psi_A = Utilities::wrap_angle_to_pmpi(xs[2]);
+	double psi_A = Utilities::wrap_to_pmpi(xs[2]);
 	Utilities::rotate_vector_2D(v_A, psi_A);
 
 	int n_obst = new_obstacles.size();
