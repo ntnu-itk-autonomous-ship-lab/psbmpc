@@ -1,5 +1,7 @@
-find_package(Eigen REQUIRED)
-
-add_library(psbmpc_lib STATIC psbmpc.h psbmpc.cpp ownship.h ownship.cpp cpe.h cpe.cpp kf.h kf.cpp obstacle.h obstacle.cpp mrou.h mrou.cpp psbmpc_index.h utilities.h)
+add_library(psbmpc_lib STATIC src/psbmpc.cpp src/ownship.cpp src/cpe.cpp src/kf.cpp src/obstacle.cpp src/mrou.cpp)
+target_include_directories(psbmpc_lib PRIVATE
+	include
+	${CMAKE_SOURCE_DIR}/libs/third_party_libs
+	)
 
 target_compile_features(psbmpc_lib PUBLIC cxx_std_11)

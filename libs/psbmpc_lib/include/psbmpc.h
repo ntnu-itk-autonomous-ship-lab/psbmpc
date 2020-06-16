@@ -20,37 +20,35 @@
 *
 *****************************************************************************************/
 
-
-
 #ifndef _PSBMPC_H_
 #define _PSBMPC_H_
 
 
 
 #include "psbmpc_index.h"
-#include "psbmpc_variables.h"
 #include "ownship.h"
 #include "obstacle.h"
 #include "Eigen/Dense"
 #include <vector>
 #include <math.h>
 
-enum ST {
+// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" or 
+// "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
+enum CPE_Method 
+{
+	CE,														// Consider positional uncertainty only
+	MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments 
+};
+
+enum ST 
+{
 	A, 														// Non-COLREGS situation	(ST = Ø)
 	B, 														// Stand-on in Overtaking 	(ST = OT, SO)
 	C, 														// Stand-on in Crossing 	(ST = CR, SO)
 	D, 														// Give-way in Overtaking 	(ST = OT, GW)
 	E, 														// Give-way in Head-on 		(ST = HO, GW)
 	F 														// Give-way in Crossing 	(ST = CR, GW)
-};			
-
-// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" or 
-// "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
-enum CPE_Method {
-	CE,														// Consider positional uncertainty only in Cross-Entropy method
-	MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments 
-};
-
+};	
 
 class PSBMPC
 {
