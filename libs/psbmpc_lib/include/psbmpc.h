@@ -145,14 +145,14 @@ private:
 		const double d_AB,
 		const int i);
 
-	void update_transitional_variables(const Eigen::VectorXd& xs_A, const Eigen::VectorXd& xs_B, const int i);
+	void update_transitional_variables(const Eigen::Matrix<double, 6, 1>& xs);
 
 
-	double calculate_total_cost(const Eigen::VectorXd &offset_sequence, const Eigen::VectorXd &maneuver_times, const int k);
+	double calculate_total_cost(const Eigen::VectorXd& offset_sequence, const Eigen::VectorXd& maneuver_times, const int k);
 
 	double calculate_collision_cost(const Eigen::Vector2d v_1, const Eigen::Vector2d v_2);
 
-	void calculate_collision_cost(Eigen::VectorXd &cost, const Eigen::Matrix<double, 2, -1> &v_1, const Eigen::Matrix<double, 2, -1> &v_2);
+	void calculate_collision_cost(Eigen::VectorXd& cost, const Eigen::Matrix<double, 2, -1>& v_1, const Eigen::Matrix<double, 2, -1>& v_2);
 
 	// Methods dealing with control deviation cost
 	double calculate_control_deviation_cost(const Eigen::VectorXd &offset_sequence);
@@ -164,7 +164,7 @@ private:
 	double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	// Methods dealing with geographical constraints
-	double calculate_grounding_cost();
+	double calculate_grounding_cost(const Eigen::Matrix<double, 2, -1> trajectory);
 
     int find_triplet_orientation(const Eigen::Vector2d p, const Eigen::Vector2d q, const Eigen::Vector2d r);                           
 

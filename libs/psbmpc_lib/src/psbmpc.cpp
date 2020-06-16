@@ -284,7 +284,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	update_transitional_variables(ownship_state);
 
-	initialize_prediction(ownship_state);
+	//initialize_prediction(ownship_state);
 
 	for (int i = 0; i < n_obst; i++)
 	{
@@ -766,16 +766,17 @@ bool PSBMPC::determine_transitional_cost_indicator(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::update_transitional_variables(
-	const Eigen::Matrix<double, 6, 1> xs 									// In: Ownship state
+	const Eigen::Matrix<double, 6, 1>& xs 									// In: Ownship state
 	)
 {
 	bool B_is_ahead;
 	bool is_close, is_passed;
 
-	Eigen::Vector2d v_A, v_B, psi_A, psi_B, d_AB, L_AB;
+	Eigen::Vector2d v_A, v_B, d_AB, L_AB;
+	double psi_A, psi_B;
 	v_A(0) = xs(3);
 	v_A(1) = xs(4);
-	double psi_A = Utilities::wrap_to_pmpi(xs[2]);
+	double psi_A = Utilities::wrap_angle_to_pmpi(xs[2]);
 	Utilities::rotate_vector_2D(v_A, psi_A);
 
 	int n_obst = new_obstacles.size();
@@ -787,13 +788,13 @@ void PSBMPC::update_transitional_variables(
 	{
 		v_B(0) = new_obstacles[i]->get_xs()(2);
 		v_B(1) = new_obstacles[i]->get_xs()(3);
-		psi_B = atan2(v_i_0(1), v_i_0(0));
+		psi_B = atan2(v_B(1), v_B(0));
 
 		d_AB(0) = new_obstacles[i]->get_xs()(0) - xs(0);
 		d_AB(1) = new_obstacles[i]->get_xs()(1) - xs(1);
 		L_AB = d_AB / d_AB.norm();
 
-		is_close = d_AB <= d_close;
+		is_close = d_AB.norm() <= d_close;
 
 		AH_0(i) = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
@@ -896,7 +897,7 @@ void PSBMPC::calculate_collision_cost(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_control_deviation_cost(
-	const Eigen::VectorXd offset_sequence, 									// In: Candidate control behavior [(u_m1, chi_m1), ..., (u_mn_M, chi_mn_M)]
+	const Eigen::VectorXd &offset_sequence 									// In: Candidate control behavior [(u_m1, chi_m1), ..., (u_mn_M, chi_mn_M)]
 	)
 {
 	double cost = 0;
@@ -921,10 +922,12 @@ double PSBMPC::calculate_control_deviation_cost(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_grounding_cost(
-	const Eigen::Matrix<double, 2, -1> trajectory, 									// In: Predicted ownship trajectory with control behavior k
+	const Eigen::Matrix<double, 2, -1> trajectory 									// In: Predicted ownship trajectory with control behavior k
 	)
 {
+	double cost;
 
+	return cost;
 }
 
 /****************************************************************************************
