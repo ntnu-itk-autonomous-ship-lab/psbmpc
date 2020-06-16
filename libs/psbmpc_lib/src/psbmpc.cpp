@@ -72,7 +72,7 @@ int PSBMPC::get_ipar(
 
 		default : std::cout << "Wrong index given" << std::endl;
 	}
-};
+}
 	
 double PSBMPC::get_dpar(
 	const int index															// In: Index of parameter to return (Must be of double type)
@@ -105,7 +105,7 @@ double PSBMPC::get_dpar(
 
 		default : std::cout << "Wrong index given" << std::endl;
 	}
-};
+}
 
 std::vector<Eigen::VectorXd> PSBMPC::get_mpar(
 	const int index															// In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
@@ -117,7 +117,7 @@ std::vector<Eigen::VectorXd> PSBMPC::get_mpar(
 
 		default : std::cout << "Wrong index given" << std::endl;  
 	}
-};
+}
 
 /****************************************************************************************
 *  Name     : set_par
@@ -921,7 +921,7 @@ double PSBMPC::calculate_control_deviation_cost(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_grounding_cost(
-	const Eigen::Matrix<2, -1> trajectory, 									// In: Predicted ownship trajectory with control behavior k
+	const Eigen::Matrix<double, 2, -1> trajectory, 									// In: Predicted ownship trajectory with control behavior k
 	)
 {
 
@@ -1101,7 +1101,7 @@ void PSBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			Obstacle *obstacle = new Obstacle(obstacle_states.col(i), obstacle_covariances[i], obstacle_filter_on, 0.0);
+			Obstacle *obstacle = new Obstacle(obstacle_states.col(i), obstacle_covariances[i], obstacle_filter_on, T, dt);
 			new_obstacles.push_back(obstacle);
 		}
 	}

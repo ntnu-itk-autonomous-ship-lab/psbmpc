@@ -1,5 +1,3 @@
-find_package(Matplotlib REQUIRED)
-
 add_executable(tester test.cpp)
 
 target_link_libraries(tester psbmpc_lib)

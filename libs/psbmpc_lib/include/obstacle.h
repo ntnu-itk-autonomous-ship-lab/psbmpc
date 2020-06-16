@@ -60,6 +60,8 @@ public:
 
 	Obstacle(const Eigen::VectorXd &xs_aug, const Eigen::Matrix4d &P, const bool filter_on, const double T, const double dt);
 
+	int get_id() const { return id; };
+
 	Eigen::Vector4d get_xs() const { return xs_upd; };
 
 	Eigen::Matrix4d get_P() const { return P_upd; };

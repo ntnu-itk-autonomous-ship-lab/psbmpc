@@ -53,7 +53,7 @@ public:
 	void predict_state(Eigen::VectorXd &xs, const Eigen::Vector2d &v, const double t);
 
 	void predict_covariance(Eigen::MatrixXd &P, const double t);
-}
+};
 
 
 #endif

@@ -19,22 +19,7 @@
 #define _PSBMPC_VARIABLES_H_
 
 
-// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" for more information
-enum CPE_Method 
-{
-	2D,														// Consider positional uncertainty only
-	4D														// Consider uncertainty in both position and velocity along piece-wise linear segments 
-};
-
-enum ST 
-{
-	A, 														// Non-COLREGS situation	(ST = Ø)
-	B, 														// Stand-on in Overtaking 	(ST = OT, SO)
-	C, 														// Stand-on in Crossing 	(ST = CR, SO)
-	D, 														// Give-way in Overtaking 	(ST = OT, GW)
-	E, 														// Give-way in Head-on 		(ST = HO, GW)
-	F 														// Give-way in Crossing 	(ST = CR, GW)
-};			
+		
 
 enum Guidance_Strategy 
 {
@@ -48,7 +33,5 @@ enum Prediction_Method
 	Linear,													// Linear prediction
 	ERK1 													// Explicit Runge Kutta 1 = Eulers method
 };
-
-
 
 #endif
