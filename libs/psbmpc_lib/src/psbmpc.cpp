@@ -838,18 +838,46 @@ void PSBMPC::update_transitional_variables(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_total_cost(
-	const Eigen::VectorXd offset_sequence, 
-	const Eigen::VectorXd maneuver_times, 
-	const Eigen::Matrix<double, 6, -1> os_trajectory,
-	const std::vector<Eigen::MatrixXd> obstacle_trajectories,
-
-	const int k 
+	const Eigen::Matrix<double, 6, -1>& trajectory,							// In: Own-ship trajectory following the current offset sequence
+	const std::vector<Eigen::MatrixXd>& obstacle_trajectories,				// In: Predicted obstacle trajectories for all prediction scenarios n_obst x <n_ps x n_samp>
+	const std::vector<Eigen::MatrixXd>& P_c,								// In: Predicted obstacle collision probabilities for all prediction scenarios, n_obst x <n_ps x n_samples>
+	const Eigen::Matrix<double, 4, -1>& static_obstacles					// In: Static obstacle information
 	)
 {
 	double cost = 0;
 
-	cost += calculate_control_deviation_cost(offset_sequence);
-	cost += calculate_grounding_cost();
+	int n_obst = new_obstacles.size();
+	int n_ps = obstacle_trajectories[0].rows();
+	int n_samples = obstacle_trajectories[0].cols();
+
+	Eigen::MatrixXd cost_ps_t;
+	Eigen::VectorXd cost_ps;
+	Eigen::Matrix<double, 6, 1> xs_p;
+	Eigen::Matrix<double, 4, 1> xs_i_p;
+
+	Eigen::Vector2d v_p, v_i_p, L, d_0i_p;
+	double psi_p, psi_i_p;
+	for(int k = 0; k < n_samples; k++)
+	{
+		psi_p = trajectory(2, k); 
+		v_p(0) = trajectory(3, k); 
+		v_p(1) = trajectory(4, k); 
+		Utilities::rotate_vector_2D(v_p, psi_p);
+		for(int i = 0; i < n_obst; i++)
+		{
+			
+			for(int ps = 0; ps < n_ps; ps++)
+			{
+				d_0i_p = obstacle_trajectories[i].block<2, 1>(ps, k) - trajectory<2, 1>(0, k);
+			}
+		}
+	}
+	cost += calculate_grounding_cost(trajectory, static_obstacles);
+
+	cost += calculate_control_deviation_cost();
+
+	cost += calculate_chattering_cost();
+	
 
 	return cost;
 }
@@ -871,8 +899,8 @@ double PSBMPC::calculate_collision_cost(
 
 void PSBMPC::calculate_collision_cost(
 	Eigen::VectorXd& cost,													// Out: Collision cost
-	const Eigen::Matrix<double, 2, -1>& v_1, 										// In: Velocity v_1
-	const Eigen::Matrix<double, 2, -1>& v_2 										// In: Velocity v_2
+	const Eigen::Matrix<double, 2, -1>& v_1, 								// In: Velocity v_1
+	const Eigen::Matrix<double, 2, -1>& v_2 								// In: Velocity v_2
 	)
 {
 	int n_samples = v_1.cols();
@@ -890,9 +918,7 @@ void PSBMPC::calculate_collision_cost(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double PSBMPC::calculate_control_deviation_cost(
-	const Eigen::VectorXd &offset_sequence 									// In: Candidate control behavior [(u_m1, chi_m1), ..., (u_mn_M, chi_mn_M)]
-	)
+double PSBMPC::calculate_control_deviation_cost()
 {
 	double cost = 0;
 	for (int i = 0; i < n_M; i++)
@@ -909,6 +935,31 @@ double PSBMPC::calculate_control_deviation_cost(
 	return cost / n_M;
 }
 
+double PSBMPC::calculate_chattering_cost()
+{
+	double cost = 0;
+
+	if (n_M > 1) 
+	{
+		double delta_t;
+		for(int M = 0; M < n_M; M++)
+		{
+			if (M+1 <= n_M)
+			{
+				if ((offset_sequence(M+1) >= 0 && offset_sequence(2 * M + 1) < 0) ||
+					(offset_sequence(M+1) < 0 && offset_sequence(2 * M + 1) >= 0))
+				{
+					delta_t = maneuver_times(M+1) - maneuver_times(M);
+					cost += K_sgn * exp( - delta_t / T_sgn);
+				}
+				
+			}
+			
+		}
+	}
+	return cost;
+}
+
 /****************************************************************************************
 *  Name     : calculate_grounding_cost
 *  Function : Determines penalty due grounding ownship on static obstacles (no-go zones)
@@ -916,7 +967,8 @@ double PSBMPC::calculate_control_deviation_cost(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_grounding_cost(
-	const Eigen::Matrix<double, 2, -1> trajectory 									// In: Predicted ownship trajectory with control behavior k
+	const Eigen::Matrix<double, 6, -1>& trajectory, 							// In: Predicted ownship trajectory with control behavior k
+	const Eigen::Matrix<double, 4, -1>& static_obstacles						// In: Static obstacle information
 	)
 {
 	double cost;
