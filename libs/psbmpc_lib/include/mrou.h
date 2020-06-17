@@ -26,12 +26,12 @@
 class MROU{
 private:
 
-	double sigma_x_;
-	double sigma_xy_;
-	double sigma_y_;
+	double sigma_x;
+	double sigma_xy;
+	double sigma_y;
 
-	double gamma_x_;
-	double gamma_y_;
+	double gamma_x;
+	double gamma_y;
 
 
 	Eigen::Matrix<double, 4, 4> Sigma_1;
@@ -52,7 +52,7 @@ public:
 
 	void predict_state(Eigen::VectorXd &xs, const Eigen::Vector2d &v, const double t);
 
-	void predict_covariance(Eigen::MatrixXd &P, const double t);
+	void predict_covariance(Eigen::Matrix<double, 4, 4> &P, const double t);
 };
 
 

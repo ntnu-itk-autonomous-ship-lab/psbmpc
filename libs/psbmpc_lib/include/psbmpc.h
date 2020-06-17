@@ -58,7 +58,7 @@ private:
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
 
-	Eigen::VectorXd offset_sequence_counter, offset_sequence;
+	Eigen::VectorXd offset_sequence_counter, offset_sequence, n_ps, course_changes;
 
 	double u_m_last;
 	double chi_m_last;
@@ -99,6 +99,8 @@ private:
 	void initialize_par_limits();
 
 	void initialize_pars();
+
+	void initialize_predictions();
 
 	void reset_control_behavior();
 

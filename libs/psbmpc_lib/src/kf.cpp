@@ -31,7 +31,7 @@
 *  Modified :
 *****************************************************************************************/
 KF::KF() : 
-	id(0), n(4), m(4), initialized(0), t_0(0), t(0)
+	id(0), initialized(0), t_0(0), t(0)
 {
 
 	xs_p.setZero();
@@ -74,7 +74,7 @@ KF::KF(
 	const double dt, 							// In: Sampling interval
 	const double t_0							// In: Initial time
 	) : 	
-	id(id), n(4), m(4), xs_upd(xs_0), initialized(true), t_0(t_0), t(t_0) 
+	id(id), xs_upd(xs_0), initialized(true), t_0(t_0), t(t_0) 
 	{
 
 	I.setIdentity();
@@ -114,7 +114,7 @@ KF::KF(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
- void reset(
+ void KF::reset(
  	const Eigen::Vector4d &xs_0,				// In: Initial filter state
  	const double t_0 							// In: Initial time
  	){
@@ -171,7 +171,8 @@ void KF::update(
 
     if (duration_lost == 0.0){
 
-		K = P_p * C.transpose() * (C * P_p * C.transpose + R).inverse(); 
+		Eigen::Matrix<double, 4, 4> K;
+		K = P_p * C.transpose() * (C * P_p * C.transpose() + R).inverse(); 
 
 		xs_upd = xs_p + K * (y_m - C * xs_p);
 

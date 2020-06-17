@@ -36,7 +36,7 @@ private:
 	Eigen::VectorXd x_p, y_p, V_x_p, V_y_p;
 
 	// NOTE: Not to be confused with predicted error covariance. This is the trajectory covariance.
-	std::vector<Eigen::Matrix4d> P_p;
+	std::vector<Eigen::MatrixXd> P_p;
 
 	Eigen::VectorXd maneuver_times;
 
