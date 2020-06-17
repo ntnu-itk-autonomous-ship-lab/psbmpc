@@ -30,21 +30,21 @@
 *  Modified :
 *****************************************************************************************/
 MROU::MROU() :
-	sigma_x_(0.8), 						
-	sigma_xy_(0), 
-	sigma_y_(0.8), 
-	gamma_x_(0.1), 						
-	gamma_y_(0.1)
+	sigma_x(0.8), 						
+	sigma_xy(0), 
+	sigma_y(0.8), 
+	gamma_x(0.1), 						
+	gamma_y(0.1)
 {
 
 	// Calculate constant part of OU predictor covariance
-	Sigma_1_ << sigma_x_**2 / pow(gamma_x_, 3), sigma_xy_ / (gamma_x_ * gamma_y_), sigma_x_ ** 2 / (2 * gamma_x_ ** 2), 2 * sigma_xy_ / gamma_x_,
+	Sigma_1 << pow(sigma_x, 2) / pow(gamma_x, 3), sigma_xy / (gamma_x * gamma_y), pow(sigma_x, 2) / (2 * pow(gamma_x, 2)), 2 * sigma_xy / gamma_x,
 
-				sigma_xy_ / (gamma_x_ * gamma_y_), sigma_y_**2 / pow(gamma_y_, 3),  2 * sigma_xy_ / gamma_y_, sigma_y_ ** 2 / (2 * gamma_y_ ** 2),
+				sigma_xy / (gamma_x * gamma_y), pow(sigma_y, 2) / pow(gamma_y, 3),  2 * sigma_xy / gamma_y, pow(sigma_y, 2) / (2 * pow(gamma_y, 2)),
 
-				sigma_x_ ** 2 / (2 * gamma_x_ ** 2), 2 * sigma_xy_ / gamma_y_, sigma_x_ ** 2 / gamma_x_, 2 * sigma_xy_ / (gamma_x_ + gamma_y_), 
+				pow(sigma_x, 2) / (2 * pow(gamma_x, 2)), 2 * sigma_xy / gamma_y, pow(sigma_x, 2) / gamma_x, 2 * sigma_xy / (gamma_x + gamma_y), 
 
-				2 * sigma_xy_ / gamma_x_, sigma_y_ ** 2 / (2 * gamma_y_ ** 2), 2 * sigma_xy_ / (gamma_x_ + gamma_y_), sigma_y_ ** 2 / gamma_y_;
+				2 * sigma_xy / gamma_x, pow(sigma_y, 2) / (2 * pow(gamma_y, 2)), 2 * sigma_xy / (gamma_x + gamma_y), pow(sigma_y, 2) / gamma_y;
 }
 
 MROU::MROU(
@@ -54,21 +54,21 @@ MROU::MROU(
 	const double gamma_x, 						// In: Revertion rate factors gamma
 	const double gamma_y
 	) :
-	sigma_x_(sigma_x), 
-	sigma_xy_(sigma_xy), 
-	sigma_y_(sigma_y), 
-	gamma_x_(gamma_x), 
-	gamma_y_(gamma_y)
+	sigma_x(sigma_x), 
+	sigma_xy(sigma_xy), 
+	sigma_y(sigma_y), 
+	gamma_x(gamma_x), 
+	gamma_y(gamma_y)
 {
 
 	// Calculate constant part of OU predictor covariance
-	Sigma_1_ << sigma_x_**2 / pow(gamma_x_, 3), sigma_xy_ / (gamma_x_ * gamma_y_), sigma_x_ ** 2 / (2 * gamma_x_ ** 2), 2 * sigma_xy_ / gamma_x_,
+	Sigma_1 << pow(sigma_x, 2) / pow(gamma_x, 3), sigma_xy / (gamma_x * gamma_y), pow(sigma_x, 2) / (2 * pow(gamma_x, 2)), 2 * sigma_xy / gamma_x,
 
-				sigma_xy_ / (gamma_x_ * gamma_y_), sigma_y_**2 / pow(gamma_y_, 3),  2 * sigma_xy_ / gamma_y_, sigma_y_ ** 2 / (2 * gamma_y_ ** 2),
+				sigma_xy / (gamma_x * gamma_y), pow(sigma_y, 2) / pow(gamma_y, 3),  2 * sigma_xy / gamma_y, pow(sigma_y, 2) / (2 * pow(gamma_y, 2)),
 
-				sigma_x_ ** 2 / (2 * gamma_x_ ** 2), 2 * sigma_xy_ / gamma_y_, sigma_x_ ** 2 / gamma_x_, 2 * sigma_xy_ / (gamma_x_ + gamma_y_), 
+				pow(sigma_x, 2) / (2 * pow(gamma_x, 2)), 2 * sigma_xy / gamma_y, pow(sigma_x, 2) / gamma_x, 2 * sigma_xy / (gamma_x + gamma_y), 
 
-				2 * sigma_xy_ / gamma_x_, sigma_y_ ** 2 / (2 * gamma_y_ ** 2), 2 * sigma_xy_ / (gamma_x_ + gamma_y_), sigma_y_ ** 2 / gamma_y_;
+				2 * sigma_xy / gamma_x, pow(sigma_y, 2) / (2 * pow(gamma_y, 2)), 2 * sigma_xy / (gamma_x + gamma_y), pow(sigma_y, 2) / gamma_y;
 }
 
 /****************************************************************************************
@@ -93,14 +93,14 @@ double MROU::g(
 double MROU::h(
 	const double t 								// In: Prediction time t = t_k+1 - t_k	
 	) const {
-	return t - (1 - exp(- t * gamma_x_)) / gamma_x_ - (1 - exp(- t * gamma_y_)) / gamma_y_ + 
-		(1 - exp( - t * (gamma_x_ + gamma_y_))) / (gamma_x_ + gamma_y_);
+	return t - (1 - exp(- t * gamma_x)) / gamma_x - (1 - exp(- t * gamma_y)) / gamma_y + 
+		(1 - exp( - t * (gamma_x + gamma_y))) / (gamma_x + gamma_y);
 }
 
 double MROU::k(
 	const double t 								// In: Prediction time t = t_k+1 - t_k	
 	) const {
-	return exp(- 2 * t) * (1 - exp(t))**2;
+	return exp(- 2 * t) * pow(1 - exp(t), 2);
 }
 
 /****************************************************************************************
@@ -118,15 +118,15 @@ void MROU::predict_state(
 
 	Eigen::Matrix<double, 4, 4> Phi, Psi;
 
-	Phi <<  1, 0, (1 - exp( - t * gamma_x_)) / gamma_x_, 0,
-			0, 1, 0, (1 - exp( - t * gamma_y_)) / gamma_y_,
-			0, 0, exp( - t * gamma_x_), 0,
-			0, 0, 0, exp( - t * gamma_y_);
+	Phi <<  1, 0, (1 - exp( - t * gamma_x)) / gamma_x, 0,
+			0, 1, 0, (1 - exp( - t * gamma_y)) / gamma_y,
+			0, 0, exp( - t * gamma_x), 0,
+			0, 0, 0, exp( - t * gamma_y);
 
-	Psi <<  t - (1 - exp( - t * gamma_x_)) / gamma_x_, 0,
-			0, t - (1 - exp( - t * gamma_y_)) / gamma_y_, 
-			- exp( - t * gamma_x_), 0
-			0, - exp( - t * gamma_y_);
+	Psi <<  t - (1 - exp( - t * gamma_x)) / gamma_x, 0,
+			0, t - (1 - exp( - t * gamma_y)) / gamma_y, 
+			- exp( - t * gamma_x), 0,
+			0, - exp( - t * gamma_y);
 
 	xs = Phi * xs + Psi * v;
 }
@@ -139,18 +139,18 @@ void MROU::predict_state(
 *  Modified :
 *****************************************************************************************/
 void MROU::predict_covariance(
-	Eigen::MatrixXd &P, 						// In/out: Covariance to be predicted
+	Eigen::Matrix<double, 4, 4> &P, 						// In/out: Covariance to be predicted
 	const double t 								// In: 	   Prediction time t = t_k+1 - t_k
 	){
+	Eigen::Matrix<double, 4, 4> Sigma_2;
+	Sigma_2 << f(t * gamma_x), h(t), k(t * gamma_x), g(gamma_y * t / 2) / gamma_y - g((gamma_x + gamma_y) * t / 2) / (gamma_x + gamma_y), 
 
-	Sigma_2 << f(t * gamma_x_), h(t), k(t * gamma_x_), g(gamma_y_ * t / 2) / gamma_y_ - g((gamma_x_ + gamma_y_) * t / 2) / (gamma_x_ + gamma_y_), 
+				h(t), f(t * gamma_y), g(gamma_x * t / 2) / gamma_x - g((gamma_x + gamma_y) * t / 2) / (gamma_x + gamma_y), k(t * gamma_y), 
 
-				h(t), f(t * gamma_y_), g(gamma_x_ * t / 2) / gamma_x_ - g((gamma_x_ + gamma_y_) * t / 2) / (gamma_x_ + gamma_y_), k(t * gamma_y_), 
+				k(t * gamma_x), g(gamma_x * t / 2) / gamma_x - g((gamma_x + gamma_y) * t / 2) / (gamma_x + gamma_y), g(t * gamma_x), g((gamma_x + gamma_y) * t / 2),
 
-				k(t * gamma_x_), g(gamma_x_ * t / 2) / gamma_x_ - g((gamma_x_ + gamma_y_) * t / 2) / (gamma_x_ + gamma_y_), , g(t * gamma_x_), g((gamma_x_ + gamma_y_) * t / 2),
-
-				g(gamma_y_ * t / 2) / gamma_y_ - g((gamma_x_ + gamma_y_) * t / 2) / (gamma_x_ + gamma_y_), k(t * gamma_y_), g((gamma_x_ + gamma_y_) * t / 2), g(t * gamma_y_);
+				g(gamma_y * t / 2) / gamma_y - g((gamma_x + gamma_y) * t / 2) / (gamma_x + gamma_y), k(t * gamma_y), g((gamma_x + gamma_y) * t / 2), g(t * gamma_y);
 
 
-	P = P + Sigma_1_.cwiseProduct(Sigma_2); 
+	P = P + Sigma_1.cwiseProduct(Sigma_2); 
 }

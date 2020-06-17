@@ -60,7 +60,7 @@ PSBMPC::~PSBMPC(){
 /****************************************************************************************
 *  Name     : get_<type>par
 *  Function : Returns parameter with index <index>, overloaded for different data types
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 int PSBMPC::get_ipar(
@@ -123,7 +123,7 @@ std::vector<Eigen::VectorXd> PSBMPC::get_mpar(
 *  Name     : set_par
 *  Function : Sets parameter with index <index> to value <value>, given that it is inside
 *			  valid limits. Overloaded for different data types
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::set_par(
@@ -150,33 +150,9 @@ void PSBMPC::set_par(
 	if (value >= dpar_low[index] && value <= dpar_high[index])
 	{
 		switch(index){
-			case i_dpar_T : 
-			{
-				T = value;
-				int n_samples = T / dt;
-
-				ownship->resize_trajectory(n_samples);
-				for (int j = 0; j < old_obstacles.size(); j++)
-				{
-					old_obstacles[j]->resize_trajectories(n_samples);
-				}
-			} 
-			case i_dpar_T_static : 
-			{
-				T_static = value;
-			}
-			case i_dpar_dt : 
-			{
-				dt = value;
-				int n_samples = T / dt;
-
-				ownship->resize_trajectory(n_samples);
-
-				for (int j = 0; j < old_obstacles.size(); j++)
-				{
-					old_obstacles[j]->resize_trajectories(n_samples);
-				}			
-			}
+			case i_dpar_T 					: T = value;
+			case i_dpar_T_static 			: T_static = value;
+			case i_dpar_dt 					: dt = value;
 			case i_dpar_p_step 				: p_step = value; 
 			case i_dpar_t_ts 				: t_ts = value;
 			case i_dpar_d_safe :
@@ -249,7 +225,7 @@ void PSBMPC::set_par(
 /****************************************************************************************
 *  Name     : get_optimal_offsets
 *  Function : Calculate optimal surge and course offsets for PSB-MPC
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::calculate_optimal_offsets(									
@@ -267,7 +243,7 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
 	)
 {
-	Eigen::VectorXd id_0, rb_0, d_0i, COG_0, SOG_0;
+	Eigen::VectorXd id_0, rb_0, d_0i, COG_0, SOG_0, CF_0, HL_0;
 
 
 	update_obstacles(obstacle_states, obstacle_covariances);
@@ -281,29 +257,37 @@ void PSBMPC::calculate_optimal_offsets(
 		chi_opt = 0; 	chi_m_last = chi_opt;
 		return;
 	}
-
+	
 	update_transitional_variables(ownship_state);
 
-	//initialize_prediction(ownship_state);
+	initialize_predictions();
 
 	for (int i = 0; i < n_obst; i++)
 	{
 		new_obstacles[i]->predict_independent_trajectories(T, dt);
 	}
 
+	double cost, min_cost;
+	Eigen::VectorXd opt_offset_sequence;
+	min_cost = 1e10;
 	reset_control_behavior();
 	for (int cb = 0; cb < n_cbs; cb++)
 	{
+		// Predict own-ship trajectory jointly with dependent obstacle trajectories
 
-
-
+		// calculate total cost with this control behavior
+		//cost = calculate_total_cost();
+		if (cost < min_cost) {
+			min_cost = cost;
+			opt_offset_sequence = offset_sequence;
+		}
 
 		increment_control_behavior();
 	}
 
 	obstacle_status.resize(13, n_obst);
 	for(int i=0; i < n_obst; i++){
-		obstacle_status.col(i) << id_0(i), SOG_0(i), COG_0(i) * RAD2DEG, rb_0(i) * RAD2DEG, d_0i(i), HL_0(i), is_passed_0(i), AH_0(i), S_TC_0(i), H_TC_0(i), X_TC_0(i), Q_TC_0(i), O_TC_0(i);
+		obstacle_status.col(i) << id_0(i), SOG_0(i), COG_0(i) * RAD2DEG, rb_0(i) * RAD2DEG, d_0i(i), HL_0(i), IP_0(i), AH_0(i), S_TC_0(i), H_TC_0(i), X_TC_0(i), Q_TC_0(i), O_TC_0(i);
 	}
 
 	colav_status.resize(2,1);
@@ -437,10 +421,18 @@ void PSBMPC::initialize_pars()
 }
 
 /****************************************************************************************
+*  Name     : initialize_predictions
+*  Function : Sets up the own-ship maneuvering times and number of prediction scenarios 
+*			  for each obstacle based on the current situation
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+
+/****************************************************************************************
 *  Name     : reset_control_behavior
 *  Function : Sets the offset sequence back to the initial starting point, i.e. the 
 *			  leftmost branches of the control behavior tree
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::reset_control_behavior()
@@ -456,7 +448,7 @@ void PSBMPC::reset_control_behavior()
 *  Name     : increment_control_behavior
 *  Function : Increments the control behavior counter and changes the offset sequence 
 *			  accordingly. Backpropagation is used for the incrementation
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::increment_control_behavior()
@@ -498,7 +490,7 @@ void PSBMPC::increment_control_behavior()
 *  Name     : predict_trajectories_jointly
 *  Function : Predicts the trajectory of the ownship and obstacles with an active COLAV
 *			  system
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::predict_trajectories_jointly()
@@ -510,7 +502,7 @@ void PSBMPC::predict_trajectories_jointly()
 *  Name     : determine_colav_active
 *  Function : Uses the freshly updated new_obstacles vector and the number of static 
 *			  obstacles to determine whether it is necessary to run the PSBMPC
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_colav_active(
@@ -534,7 +526,7 @@ bool PSBMPC::determine_colav_active(
 /****************************************************************************************
 *  Name     : determine_situation_type
 *  Function : Determines the situation type for vessel A  \in {A, B, C, D, E, F}
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 ST PSBMPC::determine_situation_type(
@@ -552,8 +544,8 @@ ST PSBMPC::determine_situation_type(
 /****************************************************************************************
 *  Name     : determine_COLREGS_violation
 *  Function : Determine if vessel A violates COLREGS with respect to vessel B.
-*			  Overloaded for X x 1 and X x n_samples inputs. Two overloads
-*  Author   : 
+*			  Two overloads
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_COLREGS_violation(
@@ -769,8 +761,7 @@ void PSBMPC::update_transitional_variables(
 	const Eigen::Matrix<double, 6, 1>& xs 									// In: Ownship state
 	)
 {
-	bool B_is_ahead;
-	bool is_close, is_passed;
+	bool is_close;
 
 	Eigen::Vector2d v_A, v_B, d_AB, L_AB;
 	double psi_A, psi_B;
@@ -843,12 +834,15 @@ void PSBMPC::update_transitional_variables(
 /****************************************************************************************
 *  Name     : calculate_total_cost
 *  Function : Calculates total hazard, i.e. cost function H(t_0)
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_total_cost(
 	const Eigen::VectorXd offset_sequence, 
 	const Eigen::VectorXd maneuver_times, 
+	const Eigen::Matrix<double, 6, -1> os_trajectory,
+	const std::vector<Eigen::MatrixXd> obstacle_trajectories,
+
 	const int k 
 	)
 {
@@ -893,7 +887,7 @@ void PSBMPC::calculate_collision_cost(
 /****************************************************************************************
 *  Name     : calculate_control_deviation_cost
 *  Function : Determines penalty due to using offsets to guidance references ++
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_control_deviation_cost(
