@@ -35,10 +35,11 @@ Obstacle::Obstacle(
 	const Eigen::VectorXd& xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, id]
 	const Eigen::Matrix4d& P, 									// In: Obstacle covariance
 	const bool filter_on, 										// In: Boolean determining whether KF should be used or not
+	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	id(xs_aug(9)), filter_on(filter_on), 
+	ID(xs_aug(9)), filter_on(filter_on), colav_on(colav_on),
 	l(xs_aug(5) + xs_aug(6)), w(xs_aug(7) + xs_aug(8)), 
 	x_offset(xs_aug(5) - xs_aug(6)), y_offset(xs_aug(7) - xs_aug(8)),
 	duration_tracked(0.0), duration_lost(0.0)
@@ -46,26 +47,24 @@ Obstacle::Obstacle(
 
 	int n_samp = T / dt;
 
-	x_p.resize(n_samp);
-	y_p.resize(n_samp);
-	V_x_p.resize(n_samp);
-	V_y_p.resize(n_samp);
+	xs_p.resize(1);
+	xs_p[0].resize(4, n_samp);
 
-	P_p.resize(n_samp);
+	P_p.resize(1);
+	P_p[0].resize(16, n_samp);
 
 	double psi = xs_aug(2);
-	x_p(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	y_p(0) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_p[0](0, 0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_p[0](1, 0) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_p[0](2, 0) = xs_aug(3) * cos(psi) - xs_aug(4) * sin(psi); 
+	xs_p[0](3, 0) = xs_aug(3) * sin(psi) + xs_aug(4) * cos(psi); 
 
-	V_x_p(0) = xs_aug(3) * cos(psi) - xs_aug(4) * sin(psi); 
-	V_y_p(0) = xs_aug(3) * sin(psi) + xs_aug(4) * cos(psi); 
-
-	P_p[0] = P;
+	P_p[0].block<16, 1>(0, 0) = Utilities::flatten(P);
 
 	Eigen::Vector4d xs_0;
-	xs_0 << x_p(0), y_p(0), V_x_p(0), V_y_p(0);
+	xs_0 << xs_p[0](0, 0), xs_p[0](1, 0), xs_p[0](2, 0), xs_p[0](3, 0);
 
-	kf = new KF(xs_0, id, dt, 0.0);
+	kf = new KF(xs_0, P, ID, dt, 0.0);
 
 	if(filter_on) {
 

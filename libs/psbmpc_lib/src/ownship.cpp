@@ -37,6 +37,9 @@
 *****************************************************************************************/
 Ownship::Ownship()
 {
+
+	trajectory.resize(6, 1);
+
 	tau = Eigen::Vector3d::Zero();
 
 	// Model parameters
@@ -176,7 +179,6 @@ Eigen::VectorXd Ownship::predict(
 *  Modified :
 *****************************************************************************************/
 void Ownship::predict_trajectory(
-	Eigen::Matrix<double, 6, -1> &trajectory, 					// In/out: Predicted ownship trajectory
 	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference

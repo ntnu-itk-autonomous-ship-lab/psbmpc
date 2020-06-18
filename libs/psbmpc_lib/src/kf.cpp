@@ -31,7 +31,7 @@
 *  Modified :
 *****************************************************************************************/
 KF::KF() : 
-	id(0), initialized(0), t_0(0), t(0)
+	ID(0), initialized(0), t_0(0), t(0)
 {
 
 	xs_p.setZero();
@@ -69,12 +69,13 @@ KF::KF() :
 }
 
 KF::KF(
-	const Eigen::Vector4d &xs_0, 				// In: Initial filter state
+	const Eigen::Vector4d& xs_0, 				// In: Initial filter state
+	const Eigen::Matrix4d& P_0,					// In: Initial filter covariance
 	const int id, 								// In: Filter id
 	const double dt, 							// In: Sampling interval
 	const double t_0							// In: Initial time
 	) : 	
-	id(id), xs_upd(xs_0), initialized(true), t_0(t_0), t(t_0) 
+	ID(ID), xs_p(xs_0), P_0(P_0), initialized(true), t_0(t_0), t(t_0) 
 	{
 
 	I.setIdentity();
@@ -99,13 +100,12 @@ KF::KF(
 	      .0,   .0,   .01,   .0,  
 	      .0,   .0,   .0,   .01;
 
-	P_0 << .1, .0, .0, .0,  
-	     .0, .1, .0, .0,  
-	     .0, .0, .1, .0,  
-	     .0, .0, .0, .1;
-
+	xs_upd = xs_p;
 
 	P_p = P_0;
+
+	P_upd = P_0;
+
 }
 
 /****************************************************************************************
@@ -115,7 +115,8 @@ KF::KF(
 *  Modified :
 *****************************************************************************************/
  void KF::reset(
- 	const Eigen::Vector4d &xs_0,				// In: Initial filter state
+ 	const Eigen::Vector4d& xs_0,				// In: Initial filter state
+	const Eigen::Matrix4d& P_0,					// In: Initial filter covariance
  	const double t_0 							// In: Initial time
  	){
 
@@ -125,6 +126,8 @@ KF::KF(
  	xs_p = xs_0;
  	xs_upd = xs_0;
 
+	this->P_0 = P_0;
+	
  	P_p = P_0;
  	P_upd = P_0;
 

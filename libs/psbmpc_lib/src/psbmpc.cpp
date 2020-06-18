@@ -267,14 +267,17 @@ void PSBMPC::calculate_optimal_offsets(
 		new_obstacles[i]->predict_independent_trajectories(T, dt);
 	}
 
-	double cost, min_cost;
+	double cost, cost_i, min_cost;
 	Eigen::VectorXd opt_offset_sequence;
 	min_cost = 1e10;
 	reset_control_behavior();
 	for (int cb = 0; cb < n_cbs; cb++)
 	{
 		// Predict own-ship trajectory jointly with dependent obstacle trajectories
-
+		for (int i = 0; i < n_obst; i++)
+		{
+			
+		}
 		// calculate total cost with this control behavior
 		//cost = calculate_total_cost();
 		if (cost < min_cost) {
@@ -292,6 +295,9 @@ void PSBMPC::calculate_optimal_offsets(
 
 	colav_status.resize(2,1);
 	colav_status << CF_0, cost;
+
+	u_opt = offset_sequence(0);
+	chi_opt = offset_sequence(1);
 }
 
 
@@ -414,6 +420,8 @@ void PSBMPC::initialize_pars()
 	G = 0;		         					 // 1.0e3
 
 	obstacle_filter_on = false;
+	obstacle_colav_on = false;
+	
 	T_lost_limit = 15.0; 	// 15.0 s obstacle no longer relevant after this time
 	T_tracked_limit = 15.0; // 15.0 s obstacle still relevant if tracked for so long, choice depends on survival rate
 
@@ -427,6 +435,10 @@ void PSBMPC::initialize_pars()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
+void PSBMPC::initialize_predictions()
+{
+
+}
 
 /****************************************************************************************
 *  Name     : reset_control_behavior
@@ -514,8 +526,8 @@ bool PSBMPC::determine_colav_active(
 	Eigen::Vector2d d_0i;
 	for (int i = 0; i < new_obstacles.size(); i++)
 	{
-		d_0i(0) = new_obstacles[i]->get_xs()(0) - xs(0);
-		d_0i(1) = new_obstacles[i]->get_xs()(1) - xs(1);
+		d_0i(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
+		d_0i(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
 		if (d_0i.norm() < d_init) colav_active = true;
 	}
 	colav_active = colav_active || n_static_obst > 0;
@@ -529,16 +541,94 @@ bool PSBMPC::determine_colav_active(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-ST PSBMPC::determine_situation_type(
-	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A (the ownship)
+void PSBMPC::determine_situation_type(
+	ST& st_A,																// In/Out: Situation type of vessel A
+	ST& st_B,																// In/Out: Situation type of vessel B
+	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A 
 	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d &v_B, 												// In: (NE) Velocity vector of vessel B (the obstacle)
+	const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B (the obstacle)
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double d_AB 														// In: Distance from vessel A to vessel B
 	)
 {
-	ST st = A;
+	// Crash situation, assume reactive maneuvers like in an overtaking scenario (KCC, SM, PM)
+	if (d_AB < d_safe) 
+	{
+		st_A = A; st_B = A; 
+		return;
+	} 
+	else if(d_AB > d_close)
+	{
+		st_A = A; st_B = A;
+		return;
+	} 
+	else
+	{
+		bool B_is_ahead;
+		bool A_is_starboard, B_is_starboard;
+		bool A_is_overtaken, B_is_overtaken;
+		bool is_close, is_passed, is_head_on, is_crossing;
+
+		B_is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
+
+		A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() &&
+						v_A.norm() < v_B.norm()							  &&
+						v_A.norm() > 0.25;
+
+		B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() &&
+						v_B.norm() < v_A.norm()							  &&
+						v_B.norm() > 0.25;
+
+		B_is_starboard = atan2(L_AB(1), L_AB(0)) > psi_A;
+
+		is_close = d_AB <= d_close;
+
+		is_passed = (v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()	&& // Vessel A's perspective	
+					!A_is_overtaken) 									||
+					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() && // Vessel B's perspective	
+					!B_is_overtaken) 									&&
+					d_AB > d_safe;
+
+		is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() &&
+					v_A.norm() > 0.25										&&
+					v_B.norm() > 0.25										&&
+					B_is_ahead;
+
+		is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  &&
+					v_A.norm() > 0.25										&&
+					v_B.norm() > 0.25										&&
+					!is_passed;
+		
+		if (A_is_overtaken) 
+		{ 
+			st_A = B; st_B = D;
+		} 
+		else if (B_is_overtaken) 
+		{ 
+			st_A = D; st_B = B; 
+		} 
+		else if (is_head_on) 
+		{ 
+			st_A = E; st_B = E; 
+		} 
+		else if (is_crossing)
+		{
+			if (B_is_starboard) 
+			{
+				st_A = F; st_B = C;
+			} else
+			{
+				st_A = C; st_B = F;
+			}
+		} 
+		else 
+		{
+			st_A = A; st_B = A;
+		}
+
+	}
+	
 }
 
 /****************************************************************************************
@@ -777,12 +867,12 @@ void PSBMPC::update_transitional_variables(
 
 	for (int i = 0; i < n_obst; i++)
 	{
-		v_B(0) = new_obstacles[i]->get_xs()(2);
-		v_B(1) = new_obstacles[i]->get_xs()(3);
+		v_B(0) = new_obstacles[i]->kf->get_state()(2);
+		v_B(1) = new_obstacles[i]->kf->get_state()(3);
 		psi_B = atan2(v_B(1), v_B(0));
 
-		d_AB(0) = new_obstacles[i]->get_xs()(0) - xs(0);
-		d_AB(1) = new_obstacles[i]->get_xs()(1) - xs(1);
+		d_AB(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
+		d_AB(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
 		L_AB = d_AB / d_AB.norm();
 
 		is_close = d_AB.norm() <= d_close;
@@ -868,7 +958,7 @@ double PSBMPC::calculate_total_cost(
 			
 			for(int ps = 0; ps < n_ps; ps++)
 			{
-				d_0i_p = obstacle_trajectories[i].block<2, 1>(ps, k) - trajectory<2, 1>(0, k);
+				d_0i_p = obstacle_trajectories[i].block<2, 1>(ps, k) - trajectory.block<2, 1>(0, k);
 			}
 		}
 	}
@@ -878,7 +968,6 @@ double PSBMPC::calculate_total_cost(
 
 	cost += calculate_chattering_cost();
 	
-
 	return cost;
 }
 
@@ -1139,7 +1228,7 @@ void PSBMPC::update_obstacles(
 		obstacle_exist = false;
 		for (int j = 0; j < n_obst_old; j++)
 		{
-			if ((double)old_obstacles[j]->get_id() == obstacle_states(8, i))
+			if ((double)old_obstacles[j]->get_ID() == obstacle_states(8, i))
 			{
 				old_obstacles[j]->reset_duration_lost();
 
@@ -1150,7 +1239,7 @@ void PSBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			Obstacle *obstacle = new Obstacle(obstacle_states.col(i), obstacle_covariances[i], obstacle_filter_on, T, dt);
+			Obstacle *obstacle = new Obstacle(obstacle_states.col(i), obstacle_covariances[i], obstacle_filter_on, obstacle_colav_on, T, dt);
 			new_obstacles.push_back(obstacle);
 		}
 	}
@@ -1165,7 +1254,7 @@ void PSBMPC::update_obstacles(
 			old_obstacles[j]->increment_duration_lost(dt * p_step);
 
 			if (old_obstacles[j]->get_duration_tracked() >= T_tracked_limit &&
-				(old_obstacles[j]->get_duration_lost() < T_lost_limit || old_obstacles[j]->get_P()(0,0) <= 5.0))
+				(old_obstacles[j]->get_duration_lost() < T_lost_limit || old_obstacles[j]->kf->get_covariance()(0,0) <= 5.0))
 			{
 				new_obstacles.push_back(old_obstacles[j]);
 			}
