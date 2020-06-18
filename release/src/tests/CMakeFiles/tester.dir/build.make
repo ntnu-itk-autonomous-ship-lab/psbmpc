@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/trymte/Desktop/psbmpc
+CMAKE_SOURCE_DIR = /home/trymte/Desktop/cybercolav_cxx
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/trymte/Desktop/psbmpc/Release
+CMAKE_BINARY_DIR = /home/trymte/Desktop/cybercolav_cxx/release
 
 # Include any dependencies generated for this target.
 include src/tests/CMakeFiles/tester.dir/depend.make
@@ -57,58 +57,58 @@ include src/tests/CMakeFiles/tester.dir/progress.make
 # Include the compile flags for this target's objects.
 include src/tests/CMakeFiles/tester.dir/flags.make
 
-src/tests/CMakeFiles/tester.dir/test.cpp.o: src/tests/CMakeFiles/tester.dir/flags.make
-src/tests/CMakeFiles/tester.dir/test.cpp.o: ../src/tests/test.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/psbmpc/Release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/tests/CMakeFiles/tester.dir/test.cpp.o"
-	cd /home/trymte/Desktop/psbmpc/Release/src/tests && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/tester.dir/test.cpp.o -c /home/trymte/Desktop/psbmpc/src/tests/test.cpp
+src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o: src/tests/CMakeFiles/tester.dir/flags.make
+src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o: ../src/tests/test_ownship.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/src/tests && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/tester.dir/test_ownship.cpp.o -c /home/trymte/Desktop/cybercolav_cxx/src/tests/test_ownship.cpp
 
-src/tests/CMakeFiles/tester.dir/test.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/tester.dir/test.cpp.i"
-	cd /home/trymte/Desktop/psbmpc/Release/src/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/psbmpc/src/tests/test.cpp > CMakeFiles/tester.dir/test.cpp.i
+src/tests/CMakeFiles/tester.dir/test_ownship.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/tester.dir/test_ownship.cpp.i"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/src/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/cybercolav_cxx/src/tests/test_ownship.cpp > CMakeFiles/tester.dir/test_ownship.cpp.i
 
-src/tests/CMakeFiles/tester.dir/test.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/tester.dir/test.cpp.s"
-	cd /home/trymte/Desktop/psbmpc/Release/src/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/psbmpc/src/tests/test.cpp -o CMakeFiles/tester.dir/test.cpp.s
+src/tests/CMakeFiles/tester.dir/test_ownship.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/tester.dir/test_ownship.cpp.s"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/src/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/src/tests/test_ownship.cpp -o CMakeFiles/tester.dir/test_ownship.cpp.s
 
-src/tests/CMakeFiles/tester.dir/test.cpp.o.requires:
+src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o.requires:
 
-.PHONY : src/tests/CMakeFiles/tester.dir/test.cpp.o.requires
+.PHONY : src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o.requires
 
-src/tests/CMakeFiles/tester.dir/test.cpp.o.provides: src/tests/CMakeFiles/tester.dir/test.cpp.o.requires
-	$(MAKE) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test.cpp.o.provides.build
-.PHONY : src/tests/CMakeFiles/tester.dir/test.cpp.o.provides
+src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o.provides: src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o.requires
+	$(MAKE) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o.provides.build
+.PHONY : src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o.provides
 
-src/tests/CMakeFiles/tester.dir/test.cpp.o.provides.build: src/tests/CMakeFiles/tester.dir/test.cpp.o
+src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o.provides.build: src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o
 
 
 # Object files for target tester
 tester_OBJECTS = \
-"CMakeFiles/tester.dir/test.cpp.o"
+"CMakeFiles/tester.dir/test_ownship.cpp.o"
 
 # External object files for target tester
 tester_EXTERNAL_OBJECTS =
 
-src/tests/tester: src/tests/CMakeFiles/tester.dir/test.cpp.o
+src/tests/tester: src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o
 src/tests/tester: src/tests/CMakeFiles/tester.dir/build.make
 src/tests/tester: libs/psbmpc_lib/libpsbmpc_lib.a
 src/tests/tester: src/tests/CMakeFiles/tester.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/trymte/Desktop/psbmpc/Release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable tester"
-	cd /home/trymte/Desktop/psbmpc/Release/src/tests && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/tester.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable tester"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/src/tests && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/tester.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 src/tests/CMakeFiles/tester.dir/build: src/tests/tester
 
 .PHONY : src/tests/CMakeFiles/tester.dir/build
 
-src/tests/CMakeFiles/tester.dir/requires: src/tests/CMakeFiles/tester.dir/test.cpp.o.requires
+src/tests/CMakeFiles/tester.dir/requires: src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o.requires
 
 .PHONY : src/tests/CMakeFiles/tester.dir/requires
 
 src/tests/CMakeFiles/tester.dir/clean:
-	cd /home/trymte/Desktop/psbmpc/Release/src/tests && $(CMAKE_COMMAND) -P CMakeFiles/tester.dir/cmake_clean.cmake
+	cd /home/trymte/Desktop/cybercolav_cxx/release/src/tests && $(CMAKE_COMMAND) -P CMakeFiles/tester.dir/cmake_clean.cmake
 .PHONY : src/tests/CMakeFiles/tester.dir/clean
 
 src/tests/CMakeFiles/tester.dir/depend:
-	cd /home/trymte/Desktop/psbmpc/Release && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/trymte/Desktop/psbmpc /home/trymte/Desktop/psbmpc/src/tests /home/trymte/Desktop/psbmpc/Release /home/trymte/Desktop/psbmpc/Release/src/tests /home/trymte/Desktop/psbmpc/Release/src/tests/CMakeFiles/tester.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/trymte/Desktop/cybercolav_cxx /home/trymte/Desktop/cybercolav_cxx/src/tests /home/trymte/Desktop/cybercolav_cxx/release /home/trymte/Desktop/cybercolav_cxx/release/src/tests /home/trymte/Desktop/cybercolav_cxx/release/src/tests/CMakeFiles/tester.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : src/tests/CMakeFiles/tester.dir/depend
 

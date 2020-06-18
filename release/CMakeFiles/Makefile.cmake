@@ -8,10 +8,10 @@ set(CMAKE_DEPENDS_GENERATOR "Unix Makefiles")
 set(CMAKE_MAKEFILE_DEPENDS
   "CMakeCache.txt"
   "../CMakeLists.txt"
+  "../libs/psbmpc_lib/CMakeLists.txt"
   "CMakeFiles/3.10.2/CMakeCCompiler.cmake"
   "CMakeFiles/3.10.2/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.10.2/CMakeSystem.cmake"
-  "../libs/psbmpc_lib/CMakeLists.txt"
   "../src/tests/CMakeLists.txt"
   "/usr/share/cmake-3.10/Modules/CMakeCInformation.cmake"
   "/usr/share/cmake-3.10/Modules/CMakeCXXInformation.cmake"

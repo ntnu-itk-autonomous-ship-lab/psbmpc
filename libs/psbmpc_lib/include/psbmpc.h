@@ -24,21 +24,13 @@
 #define _PSBMPC_H_
 
 
-
+#include "cpe.h"
 #include "psbmpc_index.h"
 #include "ownship.h"
 #include "obstacle.h"
 #include "Eigen/Dense"
 #include <vector>
 #include <math.h>
-
-// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" or 
-// "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
-enum CPE_Method 
-{
-	CE,														// Consider positional uncertainty only
-	MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments 
-};
 
 enum ST 
 {
@@ -90,6 +82,8 @@ private:
 	double T_lost_limit, T_tracked_limit;
 
 	Ownship *ownship;
+
+	Eigen::Matrix<double, 6, -1> trajectory;
 
 	// Transitional indicator variables at the current time
 	Eigen::Matrix<bool, -1, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
@@ -156,12 +150,12 @@ private:
 
 	void update_transitional_variables(const Eigen::Matrix<double, 6, 1>& xs);
 
-
+	
 	double calculate_total_cost(
-		const Eigen::Matrix<double, 6, -1>& trajectory, 
-		const std::vector<Eigen::MatrixXd>& obstacle_trajectories, 
-		const std::vector<Eigen::MatrixXd>& P_c,
-		const Eigen::Matrix<double, 4, -1>& static_obstacles);
+		const Eigen::MatrixXd& P_c,
+		const Eigen::Matrix<double, 4, 1>& static_obstacle);
+
+	void calculate_collision_probabilities(Eigen::MatrixXd& P_c_i);
 
 	double calculate_collision_cost(const Eigen::Vector2d v_1, const Eigen::Vector2d v_2);
 
@@ -202,6 +196,8 @@ public:
 	PSBMPC();
 
 	~PSBMPC();
+
+	CPE* cpe;
 
 	CPE_Method get_cpe_method() const { return cpe_method; }; 
 

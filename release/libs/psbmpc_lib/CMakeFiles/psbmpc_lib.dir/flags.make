@@ -6,5 +6,5 @@ CXX_FLAGS = -O3 -DNDEBUG   -Wall -Wextra -Wpedantic -std=gnu++11
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/trymte/Desktop/psbmpc/libs/psbmpc_lib/include -I/home/trymte/Desktop/psbmpc/libs/third_party_libs 
+CXX_INCLUDES = -I/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/include -I/home/trymte/Desktop/cybercolav_cxx/libs/third_party_libs 
 

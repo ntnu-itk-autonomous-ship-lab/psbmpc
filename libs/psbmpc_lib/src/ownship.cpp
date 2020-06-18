@@ -37,9 +37,6 @@
 *****************************************************************************************/
 Ownship::Ownship()
 {
-
-	trajectory.resize(6, 1);
-
 	tau = Eigen::Vector3d::Zero();
 
 	// Model parameters
@@ -149,6 +146,7 @@ Eigen::VectorXd Ownship::predict(
 			xs_new(3) = nu(0);  
 			xs_new(4) = nu(1);  
 			xs_new(5) = nu(2);
+			break;
 		}
 		case ERK1 : 
 		{
@@ -162,6 +160,7 @@ Eigen::VectorXd Ownship::predict(
 			xs_new(3) = nu(0);  
 			xs_new(4) = nu(1);  
 			xs_new(5) = nu(2);
+			break;
 		}
 		default :
 		{
@@ -169,6 +168,7 @@ Eigen::VectorXd Ownship::predict(
 			xs_new.setZero(); 
 		}
 	}
+	return xs_new;
 }
 
 /****************************************************************************************
@@ -179,6 +179,7 @@ Eigen::VectorXd Ownship::predict(
 *  Modified :
 *****************************************************************************************/
 void Ownship::predict_trajectory(
+	Eigen::Matrix<double, 6, -1>& trajectory, 						// In/out: Own-ship trajectory
 	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference
@@ -213,7 +214,8 @@ void Ownship::predict_trajectory(
 		update_ctrl_input(u_m * u_d_p, chi_m + psi_d_p, xs);
 
 		xs = predict(xs, dt, prediction_method);
-		trajectory.block<6, 1>(0, k) = xs;
+		
+		if (k < n_samples) trajectory.block<6, 1>(0, k + 1) = xs;
 	}
 }
 
@@ -316,16 +318,19 @@ void Ownship::update_guidance_references(
 			if (e_int >= e_int_max) e_int -= e * dt;
 
 			psi_d = alpha + atan2( - (e + LOS_K_i * e_int), LOS_LD);
+			break;
 		}
 		case WPP :
 		{
 			d_next_wp(0) = waypoints(0, wp_counter + 1) - xs(0);
 			d_next_wp(1) = waypoints(1, wp_counter + 1) - xs(1);
 			psi_d = atan2(d_next_wp(1), d_next_wp(0));
+			break;
 		}
 		case CH :
 		{
 			psi_d = xs(2);
+			break;
 		}
 		default : 
 		{
@@ -343,8 +348,8 @@ void Ownship::update_guidance_references(
 *****************************************************************************************/
 void Ownship::update_ctrl_input(
 	const double u_d,											// In: Surge reference
-	const double psi_d, 										// In: Heading reference
-	const Eigen::Matrix<double, 6, 1> &xs 						// In: State
+	const double psi_d, 										// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
+	const Eigen::Matrix<double, 6, 1>& xs 						// In: State
 	)
 {
 	double Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));

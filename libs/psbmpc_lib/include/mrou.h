@@ -50,9 +50,9 @@ public:
 
 	MROU(const double sigma_x, const double sigma_xy, const double sigma_y, const double gamma_x, const double gamma_y);
 
-	void predict_state(Eigen::VectorXd &xs, const Eigen::Vector2d &v, const double t);
+	void predict_state(Eigen::Vector4d& xs, const Eigen::Vector2d& v, const double t);
 
-	void predict_covariance(Eigen::Matrix<double, 4, 4> &P, const double t);
+	void predict_covariance(Eigen::Matrix<double, 4, 4>& P, const double t);
 };
 
 

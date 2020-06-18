@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/trymte/Desktop/psbmpc
+CMAKE_SOURCE_DIR = /home/trymte/Desktop/cybercolav_cxx
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/trymte/Desktop/psbmpc/Release
+CMAKE_BINARY_DIR = /home/trymte/Desktop/cybercolav_cxx/release
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -80,14 +80,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/trymte/Desktop/psbmpc/Release && $(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/psbmpc/Release/CMakeFiles /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib/CMakeFiles/progress.marks
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f CMakeFiles/Makefile2 libs/psbmpc_lib/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/psbmpc/Release/CMakeFiles 0
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib/CMakeFiles/progress.marks
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f CMakeFiles/Makefile2 libs/psbmpc_lib/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f CMakeFiles/Makefile2 libs/psbmpc_lib/clean
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f CMakeFiles/Makefile2 libs/psbmpc_lib/clean
 .PHONY : clean
 
 # The main clean target
@@ -97,22 +97,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f CMakeFiles/Makefile2 libs/psbmpc_lib/preinstall
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f CMakeFiles/Makefile2 libs/psbmpc_lib/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f CMakeFiles/Makefile2 libs/psbmpc_lib/preinstall
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f CMakeFiles/Makefile2 libs/psbmpc_lib/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/trymte/Desktop/psbmpc/Release && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/rule:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f CMakeFiles/Makefile2 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/rule
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f CMakeFiles/Makefile2 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/rule
 .PHONY : libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/rule
 
 # Convenience name for target.
@@ -122,7 +122,7 @@ psbmpc_lib: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/rule
 
 # fast build rule for target.
 psbmpc_lib/fast:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build
 .PHONY : psbmpc_lib/fast
 
 src/cpe.o: src/cpe.cpp.o
@@ -131,7 +131,7 @@ src/cpe.o: src/cpe.cpp.o
 
 # target to build an object file
 src/cpe.cpp.o:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o
 .PHONY : src/cpe.cpp.o
 
 src/cpe.i: src/cpe.cpp.i
@@ -140,7 +140,7 @@ src/cpe.i: src/cpe.cpp.i
 
 # target to preprocess a source file
 src/cpe.cpp.i:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.i
 .PHONY : src/cpe.cpp.i
 
 src/cpe.s: src/cpe.cpp.s
@@ -149,7 +149,7 @@ src/cpe.s: src/cpe.cpp.s
 
 # target to generate assembly for a file
 src/cpe.cpp.s:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.s
 .PHONY : src/cpe.cpp.s
 
 src/kf.o: src/kf.cpp.o
@@ -158,7 +158,7 @@ src/kf.o: src/kf.cpp.o
 
 # target to build an object file
 src/kf.cpp.o:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o
 .PHONY : src/kf.cpp.o
 
 src/kf.i: src/kf.cpp.i
@@ -167,7 +167,7 @@ src/kf.i: src/kf.cpp.i
 
 # target to preprocess a source file
 src/kf.cpp.i:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.i
 .PHONY : src/kf.cpp.i
 
 src/kf.s: src/kf.cpp.s
@@ -176,7 +176,7 @@ src/kf.s: src/kf.cpp.s
 
 # target to generate assembly for a file
 src/kf.cpp.s:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.s
 .PHONY : src/kf.cpp.s
 
 src/mrou.o: src/mrou.cpp.o
@@ -185,7 +185,7 @@ src/mrou.o: src/mrou.cpp.o
 
 # target to build an object file
 src/mrou.cpp.o:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o
 .PHONY : src/mrou.cpp.o
 
 src/mrou.i: src/mrou.cpp.i
@@ -194,7 +194,7 @@ src/mrou.i: src/mrou.cpp.i
 
 # target to preprocess a source file
 src/mrou.cpp.i:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.i
 .PHONY : src/mrou.cpp.i
 
 src/mrou.s: src/mrou.cpp.s
@@ -203,7 +203,7 @@ src/mrou.s: src/mrou.cpp.s
 
 # target to generate assembly for a file
 src/mrou.cpp.s:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.s
 .PHONY : src/mrou.cpp.s
 
 src/obstacle.o: src/obstacle.cpp.o
@@ -212,7 +212,7 @@ src/obstacle.o: src/obstacle.cpp.o
 
 # target to build an object file
 src/obstacle.cpp.o:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o
 .PHONY : src/obstacle.cpp.o
 
 src/obstacle.i: src/obstacle.cpp.i
@@ -221,7 +221,7 @@ src/obstacle.i: src/obstacle.cpp.i
 
 # target to preprocess a source file
 src/obstacle.cpp.i:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.i
 .PHONY : src/obstacle.cpp.i
 
 src/obstacle.s: src/obstacle.cpp.s
@@ -230,7 +230,7 @@ src/obstacle.s: src/obstacle.cpp.s
 
 # target to generate assembly for a file
 src/obstacle.cpp.s:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.s
 .PHONY : src/obstacle.cpp.s
 
 src/ownship.o: src/ownship.cpp.o
@@ -239,7 +239,7 @@ src/ownship.o: src/ownship.cpp.o
 
 # target to build an object file
 src/ownship.cpp.o:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o
 .PHONY : src/ownship.cpp.o
 
 src/ownship.i: src/ownship.cpp.i
@@ -248,7 +248,7 @@ src/ownship.i: src/ownship.cpp.i
 
 # target to preprocess a source file
 src/ownship.cpp.i:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.i
 .PHONY : src/ownship.cpp.i
 
 src/ownship.s: src/ownship.cpp.s
@@ -257,7 +257,7 @@ src/ownship.s: src/ownship.cpp.s
 
 # target to generate assembly for a file
 src/ownship.cpp.s:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.s
 .PHONY : src/ownship.cpp.s
 
 src/psbmpc.o: src/psbmpc.cpp.o
@@ -266,7 +266,7 @@ src/psbmpc.o: src/psbmpc.cpp.o
 
 # target to build an object file
 src/psbmpc.cpp.o:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o
 .PHONY : src/psbmpc.cpp.o
 
 src/psbmpc.i: src/psbmpc.cpp.i
@@ -275,7 +275,7 @@ src/psbmpc.i: src/psbmpc.cpp.i
 
 # target to preprocess a source file
 src/psbmpc.cpp.i:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.i
 .PHONY : src/psbmpc.cpp.i
 
 src/psbmpc.s: src/psbmpc.cpp.s
@@ -284,7 +284,7 @@ src/psbmpc.s: src/psbmpc.cpp.s
 
 # target to generate assembly for a file
 src/psbmpc.cpp.s:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.s
 .PHONY : src/psbmpc.cpp.s
 
 # Help Target
@@ -325,6 +325,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/trymte/Desktop/psbmpc/Release && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

@@ -434,6 +434,7 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o: ../libs/psbmpc_lib/src
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/psbmpc_lib/include/kf.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/psbmpc_lib/include/mrou.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/psbmpc_lib/include/obstacle.h
+libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/psbmpc_lib/include/utilities.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/third_party_libs/Eigen/Cholesky
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/third_party_libs/Eigen/Core
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/third_party_libs/Eigen/Dense
@@ -862,6 +863,7 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: ../libs/third_party
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: ../libs/psbmpc_lib/src/ownship.cpp
 
+libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o: ../libs/psbmpc_lib/include/cpe.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o: ../libs/psbmpc_lib/include/kf.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o: ../libs/psbmpc_lib/include/mrou.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o: ../libs/psbmpc_lib/include/obstacle.h

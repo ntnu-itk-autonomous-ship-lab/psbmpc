@@ -1,4 +1,4 @@
-# Install script for directory: /home/trymte/Desktop/psbmpc/libs/psbmpc_lib
+# Install script for directory: /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
