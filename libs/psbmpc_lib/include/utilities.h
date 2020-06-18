@@ -27,6 +27,7 @@
 #endif
 
 #include "Eigen/Dense"
+#include "iostream"
 
 enum Axis 
 	{
@@ -107,19 +108,23 @@ namespace Utilities
 				v_temp(0) = v(0);
 				v_temp(1) = v(1) * cos(angle) - v(2) * sin(angle);
 				v_temp(2) = v(1) * sin(angle) + v(2) * cos(angle);
+				break;
 			}
 			case Pitch : 
 			{
 				v_temp(0) = v(0) * cos(angle) + v(2) * sin(angle);
 				v_temp(1) = v(1);
 				v_temp(2) = - v(0) * sin(angle) + v(2) * cos(angle);	
+				break;
 			}			
 			case Yaw : 
 			{
 				v_temp(0) = v(0) * cos(angle) - v(1) * sin(angle);
 				v_temp(1) = v(0) * sin(angle) + v(1) * cos(angle);
 				v_temp(2) = v(2);
+				break;
 			}
+			default : std::cout << "Invalid axis specified!" << std::endl;
 		}
 		return v_temp;
 	}

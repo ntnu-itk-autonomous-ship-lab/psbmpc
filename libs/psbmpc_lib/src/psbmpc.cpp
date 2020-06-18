@@ -68,9 +68,9 @@ int PSBMPC::get_ipar(
 	) const
 {
 	switch(index){
-		case i_ipar_n_M 				: return n_M; 
+		case i_ipar_n_M 				: return n_M; break; 
 
-		default : std::cout << "Wrong index given" << std::endl;
+		default : { std::cout << "Wrong index given" << std::endl; return 0; }
 	}
 }
 	
@@ -79,31 +79,31 @@ double PSBMPC::get_dpar(
 	) const
 {
 	switch(index){
-		case i_dpar_T 					: return T; 
-		case i_dpar_T_static 			: return T_static;
-		case i_dpar_dt 					: return dt;
-		case i_dpar_t_ts 				: return t_ts;
-		case i_dpar_d_safe 				: return d_safe;
-		case i_dpar_d_close 			: return d_close;
-		case i_dpar_K_coll 				: return K_coll;
-		case i_dpar_kappa 				: return kappa;
-		case i_dpar_kappa_TC 			: return kappa_TC;
-		case i_dpar_K_u 				: return K_u;
-		case i_dpar_K_du 				: return K_du;
-		case i_dpar_K_chi_strb 			: return K_chi_strb;
-		case i_dpar_K_dchi_strb 		: return K_dchi_strb;
-		case i_dpar_K_chi_port 			: return K_chi_port;
-		case i_dpar_K_dchi_port 		: return K_dchi_port;
-		case i_dpar_K_sgn 				: return K_sgn;
-		case i_dpar_T_sgn 				: return T_sgn;
-		case i_dpar_phi_AH 				: return phi_AH;
-		case i_dpar_phi_OT 				: return phi_OT;
-		case i_dpar_phi_HO 				: return phi_HO;
-		case i_dpar_phi_CR 				: return phi_CR;
-		case i_dpar_T_lost_limit		: return T_lost_limit;
-		case i_dpar_T_tracked_limit		: return T_tracked_limit;
+		case i_dpar_T 					: return T; break;
+		case i_dpar_T_static 			: return T_static; break;
+		case i_dpar_dt 					: return dt; break;
+		case i_dpar_t_ts 				: return t_ts; break;
+		case i_dpar_d_safe 				: return d_safe; break;
+		case i_dpar_d_close 			: return d_close; break;
+		case i_dpar_K_coll 				: return K_coll; break;
+		case i_dpar_kappa 				: return kappa; break; 
+		case i_dpar_kappa_TC 			: return kappa_TC; break;
+		case i_dpar_K_u 				: return K_u; break;
+		case i_dpar_K_du 				: return K_du; break;
+		case i_dpar_K_chi_strb 			: return K_chi_strb; break;
+		case i_dpar_K_dchi_strb 		: return K_dchi_strb; break;
+		case i_dpar_K_chi_port 			: return K_chi_port; break;
+		case i_dpar_K_dchi_port 		: return K_dchi_port; break;
+		case i_dpar_K_sgn 				: return K_sgn; break;
+		case i_dpar_T_sgn 				: return T_sgn; break;
+		case i_dpar_phi_AH 				: return phi_AH; break;
+		case i_dpar_phi_OT 				: return phi_OT; break;
+		case i_dpar_phi_HO 				: return phi_HO; break;
+		case i_dpar_phi_CR 				: return phi_CR; break;
+		case i_dpar_T_lost_limit		: return T_lost_limit; break;
+		case i_dpar_T_tracked_limit		: return T_tracked_limit; break;
 
-		default : std::cout << "Wrong index given" << std::endl;
+		default : { std::cout << "Wrong index given" << std::endl; return 0; }
 	}
 }
 
@@ -112,10 +112,15 @@ std::vector<Eigen::VectorXd> PSBMPC::get_mpar(
 	) const
 {
 	switch (index){
-		case i_mpar_u_offsets			: return u_offsets; 
-		case i_mpar_chi_offsets 		: return chi_offsets;
+		case i_mpar_u_offsets			: return u_offsets; break;
+		case i_mpar_chi_offsets 		: return chi_offsets; break;
 
-		default : std::cout << "Wrong index given" << std::endl;  
+		default : 
+		{ 
+			std::cout << "Wrong index given" << std::endl; 
+			std::vector<Eigen::VectorXd> bs;
+			return bs; 
+		}
 	}
 }
 
@@ -135,11 +140,16 @@ void PSBMPC::set_par(
 	{	
 		switch(index)
 		{
-			case i_ipar_n_M : n_M = value; 
+			case i_ipar_n_M : n_M = value; break;
 
 			default : std::cout << "Wrong index given" << std::endl;
 		}
 	}
+	else
+	{
+		std::cout << "Non-valid parameter value!" << std::endl;
+	}
+	
 }
 
 void PSBMPC::set_par(
@@ -150,42 +160,48 @@ void PSBMPC::set_par(
 	if (value >= dpar_low[index] && value <= dpar_high[index])
 	{
 		switch(index){
-			case i_dpar_T 					: T = value;
-			case i_dpar_T_static 			: T_static = value;
-			case i_dpar_dt 					: dt = value;
-			case i_dpar_p_step 				: p_step = value; 
-			case i_dpar_t_ts 				: t_ts = value;
+			case i_dpar_T 					: T = value; break;
+			case i_dpar_T_static 			: T_static = value; break;
+			case i_dpar_dt 					: dt = value; break;
+			case i_dpar_p_step 				: p_step = value; break;
+			case i_dpar_t_ts 				: t_ts = value; break;
 			case i_dpar_d_safe :
 			{
 				// Limits on d_close and d_init depend on d_safe
 				d_safe = value; 
 				dpar_low[i_dpar_d_close] = d_safe;
 				dpar_low[i_dpar_d_init] = d_safe;
+				break;
 			} 
-			case i_dpar_d_close 			: d_close = value; 
-			case i_dpar_d_init 				: d_init = value;
-			case i_dpar_K_coll 				: K_coll = value;
-			case i_dpar_kappa 				: kappa = value;
-			case i_dpar_kappa_TC 			: kappa_TC = value;
-			case i_dpar_K_u 				: K_u = value;
-			case i_dpar_K_du 				: K_du = value;
-			case i_dpar_K_chi_strb 			: K_chi_strb = value;
-			case i_dpar_K_dchi_strb 		: K_dchi_strb = value;
-			case i_dpar_K_chi_port 			: K_chi_port = value;
-			case i_dpar_K_dchi_port 		: K_dchi_port = value;
-			case i_dpar_G 					: G = value;
-			case i_dpar_K_sgn 				: K_sgn = value;
-			case i_dpar_T_sgn 				: T_sgn = value;
-			case i_dpar_phi_AH 				: phi_AH = value;
-			case i_dpar_phi_OT 				: phi_OT = value;
-			case i_dpar_phi_HO 				: phi_HO = value;
-			case i_dpar_phi_CR 				: phi_CR = value;
-			case i_dpar_T_lost_limit		: T_lost_limit = value;
-			case i_dpar_T_tracked_limit		: T_tracked_limit = value;
+			case i_dpar_d_close 			: d_close = value; break;
+			case i_dpar_d_init 				: d_init = value; break;
+			case i_dpar_K_coll 				: K_coll = value; break;
+			case i_dpar_kappa 				: kappa = value; break;
+			case i_dpar_kappa_TC 			: kappa_TC = value; break;
+			case i_dpar_K_u 				: K_u = value; break;
+			case i_dpar_K_du 				: K_du = value; break;
+			case i_dpar_K_chi_strb 			: K_chi_strb = value; break;
+			case i_dpar_K_dchi_strb 		: K_dchi_strb = value; break;
+			case i_dpar_K_chi_port 			: K_chi_port = value; break;
+			case i_dpar_K_dchi_port 		: K_dchi_port = value; break;
+			case i_dpar_G 					: G = value; break;
+			case i_dpar_K_sgn 				: K_sgn = value; break;
+			case i_dpar_T_sgn 				: T_sgn = value; break;
+			case i_dpar_phi_AH 				: phi_AH = value; break;
+			case i_dpar_phi_OT 				: phi_OT = value; break;
+			case i_dpar_phi_HO 				: phi_HO = value; break;
+			case i_dpar_phi_CR 				: phi_CR = value; break;
+			case i_dpar_T_lost_limit		: T_lost_limit = value; break;
+			case i_dpar_T_tracked_limit		: T_tracked_limit = value; break;
 
 			default : std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the PSBMPC class.." << std::endl;
 		}
 	}
+	else
+	{
+		std::cout << "Non-valid parameter value!" << std::endl;
+	}
+	
 }
 
 void PSBMPC::set_par(
@@ -204,6 +220,7 @@ void PSBMPC::set_par(
 						u_offsets[j] = value[j];
 					}
 				}
+				break;
 			}
 			case i_mpar_chi_offsets : 
 			{
@@ -213,6 +230,7 @@ void PSBMPC::set_par(
 						chi_offsets[j] = value[j];
 					}
 				}
+				break;
 			}
 			default : std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the PSBMPC class.." << std::endl;  
 		}
@@ -245,7 +263,7 @@ void PSBMPC::calculate_optimal_offsets(
 {
 	Eigen::VectorXd id_0, rb_0, d_0i, COG_0, SOG_0, CF_0, HL_0;
 
-
+	trajectory.col(0) = ownship_state;
 	update_obstacles(obstacle_states, obstacle_covariances);
 	int n_obst = new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
@@ -270,16 +288,22 @@ void PSBMPC::calculate_optimal_offsets(
 	double cost, cost_i, min_cost;
 	Eigen::VectorXd opt_offset_sequence;
 	min_cost = 1e10;
+
+	Eigen::MatrixXd P_c_i;
+
 	reset_control_behavior();
 	for (int cb = 0; cb < n_cbs; cb++)
 	{
 		// Predict own-ship trajectory jointly with dependent obstacle trajectories
 		for (int i = 0; i < n_obst; i++)
 		{
-			
+			// Calculate collision probabilities
+			calculate_collision_probabilities(P_c_i); 
+
+			// Calculate cost associated with this obstacle
+			cost_i = calculate_total_cost(P_c_i, static_obstacles.col(i));
 		}
-		// calculate total cost with this control behavior
-		//cost = calculate_total_cost();
+		
 		if (cost < min_cost) {
 			min_cost = cost;
 			opt_offset_sequence = offset_sequence;
@@ -572,32 +596,32 @@ void PSBMPC::determine_situation_type(
 
 		B_is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
-		A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() &&
-						v_A.norm() < v_B.norm()							  &&
+		A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
+						v_A.norm() < v_B.norm()							  		&&
 						v_A.norm() > 0.25;
 
-		B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() &&
-						v_B.norm() < v_A.norm()							  &&
+		B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
+						v_B.norm() < v_A.norm()							  		&&
 						v_B.norm() > 0.25;
 
 		B_is_starboard = atan2(L_AB(1), L_AB(0)) > psi_A;
 
 		is_close = d_AB <= d_close;
 
-		is_passed = (v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()	&& // Vessel A's perspective	
-					!A_is_overtaken) 									||
-					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() && // Vessel B's perspective	
-					!B_is_overtaken) 									&&
+		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+					!A_is_overtaken) 											||
+					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+					!B_is_overtaken)) 											&&
 					d_AB > d_safe;
 
-		is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() &&
-					v_A.norm() > 0.25										&&
-					v_B.norm() > 0.25										&&
+		is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() > 0.25											&&
+					v_B.norm() > 0.25											&&
 					B_is_ahead;
 
-		is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  &&
-					v_A.norm() > 0.25										&&
-					v_B.norm() > 0.25										&&
+		is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
+					v_A.norm() > 0.25											&&
+					v_B.norm() > 0.25											&&
 					!is_passed;
 		
 		if (A_is_overtaken) 
@@ -639,11 +663,11 @@ void PSBMPC::determine_situation_type(
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_COLREGS_violation(
-	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A (the ownship)
+	const Eigen::Vector2d& v_A,												// In: (NE) Velocity vector of vessel A (the ownship)
 	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d &v_B, 												// In: (NE) Velocity vector of vessel B (the obstacle)
+	const Eigen::Vector2d& v_B, 												// In: (NE) Velocity vector of vessel B (the obstacle)
 	const double psi_B, 													// In: Heading of vessel B
-	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
+	const Eigen::Vector2d& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double d_AB 														// In: Distance from vessel A to vessel B
 	)
 {
@@ -654,32 +678,32 @@ bool PSBMPC::determine_COLREGS_violation(
 
 	B_is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
-	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() &&
-					 v_A.norm() < v_B.norm()							  &&
+	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
+					 v_A.norm() < v_B.norm()							  	&&
 					 v_A.norm() > 0.25;
 
-	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() &&
-					 v_B.norm() < v_A.norm()							  &&
+	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
+					 v_B.norm() < v_A.norm()							  	&&
 					 v_B.norm() > 0.25;
 
 	B_is_starboard = atan2(L_AB(1), L_AB(0)) > psi_A;
 
 	is_close = d_AB <= d_close;
 
-	is_passed = (v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()	&& // Vessel A's perspective	
-				!A_is_overtaken) 									||
-				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() && // Vessel B's perspective	
-				!B_is_overtaken) 									&&
+	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+				!A_is_overtaken) 											||
+				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+				!B_is_overtaken)) 											&&
 				d_AB > d_safe;
 
-	is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() &&
-				 v_A.norm() > 0.25										&&
-				 v_B.norm() > 0.25										&&
+	is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+				 v_A.norm() > 0.25											&&
+				 v_B.norm() > 0.25											&&
 				 B_is_ahead;
 
-	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  &&
-				  v_A.norm() > 0.25										&&
-				  v_B.norm() > 0.25										&&
+	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
+				  v_A.norm() > 0.25											&&
+				  v_B.norm() > 0.25											&&
 				  !is_passed;
 
 	return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
@@ -695,7 +719,7 @@ bool PSBMPC::determine_COLREGS_violation(
 	bool A_is_overtaken, B_is_overtaken;
 	bool is_close, is_passed, is_head_on, is_crossing;
 
-	Eigen::Vector2d v_A, v_B, d_AB, L_AB;
+	Eigen::Vector2d v_A, v_B, L_AB;
 	double psi_A, psi_B;
 	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); Utilities::rotate_vector_2D(v_A, psi_A); }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
@@ -703,38 +727,39 @@ bool PSBMPC::determine_COLREGS_violation(
 	if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); Utilities::rotate_vector_2D(v_B, psi_B); }
 	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
 
-	d_AB(0) = xs_B(0) - xs_A(0);
-	d_AB(1) = xs_B(1) - xs_A(1);
-	L_AB = d_AB / d_AB.norm();
+	L_AB(0) = xs_B(0) - xs_A(0);
+	L_AB(1) = xs_B(1) - xs_A(1);
+	double d_AB = L_AB.norm();
+	L_AB = L_AB / L_AB.norm();
 
 	B_is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
-	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() &&
-					 v_A.norm() < v_B.norm()							  &&
+	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
+					 v_A.norm() < v_B.norm()							  	&&
 					 v_A.norm() > 0.25;
 
-	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() &&
-					 v_B.norm() < v_A.norm()							  &&
+	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
+					 v_B.norm() < v_A.norm()							  	&&
 					 v_B.norm() > 0.25;
 
 	B_is_starboard = atan2(L_AB(1), L_AB(0)) > psi_A;
 
-	is_close = d_AB.norm() <= d_close;
+	is_close = d_AB <= d_close;
 
-	is_passed = (v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()	&& // Vessel A's perspective	
-				!A_is_overtaken) 									||
-				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() && // Vessel B's perspective	
-				!B_is_overtaken) 									&&
-				d_AB.norm() > d_safe;
+	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+				!A_is_overtaken) 											||
+				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+				!B_is_overtaken)) 											&&
+				d_AB > d_safe;
 
-	is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() &&
-				 v_A.norm() > 0.25										&&
-				 v_B.norm() > 0.25										&&
+	is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+				 v_A.norm() > 0.25											&&
+				 v_B.norm() > 0.25											&&
 				 B_is_ahead;
 
-	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  &&
-				  v_A.norm() > 0.25										&&
-				  v_B.norm() > 0.25										&&
+	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
+				  v_A.norm() > 0.25											&&
+				  v_B.norm() > 0.25											&&
 				  !is_passed;
 
 	return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
@@ -798,16 +823,16 @@ bool PSBMPC::determine_transitional_cost_indicator(
 {
 	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 	double psi_A, psi_B;
-	Eigen::Vector2d v_A, v_B, d_AB, L_AB;
+	Eigen::Vector2d v_A, v_B, L_AB;
 	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); Utilities::rotate_vector_2D(v_A, psi_A); }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
 	
 	if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); Utilities::rotate_vector_2D(v_B, psi_B); }
 	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
 
-	d_AB(0) = xs_B(0) - xs_A(0);
-	d_AB(1) = xs_B(1) - xs_A(1);
-	L_AB = d_AB / d_AB.norm();
+	L_AB(0) = xs_B(0) - xs_A(0);
+	L_AB(1) = xs_B(1) - xs_A(1);
+	L_AB = L_AB / L_AB.norm();
 
 	// Obstacle on starboard side
 	S_TC = atan2(L_AB(1), L_AB(0)) > psi_A;
@@ -853,11 +878,11 @@ void PSBMPC::update_transitional_variables(
 {
 	bool is_close;
 
-	Eigen::Vector2d v_A, v_B, d_AB, L_AB;
-	double psi_A, psi_B;
+	Eigen::Vector2d v_A, v_B, L_AB;
+	double psi_A, psi_B, d_AB;
 	v_A(0) = xs(3);
 	v_A(1) = xs(4);
-	double psi_A = Utilities::wrap_angle_to_pmpi(xs[2]);
+	psi_A = Utilities::wrap_angle_to_pmpi(xs[2]);
 	Utilities::rotate_vector_2D(v_A, psi_A);
 
 	int n_obst = new_obstacles.size();
@@ -871,11 +896,12 @@ void PSBMPC::update_transitional_variables(
 		v_B(1) = new_obstacles[i]->kf->get_state()(3);
 		psi_B = atan2(v_B(1), v_B(0));
 
-		d_AB(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
-		d_AB(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
-		L_AB = d_AB / d_AB.norm();
+		L_AB(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
+		L_AB(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
+		d_AB = L_AB.norm();
+		L_AB = L_AB / L_AB.norm();
 
-		is_close = d_AB.norm() <= d_close;
+		is_close = d_AB <= d_close;
 
 		AH_0(i) = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
@@ -900,11 +926,11 @@ void PSBMPC::update_transitional_variables(
 				!AH_0(i);
 
 		// Determine if the obstacle is passed by
-		IP_0(i) = (v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
+		IP_0(i) = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
 				!Q_TC_0(i))		 											||
 				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Obstacle's perspective	
-				!O_TC_0(i))		 											&&
-				d_AB.norm() > d_safe;
+				!O_TC_0(i)))		 										&&
+				d_AB > d_safe;
 		
 		// This is not mentioned in article, but also implemented here..				
 		H_TC_0(i) = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
@@ -928,19 +954,16 @@ void PSBMPC::update_transitional_variables(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_total_cost(
-	const Eigen::Matrix<double, 6, -1>& trajectory,							// In: Own-ship trajectory following the current offset sequence
-	const std::vector<Eigen::MatrixXd>& obstacle_trajectories,				// In: Predicted obstacle trajectories for all prediction scenarios n_obst x <n_ps x n_samp>
-	const std::vector<Eigen::MatrixXd>& P_c,								// In: Predicted obstacle collision probabilities for all prediction scenarios, n_obst x <n_ps x n_samples>
-	const Eigen::Matrix<double, 4, -1>& static_obstacles					// In: Static obstacle information
+	const Eigen::MatrixXd& P_c,											// In: Predicted obstacle collision probabilities for all prediction scenarios, n_obst x <n_ps x n_samples>
+	const Eigen::Matrix<double, 4, 1>& static_obstacle						// In: Static obstacle information
 	)
 {
 	double cost = 0;
 
 	int n_obst = new_obstacles.size();
-	int n_ps = obstacle_trajectories[0].rows();
-	int n_samples = obstacle_trajectories[0].cols();
+	int n_ps = 1; //obstacle_trajectories[0].rows();
+	int n_samples = 1; //obstacle_trajectories[0].cols();
 
-	Eigen::MatrixXd cost_ps_t;
 	Eigen::VectorXd cost_ps;
 	Eigen::Matrix<double, 6, 1> xs_p;
 	Eigen::Matrix<double, 4, 1> xs_i_p;
@@ -958,11 +981,11 @@ double PSBMPC::calculate_total_cost(
 			
 			for(int ps = 0; ps < n_ps; ps++)
 			{
-				d_0i_p = obstacle_trajectories[i].block<2, 1>(ps, k) - trajectory.block<2, 1>(0, k);
+				//d_0i_p = obstacle_trajectories[i].block<2, 1>(ps, k) - trajectory.block<2, 1>(0, k);
 			}
 		}
 	}
-	cost += calculate_grounding_cost(trajectory, static_obstacles);
+	cost += calculate_grounding_cost(trajectory, static_obstacle);
 
 	cost += calculate_control_deviation_cost();
 

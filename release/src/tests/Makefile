@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/trymte/Desktop/psbmpc
+CMAKE_SOURCE_DIR = /home/trymte/Desktop/cybercolav_cxx
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/trymte/Desktop/psbmpc/Release
+CMAKE_BINARY_DIR = /home/trymte/Desktop/cybercolav_cxx/release
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -80,14 +80,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/trymte/Desktop/psbmpc/Release && $(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/psbmpc/Release/CMakeFiles /home/trymte/Desktop/psbmpc/Release/src/tests/CMakeFiles/progress.marks
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f CMakeFiles/Makefile2 src/tests/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/psbmpc/Release/CMakeFiles 0
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles /home/trymte/Desktop/cybercolav_cxx/release/src/tests/CMakeFiles/progress.marks
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f CMakeFiles/Makefile2 src/tests/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f CMakeFiles/Makefile2 src/tests/clean
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f CMakeFiles/Makefile2 src/tests/clean
 .PHONY : clean
 
 # The main clean target
@@ -97,22 +97,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f CMakeFiles/Makefile2 src/tests/preinstall
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f CMakeFiles/Makefile2 src/tests/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f CMakeFiles/Makefile2 src/tests/preinstall
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f CMakeFiles/Makefile2 src/tests/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/trymte/Desktop/psbmpc/Release && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/tests/CMakeFiles/tester.dir/rule:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f CMakeFiles/Makefile2 src/tests/CMakeFiles/tester.dir/rule
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f CMakeFiles/Makefile2 src/tests/CMakeFiles/tester.dir/rule
 .PHONY : src/tests/CMakeFiles/tester.dir/rule
 
 # Convenience name for target.
@@ -122,35 +122,35 @@ tester: src/tests/CMakeFiles/tester.dir/rule
 
 # fast build rule for target.
 tester/fast:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test.o: test.cpp.o
+test_ownship.o: test_ownship.cpp.o
 
-.PHONY : test.o
+.PHONY : test_ownship.o
 
 # target to build an object file
-test.cpp.o:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test.cpp.o
-.PHONY : test.cpp.o
+test_ownship.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o
+.PHONY : test_ownship.cpp.o
 
-test.i: test.cpp.i
+test_ownship.i: test_ownship.cpp.i
 
-.PHONY : test.i
+.PHONY : test_ownship.i
 
 # target to preprocess a source file
-test.cpp.i:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test.cpp.i
-.PHONY : test.cpp.i
+test_ownship.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_ownship.cpp.i
+.PHONY : test_ownship.cpp.i
 
-test.s: test.cpp.s
+test_ownship.s: test_ownship.cpp.s
 
-.PHONY : test.s
+.PHONY : test_ownship.s
 
 # target to generate assembly for a file
-test.cpp.s:
-	cd /home/trymte/Desktop/psbmpc/Release && $(MAKE) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test.cpp.s
-.PHONY : test.cpp.s
+test_ownship.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_ownship.cpp.s
+.PHONY : test_ownship.cpp.s
 
 # Help Target
 help:
@@ -161,9 +161,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... tester"
 	@echo "... edit_cache"
-	@echo "... test.o"
-	@echo "... test.i"
-	@echo "... test.s"
+	@echo "... test_ownship.o"
+	@echo "... test_ownship.i"
+	@echo "... test_ownship.s"
 .PHONY : help
 
 
@@ -175,6 +175,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/trymte/Desktop/psbmpc/Release && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

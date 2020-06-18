@@ -48,8 +48,6 @@ class Ownship
 {
 	private:
 
-	Eigen::Matrix<double, 6, -1> trajectory;
-
 	Eigen::Vector3d tau;
 	Eigen::Matrix3d M_inv;
 	Eigen::Vector3d Cvv;
@@ -128,6 +126,7 @@ class Ownship
 	Eigen::VectorXd predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
 	void predict_trajectory(
+		Eigen::Matrix<double, 6, -1>& trajectory,
 		const Eigen::VectorXd offset_sequence,
 		const Eigen::VectorXd maneuver_times,
 		const double u_d,

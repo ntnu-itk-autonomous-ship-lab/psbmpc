@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/trymte/Desktop/psbmpc
+CMAKE_SOURCE_DIR = /home/trymte/Desktop/cybercolav_cxx
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/trymte/Desktop/psbmpc/Release
+CMAKE_BINARY_DIR = /home/trymte/Desktop/cybercolav_cxx/release
 
 # Include any dependencies generated for this target.
 include libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/depend.make
@@ -59,16 +59,16 @@ include libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/flags.make
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/flags.make
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o: ../libs/psbmpc_lib/src/psbmpc.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/psbmpc/Release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o -c /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/psbmpc.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o -c /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.i"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/psbmpc.cpp > CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp > CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.i
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.s"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/psbmpc.cpp -o CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp -o CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.s
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o.requires:
 
@@ -83,16 +83,16 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o.provides.build: libs/
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/flags.make
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: ../libs/psbmpc_lib/src/ownship.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/psbmpc/Release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o -c /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/ownship.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o -c /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/ownship.cpp
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.i"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/ownship.cpp > CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/ownship.cpp > CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.i
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.s"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/ownship.cpp -o CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/ownship.cpp -o CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.s
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o.requires:
 
@@ -107,16 +107,16 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o.provides.build: libs
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/flags.make
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o: ../libs/psbmpc_lib/src/cpe.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/psbmpc/Release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o -c /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/cpe.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o -c /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/cpe.cpp
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.i"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/cpe.cpp > CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/cpe.cpp > CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.i
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.s"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/cpe.cpp -o CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/cpe.cpp -o CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.s
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o.requires:
 
@@ -131,16 +131,16 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o.provides.build: libs/psb
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/flags.make
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o: ../libs/psbmpc_lib/src/kf.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/psbmpc/Release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o -c /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/kf.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o -c /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.cpp
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/psbmpc_lib.dir/src/kf.cpp.i"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/kf.cpp > CMakeFiles/psbmpc_lib.dir/src/kf.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.cpp > CMakeFiles/psbmpc_lib.dir/src/kf.cpp.i
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/psbmpc_lib.dir/src/kf.cpp.s"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/kf.cpp -o CMakeFiles/psbmpc_lib.dir/src/kf.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.cpp -o CMakeFiles/psbmpc_lib.dir/src/kf.cpp.s
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o.requires:
 
@@ -155,16 +155,16 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o.provides.build: libs/psbm
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/flags.make
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/psbmpc_lib/src/obstacle.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/psbmpc/Release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o -c /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/obstacle.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o -c /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.cpp
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.i"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/obstacle.cpp > CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.cpp > CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.i
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.s"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/obstacle.cpp -o CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.cpp -o CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.s
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o.requires:
 
@@ -179,16 +179,16 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o.provides.build: lib
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/flags.make
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o: ../libs/psbmpc_lib/src/mrou.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/psbmpc/Release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o -c /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/mrou.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o -c /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/mrou.cpp
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.i"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/mrou.cpp > CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.i
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/mrou.cpp > CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.i
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.s"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/psbmpc/libs/psbmpc_lib/src/mrou.cpp -o CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.s
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/mrou.cpp -o CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.s
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o.requires:
 
@@ -221,9 +221,9 @@ libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/o
 libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o
 libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make
 libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/trymte/Desktop/psbmpc/Release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX static library libpsbmpc_lib.a"
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && $(CMAKE_COMMAND) -P CMakeFiles/psbmpc_lib.dir/cmake_clean_target.cmake
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/psbmpc_lib.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX static library libpsbmpc_lib.a"
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && $(CMAKE_COMMAND) -P CMakeFiles/psbmpc_lib.dir/cmake_clean_target.cmake
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/psbmpc_lib.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build: libs/psbmpc_lib/libpsbmpc_lib.a
@@ -240,10 +240,10 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/requires: libs/psbmpc_lib/CMakeFiles/p
 .PHONY : libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/requires
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/clean:
-	cd /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib && $(CMAKE_COMMAND) -P CMakeFiles/psbmpc_lib.dir/cmake_clean.cmake
+	cd /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib && $(CMAKE_COMMAND) -P CMakeFiles/psbmpc_lib.dir/cmake_clean.cmake
 .PHONY : libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/clean
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/depend:
-	cd /home/trymte/Desktop/psbmpc/Release && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/trymte/Desktop/psbmpc /home/trymte/Desktop/psbmpc/libs/psbmpc_lib /home/trymte/Desktop/psbmpc/Release /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib /home/trymte/Desktop/psbmpc/Release/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/trymte/Desktop/cybercolav_cxx /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib /home/trymte/Desktop/cybercolav_cxx/release /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib /home/trymte/Desktop/cybercolav_cxx/release/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/depend
 

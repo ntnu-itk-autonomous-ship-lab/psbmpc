@@ -61,6 +61,8 @@ public:
 
 	MROU* mrou;
 
+	~Obstacle();
+
 	Obstacle(const Eigen::VectorXd &xs_aug, const Eigen::Matrix4d &P, const bool filter_on, const bool colav_on, const double T, const double dt);
 
 	int get_ID() const { return ID; };
@@ -81,7 +83,7 @@ public:
 
 	std::vector<Eigen::MatrixXd> get_independent_trajectories() const { return xs_p; };
 
-	std::vector<Eigen::MatrixXd> get_independent_covariances() const { return P_p; };
+	std::vector<Eigen::MatrixXd> get_independent_trajectory_covariances() const { return P_p; };
 
 	void predict_independent_trajectories(const double T, const double dt);
 

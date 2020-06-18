@@ -111,12 +111,13 @@ double MROU::k(
 *  Modified :
 *****************************************************************************************/
 void MROU::predict_state(
-	Eigen::VectorXd &xs, 						// In/out:  State to be predicted
-	const Eigen::Vector2d &v, 					// In: 		Typical mean velocity for the process
+	Eigen::Vector4d& xs, 						// In/out:  State to be predicted
+	const Eigen::Vector2d& v, 					// In: 		Typical mean velocity for the process
 	const double t								// In: 		Prediction time t = t_k+1 - t_k	
 	){
 
-	Eigen::Matrix<double, 4, 4> Phi, Psi;
+	Eigen::Matrix<double, 4, 4> Phi;
+	Eigen::Matrix<double, 4, 2> Psi;
 
 	Phi <<  1, 0, (1 - exp( - t * gamma_x)) / gamma_x, 0,
 			0, 1, 0, (1 - exp( - t * gamma_y)) / gamma_y,
@@ -139,7 +140,7 @@ void MROU::predict_state(
 *  Modified :
 *****************************************************************************************/
 void MROU::predict_covariance(
-	Eigen::Matrix<double, 4, 4> &P, 						// In/out: Covariance to be predicted
+	Eigen::Matrix<double, 4, 4>& P, 						// In/out: Covariance to be predicted
 	const double t 								// In: 	   Prediction time t = t_k+1 - t_k
 	){
 	Eigen::Matrix<double, 4, 4> Sigma_2;
