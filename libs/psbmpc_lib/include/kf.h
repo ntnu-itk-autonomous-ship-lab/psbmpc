@@ -29,7 +29,7 @@
 class KF{
 private:
 
-  int id;
+  int ID;
 
   double t_0, t;
 
@@ -45,9 +45,9 @@ public:
 
   KF();
 
-  KF(const Eigen::Vector4d &xs_0, const int id, const double dt, const double t_0);
+  KF(const Eigen::Vector4d& xs_0, const Eigen::Matrix4d& P_0, const int ID, const double dt, const double t_0);
 
-  int get_id() const { return id; };
+  int get_ID() const { return ID; };
 
   double get_time() const { return t; };
 
@@ -55,7 +55,7 @@ public:
 
   Eigen::MatrixXd get_covariance() const { return P_upd; };
 
-  void reset(const Eigen::Vector4d &xs_0, const double t_0);
+  void reset(const Eigen::Vector4d& xs_0, const Eigen::Matrix4d& P_0, const double t_0);
 
   void predict(const double dt);
 

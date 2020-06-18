@@ -27,21 +27,24 @@
 #include "Eigen/Dense"
 #include "mrou.h"
 #include "kf.h"
+#include "utilities.h"
 
 class Obstacle {
 private:
 
-	int id;
+	int ID;
 
-	Eigen::VectorXd x_p, y_p, V_x_p, V_y_p;
+	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
+	std::vector<Eigen::MatrixXd> xs_p;
 
-	// NOTE: Not to be confused with predicted error covariance. This is the trajectory covariance.
-	std::vector<Eigen::MatrixXd> P_p;
+	// Predicted covariance for each prediction scenario: n_ps x n*n x n_samples, i.e. the covariance is flattened for each time step
+	std::vector<Eigen::MatrixXd> P_p;  
 
-	Eigen::VectorXd maneuver_times;
+	// Time of alternative maneuvers for the obstacle prediction scenarios
+	Eigen::MatrixXd maneuver_times;
 
-	Eigen::Vector4d xs_upd;
-	Eigen::Matrix4d P_upd;
+	// Predicted obstacle trajectory and covariance when it is behaving intelligently
+	Eigen::MatrixXd xs_colav_p, P_colav_p;
 
 	// Obstacle dimension quantifiers, length (l) and width (w)
 	double A, B, C, D, l, w;
@@ -50,7 +53,7 @@ private:
 
 	double duration_tracked, duration_lost;
 
-	bool filter_on;
+	bool colav_on, filter_on;
 
 public:
 
@@ -58,13 +61,9 @@ public:
 
 	MROU* mrou;
 
-	Obstacle(const Eigen::VectorXd &xs_aug, const Eigen::Matrix4d &P, const bool filter_on, const double T, const double dt);
+	Obstacle(const Eigen::VectorXd &xs_aug, const Eigen::Matrix4d &P, const bool filter_on, const bool colav_on, const double T, const double dt);
 
-	int get_id() const { return id; };
-
-	Eigen::Vector4d get_xs() const { return xs_upd; };
-
-	Eigen::Matrix4d get_P() const { return P_upd; };
+	int get_ID() const { return ID; };
 
 	double get_duration_tracked() const { return duration_tracked; };
 
@@ -80,7 +79,17 @@ public:
 
 	void resize_trajectories(const int n_samples);
 
+	std::vector<Eigen::MatrixXd> get_independent_trajectories() const { return xs_p; };
+
+	std::vector<Eigen::MatrixXd> get_independent_covariances() const { return P_p; };
+
 	void predict_independent_trajectories(const double T, const double dt);
+
+	void set_dependent_trajectory(const Eigen::MatrixXd& xs_colav_p, const Eigen::MatrixXd& P_colav_p) { this->xs_colav_p = xs_colav_p; this->P_colav_p = P_colav_p; };
+
+	Eigen::MatrixXd get_dependent_trajectory() const { return xs_colav_p; };
+
+	Eigen::MatrixXd get_dependent_trajectory_covariance() const { return P_colav_p; };
 };
 
 #endif

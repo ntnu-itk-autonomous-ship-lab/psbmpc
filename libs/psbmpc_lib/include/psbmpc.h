@@ -74,8 +74,6 @@ private:
 
 	Guidance_Method guidance_method;
 
-	Eigen::Matrix<bool, -1, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
-
 	double T, T_static, dt, p_step;
 	double t_ts;
 	double d_safe, d_close, d_init;
@@ -88,10 +86,17 @@ private:
 	double K_sgn, T_sgn;
 	double G;
 	
-	bool obstacle_filter_on;
+	bool obstacle_filter_on, obstacle_colav_on;
 	double T_lost_limit, T_tracked_limit;
 
 	Ownship *ownship;
+
+	// Transitional indicator variables at the current time
+	Eigen::Matrix<bool, -1, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
+
+	// Situation type variables at the current time
+	ST ST_0;
+	Eigen::Matrix<ST, -1, 1> ST_i_0;
 
 	std::vector<Obstacle*> old_obstacles;
 	std::vector<Obstacle*> new_obstacles;
@@ -110,7 +115,9 @@ private:
 
 	bool determine_colav_active(const Eigen::Matrix<double, 6, 1> xs, const int n_static_obst);
 
-	ST determine_situation_type(
+	void determine_situation_type(
+		ST& st_A,
+		ST& st_B,
 		const Eigen::Vector2d &v_A, 
 		const double psi_A, 
 		const Eigen::Vector2d &v_B,
