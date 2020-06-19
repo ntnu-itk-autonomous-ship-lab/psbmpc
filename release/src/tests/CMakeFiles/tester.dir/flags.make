@@ -6,5 +6,5 @@ CXX_FLAGS = -O3 -DNDEBUG   -Wall -Wextra -Wpedantic -std=gnu++11
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = 
+CXX_INCLUDES = -I/usr/include/python2.7 -I/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/include -I/home/trymte/Desktop/cybercolav_cxx/libs/third_party_libs 
 

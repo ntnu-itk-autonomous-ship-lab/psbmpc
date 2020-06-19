@@ -91,6 +91,7 @@ tester_EXTERNAL_OBJECTS =
 src/tests/tester: src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o
 src/tests/tester: src/tests/CMakeFiles/tester.dir/build.make
 src/tests/tester: libs/psbmpc_lib/libpsbmpc_lib.a
+src/tests/tester: /usr/lib/x86_64-linux-gnu/libpython2.7.so
 src/tests/tester: src/tests/CMakeFiles/tester.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable tester"
 	cd /home/trymte/Desktop/cybercolav_cxx/release/src/tests && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/tester.dir/link.txt --verbose=$(VERBOSE)
