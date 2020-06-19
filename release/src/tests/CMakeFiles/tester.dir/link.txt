@@ -1,1 +1,1 @@
-/usr/bin/c++  -O3 -DNDEBUG   CMakeFiles/tester.dir/test_ownship.cpp.o  -o tester ../../libs/psbmpc_lib/libpsbmpc_lib.a -lPython2::Python -lPython2::NumPy 
+/usr/bin/c++  -O3 -DNDEBUG   CMakeFiles/tester.dir/test_ownship.cpp.o  -o tester ../../libs/psbmpc_lib/libpsbmpc_lib.a /usr/lib/x86_64-linux-gnu/libpython2.7.so 

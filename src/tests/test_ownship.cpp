@@ -3,7 +3,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "matplotlibcpp.h"
+#include "Matplotlib/matplotlibcpp.h"
 #include "ownship.h"
 #include <iostream>
 #include <variant>
@@ -35,7 +35,8 @@ int main(){
 	chi_offsets[1] << v2;
 	chi_offsets[2] << v3;
 
-	Eigen::Vector4d maneuver_times, offset_sequence;
+	Eigen::Vector4d offset_sequence;
+	Eigen::Vector2d maneuver_times;
 	offset_sequence << 1, -90 * M_PI / 180, 1, -30 * M_PI / 180;
 	maneuver_times << 1, 100;
 

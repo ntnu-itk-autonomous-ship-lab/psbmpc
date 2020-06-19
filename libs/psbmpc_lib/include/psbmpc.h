@@ -23,7 +23,6 @@
 #ifndef _PSBMPC_H_
 #define _PSBMPC_H_
 
-
 #include "cpe.h"
 #include "psbmpc_index.h"
 #include "ownship.h"

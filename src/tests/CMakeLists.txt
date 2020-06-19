@@ -1,14 +1,16 @@
-find_package(Python2 COMPONENTS Development NumPy)
 
+find_package(PythonLibs REQUIRED)
 
 
 add_executable(tester test_ownship.cpp)
-
-target_link_libraries(tester psbmpc_lib Python2::Python Python2::NumPy)
 target_include_directories(tester PRIVATE 
-	${Python2_INCLUDE_DIRS} 
-	${Python2_NumPy_INCLUDE_DIRS}
+	${PYTHON_INCLUDE_DIRS} 
 	)
+
+message("Python include dirs: {PYTHON_INCLUDE_DIRS}")
+
+
+target_link_libraries(tester psbmpc_lib ${PYTHON_LIBRARIES})
 
 target_compile_features(tester PUBLIC cxx_std_11)
 
