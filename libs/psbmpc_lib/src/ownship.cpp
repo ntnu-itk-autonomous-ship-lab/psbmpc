@@ -193,20 +193,21 @@ void Ownship::predict_trajectory(
 {
 	int n_samples = T / dt;
 	
-	trajectory.resize(6, n_samples);
+	trajectory.conservativeResize(6, n_samples);
 
 	wp_counter = 0;
 	int man_count = 0;
 	double u_m = 1, u_d_p = u_d;
 	double chi_m = 0, psi_d_p = psi_d;
 	Eigen::Matrix<double, 6, 1> xs = trajectory.block<6, 1>(0, 0);
+	std::cout << "xs = [" << xs(0) << ", " << xs(1) << ", " << xs(2) << ", " << xs(3) << ", " << xs(4) << ", " << xs(5) << "]" << std::endl;
 
 	for (int k = 0; k < n_samples; k++)
 	{ 
 		if (k == maneuver_times[man_count]){
 			u_m = offset_sequence[2 * man_count];
-			chi_m = offset_sequence[2 * man_count + 1];
-			if (man_count < maneuver_times.size()) man_count += 1;
+			chi_m = offset_sequence[2 * man_count + 1]; 
+			if (man_count + 1 != maneuver_times.size()) man_count += 1;
 		}  
 
 		update_guidance_references(u_d_p, psi_d_p, waypoints, xs, k, dt, guidance_method);
@@ -215,7 +216,7 @@ void Ownship::predict_trajectory(
 
 		xs = predict(xs, dt, prediction_method);
 		
-		if (k < n_samples) trajectory.block<6, 1>(0, k + 1) = xs;
+		if (k < n_samples - 1) trajectory.block<6, 1>(0, k + 1) = xs;
 	}
 }
 
@@ -352,6 +353,9 @@ void Ownship::update_ctrl_input(
 	const Eigen::Matrix<double, 6, 1>& xs 						// In: State
 	)
 {
+	update_Cvv(xs.block<3, 1>(3, 0));
+	update_Dvv(xs.block<3, 1>(3, 0));
+
 	double Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
 
 	double Fy = (Kp_psi * I_z ) * ((psi_d - xs(2)) - Kd_psi * xs(5));
