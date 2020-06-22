@@ -10,7 +10,7 @@ set(CMAKE_CXX_COMPILER_ID "GNU")
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
-  "/usr/include/python3.6m"
+  "/usr/local/MATLAB/R2019a/extern/include"
   "../libs/psbmpc_lib/include"
   "../libs/third_party_libs"
   )
