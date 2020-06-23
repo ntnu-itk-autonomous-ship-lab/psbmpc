@@ -96,7 +96,6 @@ class Ownship
 	double Kp_r;
 	
 	double r_max; 
-	double psi_rf; // required fraction of psi_d to be achieved before adapting psi_d.
 
 	double A, B, C, D, l, w;
 	double x_offset, y_offset;
@@ -126,7 +125,7 @@ class Ownship
 	Eigen::VectorXd predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
 	void predict_trajectory(
-		Eigen::Matrix<double, 6, -1>& trajectory,
+		Eigen::Matrix<double, 6, -1> &trajectory,
 		const Eigen::VectorXd offset_sequence,
 		const Eigen::VectorXd maneuver_times,
 		const double u_d,

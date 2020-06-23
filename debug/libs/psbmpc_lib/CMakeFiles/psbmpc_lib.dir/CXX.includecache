@@ -1108,30 +1108,6 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/cpe.cpp
-iostream
--
-
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.cpp
-kf.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.h
-stdexcept
--
-
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/mrou.cpp
-mrou.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/mrou.h
-math.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/math.h
-
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.cpp
-obstacle.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.h
-kf.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.h
-iostream
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/iostream
-
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/ownship.cpp
 ownship.h
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/ownship.h

@@ -66,14 +66,14 @@ namespace Utilities
 
 	/****************************************************************************************
 	*  Name     : angle_difference_pmpi
-	*  Function : Makes sure angle difference is within [-pi, pi] interval
+	*  Function : Makes sure angle difference a_1 - a_2 is within [-pi, pi] interval
 	*  Author   :
 	*  Modified :
 	*****************************************************************************************/
 	inline double angle_difference_pmpi(const double a_1, const double a_2) 
 	{
-		double diff = wrap_angle_to_02pi(a_2) - wrap_angle_to_02pi(a_1);
-		while (diff >= M_PI) diff -= 2 * M_PI;
+		double diff = wrap_angle_to_pmpi(a_1) - wrap_angle_to_pmpi(a_2);
+		while (diff > M_PI) diff -= 2 * M_PI;
 		while (diff < -M_PI) diff += 2 * M_PI;
 		return diff;
 	}
