@@ -6,23 +6,9 @@
 
 #IncludeRegexTransform: 
 
-../libs/psbmpc_lib/include/ownship.h
-utilities.h
-../libs/psbmpc_lib/include/utilities.h
-vector
--
-cmath
--
+../libs/psbmpc_lib/include/kf.h
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
-string
--
-
-../libs/psbmpc_lib/include/utilities.h
-Eigen/Dense
-../libs/psbmpc_lib/include/Eigen/Dense
-iostream
-../libs/psbmpc_lib/include/iostream
 
 ../libs/third_party_libs/Eigen/Cholesky
 Core
@@ -1080,9 +1066,9 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/src/tests/test_ownship.cpp
-ownship.h
-/home/trymte/Desktop/cybercolav_cxx/src/tests/ownship.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/test_kf.cpp
+kf.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/kf.h
 iostream
 -
 variant
