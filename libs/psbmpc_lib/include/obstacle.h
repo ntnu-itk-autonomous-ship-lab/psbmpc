@@ -37,6 +37,9 @@ private:
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 	std::vector<Eigen::MatrixXd> xs_p;
 
+	// Mean predicted velocity for the obstacle (MROU): n_ps x n x n_samples, where n = 4
+	std::vector<Eigen::MatrixXd> v_p;
+
 	// Predicted covariance for each prediction scenario: n_ps x n*n x n_samples, i.e. the covariance is flattened for each time step
 	std::vector<Eigen::MatrixXd> P_p;  
 

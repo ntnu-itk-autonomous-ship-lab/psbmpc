@@ -109,7 +109,7 @@ int main(){
 	engPutVariable(ep, "X", traj);
 	engPutVariable(ep, "WPs", wps);
 	engEvalString(ep, "whos");
-	engEvalString(ep, "test_ownship_plot");
+	engEvalString(ep, "testPlot");
 
 	
 	printf("%s", buffer);

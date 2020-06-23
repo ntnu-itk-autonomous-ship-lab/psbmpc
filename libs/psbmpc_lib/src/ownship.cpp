@@ -19,9 +19,12 @@
 *
 *****************************************************************************************/
 
-
+#include "utilities.h"
 #include "ownship.h"
-#include  <iostream>
+#include <vector>
+#include <cmath>
+#include <string>
+#include <iostream>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -112,7 +115,7 @@ Ownship::Ownship()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Eigen::VectorXd Ownship::predict(
+Eigen::Matrix<double, 6, 1> Ownship::predict(
 	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
 	const double dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
@@ -197,7 +200,6 @@ void Ownship::predict_trajectory(
 	double u_m = 1, u_d_p = u_d;
 	double chi_c = 0, chi_m = 0, psi_d_p = psi_d;
 	Eigen::Matrix<double, 6, 1> xs = trajectory.block<6, 1>(0, 0);
-	std::cout << "xs = [" << xs(0) << ", " << xs(1) << ", " << xs(2) << ", " << xs(3) << ", " << xs(4) << ", " << xs(5) << "]" << std::endl;
 
 	for (int k = 0; k < n_samples; k++)
 	{ 
@@ -323,10 +325,6 @@ void Ownship::update_guidance_references(
 			{
 				alpha = atan2(waypoints(1, wp_counter + 1) - waypoints(1, wp_counter), 
 							waypoints(0, wp_counter + 1) - waypoints(0, wp_counter));
-			}
-			if (alpha < 0)
-			{
-				std::cout << alpha << std::endl;
 			}
 			// Compute cross track error and integrate it
 			e = - (xs(0) - waypoints(0, wp_counter)) * sin(alpha) + (xs(1) - waypoints(1, wp_counter)) * cos(alpha);
