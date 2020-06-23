@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test_kf.o: test_kf.cpp.o
+test_mrou.o: test_mrou.cpp.o
 
-.PHONY : test_kf.o
+.PHONY : test_mrou.o
 
 # target to build an object file
-test_kf.cpp.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_kf.cpp.o
-.PHONY : test_kf.cpp.o
+test_mrou.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_mrou.cpp.o
+.PHONY : test_mrou.cpp.o
 
-test_kf.i: test_kf.cpp.i
+test_mrou.i: test_mrou.cpp.i
 
-.PHONY : test_kf.i
+.PHONY : test_mrou.i
 
 # target to preprocess a source file
-test_kf.cpp.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_kf.cpp.i
-.PHONY : test_kf.cpp.i
+test_mrou.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_mrou.cpp.i
+.PHONY : test_mrou.cpp.i
 
-test_kf.s: test_kf.cpp.s
+test_mrou.s: test_mrou.cpp.s
 
-.PHONY : test_kf.s
+.PHONY : test_mrou.s
 
 # target to generate assembly for a file
-test_kf.cpp.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_kf.cpp.s
-.PHONY : test_kf.cpp.s
+test_mrou.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_mrou.cpp.s
+.PHONY : test_mrou.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... test_kf.o"
-	@echo "... test_kf.i"
-	@echo "... test_kf.s"
+	@echo "... test_mrou.o"
+	@echo "... test_mrou.i"
+	@echo "... test_mrou.s"
 .PHONY : help
 
 
