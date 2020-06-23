@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-../libs/psbmpc_lib/include/kf.h
+../libs/psbmpc_lib/include/mrou.h
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
 
@@ -1072,11 +1072,11 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/src/tests/test_kf.cpp
+/home/trymte/Desktop/cybercolav_cxx/src/tests/test_mrou.cpp
 utilities.h
 /home/trymte/Desktop/cybercolav_cxx/src/tests/utilities.h
-kf.h
-/home/trymte/Desktop/cybercolav_cxx/src/tests/kf.h
+mrou.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/mrou.h
 iostream
 -
 variant
