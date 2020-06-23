@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test_ownship.o: test_ownship.cpp.o
+test_kf.o: test_kf.cpp.o
 
-.PHONY : test_ownship.o
+.PHONY : test_kf.o
 
 # target to build an object file
-test_ownship.cpp.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o
-.PHONY : test_ownship.cpp.o
+test_kf.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_kf.cpp.o
+.PHONY : test_kf.cpp.o
 
-test_ownship.i: test_ownship.cpp.i
+test_kf.i: test_kf.cpp.i
 
-.PHONY : test_ownship.i
+.PHONY : test_kf.i
 
 # target to preprocess a source file
-test_ownship.cpp.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_ownship.cpp.i
-.PHONY : test_ownship.cpp.i
+test_kf.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_kf.cpp.i
+.PHONY : test_kf.cpp.i
 
-test_ownship.s: test_ownship.cpp.s
+test_kf.s: test_kf.cpp.s
 
-.PHONY : test_ownship.s
+.PHONY : test_kf.s
 
 # target to generate assembly for a file
-test_ownship.cpp.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_ownship.cpp.s
-.PHONY : test_ownship.cpp.s
+test_kf.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_kf.cpp.s
+.PHONY : test_kf.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... test_ownship.o"
-	@echo "... test_ownship.i"
-	@echo "... test_ownship.s"
+	@echo "... test_kf.o"
+	@echo "... test_kf.i"
+	@echo "... test_kf.s"
 .PHONY : help
 
 

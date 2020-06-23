@@ -77,27 +77,27 @@ include src/tests/CMakeFiles/tester.dir/progress.make
 # Include the compile flags for this target's objects.
 include src/tests/CMakeFiles/tester.dir/flags.make
 
-src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o: src/tests/CMakeFiles/tester.dir/flags.make
-src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o: ../src/tests/test_ownship.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o"
-	cd /home/trymte/Desktop/cybercolav_cxx/debug/src/tests && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/tester.dir/test_ownship.cpp.o -c /home/trymte/Desktop/cybercolav_cxx/src/tests/test_ownship.cpp
+src/tests/CMakeFiles/tester.dir/test_kf.cpp.o: src/tests/CMakeFiles/tester.dir/flags.make
+src/tests/CMakeFiles/tester.dir/test_kf.cpp.o: ../src/tests/test_kf.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/tests/CMakeFiles/tester.dir/test_kf.cpp.o"
+	cd /home/trymte/Desktop/cybercolav_cxx/debug/src/tests && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/tester.dir/test_kf.cpp.o -c /home/trymte/Desktop/cybercolav_cxx/src/tests/test_kf.cpp
 
-src/tests/CMakeFiles/tester.dir/test_ownship.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/tester.dir/test_ownship.cpp.i"
-	cd /home/trymte/Desktop/cybercolav_cxx/debug/src/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/cybercolav_cxx/src/tests/test_ownship.cpp > CMakeFiles/tester.dir/test_ownship.cpp.i
+src/tests/CMakeFiles/tester.dir/test_kf.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/tester.dir/test_kf.cpp.i"
+	cd /home/trymte/Desktop/cybercolav_cxx/debug/src/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/cybercolav_cxx/src/tests/test_kf.cpp > CMakeFiles/tester.dir/test_kf.cpp.i
 
-src/tests/CMakeFiles/tester.dir/test_ownship.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/tester.dir/test_ownship.cpp.s"
-	cd /home/trymte/Desktop/cybercolav_cxx/debug/src/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/src/tests/test_ownship.cpp -o CMakeFiles/tester.dir/test_ownship.cpp.s
+src/tests/CMakeFiles/tester.dir/test_kf.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/tester.dir/test_kf.cpp.s"
+	cd /home/trymte/Desktop/cybercolav_cxx/debug/src/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/src/tests/test_kf.cpp -o CMakeFiles/tester.dir/test_kf.cpp.s
 
 # Object files for target tester
 tester_OBJECTS = \
-"CMakeFiles/tester.dir/test_ownship.cpp.o"
+"CMakeFiles/tester.dir/test_kf.cpp.o"
 
 # External object files for target tester
 tester_EXTERNAL_OBJECTS =
 
-src/tests/tester: src/tests/CMakeFiles/tester.dir/test_ownship.cpp.o
+src/tests/tester: src/tests/CMakeFiles/tester.dir/test_kf.cpp.o
 src/tests/tester: src/tests/CMakeFiles/tester.dir/build.make
 src/tests/tester: libs/psbmpc_lib/libpsbmpc_lib.a
 src/tests/tester: /usr/local/MATLAB/R2019a/bin/glnxa64/libmex.so
