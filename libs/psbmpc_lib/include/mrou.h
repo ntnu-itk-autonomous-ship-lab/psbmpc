@@ -34,7 +34,7 @@ private:
 	double gamma_y;
 
 
-	Eigen::Matrix<double, 4, 4> Sigma_1;
+	Eigen::Matrix4d Sigma_1;
 
 	double f(const double t) const;
 
@@ -50,10 +50,9 @@ public:
 
 	MROU(const double sigma_x, const double sigma_xy, const double sigma_y, const double gamma_x, const double gamma_y);
 
-	void predict_state(Eigen::Vector4d& xs, const Eigen::Vector2d& v, const double t);
+	Eigen::Vector4d predict_state(const Eigen::Vector4d &xs_old, const Eigen::Vector2d &v, const double t);
 
-	void predict_covariance(Eigen::Matrix<double, 4, 4>& P, const double t);
+	Eigen::Matrix4d predict_covariance(const Eigen::Matrix4d &P_old, const double t);
 };
-
 
 #endif

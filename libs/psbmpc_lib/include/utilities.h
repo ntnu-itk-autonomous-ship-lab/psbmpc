@@ -147,7 +147,7 @@ namespace Utilities
 		{
 			for(int j = 0; j < n_cols; j++)
 			{
-				out(count, 1) = in(i, j);
+				out(count) = in(i, j);
 				count += 1;
 			}
 		}
@@ -179,44 +179,39 @@ namespace Utilities
 		return out;
 	}
 
-/*
-	inline void rotate_vector_2D(Eigen::Vector2d &v, const double angle)
+	/****************************************************************************************
+	*  Name     : print_matrix
+	*  Function : 
+	*  Author   :
+	*  Modified :
+	*****************************************************************************************/
+	void print_matrix(const Eigen::MatrixXd& in)
 	{
-		Eigen::Vector2d v_temp;
-		v_temp(1) = v(1) * cos(angle) - v(2) * sin(angle);
-		v_temp(2) = v(1) * sin(angle) - v(2) * cos(angle);
-		v = v_temp;
-	}	
-*/
+		int n_rows = in.rows();
+		int n_cols = in.cols();
 
-/*
-	inline void rotate_vector_3D(Eigen::Vector3d &v, const double angle, const Axis axis)
-	{
-		Eigen::Vector3d v_temp;
-		switch (axis) 
+		std::cout << "[";
+		for (int i = 0; i < n_rows; i++)
 		{
-			case Roll : 
+			for (int j = 0; j < n_cols; j++)
 			{
-				v_temp(0) = v(0);
-				v_temp(1) = v(1) * cos(angle) - v(2) * sin(angle);
-				v_temp(2) = v(1) * sin(angle) + v(2) * cos(angle);
+				if (j < n_cols - 1)
+				{
+					std::cout << in(i, j) << ", ";
+				}
+				else
+				{
+					std::cout << in(i, j);
+				}
 			}
-			case Pitch : 
+
+			if (i < n_cols - 1)
 			{
-				v_temp(0) = v(0) * cos(angle) + v(2) * sin(angle);
-				v_temp(1) = v(1);
-				v_temp(2) = - v(0) * sin(angle) + v(2) * cos(angle);	
+				std::cout << std::endl;
 			}			
-			case Yaw : 
-			{
-				v_temp(0) = v(0) * cos(angle) - v(1) * sin(angle);
-				v_temp(1) = v(0) * sin(angle) + v(1) * cos(angle);
-				v_temp(2) = v(2);
-			}
 		}
-		v = v_temp;
+		std::cout << "]" << std::endl;
 	}
-*/
 }
 
 #endif

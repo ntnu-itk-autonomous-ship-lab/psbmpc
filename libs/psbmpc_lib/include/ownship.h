@@ -24,11 +24,7 @@
 #ifndef _Ownship_H_
 #define _Ownship_H_
 
-#include "utilities.h"
-#include <vector>
-#include <cmath>
 #include "Eigen/Dense"
-#include <string>
 
 enum Prediction_Method {
 	Linear,													// Linear prediction
@@ -122,7 +118,7 @@ class Ownship
 
 	Ownship();
 
-	Eigen::VectorXd predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
+	Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
 	void predict_trajectory(
 		Eigen::Matrix<double, 6, -1> &trajectory,

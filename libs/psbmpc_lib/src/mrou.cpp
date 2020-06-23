@@ -20,6 +20,7 @@
 
 #include "mrou.h"
 #include "math.h"
+#include <iostream>
 
 
 /****************************************************************************************
@@ -61,7 +62,7 @@ MROU::MROU(
 	gamma_y(gamma_y)
 {
 
-	// Calculate constant part of OU predictor covariance
+	// Constant part of OU predictor covariance
 	Sigma_1 << pow(sigma_x, 2) / pow(gamma_x, 3), sigma_xy / (gamma_x * gamma_y), pow(sigma_x, 2) / (2 * pow(gamma_x, 2)), 2 * sigma_xy / gamma_x,
 
 				sigma_xy / (gamma_x * gamma_y), pow(sigma_y, 2) / pow(gamma_y, 3),  2 * sigma_xy / gamma_y, pow(sigma_y, 2) / (2 * pow(gamma_y, 2)),
@@ -79,27 +80,31 @@ MROU::MROU(
 *  Modified :
 *****************************************************************************************/
 double MROU::f(
-	const double t 								// In: Prediction time t = t_k+1 - t_k		
-	) const {
+	const double t 								// In: Prediction time		
+	) const 
+{
 	return 0.5 * (2 * t + 4 * exp(-t) - exp(- 2 * t) - 3);
 }
 
 double MROU::g(
-	const double t 								// In: Prediction time t = t_k+1 - t_k	
-	) const {
+	const double t 								// In: Prediction time	
+	) const 
+{
 	return 0.5 * (1 - exp(- 2 * t));
 }
 
 double MROU::h(
-	const double t 								// In: Prediction time t = t_k+1 - t_k	
-	) const {
+	const double t 								// In: Prediction time	
+	) const 
+{
 	return t - (1 - exp(- t * gamma_x)) / gamma_x - (1 - exp(- t * gamma_y)) / gamma_y + 
 		(1 - exp( - t * (gamma_x + gamma_y))) / (gamma_x + gamma_y);
 }
 
 double MROU::k(
-	const double t 								// In: Prediction time t = t_k+1 - t_k	
-	) const {
+	const double t 								// In: Prediction time
+	) const 
+{
 	return exp(- 2 * t) * pow(1 - exp(t), 2);
 }
 
@@ -110,26 +115,29 @@ double MROU::k(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void MROU::predict_state(
-	Eigen::Vector4d& xs, 						// In/out:  State to be predicted
-	const Eigen::Vector2d& v, 					// In: 		Typical mean velocity for the process
-	const double t								// In: 		Prediction time t = t_k+1 - t_k	
-	){
-
-	Eigen::Matrix<double, 4, 4> Phi;
+Eigen::Vector4d MROU::predict_state(
+	const Eigen::Vector4d& xs_old, 				// In: Old state
+	const Eigen::Vector2d& v, 					// In: Typical mean velocity for the process at the current time
+	const double t								// In: Prediction time t	
+	)
+{
+	Eigen::Vector4d xs;
+	Eigen::Matrix4d Phi;
 	Eigen::Matrix<double, 4, 2> Psi;
 
-	Phi <<  1, 0, (1 - exp( - t * gamma_x)) / gamma_x, 0,
-			0, 1, 0, (1 - exp( - t * gamma_y)) / gamma_y,
-			0, 0, exp( - t * gamma_x), 0,
-			0, 0, 0, exp( - t * gamma_y);
+	Phi <<  1, 0, (1 - exp( - t * gamma_x)) / gamma_x, 				0,
+			0, 1, 				0, 						(1 - exp( - t * gamma_y)) / gamma_y,
+			0, 0, 		exp( - t * gamma_x), 						0,
+			0, 0, 				0, 							exp( - t * gamma_y);
 
-	Psi <<  t - (1 - exp( - t * gamma_x)) / gamma_x, 0,
-			0, t - (1 - exp( - t * gamma_y)) / gamma_y, 
-			- exp( - t * gamma_x), 0,
-			0, - exp( - t * gamma_y);
+	Psi <<  t - (1 - exp( - t * gamma_x)) / gamma_x, 					0,
+						0, 								t - (1 - exp( - t * gamma_y)) / gamma_y, 
+			1 - exp( - t * gamma_x), 									0,
+						0,  								1 - exp( - t * gamma_y);
 
-	xs = Phi * xs + Psi * v;
+	xs = Phi * xs_old + Psi * v;
+
+	return xs;
 }
 
 /****************************************************************************************
@@ -139,11 +147,12 @@ void MROU::predict_state(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void MROU::predict_covariance(
-	Eigen::Matrix<double, 4, 4>& P, 						// In/out: Covariance to be predicted
-	const double t 								// In: 	   Prediction time t = t_k+1 - t_k
-	){
-	Eigen::Matrix<double, 4, 4> Sigma_2;
+Eigen::Matrix4d MROU::predict_covariance(
+	const Eigen::Matrix<double, 4, 4> &P_old, 	// In: Old covariance
+	const double t 								// In: Prediction time
+	)
+{
+	Eigen::Matrix4d P, Sigma_2;
 	Sigma_2 << f(t * gamma_x), h(t), k(t * gamma_x), g(gamma_y * t / 2) / gamma_y - g((gamma_x + gamma_y) * t / 2) / (gamma_x + gamma_y), 
 
 				h(t), f(t * gamma_y), g(gamma_x * t / 2) / gamma_x - g((gamma_x + gamma_y) * t / 2) / (gamma_x + gamma_y), k(t * gamma_y), 
@@ -152,6 +161,7 @@ void MROU::predict_covariance(
 
 				g(gamma_y * t / 2) / gamma_y - g((gamma_x + gamma_y) * t / 2) / (gamma_x + gamma_y), k(t * gamma_y), g((gamma_x + gamma_y) * t / 2), g(t * gamma_y);
 
+	P = P_old + Sigma_1.cwiseProduct(Sigma_2); 
 
-	P = P + Sigma_1.cwiseProduct(Sigma_2); 
+	return P;
 }

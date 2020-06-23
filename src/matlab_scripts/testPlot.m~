@@ -1,7 +1,0 @@
-figure; axis equal
-th = 0 : 0.01 : 2.01 * pi;
-x_a = 20 * cos(th); y_a = 20 * sin(t
-hold on; grid on;
-plot(X(2, :), X(1, :), 'k');
-plot(WPs(2, :), WPs(1, :), 'rx', 'Linewidth', 1.2);
-legend('OS', 'WPs');

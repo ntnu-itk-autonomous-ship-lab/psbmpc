@@ -1,0 +1,12 @@
+[~, n_samples] = size(P_traj);
+
+figure; axis equal
+th = 0 : 0.01 : 2.01 * pi;
+x_a = 20 * cos(th); y_a = 20 * sin(th);
+hold on; grid on;
+plot(X(2, :), X(1, :), 'k');
+for k = 1 : 10 : n_samples
+    ell = create_probability_contour(reshape(P_flat, 4, 4));
+    plot(ell(1, :) + X(2, 
+end
+legend('mrou');

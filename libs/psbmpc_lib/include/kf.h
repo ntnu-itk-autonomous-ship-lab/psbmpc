@@ -55,7 +55,7 @@ public:
 
   Eigen::MatrixXd get_covariance() const { return P_upd; };
 
-  void reset(const Eigen::Vector4d& xs_0, const Eigen::Matrix4d& P_0, const double t_0);
+  void reset(const Eigen::Vector4d &xs_0, const Eigen::Matrix4d &P_0, const double t_0);
 
   void predict(const double dt);
 
