@@ -103,8 +103,6 @@ Ownship::Ownship()
 		
 	//Motion limits
 	r_max = 0.34 * DEG2RAD; // [rad/s] default max yaw rate
-	psi_rf = 0.7; // 1.0 means psi_d must be fully achieved before adapting
-
 }
 
 /****************************************************************************************
@@ -124,8 +122,7 @@ Eigen::VectorXd Ownship::predict(
 	Eigen::Vector3d eta, nu;
 	eta(0) = xs_old(0);
 	eta(1) = xs_old(1);
-	eta(2) = Utilities::wrap_angle_to_pmpi(xs_old(2));
-
+	eta(2) = xs_old(2);
 	nu(0) = xs_old(3);
 	nu(1) = xs_old(4);
 	nu(2) = xs_old(5);
@@ -198,7 +195,7 @@ void Ownship::predict_trajectory(
 	wp_counter = 0;
 	int man_count = 0;
 	double u_m = 1, u_d_p = u_d;
-	double chi_m = 0, psi_d_p = psi_d;
+	double chi_c = 0, chi_m = 0, psi_d_p = psi_d;
 	Eigen::Matrix<double, 6, 1> xs = trajectory.block<6, 1>(0, 0);
 	std::cout << "xs = [" << xs(0) << ", " << xs(1) << ", " << xs(2) << ", " << xs(3) << ", " << xs(4) << ", " << xs(5) << "]" << std::endl;
 
@@ -207,12 +204,13 @@ void Ownship::predict_trajectory(
 		if (k == maneuver_times[man_count]){
 			u_m = offset_sequence[2 * man_count];
 			chi_m = offset_sequence[2 * man_count + 1]; 
-			if (man_count + 1 != maneuver_times.size()) man_count += 1;
+			if (man_count < maneuver_times.size() - 1) man_count += 1;
 		}  
 
 		update_guidance_references(u_d_p, psi_d_p, waypoints, xs, k, dt, guidance_method);
+		chi_c = chi_m + psi_d_p;
 
-		update_ctrl_input(u_m * u_d_p, chi_m + psi_d_p, xs);
+		update_ctrl_input(u_m * u_d_p, chi_c, xs);
 
 		xs = predict(xs, dt, prediction_method);
 		
@@ -270,7 +268,7 @@ inline void Ownship::update_Dvv(
 
 /****************************************************************************************
 *  Name     : update_guidance_references 
-*  Function : Using LOS guidance
+*  Function : 
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -285,36 +283,53 @@ void Ownship::update_guidance_references(
 	)
 {
 	int n_wps = waypoints.cols();
-	double alpha, e;
-
-	// Check if last WP segment is passed. If so, hold the current heading/course
-	if (wp_counter == n_wps - 1)
-	{
-		psi_d = xs(2); 
-		return;
-	}
-
-	// Determine if a switch must be made to the next waypoint segment
+	double alpha, e, s;
 	Eigen::Vector2d d_next_wp;
-	d_next_wp(0) = waypoints(0, wp_counter + 1) - xs(0);
-	d_next_wp(1) = waypoints(1, wp_counter + 1) - xs(1);
-	if (d_next_wp.norm() <= R_a)
+
+	
+	if (wp_counter < n_wps - 1 && (guidance_method == LOS || guidance_method == WPP))
 	{
-		e_int = 0;
-		wp_counter += 1;
-	} 
+		// Determine if a switch must be made to the next waypoint segment, for LOS and WPP
+		d_next_wp(0) = waypoints(0, wp_counter + 1) - xs(0);
+		d_next_wp(1) = waypoints(1, wp_counter + 1) - xs(1);
+
+		alpha = atan2(waypoints(1, wp_counter + 1) - waypoints(1, wp_counter), 
+					waypoints(0, wp_counter + 1) - waypoints(0, wp_counter));
+
+		s =   (xs(0) - waypoints(0, wp_counter + 1)) * cos(alpha) + (xs(1) - waypoints(1, wp_counter + 1)) * sin(alpha);
+		e = - (xs(0) - waypoints(0, wp_counter + 1)) * sin(alpha) + (xs(1) - waypoints(1, wp_counter + 1)) * cos(alpha);
+		// Positive along-track error with respect to the furthest waypoint in the active segment (for cross-track
+		// this does not matter) means the segment is passed by, not neccessarily within R_a, which can be the case 
+		// when using avoidance maneuvers
+
+		if (d_next_wp.norm() <= R_a || (s > R_a && e <= R_a))
+		{
+			e_int = 0;
+			if (wp_counter < n_wps - 1)	wp_counter += 1;
+		} 
+	}
 
 	switch (guidance_method)
 	{
 		case LOS : 
 		{
 			// Compute path tangential angle
-			alpha = atan2(waypoints(1, wp_counter + 1) - waypoints(1, wp_counter), 
-						  waypoints(0, wp_counter + 1) - waypoints(0, wp_counter));
-
-			//s =   (xs(0) - waypoints(0, wp_counter)) * cos(alpha) + (xs(1) - waypoints(1, wp_counter)) * sin(alpha);
+			if (wp_counter == n_wps - 1)
+			{
+				alpha = atan2(waypoints(1, wp_counter) - waypoints(1, wp_counter - 1), 
+							waypoints(0, wp_counter) - waypoints(0, wp_counter - 1));
+			}
+			else
+			{
+				alpha = atan2(waypoints(1, wp_counter + 1) - waypoints(1, wp_counter), 
+							waypoints(0, wp_counter + 1) - waypoints(0, wp_counter));
+			}
+			if (alpha < 0)
+			{
+				std::cout << alpha << std::endl;
+			}
+			// Compute cross track error and integrate it
 			e = - (xs(0) - waypoints(0, wp_counter)) * sin(alpha) + (xs(1) - waypoints(1, wp_counter)) * cos(alpha);
-
 			e_int += e * dt;
 			if (e_int >= e_int_max) e_int -= e * dt;
 
@@ -323,9 +338,20 @@ void Ownship::update_guidance_references(
 		}
 		case WPP :
 		{
-			d_next_wp(0) = waypoints(0, wp_counter + 1) - xs(0);
-			d_next_wp(1) = waypoints(1, wp_counter + 1) - xs(1);
-			psi_d = atan2(d_next_wp(1), d_next_wp(0));
+			// Note that the WPP method will make the own-ship drive in roundabouts
+			// around and towards the last waypoint, unless some LOS-element such 
+			// as cross-track error and path tangential angle is used
+			if (wp_counter == n_wps - 1)
+			{
+				d_next_wp(0) = waypoints(0, wp_counter) - xs(0);
+				d_next_wp(1) = waypoints(1, wp_counter) - xs(1);
+			}
+			else
+			{
+				d_next_wp(0) = waypoints(0, wp_counter + 1) - xs(0);
+				d_next_wp(1) = waypoints(1, wp_counter + 1) - xs(1);
+			}
+			psi_d = atan2(d_next_wp(1), d_next_wp(0));	
 			break;
 		}
 		case CH :
@@ -338,7 +364,6 @@ void Ownship::update_guidance_references(
 			std::cout << "This guidance method does not exist or is not implemented" << std::endl;
 		}
 	}
-	psi_d = Utilities::wrap_angle_to_pmpi(psi_d);
 }
 
 /****************************************************************************************
@@ -357,8 +382,9 @@ void Ownship::update_ctrl_input(
 	update_Dvv(xs.block<3, 1>(3, 0));
 
 	double Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
-
-	double Fy = (Kp_psi * I_z ) * ((psi_d - xs(2)) - Kd_psi * xs(5));
+	
+	double psi_diff = Utilities::angle_difference_pmpi(psi_d, xs(2));
+	double Fy = (Kp_psi * I_z ) * (psi_diff - Kd_psi * xs(5));
     Fy *= 1.0 / l_r;
 
 	// Saturate
