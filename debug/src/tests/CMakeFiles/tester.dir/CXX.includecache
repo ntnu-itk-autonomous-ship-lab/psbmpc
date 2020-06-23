@@ -10,6 +10,12 @@
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
 
+../libs/psbmpc_lib/include/utilities.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+iostream
+../libs/psbmpc_lib/include/iostream
+
 ../libs/third_party_libs/Eigen/Cholesky
 Core
 ../libs/third_party_libs/Eigen/Core
@@ -1067,6 +1073,8 @@ lapacke_mangling.h
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
 /home/trymte/Desktop/cybercolav_cxx/src/tests/test_kf.cpp
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/utilities.h
 kf.h
 /home/trymte/Desktop/cybercolav_cxx/src/tests/kf.h
 iostream

@@ -3,6 +3,7 @@
 
 src/tests/CMakeFiles/tester.dir/test_kf.cpp.o
  ../libs/psbmpc_lib/include/kf.h
+ ../libs/psbmpc_lib/include/utilities.h
  ../libs/third_party_libs/Eigen/Cholesky
  ../libs/third_party_libs/Eigen/Core
  ../libs/third_party_libs/Eigen/Dense
