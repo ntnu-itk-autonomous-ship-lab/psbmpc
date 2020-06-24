@@ -45,6 +45,7 @@ PSBMPC::PSBMPC(){
 
 	ownship = new Ownship();
 
+	cpe = new CPE();
 }
 
 /****************************************************************************************
@@ -55,6 +56,7 @@ PSBMPC::PSBMPC(){
 *****************************************************************************************/
 PSBMPC::~PSBMPC(){
 	delete ownship;
+	delete cpe;
 }
 
 /****************************************************************************************
@@ -247,26 +249,27 @@ void PSBMPC::set_par(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::calculate_optimal_offsets(									
-	double &u_opt, 															// Out: Optimal surge offset
-	double &chi_opt, 														// Out: Optimal course offset
-	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// Out: Predicted optimal ownship trajectory
-	Eigen::Matrix<double,-1,-1> &obstacle_status,							// Out: Status on obstacles
-	Eigen::Matrix<double,-1, 1> &colav_status,								// Out: status on the COLAV system
+	double &u_opt, 															// In/out: Optimal surge offset
+	double &chi_opt, 														// In/out: Optimal course offset
+	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
+	Eigen::Matrix<double,-1,-1> &obstacle_status,							// In/out: Status on obstacles
+	Eigen::Matrix<double,-1, 1> &colav_status,								// In/out: status on the COLAV system
 	const double u_d, 														// In: Surge reference
 	const double psi_d, 													// In: Heading reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
 	const Eigen::Matrix<double, 9, -1> &obstacle_states, 					// In: Dynamic obstacle states 
-	const std::vector<Eigen::Matrix<double, 4, 4>> &obstacle_covariances, 	// In: Dynamic obstacle covariances
+	const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 				// In: Dynamic obstacle covariances
+	const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities,  // In: Intention probabilitiy information for the obstacles
 	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
 	)
 {
-	Eigen::VectorXd id_0, rb_0, d_0i, COG_0, SOG_0, CF_0, HL_0;
-
 	trajectory.col(0) = ownship_state;
-	update_obstacles(obstacle_states, obstacle_covariances);
+	update_obstacles(obstacle_states, obstacle_covariances, obstacle_intention_probabilities);
 	int n_obst = new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
+
+	Eigen::VectorXd ID_0(n_obst), rb_0(n_obst), d_0i(n_obst), COG_0(n_obst), SOG_0(n_obst), CF_0(n_obst), HL_0(n_obst); 
 
 	bool colav_active = determine_colav_active(ownship_state, n_static_obst);
 	if (!colav_active)
@@ -278,25 +281,29 @@ void PSBMPC::calculate_optimal_offsets(
 	
 	update_transitional_variables(ownship_state);
 
-	initialize_predictions();
+	initialize_prediction();
 
 	for (int i = 0; i < n_obst; i++)
 	{
 		new_obstacles[i]->predict_independent_trajectories(T, dt);
 	}
 
-	double cost, cost_i, min_cost;
+	double cost = 1e10, cost_i = 1e10;
 	Eigen::VectorXd opt_offset_sequence;
-	min_cost = 1e10;
-
 	Eigen::MatrixXd P_c_i;
 
 	reset_control_behavior();
 	for (int cb = 0; cb < n_cbs; cb++)
 	{
-		// Predict own-ship trajectory jointly with dependent obstacle trajectories
+		ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, psi_d, waypoints, prediction_method, guidance_method, T, dt);
+
 		for (int i = 0; i < n_obst; i++)
 		{
+			if (obstacle_colav_on)
+			{
+				predict_trajectories_jointly();
+			}
+			
 			// Calculate collision probabilities
 			calculate_collision_probabilities(P_c_i); 
 
@@ -304,7 +311,8 @@ void PSBMPC::calculate_optimal_offsets(
 			cost_i = calculate_total_cost(P_c_i, static_obstacles.col(i));
 		}
 		
-		if (cost < min_cost) {
+		if (cost < min_cost) 
+		{
 			min_cost = cost;
 			opt_offset_sequence = offset_sequence;
 		}
@@ -314,14 +322,17 @@ void PSBMPC::calculate_optimal_offsets(
 
 	obstacle_status.resize(13, n_obst);
 	for(int i=0; i < n_obst; i++){
-		obstacle_status.col(i) << id_0(i), SOG_0(i), COG_0(i) * RAD2DEG, rb_0(i) * RAD2DEG, d_0i(i), HL_0(i), IP_0(i), AH_0(i), S_TC_0(i), H_TC_0(i), X_TC_0(i), Q_TC_0(i), O_TC_0(i);
+		obstacle_status.col(i) << ID_0(i), SOG_0(i), COG_0(i) * RAD2DEG, rb_0(i) * RAD2DEG, d_0i(i), HL_0(i), 
+								  IP_0(i), AH_0(i), S_TC_0(i), H_TC_0(i), X_TC_0(i), Q_TC_0(i), O_TC_0(i);
 	}
 
 	colav_status.resize(2,1);
-	colav_status << CF_0, cost;
+	colav_status << CF_0, min_cost;
 
-	u_opt = offset_sequence(0);
-	chi_opt = offset_sequence(1);
+	u_opt = offset_sequence(0); 	u_m_last = u_opt;
+	chi_opt = offset_sequence(1); 	chi_m_last = chi_opt;	
+	
+	
 }
 
 
@@ -379,6 +390,7 @@ void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 2;
+	n_a = 3; // KCC, SM, PM
 
 	offset_sequence_counter.resize(2 * n_M);
 	offset_sequence.resize(2 * n_M);
@@ -449,7 +461,7 @@ void PSBMPC::initialize_pars()
 	T_lost_limit = 15.0; 	// 15.0 s obstacle no longer relevant after this time
 	T_tracked_limit = 15.0; // 15.0 s obstacle still relevant if tracked for so long, choice depends on survival rate
 
-	cost = 1e12;
+	min_cost = 1e10;
 }
 
 /****************************************************************************************
@@ -459,9 +471,30 @@ void PSBMPC::initialize_pars()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::initialize_predictions()
+void PSBMPC::initialize_prediction()
 {
-
+	int n_obst = new_obstacles.size();
+	std::vector<Intention> ps_ordering_i;
+	Eigen::VectorXd ps_weights_i;
+	Eigen::MatrixXd maneuver_times_i;
+	for (int i = 0; i < n_obst; i++)
+	{
+		// If only one intention, then only one prediction scenario
+		if (n_a == 1)
+		{
+			ps_ordering_i.resize(1);
+			ps_ordering_i[0] = KCC;
+			ps_weights_i.resize(1);
+			ps_weights_i(0)= 1;
+			maneuver_times_i.resize(1, 1);
+			maneuver_times_i(0, 0) = 0;
+		}
+		else
+		{
+			
+		}
+		
+	}
 }
 
 /****************************************************************************************
@@ -1083,7 +1116,7 @@ double PSBMPC::calculate_grounding_cost(
 	const Eigen::Matrix<double, 4, -1>& static_obstacles						// In: Static obstacle information
 	)
 {
-	double cost;
+	double cost = 0;
 
 	return cost;
 }
@@ -1237,13 +1270,14 @@ double PSBMPC::distance_to_static_obstacle(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::update_obstacles(
-	const Eigen::Matrix<double,-1,9>& obstacle_states, 								// In: Dynamic obstacle states 
-	const std::vector<Eigen::Matrix<double, 4, 4>> &obstacle_covariances 			// In: Dynamic obstacle covariances
+	const Eigen::Matrix<double, 9, -1>& obstacle_states, 								// In: Dynamic obstacle states 
+	const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
+	const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities 				// In: Obstacle intention probability information
 	) 			
 {
-
 	int n_obst_old = old_obstacles.size();
 	int n_obst_new = obstacle_states.rows();
+	int n_a = obstacle_intention_probabilities.rows();
 
 	bool obstacle_exist;
 	for (int i = 0; i < n_obst_new; i++)
@@ -1262,7 +1296,14 @@ void PSBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			Obstacle *obstacle = new Obstacle(obstacle_states.col(i), obstacle_covariances[i], obstacle_filter_on, obstacle_colav_on, T, dt);
+			Obstacle *obstacle = new Obstacle(
+				obstacle_states.col(i), 
+				Utilities::reshape(obstacle_covariances.col(i), 4, 4),
+				obstacle_intention_probabilities.col(i), 
+				obstacle_filter_on, 
+				obstacle_colav_on, 
+				T, 
+				dt);
 			new_obstacles.push_back(obstacle);
 		}
 	}
@@ -1276,8 +1317,8 @@ void PSBMPC::update_obstacles(
 		{
 			old_obstacles[j]->increment_duration_lost(dt * p_step);
 
-			if (old_obstacles[j]->get_duration_tracked() >= T_tracked_limit &&
-				(old_obstacles[j]->get_duration_lost() < T_lost_limit || old_obstacles[j]->kf->get_covariance()(0,0) <= 5.0))
+			if (	old_obstacles[j]->get_duration_tracked() >= T_tracked_limit 	&&
+					(old_obstacles[j]->get_duration_lost() < T_lost_limit || old_obstacles[j]->kf->get_covariance()(0,0) <= 5.0))
 			{
 				new_obstacles.push_back(old_obstacles[j]);
 			}

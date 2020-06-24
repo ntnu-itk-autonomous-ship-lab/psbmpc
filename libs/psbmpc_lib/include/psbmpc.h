@@ -45,16 +45,16 @@ class PSBMPC
 {
 private:
 
-	int n_cbs, n_M;
+	int n_cbs, n_M, n_a;
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
 
-	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times, n_ps, course_changes;
+	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times, course_changes;
 
 	double u_m_last;
 	double chi_m_last;
 
-	double cost;
+	double min_cost;
 
 	Eigen::VectorXd dpar_low, dpar_high;
 	Eigen::VectorXd ipar_low, ipar_high;
@@ -82,6 +82,8 @@ private:
 
 	Ownship *ownship;
 
+	CPE *cpe;
+
 	Eigen::Matrix<double, 6, -1> trajectory;
 
 	// Transitional indicator variables at the current time
@@ -89,7 +91,7 @@ private:
 
 	// Situation type variables at the current time
 	ST ST_0;
-	Eigen::Matrix<ST, -1, 1> ST_i_0;
+	std::vector<ST> ST_i_0;
 
 	std::vector<Obstacle*> old_obstacles;
 	std::vector<Obstacle*> new_obstacles;
@@ -98,7 +100,7 @@ private:
 
 	void initialize_pars();
 
-	void initialize_predictions();
+	void initialize_prediction();
 
 	void reset_control_behavior();
 
@@ -188,7 +190,10 @@ private:
     double distance_to_static_obstacle(const Eigen::Vector2d p, const Eigen::Vector2d v_1, const Eigen::Vector2d v_2);
 
 
-    void update_obstacles(const Eigen::Matrix<double,-1,9>& obstacle_states, const std::vector<Eigen::Matrix<double, 4, 4>> &obstacle_covariances);
+    void update_obstacles(
+		const Eigen::Matrix<double, 9, -1>& obstacle_states, 
+		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
+		const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities);
 
 public:
 
@@ -226,6 +231,10 @@ public:
 
 	void toggle_obstacle_filter(const bool value) { obstacle_filter_on = value; };
 
+	bool get_obstacle_colav_status() const { return obstacle_colav_on; };
+
+	void toggle_obstacle_colav(const bool value) { obstacle_colav_on = value; };
+
 	void calculate_optimal_offsets(
 		double &u_opt, 
 		double &psi_opt, 
@@ -237,7 +246,8 @@ public:
 		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::VectorXd &ownship_state,
 		const Eigen::Matrix<double, 9, -1> &obstacle_states, 
-		const std::vector<Eigen::Matrix<double, 4, 4>> &obstacle_covariances,
+		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
+		const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities,
 		const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
 };

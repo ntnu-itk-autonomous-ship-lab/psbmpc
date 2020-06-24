@@ -156,15 +156,13 @@ namespace Utilities
 
 	/****************************************************************************************
 	*  Name     : reshape
-	*  Function : Reshapes a matrix of size n_rows * n_cols x 1 to n_rows x n_cols 
+	*  Function : Reshapes a vector of size n_rows * n_cols x 1 to  a matrix of 
+	*			  n_rows x n_cols 
 	*  Author   :
 	*  Modified :
 	*****************************************************************************************/
-	inline Eigen::MatrixXd reshape(const Eigen::MatrixXd& in)
+	inline Eigen::MatrixXd reshape(const Eigen::MatrixXd& in, const double n_rows, const double n_cols)
 	{
-		int n_rows = in.rows();
-		int n_cols = in.cols();
-
 		Eigen::MatrixXd out;
 		out.resize(n_rows, n_cols);
 		int count = 0;
