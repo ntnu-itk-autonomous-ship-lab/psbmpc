@@ -34,7 +34,8 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-PSBMPC::PSBMPC(){
+PSBMPC::PSBMPC()
+{
 
 	// Initialize parameters before parameter limits, as some limits depend on the
 	// parameter values set.
@@ -54,7 +55,8 @@ PSBMPC::PSBMPC(){
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-PSBMPC::~PSBMPC(){
+PSBMPC::~PSBMPC()
+{
 	delete ownship;
 	delete cpe;
 }
@@ -271,7 +273,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	Eigen::VectorXd ID_0(n_obst), rb_0(n_obst), d_0i(n_obst), COG_0(n_obst), SOG_0(n_obst), CF_0(n_obst), HL_0(n_obst); 
 
-	bool colav_active = determine_colav_active(ownship_state, n_static_obst);
+	bool colav_active = determine_colav_active(n_static_obst);
 	if (!colav_active)
 	{
 		u_opt = 1; 		u_m_last = u_opt;
@@ -279,7 +281,7 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 	
-	update_transitional_variables(ownship_state);
+	update_transitional_variables();
 
 	initialize_prediction();
 
@@ -321,7 +323,8 @@ void PSBMPC::calculate_optimal_offsets(
 	}
 
 	obstacle_status.resize(13, n_obst);
-	for(int i=0; i < n_obst; i++){
+	for(int i=0; i < n_obst; i++)
+	{
 		obstacle_status.col(i) << ID_0(i), SOG_0(i), COG_0(i) * RAD2DEG, rb_0(i) * RAD2DEG, d_0i(i), HL_0(i), 
 								  IP_0(i), AH_0(i), S_TC_0(i), H_TC_0(i), X_TC_0(i), Q_TC_0(i), O_TC_0(i);
 	}
@@ -423,6 +426,9 @@ void PSBMPC::initialize_pars()
 	u_m_last = 1;
 	chi_m_last = 0;
 
+	course_changes.resize(3);
+	course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
+
 	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
@@ -475,8 +481,13 @@ void PSBMPC::initialize_prediction()
 {
 	int n_obst = new_obstacles.size();
 	std::vector<Intention> ps_ordering_i;
+	Eigen::VectorXd ps_course_changes_i;
 	Eigen::VectorXd ps_weights_i;
-	Eigen::MatrixXd maneuver_times_i;
+	Eigen::VectorXd maneuver_times_i;
+	double t_cpa, d_cpa;
+	Eigen::Vector2d p_cpa;
+
+	int n_turns, spacing = std::round(t_ts / dt), turn_count;
 	for (int i = 0; i < n_obst; i++)
 	{
 		// If only one intention, then only one prediction scenario
@@ -484,16 +495,75 @@ void PSBMPC::initialize_prediction()
 		{
 			ps_ordering_i.resize(1);
 			ps_ordering_i[0] = KCC;
+			ps_course_changes_i.resize(1);
+			ps_course_changes_i[0] = 0;
 			ps_weights_i.resize(1);
 			ps_weights_i(0)= 1;
-			maneuver_times_i.resize(1, 1);
-			maneuver_times_i(0, 0) = 0;
+			maneuver_times_i.resize(1);
+			maneuver_times_i(0) = 0;
 		}
 		else
 		{
+			calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(0), new_obstacles[i]->kf->get_state());
 			
+			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
+			turn_count = 0;
+			if (d_cpa > d_safe || (d_cpa <= d_safe && t_cpa > t_ts)) // No predicted collision inside time horizon
+			{
+				n_turns = std::floor(T / spacing);
+			} 
+			else 				// Safety zone violation at CPA inside prediction horizon, as d_cpa <= d_safe
+			{
+				if (t_cpa > t_ts) // Space evenly until t_cpa
+				{
+					n_turns = std::round(t_cpa / spacing);
+				}
+				else			// No time to react=> only one maneuver
+				{
+					n_turns = 1;
+				}	
+			}
+			for (int t = 0; t < n_turns; t++)
+			{
+				maneuver_times_i(t) = turn_count * (spacing);
+				turn_count++;
+			}
+
+			// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
+			switch(ST_i_0[i])
+			{
+				case A :
+				{
+
+				}
+				case B :
+				{
+					
+				}
+				case C :
+				{
+					
+				}
+				case D :
+				{
+					
+				}
+				case E :
+				{
+					
+				}
+				case F :
+				{
+					
+				}
+				default :
+				{
+					std::cout << "This situation type does not exist" << std::endl;
+				}
+			}
+				
 		}
-		
+		new_obstacles[i]->initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, maneuver_times_i);
 	}
 }
 
@@ -568,6 +638,45 @@ void PSBMPC::predict_trajectories_jointly()
 }
 
 /****************************************************************************************
+*  Name     : calculate_cpa
+*  Function : Calculates time, distance (vector) and position (vector) at the Closest 
+*			  Point of Approach between vessel A and B
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::calculate_cpa(
+	Eigen::Vector2d &p_cpa, 												// In/out: Position of vessel A at CPA
+	double &t_cpa, 															// In/out: Time to CPA
+	double &d_cpa, 															// In/out: Distance at CPA
+	const Eigen::VectorXd &xs_A, 											// In: State of vessel A 
+	const Eigen::VectorXd &xs_B 											// In: State of vessel B
+	)
+{
+	double epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
+	double psi_A, psi_B;
+	Eigen::Vector2d v_A, v_B, p_A, p_B, L_AB;
+	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); Utilities::rotate_vector_2D(v_A, psi_A); }
+	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); p_A(0) = xs_A(0); p_A(1) = xs_A(1); }
+	
+	if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); Utilities::rotate_vector_2D(v_B, psi_B); }
+	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); p_B(0) = xs_B(0); p_B(1) = xs_B(1);}
+
+	if ((v_A - v_B).norm() > epsilon)
+	{
+		t_cpa = - (p_A - p_B).dot(v_A - v_B) / pow((v_A - v_B).norm(), 2);
+		p_cpa = p_A + v_A * t_cpa;
+		d_cpa = (p_cpa - (p_B + v_B * t_cpa)).norm();
+	}
+	else
+	{
+		t_cpa = 0;
+		p_cpa = p_A;
+		d_cpa = (p_A - p_B).norm();
+	}
+}
+
+
+/****************************************************************************************
 *  Name     : determine_colav_active
 *  Function : Uses the freshly updated new_obstacles vector and the number of static 
 *			  obstacles to determine whether it is necessary to run the PSBMPC
@@ -575,10 +684,10 @@ void PSBMPC::predict_trajectories_jointly()
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_colav_active(
-	const Eigen::Matrix<double, 6, 1> xs, 									// In: Ownship state
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
+	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
 	for (int i = 0; i < new_obstacles.size(); i++)
@@ -905,10 +1014,9 @@ bool PSBMPC::determine_transitional_cost_indicator(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::update_transitional_variables(
-	const Eigen::Matrix<double, 6, 1>& xs 									// In: Ownship state
-	)
+void PSBMPC::update_transitional_variables()
 {
+	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
 	bool is_close;
 
 	Eigen::Vector2d v_A, v_B, L_AB;
