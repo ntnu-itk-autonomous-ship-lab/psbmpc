@@ -108,13 +108,6 @@ private:
 
 	void predict_trajectories_jointly();
 
-	void calculate_cpa(
-		Eigen::Vector2d &p_cpa, 
-		double &t_cpa, 
-		double &d_cpa, 
-		const Eigen::VectorXd &xs_A, 
-		const Eigen::VectorXd &xs_B);
-
 	bool determine_colav_active(const int n_static_obst);
 
 	void determine_situation_type(

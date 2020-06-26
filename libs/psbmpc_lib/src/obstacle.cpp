@@ -119,21 +119,20 @@ void Obstacle::resize_trajectories(const int n_samples)
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-
 void Obstacle::initialize_independent_prediction(
-	const std::vector<Intention> &ps_ordering, 					// In: Prediction scenario ordering
-	const Eigen::VectorXd &ps_course_change_ordering, 			// In: Order of alternative maneuvers for the prediction scenarios
-	const Eigen::VectorXd &ps_weights,	 						// In: The different course changes employed in the prediction scenarios
-	const Eigen::VectorXd &maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios
+	const std::vector<Intention> &ps_ordering, 						// In: Prediction scenario ordering
+	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
+	const Eigen::VectorXd &ps_weights,	 							// In: The different course changes employed in the prediction scenarios
+	const Eigen::VectorXd &ps_maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios	
 	)
 {
 	this->ps_ordering = ps_ordering;
 	
-	this->ps_course_change_ordering = ps_course_change_ordering;
+	this->ps_course_changes = ps_course_changes;
 
 	this->ps_weights = ps_weights;
 
-	this->maneuver_times = maneuver_times;
+	this->ps_maneuver_times = ps_maneuver_times;
 }
 
 /****************************************************************************************
@@ -145,7 +144,8 @@ void Obstacle::initialize_independent_prediction(
 *****************************************************************************************/
 void Obstacle::predict_independent_trajectories(						
 	const double T, 											// In: Time horizon
-	const double dt 											// In: Time step
+	const double dt, 											// In: Time step
+	const Eigen::Matrix<double, 6, 1> &ownship_state 			// In: State of own-ship to use for COLREGS penalization calculation
 	)
 {
 	int n_samples = std::round(T / dt);
@@ -154,26 +154,36 @@ void Obstacle::predict_independent_trajectories(
 	int n_ps = ps_ordering.size();
 	mu.resize(n_ps);
 	
+	Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
 	Eigen::Matrix4d P_0 = kf->get_covariance();
-	double t = 0;
+	double chi_ps, t = 0;
+	bool have_turned;
 	for(int ps = 0; ps < n_ps; ps++)
 	{
+		ownship_state_sl = ownship_state;
+
+		v_p[ps](0, 0) = kf->get_state()(2);
+		v_p[ps](1, 0) = kf->get_state()(3);
 		xs_p[ps].col(0) = kf->get_state();
 		P_p[ps].col(0) = Utilities::flatten(P_0);
+		have_turned = false;
 		for(int k = 0; k < n_samples; k++)
 		{
 			t = (k + 1) * dt;
 
+			mu[ps] = determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl.col(k));
 			switch (ps_ordering[ps])
 			{
 				case KCC :	// Proceed
-				case SM :
+				case SM || PM:
 				{
-
-				}
-				case PM :
-				{
-					
+					if (k == ps_maneuver_times[ps] && !have_turned)
+					{
+						chi_ps = atan2(v_p[ps](1, 0), v_p[ps](0, 0)); 
+						v_p[ps](0, k) = v_p[ps].col(k).norm() * cos(chi_ps + ps_course_changes[ps]);
+						v_p[ps](1, k) = v_p[ps].col(k).norm() * sin(chi_ps + ps_course_changes[ps]);
+						have_turned = true;
+					}
 				}
 				default :
 				{
@@ -185,6 +195,12 @@ void Obstacle::predict_independent_trajectories(
 			{
 				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p[ps].col(k), dt);
 				P_p[ps].col(k + 1) = mrou->predict_covariance(P_0, t);
+				v_p[ps].col(k + 1) = v_p[ps].col(k);
+
+				// Propagate ownship assuming straight line trajectory
+				ownship_state_sl.block<2, 1>(0, k + 1) =  ownship_state_sl.block<2, 1>(0, k) + 
+					dt * Utilities::rotate_vector_2D(ownship_state_sl.block<2, 1>(3, k), ownship_state_sl(2, k));
+				ownship_state_sl.block<4, 1>(2, k + 1) = ownship_state_sl.block<4, 1>(2, k);
 			}
 			
 		}

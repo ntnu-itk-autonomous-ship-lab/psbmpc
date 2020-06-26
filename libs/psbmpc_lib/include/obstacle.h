@@ -60,7 +60,7 @@ private:
 	std::vector<Intention> ps_ordering;
 
 	// Course change ordering, weights and maneuvering times for the prediction scenarios: n_ps x 1
-	Eigen::VectorXd ps_course_change_ordering, ps_weights, maneuver_times;
+	Eigen::VectorXd ps_course_changes, ps_weights, ps_maneuver_times;
 
 	// Predicted obstacle trajectory and covariance when it is behaving intelligently
 	Eigen::MatrixXd xs_colav_p, P_colav_p;
@@ -116,9 +116,9 @@ public:
 		const std::vector<Intention> &ps_ordering,
 		const Eigen::VectorXd &ps_course_change_ordering,
 		const Eigen::VectorXd &ps_weights,
-		const Eigen::VectorXd &maneuver_times);
+		const Eigen::VectorXd &ps_maneuver_times);
 
-	void predict_independent_trajectories(const double T, const double dt);
+	void predict_independent_trajectories(const double T, const double dt, const Eigen::Matrix<double, 6, 1> &ownship_state);
 
 	void set_dependent_trajectory(const Eigen::MatrixXd &xs_colav_p, const Eigen::MatrixXd &P_colav_p) { this->xs_colav_p = xs_colav_p; this->P_colav_p = P_colav_p; };
 
