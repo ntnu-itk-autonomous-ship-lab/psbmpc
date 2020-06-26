@@ -287,7 +287,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	for (int i = 0; i < n_obst; i++)
 	{
-		new_obstacles[i]->predict_independent_trajectories(T, dt);
+		new_obstacles[i]->predict_independent_trajectories(T, dt, trajectory.col(0));
 	}
 
 	double cost = 1e10, cost_i = 1e10;
@@ -483,7 +483,7 @@ void PSBMPC::initialize_prediction()
 	std::vector<Intention> ps_ordering_i;
 	Eigen::VectorXd ps_course_changes_i;
 	Eigen::VectorXd ps_weights_i;
-	Eigen::VectorXd maneuver_times_i;
+	Eigen::VectorXd ps_maneuver_times_i;
 	double t_cpa, d_cpa;
 	Eigen::Vector2d p_cpa;
 
@@ -499,12 +499,12 @@ void PSBMPC::initialize_prediction()
 			ps_course_changes_i[0] = 0;
 			ps_weights_i.resize(1);
 			ps_weights_i(0)= 1;
-			maneuver_times_i.resize(1);
-			maneuver_times_i(0) = 0;
+			ps_maneuver_times_i.resize(1);
+			ps_maneuver_times_i(0) = 0;
 		}
 		else
 		{
-			calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(0), new_obstacles[i]->kf->get_state());
+			Utilities::calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(0), new_obstacles[i]->kf->get_state());
 			
 			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
 			turn_count = 0;
@@ -525,7 +525,7 @@ void PSBMPC::initialize_prediction()
 			}
 			for (int t = 0; t < n_turns; t++)
 			{
-				maneuver_times_i(t) = turn_count * (spacing);
+				ps_maneuver_times_i(t) = turn_count * (spacing);
 				turn_count++;
 			}
 
@@ -563,7 +563,7 @@ void PSBMPC::initialize_prediction()
 			}
 				
 		}
-		new_obstacles[i]->initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, maneuver_times_i);
+		new_obstacles[i]->initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);
 	}
 }
 
@@ -583,6 +583,7 @@ void PSBMPC::reset_control_behavior()
 		offset_sequence(2 * M + 1) = chi_offsets[M](0);
 	}
 }
+
 /****************************************************************************************
 *  Name     : increment_control_behavior
 *  Function : Increments the control behavior counter and changes the offset sequence 
@@ -624,7 +625,6 @@ void PSBMPC::increment_control_behavior()
 	}
 }
 
-
 /****************************************************************************************
 *  Name     : predict_trajectories_jointly
 *  Function : Predicts the trajectory of the ownship and obstacles with an active COLAV
@@ -636,45 +636,6 @@ void PSBMPC::predict_trajectories_jointly()
 {
 
 }
-
-/****************************************************************************************
-*  Name     : calculate_cpa
-*  Function : Calculates time, distance (vector) and position (vector) at the Closest 
-*			  Point of Approach between vessel A and B
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::calculate_cpa(
-	Eigen::Vector2d &p_cpa, 												// In/out: Position of vessel A at CPA
-	double &t_cpa, 															// In/out: Time to CPA
-	double &d_cpa, 															// In/out: Distance at CPA
-	const Eigen::VectorXd &xs_A, 											// In: State of vessel A 
-	const Eigen::VectorXd &xs_B 											// In: State of vessel B
-	)
-{
-	double epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
-	double psi_A, psi_B;
-	Eigen::Vector2d v_A, v_B, p_A, p_B, L_AB;
-	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); Utilities::rotate_vector_2D(v_A, psi_A); }
-	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); p_A(0) = xs_A(0); p_A(1) = xs_A(1); }
-	
-	if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); Utilities::rotate_vector_2D(v_B, psi_B); }
-	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); p_B(0) = xs_B(0); p_B(1) = xs_B(1);}
-
-	if ((v_A - v_B).norm() > epsilon)
-	{
-		t_cpa = - (p_A - p_B).dot(v_A - v_B) / pow((v_A - v_B).norm(), 2);
-		p_cpa = p_A + v_A * t_cpa;
-		d_cpa = (p_cpa - (p_B + v_B * t_cpa)).norm();
-	}
-	else
-	{
-		t_cpa = 0;
-		p_cpa = p_A;
-		d_cpa = (p_A - p_B).norm();
-	}
-}
-
 
 /****************************************************************************************
 *  Name     : determine_colav_active
@@ -708,11 +669,11 @@ bool PSBMPC::determine_colav_active(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::determine_situation_type(
-	ST& st_A,																// In/Out: Situation type of vessel A
-	ST& st_B,																// In/Out: Situation type of vessel B
+	ST& st_A,																// In/out: Situation type of vessel A
+	ST& st_B,																// In/out: Situation type of vessel B
 	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A 
 	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B (the obstacle)
+	const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double d_AB 														// In: Distance from vessel A to vessel B
@@ -805,9 +766,9 @@ void PSBMPC::determine_situation_type(
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_COLREGS_violation(
-	const Eigen::Vector2d& v_A,												// In: (NE) Velocity vector of vessel A (the ownship)
+	const Eigen::Vector2d& v_A,												// In: (NE) Velocity vector of vessel A
 	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d& v_B, 												// In: (NE) Velocity vector of vessel B (the obstacle)
+	const Eigen::Vector2d& v_B, 											// In: (NE) Velocity vector of vessel B
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double d_AB 														// In: Distance from vessel A to vessel B
@@ -1005,7 +966,6 @@ bool PSBMPC::determine_transitional_cost_indicator(
 
 	return O_TC || Q_TC || X_TC || H_TC;
 }
-
 
 /****************************************************************************************
 *  Name     : update_transitional_variables
@@ -1369,7 +1329,6 @@ double PSBMPC::distance_to_static_obstacle(
     if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line)) return d2line;
     else return std::min((v_1-p).norm(),(v_2-p).norm());
 }
-
 
 /****************************************************************************************
 *  Name     : update_obstacles
