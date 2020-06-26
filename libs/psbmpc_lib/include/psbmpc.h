@@ -108,7 +108,14 @@ private:
 
 	void predict_trajectories_jointly();
 
-	bool determine_colav_active(const Eigen::Matrix<double, 6, 1> xs, const int n_static_obst);
+	void calculate_cpa(
+		Eigen::Vector2d &p_cpa, 
+		double &t_cpa, 
+		double &d_cpa, 
+		const Eigen::VectorXd &xs_A, 
+		const Eigen::VectorXd &xs_B);
+
+	bool determine_colav_active(const int n_static_obst);
 
 	void determine_situation_type(
 		ST& st_A,
@@ -149,7 +156,7 @@ private:
 		const int i,
 		const double chi_m);
 
-	void update_transitional_variables(const Eigen::Matrix<double, 6, 1>& xs);
+	void update_transitional_variables();
 
 	
 	double calculate_total_cost(

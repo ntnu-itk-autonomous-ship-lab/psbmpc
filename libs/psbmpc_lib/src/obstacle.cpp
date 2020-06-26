@@ -148,10 +148,12 @@ void Obstacle::predict_independent_trajectories(
 	const double dt 											// In: Time step
 	)
 {
-	int n_ps = ps_ordering.size();
-	mu.resize(n_ps);
 	int n_samples = std::round(T / dt);
 	resize_trajectories(n_samples);
+
+	int n_ps = ps_ordering.size();
+	mu.resize(n_ps);
+	
 	Eigen::Matrix4d P_0 = kf->get_covariance();
 	double t = 0;
 	for(int ps = 0; ps < n_ps; ps++)
