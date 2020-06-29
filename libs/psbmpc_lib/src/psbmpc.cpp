@@ -294,8 +294,8 @@ void PSBMPC::calculate_optimal_offsets(
 		new_obstacles[i]->predict_independent_trajectories(T, dt, trajectory.col(0), phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
 	}
 
-	double cost = 1e10, cost_i = 1e10;
-	Eigen::VectorXd opt_offset_sequence;
+	double cost = 1e10;
+	Eigen::VectorXd opt_offset_sequence, cost_i;
 	Eigen::MatrixXd P_c_i;
 
 	reset_control_behavior();
@@ -303,9 +303,13 @@ void PSBMPC::calculate_optimal_offsets(
 	{
 		ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, psi_d, waypoints, prediction_method, guidance_method, T, dt);
 
+
+
+		cost = calculate_total_cost(HL_0, static_obstacles);
+
 		for (int i = 0; i < n_obst; i++)
 		{
-			if (obstacle_colav_on)
+			if (obstacle_colav_on[i])
 			{
 				predict_trajectories_jointly();
 			}
@@ -314,29 +318,41 @@ void PSBMPC::calculate_optimal_offsets(
 			calculate_collision_probabilities(P_c_i); 
 
 			// Calculate cost associated with this obstacle
-			cost_i = calculate_total_cost(P_c_i, static_obstacles.col(i));
+			cost_i(i) = calculate_total_cost(P_c_i, static_obstacles.col(i));
 		}
+
+
 		
 		if (cost < min_cost) 
 		{
 			min_cost = cost;
 			opt_offset_sequence = offset_sequence;
 
-			if (prediction_method == ERK1)
+			// Set current optimal x-y position trajectory
+			if (prediction_method > Linear)
 			{
+				int count = 0;
 				predicted_trajectory.resize(2, n_samples / p_step);
-				for (int k = 0; k < std::round(T / dt); k+=p_step){
-					
-
-					trajectory.col(n) = trajectory.col(m);
+				for (int k = 0; k < std::round(T / dt); k+=p_step)
+				{
+					predicted_trajectory.col(count) = trajectory.col(k);
+					if (count < std::round(n_samples / p_step) - 1) count++;					
 				}
+			} 
+			else
+			{
+				predicted_trajectory = trajectory.block(2, n_samples, 0, 0);
 			}
-				
+
+			// Assign current optimal hazard level for each obstacle
+			for (int i = 0; i < n_obst; i++)
+			{
+				HL_0(i) = cost_i(i) / cost_i.sum();
+			}	
 		}
 
 		increment_control_behavior();
 	}
-
 
 	update_obstacle_status(obstacle_status, HL_0);
 
@@ -470,8 +486,13 @@ void PSBMPC::initialize_pars()
 	K_dchi_port = 0.9;	  					// 1.2, 0.9 (cost requires <1)
 	G = 0;		         					 // 1.0e3
 
+
 	obstacle_filter_on = false;
-	obstacle_colav_on = false;
+	obstacle_colav_on.resize(new_obstacles.size());
+	for(int i = 0; i < new_obstacles.size(); i++)
+	{
+		obstacle_colav_on[i] = false;
+	}
 	
 	T_lost_limit = 15.0; 	// 15.0 s obstacle no longer relevant after this time
 	T_tracked_limit = 15.0; // 15.0 s obstacle still relevant if tracked for so long, choice depends on survival rate
@@ -1334,7 +1355,7 @@ void PSBMPC::update_obstacles(
 				Utilities::reshape(obstacle_covariances.col(i), 4, 4),
 				obstacle_intention_probabilities.col(i), 
 				obstacle_filter_on, 
-				obstacle_colav_on, 
+				obstacle_colav_on[i], 
 				T, 
 				dt);
 			new_obstacles.push_back(obstacle);

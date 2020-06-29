@@ -77,7 +77,9 @@ private:
 	double K_sgn, T_sgn;
 	double G;
 	
-	bool obstacle_filter_on, obstacle_colav_on;
+	bool obstacle_filter_on;
+	std::vector<bool> obstacle_colav_on;
+
 	double T_lost_limit, T_tracked_limit;
 
 	Ownship *ownship;
@@ -150,7 +152,8 @@ private:
 
 	void update_transitional_variables();
 
-	
+	double calculate_dynamic_obstacle_cost();
+
 	double calculate_total_cost(
 		const Eigen::MatrixXd& P_c,
 		const Eigen::Matrix<double, 4, 1>& static_obstacle);
