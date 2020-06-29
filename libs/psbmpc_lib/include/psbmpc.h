@@ -194,6 +194,8 @@ private:
 		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
 		const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities);
 
+	void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
+
 public:
 
 	PSBMPC();
