@@ -266,12 +266,14 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
 	)
 {
+	int n_samples = std::round(T / dt);
+
 	trajectory.col(0) = ownship_state;
 	update_obstacles(obstacle_states, obstacle_covariances, obstacle_intention_probabilities);
 	int n_obst = new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
-	Eigen::VectorXd ID_0(n_obst), rb_0(n_obst), d_0i(n_obst), COG_0(n_obst), SOG_0(n_obst), CF_0(n_obst), HL_0(n_obst); 
+	Eigen::VectorXd HL_0(n_obst); 
 
 	bool colav_active = determine_colav_active(n_static_obst);
 	if (!colav_active)
@@ -319,6 +321,17 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			min_cost = cost;
 			opt_offset_sequence = offset_sequence;
+
+			if (prediction_method == ERK1)
+			{
+				predicted_trajectory.resize(2, n_samples / p_step);
+				for (int k = 0; k < std::round(T / dt); k+=p_step){
+					
+
+					trajectory.col(n) = trajectory.col(m);
+				}
+			}
+				
 		}
 
 		increment_control_behavior();
@@ -327,11 +340,12 @@ void PSBMPC::calculate_optimal_offsets(
 
 	update_obstacle_status(obstacle_status, HL_0);
 
-	colav_status.resize(2,1);
-	colav_status << CF_0, min_cost;
-
 	u_opt = offset_sequence(0); 	u_m_last = u_opt;
 	chi_opt = offset_sequence(1); 	chi_m_last = chi_opt;
+
+	double CF_0 = u_opt * (1 - fabs(chi_opt * RAD2DEG) / 15.0);
+	colav_status.resize(2,1);
+	colav_status << CF_0, min_cost;
 }
 
 /****************************************************************************************
@@ -1353,7 +1367,7 @@ void PSBMPC::update_obstacles(
 
 /****************************************************************************************
 *  Name     : update_obstacle_status
-*  Function : Updates various information on each obstacle
+*  Function : Updates various information on each obstacle at the current time
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -1362,5 +1376,36 @@ void PSBMPC::update_obstacle_status(
 	const Eigen::VectorXd &HL_0 											// In: relative (to total hazard) hazard level of each obstacle
 	)
 {
+	int n_obst = new_obstacles.size();
+	obstacle_status.resize(6, n_obst);
+	double ID_0, RB_0, d_0i, COG_0, SOG_0; 
+	Eigen::Vector4d xs_i;
+	for(int i = 0; i < n_obst; i++)
+	{
+		xs_i = new_obstacles[i]->kf->get_state();
 
+		ID_0 = new_obstacles[i]->get_ID();
+		
+		d_0i = (xs_i.block<2, 1>(0, 0) - trajectory.block<2, 1>(0, 0)).norm();
+
+		COG_0 = atan2(xs_i(3), xs_i(2));
+
+		SOG_0 = xs_i.block<2, 1>(2, 0).norm();
+
+		RB_0 = Utilities::angle_difference_pmpi(COG_0, trajectory(2, 0));
+
+		obstacle_status.col(i) << ID_0, 											// Obstacle ID
+								  SOG_0, 											// Speed over ground of obstacle
+								  Utilities::wrap_angle_to_02pi(COG_0) * RAD2DEG, 	// Course over ground of obstacle
+								  RB_0, 											// Relative bearing
+								  d_0i,												// Range
+								  HL_0(i), 											// Hazard level of obstacle at optimum
+								  IP_0(i), 											// If obstacle is passed by or not 
+								  AH_0(i), 											// If obstacle is ahead or not
+								  S_TC_0(i), 										// If obstacle is starboard or not
+								  H_TC_0(i),										// If obstacle is head on or not
+								  X_TC_0(i),										// If crossing situation or not
+								  Q_TC_0(i),										// If obstacle overtakes ownship or not
+								  O_TC_0(i);										// If ownship overtakes obstacle or not
+	}
 }
