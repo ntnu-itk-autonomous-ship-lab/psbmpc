@@ -254,7 +254,7 @@ void PSBMPC::calculate_optimal_offsets(
 	double &u_opt, 															// In/out: Optimal surge offset
 	double &chi_opt, 														// In/out: Optimal course offset
 	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
-	Eigen::Matrix<double,-1,-1> &obstacle_status,							// In/out: Status on obstacles
+	Eigen::Matrix<double,-1,-1> &obstacle_status,							// In/out: Various information on obstacles
 	Eigen::Matrix<double,-1, 1> &colav_status,								// In/out: status on the COLAV system
 	const double u_d, 														// In: Surge reference
 	const double psi_d, 													// In: Heading reference
@@ -324,22 +324,15 @@ void PSBMPC::calculate_optimal_offsets(
 		increment_control_behavior();
 	}
 
-	obstacle_status.resize(13, n_obst);
-	for(int i=0; i < n_obst; i++)
-	{
-		obstacle_status.col(i) << ID_0(i), SOG_0(i), COG_0(i) * RAD2DEG, rb_0(i) * RAD2DEG, d_0i(i), HL_0(i), 
-								  IP_0(i), AH_0(i), S_TC_0(i), H_TC_0(i), X_TC_0(i), Q_TC_0(i), O_TC_0(i);
-	}
+
+	update_obstacle_status(obstacle_status, HL_0);
 
 	colav_status.resize(2,1);
 	colav_status << CF_0, min_cost;
 
 	u_opt = offset_sequence(0); 	u_m_last = u_opt;
-	chi_opt = offset_sequence(1); 	chi_m_last = chi_opt;	
-	
-	
+	chi_opt = offset_sequence(1); 	chi_m_last = chi_opt;
 }
-
 
 /****************************************************************************************
 	Private functions
@@ -545,7 +538,7 @@ void PSBMPC::initialize_prediction()
 					{
 						if (ps == 0)
 						{
-							
+
 						}
 					}
 				}
@@ -1356,4 +1349,18 @@ void PSBMPC::update_obstacles(
 		delete old_obstacles[i];
 	}
 	old_obstacles.clear();
+}
+
+/****************************************************************************************
+*  Name     : update_obstacle_status
+*  Function : Updates various information on each obstacle
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::update_obstacle_status(
+	Eigen::Matrix<double,-1,-1> &obstacle_status,							// In/out: Various information on obstacles
+	const Eigen::VectorXd &HL_0 											// In: relative (to total hazard) hazard level of each obstacle
+	)
+{
+
 }
