@@ -128,7 +128,6 @@ private:
 		const Eigen::Vector2d &L_AB, 
 		const double d_AB);
 
-	bool determine_COLREGS_violation(const Eigen::VectorXd& xs_A, const Eigen::VectorXd& xs_B);
 
 	bool determine_transitional_cost_indicator(
 		const Eigen::Vector2d &v_A, 

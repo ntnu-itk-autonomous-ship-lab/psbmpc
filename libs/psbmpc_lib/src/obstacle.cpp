@@ -94,6 +94,8 @@ Obstacle::~Obstacle(){
 	delete mrou;
 }
 
+
+
 /****************************************************************************************
 *  Name     : resize_trajectories
 *  Function : Resizes trajectory and preserves old values inside new range of samples
@@ -138,14 +140,22 @@ void Obstacle::initialize_independent_prediction(
 /****************************************************************************************
 *  Name     : predict_independent_trajectories
 *  Function : Predicts the obstacle trajectories for scenarios where the obstacle
-*			  does not take the own-ship into account 
+*			  does not take the own-ship into account. PSBMPC parameters needed 
+* 			  to determine if obstacle breaches cOLREGS (future: implement simple 
+*			  sbmpc class for obstacle which has the "determine COLREGS violation" function)
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void Obstacle::predict_independent_trajectories(						
 	const double T, 											// In: Time horizon
 	const double dt, 											// In: Time step
-	const Eigen::Matrix<double, 6, 1> &ownship_state 			// In: State of own-ship to use for COLREGS penalization calculation
+	const Eigen::Matrix<double, 6, 1> &ownship_state, 			// In: State of own-ship to use for COLREGS penalization calculation
+	const double phi_AH,
+	const double phi_CR,
+	const double phi_HO,
+	const double phi_OT,
+	const double d_close,
+	const double d_safe
 	)
 {
 	int n_samples = std::round(T / dt);
@@ -171,7 +181,7 @@ void Obstacle::predict_independent_trajectories(
 		{
 			t = (k + 1) * dt;
 
-			mu[ps] = determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl.col(k));
+			mu[ps] = Utilities::determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl.col(k), phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
 			switch (ps_ordering[ps])
 			{
 				case KCC :	// Proceed
@@ -179,7 +189,7 @@ void Obstacle::predict_independent_trajectories(
 				{
 					if (k == ps_maneuver_times[ps] && !have_turned)
 					{
-						chi_ps = atan2(v_p[ps](1, 0), v_p[ps](0, 0)); 
+						chi_ps = atan2(v_p[ps](1, k), v_p[ps](0, k)); 
 						v_p[ps](0, k) = v_p[ps].col(k).norm() * cos(chi_ps + ps_course_changes[ps]);
 						v_p[ps](1, k) = v_p[ps].col(k).norm() * sin(chi_ps + ps_course_changes[ps]);
 						have_turned = true;
@@ -202,7 +212,6 @@ void Obstacle::predict_independent_trajectories(
 					dt * Utilities::rotate_vector_2D(ownship_state_sl.block<2, 1>(3, k), ownship_state_sl(2, k));
 				ownship_state_sl.block<4, 1>(2, k + 1) = ownship_state_sl.block<4, 1>(2, k);
 			}
-			
 		}
 	}
 }

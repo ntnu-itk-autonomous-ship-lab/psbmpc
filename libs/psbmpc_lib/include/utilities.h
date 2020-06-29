@@ -25,9 +25,12 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+#define DEG2RAD M_PI / 180.0f
+#define RAD2DEG 180.0f / M_PI
 
 #include "Eigen/Dense"
 #include "iostream"
+
 
 enum Axis 
 	{
@@ -247,6 +250,75 @@ namespace Utilities
 			p_cpa = p_A;
 			d_cpa = (p_A - p_B).norm();
 		}
+	}
+
+	/****************************************************************************************
+	*  Name     : determine_COLREGS_violation
+	*  Function : Determine if vessel A violates COLREGS with respect to vessel B.
+	*			  Temporary solution until SBMPC class is implemented for the obstacles
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
+	bool determine_COLREGS_violation(
+		const Eigen::VectorXd& xs_A,											// In: State vector of vessel A (most often the ownship)
+		const Eigen::VectorXd& xs_B, 											// In: State vector of vessel B (most often an obstacle)
+		const double phi_AH,
+		const double phi_OT, 
+		const double phi_HO,
+		const double phi_CR,
+		const double d_close,
+		const double d_safe
+		)
+	{
+		bool B_is_ahead;
+		bool A_is_starboard, B_is_starboard;
+		bool A_is_overtaken, B_is_overtaken;
+		bool is_close, is_passed, is_head_on, is_crossing;
+
+		Eigen::Vector2d v_A, v_B, L_AB;
+		double psi_A, psi_B;
+		if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); Utilities::rotate_vector_2D(v_A, psi_A); }
+		else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
+		
+		if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); Utilities::rotate_vector_2D(v_B, psi_B); }
+		else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
+
+		L_AB(0) = xs_B(0) - xs_A(0);
+		L_AB(1) = xs_B(1) - xs_A(1);
+		double d_AB = L_AB.norm();
+		L_AB = L_AB / L_AB.norm();
+
+		B_is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
+
+		A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
+						v_A.norm() < v_B.norm()							  	&&
+						v_A.norm() > 0.25;
+
+		B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
+						v_B.norm() < v_A.norm()							  	&&
+						v_B.norm() > 0.25;
+
+		B_is_starboard = atan2(L_AB(1), L_AB(0)) > psi_A;
+
+		is_close = d_AB <= d_close;
+
+		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+					!A_is_overtaken) 											||
+					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+					!B_is_overtaken)) 											&&
+					d_AB > d_safe;
+
+		is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() > 0.25											&&
+					v_B.norm() > 0.25											&&
+					B_is_ahead;
+
+		is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
+					v_A.norm() > 0.25											&&
+					v_B.norm() > 0.25											&&
+					!is_passed;
+
+		return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
 	}
 }
 
