@@ -118,7 +118,18 @@ public:
 		const Eigen::VectorXd &ps_weights,
 		const Eigen::VectorXd &ps_maneuver_times);
 
-	void predict_independent_trajectories(const double T, const double dt, const Eigen::Matrix<double, 6, 1> &ownship_state);
+	// PSBMPC parameters needed to determine if obstacle breaches cOLREGS 
+	// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
+	void predict_independent_trajectories(
+		const double T, 
+		const double dt, 
+		const Eigen::Matrix<double, 6, 1> &ownship_state,
+		const double phi_AH,
+		const double phi_CR,
+		const double phi_HO,
+		const double phi_OT,
+		const double d_close,
+		const double d_safe);
 
 	void set_dependent_trajectory(const Eigen::MatrixXd &xs_colav_p, const Eigen::MatrixXd &P_colav_p) { this->xs_colav_p = xs_colav_p; this->P_colav_p = P_colav_p; };
 
