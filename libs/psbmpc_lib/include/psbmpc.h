@@ -104,6 +104,8 @@ private:
 
 	void initialize_prediction();
 
+	double find_time_of_passing(const int i);
+
 	void reset_control_behavior();
 
 	void increment_control_behavior();
@@ -152,11 +154,7 @@ private:
 
 	void update_transitional_variables();
 
-	double calculate_dynamic_obstacle_cost();
-
-	double calculate_total_cost(
-		const Eigen::MatrixXd& P_c,
-		const Eigen::Matrix<double, 4, 1>& static_obstacle);
+	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd& P_c);
 
 	void calculate_collision_probabilities(Eigen::MatrixXd& P_c_i);
 
@@ -195,7 +193,8 @@ private:
     void update_obstacles(
 		const Eigen::Matrix<double, 9, -1>& obstacle_states, 
 		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
-		const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities);
+		const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities,
+		const Eigen::VectorXd &obstacle_a_priori_CC_probabilities);
 
 	void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
 
@@ -235,9 +234,9 @@ public:
 
 	void toggle_obstacle_filter(const bool value) { obstacle_filter_on = value; };
 
-	bool get_obstacle_colav_status() const { return obstacle_colav_on; };
+	bool get_obstacle_colav_status(const int i) const { return obstacle_colav_on[i]; };
 
-	void toggle_obstacle_colav(const bool value) { obstacle_colav_on = value; };
+	void toggle_obstacle_colav(const bool value, const int i) { obstacle_colav_on[i] = value; };
 
 	void calculate_optimal_offsets(
 		double &u_opt, 
@@ -252,6 +251,7 @@ public:
 		const Eigen::Matrix<double, 9, -1> &obstacle_states, 
 		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
 		const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities,
+		const Eigen::VectorXd &obstacle_a_priori_CC_probabilities,
 		const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
 };

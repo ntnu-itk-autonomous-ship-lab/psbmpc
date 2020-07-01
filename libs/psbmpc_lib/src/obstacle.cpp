@@ -35,6 +35,7 @@ Obstacle::Obstacle(
 	const Eigen::VectorXd& xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, id]
 	const Eigen::Matrix4d& P, 									// In: Obstacle covariance
 	const Eigen::VectorXd Pr_a,									// In: Obstacle intention probability vector
+	const double Pr_cc, 										// In: A priori COLREGS compliance probability
 	const bool filter_on, 										// In: Boolean determining whether KF should be used or not
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
@@ -46,6 +47,8 @@ Obstacle::Obstacle(
 	duration_lost(0.0)
 {
 	this->Pr_a = Pr_a;
+
+	this->Pr_CC = Pr_CC;
 
 	int n_samples = std::round(T / dt);
 

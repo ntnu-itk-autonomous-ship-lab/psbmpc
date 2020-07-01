@@ -44,6 +44,9 @@ private:
 	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: n_ps x 1
 	std::vector<bool> mu;
 
+	// A priori COLREGS compliance probability
+	double Pr_CC;
+
 	// Vector of intention probabilities
 	Eigen::VectorXd Pr_a;
 
@@ -85,12 +88,15 @@ public:
 	Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const Eigen::Matrix4d &P, 
 			 const Eigen::VectorXd Pr_a, 
+			 const double Pr_cc,
 			 const bool filter_on, 
 			 const bool colav_on, 
 			 const double T, 
 			 const double dt);
 
 	int get_ID() const { return ID; };
+
+	double get_a_priori_CC_probability() const { return Pr_CC;}
 
 	// AIS-based KF related methods
 	double get_duration_tracked() const { return duration_tracked; };
