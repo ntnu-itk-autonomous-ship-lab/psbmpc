@@ -521,7 +521,8 @@ void PSBMPC::initialize_prediction()
 	Eigen::VectorXd ps_course_changes_i;
 	Eigen::VectorXd ps_weights_i;
 	Eigen::VectorXd ps_maneuver_times_i;
-	double t_cpa, d_cpa, Pr_CC_i, t_obst_passed;
+	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
+	double Pr_CC_i, t_obst_passed;
 	Eigen::Vector2d p_cpa;
 
 	int spacing = std::round(t_ts / dt), turn_count, course_change_count;
@@ -543,21 +544,22 @@ void PSBMPC::initialize_prediction()
 		// Else: typically three intentions: KCC, SM, PM
 		else 
 		{
-			Utilities::calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(0), new_obstacles[i]->kf->get_state());
+			Utilities::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->kf->get_state());
 			
 			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
 			turn_count = 0;
-			if (d_cpa > d_safe || (d_cpa <= d_safe && t_cpa > t_ts)) // No predicted collision inside time horizon
+			if (d_cpa(i) > d_safe || (d_cpa(i) <= d_safe && t_cpa(i) > T)) // No predicted collision inside time horizon
 			{
 				n_turns = std::floor(T / spacing);
 			} 
-			else 				// Safety zone violation at CPA inside prediction horizon, as d_cpa <= d_safe
+			// Safety zone violation at CPA inside prediction horizon, as d_cpa <= d_safe
+			else 				
 			{
-				if (t_cpa > t_ts) // Space evenly until t_cpa
+				if (t_cpa(i) > t_ts) // Space evenly until t_cpa
 				{
-					n_turns = std::round(t_cpa / spacing);
+					n_turns = std::floor(t_cpa(i) / spacing);
 				}
-				else			// No time to react=> only one maneuver
+				else			// No time to react => only one maneuver
 				{
 					n_turns = 1;
 				}	
@@ -675,7 +677,44 @@ void PSBMPC::initialize_prediction()
 	//***********************************************************************************
 	// Own-ship prediction initialization
 	//***********************************************************************************
-	
+	maneuver_times.resize(n_M);
+	// First avoidance maneuver is always at t0
+	maneuver_times(0) = 0;
+	double d_cpa_min = 1e10, t_cpa_min;
+	int index_min = 0, M_count = 0;
+	for (int M = 1; M < n_M; M++)
+	{
+		for (int i = 0; i < n_obst; i++)
+		{
+			// For the current avoidance maneuver, determine which obstacle that should be
+			// considered, i.e. the closest obstacle that is not already passed (which means
+			// that the previous avoidance maneuver happened before CPA with this obstacle)
+			if (maneuver_times(M - 1) * dt < t_cpa(i))
+			{	
+				if (d_cpa(i) < d_cpa_min)
+				{
+					d_cpa_min = d_cpa(i);
+					t_cpa_min = t_cpa(i);
+					index_min = i;
+				}
+			}
+		}
+		// If no predicted collision,  avoidance maneuver M with the closest
+		// obstacle (that is not passed) is taken at t_cpa_min
+		if (d_cpa_min > d_safe)
+		{
+			maneuver_times(M) = std::round(t_cpa_min / dt);
+		}
+		// If a predicted collision occurs with the closest obstacle, avoidance maneuver 
+		// M is taken right after the obstacle maneuvers (which will be at t_0 + M * t_ts)
+		// Given that t_cpa > t_ts. If t_cpa < t_ts, the subsequent maneuver is taken
+		MÅ TENKJE PÅ DETTA
+		else
+		{
+			maneuver_times(M) = maneuver_times(M - 1) + std::round((t_ts + 1) / dt);
+		}
+	}
+
 }
 
 /****************************************************************************************
