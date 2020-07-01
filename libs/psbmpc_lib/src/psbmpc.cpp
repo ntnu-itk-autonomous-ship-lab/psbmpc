@@ -513,6 +513,9 @@ void PSBMPC::initialize_pars()
 *****************************************************************************************/
 void PSBMPC::initialize_prediction()
 {
+	//***********************************************************************************
+	// Obstacle prediction initialization
+	//***********************************************************************************
 	int n_obst = new_obstacles.size(), n_ps, n_turns;
 	std::vector<Intention> ps_ordering_i;
 	Eigen::VectorXd ps_course_changes_i;
@@ -537,7 +540,8 @@ void PSBMPC::initialize_prediction()
 			ps_maneuver_times_i.resize(1);
 			ps_maneuver_times_i(0) = 0;
 		}
-		else
+		// Else: typically three intentions: KCC, SM, PM
+		else 
 		{
 			Utilities::calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(0), new_obstacles[i]->kf->get_state());
 			
@@ -573,12 +577,14 @@ void PSBMPC::initialize_prediction()
 			course_change_count = 0;
 			for (int ps = 1; ps < n_ps; ps++)
 			{
+				// Starboard maneuvers
 				if (ps < (n_ps - 1) / 2 + 1)
 				{
 					ps_ordering_i[ps] = SM;
 					ps_course_changes_i(ps) = course_changes(course_change_count);
 					if (course_change_count++ == course_changes.size()) course_change_count = 0;
 				}
+				// Port maneuvers
 				else
 				{
 					ps_ordering_i[ps] = PM;
@@ -592,7 +598,7 @@ void PSBMPC::initialize_prediction()
 			Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
 			switch(ST_i_0[i])
 			{
-				case A :
+				case A : // Outside CC consideration zone
 				{
 					ps_weights_i.Constant(1);
 
@@ -603,7 +609,7 @@ void PSBMPC::initialize_prediction()
 					}
 					break;
 				}
-				case B || C:
+				case B || C: // OT/CR, SO
 				{
 					ps_weights_i(0) = Pr_CC_i;
 					for (int ps = 1; ps < n_ps; ps++)
@@ -612,7 +618,7 @@ void PSBMPC::initialize_prediction()
 					}
 					break;
 				}
-				case D :
+				case D : // OT, GW
 				{
 					ps_weights_i(0) = 1 - Pr_CC_i;
 					for (int ps = 1; ps < n_ps; ps++)
@@ -621,37 +627,38 @@ void PSBMPC::initialize_prediction()
 					}
 					break;
 				}
-				case E :
+				case E : // HO, GW
 				{
-					ps_weights_i(0) = 1 - Pr_CC_i;
-					for (int ps = 1; ps < n_ps; ps++)
+					for (int ps = 0; ps < n_ps; ps++)
 					{
-						if (ps < (n_ps - 1) / 2 + 1)
+						ps_weights_i(ps) = 1 - Pr_CC_i;	
+
+						// Starboard maneuvers, which are CC
+						if (ps > 0 && ps < (n_ps - 1) / 2 + 1)
 						{
 							ps_weights_i(ps) = Pr_CC_i;	
-						}
-						else
-						{
-							ps_weights_i(ps) = 1 - Pr_CC_i;	
 						}
 					}
 					break;
 				}
-				case F :
+				case F : // CR, GW
 				{
 					t_obst_passed = find_time_of_passing(i);
-					ps_weights_i(0) = 1;
+					ps_weights_i(0) = 1 - Pr_CC_i;
 					for (int ps = 1; ps < n_ps; ps++)
 					{
+						ps_weights_i(ps) = 1 - Pr_CC_i;
+						// Starboard maneuvers
 						if (ps < (n_ps - 1) / 2 + 1)
 						{
-							if 
+							// Crossing obstacle prediction scenario gets COLREGS compliant weight Pr_CC_i
+							// if the course change is COLREGS compliant and happens in good time before
+							// the own-ship is passed
+							if (ps_maneuver_times_i(ps) * dt < t_obst_passed - t_ts)
+							{
+								ps_weights_i(ps) = Pr_CC_i;
+							}							
 						} 
-						else
-						{
-							ps_weights_i(ps) = 1 - Pr_CC_i;	
-						}
-						
 					}
 					break;
 				}
@@ -665,6 +672,10 @@ void PSBMPC::initialize_prediction()
 		}
 		new_obstacles[i]->initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);
 	}
+	//***********************************************************************************
+	// Own-ship prediction initialization
+	//***********************************************************************************
+	
 }
 
 /****************************************************************************************
