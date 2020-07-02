@@ -46,7 +46,7 @@ PSBMPC::PSBMPC()
 
 	ownship = new Ownship();
 
-	cpe = new CPE(1000, 100, d_safe);
+	cpe = new CPE(cpe_method, 1000, 100, d_safe, dt);
 }
 
 /****************************************************************************************
@@ -63,7 +63,7 @@ PSBMPC::~PSBMPC()
 
 /****************************************************************************************
 *  Name     : get_<type>par
-*  Function : Returns parameter with index <index>, overloaded for different data types
+*  Function : Returns parameter with index <index>, "overloaded" for different data types
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -175,6 +175,8 @@ void PSBMPC::set_par(
 				d_safe = value; 
 				dpar_low[i_dpar_d_close] = d_safe;
 				dpar_low[i_dpar_d_init] = d_safe;
+				// and CPE method
+				cpe->set_safety_zone_radius(d_safe);
 				break;
 			} 
 			case i_dpar_d_close 			: d_close = value; break;
