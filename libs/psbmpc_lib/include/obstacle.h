@@ -96,7 +96,11 @@ public:
 
 	int get_ID() const { return ID; };
 
-	double get_a_priori_CC_probability() const { return Pr_CC;}
+	std::vector<bool> get_COLREGS_violation_indicator() const { return mu; };
+
+	double get_a_priori_CC_probability() const { return Pr_CC; };
+
+	Eigen::VectorXd get_intention_probabilities() const { return Pr_a; };
 
 	// AIS-based KF related methods
 	double get_duration_tracked() const { return duration_tracked; };

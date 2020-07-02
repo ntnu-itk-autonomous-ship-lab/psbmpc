@@ -154,7 +154,7 @@ private:
 
 	void update_transitional_variables();
 
-	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd& P_c);
+	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd& P_c, const int i);
 
 	void calculate_collision_probabilities(Eigen::MatrixXd& P_c_i);
 
@@ -203,8 +203,6 @@ public:
 	PSBMPC();
 
 	~PSBMPC();
-
-	CPE* cpe;
 
 	CPE_Method get_cpe_method() const { return cpe_method; }; 
 
