@@ -34,12 +34,13 @@
 *  Modified :
 *****************************************************************************************/
 CPE::CPE(
+    const CPE_Method cpe_method,                                    // In: Method to be used
     const int n_CE,                                                 // In: Number of samples for the Cross-Entropy method
     const int n_MCSKF,                                              // In: Number of samples for the Monte Carlo Simulation + Kalman-filtering method
     const double d_safe,                                            // In: Safety zone radius around own-ship
     const double dt                                                 // In: Time step of calling function simulation environment
     ) :
-    n_CE(n_CE), n_MCSKF(n_MCSKF), generator(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1)), d_safe(d_safe)
+    method(cpe_method), n_CE(n_CE), n_MCSKF(n_MCSKF), generator(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1)), d_safe(d_safe)
 {
     // CE pars
     sigma_inject = 0.9;
@@ -60,6 +61,7 @@ CPE::CPE(
 
     P_c_p = 0; P_c_upd = 0;
 
+    // Ad hoc "guess" of variance for the KF
     var_P_c_p = 0.3; var_P_c_upd = 0;
 
     dt_seg = 2 * dt;
@@ -76,9 +78,39 @@ void CPE::initialize(
     const Eigen::MatrixXd &P_A, 
     const Eigen::MatrixXd &xs_B, 
     const Eigen::MatrixXd &P_B
+    
     )
 {
+    
+}
 
+/****************************************************************************************
+*  Name     : reset
+*  Function : 
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void CPE::reset()
+{
+    switch (method)
+    {
+        case CE :
+        {
+            converged_last = false;
+            break;
+        }
+        case MCSKF4D :
+        {
+            P_c_p = 0; P_c_upd = 0;
+
+            var_P_c_p = 0.3; var_P_c_upd = 0;
+            break;
+        }
+        default :
+        {
+            std::cout << "Invalid estimation method" << std::endl;
+        }
+    }
 }
 
 /****************************************************************************************
@@ -91,19 +123,29 @@ double CPE::estimate(
 	const Eigen::MatrixXd &xs_A, 
 	const Eigen::MatrixXd &P_A, 
 	const Eigen::MatrixXd &xs_B, 
-	const Eigen::MatrixXd &P_B,
-	const CPE_Method cpe_method
+	const Eigen::MatrixXd &P_B
     )
 {
-
+    double P_c;
+    switch (method)
+    {
+        case CE :
+        {
+            P_c = CE_estimation(xs_A, P_A, xs_B, P_B);
+            break;
+        }
+        case MCSKF4D :
+        {
+            P_c = MCSKF4D_estimation(xs_A, P_A, xs_B, P_B);
+            break;
+        }
+        default :
+        {
+            std::cout << "Invalid estimation method" << std::endl;
+        }
+    }
+    return P_c;
 }
-
-/****************************************************************************************
-*  Name     : 
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
 
 
 /****************************************************************************************
@@ -175,4 +217,39 @@ bool CPE::check_sample_validity_4D(
     )
 {
 
+}
+
+/****************************************************************************************
+*  Name     : CE_estimation
+*  Function : 
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+double CPE::CE_estimation(
+	const Eigen::MatrixXd &xs_A, 
+	const Eigen::MatrixXd &P_A, 
+	const Eigen::MatrixXd &xs_B, 
+	const Eigen::MatrixXd &P_B
+    )
+{
+    double P_c;
+    
+    return P_c;
+}
+
+/****************************************************************************************
+*  Name     : MCSKF4D_estimation
+*  Function : 
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+double CPE::MCSKF4D_estimation(
+	const Eigen::MatrixXd &xs_A, 
+	const Eigen::MatrixXd &P_A, 
+	const Eigen::MatrixXd &xs_B, 
+	const Eigen::MatrixXd &P_B
+    )
+{
+    
+    return P_c_upd;
 }

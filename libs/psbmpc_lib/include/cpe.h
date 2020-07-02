@@ -38,6 +38,9 @@ class CPE
 {
 private:
 
+	// Active CPE method
+	CPE_Method method;
+
 	// Number of samples drawn
 	int n_CE, n_MCSKF;
 
@@ -53,7 +56,9 @@ private:
 	
 	bool converged_last;
 
+	// Previous possibly optimal CE density parameters
 	Eigen::Vector2d mu_CE_last, P_CE_last;
+
 
 	// MCSKF4D-method parameters
 	double q, p, dt_seg; 
@@ -75,21 +80,37 @@ private:
 
 	bool check_sample_validity_4D(const Eigen::MatrixXd samples, const Eigen::Vector2d p_OS, const double t);
 
+	double CE_estimation(
+		const Eigen::MatrixXd &xs_A, 
+		const Eigen::MatrixXd &P_A, 
+		const Eigen::MatrixXd &xs_B, 
+		const Eigen::MatrixXd &P_B
+    );
+
+	double MCSKF4D_estimation(
+		const Eigen::MatrixXd &xs_A, 
+		const Eigen::MatrixXd &P_A, 
+		const Eigen::MatrixXd &xs_B, 
+		const Eigen::MatrixXd &P_B
+    );
 
 public:
 
-	CPE(const int n_CE, const int n_MCSKF, const double d_safe, const double dt);
+	CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const double d_safe, const double dt);
+
+	void set_method(const CPE_Method cpe_method) { method = cpe_method; };
 
 	void set_safety_zone_radius(const double d_safe) { this->d_safe = d_safe; };
 
 	void initialize(const Eigen::MatrixXd &xs_A, const Eigen::MatrixXd &P_A, const Eigen::MatrixXd &xs_B, const Eigen::MatrixXd &P_B);
 
+	void reset();
+
 	double estimate(
 		const Eigen::MatrixXd &xs_A, 
 		const Eigen::MatrixXd &P_A, 
 		const Eigen::MatrixXd &xs_B, 
-		const Eigen::MatrixXd &P_B,
-		const CPE_Method cpe_method);
+		const Eigen::MatrixXd &P_B);
 
 };
 
