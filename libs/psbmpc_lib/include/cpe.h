@@ -2,9 +2,11 @@
 *
 *  File name : cpe.h
 *
-*  Function  : Header file for the Collision Probability Estimator (CPE)
-*
-*  
+*  Function  : Header file for the Collision Probability Estimator (CPE).
+*			   The module assumes that the own-ship uncertainty is negligible
+*  			   compared to that of the obstacles. If this is not the case, then a
+			   linear transformationcan be used to "gather" both vessel's 
+			   uncertainty in one RV
 *            ---------------------
 *
 *  Version 1.0
@@ -41,9 +43,10 @@ private:
 
 	// PRNG-related
 	std::random_device seed;
-	std::mt19937 gen{seed()};
+	// consider other faster generators than the mersenne twister
+	std::mt19937 generator;
 
-	std::normal_distribution<double> std_norm_pdf{0.0, 1.0};
+	std::normal_distribution<double> std_norm_pdf;
 
 	// CE-method parameters
 	double sigma_inject, alpha_n, alpha_p, rho, max_it;
@@ -62,6 +65,8 @@ private:
 
 	double norm_pdf_log(const Eigen::VectorXd &xs, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
+	void generate_norm_dist_samples(Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+
 	double produce_MCS_estimate(
 		const Eigen::VectorXd &xs, 
 		const Eigen::MatrixXd &P, 
@@ -73,7 +78,7 @@ private:
 
 public:
 
-	CPE(const int n_CE, const int n_MCSKF, const double d_safe);
+	CPE(const int n_CE, const int n_MCSKF, const double d_safe, const double dt);
 
 	void set_safety_zone_radius(const double d_safe) { this->d_safe = d_safe; };
 
