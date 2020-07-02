@@ -36,17 +36,39 @@
 CPE::CPE(
     const int n_CE,                                                 // In: Number of samples for the Cross-Entropy method
     const int n_MCSKF,                                              // In: Number of samples for the Monte Carlo Simulation + Kalman-filtering method
-    const double d_safe                                             // In: Safety zone radius around own-ship
+    const double d_safe,                                            // In: Safety zone radius around own-ship
+    const double dt                                                 // In: Time step of calling function simulation environment
     ) :
-    n_CE(n_CE), n_MCSKF(n_MCSKF), gen(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1)), d_safe(d_safe)
+    n_CE(n_CE), n_MCSKF(n_MCSKF), generator(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1)), d_safe(d_safe)
 {
-    
+    // CE pars
+    sigma_inject = 0.9;
+
+    alpha_n = 0.9;
+    alpha_p = 0.997;
+
+    rho = 0.9;
+
+    max_it = 10;
+
+    converged_last = false;
+
+    // MCSKF4D pars
+    p = 0.001;
+
+    q = 0.003;
+
+    P_c_p = 0; P_c_upd = 0;
+
+    var_P_c_p = 0.3; var_P_c_upd = 0;
+
+    dt_seg = 2 * dt;
 }
 
 /****************************************************************************************
 *  Name     : initialize
 *  Function : 
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void CPE::initialize(
@@ -62,7 +84,7 @@ void CPE::initialize(
 /****************************************************************************************
 *  Name     : estimate
 *  Function : 
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 double CPE::estimate(
@@ -90,23 +112,44 @@ double CPE::estimate(
 
 /****************************************************************************************
 *  Name     : norm_pdf_log
-*  Function : Calculates the value of the multivariate normal distribution for a sample
-*  Author   : 
+*  Function : Calculates the value of the multivariate normal distribution (MVN) 
+*             for a sample
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 double CPE::norm_pdf_log(
-    const Eigen::VectorXd &xs, 
-    const Eigen::VectorXd &mu, 
-    const Eigen::MatrixXd &Sigma
+    const Eigen::VectorXd &xs,                                      // In: State vector value of normal distributed RV
+    const Eigen::VectorXd &mu,                                      // In: Expectation of the MVN
+    const Eigen::MatrixXd &Sigma                                    // In: Covariance of the MVN
+    )
+{
+    double val;
+
+
+
+    return val;
+}
+
+/****************************************************************************************
+*  Name     : generate_norm_dist_samples
+*  Function : Generates samples from the MVN distribution with given mean and covariance
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void CPE::generate_norm_dist_samples(
+    Eigen::MatrixXd &samples,                                       // In: Samples to fill with generated MVN values, size n x n_samples
+    const Eigen::VectorXd &mu,                                      // In: Expectation of the MVN
+    const Eigen::MatrixXd &Sigma                                    // In: Covariance of the MVN
     )
 {
 
 }
+
 /****************************************************************************************
 *  Name     : produce_MCS_estimate
 *  Function : Uses Monte Carlo Simulation to produce a collision probability "measurement"
 *             for the MCSKF4D method
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 double CPE::produce_MCS_estimate(
@@ -122,7 +165,7 @@ double CPE::produce_MCS_estimate(
 /****************************************************************************************
 *  Name     : check_sample_validity_4D
 *  Function : Determine if a sample is valid for use in estimation for the MCSKF4D method
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 bool CPE::check_sample_validity_4D(
