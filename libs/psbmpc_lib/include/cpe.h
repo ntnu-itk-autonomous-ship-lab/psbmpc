@@ -41,6 +41,9 @@ private:
 	// Active CPE method
 	CPE_Method method;
 
+	// Number of obstacles to consider in estimation
+	int n_obst;
+
 	// Number of samples drawn
 	int n_CE, n_MCSKF;
 
@@ -52,65 +55,81 @@ private:
 	std::normal_distribution<double> std_norm_pdf;
 
 	// CE-method parameters
-	double sigma_inject, alpha_n, alpha_p, rho, max_it;
+	double sigma_inject, alpha_n, gate, rho, max_it;
 	
 	bool converged_last;
 
 	// Previous possibly optimal CE density parameters
-	Eigen::Vector2d mu_CE_last, P_CE_last;
+	std::vector<Eigen::Vector2d> mu_CE_last;
+	std::vector<Eigen::Matrix2d> P_CE_last;
 
 
 	// MCSKF4D-method parameters
 	double q, p, dt_seg; 
 	
-	double P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
+	Eigen::VectorXd P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
 	// Safety zone parameters
 	double d_safe;
 
-	double norm_pdf_log(const Eigen::VectorXd &xs, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	Eigen::VectorXd norm_pdf_log(const Eigen::MatrixXd &xs, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
 	void generate_norm_dist_samples(Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
 	double produce_MCS_estimate(
-		const Eigen::VectorXd &xs, 
-		const Eigen::MatrixXd &P, 
-		const Eigen::Vector2d &p,
-		const double t);
+		const Eigen::Vector4d &xs_i, 
+		const Eigen::Matrix4d &P_i, 
+		const Eigen::Vector2d &p_os_cpa,
+		const double t_cpa);
 
-	bool check_sample_validity_4D(const Eigen::MatrixXd samples, const Eigen::Vector2d p_OS, const double t);
-
-	double CE_estimation(
-		const Eigen::MatrixXd &xs_A, 
-		const Eigen::MatrixXd &P_A, 
-		const Eigen::MatrixXd &xs_B, 
-		const Eigen::MatrixXd &P_B
-    );
+	bool determine_sample_validity_4D(
+		Eigen::VectorXd &valid,
+		const Eigen::MatrixXd &samples, 
+		const Eigen::Vector2d &p_os_cpa, 
+		const double t_cpa);
 
 	double MCSKF4D_estimation(
-		const Eigen::MatrixXd &xs_A, 
-		const Eigen::MatrixXd &P_A, 
-		const Eigen::MatrixXd &xs_B, 
-		const Eigen::MatrixXd &P_B
-    );
+		const Eigen::Matrix<double, 6, 1> &xs_os,  
+		const Eigen::Vector4d &xs_i, 
+		const Eigen::Matrix4d &P_i,
+		const int i);	
+
+	Eigen::VectorXd determine_best_performing_samples(
+		Eigen::VectorXd &valid, 
+		const Eigen::MatrixXd &samples, 
+		const Eigen::Vector2d &p_os, 
+		const Eigen::Vector2d &p_i, 
+		const Eigen::Matrix2d &P_i);
+
+	double CE_estimation(
+		const Eigen::Vector2d &p_os, 
+		const Eigen::Vector2d &p_i, 
+		const Eigen::Matrix2d &P_i,
+		const int i);
 
 public:
 
 	CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const double d_safe, const double dt);
 
-	void set_method(const CPE_Method cpe_method) { method = cpe_method; };
+	void set_method(const CPE_Method cpe_method) { method = cpe_method; };
 
 	void set_safety_zone_radius(const double d_safe) { this->d_safe = d_safe; };
 
-	void initialize(const Eigen::MatrixXd &xs_A, const Eigen::MatrixXd &P_A, const Eigen::MatrixXd &xs_B, const Eigen::MatrixXd &P_B);
+	void set_number_of_obstacles(const int n_obst);
+
+	void initialize(
+		const Eigen::Matrix<double, 6, 1> &xs_os, 
+		const Eigen::Vector4d &xs_i, 
+		const Eigen::Matrix4d &P_i,
+		const int i);
 
 	void reset();
 
 	double estimate(
-		const Eigen::MatrixXd &xs_A, 
-		const Eigen::MatrixXd &P_A, 
-		const Eigen::MatrixXd &xs_B, 
-		const Eigen::MatrixXd &P_B);
+		const Eigen::Matrix<double, 6, 1> &xs_os, 
+		const Eigen::Vector4d &xs_i, 
+		const Eigen::Matrix4d &P_i,
+		const int i);
 
 };
 
