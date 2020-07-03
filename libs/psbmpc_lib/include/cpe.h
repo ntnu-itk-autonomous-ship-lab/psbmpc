@@ -96,11 +96,13 @@ private:
 
 	Eigen::VectorXd determine_best_performing_samples(
 		Eigen::VectorXd &valid, 
+		int &N_e,
 		const Eigen::MatrixXd &samples, 
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
 		const Eigen::Matrix2d &P_i);
 
+	
 	double CE_estimation(
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
