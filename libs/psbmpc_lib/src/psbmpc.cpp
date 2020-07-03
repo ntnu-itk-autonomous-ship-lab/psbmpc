@@ -72,9 +72,9 @@ int PSBMPC::get_ipar(
 	) const
 {
 	switch(index){
-		case i_ipar_n_M 				: return n_M; break; 
+		case i_ipar_n_M 				: return n_M; 
 
-		default : { std::cout << "Wrong index given" << std::endl; return 0; }
+		default : { std::cout << "Wrong index given" << std::endl; return 0;}
 	}
 }
 	
@@ -83,29 +83,29 @@ double PSBMPC::get_dpar(
 	) const
 {
 	switch(index){
-		case i_dpar_T 					: return T; break;
-		case i_dpar_T_static 			: return T_static; break;
-		case i_dpar_dt 					: return dt; break;
-		case i_dpar_t_ts 				: return t_ts; break;
-		case i_dpar_d_safe 				: return d_safe; break;
-		case i_dpar_d_close 			: return d_close; break;
-		case i_dpar_K_coll 				: return K_coll; break;
-		case i_dpar_kappa 				: return kappa; break; 
-		case i_dpar_kappa_TC 			: return kappa_TC; break;
-		case i_dpar_K_u 				: return K_u; break;
-		case i_dpar_K_du 				: return K_du; break;
-		case i_dpar_K_chi_strb 			: return K_chi_strb; break;
-		case i_dpar_K_dchi_strb 		: return K_dchi_strb; break;
-		case i_dpar_K_chi_port 			: return K_chi_port; break;
-		case i_dpar_K_dchi_port 		: return K_dchi_port; break;
-		case i_dpar_K_sgn 				: return K_sgn; break;
-		case i_dpar_T_sgn 				: return T_sgn; break;
-		case i_dpar_phi_AH 				: return phi_AH; break;
-		case i_dpar_phi_OT 				: return phi_OT; break;
-		case i_dpar_phi_HO 				: return phi_HO; break;
-		case i_dpar_phi_CR 				: return phi_CR; break;
-		case i_dpar_T_lost_limit		: return T_lost_limit; break;
-		case i_dpar_T_tracked_limit		: return T_tracked_limit; break;
+		case i_dpar_T 					: return T;
+		case i_dpar_T_static 			: return T_static;
+		case i_dpar_dt 					: return dt;
+		case i_dpar_t_ts 				: return t_ts;
+		case i_dpar_d_safe 				: return d_safe;
+		case i_dpar_d_close 			: return d_close;
+		case i_dpar_K_coll 				: return K_coll;
+		case i_dpar_kappa 				: return kappa;
+		case i_dpar_kappa_TC 			: return kappa_TC;
+		case i_dpar_K_u 				: return K_u;
+		case i_dpar_K_du 				: return K_du;
+		case i_dpar_K_chi_strb 			: return K_chi_strb;
+		case i_dpar_K_dchi_strb 		: return K_dchi_strb;
+		case i_dpar_K_chi_port 			: return K_chi_port;
+		case i_dpar_K_dchi_port 		: return K_dchi_port;
+		case i_dpar_K_sgn 				: return K_sgn;
+		case i_dpar_T_sgn 				: return T_sgn;
+		case i_dpar_phi_AH 				: return phi_AH;
+		case i_dpar_phi_OT 				: return phi_OT;
+		case i_dpar_phi_HO 				: return phi_HO;
+		case i_dpar_phi_CR 				: return phi_CR;
+		case i_dpar_T_lost_limit		: return T_lost_limit;
+		case i_dpar_T_tracked_limit		: return T_tracked_limit;
 
 		default : { std::cout << "Wrong index given" << std::endl; return 0; }
 	}
@@ -116,8 +116,8 @@ std::vector<Eigen::VectorXd> PSBMPC::get_mpar(
 	) const
 {
 	switch (index){
-		case i_mpar_u_offsets			: return u_offsets; break;
-		case i_mpar_chi_offsets 		: return chi_offsets; break;
+		case i_mpar_u_offsets			: return u_offsets;
+		case i_mpar_chi_offsets 		: return chi_offsets;
 
 		default : 
 		{ 
@@ -146,7 +146,7 @@ void PSBMPC::set_par(
 		{
 			case i_ipar_n_M : n_M = value; break;
 
-			default : std::cout << "Wrong index given" << std::endl;
+			default : std::cout << "Wrong index given" << std::endl; break;
 		}
 	}
 	else
@@ -170,7 +170,6 @@ void PSBMPC::set_par(
 			case i_dpar_p_step 				: p_step = value; break;
 			case i_dpar_t_ts 				: t_ts = value; break;
 			case i_dpar_d_safe :
-			{
 				// Limits on d_close and d_init depend on d_safe
 				d_safe = value; 
 				dpar_low[i_dpar_d_close] = d_safe;
@@ -178,7 +177,6 @@ void PSBMPC::set_par(
 				// and CPE method
 				cpe->set_safety_zone_radius(d_safe);
 				break;
-			} 
 			case i_dpar_d_close 			: d_close = value; break;
 			case i_dpar_d_init 				: d_init = value; break;
 			case i_dpar_K_coll 				: K_coll = value; break;
@@ -219,7 +217,6 @@ void PSBMPC::set_par(
 	{
 		switch (index){
 			case i_mpar_u_offsets : 
-			{
 				for (int j = 0; j < n_M; j++){
 					if (value[j].size() > 0)
 					{
@@ -227,21 +224,20 @@ void PSBMPC::set_par(
 					}
 				}
 				break;
-			}
 			case i_mpar_chi_offsets : 
-			{
-				for (int j = 0; j < n_M; j++){
+				for (int j = 0; j < n_M; j++)
+				{
 					if (value[j].size() > 0)
 					{
 						chi_offsets[j] = value[j];
 					}
 				}
 				break;
-			}
-			default : std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the PSBMPC class.." << std::endl;  
+			default : std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the PSBMPC class.." << std::endl; break; 
 		}
 	}
-	else{
+	else
+	{
 		std::cout << "Update n_M first.." << std::endl;
 	}
 }
@@ -603,7 +599,6 @@ void PSBMPC::initialize_prediction()
 			switch(ST_i_0[i])
 			{
 				case A : // Outside CC consideration zone
-				{
 					ps_weights_i.Constant(1);
 
 					ps_weights_i(0) = 1;
@@ -612,27 +607,21 @@ void PSBMPC::initialize_prediction()
 						ps_weights_i(ps) = 1;	
 					}
 					break;
-				}
 				case B || C: // OT/CR, SO
-				{
 					ps_weights_i(0) = Pr_CC_i;
 					for (int ps = 1; ps < n_ps; ps++)
 					{
 						ps_weights_i(ps) = 1 - Pr_CC_i;	
 					}
 					break;
-				}
 				case D : // OT, GW
-				{
 					ps_weights_i(0) = 1 - Pr_CC_i;
 					for (int ps = 1; ps < n_ps; ps++)
 					{
 						ps_weights_i(ps) = Pr_CC_i;
 					}
 					break;
-				}
 				case E : // HO, GW
-				{
 					for (int ps = 0; ps < n_ps; ps++)
 					{
 						ps_weights_i(ps) = 1 - Pr_CC_i;	
@@ -644,9 +633,7 @@ void PSBMPC::initialize_prediction()
 						}
 					}
 					break;
-				}
 				case F : // CR, GW
-				{
 					t_obst_passed = find_time_of_passing(i);
 					ps_weights_i(0) = 1 - Pr_CC_i;
 					for (int ps = 1; ps < n_ps; ps++)
@@ -665,11 +652,9 @@ void PSBMPC::initialize_prediction()
 						} 
 					}
 					break;
-				}
 				default :
-				{
 					std::cout << "This situation type does not exist" << std::endl;
-				}
+					break;
 			}
 			ps_weights_i = ps_weights_i.normalized();
 				
@@ -1253,30 +1238,34 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			v_i_p(1) = xs_i_p[ps](3, k);
 			psi_i_p = atan2(v_i_p(1), v_i_p(0));
 
-			mu = determine_COLREGS_violation(v_p, psi_p, v_i_p, psi_i_p, L_0i_p, d_0i_p);
-
 			coll_cost = calculate_collision_cost(v_p, v_i_p);
+
+			mu = determine_COLREGS_violation(v_p, psi_p, v_i_p, psi_i_p, L_0i_p, d_0i_p);
 
 			cost_ps = coll_cost * P_c(ps, k) + kappa * mu;
 
 			if (cost_ps > max_cost_ps(ps))
 			{
 				max_cost_ps(ps) = cost_ps;
-				// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-				// which means that higher cost is applied if the obstacle follows COLREGS
-				// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-				// and the own-ship breaches COLREGS
-				if (mu_i[ps])
-				{
-					max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
-				}
-				else
-				{
-					max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
-				}
 			}
 		}
 	}
+	// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
+	// which means that higher cost is applied if the obstacle follows COLREGS
+	// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
+	// and the own-ship breaches COLREGS
+	for (int ps = 0; ps < n_ps; ps++)
+	{
+		if (mu_i[ps])
+		{
+			max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
+		}
+		else
+		{
+			max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
+		}
+	}
+
 	if (n_ps == 1)
 	{
 		cost = max_cost_ps(0);
