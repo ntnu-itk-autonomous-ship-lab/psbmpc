@@ -342,12 +342,14 @@ double CPE::MCSKF4D_estimation(
 *****************************************************************************************/
 Eigen::VectorXd CPE::determine_best_performing_samples(
     Eigen::VectorXd &valid, 
+    int &N_e,
     const Eigen::MatrixXd &samples, 
     const Eigen::Vector2d &p_os,
     const Eigen::Vector2d &p_i, 
     const Eigen::Matrix2d &P_i
     )
 {
+    N_e = 0;
     bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
     for (int i = 0; i < n_CE; i++)
     {
@@ -359,6 +361,7 @@ Eigen::VectorXd CPE::determine_best_performing_samples(
         if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
         {
             valid(i) = 1;
+            N_e++;
         }
     }
     return valid;
@@ -416,20 +419,52 @@ double CPE::CE_estimation(
         return P_c;
     }
     
-    double N_e;
+    int N_e, e_count = 0;
     Eigen::MatrixXd samples(2, n_CE), elite_samples;
     Eigen::VectorXd valid(n_CE);
     for (int i = 0; i < max_it; i++)
     {
         generate_norm_dist_samples(samples, mu_CE, P_CE);
 
-        determine_best_performing_samples(valid, samples, p_os, p_i, P_i);
+        determine_best_performing_samples(valid, N_e, samples, p_os, p_i, P_i);
 
+        elite_samples.resize(2, N_e);
         for (int j = 0; j < n_CE; j++)
         {
+            if (valid(j) = 1)
+            {
+                elite_samples.col(e_count) = samples.col(j);
+                e_count++;
+            }
+        }
 
+        // Terminate iterative optimization if enough elite samples are collected
+        if (N_e > n_CE * rho) { converged_last = true; break; }
+        // Otherwise, improve importance density parameters
+        else
+        {
+            mu_CE_prev = mu_CE;
+            P_CE_prev = P_CE;
+
+            mu_CE = elite_samples.colwise().mean();
+
+            P_CE = Eigen::Matrix2d::Zero();
+            for (int j = 0; j < N_e; j++)
+            {
+                P_CE += (elite_samples.col(j) - mu_CE) * (elite_samples.col(j) - mu_CE);
+            }
+            P_CE = P_CE / (double)N_e;
+
+            // Smoothing to aid in preventing degeneration
+            mu_CE = alpha_n * mu_CE + (1 - alpha_n) * mu_CE_prev;
+            P_CE =  alpha_n * P_CE  + (1 - alpha_n) * P_CE_prev;
         }
     }
+    // Estimate collision probability with a final set of samples
+    generate_norm_dist_samples(samples, mu_CE, P_CE);
+    valid = (int)(samples - p_os).dot(samples - p_os) <= pow(d_safe, 2);
     
-    return P_c;
+
+    if (P_c > 1) return 1;
+    else return P_c;
 }
