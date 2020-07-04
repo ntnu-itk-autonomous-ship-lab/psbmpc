@@ -222,15 +222,15 @@ double CPE::estimate(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Eigen::VectorXd CPE::norm_pdf_log(
-    const Eigen::MatrixXd &xs,                                      // In: State vector value of normal distributed RV
-    const Eigen::VectorXd &mu,                                      // In: Expectation of the MVN
-    const Eigen::MatrixXd &Sigma                                    // In: Covariance of the MVN
+void CPE::norm_pdf_log(
+    Eigen::VectorXd &result,                                                    // In/out: Resulting vector of pdf values
+    const Eigen::MatrixXd &xs,                                                  // In: Samples of states from a normally distributed RV
+    const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
+    const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
     )
 {
     int n = xs.rows(), n_samples = xs.cols();
-    Eigen::VectorXd result(n_samples);
-
+    result.resize(n_samples);
     double exp_val = 0;
     double log_val = - pow(log(2 * M_PI), n / 2) * sqrt(Sigma.determinant());
     for (int i = 0; i < n_samples; i++)
@@ -242,7 +242,6 @@ Eigen::VectorXd CPE::norm_pdf_log(
 
         result(i) = log_val + exp_val;
     }
-    return result;
 }
 
 /****************************************************************************************
@@ -252,9 +251,9 @@ Eigen::VectorXd CPE::norm_pdf_log(
 *  Modified :
 *****************************************************************************************/
 void CPE::generate_norm_dist_samples(
-    Eigen::MatrixXd &samples,                                       // In: Samples to fill with generated MVN values, size n x n_samples
-    const Eigen::VectorXd &mu,                                      // In: Expectation of the MVN
-    const Eigen::MatrixXd &Sigma                                    // In: Covariance of the MVN
+    Eigen::MatrixXd &samples,                                                   // In: Samples to fill with generated MVN values, size n x n_samples
+    const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
+    const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
     )
 {
     int n = samples.rows(), n_samples = samples.cols();
@@ -291,10 +290,10 @@ void CPE::generate_norm_dist_samples(
 *  Modified :
 *****************************************************************************************/
 double CPE::produce_MCS_estimate(
-	const Eigen::Vector4d &xs_i,                                      // In: Obstacle state vector
-	const Eigen::Matrix4d &P_i,                                       // In: Obstacle covariance
-	const Eigen::Vector2d &p_os_cpa,                                // In: Position of own-ship at cpa
-	const double t_cpa                                              // In: Time to cpa
+	const Eigen::Vector4d &xs_i,                                                // In: Obstacle state vector
+	const Eigen::Matrix4d &P_i,                                                 // In: Obstacle covariance
+	const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
+	const double t_cpa                                                          // In: Time to cpa
     )
 {
 
@@ -307,10 +306,10 @@ double CPE::produce_MCS_estimate(
 *  Modified :
 *****************************************************************************************/
 bool CPE::determine_sample_validity_4D(
-    Eigen::VectorXd &valid,
-    const Eigen::MatrixXd &samples, 
-    const Eigen::Vector2d &p_OS_cpa, 
-    const double t_cpa
+    Eigen::VectorXd &valid,                                                     // In/out: Vector of ones/zeros for the valid samples
+    const Eigen::MatrixXd &samples,                                             // In: Samples to be investigated
+    const Eigen::Vector2d &p_OS_cpa,                                            // In: Position of own-ship at cpa
+    const double t_cpa                                                          // In: Time to cpa
     )
 {
     
@@ -318,14 +317,15 @@ bool CPE::determine_sample_validity_4D(
 
 /****************************************************************************************
 *  Name     : MCSKF4D_estimation
-*  Function : 
+*  Function : Collision probability estimation using Monte Carlo Simulation and 
+*             Kalman-filtering considering the 4D obstacle uncertainty
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 double CPE::MCSKF4D_estimation(
-	const Eigen::Matrix<double, 6, 1> &xs_os,                                   // In: Own-ship state vector
-    const Eigen::Vector4d &xs_i,                                                // In: Obstacle i state vector
-    const Eigen::Matrix4d &P_i,                                                 // In: Obstacle i covariance
+	const Eigen::MatrixXd &xs_os,                                               // In: Own-ship states for the active segment
+    const Eigen::VectorXd &xs_i,                                                // In: Obstacle i states for the active segment
+    const Eigen::Matrix4d &P_i,                                                 // In: Obstacle i covariance for the start of the active segment
     const int i                                                                 // In: Index of obstacle i
     )
 {
@@ -333,6 +333,30 @@ double CPE::MCSKF4D_estimation(
     return P_c_upd(i);
 }
 
+/****************************************************************************************
+*  Name     : determine_sample_validity_2D
+*  Function : Determine valid samples for collision probability estimation for 2D methods
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void CPE::determine_sample_validity_2D(
+		Eigen::VectorXd &valid,
+		const Eigen::MatrixXd &samples, 
+		const Eigen::Vector2d &p_os
+    )
+{
+    int n_samples = samples.cols();
+    bool inside_safety_zone;
+    for (int i = 0; i < n_samples; i++)
+    {
+        valid(i) = 0;
+        inside_safety_zone = (samples.col(i) - p_os).dot(samples.col(i) - p_os) <= pow(d_safe, 2);
+        if (inside_safety_zone)
+        {
+            valid(i) = 1;
+        }
+    }
+}
 
 /****************************************************************************************
 *  Name     : determine_best_performing_samples
@@ -341,12 +365,12 @@ double CPE::MCSKF4D_estimation(
 *  Modified :
 *****************************************************************************************/
 Eigen::VectorXd CPE::determine_best_performing_samples(
-    Eigen::VectorXd &valid, 
-    int &N_e,
-    const Eigen::MatrixXd &samples, 
-    const Eigen::Vector2d &p_os,
-    const Eigen::Vector2d &p_i, 
-    const Eigen::Matrix2d &P_i
+    Eigen::VectorXd &valid,                                                         // In/out: Vector of ones/zeros for the best performing samples in <samples>
+    int &N_e,                                                                       // In/out: Number of best performing samples
+    const Eigen::MatrixXd &samples,                                                 // In: Samples to be investigated
+    const Eigen::Vector2d &p_os,                                                    // In: Own-ship position vector
+    const Eigen::Vector2d &p_i,                                                     // In: Obstacle i position vector
+    const Eigen::Matrix2d &P_i                                                      // In: Obstacle i positional covariance
     )
 {
     N_e = 0;
@@ -358,6 +382,7 @@ Eigen::VectorXd CPE::determine_best_performing_samples(
 
         inside_alpha_p_confidence_ellipse = 
             (samples.col(i) - p_i).transpose() * P_i.inverse() * (samples.col(i) - p_i) <= gate;
+
         if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
         {
             valid(i) = 1;
@@ -369,18 +394,28 @@ Eigen::VectorXd CPE::determine_best_performing_samples(
 
 /****************************************************************************************
 *  Name     : CE_estimation
-*  Function : 
+*  Function : Collision probability estimation using the Cross-Entropy method
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 double CPE::CE_estimation(
 	const Eigen::Vector2d &p_os,                                                // In: Own-ship position vector
     const Eigen::Vector2d &p_i,                                                 // In: Obstacle i position vector
-    const Eigen::Matrix2d &P_i,                                                 // In: Obstacle i covariance
+    const Eigen::Matrix2d &P_i,                                                 // In: Obstacle i positional covariance
     const int i                                                                 // In: Index of obstacle i
     )
 {
     double P_c;
+    // Check if it is necessary to perform estimation
+    double d_0i = (p_i - p_os).norm();
+    double var_P_i_largest = 0;
+    
+    if (P_i(0, 0) > P_i(1, 1)) { var_P_i_largest = P_i(0, 0); }
+    else                       { var_P_i_largest = P_i(1, 1); }
+
+    // This large a distance usually means no effective conflict zone
+    if (d_0i > d_safe + 5 * var_P_i_largest) { P_c = 0; return P_c; }
+
     Eigen::Vector2d mu_CE_prev, mu_CE;
     Eigen::Matrix2d P_CE_prev, P_CE;
 
@@ -400,25 +435,6 @@ double CPE::CE_estimation(
         P_CE = P_CE_prev;
     }
 
-    // Check if it is necessary to perform estimation
-    double d_0i = (p_i + p_os).norm();
-    double var_P_i_largest = 0;
-    
-    if (P_i(0, 0) > P_i(1, 1))
-    {
-        var_P_i_largest = P_i(0, 0);
-    }
-    else
-    {
-        var_P_i_largest = P_i(1, 1);
-    }
-    // This large a distance usually means no effective conflict zone
-    if (d_0i > d_safe + 5 * var_P_i_largest)
-    {
-        P_c = 0;
-        return P_c;
-    }
-    
     int N_e, e_count = 0;
     Eigen::MatrixXd samples(2, n_CE), elite_samples;
     Eigen::VectorXd valid(n_CE);
@@ -460,10 +476,28 @@ double CPE::CE_estimation(
             P_CE =  alpha_n * P_CE  + (1 - alpha_n) * P_CE_prev;
         }
     }
-    // Estimate collision probability with a final set of samples
+    mu_CE_last[i] = mu_CE; P_CE_last[i] = P_CE;
+
+    // Estimate collision probability with a final set of samples from the importance density
     generate_norm_dist_samples(samples, mu_CE, P_CE);
-    valid = (int)(samples - p_os).dot(samples - p_os) <= pow(d_safe, 2);
+
+    determine_sample_validity_2D(valid, samples, p_os);
+
+    Eigen::VectorXd weights(n_CE), integrand(n_CE), importance(n_CE);
+    norm_pdf_log(integrand, samples, p_i, P_i);
+    norm_pdf_log(importance, samples, mu_CE, P_CE);
+
+    // Calculate importance weights for estimating the integral \Int_S_2 {p^i(x, y, t_k) dx dy}
+    // where p^i = Norm_distr(p_i, P_i; t_k) is the obstacle positional uncertainty (or combined uncertainty
+    // if the own-ship uncertainty is also considered)
+    for (int i = 0; i < n_CE; i++)
+    {
+        if (exp(importance(i)) > 0) { weights(i) = exp(integrand(i)) / exp(importance(i)); }   
+        else                        { weights(i) = 0; }
+    }
+    weights = weights.cwiseProduct(valid);
     
+    P_c = weights.mean();
 
     if (P_c > 1) return 1;
     else return P_c;

@@ -120,7 +120,6 @@ private:
 		const Eigen::Vector2d &v_A, 
 		const double psi_A, 
 		const Eigen::Vector2d &v_B,
-		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
 		const double d_AB);
 
@@ -128,15 +127,11 @@ private:
 		const Eigen::Vector2d &v_A, 
 		const double psi_A, 
 		const Eigen::Vector2d &v_B,
-		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
 		const double d_AB);
 
-
 	bool determine_transitional_cost_indicator(
-		const Eigen::Vector2d &v_A, 
 		const double psi_A, 
-		const Eigen::Vector2d &v_B,
 		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
 		const int i,

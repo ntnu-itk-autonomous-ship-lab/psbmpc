@@ -72,7 +72,7 @@ private:
 	// Safety zone parameters
 	double d_safe;
 
-	Eigen::VectorXd norm_pdf_log(const Eigen::MatrixXd &xs, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	void norm_pdf_log(Eigen::VectorXd &result, const Eigen::MatrixXd &xs, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
 	void generate_norm_dist_samples(Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
@@ -89,10 +89,15 @@ private:
 		const double t_cpa);
 
 	double MCSKF4D_estimation(
-		const Eigen::Matrix<double, 6, 1> &xs_os,  
-		const Eigen::Vector4d &xs_i, 
+		const Eigen::MatrixXd &xs_os,  
+		const Eigen::VectorXd &xs_i, 
 		const Eigen::Matrix4d &P_i,
 		const int i);	
+
+	void determine_sample_validity_2D(
+		Eigen::VectorXd &valid,
+		const Eigen::MatrixXd &samples, 
+		const Eigen::Vector2d &p_os);
 
 	Eigen::VectorXd determine_best_performing_samples(
 		Eigen::VectorXd &valid, 
@@ -102,7 +107,6 @@ private:
 		const Eigen::Vector2d &p_i, 
 		const Eigen::Matrix2d &P_i);
 
-	
 	double CE_estimation(
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 

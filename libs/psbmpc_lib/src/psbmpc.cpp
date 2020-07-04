@@ -337,7 +337,7 @@ void PSBMPC::calculate_optimal_offsets(
 				predicted_trajectory.resize(2, n_samples / p_step);
 				for (int k = 0; k < n_samples; k+=p_step)
 				{
-					predicted_trajectory.col(count) = trajectory.col(k);
+					predicted_trajectory.col(count) = trajectory.block<2, 1>(0, k);
 					if (count < std::round(n_samples / p_step) - 1) count++;					
 				}
 			} 
@@ -599,8 +599,6 @@ void PSBMPC::initialize_prediction()
 			switch(ST_i_0[i])
 			{
 				case A : // Outside CC consideration zone
-					ps_weights_i.Constant(1);
-
 					ps_weights_i(0) = 1;
 					for (int ps = 1; ps < n_ps; ps++)
 					{
@@ -668,7 +666,6 @@ void PSBMPC::initialize_prediction()
 	// First avoidance maneuver is always at t0
 	maneuver_times(0) = 0;
 	double d_cpa_min = 1e10, t_cpa_min;
-	int index_min = 0, M_count = 0;
 	for (int M = 1; M < n_M; M++)
 	{
 		for (int i = 0; i < n_obst; i++)
@@ -682,7 +679,6 @@ void PSBMPC::initialize_prediction()
 				{
 					d_cpa_min = d_cpa(i);
 					t_cpa_min = t_cpa(i);
-					index_min = i;
 				}
 			}
 		}
@@ -725,7 +721,7 @@ double PSBMPC::find_time_of_passing(
 	p_B(0) = xs_B(0); p_B(1) = xs_B(1);
 	v_B(0) = xs_B(2); v_B(1) = xs_B(3); 
 
-	bool A_is_ahead, B_is_ahead, A_is_overtaken, B_is_overtaken, B_is_starboard, is_passed;
+	bool A_is_overtaken, B_is_overtaken, is_passed;
 
 	int n_samples = T / dt;
 	for (int k = 0; k < n_samples; k++)
@@ -738,8 +734,6 @@ double PSBMPC::find_time_of_passing(
 		d_AB = L_AB.norm();
 		L_AB = L_AB.normalized();
 
-		B_is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
-
 		A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
 						v_A.norm() < v_B.norm()							  		&&
 						v_A.norm() > 0.25;
@@ -747,8 +741,6 @@ double PSBMPC::find_time_of_passing(
 		B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
 						v_B.norm() < v_A.norm()							  		&&
 						v_B.norm() > 0.25;
-
-		B_is_starboard = atan2(L_AB(1), L_AB(0)) > psi_A;
 
 		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
 					!A_is_overtaken) 											||
@@ -872,7 +864,6 @@ void PSBMPC::determine_situation_type(
 	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A 
 	const double psi_A, 													// In: Heading of vessel A
 	const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B
-	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double d_AB 														// In: Distance from vessel A to vessel B
 	)
@@ -888,14 +879,13 @@ void PSBMPC::determine_situation_type(
 		st_A = A; st_B = A;
 		return;
 	} 
+	// d_AB <= d_close
 	else
 	{
-		bool B_is_ahead;
-		bool A_is_starboard, B_is_starboard;
-		bool A_is_overtaken, B_is_overtaken;
-		bool is_close, is_passed, is_head_on, is_crossing;
+		bool B_is_starboard, A_is_overtaken, B_is_overtaken;
+		bool is_ahead, is_passed, is_head_on, is_crossing;
 
-		B_is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
+		is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
 		A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
 						v_A.norm() < v_B.norm()							  		&&
@@ -907,8 +897,6 @@ void PSBMPC::determine_situation_type(
 
 		B_is_starboard = atan2(L_AB(1), L_AB(0)) > psi_A;
 
-		is_close = d_AB <= d_close;
-
 		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
 					!A_is_overtaken) 											||
 					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
@@ -918,7 +906,7 @@ void PSBMPC::determine_situation_type(
 		is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
 					v_A.norm() > 0.25											&&
 					v_B.norm() > 0.25											&&
-					B_is_ahead;
+					is_ahead;
 
 		is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
 					v_A.norm() > 0.25											&&
@@ -959,7 +947,7 @@ void PSBMPC::determine_situation_type(
 /****************************************************************************************
 *  Name     : determine_COLREGS_violation
 *  Function : Determine if vessel A violates COLREGS with respect to vessel B.
-*			  Two overloads
+*			  
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -967,17 +955,14 @@ bool PSBMPC::determine_COLREGS_violation(
 	const Eigen::Vector2d& v_A,												// In: (NE) Velocity vector of vessel A
 	const double psi_A, 													// In: Heading of vessel A
 	const Eigen::Vector2d& v_B, 											// In: (NE) Velocity vector of vessel B
-	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double d_AB 														// In: Distance from vessel A to vessel B
 	)
 {
-	bool B_is_ahead;
-	bool A_is_starboard, B_is_starboard;
-	bool A_is_overtaken, B_is_overtaken;
-	bool is_close, is_passed, is_head_on, is_crossing;
+	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
+	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
 
-	B_is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
+	is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
 	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
 					 v_A.norm() < v_B.norm()							  	&&
@@ -1000,7 +985,7 @@ bool PSBMPC::determine_COLREGS_violation(
 	is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
 				 v_A.norm() > 0.25											&&
 				 v_B.norm() > 0.25											&&
-				 B_is_ahead;
+				 is_ahead;
 
 	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
 				  v_A.norm() > 0.25											&&
@@ -1020,9 +1005,7 @@ bool PSBMPC::determine_COLREGS_violation(
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_transitional_cost_indicator(
-	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A (the ownship)
 	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B (the obstacle)
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const int i, 															// In: Index of obstacle
@@ -1070,12 +1053,12 @@ bool PSBMPC::determine_transitional_cost_indicator(
 {
 	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 	double psi_A, psi_B;
-	Eigen::Vector2d v_A, v_B, L_AB;
-	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); Utilities::rotate_vector_2D(v_A, psi_A); }
-	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
+	Eigen::Vector2d L_AB;
+	if (xs_A.size() == 6) { psi_A = xs_A[2]; }
+	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); }
 	
-	if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); Utilities::rotate_vector_2D(v_B, psi_B); }
-	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
+	if (xs_B.size() == 6) { psi_B = xs_B[2]; }
+	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); }
 
 	L_AB(0) = xs_B(0) - xs_A(0);
 	L_AB(1) = xs_B(1) - xs_A(1);
@@ -1205,7 +1188,6 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 {
 	double cost = 0, cost_ps, coll_cost;
 
-	int n_obst = new_obstacles.size();
 	int n_samples = trajectory.cols();
 
 	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
@@ -1236,11 +1218,10 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 
 			v_i_p(0) = xs_i_p[ps](2, k);
 			v_i_p(1) = xs_i_p[ps](3, k);
-			psi_i_p = atan2(v_i_p(1), v_i_p(0));
 
 			coll_cost = calculate_collision_cost(v_p, v_i_p);
 
-			mu = determine_COLREGS_violation(v_p, psi_p, v_i_p, psi_i_p, L_0i_p, d_0i_p);
+			mu = determine_COLREGS_violation(v_p, psi_p, v_i_p, L_0i_p, d_0i_p);
 
 			cost_ps = coll_cost * P_c(ps, k) + kappa * mu;
 
@@ -1554,7 +1535,6 @@ void PSBMPC::update_obstacles(
 {
 	int n_obst_old = old_obstacles.size();
 	int n_obst_new = obstacle_states.rows();
-	int n_a = obstacle_intention_probabilities.rows();
 
 	bool obstacle_exist;
 	for (int i = 0; i < n_obst_new; i++)
