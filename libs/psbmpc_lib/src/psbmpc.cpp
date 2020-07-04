@@ -1176,13 +1176,28 @@ void PSBMPC::update_transitional_variables()
 }
 
 /****************************************************************************************
+*  Name     : calculate_collision_probabilities
+*  Function : Estimates collision probabilities for own-ship and an obstacle i in
+*			  consideration
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::calculate_collision_probabilities(
+	Eigen::MatrixXd& P_c_i,
+	const int i
+	)
+{
+
+}
+
+/****************************************************************************************
 *  Name     : calculate_dynamic_obstacle_cost
 *  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_dynamic_obstacle_cost(
-	const Eigen::MatrixXd& P_c,										// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps x n_samples
+	const Eigen::MatrixXd& P_c_i,										// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps x n_samples
 	const int i 													// In: Index of obstacle
 	)
 {
@@ -1223,7 +1238,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 
 			mu = determine_COLREGS_violation(v_p, psi_p, v_i_p, L_0i_p, d_0i_p);
 
-			cost_ps = coll_cost * P_c(ps, k) + kappa * mu;
+			cost_ps = coll_cost * P_c_i(ps, k) + kappa * mu;
 
 			if (cost_ps > max_cost_ps(ps))
 			{

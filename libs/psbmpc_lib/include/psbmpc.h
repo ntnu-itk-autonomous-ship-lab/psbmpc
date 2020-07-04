@@ -149,9 +149,9 @@ private:
 
 	void update_transitional_variables();
 
-	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd& P_c, const int i);
+	void calculate_collision_probabilities(Eigen::MatrixXd& P_c_i, const int i);
 
-	void calculate_collision_probabilities(Eigen::MatrixXd& P_c_i);
+	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd& P_c_i, const int i);
 
 	double calculate_collision_cost(const Eigen::Vector2d v_1, const Eigen::Vector2d v_2);
 

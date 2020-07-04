@@ -238,7 +238,7 @@ void CPE::norm_pdf_log(
         // Consider using Cholesky decomposition if you find the direct inverse of
         // Sigma to be less numerically stable
         exp_val = - (xs.col(i) - mu).transpose() * Sigma.inverse() * (xs.col(i) - mu);
-        exp_val = exp_val / 2;
+        exp_val = exp_val / 2.0;
 
         result(i) = log_val + exp_val;
     }
