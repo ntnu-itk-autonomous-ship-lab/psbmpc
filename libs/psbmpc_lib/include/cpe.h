@@ -49,7 +49,7 @@ private:
 
 	// PRNG-related
 	std::random_device seed;
-	// consider other faster generators than the mersenne twister
+	// consider other faster generators than the mersenne twister (xorshof)
 	std::mt19937 generator;
 
 	std::normal_distribution<double> std_norm_pdf;
