@@ -270,10 +270,8 @@ namespace Utilities
 		const double d_safe
 		)
 	{
-		bool B_is_ahead;
-		bool A_is_starboard, B_is_starboard;
-		bool A_is_overtaken, B_is_overtaken;
-		bool is_close, is_passed, is_head_on, is_crossing;
+		bool B_is_starboard, A_is_overtaken, B_is_overtaken;
+		bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
 
 		Eigen::Vector2d v_A, v_B, L_AB;
 		double psi_A, psi_B;
@@ -288,7 +286,7 @@ namespace Utilities
 		double d_AB = L_AB.norm();
 		L_AB = L_AB / L_AB.norm();
 
-		B_is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
+		is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
 		A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
 						v_A.norm() < v_B.norm()							  	&&
@@ -311,7 +309,7 @@ namespace Utilities
 		is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
 					v_A.norm() > 0.25											&&
 					v_B.norm() > 0.25											&&
-					B_is_ahead;
+					is_ahead;
 
 		is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
 					v_A.norm() > 0.25											&&
