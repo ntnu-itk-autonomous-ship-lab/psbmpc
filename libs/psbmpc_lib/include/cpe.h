@@ -54,18 +54,17 @@ private:
 
 	std::normal_distribution<double> std_norm_pdf;
 
-	// CE-method parameters
+	// CE-method parameters and states
 	double sigma_inject, alpha_n, gate, rho, max_it;
 	
 	bool converged_last;
 
-	// Previous possibly optimal CE density parameters
 	std::vector<Eigen::Vector2d> mu_CE_last;
 	std::vector<Eigen::Matrix2d> P_CE_last;
 
 
-	// MCSKF4D-method parameters
-	double q, p, dt_seg; 
+	// MCSKF4D-method parameters and internal states
+	double q, r, dt_seg; 
 	
 	Eigen::VectorXd P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
@@ -75,6 +74,8 @@ private:
 	void norm_pdf_log(Eigen::VectorXd &result, const Eigen::MatrixXd &xs, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
 	void generate_norm_dist_samples(Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+
+	void calculate_roots_2nd_order(Eigen::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
 
 	double produce_MCS_estimate(
 		const Eigen::Vector4d &xs_i, 
@@ -136,7 +137,12 @@ public:
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::Matrix4d &P_i,
 		const int i);
-
+	
+	double estimate(
+		const Eigen::MatrixXd &xs_os,                                               // In: Own-ship state vector for time steps in [t_k-1, t_k-1 + dt_seg]
+		const Eigen::VectorXd &xs_i,                                                // In: Obstacle i state vector for time steps in [t_k-1, t_k-1 + dt_seg]
+		const Eigen::MatrixXd &P_i,                                                 // In: Obstacle i covariance for time steps in [t_k-1, t_k-1 + dt_seg]
+		const int i);
 };
 
 #endif

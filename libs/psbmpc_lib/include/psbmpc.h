@@ -88,10 +88,11 @@ private:
 
 	Eigen::Matrix<double, 6, -1> trajectory;
 
-	// Transitional indicator variables at the current time
+	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
+	// and <obstacle is passed> (IP_0) indicators
 	Eigen::Matrix<bool, -1, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
 
-	// Situation type variables at the current time
+	// Situation type variables at the current time for the own-ship and nearby obstacles
 	ST ST_0;
 	std::vector<ST> ST_i_0;
 

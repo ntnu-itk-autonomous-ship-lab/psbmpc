@@ -302,18 +302,14 @@ void PSBMPC::calculate_optimal_offsets(
 	{
 		ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, psi_d, waypoints, prediction_method, guidance_method, T, dt);
 
-
 		for (int i = 0; i < n_obst; i++)
 		{
 			if (obstacle_colav_on[i])
 			{
 				predict_trajectories_jointly();
 			}
-			
-			// Calculate collision probabilities
-			calculate_collision_probabilities(P_c_i); 
+			calculate_collision_probabilities(P_c_i, i); 
 
-			// Calculate cost associated with this obstacle
 			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
 		}
 
@@ -1197,7 +1193,7 @@ void PSBMPC::calculate_collision_probabilities(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_dynamic_obstacle_cost(
-	const Eigen::MatrixXd& P_c_i,										// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps x n_samples
+	const Eigen::MatrixXd& P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps x n_samples
 	const int i 													// In: Index of obstacle
 	)
 {
