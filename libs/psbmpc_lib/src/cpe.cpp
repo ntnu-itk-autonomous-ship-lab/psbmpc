@@ -19,6 +19,7 @@
 *****************************************************************************************/
 
 #include "cpe.h"
+#include "utilities.h"
 #include <iostream>
 
 #ifndef M_PI
@@ -65,7 +66,7 @@ CPE::CPE(
     converged_last = false;
 
     // MCSKF4D pars
-    p = 0.001;
+    r = 0.001;
 
     q = 0.003;
 
@@ -177,7 +178,7 @@ void CPE::reset()
 
 /****************************************************************************************
 *  Name     : estimate
-*  Function : 
+*  Function : Two overloads, depending on the method used
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -192,24 +193,44 @@ double CPE::estimate(
     switch (method)
     {
         case CE :
-        {
             P_c = CE_estimation(xs_os.block<2, 1>(0, 0), xs_i.block<2, 1>(0, 0), P_i.block<2, 2>(0, 0), i);
             break;
-        }
         case MCSKF4D :
-        {
-            P_c = MCSKF4D_estimation(xs_os, xs_i, P_i, i);
+            P_c = MCSKF4D_estimation(xs_os, xs_i, Utilities::flatten(P_i), i);
             break;
-        }
         default :
-        {
             std::cout << "Invalid estimation method" << std::endl;
             break;
-        }
     }
     return P_c;
 }
 
+double CPE::estimate(
+	const Eigen::MatrixXd &xs_os,                                   // In: Own-ship state vector for time steps in [t_k-1, t_k-1 + dt_seg]
+    const Eigen::VectorXd &xs_i,                                    // In: Obstacle i state vector for time steps in [t_k-1, t_k-1 + dt_seg]
+    const Eigen::MatrixXd &P_i,                                     // In: Obstacle i covariance for time steps in [t_k-1, t_k-1 + dt_seg], flattened into n² x n_cols
+    const int i                                                     // In: Index of obstacle i
+    )
+{
+    Eigen::Matrix2d P_i_2D;
+    int n_cols = xs_os.cols();
+    double P_c;
+    switch (method)
+    {
+        case CE :
+            // The last column gives the current prediction time information
+            P_i_2D = Utilities::reshape(P_i, 4, 4).block<2, 2>(0, n_cols - 1);
+            P_c = CE_estimation(xs_os.block<2, 1>(0, n_cols - 1), xs_i.block<2, 1>(0, n_cols - 1), P_i_2D, i);
+            break;
+        case MCSKF4D :
+            P_c = MCSKF4D_estimation(xs_os, xs_i, P_i, i);
+            break;
+        default :
+            std::cout << "Invalid estimation method" << std::endl;
+            break;
+    }
+    return P_c;
+}
 
 /****************************************************************************************
 	Private functions
@@ -283,6 +304,44 @@ void CPE::generate_norm_dist_samples(
 }
 
 /****************************************************************************************
+*  Name     : calculate_roots_2nd_order
+*  Function : Simple root calculation for a 2nd order polynomial Ax² + Bx + C = 0
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void CPE::calculate_roots_2nd_order(
+    Eigen::Vector2d &r,                                                 // In: vector of roots to find
+    bool &is_complex,                                                   // In: Indicator of real/complex roots
+    const double A,                                                     // In: Coefficient in polynomial 
+    const double B,                                                     // In: Coefficient in polynomial 
+    const double C                                                      // In: Coefficient in polynomial 
+    )
+{
+    is_complex = 0;
+
+    double d = pow(B, 2) - 4 * A * C;
+    // Distinct real roots
+    if (d > 0)          
+    {
+        r(0) = - (B + sqrt(fabs(d))) / (2 * A);
+        r(1) = - (B - sqrt(fabs(d))) / (2 * A);
+    }
+    // Repeated real roots
+    else if (d == 0)
+    {
+        r(0) = - B / (2 * A);
+        r(1) = r(0);
+    }
+    // Complex conjugated roots, dont care solution
+    else
+    {
+        is_complex = 1;
+        r(0) = - 1e10;
+        r(1) = 1e10;
+    }
+}
+
+/****************************************************************************************
 *  Name     : produce_MCS_estimate
 *  Function : Uses Monte Carlo Simulation to produce a collision probability "measurement"
 *             for the MCSKF4D method
@@ -296,29 +355,78 @@ double CPE::produce_MCS_estimate(
 	const double t_cpa                                                          // In: Time to cpa
     )
 {
+    double P_c;
 
+    Eigen::MatrixXd samples(4, n_MCSKF);
+    generate_norm_dist_samples(samples, xs_i, P_i);
+
+    Eigen::VectorXd valid(n_MCSKF);
+    determine_sample_validity_4D(valid, samples, p_os_cpa, t_cpa);
+
+    // The estimate will be taken as the ratio of samples inside the integration domain, 
+    // to the total number of samples, i.e. the mean of the validity vector
+    P_c = valid.mean();
+    if (P_c > 1) { return 1; }
+    else         { return P_c; }      
 }
 
 /****************************************************************************************
 *  Name     : determine_sample_validity_4D
 *  Function : Determine if a sample is valid for use in estimation for the MCSKF4D method
+*             See "On Collision Risk Assessment for Autonomous Ships Using Scenario-based"
+*             MPC for more information
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 bool CPE::determine_sample_validity_4D(
     Eigen::VectorXd &valid,                                                     // In/out: Vector of ones/zeros for the valid samples
     const Eigen::MatrixXd &samples,                                             // In: Samples to be investigated
-    const Eigen::Vector2d &p_OS_cpa,                                            // In: Position of own-ship at cpa
+    const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
     const double t_cpa                                                          // In: Time to cpa
     )
 {
-    
+    int n_samples = samples.cols();
+
+    bool complex_roots;
+    Eigen::Vector2d p_i_sample, v_i_sample;
+    double A, B, C;
+    Eigen::Vector2d r;
+    for (int i = 0; i < n_samples; i++)
+    {
+        valid(i) = 0;
+
+        p_i_sample = samples.block<2, 1>(0, i);
+        v_i_sample = samples.block<2, 1>(2, i);
+
+        A = v_i_sample.dot(v_i_sample);
+        B = 2 * (p_i_sample - p_os_cpa).transpose() * v_i_sample;
+        C = p_i_sample.dot(p_i_sample) - 2 * p_os_cpa.dot(p_i_sample) + p_os_cpa.dot(p_os_cpa) - pow(d_safe, 2);
+
+        calculate_roots_2nd_order(r, complex_roots, A, B, C);
+
+        // Distinct real positive or pos+negative roots: 2 crossings, possibly only one in
+        // t >= t0, checks if t_cpa occurs inside this root interval <=> inside safety zone
+        if (!complex_roots && r(0) != r(1) && t_cpa >= 0 && (r(0) <= t_cpa && t_cpa <= r(1)))
+        {
+            valid(i) = 1;
+        }
+        // Repetitive real positive roots: 1 crossing, this is only possible if the sampled
+        // trajectory is tangent to the safety zone at t_cpa, checks if t_cpa = cross time
+        // in this case
+        else if(!complex_roots && r(0) == r(1) && t_cpa >= 0 && t_cpa == r(0))
+        {
+            valid(i) = 1;
+        }
+        // Negative roots are not considered, as that implies going backwards in time..
+    }
 }
 
 /****************************************************************************************
 *  Name     : MCSKF4D_estimation
 *  Function : Collision probability estimation using Monte Carlo Simulation and 
-*             Kalman-filtering considering the 4D obstacle uncertainty
+*             Kalman-filtering considering the 4D obstacle uncertainty along piece-wise
+*             linear segments of the vessel trajectories. See "Risk-based Autonomous 
+*             Maritime Collision Avoidance Considering Obstacle Intentions" for more info.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -329,6 +437,74 @@ double CPE::MCSKF4D_estimation(
     const int i                                                                 // In: Index of obstacle i
     )
 {
+    int n_cols = xs_os.cols();
+    // Collision probability "measurement" from MCS
+    double y_P_c;
+    // Define speed and course for the vessels along their linear segments, and the
+    // state vector representing the straight line
+    double U_os_sl, U_i_sl, psi_os_sl, psi_i_sl;
+    Eigen::Vector4d xs_os_sl, xs_i_sl;
+
+    // Own-ship segment
+    // Find average velocity along segment
+    U_os_sl = xs_os.block(2, n_cols, 3, 0).colwise().mean().norm();
+    // Find angle of the segment
+    psi_os_sl = atan2(xs_os(1, n_cols - 1) - xs_os(1, 0), xs_os(0, n_cols - 1) - xs_os(0, 0));
+    // Set initial position to be that of the own-ship at the start of the segment
+    xs_os_sl(0) = xs_os(0, 0); xs_os_sl(1) = xs_os(1, 0);
+    // Rotate velocity vector to be parallel to the straight line
+    xs_os_sl(2) = U_os_sl * cos(psi_os_sl);
+    xs_os_sl(3) = U_os_sl * sin(psi_os_sl);
+
+    // Obstacle segment
+    // Same procedure as every year James
+    U_i_sl = xs_i.block(2, n_cols, 3, 0).colwise().mean().norm();
+
+    psi_i_sl = atan2(xs_i(1, n_cols - 1) - xs_i(1, 0), xs_i(0, n_cols - 1) - xs_i(0, 0));
+
+    xs_i_sl(0) = xs_i(0, 0); xs_i_sl(1) = xs_i(1, 0);
+    xs_i_sl(2) = U_i_sl * cos(psi_i_sl);
+    xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
+
+    Eigen::Vector2d p_os_cpa;
+    double t_cpa, d_cpa;
+    Utilities::calculate_cpa(p_os_cpa, t_cpa, d_cpa, xs_os_sl, xs_i_sl);
+
+    // Constrain the collision probability estimation to the interval [t_j-1, t_j], 
+    // which is of length dt_seg. This is done to only consider vessel positions on
+    // their discretized trajectories, and not beyond that. 
+    if (t_cpa > dt_seg)
+    {
+        y_P_c = produce_MCS_estimate(xs_os_sl, P_i, xs_os.block<2, 1>(0, n_cols - 1), dt_seg);
+    }
+    else
+    {
+        y_P_c = produce_MCS_estimate(xs_os_sl, P_i, p_os_cpa, t_cpa);
+    }
+
+    //*****************************************************
+    // Kalman-filtering for simple markov chain model
+    // P_c^i_k+1 = P_c^i_k + v^i_k
+    // y^i_k     = P_c^i_k + w^i_k
+    //*****************************************************
+    // Update using measurement y_P_c
+    //*****************************************************
+    double K;
+    K = var_P_c_p(i) / (var_P_c_p(i) + r);
+
+    P_c_upd(i) = P_c_p(i) + K * (y_P_c - P_c_p(i));
+    if (P_c_upd(i) > 1) P_c_upd(i) = 1;
+
+    var_P_c_upd(i) = (1 - K) * var_P_c_p(i);
+
+    //*****************************************************
+    // Predict
+    //*****************************************************
+    P_c_p(i) = P_c_upd(i);
+    if (P_c_p(i) > 1) P_c_p(i) = 1;
+
+    var_P_c_p(i) = var_P_c_upd(i) + q;
+    //*****************************************************
     
     return P_c_upd(i);
 }
