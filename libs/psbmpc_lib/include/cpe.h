@@ -91,8 +91,8 @@ private:
 
 	double MCSKF4D_estimation(
 		const Eigen::MatrixXd &xs_os,  
-		const Eigen::VectorXd &xs_i, 
-		const Eigen::Matrix4d &P_i,
+		const Eigen::MatrixXd &xs_i, 
+		const Eigen::MatrixXd &P_i,
 		const int i);	
 
 	void determine_sample_validity_2D(
@@ -100,7 +100,7 @@ private:
 		const Eigen::MatrixXd &samples, 
 		const Eigen::Vector2d &p_os);
 
-	Eigen::VectorXd determine_best_performing_samples(
+	void determine_best_performing_samples(
 		Eigen::VectorXd &valid, 
 		int &N_e,
 		const Eigen::MatrixXd &samples, 
@@ -131,17 +131,11 @@ public:
 		const int i);
 
 	void reset();
-
-	double estimate(
-		const Eigen::Matrix<double, 6, 1> &xs_os, 
-		const Eigen::Vector4d &xs_i, 
-		const Eigen::Matrix4d &P_i,
-		const int i);
 	
 	double estimate(
-		const Eigen::MatrixXd &xs_os,                                               // In: Own-ship state vector for time steps in [t_k-1, t_k-1 + dt_seg]
-		const Eigen::VectorXd &xs_i,                                                // In: Obstacle i state vector for time steps in [t_k-1, t_k-1 + dt_seg]
-		const Eigen::MatrixXd &P_i,                                                 // In: Obstacle i covariance for time steps in [t_k-1, t_k-1 + dt_seg]
+		const Eigen::MatrixXd &xs_os,
+		const Eigen::MatrixXd &xs_i,
+		const Eigen::MatrixXd &P_i,
 		const int i);
 };
 

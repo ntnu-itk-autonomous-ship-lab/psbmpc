@@ -155,6 +155,19 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.s"
 	cd /home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/mrou.cpp -o CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.s
 
+libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/flags.make
+libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o: ../libs/psbmpc_lib/src/utilities.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o"
+	cd /home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o -c /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.cpp
+
+libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.i"
+	cd /home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.cpp > CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.i
+
+libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.s"
+	cd /home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.cpp -o CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.s
+
 # Object files for target psbmpc_lib
 psbmpc_lib_OBJECTS = \
 "CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o" \
@@ -162,7 +175,8 @@ psbmpc_lib_OBJECTS = \
 "CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o" \
 "CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o" \
 "CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o" \
-"CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o"
+"CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o" \
+"CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o"
 
 # External object files for target psbmpc_lib
 psbmpc_lib_EXTERNAL_OBJECTS =
@@ -173,9 +187,10 @@ libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/c
 libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o
 libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o
 libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o
+libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o
 libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make
 libs/psbmpc_lib/libpsbmpc_lib.a: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX static library libpsbmpc_lib.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX static library libpsbmpc_lib.a"
 	cd /home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib && $(CMAKE_COMMAND) -P CMakeFiles/psbmpc_lib.dir/cmake_clean_target.cmake
 	cd /home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/psbmpc_lib.dir/link.txt --verbose=$(VERBOSE)
 

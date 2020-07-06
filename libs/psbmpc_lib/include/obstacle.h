@@ -27,7 +27,6 @@
 #include "Eigen/Dense"
 #include "mrou.h"
 #include "kf.h"
-#include "utilities.h"
 
 enum Intention 
 {

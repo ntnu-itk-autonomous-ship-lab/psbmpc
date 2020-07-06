@@ -307,6 +307,33 @@ src/psbmpc.cpp.s:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.s
 .PHONY : src/psbmpc.cpp.s
 
+src/utilities.o: src/utilities.cpp.o
+
+.PHONY : src/utilities.o
+
+# target to build an object file
+src/utilities.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o
+.PHONY : src/utilities.cpp.o
+
+src/utilities.i: src/utilities.cpp.i
+
+.PHONY : src/utilities.i
+
+# target to preprocess a source file
+src/utilities.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.i
+.PHONY : src/utilities.cpp.i
+
+src/utilities.s: src/utilities.cpp.s
+
+.PHONY : src/utilities.s
+
+# target to generate assembly for a file
+src/utilities.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.s
+.PHONY : src/utilities.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -334,6 +361,9 @@ help:
 	@echo "... src/psbmpc.o"
 	@echo "... src/psbmpc.i"
 	@echo "... src/psbmpc.s"
+	@echo "... src/utilities.o"
+	@echo "... src/utilities.i"
+	@echo "... src/utilities.s"
 .PHONY : help
 
 

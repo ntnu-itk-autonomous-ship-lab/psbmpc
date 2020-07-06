@@ -49,8 +49,8 @@ int main(){
 	// Own-ship prediction setup
 	//*****************************************************************************************************************
 
-	Eigen::Matrix<double, 6, 1> xs;
-	xs << 0, 0, 0, 6, 0, 0;
+	Eigen::Matrix<double, 6, 1> xs_os_0;
+	xs_os_0 << 0, 0, 0, 6, 0, 0;
 
 	double T = 300; double dt = 0.5;
 
@@ -87,7 +87,7 @@ int main(){
 
 	int n_samples = std::round(T / dt);
 	trajectory.resize(6, n_samples);
-	trajectory.block<6, 1>(0, 0) << xs;
+	trajectory.block<6, 1>(0, 0) << xs_os_0;
 	std::cout << "traj init = [" << trajectory(0, 0) << ", " << trajectory(1, 0) << ", " << trajectory(2, 0) << ", " \
 	<< trajectory(3, 0) << ", " << trajectory(4, 0) << ", " << trajectory(5, 0) << "]" << std::endl;
 
@@ -108,7 +108,7 @@ int main(){
 	double sigma_x(0.8), sigma_xy(0),sigma_y(0.8), gamma_x(0.1), gamma_y(0.1);
 
 	Eigen::Vector4d xs_0;
-	xs_0 << 0, 0, 2, 0;
+	xs_0 << 50, 0, 2, 0;
 
 	Eigen::Matrix4d P_0;
 	P_0 << 100, 0, 0, 0,
@@ -131,7 +131,7 @@ int main(){
 	xs_p.resize(1); xs_p[0].resize(4, n_samples);
 	xs_p[0].col(0) = xs_0;
 	P_p.resize(1); P_p[0].resize(16, n_samples);
-	P_p[0].col(0) = Utilities::flatten(P_0);
+	P_p[0].col(0) = flatten(P_0);
 
 	v_p.resize(1); v_p[0].resize(2, n_samples);
 	
@@ -177,51 +177,60 @@ int main(){
 	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
 	double d_safe = 50;
+	int n_CE = 1000, n_MCSKF = 100, dt_seg = 1;
 
 	std::vector<Eigen::VectorXd> P_c_i_CE, P_c_i_MCSKF;
 	P_c_i_CE.resize(1); P_c_i_MCSKF.resize(1);
 	P_c_i_CE[0].resize(n_samples);
 	P_c_i_MCSKF[0].resize(n_samples);
 
-	CPE *cpe = new CPE(CE, 1000, 100, d_safe, dt);
+	CPE *cpe = new CPE(CE, n_CE, n_MCSKF, d_safe, dt);
 
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
 
 	cpe->set_number_of_obstacles(1);
-	cpe->initialize(trajectory.col(0), xs_p[0].col(0), Utilities::reshape(P_p[0].col(0), 4, 4), 0);
+	cpe->initialize(trajectory.col(0), xs_p[0].col(0), reshape(P_p[0].col(0), 4, 4), 0);
 
 	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
 
 	double t = 0;
-	Eigen::Vector4d xs = xs_0;
-	Eigen::Matrix4d P = P_0;
+	int n_seg_samples = std::round(dt_seg / dt);
+
+	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
+	Eigen::Matrix4d P_i_ps_k;
+	int k_j_ = 0, k_j = 0;
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		cpe->set_method(CE);
 		for (int k = 0; k < n_samples; k++)
 		{
 			t = (k + 1) * dt;
-			xs = mrou->predict_state(xs, v_p[ps].col(k), dt);
-			P = mrou->predict_covariance(P_0, t);
-
 			if (k < n_samples - 1)
 			{
-				xs_p[ps].col(k + 1) = xs;
-				P_p[ps].col(k + 1) = Utilities::flatten(P);
+				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p[ps].col(k), dt);
+				P_p[ps].col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
 			}
 
 			// Collision probability estimation using CE
-			P_c_i_CE[ps](k) = cpe->estimate(trajectory.col(k), xs_p[ps].col(k), Utilities::reshape(P_p[ps].col(k), 4, 4), 0);
+			P_c_i_CE[ps](k) = cpe->estimate(trajectory.col(k), xs_p[ps].col(k), P_p[ps].col(k), 0);
 		}
 		
 		cpe->set_method(MCSKF4D);
-		cpe->initialize(trajectory.col(0), xs_p[ps].col(0), Utilities::reshape(P_p[ps].col(0), 4, 4), 0);
+		cpe->initialize(trajectory.col(0), xs_p[ps].col(0), reshape(P_p[ps].col(0), 4, 4), 0);
 		for (int k = 0; k < n_samples; k++)
 		{
+			if (fmod(k, n_seg_samples - 1) == 0)
+			{
+				k_j_ = k_j;
+				k_j = k;
+				xs_os_seg = trajectory.block(6, k_j - k_j_ + 1, 0, k_j_);
+				xs_i_seg = xs_p[ps].block(4, k_j - k_j_ + 1, 0, k_j_);
+				P_i_seg = trajectory.block(16, k_j - k_j_ + 1, 0, k_j_);
+			}
 			// Collision probability estimation using MCSKF4D
-			P_c_i_CE[ps](k) = cpe->estimate(trajectory.col(k), xs_p[ps].col(k), Utilities::reshape(P_p[ps].col(k), 4, 4), 0);
+			P_c_i_CE[ps](k) = cpe->estimate(xs_os_seg, xs_i_seg, P_i_seg, 0);
 		}
 	}
 
@@ -244,6 +253,12 @@ int main(){
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 	map_P_traj_i = P_p[0];
 
+	Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, 1, n_samples);
+	map_Pcoll_CE = P_c_i_CE[0];
+
+	Eigen::Map<Eigen::MatrixXd> map_Pcoll_MCSKF(p_MCSKF, 1, n_samples);
+	map_Pcoll_MCSKF = P_c_i_MCSKF[0];
+
 	buffer[BUFSIZE] = '\0';
 	engOutputBuffer(ep, buffer, BUFSIZE);
 
@@ -253,6 +268,9 @@ int main(){
 	engPutVariable(ep, "X_i", traj_i);
 	engPutVariable(ep, "v", vtraj_i);
 	engPutVariable(ep, "P_flat", P_traj_i);
+
+	engPutVariable(ep, "P_c_CE", Pcoll_CE);
+	engPutVariable(ep, "P_c_MCSKF", Pcoll_MCSKF);
 	engEvalString(ep, "test_cpe_plot");
 
 	printf("%s", buffer);

@@ -23,10 +23,11 @@
 #ifndef _PSBMPC_H_
 #define _PSBMPC_H_
 
-#include "cpe.h"
+
 #include "psbmpc_index.h"
 #include "ownship.h"
 #include "obstacle.h"
+#include "cpe.h"
 #include "Eigen/Dense"
 #include <vector>
 #include <math.h>

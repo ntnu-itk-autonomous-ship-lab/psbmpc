@@ -21,6 +21,7 @@
 #include "cpe.h"
 #include "utilities.h"
 #include <iostream>
+#include "engine.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -67,8 +68,7 @@ CPE::CPE(
 
     // MCSKF4D pars
     r = 0.001;
-
-    q = 0.003;
+    q = 8e-4;
 
     dt_seg = 2 * dt;
 }
@@ -123,9 +123,9 @@ void CPE::initialize(
         for (int i = 0; i < n_obst; i++)
         {
             // Heuristic initialization
-            mu_CE_last[i] = 0.5 * (xs_os.block<2, 1>(0, 0) + xs_i); 
+            mu_CE_last[i] = 0.5 * (xs_os.block<2, 1>(0, 0) + xs_i.block<2, 1>(0, 0)); 
             
-            P_CE_last[i] = pow(d_safe, 2) * Eigen::Matrix2d::Identity() / 3;
+            P_CE_last[i] = pow(d_safe, 2) * Eigen::Matrix2d::Identity() / 3.0;
         }
         break;
     case MCSKF4D :
@@ -178,36 +178,13 @@ void CPE::reset()
 
 /****************************************************************************************
 *  Name     : estimate
-*  Function : Two overloads, depending on the method used
+*  Function : 
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 double CPE::estimate(
-	const Eigen::Matrix<double, 6, 1> &xs_os,                                   // In: Own-ship state vector
-    const Eigen::Vector4d &xs_i,                                                // In: Obstacle i state vector
-    const Eigen::Matrix4d &P_i,                                                 // In: Obstacle i covariance
-    const int i                                                                 // In: Index of obstacle i
-    )
-{
-    double P_c;
-    switch (method)
-    {
-        case CE :
-            P_c = CE_estimation(xs_os.block<2, 1>(0, 0), xs_i.block<2, 1>(0, 0), P_i.block<2, 2>(0, 0), i);
-            break;
-        case MCSKF4D :
-            P_c = MCSKF4D_estimation(xs_os, xs_i, Utilities::flatten(P_i), i);
-            break;
-        default :
-            std::cout << "Invalid estimation method" << std::endl;
-            break;
-    }
-    return P_c;
-}
-
-double CPE::estimate(
 	const Eigen::MatrixXd &xs_os,                                   // In: Own-ship state vector for time steps in [t_k-1, t_k-1 + dt_seg]
-    const Eigen::VectorXd &xs_i,                                    // In: Obstacle i state vector for time steps in [t_k-1, t_k-1 + dt_seg]
+    const Eigen::MatrixXd &xs_i,                                    // In: Obstacle i state vector for time steps in [t_k-1, t_k-1 + dt_seg]
     const Eigen::MatrixXd &P_i,                                     // In: Obstacle i covariance for time steps in [t_k-1, t_k-1 + dt_seg], flattened into n² x n_cols
     const int i                                                     // In: Index of obstacle i
     )
@@ -218,8 +195,9 @@ double CPE::estimate(
     switch (method)
     {
         case CE :
+            // If CE is used, (typically when n_cols = 1)
             // The last column gives the current prediction time information
-            P_i_2D = Utilities::reshape(P_i, 4, 4).block<2, 2>(0, n_cols - 1);
+            P_i_2D = reshape(P_i, 4, 4).block<2, 2>(0, n_cols - 1);
             P_c = CE_estimation(xs_os.block<2, 1>(0, n_cols - 1), xs_i.block<2, 1>(0, n_cols - 1), P_i_2D, i);
             break;
         case MCSKF4D :
@@ -253,7 +231,7 @@ void CPE::norm_pdf_log(
     int n = xs.rows(), n_samples = xs.cols();
     result.resize(n_samples);
     double exp_val = 0;
-    double log_val = - pow(log(2 * M_PI), n / 2) * sqrt(Sigma.determinant());
+    double log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
     for (int i = 0; i < n_samples; i++)
     {
         // Consider using Cholesky decomposition if you find the direct inverse of
@@ -290,6 +268,10 @@ void CPE::generate_norm_dist_samples(
             std_norm_samples(c, i) = std_norm_pdf(generator);
         }
     }
+    Eigen::VectorXd std_mean1, std_mean2;
+    std_mean1 = std_norm_samples.rowwise().mean();
+    std::cout << "std mean = " << std_mean1 << std::endl;
+
     /*
     for (int i = 0; i < n_samples; i++)
     {
@@ -301,6 +283,10 @@ void CPE::generate_norm_dist_samples(
     */
     // Box-muller transform
     samples = (L * std_norm_samples).colwise() + mu;
+
+    std::cout << "mu = " << mu << std::endl;
+    Eigen::VectorXd mean = samples.rowwise().mean();
+    std::cout << "sample mean = " << mean << std::endl;
 }
 
 /****************************************************************************************
@@ -432,54 +418,70 @@ bool CPE::determine_sample_validity_4D(
 *****************************************************************************************/
 double CPE::MCSKF4D_estimation(
 	const Eigen::MatrixXd &xs_os,                                               // In: Own-ship states for the active segment
-    const Eigen::VectorXd &xs_i,                                                // In: Obstacle i states for the active segment
-    const Eigen::Matrix4d &P_i,                                                 // In: Obstacle i covariance for the start of the active segment
+    const Eigen::MatrixXd &xs_i,                                                // In: Obstacle i states for the active segment
+    const Eigen::MatrixXd &P_i,                                                 // In: Obstacle i covariance for the active segment
     const int i                                                                 // In: Index of obstacle i
     )
 {
     int n_cols = xs_os.cols();
     // Collision probability "measurement" from MCS
     double y_P_c;
-    // Define speed and course for the vessels along their linear segments, and the
-    // state vector representing the straight line
-    double U_os_sl, U_i_sl, psi_os_sl, psi_i_sl;
-    Eigen::Vector4d xs_os_sl, xs_i_sl;
 
-    // Own-ship segment
-    // Find average velocity along segment
-    U_os_sl = xs_os.block(2, n_cols, 3, 0).colwise().mean().norm();
-    // Find angle of the segment
-    psi_os_sl = atan2(xs_os(1, n_cols - 1) - xs_os(1, 0), xs_os(0, n_cols - 1) - xs_os(0, 0));
-    // Set initial position to be that of the own-ship at the start of the segment
-    xs_os_sl(0) = xs_os(0, 0); xs_os_sl(1) = xs_os(1, 0);
-    // Rotate velocity vector to be parallel to the straight line
-    xs_os_sl(2) = U_os_sl * cos(psi_os_sl);
-    xs_os_sl(3) = U_os_sl * sin(psi_os_sl);
+    // Vectors representing the linear segments
+    Eigen::VectorXd xs_os_sl = xs_os.col(0), xs_i_sl = xs_i.col(0);
 
-    // Obstacle segment
-    // Same procedure as every year James
-    U_i_sl = xs_i.block(2, n_cols, 3, 0).colwise().mean().norm();
+    if (n_cols > 1)
+    {
+        // Define speed and course for the vessels along their linear segments
+        double U_os_sl, U_i_sl, psi_os_sl, psi_i_sl;
+    
+        // Own-ship segment
+        xs_os_sl.resize(4);
+        // Find average velocity along segment
+        U_os_sl = xs_os.block(2, n_cols, 3, 0).colwise().mean().norm();
+        // Find angle of the segment
+        psi_os_sl = atan2(xs_os(1, n_cols - 1) - xs_os(1, 0), xs_os(0, n_cols - 1) - xs_os(0, 0));
+        // Set initial position to be that of the own-ship at the start of the segment
+        xs_os_sl(0) = xs_os(0, 0); 
+        xs_os_sl(1) = xs_os(1, 0);
+        // Rotate velocity vector to be parallel to the straight line
+        xs_os_sl(2) = U_os_sl * cos(psi_os_sl);
+        xs_os_sl(3) = U_os_sl * sin(psi_os_sl);
 
-    psi_i_sl = atan2(xs_i(1, n_cols - 1) - xs_i(1, 0), xs_i(0, n_cols - 1) - xs_i(0, 0));
+        // Obstacle segment
+        // Same procedure as every year James
+        U_i_sl = xs_i.block(2, n_cols, 3, 0).colwise().mean().norm();
+        psi_i_sl = atan2(xs_i(1, n_cols - 1) - xs_i(1, 0), xs_i(0, n_cols - 1) - xs_i(0, 0));
 
-    xs_i_sl(0) = xs_i(0, 0); xs_i_sl(1) = xs_i(1, 0);
-    xs_i_sl(2) = U_i_sl * cos(psi_i_sl);
-    xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
+        xs_i_sl(0) = xs_i(0, 0); 
+        xs_i_sl(1) = xs_i(1, 0);
+        xs_i_sl(2) = U_i_sl * cos(psi_i_sl);
+        xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
+    }
+    std::cout << "xs os sl = " << xs_os_sl << std::endl;
+    std::cout << "xs i sl = " << xs_i_sl << std::endl;
+
+
+    Eigen::Matrix4d P_i_sl;
+    P_i_sl = reshape(P_i.col(0), 4, 4);
+    std::cout << "P_i_sl = " << std::endl;
+    print_matrix(P_i_sl);
 
     Eigen::Vector2d p_os_cpa;
     double t_cpa, d_cpa;
-    Utilities::calculate_cpa(p_os_cpa, t_cpa, d_cpa, xs_os_sl, xs_i_sl);
-
+    calculate_cpa(p_os_cpa, t_cpa, d_cpa, xs_os_sl, xs_i_sl);
+    std::cout << "p_os_cpa = " << p_os_cpa << std::endl;
+    std::cout << "t_cpa = " << t_cpa << std::endl;
     // Constrain the collision probability estimation to the interval [t_j-1, t_j], 
     // which is of length dt_seg. This is done to only consider vessel positions on
     // their discretized trajectories, and not beyond that. 
     if (t_cpa > dt_seg)
     {
-        y_P_c = produce_MCS_estimate(xs_os_sl, P_i, xs_os.block<2, 1>(0, n_cols - 1), dt_seg);
+        y_P_c = produce_MCS_estimate(xs_os_sl, P_i_sl, xs_os.block<2, 1>(0, n_cols - 1), dt_seg);
     }
     else
     {
-        y_P_c = produce_MCS_estimate(xs_os_sl, P_i, p_os_cpa, t_cpa);
+        y_P_c = produce_MCS_estimate(xs_os_sl, P_i_sl, p_os_cpa, t_cpa);
     }
 
     //*****************************************************
@@ -491,12 +493,15 @@ double CPE::MCSKF4D_estimation(
     //*****************************************************
     double K;
     K = var_P_c_p(i) / (var_P_c_p(i) + r);
-
+    std::cout << "K = " << K << std::endl;
     P_c_upd(i) = P_c_p(i) + K * (y_P_c - P_c_p(i));
+    std::cout << "P_c_p(i) = " << P_c_p(i) << std::endl;
+    std::cout << "P_c_upd(i) = " << P_c_upd(i) << std::endl;
     if (P_c_upd(i) > 1) P_c_upd(i) = 1;
 
     var_P_c_upd(i) = (1 - K) * var_P_c_p(i);
-
+    std::cout << "var_P_c_p(i) = " << var_P_c_p(i) << std::endl;
+    std::cout << "var_P_c_upd(i) = " << var_P_c_upd(i) << std::endl;
     //*****************************************************
     // Predict
     //*****************************************************
@@ -504,6 +509,7 @@ double CPE::MCSKF4D_estimation(
     if (P_c_p(i) > 1) P_c_p(i) = 1;
 
     var_P_c_p(i) = var_P_c_upd(i) + q;
+    std::cout << "var_P_c_p(i) = " << var_P_c_p(i) << std::endl;
     //*****************************************************
     
     return P_c_upd(i);
@@ -540,7 +546,7 @@ void CPE::determine_sample_validity_2D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Eigen::VectorXd CPE::determine_best_performing_samples(
+void CPE::determine_best_performing_samples(
     Eigen::VectorXd &valid,                                                         // In/out: Vector of ones/zeros for the best performing samples in <samples>
     int &N_e,                                                                       // In/out: Number of best performing samples
     const Eigen::MatrixXd &samples,                                                 // In: Samples to be investigated
@@ -565,7 +571,6 @@ Eigen::VectorXd CPE::determine_best_performing_samples(
             N_e++;
         }
     }
-    return valid;
 }
 
 /****************************************************************************************
@@ -581,6 +586,15 @@ double CPE::CE_estimation(
     const int i                                                                 // In: Index of obstacle i
     )
 {
+    /*
+    // Matlab engine setup
+	Engine *ep = engOpen(NULL);
+	if (ep == NULL)
+	{
+		std::cout << "engine start failed!" << std::endl;
+	}
+	char buffer[100000+1];
+    */
     double P_c;
     // Check if it is necessary to perform estimation
     double d_0i = (p_i - p_os).norm();
@@ -614,6 +628,57 @@ double CPE::CE_estimation(
     int N_e, e_count = 0;
     Eigen::MatrixXd samples(2, n_CE), elite_samples;
     Eigen::VectorXd valid(n_CE);
+
+    /*
+    // Matlab init CE plotting
+    mxArray *p_os_ms = mxCreateDoubleMatrix(2, 1, mxREAL);
+	mxArray *p_i_ms = mxCreateDoubleMatrix(2, 1, mxREAL);
+    mxArray *P_i_ms = mxCreateDoubleMatrix(2, 2, mxREAL);
+
+    mxArray *ms = mxCreateDoubleMatrix(2, n_CE, mxREAL);
+	mxArray *ms_elite;
+
+    mxArray *Pce_last = mxCreateDoubleMatrix(2, 2, mxREAL);
+    mxArray *Pce = mxCreateDoubleMatrix(2, 2, mxREAL);
+
+    mxArray *mu_ce_last = mxCreateDoubleMatrix(2, 1, mxREAL);
+    mxArray *mu_ce = mxCreateDoubleMatrix(2, 1, mxREAL);
+
+    double *p_p_os_ms = mxGetPr(p_os_ms);
+	double *p_p_i_ms = mxGetPr(p_i_ms);
+    double *p_P_i_ms = mxGetPr(P_i_ms);
+
+	double *p_ms = mxGetPr(ms);
+	
+
+    double *p_Pce_last = mxGetPr(Pce_last);
+	double *p_Pce = mxGetPr(Pce);
+
+    double *p_mu_ce_last = mxGetPr(mu_ce_last);
+	double *p_mu_ce = mxGetPr(mu_ce);
+
+    Eigen::Map<Eigen::MatrixXd> map_p_os_ms(p_p_os_ms, 2, 1);
+	map_p_os_ms = p_os;
+    Eigen::Map<Eigen::MatrixXd> map_p_i_ms(p_p_i_ms, 2, 1);
+	map_p_i_ms = p_i;
+    Eigen::Map<Eigen::MatrixXd> map_P_i_ms(p_P_i_ms, 2, 2);
+	map_P_i_ms = P_i;
+
+    Eigen::Map<Eigen::MatrixXd> map_Pce_last(p_Pce_last, 2, 2);
+	map_Pce_last = P_CE_last[i];
+
+    Eigen::Map<Eigen::MatrixXd> map_mu_ce_last(p_mu_ce_last, 2, 1);
+	map_mu_ce_last = mu_CE_last[i];
+
+    engPutVariable(ep, "p_os", p_os_ms);
+    engPutVariable(ep, "p_i", p_i_ms);
+    engPutVariable(ep, "P_i", P_i_ms);
+    engPutVariable(ep, "P_CE_last", Pce_last);
+    engPutVariable(ep, "mu_CE_last", mu_ce_last);
+
+    engEvalString(ep, "test_ce_live_plot_init");
+    */
+
     for (int i = 0; i < max_it; i++)
     {
         generate_norm_dist_samples(samples, mu_CE, P_CE);
@@ -621,29 +686,33 @@ double CPE::CE_estimation(
         determine_best_performing_samples(valid, N_e, samples, p_os, p_i, P_i);
 
         elite_samples.resize(2, N_e);
+        e_count = 0;
         for (int j = 0; j < n_CE; j++)
         {
-            if (valid(j) = 1)
+            if (valid(j) == 1)
             {
                 elite_samples.col(e_count) = samples.col(j);
                 e_count++;
             }
         }
 
+        //ms_elite =  mxCreateDoubleMatrix(2, N_e, mxREAL);
+        //double *p_ms_elite = mxGetPr(ms_elite);
+
         // Terminate iterative optimization if enough elite samples are collected
-        if (N_e > n_CE * rho) { converged_last = true; break; }
+        if (N_e > n_CE * rho) { converged_last = true; }
         // Otherwise, improve importance density parameters
         else
         {
             mu_CE_prev = mu_CE;
             P_CE_prev = P_CE;
 
-            mu_CE = elite_samples.colwise().mean();
+            mu_CE = elite_samples.rowwise().mean();
 
             P_CE = Eigen::Matrix2d::Zero();
             for (int j = 0; j < N_e; j++)
             {
-                P_CE += (elite_samples.col(j) - mu_CE) * (elite_samples.col(j) - mu_CE);
+                P_CE += (elite_samples.col(j) - mu_CE) * (elite_samples.col(j) - mu_CE).transpose();
             }
             P_CE = P_CE / (double)N_e;
 
@@ -651,7 +720,27 @@ double CPE::CE_estimation(
             mu_CE = alpha_n * mu_CE + (1 - alpha_n) * mu_CE_prev;
             P_CE =  alpha_n * P_CE  + (1 - alpha_n) * P_CE_prev;
         }
+        /*
+        // Send stuff to matlab for plotting
+        Eigen::Map<Eigen::MatrixXd> map_ms(p_ms, 2, n_CE);
+	    map_ms = samples;
+        Eigen::Map<Eigen::MatrixXd> map_ms_elite(p_ms_elite, 2, N_e);
+	    map_ms_elite = elite_samples;
+
+        Eigen::Map<Eigen::MatrixXd> map_Pce(p_Pce, 2, 2);
+	    map_Pce = P_CE;
+        Eigen::Map<Eigen::MatrixXd> map_mu_ce(p_mu_ce, 2, 1);
+	    map_mu_ce = mu_CE;
+
+        engPutVariable(ep, "samples", ms);
+        engPutVariable(ep, "elite_samples", ms_elite);
+        engPutVariable(ep, "P_CE", Pce);
+        engPutVariable(ep, "mu_CE", mu_ce);
+        engEvalString(ep, "test_ce_live_plot_upd");
+        std::cout << std::endl;
+        */
     }
+    
     mu_CE_last[i] = mu_CE; P_CE_last[i] = P_CE;
 
     // Estimate collision probability with a final set of samples from the importance density
@@ -671,10 +760,13 @@ double CPE::CE_estimation(
         if (exp(importance(i)) > 0) { weights(i) = exp(integrand(i)) / exp(importance(i)); }   
         else                        { weights(i) = 0; }
     }
+    std::cout << "weights1 = " << weights << std::endl;
     weights = weights.cwiseProduct(valid);
+    std::cout << "weights2 = " << weights << std::endl;
     
     P_c = weights.mean();
 
+    //engClose(ep);
     if (P_c > 1) return 1;
     else return P_c;
 }
