@@ -232,6 +232,9 @@ PYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.6m.so
 //Path to a library.
 PYTHON_LIBRARY_DEBUG:FILEPATH=PYTHON_LIBRARY_DEBUG-NOTFOUND
 
+//Dependencies for the target
+psbmpc_lib_LIB_DEPENDS:STATIC=general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmex.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmx.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libeng.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmat.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libMatlabDataArray.so;general;/usr/local/MATLAB/R2019a/extern/bin/glnxa64/libMatlabEngine.so;
+
 //Value Computed by CMake
 psbmpc_test_BINARY_DIR:STATIC=/home/trymte/Desktop/cybercolav_cxx/debug
 

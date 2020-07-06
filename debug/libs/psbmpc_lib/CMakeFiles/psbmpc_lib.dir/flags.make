@@ -6,5 +6,5 @@ CXX_FLAGS = -g   -Wall -Wextra -Wpedantic
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/include -I/home/trymte/Desktop/cybercolav_cxx/libs/third_party_libs 
+CXX_INCLUDES = -I/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/include -I/home/trymte/Desktop/cybercolav_cxx/libs/third_party_libs -I/usr/local/MATLAB/R2019a/extern/include 
 

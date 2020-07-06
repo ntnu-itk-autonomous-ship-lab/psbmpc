@@ -5,6 +5,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o"
   "CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o"
   "CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o"
+  "CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o"
   "libpsbmpc_lib.a"
   "libpsbmpc_lib.pdb"
 )

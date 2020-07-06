@@ -6,7 +6,17 @@
 
 #IncludeRegexTransform: 
 
+../libs/psbmpc_lib/include/cpe.h
+Eigen/Dense
+-
+random
+-
+
 ../libs/psbmpc_lib/include/mrou.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+
+../libs/psbmpc_lib/include/ownship.h
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
 
@@ -1072,11 +1082,15 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/src/tests/test_mrou.cpp
+/home/trymte/Desktop/cybercolav_cxx/src/tests/test_cpe.cpp
 utilities.h
 /home/trymte/Desktop/cybercolav_cxx/src/tests/utilities.h
+cpe.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/cpe.h
 mrou.h
 /home/trymte/Desktop/cybercolav_cxx/src/tests/mrou.h
+ownship.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/ownship.h
 iostream
 -
 variant

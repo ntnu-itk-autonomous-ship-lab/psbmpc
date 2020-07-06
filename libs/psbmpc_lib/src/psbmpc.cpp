@@ -2,7 +2,7 @@
 *
 *  File name : psb_mpc.h
 *
-*  Function  : Class functions for Probabilistic Scneario-based Model Predictive Control
+*  Function  : Class functions for Probabilistic Scenario-based Model Predictive Control
 *
 *	           ---------------------
 *
@@ -538,7 +538,7 @@ void PSBMPC::initialize_prediction()
 		// Else: typically three intentions: KCC, SM, PM
 		else 
 		{
-			Utilities::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->kf->get_state());
+			calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->kf->get_state());
 			
 			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
 			turn_count = 0;
@@ -713,7 +713,7 @@ double PSBMPC::find_time_of_passing(
 	Eigen::Vector2d p_A, p_B, v_A, v_B, L_AB;
 	p_A(0) = xs_A(0); p_A(1) = xs_A(1); psi_A = xs_A(2);
 	v_A(0) = xs_A(3); v_A(1) = xs_A(4); 
-	v_A = Utilities::rotate_vector_2D(v_A, psi_A);
+	v_A = rotate_vector_2D(v_A, psi_A);
 	p_B(0) = xs_B(0); p_B(1) = xs_B(1);
 	v_B(0) = xs_B(2); v_B(1) = xs_B(3); 
 
@@ -1106,8 +1106,8 @@ void PSBMPC::update_transitional_variables()
 	double psi_A, psi_B, d_AB;
 	v_A(0) = xs(3);
 	v_A(1) = xs(4);
-	psi_A = Utilities::wrap_angle_to_pmpi(xs[2]);
-	Utilities::rotate_vector_2D(v_A, psi_A);
+	psi_A = wrap_angle_to_pmpi(xs[2]);
+	rotate_vector_2D(v_A, psi_A);
 
 	int n_obst = new_obstacles.size();
 	AH_0.resize(n_obst);   S_TC_0.resize(n_obst); S_i_TC_0.resize(n_obst); 
@@ -1220,7 +1220,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 		psi_p = trajectory(2, k); 
 		v_p(0) = trajectory(3, k); 
 		v_p(1) = trajectory(4, k); 
-		Utilities::rotate_vector_2D(v_p, psi_p);
+		rotate_vector_2D(v_p, psi_p);
 		for(int ps = 0; ps < n_ps; ps++)
 		{
 			L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
@@ -1566,7 +1566,7 @@ void PSBMPC::update_obstacles(
 		{
 			Obstacle *obstacle = new Obstacle(
 				obstacle_states.col(i), 
-				Utilities::reshape(obstacle_covariances.col(i), 4, 4),
+				reshape(obstacle_covariances.col(i), 4, 4),
 				obstacle_intention_probabilities.col(i), 
 				obstacle_a_priori_CC_probabilities(i),
 				obstacle_filter_on, 
@@ -1628,11 +1628,11 @@ void PSBMPC::update_obstacle_status(
 
 		SOG_0 = xs_i.block<2, 1>(2, 0).norm();
 
-		RB_0 = Utilities::angle_difference_pmpi(COG_0, trajectory(2, 0));
+		RB_0 = angle_difference_pmpi(COG_0, trajectory(2, 0));
 
 		obstacle_status.col(i) << ID_0, 											// Obstacle ID
 								  SOG_0, 											// Speed over ground of obstacle
-								  Utilities::wrap_angle_to_02pi(COG_0) * RAD2DEG, 	// Course over ground of obstacle
+								  wrap_angle_to_02pi(COG_0) * RAD2DEG, 	// Course over ground of obstacle
 								  RB_0, 											// Relative bearing
 								  d_0i,												// Range
 								  HL_0(i), 											// Hazard level of obstacle at optimum

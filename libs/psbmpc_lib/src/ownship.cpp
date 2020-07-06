@@ -135,8 +135,8 @@ Eigen::Matrix<double, 6, 1> Ownship::predict(
 		case Linear : 
 		{
 			// Straight line trajectory with the current heading and surge speed
-			eta = eta + dt * Utilities::rotate_vector_3D(nu, eta(2), Yaw);
-			eta(2) = Utilities::wrap_angle_to_pmpi(xs_old(2)); 
+			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
+			eta(2) = wrap_angle_to_pmpi(xs_old(2)); 
 			nu(0) = nu(0);
 			nu(1) = 0;
 			nu(2) = 0;
@@ -152,11 +152,11 @@ Eigen::Matrix<double, 6, 1> Ownship::predict(
 		{
 			update_Cvv(nu); 
 			update_Dvv(nu);
-			eta = eta + dt * Utilities::rotate_vector_3D(nu, eta(2), Yaw);
+			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
 			nu  = nu  + dt * M_inv * (- Cvv - Dvv + tau);
 			xs_new(0) = eta(0); 
 			xs_new(1) = eta(1); 
-			xs_new(2) = Utilities::wrap_angle_to_pmpi(eta(2));
+			xs_new(2) = wrap_angle_to_pmpi(eta(2));
 			xs_new(3) = nu(0);  
 			xs_new(4) = nu(1);  
 			xs_new(5) = nu(2);
@@ -381,7 +381,7 @@ void Ownship::update_ctrl_input(
 
 	double Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
 	
-	double psi_diff = Utilities::angle_difference_pmpi(psi_d, xs(2));
+	double psi_diff = angle_difference_pmpi(psi_d, xs(2));
 	double Fy = (Kp_psi * I_z ) * (psi_diff - Kd_psi * xs(5));
     Fy *= 1.0 / l_r;
 
