@@ -127,40 +127,6 @@ void CPE::initialize(
 }
 
 /****************************************************************************************
-*  Name     : reset
-*  Function : 
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void CPE::reset()
-{
-    switch (method)
-    {
-        case CE :
-        {
-            converged_last = false;
-
-            break;
-        }
-        case MCSKF4D :
-        {
-            for (int i = 0; i < n_obst; i++)
-            {
-                P_c_p(i) = 0; P_c_upd(i) = 0;
-                // Ad hoc "guess" of variance for the KF
-                var_P_c_p(i) = 0.3; var_P_c_upd(i) = 0;
-            }
-            break;
-        }
-        default :
-        {
-            std::cout << "Invalid estimation method" << std::endl;
-            break;
-        }
-    }
-}
-
-/****************************************************************************************
 *  Name     : estimate
 *  Function : 
 *  Author   : Trym Tengesdal
@@ -323,7 +289,7 @@ double CPE::produce_MCS_estimate(
     Eigen::MatrixXd samples(4, n_MCSKF);
     generate_norm_dist_samples(samples, xs_i, P_i);
 
-    save_matrix_to_file(samples);
+    
     Eigen::VectorXd valid(n_MCSKF);
     determine_sample_validity_4D(valid, samples, p_os_cpa, t_cpa);
 
@@ -567,13 +533,13 @@ double CPE::CE_estimation(
     )
 {
     
-    // Matlab engine setup
+/*     // Matlab engine setup
 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[100000+1];
+	char buffer[100000+1]; */
     
     double P_c;
     // Check if it is necessary to perform estimation
@@ -610,7 +576,7 @@ double CPE::CE_estimation(
     Eigen::VectorXd valid(n_CE);
 
     
-    // Matlab init CE plotting
+/*     // Matlab init CE plotting
     mxArray *p_os_ms = mxCreateDoubleMatrix(2, 1, mxREAL);
 	mxArray *p_i_ms = mxCreateDoubleMatrix(2, 1, mxREAL);
     mxArray *P_i_ms = mxCreateDoubleMatrix(2, 2, mxREAL);
@@ -656,7 +622,7 @@ double CPE::CE_estimation(
     engPutVariable(ep, "P_CE_last", Pce_last);
     engPutVariable(ep, "mu_CE_last", mu_ce_last);
 
-    engEvalString(ep, "test_ce_live_plot_init");
+    engEvalString(ep, "test_ce_live_plot_init"); */
     
 
     for (int i = 0; i < max_it; i++)
@@ -676,7 +642,7 @@ double CPE::CE_estimation(
             }
         }
 
-        ms_elite =  mxCreateDoubleMatrix(2, N_e, mxREAL);
+/*         ms_elite =  mxCreateDoubleMatrix(2, N_e, mxREAL);
         double *p_ms_elite = mxGetPr(ms_elite);
 
         // Send stuff to matlab for plotting
@@ -694,7 +660,7 @@ double CPE::CE_estimation(
         engPutVariable(ep, "elite_samples", ms_elite);
         engPutVariable(ep, "P_CE", Pce);
         engPutVariable(ep, "mu_CE", mu_ce);
-        engEvalString(ep, "test_ce_live_plot_upd");
+        engEvalString(ep, "test_ce_live_plot_upd"); */
 
         // Terminate iterative optimization if enough elite samples are collected
         if (N_e > n_CE * rho) { converged_last = true; break;}
@@ -726,10 +692,12 @@ double CPE::CE_estimation(
     generate_norm_dist_samples(samples, mu_CE, P_CE);
 
     determine_sample_validity_2D(valid, samples, p_os);
-
+    save_matrix_to_file(samples);
     Eigen::VectorXd weights(n_CE), integrand(n_CE), importance(n_CE);
     norm_pdf_log(integrand, samples, p_i, P_i);
+    save_matrix_to_file(integrand);
     norm_pdf_log(importance, samples, mu_CE, P_CE);
+    save_matrix_to_file(importance);
 
     // Calculate importance weights for estimating the integral \Int_S_2 {p^i(x, y, t_k) dx dy}
     // where p^i = Norm_distr(p_i, P_i; t_k) is the obstacle positional uncertainty (or combined uncertainty
@@ -743,7 +711,7 @@ double CPE::CE_estimation(
     
     P_c = weights.mean();
 
-    engClose(ep);
+    //engClose(ep);
     if (P_c > 1) return 1;
     else return P_c;
 }

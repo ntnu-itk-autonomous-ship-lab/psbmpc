@@ -179,8 +179,8 @@ int main(){
 	double *p_CE = mxGetPr(Pcoll_CE);
 	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
-	double d_safe = 50;
-	int n_CE = 1000, n_MCSKF = 100, dt_seg = 0.5;
+	double d_safe = 50, dt_seg = 0.5;
+	int n_CE = 1000, n_MCSKF = 100;
 
 	std::vector<Eigen::VectorXd> P_c_i_CE, P_c_i_MCSKF;
 	P_c_i_CE.resize(1); P_c_i_MCSKF.resize(1);

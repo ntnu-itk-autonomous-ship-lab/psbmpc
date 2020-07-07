@@ -3,10 +3,11 @@
 *  File name : cpe.h
 *
 *  Function  : Header file for the Collision Probability Estimator (CPE).
-*			   The module assumes that the own-ship uncertainty is negligible
+*			   The module estimates the collision probability wrt all nearby
+*			   obstacles. The module assumes that the own-ship uncertainty is negligible
 *  			   compared to that of the obstacles. If this is not the case, then a
-			   linear transformationcan be used to "gather" both vessel's 
-			   uncertainty in one RV
+*			   linear transformationcan be used to "gather" both vessel's 
+*			   uncertainty in one RV
 *            ---------------------
 *
 *  Version 1.0
@@ -61,7 +62,6 @@ private:
 
 	std::vector<Eigen::Vector2d> mu_CE_last;
 	std::vector<Eigen::Matrix2d> P_CE_last;
-
 
 	// MCSKF4D-method parameters and internal states
 	double q, r, dt_seg; 
@@ -131,8 +131,6 @@ public:
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::VectorXd &P_i,
 		const int i);
-
-	void reset();
 	
 	double estimate(
 		const Eigen::MatrixXd &xs_os,

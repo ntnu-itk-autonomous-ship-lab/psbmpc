@@ -37,7 +37,7 @@
 
 void save_matrix_to_file(const Eigen::MatrixXd &in)
 {
-    std::ofstream outdata("/home/trymte/Desktop/cybercolav_cxx/src/matlab_scripts/matrix.csv");
+    std::ofstream outdata("/home/trymte/Desktop/cybercolav_cxx/src/matlab_scripts/matrix.csv", std::ofstream::trunc);
     int n_rows = in.rows();
     int n_cols = in.cols();
 
@@ -51,9 +51,9 @@ void save_matrix_to_file(const Eigen::MatrixXd &in)
         for (int j = 0; j < n_cols; j++)
         {
             outdata << in(i, j);
-            if (j != n_cols - 1) outdata << ",";
+            if (j != n_cols - 1) { outdata << ","; }
         }
-        outdata << std::endl;
+        if (i != n_rows - 1) { outdata << std::endl; }
     }
 }
 
