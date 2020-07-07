@@ -864,6 +864,7 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/third_part
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: ../libs/psbmpc_lib/src/obstacle.cpp
+libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o: /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: ../libs/psbmpc_lib/include/ownship.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: ../libs/psbmpc_lib/include/utilities.h
@@ -1079,6 +1080,7 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: ../libs/third_party
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: ../libs/psbmpc_lib/src/ownship.cpp
+libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o: /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o: ../libs/psbmpc_lib/include/cpe.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o: ../libs/psbmpc_lib/include/kf.h
@@ -1515,4 +1517,5 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o: ../libs/third_par
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o: ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o: ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o: ../libs/psbmpc_lib/src/utilities.cpp
+libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o: /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
 
