@@ -52,7 +52,7 @@ int main(){
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 6, 0, 0;
 
-	double T = 300; double dt = 0.5;
+	double T = 80; double dt = 0.5;
 
 	double u_d = 6.0; double chi_d = 0.0;
 
@@ -91,9 +91,11 @@ int main(){
 	std::cout << "traj init = [" << trajectory(0, 0) << ", " << trajectory(1, 0) << ", " << trajectory(2, 0) << ", " \
 	<< trajectory(3, 0) << ", " << trajectory(4, 0) << ", " << trajectory(5, 0) << "]" << std::endl;
 
-	waypoints.resize(2, 7); 
-	waypoints << 0, 200, 200, 0,    0, 300, 1000,
-				 0, -50,  -200, -200,  0, 300, 0;
+	waypoints.resize(2, 2); 
+	//waypoints << 0, 200, 200, 0,    0, 300, 1000,
+	//			 0, -50,  -200, -200,  0, 300, 0;
+	waypoints << 0, 1000,
+				 0, 0;
 
 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
 	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
@@ -108,7 +110,7 @@ int main(){
 	double sigma_x(0.8), sigma_xy(0),sigma_y(0.8), gamma_x(0.1), gamma_y(0.1);
 
 	Eigen::Vector4d xs_0;
-	xs_0 << 50, 0, 2, 0;
+	xs_0 << 75, 0, -2, 0;
 
 	Eigen::Matrix4d P_0;
 	P_0 << 100, 0, 0, 0,
@@ -138,11 +140,11 @@ int main(){
 	int n_ps = xs_p.size();
 
 	Eigen::Vector2d v_0, v;
-	v_0 << 4, 0;
+	v_0 << -2, 0;
 	v_p[0].col(0) = v_0;
 
 	Eigen::VectorXd turn_times(1);
-	turn_times << 100;
+	turn_times << 300;
 
 	int tt_count = 0;
 	double chi = 0; 
@@ -154,6 +156,7 @@ int main(){
 			chi = atan2(v(1), v(0));
 			v(0) = v.norm() * cos(chi + 30 * M_PI / 180.0);
 			v(1) = v.norm() * sin(chi + 30 * M_PI / 180.0);
+			v(0) = -2.0; v(1) = 1.0;
 			if (tt_count < turn_times.size() - 1) tt_count += 1;
 		}
 		if (k < n_samples - 1)	v_p[0].col(k + 1) = v;
@@ -177,7 +180,7 @@ int main(){
 	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
 	double d_safe = 50;
-	int n_CE = 1000, n_MCSKF = 100, dt_seg = 1;
+	int n_CE = 1000, n_MCSKF = 100, dt_seg = 0.5;
 
 	std::vector<Eigen::VectorXd> P_c_i_CE, P_c_i_MCSKF;
 	P_c_i_CE.resize(1); P_c_i_MCSKF.resize(1);
@@ -191,12 +194,12 @@ int main(){
 	//*****************************************************************************************************************
 
 	cpe->set_number_of_obstacles(1);
-	cpe->initialize(trajectory.col(0), xs_p[0].col(0), reshape(P_p[0].col(0), 4, 4), 0);
+	cpe->initialize(trajectory.col(0), xs_p[0].col(0), P_p[0].col(0), 0);
 
 	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
 
 	double t = 0;
-	int n_seg_samples = std::round(dt_seg / dt);
+	int n_seg_samples = std::round(dt_seg / dt) + 1;
 
 	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
 	Eigen::Matrix4d P_i_ps_k;
@@ -214,23 +217,33 @@ int main(){
 			}
 
 			// Collision probability estimation using CE
+
 			P_c_i_CE[ps](k) = cpe->estimate(trajectory.col(k), xs_p[ps].col(k), P_p[ps].col(k), 0);
 		}
 		
 		cpe->set_method(MCSKF4D);
-		cpe->initialize(trajectory.col(0), xs_p[ps].col(0), reshape(P_p[ps].col(0), 4, 4), 0);
+		cpe->initialize(trajectory.col(0), xs_p[ps].col(0), P_p[ps].col(0), 0);
 		for (int k = 0; k < n_samples; k++)
 		{
-			if (fmod(k, n_seg_samples - 1) == 0)
+			if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 			{
 				k_j_ = k_j;
 				k_j = k;
-				xs_os_seg = trajectory.block(6, k_j - k_j_ + 1, 0, k_j_);
-				xs_i_seg = xs_p[ps].block(4, k_j - k_j_ + 1, 0, k_j_);
-				P_i_seg = trajectory.block(16, k_j - k_j_ + 1, 0, k_j_);
-			}
-			// Collision probability estimation using MCSKF4D
-			P_c_i_CE[ps](k) = cpe->estimate(xs_os_seg, xs_i_seg, P_i_seg, 0);
+				xs_os_seg = trajectory.block(0, k_j_, 6, n_seg_samples);
+				std::cout << "xs_os_seg = " << std::endl; 
+				std::cout << xs_os_seg << std::endl;
+				xs_i_seg = xs_p[ps].block(0, k_j_, 4, n_seg_samples);
+				std::cout << "xs_i_seg = " << std::endl;
+				std::cout << xs_i_seg << std::endl;
+				P_i_seg = P_p[ps].block(0, k_j_, 16, n_seg_samples);
+				std::cout << "P_i_seg = " <<  std::endl;
+				print_matrix(reshape(P_i_seg.col(0), 4, 4));
+				print_matrix(reshape(P_i_seg.col(1), 4, 4));
+				// Collision probability estimation using MCSKF4D
+				P_c_i_MCSKF[ps](k_j_) = cpe->estimate(xs_os_seg, xs_i_seg, P_i_seg, 0);
+				// Collision probability on this active segment are all equal
+				P_c_i_MCSKF[ps].block(k_j_, 0, n_seg_samples, 1) = P_c_i_MCSKF[ps](k_j_) * Eigen::MatrixXd::Ones(k_j - k_j_ + 1, 1);
+			}	
 		}
 	}
 
@@ -241,7 +254,7 @@ int main(){
 	Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, n_samples);
 	map_traj_os = trajectory;
 
-	Eigen::Map<Eigen::MatrixXd> map_wps(pwps, 2, 7);
+	Eigen::Map<Eigen::MatrixXd> map_wps(pwps, 2, 2);
 	map_wps = waypoints;
 
 	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
@@ -253,10 +266,10 @@ int main(){
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 	map_P_traj_i = P_p[0];
 
-	Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, 1, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, n_samples, 1);
 	map_Pcoll_CE = P_c_i_CE[0];
 
-	Eigen::Map<Eigen::MatrixXd> map_Pcoll_MCSKF(p_MCSKF, 1, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_Pcoll_MCSKF(p_MCSKF, n_samples, 1);
 	map_Pcoll_MCSKF = P_c_i_MCSKF[0];
 
 	buffer[BUFSIZE] = '\0';

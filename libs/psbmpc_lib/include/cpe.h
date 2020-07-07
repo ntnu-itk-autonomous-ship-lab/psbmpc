@@ -65,6 +65,8 @@ private:
 
 	// MCSKF4D-method parameters and internal states
 	double q, r, dt_seg; 
+
+	Eigen::MatrixXd samples_MCSKF4D;
 	
 	Eigen::VectorXd P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
@@ -127,7 +129,7 @@ public:
 	void initialize(
 		const Eigen::Matrix<double, 6, 1> &xs_os, 
 		const Eigen::Vector4d &xs_i, 
-		const Eigen::Matrix4d &P_i,
+		const Eigen::VectorXd &P_i,
 		const int i);
 
 	void reset();

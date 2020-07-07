@@ -40,7 +40,7 @@ enum Axis
 		Yaw
 	};
 
-
+void save_matrix_to_file(const Eigen::MatrixXd &in);
 
 
 /****************************************************************************************
@@ -53,7 +53,7 @@ enum Axis
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline void print_matrix(const Eigen::MatrixXd& in)
+inline void print_matrix(const Eigen::MatrixXd &in)
 {
 	int n_rows = in.rows();
 	int n_cols = in.cols();
@@ -128,7 +128,7 @@ inline double angle_difference_pmpi(const double a_1, const double a_2)
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d v, const double angle)
+inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d &v, const double angle)
 {
 	Eigen::Vector2d v_temp;
 	v_temp(1) = v(1) * cos(angle) - v(2) * sin(angle);
@@ -142,7 +142,7 @@ inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d v, const double an
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3d v, const double angle, const Axis axis)
+inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3d &v, const double angle, const Axis axis)
 {
 	Eigen::Vector3d v_temp;
 	switch (axis) 
@@ -179,7 +179,7 @@ inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3d v, const double an
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline Eigen::MatrixXd flatten(const Eigen::MatrixXd& in)
+inline Eigen::MatrixXd flatten(const Eigen::MatrixXd &in)
 {
 	int n_rows = in.rows();
 	int n_cols = in.cols();
@@ -205,7 +205,7 @@ inline Eigen::MatrixXd flatten(const Eigen::MatrixXd& in)
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline Eigen::MatrixXd reshape(const Eigen::VectorXd& in, const int n_rows, const int n_cols)
+inline Eigen::MatrixXd reshape(const Eigen::VectorXd &in, const int n_rows, const int n_cols)
 {
 	Eigen::MatrixXd out;
 	out.resize(n_rows, n_cols);
@@ -267,8 +267,8 @@ inline void calculate_cpa(
 *  Modified :
 *****************************************************************************************/
 inline bool determine_COLREGS_violation(
-	const Eigen::VectorXd& xs_A,											// In: State vector of vessel A (most often the ownship)
-	const Eigen::VectorXd& xs_B, 											// In: State vector of vessel B (most often an obstacle)
+	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A (most often the ownship)
+	const Eigen::VectorXd &xs_B, 											// In: State vector of vessel B (most often an obstacle)
 	const double phi_AH,
 	const double phi_OT, 
 	const double phi_HO,
