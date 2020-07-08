@@ -114,29 +114,35 @@ void CPE::initialize(
         mu_CE_last[i] = 0.5 * (xs_os.block<2, 1>(0, 0) + xs_i.block<2, 1>(0, 0)); 
         
         P_CE_last[i] = pow(d_safe, 2) * Eigen::Matrix2d::Identity() / 3.0;
+        
+        samples.resize(2, n_CE);
+        valid.resize(n_CE);
         break;
     case MCSKF4D :
         P_c_p(i) = 0; P_c_upd(i) = 0;
-        // Ad hoc "guess" of variance for the probability
+        // Ad hoc variance for the probability
         var_P_c_p(i) = 0.3; var_P_c_upd(i) = 0; 
+
+        samples.resize(4, n_MCSKF);
+        valid.resize(n_MCSKF);
         break;
     default:
-        std::cout << "Invalid method, reset it!" << std::endl;
+        std::cout << "Invalid method" << std::endl;
         break;
     }
 }
 
 /****************************************************************************************
 *  Name     : estimate
-*  Function : 
+*  Function : Input parameters have different size depending on if CE or MCSKF4D are used.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 double CPE::estimate(
-	const Eigen::MatrixXd &xs_os,                                   // In: Own-ship state vector for time steps in [t_k-1, t_k-1 + dt_seg]
-    const Eigen::MatrixXd &xs_i,                                    // In: Obstacle i state vector for time steps in [t_k-1, t_k-1 + dt_seg]
-    const Eigen::MatrixXd &P_i,                                     // In: Obstacle i covariance for time steps in [t_k-1, t_k-1 + dt_seg], flattened into n² x n_cols
-    const int i                                                     // In: Index of obstacle i
+	const Eigen::MatrixXd &xs_os,                       // In: Own-ship state vector(s)
+    const Eigen::MatrixXd &xs_i,                        // In: Obstacle i state vector(s)
+    const Eigen::MatrixXd &P_i,                         // In: Obstacle i covariance(s), flattened into n² x n_cols
+    const int i                                         // In: Index of obstacle i
     )
 {
     Eigen::Matrix2d P_i_2D;
@@ -167,18 +173,17 @@ double CPE::estimate(
 /****************************************************************************************
 *  Name     : norm_pdf_log
 *  Function : Calculates the logarithmic value of the multivariate normal distribution
-*             for samples.
+*             for the internally stored sample matrix
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void CPE::norm_pdf_log(
     Eigen::VectorXd &result,                                                    // In/out: Resulting vector of pdf values
-    const Eigen::MatrixXd &xs,                                                  // In: Samples of states from a normally distributed RV
     const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
     const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
     )
 {
-    int n = xs.rows(), n_samples = xs.cols();
+    int n = samples.rows(), n_samples = samples.cols();
     result.resize(n_samples);
     double exp_val = 0;
     double log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
@@ -186,7 +191,7 @@ void CPE::norm_pdf_log(
     {
         // Consider using Cholesky decomposition if you find the direct inverse of
         // Sigma to be less numerically stable
-        exp_val = - (xs.col(i) - mu).transpose() * Sigma.inverse() * (xs.col(i) - mu);
+        exp_val = - (samples.col(i) - mu).transpose() * Sigma.inverse() * (samples.col(i) - mu);
         exp_val = exp_val / 2.0;
 
         result(i) = log_val + exp_val;
@@ -196,11 +201,11 @@ void CPE::norm_pdf_log(
 /****************************************************************************************
 *  Name     : generate_norm_dist_samples
 *  Function : Generates samples from the MVN distribution with given mean and covariance
+*             and fills the internal sample matrix with them.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void CPE::generate_norm_dist_samples(
-    Eigen::MatrixXd &samples,                                                   // In: Samples to fill with generated MVN values, size n x n_samples
     const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
     const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
     )
@@ -211,6 +216,7 @@ void CPE::generate_norm_dist_samples(
     Eigen::LLT<Eigen::MatrixXd> cholesky_decomposition(Sigma);
     Eigen::MatrixXd L = cholesky_decomposition.matrixL();
     // Check if bigger loop within small loop faster than the other way around
+    // if time usage becomes an issue
     for (int c = 0; c < n; c++)
     {
         for(int i = 0; i < n_samples; i++)
@@ -286,14 +292,11 @@ double CPE::produce_MCS_estimate(
 {
     double P_c;
 
-    Eigen::MatrixXd samples(4, n_MCSKF);
-    generate_norm_dist_samples(samples, xs_i, P_i);
-
+    generate_norm_dist_samples(xs_i, P_i);
     
-    Eigen::VectorXd valid(n_MCSKF);
-    determine_sample_validity_4D(valid, samples, p_os_cpa, t_cpa);
+    determine_sample_validity_4D(p_os_cpa, t_cpa);
 
-    // The estimate will be taken as the ratio of samples inside the integration domain, 
+    // The estimate is taken as the ratio of samples inside the integration domain, 
     // to the total number of samples, i.e. the mean of the validity vector
     P_c = valid.mean();
     if (P_c > 1) { return 1; }
@@ -302,15 +305,13 @@ double CPE::produce_MCS_estimate(
 
 /****************************************************************************************
 *  Name     : determine_sample_validity_4D
-*  Function : Determine if a sample is valid for use in estimation for the MCSKF4D method
+*  Function : Determine if a sample is valid for use in estimation for the MCSKF4D.
 *             See "On Collision Risk Assessment for Autonomous Ships Using Scenario-based"
-*             MPC for more information
+*             MPC for more information.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 bool CPE::determine_sample_validity_4D(
-    Eigen::VectorXd &valid,                                                     // In/out: Vector of ones/zeros for the valid samples
-    const Eigen::MatrixXd &samples,                                             // In: Samples to be investigated
     const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
     const double t_cpa                                                          // In: Time to cpa
     )
@@ -367,10 +368,13 @@ double CPE::MCSKF4D_estimation(
     const int i                                                                 // In: Index of obstacle i
     )
 {
-    int n_seg_samples = xs_os.cols();
     // Collision probability "measurement" from MCS
     double y_P_c;
 
+    /*****************************************************
+    * Find linear segment representative state vectors
+    *****************************************************/
+   int n_seg_samples = xs_os.cols();
     // Vectors representing the linear segments
     Eigen::VectorXd xs_os_sl, xs_i_sl;
     xs_os_sl = xs_os.col(0);
@@ -404,20 +408,17 @@ double CPE::MCSKF4D_estimation(
         xs_i_sl(2) = U_i_sl * cos(psi_i_sl);
         xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
     }
-    std::cout << "xs os sl = " << xs_os_sl << std::endl;
-    std::cout << "xs i sl = " << xs_i_sl << std::endl;
-
-
     Eigen::Matrix4d P_i_sl;
     P_i_sl = reshape(P_i.col(0), 4, 4);
-    std::cout << "P_i_sl = " << std::endl;
-    print_matrix(P_i_sl);
 
     Eigen::Vector2d p_os_cpa;
     double t_cpa, d_cpa;
     calculate_cpa(p_os_cpa, t_cpa, d_cpa, xs_os_sl, xs_i_sl);
-    std::cout << "p_os_cpa = " << p_os_cpa << std::endl;
-    std::cout << "t_cpa = " << t_cpa << std::endl;
+
+    /*****************************************************
+    * Generate Monte Carlo Simulation estimate of P_c
+    * for use in the Kalman-filter
+    *****************************************************/
     // Constrain the collision probability estimation to the interval [t_j-1, t_j], 
     // which is of length dt_seg. This is done to only consider vessel positions on
     // their discretized trajectories, and not beyond that. 
@@ -430,32 +431,29 @@ double CPE::MCSKF4D_estimation(
         y_P_c = produce_MCS_estimate(xs_i_sl, P_i_sl, p_os_cpa, t_cpa);
     }
 
-    //*****************************************************
-    // Kalman-filtering for simple markov chain model
-    // P_c^i_k+1 = P_c^i_k + v^i_k
-    // y^i_k     = P_c^i_k + w^i_k
-    //*****************************************************
-    // Update using measurement y_P_c
-    //*****************************************************
+    /*****************************************************
+    * Kalman-filtering for simple markov chain model
+    * P_c^i_k+1 = P_c^i_k + v^i_k
+    * y^i_k     = P_c^i_k + w^i_k
+    /*****************************************************
+    * Update using measurement y_P_c
+    *****************************************************/
     double K;
     K = var_P_c_p(i) / (var_P_c_p(i) + r);
-    std::cout << "K = " << K << std::endl;
+
     P_c_upd(i) = P_c_p(i) + K * (y_P_c - P_c_p(i));
-    std::cout << "P_c_p(i) = " << P_c_p(i) << std::endl;
-    std::cout << "P_c_upd(i) = " << P_c_upd(i) << std::endl;
+
     if (P_c_upd(i) > 1) P_c_upd(i) = 1;
 
     var_P_c_upd(i) = (1 - K) * var_P_c_p(i);
-    std::cout << "var_P_c_p(i) = " << var_P_c_p(i) << std::endl;
-    std::cout << "var_P_c_upd(i) = " << var_P_c_upd(i) << std::endl;
-    //*****************************************************
-    // Predict
-    //*****************************************************
+
+    /*****************************************************
+    * Predict
+    *****************************************************/
     P_c_p(i) = P_c_upd(i);
     if (P_c_p(i) > 1) P_c_p(i) = 1;
 
     var_P_c_p(i) = var_P_c_upd(i) + q;
-    std::cout << "var_P_c_p(i) = " << var_P_c_p(i) << std::endl;
     //*****************************************************
     
     return P_c_upd(i);
@@ -463,14 +461,13 @@ double CPE::MCSKF4D_estimation(
 
 /****************************************************************************************
 *  Name     : determine_sample_validity_2D
-*  Function : Determine valid samples for collision probability estimation for 2D methods
+*  Function : Determine valid samples for 2D collision probability estimation methods
+*             (CE-method)
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void CPE::determine_sample_validity_2D(
-		Eigen::VectorXd &valid,
-		const Eigen::MatrixXd &samples, 
-		const Eigen::Vector2d &p_os
+		const Eigen::Vector2d &p_os                                 // In: Own-ship position vector
     )
 {
     int n_samples = samples.cols();
@@ -493,9 +490,6 @@ void CPE::determine_sample_validity_2D(
 *  Modified :
 *****************************************************************************************/
 void CPE::determine_best_performing_samples(
-    Eigen::VectorXd &valid,                                                         // In/out: Vector of ones/zeros for the best performing samples in <samples>
-    int &N_e,                                                                       // In/out: Number of best performing samples
-    const Eigen::MatrixXd &samples,                                                 // In: Samples to be investigated
     const Eigen::Vector2d &p_os,                                                    // In: Own-ship position vector
     const Eigen::Vector2d &p_i,                                                     // In: Obstacle i position vector
     const Eigen::Matrix2d &P_i                                                      // In: Obstacle i positional covariance
@@ -532,17 +526,10 @@ double CPE::CE_estimation(
     const int i                                                                 // In: Index of obstacle i
     )
 {
-    
-/*     // Matlab engine setup
-	Engine *ep = engOpen(NULL);
-	if (ep == NULL)
-	{
-		std::cout << "engine start failed!" << std::endl;
-	}
-	char buffer[100000+1]; */
-    
     double P_c;
-    // Check if it is necessary to perform estimation
+    /******************************************************************************
+    * Check if it is necessary to perform estimation
+    ******************************************************************************/
     double d_0i = (p_i - p_os).norm();
     double var_P_i_largest = 0;
     
@@ -552,10 +539,11 @@ double CPE::CE_estimation(
     // This large a distance usually means no effective conflict zone
     if (d_0i > d_safe + 5 * var_P_i_largest) { P_c = 0; return P_c; }
 
+    /******************************************************************************
+    * Convergence depedent initialization prior to the run at time t_k
+    ******************************************************************************/
     Eigen::Vector2d mu_CE_prev, mu_CE;
     Eigen::Matrix2d P_CE_prev, P_CE;
-
-    // Convergence depedent initialization prior to the run at time t_k
     if (converged_last)
     {
         mu_CE_prev = mu_CE_last[i]; mu_CE = mu_CE_last[i];
@@ -571,65 +559,14 @@ double CPE::CE_estimation(
         P_CE = P_CE_prev;
     }
 
-    int N_e, e_count = 0;
-    Eigen::MatrixXd samples(2, n_CE), elite_samples;
-    Eigen::VectorXd valid(n_CE);
-
-    
-/*     // Matlab init CE plotting
-    mxArray *p_os_ms = mxCreateDoubleMatrix(2, 1, mxREAL);
-	mxArray *p_i_ms = mxCreateDoubleMatrix(2, 1, mxREAL);
-    mxArray *P_i_ms = mxCreateDoubleMatrix(2, 2, mxREAL);
-
-    mxArray *ms = mxCreateDoubleMatrix(2, n_CE, mxREAL);
-	mxArray *ms_elite;
-
-    mxArray *Pce_last = mxCreateDoubleMatrix(2, 2, mxREAL);
-    mxArray *Pce = mxCreateDoubleMatrix(2, 2, mxREAL);
-
-    mxArray *mu_ce_last = mxCreateDoubleMatrix(2, 1, mxREAL);
-    mxArray *mu_ce = mxCreateDoubleMatrix(2, 1, mxREAL);
-
-    double *p_p_os_ms = mxGetPr(p_os_ms);
-	double *p_p_i_ms = mxGetPr(p_i_ms);
-    double *p_P_i_ms = mxGetPr(P_i_ms);
-
-	double *p_ms = mxGetPr(ms);
-	
-
-    double *p_Pce_last = mxGetPr(Pce_last);
-	double *p_Pce = mxGetPr(Pce);
-
-    double *p_mu_ce_last = mxGetPr(mu_ce_last);
-	double *p_mu_ce = mxGetPr(mu_ce);
-
-    Eigen::Map<Eigen::MatrixXd> map_p_os_ms(p_p_os_ms, 2, 1);
-	map_p_os_ms = p_os;
-    Eigen::Map<Eigen::MatrixXd> map_p_i_ms(p_p_i_ms, 2, 1);
-	map_p_i_ms = p_i;
-    Eigen::Map<Eigen::MatrixXd> map_P_i_ms(p_P_i_ms, 2, 2);
-	map_P_i_ms = P_i;
-
-    Eigen::Map<Eigen::MatrixXd> map_Pce_last(p_Pce_last, 2, 2);
-	map_Pce_last = P_CE_last[i];
-
-    Eigen::Map<Eigen::MatrixXd> map_mu_ce_last(p_mu_ce_last, 2, 1);
-	map_mu_ce_last = mu_CE_last[i];
-
-    engPutVariable(ep, "p_os", p_os_ms);
-    engPutVariable(ep, "p_i", p_i_ms);
-    engPutVariable(ep, "P_i", P_i_ms);
-    engPutVariable(ep, "P_CE_last", Pce_last);
-    engPutVariable(ep, "mu_CE_last", mu_ce_last);
-
-    engEvalString(ep, "test_ce_live_plot_init"); */
-    
-
+    /******************************************************************************
+    * Iterative optimization to find the near-optimal importance density
+    ******************************************************************************/
     for (int i = 0; i < max_it; i++)
     {
-        generate_norm_dist_samples(samples, mu_CE, P_CE);
+        generate_norm_dist_samples(mu_CE, P_CE);
 
-        determine_best_performing_samples(valid, N_e, samples, p_os, p_i, P_i);
+        determine_best_performing_samples(p_os, p_i, P_i);
 
         elite_samples.resize(2, N_e);
         e_count = 0;
@@ -642,28 +579,8 @@ double CPE::CE_estimation(
             }
         }
 
-/*         ms_elite =  mxCreateDoubleMatrix(2, N_e, mxREAL);
-        double *p_ms_elite = mxGetPr(ms_elite);
-
-        // Send stuff to matlab for plotting
-        Eigen::Map<Eigen::MatrixXd> map_ms(p_ms, 2, n_CE);
-	    map_ms = samples;
-        Eigen::Map<Eigen::MatrixXd> map_ms_elite(p_ms_elite, 2, N_e);
-	    map_ms_elite = elite_samples;
-
-        Eigen::Map<Eigen::MatrixXd> map_Pce(p_Pce, 2, 2);
-	    map_Pce = P_CE;
-        Eigen::Map<Eigen::MatrixXd> map_mu_ce(p_mu_ce, 2, 1);
-	    map_mu_ce = mu_CE;
-
-        engPutVariable(ep, "samples", ms);
-        engPutVariable(ep, "elite_samples", ms_elite);
-        engPutVariable(ep, "P_CE", Pce);
-        engPutVariable(ep, "mu_CE", mu_ce);
-        engEvalString(ep, "test_ce_live_plot_upd"); */
-
         // Terminate iterative optimization if enough elite samples are collected
-        if (N_e > n_CE * rho) { converged_last = true; break;}
+        if (N_e >= n_CE * rho) { converged_last = true; break;}
         // Otherwise, improve importance density parameters (given N_e > 1 to prevent zero-matrix 
         // in P_CE and/or negative definite matrix if no smoothing is used)
         else if (N_e > 1)
@@ -685,32 +602,28 @@ double CPE::CE_estimation(
             P_CE =  alpha_n * P_CE  + (1 - alpha_n) * P_CE_prev;
         }
     }
-    
     mu_CE_last[i] = mu_CE; P_CE_last[i] = P_CE;
 
-    // Estimate collision probability with a final set of samples from the importance density
-    generate_norm_dist_samples(samples, mu_CE, P_CE);
+    /******************************************************************************
+    * Estimate collision probability with samples from the final importance
+    * density from the optimization
+    ******************************************************************************/
+    generate_norm_dist_samples(mu_CE, P_CE);
 
-    determine_sample_validity_2D(valid, samples, p_os);
-    save_matrix_to_file(samples);
+    determine_sample_validity_2D(p_os);
+
     Eigen::VectorXd weights(n_CE), integrand(n_CE), importance(n_CE);
-    norm_pdf_log(integrand, samples, p_i, P_i);
-    save_matrix_to_file(integrand);
-    norm_pdf_log(importance, samples, mu_CE, P_CE);
-    save_matrix_to_file(importance);
-
+    norm_pdf_log(integrand, p_i, P_i);
+    norm_pdf_log(importance, mu_CE, P_CE);
+    
     // Calculate importance weights for estimating the integral \Int_S_2 {p^i(x, y, t_k) dx dy}
     // where p^i = Norm_distr(p_i, P_i; t_k) is the obstacle positional uncertainty (or combined uncertainty
-    // if the own-ship uncertainty is also considered)
-    for (int i = 0; i < n_CE; i++)
-    {
-        if (exp(importance(i)) > 0) { weights(i) = exp(integrand(i)) / exp(importance(i)); }   
-        else                        { weights(i) = 0; }
-    }
+    // if the own-ship uncertainty is also considered). 
+    // Divide using log-values as this is more robust against underflow
+    weights = (integrand - importance).array().exp();
     weights = weights.cwiseProduct(valid);
-    
-    P_c = weights.mean();
 
+    P_c = weights.mean();
     //engClose(ep);
     if (P_c > 1) return 1;
     else return P_c;
