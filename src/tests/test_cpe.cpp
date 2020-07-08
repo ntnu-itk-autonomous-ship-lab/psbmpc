@@ -110,7 +110,7 @@ int main(){
 	double sigma_x(0.8), sigma_xy(0),sigma_y(0.8), gamma_x(0.1), gamma_y(0.1);
 
 	Eigen::Vector4d xs_0;
-	xs_0 << 75, 0, -2, 0;
+	xs_0 << 75, 75, -2, 0;
 
 	Eigen::Matrix4d P_0;
 	P_0 << 100, 0, 0, 0,
@@ -180,7 +180,7 @@ int main(){
 	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
 	double d_safe = 50, dt_seg = 0.5;
-	int n_CE = 1000, n_MCSKF = 100;
+	int n_CE = 1000, n_MCSKF = 200;
 
 	std::vector<Eigen::VectorXd> P_c_i_CE, P_c_i_MCSKF;
 	P_c_i_CE.resize(1); P_c_i_MCSKF.resize(1);
@@ -217,7 +217,6 @@ int main(){
 			}
 
 			// Collision probability estimation using CE
-
 			P_c_i_CE[ps](k) = cpe->estimate(trajectory.col(k), xs_p[ps].col(k), P_p[ps].col(k), 0);
 		}
 		
@@ -227,18 +226,12 @@ int main(){
 		{
 			if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 			{
-				k_j_ = k_j;
-				k_j = k;
+				k_j_ = k_j; k_j = k;
 				xs_os_seg = trajectory.block(0, k_j_, 6, n_seg_samples);
-				std::cout << "xs_os_seg = " << std::endl; 
-				std::cout << xs_os_seg << std::endl;
 				xs_i_seg = xs_p[ps].block(0, k_j_, 4, n_seg_samples);
-				std::cout << "xs_i_seg = " << std::endl;
-				std::cout << xs_i_seg << std::endl;
+
 				P_i_seg = P_p[ps].block(0, k_j_, 16, n_seg_samples);
-				std::cout << "P_i_seg = " <<  std::endl;
-				print_matrix(reshape(P_i_seg.col(0), 4, 4));
-				print_matrix(reshape(P_i_seg.col(1), 4, 4));
+
 				// Collision probability estimation using MCSKF4D
 				P_c_i_MCSKF[ps](k_j_) = cpe->estimate(xs_os_seg, xs_i_seg, P_i_seg, 0);
 				// Collision probability on this active segment are all equal

@@ -245,17 +245,19 @@ inline void calculate_cpa(
 	if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); rotate_vector_2D(v_B, psi_B); }
 	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); p_B(0) = xs_B(0); p_B(1) = xs_B(1);}
 
-	if ((v_A - v_B).norm() > epsilon)
-	{
-		t_cpa = - (p_A - p_B).dot(v_A - v_B) / pow((v_A - v_B).norm(), 2);
-		p_cpa = p_A + v_A * t_cpa;
-		d_cpa = (p_cpa - (p_B + v_B * t_cpa)).norm();
-	}
-	else
+	// Check if the relative speed is too low, or if the vessels are moving away from each other with the current velocity vectors
+	double dt_incr = 0.1;
+	if ((v_A - v_B).norm() < epsilon || (p_A - p_B).norm() < ((p_A + v_A * dt_incr) - (p_B + v_B * dt_incr)).norm())
 	{
 		t_cpa = 0;
 		p_cpa = p_A;
 		d_cpa = (p_A - p_B).norm();
+	}
+	else
+	{
+		t_cpa = - (p_A - p_B).dot(v_A - v_B) / pow((v_A - v_B).norm(), 2);
+		p_cpa = p_A + v_A * t_cpa;
+		d_cpa = (p_cpa - (p_B + v_B * t_cpa)).norm();
 	}
 }
 
