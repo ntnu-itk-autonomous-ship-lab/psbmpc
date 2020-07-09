@@ -33,7 +33,7 @@
 *  Modified :
 *****************************************************************************************/
 Obstacle::Obstacle(
-	const Eigen::VectorXd& xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, id]
+	const Eigen::VectorXd& xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::Matrix4d& P, 									// In: Obstacle covariance
 	const Eigen::VectorXd Pr_a,									// In: Obstacle intention probability vector
 	const double Pr_cc, 										// In: A priori COLREGS compliance probability
@@ -42,9 +42,9 @@ Obstacle::Obstacle(
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	ID(xs_aug(9)), filter_on(filter_on), colav_on(colav_on),
-	l(xs_aug(5) + xs_aug(6)), w(xs_aug(7) + xs_aug(8)), 
-	x_offset(xs_aug(5) - xs_aug(6)), y_offset(xs_aug(7) - xs_aug(8)),
+	ID(xs_aug(8)), P_0(P), filter_on(filter_on), colav_on(colav_on),
+	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
+	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
 	duration_lost(0.0)
 {
 	this->Pr_a = Pr_a;
@@ -64,18 +64,17 @@ Obstacle::Obstacle(
 
 	P_colav_p.resize(16, n_samples);
 
-	double psi = xs_aug(2);
-	xs_p[0](0, 0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	xs_p[0](1, 0) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
-	xs_p[0](2, 0) = xs_aug(3) * cos(psi) - xs_aug(4) * sin(psi); 
-	xs_p[0](3, 0) = xs_aug(3) * sin(psi) + xs_aug(4) * cos(psi); 
+	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
+	
+	xs_p[0].col(0) = xs_0;
 
-	P_p[0].block<16, 1>(0, 0) = flatten(P);
+	P_p[0].col(0) = flatten(P_0);
 
-	Eigen::Vector4d xs_0;
-	xs_0 << xs_p[0](0, 0), xs_p[0](1, 0), xs_p[0](2, 0), xs_p[0](3, 0);
-
-	kf = new KF(xs_0, P, ID, dt, 0.0);
+	kf = new KF(xs_0, P_0, ID, dt, 0.0);
 
 	if(filter_on) 
 	{
@@ -93,12 +92,11 @@ Obstacle::Obstacle(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Obstacle::~Obstacle(){
+Obstacle::~Obstacle()
+{
 	delete kf;
 	delete mrou;
 }
-
-
 
 /****************************************************************************************
 *  Name     : resize_trajectories
@@ -108,14 +106,19 @@ Obstacle::~Obstacle(){
 *****************************************************************************************/
 void Obstacle::resize_trajectories(const int n_samples)
 {
-	int n_ps = xs_p.size();
+	int n_ps = ps_ordering.size();
+	xs_p.resize(n_ps);
+	P_p.resize(n_ps);
+	v_p.resize(n_ps);
 	for(int ps = 0; ps < n_ps; ps++)
 	{
-		xs_p[ps].conservativeResize(4, n_samples);
-		P_p[ps].conservativeResize(16, n_samples);
+		xs_p[ps].resize(4, n_samples); 	xs_p[ps].col(0) = kf->get_state();
+		P_p[ps].resize(16, n_samples); 	P_p[ps].col(0) 	= flatten(kf->get_covariance());
+		v_p[ps].resize(2, n_samples); 	v_p[ps].col(0) 	= kf->get_state().block<2, 1>(2, 0);
 	}
-	xs_colav_p.conservativeResize(4, n_samples);
-	P_colav_p.conservativeResize(16, n_samples);
+	xs_colav_p.resize(4, n_samples); 	xs_colav_p.col(0) = kf->get_state();
+	P_colav_p.resize(16, n_samples); 	P_colav_p.col(0) = flatten(kf->get_covariance());
+
 }
 
 /****************************************************************************************
@@ -216,4 +219,42 @@ void Obstacle::predict_independent_trajectories(
 			}
 		}
 	}
+}
+
+/****************************************************************************************
+*  Name     : update
+*  Function : Updates the obstacle state, covariance, intention probabilities, a priori
+* 			  COLREGS compliance probability at the current time prior to a run of the
+*			  PSB-MPC.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void Obstacle::update(
+	const Eigen::VectorXd& xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::Matrix4d& P, 									// In: Obstacle covariance
+	const Eigen::VectorXd Pr_a,									// In: Obstacle intention probability vector
+	const double Pr_cc, 										// In: A priori COLREGS compliance probability
+	const bool filter_on, 											// In: Indicator of whether the AIS-KF is active
+	const double dt 											// In: Prediction time step
+	)
+{
+	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
+
+	P_0 = P;
+
+	if (filter_on)
+	{
+		kf->update(xs_0, duration_lost, dt);
+
+		duration_tracked = kf->get_time();
+	}
+	else { kf->reset(xs_0, P_0, 0.0); }
+	
+	this->Pr_a = Pr_a; 
+	
+	this->Pr_CC = Pr_CC;
 }

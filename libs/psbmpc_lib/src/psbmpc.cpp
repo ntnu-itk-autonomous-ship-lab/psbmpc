@@ -305,7 +305,7 @@ void PSBMPC::calculate_optimal_offsets(
 		for (int i = 0; i < n_obst; i++)
 		{
 			if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
-			
+
 			calculate_collision_probabilities(P_c_i, i); 
 
 			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
@@ -1581,6 +1581,14 @@ void PSBMPC::update_obstacles(
 			{
 				old_obstacles[j]->reset_duration_lost();
 
+				old_obstacles[j]->update(
+					obstacle_states.col(i), 
+					obstacle_covariances.col(i), 
+					obstacle_intention_probabilities.col(i),
+					obstacle_a_priori_CC_probabilities(i),
+					obstacle_filter_on,
+					dt);
+
 				new_obstacles.push_back(old_obstacles[j]);
 
 				obstacle_exist = true;
@@ -1613,6 +1621,7 @@ void PSBMPC::update_obstacles(
 			if (	old_obstacles[j]->get_duration_tracked() >= T_tracked_limit 	&&
 					(old_obstacles[j]->get_duration_lost() < T_lost_limit || old_obstacles[j]->kf->get_covariance()(0,0) <= 5.0))
 			{
+				
 				new_obstacles.push_back(old_obstacles[j]);
 			}
 		}

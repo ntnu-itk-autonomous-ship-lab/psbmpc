@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test_cpe.o: test_cpe.cpp.o
+test_obstacle.o: test_obstacle.cpp.o
 
-.PHONY : test_cpe.o
+.PHONY : test_obstacle.o
 
 # target to build an object file
-test_cpe.cpp.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.o
-.PHONY : test_cpe.cpp.o
+test_obstacle.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle.cpp.o
+.PHONY : test_obstacle.cpp.o
 
-test_cpe.i: test_cpe.cpp.i
+test_obstacle.i: test_obstacle.cpp.i
 
-.PHONY : test_cpe.i
+.PHONY : test_obstacle.i
 
 # target to preprocess a source file
-test_cpe.cpp.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.i
-.PHONY : test_cpe.cpp.i
+test_obstacle.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle.cpp.i
+.PHONY : test_obstacle.cpp.i
 
-test_cpe.s: test_cpe.cpp.s
+test_obstacle.s: test_obstacle.cpp.s
 
-.PHONY : test_cpe.s
+.PHONY : test_obstacle.s
 
 # target to generate assembly for a file
-test_cpe.cpp.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.s
-.PHONY : test_cpe.cpp.s
+test_obstacle.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle.cpp.s
+.PHONY : test_obstacle.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... test_cpe.o"
-	@echo "... test_cpe.i"
-	@echo "... test_cpe.s"
+	@echo "... test_obstacle.o"
+	@echo "... test_obstacle.i"
+	@echo "... test_obstacle.s"
 .PHONY : help
 
 
