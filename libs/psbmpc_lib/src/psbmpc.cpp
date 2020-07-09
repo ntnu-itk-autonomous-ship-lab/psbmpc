@@ -897,7 +897,7 @@ void PSBMPC::determine_situation_type(
 					!B_is_overtaken)) 											&&
 					d_AB > d_safe;
 
-		is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+		is_head_on = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
 					v_A.norm() > 0.25											&&
 					v_B.norm() > 0.25											&&
 					is_ahead;
@@ -976,7 +976,7 @@ bool PSBMPC::determine_COLREGS_violation(
 				!B_is_overtaken)) 											&&
 				d_AB > d_safe;
 
-	is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+	is_head_on = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
 				 v_A.norm() > 0.25											&&
 				 v_B.norm() > 0.25											&&
 				 is_ahead;
@@ -1155,7 +1155,7 @@ void PSBMPC::update_transitional_variables()
 				d_AB > d_safe;
 		
 		// This is not mentioned in article, but also implemented here..				
-		H_TC_0(i) = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+		H_TC_0(i) = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
 				v_A.norm() > 0.25											&&
 				v_B.norm() > 0.25											&&
 				AH_0(i);
@@ -1583,7 +1583,7 @@ void PSBMPC::update_obstacles(
 
 				old_obstacles[j]->update(
 					obstacle_states.col(i), 
-					obstacle_covariances.col(i), 
+					reshape(obstacle_covariances.col(i), 4, 4), 
 					obstacle_intention_probabilities.col(i),
 					obstacle_a_priori_CC_probabilities(i),
 					obstacle_filter_on,

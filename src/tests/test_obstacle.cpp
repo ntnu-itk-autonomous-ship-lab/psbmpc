@@ -83,7 +83,6 @@ int main(){
 	Eigen::Matrix<double, 6, -1> trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
 
-	int n_samples = std::round(T / dt);
 	trajectory.resize(6, n_samples);
 	trajectory.block<6, 1>(0, 0) << xs_os_0;
 	std::cout << "traj init = [" << trajectory(0, 0) << ", " << trajectory(1, 0) << ", " << trajectory(2, 0) << ", " \
@@ -118,11 +117,11 @@ int main(){
 	Pr_a << 1, 1, 1;
 	Pr_a = Pr_a.normalized();
 
-	double Pr_cc = 0.9;
+	double Pr_CC = 0.9;
 
 	bool filter_on = true, colav_on = false;
 
-	Obstacle *obstacle = new Obstacle(xs_aug, P, Pr_a, Pr_cc, filter_on, colav_on, T, dt);
+	Obstacle *obstacle = new Obstacle(xs_aug, P, Pr_a, Pr_CC, filter_on, colav_on, T, dt);
 
 	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
@@ -195,7 +194,7 @@ int main(){
 
 		engPutVariable(ep, "ps_counter", ps_count);
 		*ps_ptr++;
-		
+
 		engEvalString(ep, "test_obstacle_plot");
 	}
 	

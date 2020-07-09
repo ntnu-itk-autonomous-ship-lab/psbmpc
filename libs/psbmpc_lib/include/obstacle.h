@@ -154,7 +154,7 @@ public:
 	void update(
 		const Eigen::VectorXd &xs_aug, 
 		const Eigen::Matrix4d &P, 
-		const Eigen::VectorXd Pr_a, 
+		const Eigen::VectorXd &Pr_a, 
 		const double Pr_cc,
 		const bool filter_on,
 		const double dt);

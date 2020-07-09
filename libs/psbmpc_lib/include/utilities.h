@@ -131,8 +131,8 @@ inline double angle_difference_pmpi(const double a_1, const double a_2)
 inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d &v, const double angle)
 {
 	Eigen::Vector2d v_temp;
-	v_temp(1) = v(1) * cos(angle) - v(2) * sin(angle);
-	v_temp(2) = v(1) * sin(angle) - v(2) * cos(angle);
+	v_temp(0) = v(0) * cos(angle) - v(0) * sin(angle);
+	v_temp(1) = v(1) * sin(angle) - v(1) * cos(angle);
 	return v_temp;
 }
 
@@ -284,10 +284,10 @@ inline bool determine_COLREGS_violation(
 
 	Eigen::Vector2d v_A, v_B, L_AB;
 	double psi_A, psi_B;
-	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
+	if (xs_A.size() == 6) { psi_A = xs_A(2); v_A(0) = xs_A(3); v_A(1) = xs_A(4); v_A = rotate_vector_2D(v_A, psi_A); }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
 	
-	if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); rotate_vector_2D(v_B, psi_B); }
+	if (xs_B.size() == 6) { psi_B = xs_B(2); v_B(0) = xs_B(3); v_B(1) = xs_B(4); v_B = rotate_vector_2D(v_B, psi_B); }
 	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
 
 	L_AB(0) = xs_B(0) - xs_A(0);
@@ -315,7 +315,7 @@ inline bool determine_COLREGS_violation(
 				!B_is_overtaken)) 											&&
 				d_AB > d_safe;
 
-	is_head_on = v_A.dot(v_B) > - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+	is_head_on = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
 				v_A.norm() > 0.25											&&
 				v_B.norm() > 0.25											&&
 				is_ahead;
