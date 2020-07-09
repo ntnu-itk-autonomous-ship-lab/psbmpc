@@ -210,7 +210,7 @@ void PSBMPC::set_par(
 
 void PSBMPC::set_par(
 	const int index,														// In: Index of parameter to set
-	const std::vector<Eigen::VectorXd> value 								// In: Value to set for parameter
+	const std::vector<Eigen::VectorXd> &value 								// In: Value to set for parameter
 	)
 {
 	if (value.size() == n_M)
@@ -304,10 +304,8 @@ void PSBMPC::calculate_optimal_offsets(
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			if (obstacle_colav_on[i])
-			{
-				predict_trajectories_jointly();
-			}
+			if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
+			
 			calculate_collision_probabilities(P_c_i, i); 
 
 			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
@@ -315,7 +313,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		cost += cost_i.maxCoeff();
 
-		cost += calculate_grounding_cost(trajectory, static_obstacles);
+		cost += calculate_grounding_cost(static_obstacles);
 
 		cost += calculate_control_deviation_cost();
 
@@ -1179,11 +1177,38 @@ void PSBMPC::update_transitional_variables()
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::calculate_collision_probabilities(
-	Eigen::MatrixXd& P_c_i,
+	Eigen::MatrixXd& P_c_i,										// In/out: Collision probabilities for 
 	const int i
 	)
 {
+	int n_samples = trajectory.cols();
 
+	if (!obstacle_colav_on[i])
+	{
+		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
+		std::vector<Eigen::MatrixXd> P_i_p = new_obstacles[i]->get_independent_trajectory_covariances();
+		int n_ps = xs_i_p.size();
+		P_c_i.resize(n_ps, n_samples);
+		for (int ps = 0; ps < n_ps; ps++)
+		{
+			cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p[ps].col(0), i);
+			for (int k = 0; k < n_samples; k++)
+			{
+				P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p[ps].col(k), i);
+			}
+		}
+	}
+	else
+	{
+		P_c_i.resize(1, n_samples);
+		Eigen::MatrixXd xs_i_p = new_obstacles[i]->get_dependent_trajectory();
+		Eigen::MatrixXd P_i_p = new_obstacles[i]->get_dependent_trajectory_covariance();
+		cpe->initialize(trajectory.col(0), xs_i_p.col(0), P_i_p.col(0), i);
+		for (int k = 0; k < n_samples; k++)
+		{
+			P_c_i(0, k) = cpe->estimate(trajectory.col(k), xs_i_p.col(k), P_i_p.col(k), i);
+		}
+	}
 }
 
 /****************************************************************************************
@@ -1297,17 +1322,17 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_collision_cost(
-	const Eigen::Vector2d v_1, 												// In: Velocity v_1
-	const Eigen::Vector2d v_2 												// In: Velocity v_2
+	const Eigen::Vector2d &v_1, 												// In: Velocity v_1
+	const Eigen::Vector2d &v_2 												// In: Velocity v_2
 	)
 {
 	return K_coll * (v_1 - v_2).norm();
 }
 
 void PSBMPC::calculate_collision_cost(
-	Eigen::VectorXd& cost,													// Out: Collision cost
-	const Eigen::Matrix<double, 2, -1>& v_1, 								// In: Velocity v_1
-	const Eigen::Matrix<double, 2, -1>& v_2 								// In: Velocity v_2
+	Eigen::VectorXd &cost,													// Out: Collision cost
+	const Eigen::Matrix<double, 2, -1> &v_1, 								// In: Velocity v_1
+	const Eigen::Matrix<double, 2, -1> &v_2 								// In: Velocity v_2
 	)
 {
 	int n_samples = v_1.cols();
@@ -1381,7 +1406,6 @@ double PSBMPC::calculate_chattering_cost()
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_grounding_cost(
-	const Eigen::Matrix<double, 6, -1>& trajectory, 							// In: Predicted ownship trajectory with control behavior k
 	const Eigen::Matrix<double, 4, -1>& static_obstacles						// In: Static obstacle information
 	)
 {
@@ -1397,9 +1421,9 @@ double PSBMPC::calculate_grounding_cost(
 *  Modified :
 *****************************************************************************************/
 int PSBMPC::find_triplet_orientation(
-	const Eigen::Vector2d p, 
-	const Eigen::Vector2d q, 
-	const Eigen::Vector2d r
+	const Eigen::Vector2d &p, 
+	const Eigen::Vector2d &q, 
+	const Eigen::Vector2d &r
 	)
 {
 	// Calculate z-component of cross product (q - p) x (r - q)
@@ -1417,9 +1441,9 @@ int PSBMPC::find_triplet_orientation(
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_if_on_segment(
-	const Eigen::Vector2d p, 
-	const Eigen::Vector2d q, 
-	const Eigen::Vector2d r
+	const Eigen::Vector2d &p, 
+	const Eigen::Vector2d &q, 
+	const Eigen::Vector2d &r
 	)
 {
     if (q[0] <= std::max(p[0], r[0]) && q[0] >= std::min(p[0], r[0]) &&
@@ -1435,9 +1459,9 @@ bool PSBMPC::determine_if_on_segment(
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_if_behind(
-	const Eigen::Vector2d p_1, 
-	const Eigen::Vector2d v_1, 
-	const Eigen::Vector2d v_2, 
+	const Eigen::Vector2d &p_1, 
+	const Eigen::Vector2d &v_1, 
+	const Eigen::Vector2d &v_2, 
 	const double distance_to_line
 	)
 {
@@ -1458,10 +1482,10 @@ bool PSBMPC::determine_if_behind(
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_if_lines_intersect(
-	const Eigen::Vector2d p_1, 
-	const Eigen::Vector2d q_1, 
-	const Eigen::Vector2d p_2, 
-	const Eigen::Vector2d q_2
+	const Eigen::Vector2d &p_1, 
+	const Eigen::Vector2d &q_1, 
+	const Eigen::Vector2d &p_2, 
+	const Eigen::Vector2d &q_2
 	)
 {
     // Find the four orientations needed for general and
@@ -1498,9 +1522,9 @@ bool PSBMPC::determine_if_lines_intersect(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::distance_from_point_to_line(
-	const Eigen::Vector2d p, 
-	const Eigen::Vector2d q_1, 
-	const Eigen::Vector2d q_2
+	const Eigen::Vector2d &p, 
+	const Eigen::Vector2d &q_1, 
+	const Eigen::Vector2d &q_2
 	)
 {   
 	Eigen::Vector3d a;
@@ -1520,9 +1544,9 @@ double PSBMPC::distance_from_point_to_line(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::distance_to_static_obstacle(
-	const Eigen::Vector2d p, 
-	const Eigen::Vector2d v_1, 
-	const Eigen::Vector2d v_2
+	const Eigen::Vector2d &p, 
+	const Eigen::Vector2d &v_1, 
+	const Eigen::Vector2d &v_2
 	)
 {
     double d2line = distance_from_point_to_line(p, v_1, v_2);
@@ -1538,7 +1562,7 @@ double PSBMPC::distance_to_static_obstacle(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::update_obstacles(
-	const Eigen::Matrix<double, 9, -1>& obstacle_states, 								// In: Dynamic obstacle states 
+	const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
 	const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
 	const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities, 				// In: Obstacle intention probability information
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities

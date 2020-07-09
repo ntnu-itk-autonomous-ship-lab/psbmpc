@@ -117,8 +117,8 @@ private:
 	bool determine_colav_active(const int n_static_obst);
 
 	void determine_situation_type(
-		ST& st_A,
-		ST& st_B,
+		ST &st_A,
+		ST &st_B,
 		const Eigen::Vector2d &v_A, 
 		const double psi_A, 
 		const Eigen::Vector2d &v_B,
@@ -138,7 +138,7 @@ private:
 		const Eigen::Vector2d &L_AB, 
 		const int i,
 		const double chi_m);
-	bool determine_transitional_cost_indicator(const Eigen::VectorXd& xs_A, const Eigen::VectorXd& xs_B, const int i, const double chi_m);
+	bool determine_transitional_cost_indicator(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B, const int i, const double chi_m);
 
 	void update_transitional_variables(
 		const Eigen::Vector2d &v_A, 
@@ -151,13 +151,13 @@ private:
 
 	void update_transitional_variables();
 
-	void calculate_collision_probabilities(Eigen::MatrixXd& P_c_i, const int i);
+	void calculate_collision_probabilities(Eigen::MatrixXd &P_c_i, const int i);
 
-	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd& P_c_i, const int i);
+	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const int i);
 
-	double calculate_collision_cost(const Eigen::Vector2d v_1, const Eigen::Vector2d v_2);
+	double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
-	void calculate_collision_cost(Eigen::VectorXd& cost, const Eigen::Matrix<double, 2, -1>& v_1, const Eigen::Matrix<double, 2, -1>& v_2);
+	void calculate_collision_cost(Eigen::VectorXd &cost, const Eigen::Matrix<double, 2, -1> &v_1, const Eigen::Matrix<double, 2, -1> &v_2);
 
 	// Methods dealing with control deviation cost
 	double calculate_control_deviation_cost();
@@ -172,19 +172,19 @@ private:
 	double calculate_chattering_cost();
 
 	// Methods dealing with geographical constraints
-	double calculate_grounding_cost(const Eigen::Matrix<double, 6, -1>& trajectory, const Eigen::Matrix<double, 4, -1>& static_obstacles);
+	double calculate_grounding_cost(const Eigen::Matrix<double, 4, -1>& static_obstacles);
 
-    int find_triplet_orientation(const Eigen::Vector2d p, const Eigen::Vector2d q, const Eigen::Vector2d r);                           
+    int find_triplet_orientation(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);                           
 
-    bool determine_if_on_segment(const Eigen::Vector2d p, const Eigen::Vector2d q, const Eigen::Vector2d r);   
+    bool determine_if_on_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);   
 
-    bool determine_if_behind(const Eigen::Vector2d p_1, const Eigen::Vector2d v_1, const Eigen::Vector2d v_2, const double d_to_line);                         
+    bool determine_if_behind(const Eigen::Vector2d &p_1, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2, const double d_to_line);                         
 
-    bool determine_if_lines_intersect(const Eigen::Vector2d p_1, const Eigen::Vector2d q_1, const Eigen::Vector2d p_2, const Eigen::Vector2d q_2);   
+    bool determine_if_lines_intersect(const Eigen::Vector2d &p_1, const Eigen::Vector2d &q_1, const Eigen::Vector2d &p_2, const Eigen::Vector2d &q_2);   
 
-    double distance_from_point_to_line(const Eigen::Vector2d p, const Eigen::Vector2d q_1, const Eigen::Vector2d q_2);                  
+    double distance_from_point_to_line(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2);                  
 
-    double distance_to_static_obstacle(const Eigen::Vector2d p, const Eigen::Vector2d v_1, const Eigen::Vector2d v_2);
+    double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
 
     void update_obstacles(
@@ -223,7 +223,7 @@ public:
 
 	void set_par(const int index, const double value);
 
-	void set_par(const int index, const std::vector<Eigen::VectorXd> value);
+	void set_par(const int index, const std::vector<Eigen::VectorXd> &value);
 
 	bool get_obstacle_filter_status() const { return obstacle_filter_on; };
 

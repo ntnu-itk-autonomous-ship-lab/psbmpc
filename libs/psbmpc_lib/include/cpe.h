@@ -63,25 +63,24 @@ private:
 	std::vector<Eigen::Vector2d> mu_CE_last;
 	std::vector<Eigen::Matrix2d> P_CE_last;
 
-	int N_e, e_count;
-	Eigen::MatrixXd elite_samples;
+	std::vector<int> N_e, e_count;
+	std::vector<Eigen::MatrixXd> elite_samples;
 
 	// MCSKF4D-method parameters and internal states
 	double q, r, dt_seg; 
 	
 	Eigen::VectorXd P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
-	// Common internal sample variables (only one method is able to use these at a time
-	// due to the nature of this class)
-	Eigen::MatrixXd samples;
-	Eigen::VectorXd valid;
+	// Common internal sample variables
+	std::vector<Eigen::MatrixXd> samples;
+	std::vector<Eigen::VectorXd> valid;
 
 	// Safety zone parameters
 	double d_safe;
 
-	void norm_pdf_log(Eigen::VectorXd &result, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	void norm_pdf_log(Eigen::VectorXd &result, const Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
-	void generate_norm_dist_samples(const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	void generate_norm_dist_samples(Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
 	void calculate_roots_2nd_order(Eigen::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
 
@@ -89,9 +88,12 @@ private:
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::Matrix4d &P_i, 
 		const Eigen::Vector2d &p_os_cpa,
-		const double t_cpa);
+		const double t_cpa,
+		const int i);
 
 	bool determine_sample_validity_4D(
+		Eigen::VectorXd &valid, 
+		const Eigen::MatrixXd &samples, 
 		const Eigen::Vector2d &p_os_cpa, 
 		const double t_cpa);
 
@@ -102,9 +104,14 @@ private:
 		const int i);	
 
 	void determine_sample_validity_2D(
+		Eigen::VectorXd &valid, 
+		const Eigen::MatrixXd &samples,
 		const Eigen::Vector2d &p_os);
 
 	void determine_best_performing_samples(
+		Eigen::VectorXd &valid, 
+		int &N_e, 
+		const Eigen::MatrixXd &samples,
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
 		const Eigen::Matrix2d &P_i);

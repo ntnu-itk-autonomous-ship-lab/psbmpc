@@ -72,7 +72,7 @@ int main()
 	xs_p.resize(1); xs_p[0].resize(4, n_samples);
 	xs_p[0].col(0) = xs_0;
 	P_p.resize(1); P_p[0].resize(16, n_samples);
-	P_p[0].col(0) = Utilities::flatten(P_0);
+	P_p[0].col(0) = flatten(P_0);
 
 	v_p.resize(1); v_p[0].resize(2, n_samples);
 	
@@ -122,7 +122,7 @@ int main()
 			if (k < n_samples - 1)
 			{
 				xs_p[ps].col(k + 1) = xs;
-				P_p[ps].col(k + 1) = Utilities::flatten(P);
+				P_p[ps].col(k + 1) = flatten(P);
 			}
 		}
 	}
