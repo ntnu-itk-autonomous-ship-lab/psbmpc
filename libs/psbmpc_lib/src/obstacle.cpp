@@ -188,12 +188,25 @@ void Obstacle::predict_independent_trajectories(
 		{
 			t = (k + 1) * dt;
 
-			mu[ps] = determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl.col(k), phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
+			if (!mu[ps])
+			{
+				mu[ps] = determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl, phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
+			}
+		
 			switch (ps_ordering[ps])
 			{
 				case KCC :	
 					break; // Proceed
-				case SM || PM:
+				case SM :
+					if (k == ps_maneuver_times[ps] && !have_turned)
+					{
+						chi_ps = atan2(v_p[ps](1, k), v_p[ps](0, k)); 
+						v_p[ps](0, k) = v_p[ps].col(k).norm() * cos(chi_ps + ps_course_changes[ps]);
+						v_p[ps](1, k) = v_p[ps].col(k).norm() * sin(chi_ps + ps_course_changes[ps]);
+						have_turned = true;
+					}
+					break;
+				case PM : 
 					if (k == ps_maneuver_times[ps] && !have_turned)
 					{
 						chi_ps = atan2(v_p[ps](1, k), v_p[ps](0, k)); 
@@ -214,10 +227,9 @@ void Obstacle::predict_independent_trajectories(
 				v_p[ps].col(k + 1) = v_p[ps].col(k);
 
 				// Propagate ownship assuming straight line trajectory
-				std::cout << 
-				ownship_state_sl.block(0, k + 1, 2, 1) =  ownship_state_sl.block(0, k, 2, 1) + 
-					dt * rotate_vector_2D(ownship_state_sl.block(3, k, 2, 1), ownship_state_sl(2, k));
-				ownship_state_sl.block(2, k + 1, 4, 1) = ownship_state_sl.block(2, k, 4, 1);
+				ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
+					dt * rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
+				ownship_state_sl.block<4, 1>(2, 0) = ownship_state_sl.block<4, 1>(2, 0);
 			}
 		}
 	}

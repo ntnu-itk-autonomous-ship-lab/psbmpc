@@ -50,7 +50,7 @@ int main(){
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 6, 0, 0;
 
-	double T = 80; double dt = 0.5;
+	double T = 200; double dt = 0.5;
 	int n_samples = std::round(T / dt);
 	double u_d = 6.0; double chi_d = 0.0;
 
@@ -99,13 +99,15 @@ int main(){
 
 	double *ptraj_os = mxGetPr(traj_os);
 	double *pwps = mxGetPr(wps);
+
+	Ownship *ownship = new Ownship();
 	
 	//*****************************************************************************************************************
 	// Obstacle setup
 	//*****************************************************************************************************************
 
 	Eigen::VectorXd xs_aug(9);
-	xs_aug << 100, 0, -2, 0, 5, 5, 5, 5, 0;
+	xs_aug << 1000, 0, -5, 0, 5, 5, 5, 5, 0;
 
 	Eigen::MatrixXd P(4, 4);
 	P << 100, 0, 0, 0,
@@ -132,7 +134,7 @@ int main(){
 	//*****************************************************************************************************************
 	// Test obstacle functionality
 	//*****************************************************************************************************************
-	double d_close = 500, d_safe = 300; 
+	double d_close = 1000, d_safe = 100; 
 	double phi_AH = 68.5 * DEG2RAD, phi_OT = 68.5 * DEG2RAD, phi_HO = 22.5 * DEG2RAD, phi_CR = 68.5 * DEG2RAD;	
 	
 	int n_ps = 5; 	// KCC, two alternative maneuvers to starboard and port, only one course change of 45 deg
@@ -151,9 +153,11 @@ int main(){
 		else { ps_ordering[ps] = PM; }
 	}
 	// Lets say a head-on situation, assign weights accordingly:
-	ps_maneuver_times << 0, 0, 50, 0, 50;
+	ps_maneuver_times << 0, 0, 100, 0, 100;
 	ps_course_changes << 0, 45 * DEG2RAD, 45 * DEG2RAD, - 45 * DEG2RAD, - 45 * DEG2RAD;
 	ps_weights << (1 - Pr_CC_i_test), Pr_CC_i_test, Pr_CC_i_test, (1 - Pr_CC_i_test), (1 - Pr_CC_i_test);
+
+	ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
 
 	obstacle->initialize_independent_prediction(ps_ordering, ps_course_changes, ps_weights, ps_maneuver_times);
 
@@ -164,6 +168,8 @@ int main(){
 	std::vector<Eigen::MatrixXd> P_p = obstacle->get_independent_trajectory_covariances();
 
 	std::vector<bool> mu = obstacle->get_COLREGS_violation_indicator();
+
+	
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
@@ -176,6 +182,9 @@ int main(){
 	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 
+	buffer[BUFSIZE] = '\0';
+	engOutputBuffer(ep, buffer, BUFSIZE);
+
 	engPutVariable(ep, "X", traj_os);
 	engPutVariable(ep, "WPs", wps);
 
@@ -186,29 +195,28 @@ int main(){
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
+		std::cout << "Obstacle breaches COLREGS in prediction scenario " << ps << " ? " << mu[ps] << std::endl;
+		std::cout << xs_p[ps].col(300).transpose() << std::endl;
 		map_traj_i = xs_p[ps];
 		engPutVariable(ep, "X_i", traj_i);
 
 		map_P_traj_i = P_p[ps];
-		engPutVariable(ep, "P_flat_i", P_traj_i);
+		engPutVariable(ep, "P_i_flat", P_traj_i);
 
 		engPutVariable(ep, "ps_counter", ps_count);
 		*ps_ptr++;
 
 		engEvalString(ep, "test_obstacle_plot");
+
+		printf("%s", buffer);
 	}
 	
-	buffer[BUFSIZE] = '\0';
-	engOutputBuffer(ep, buffer, BUFSIZE);
-
-	printf("%s", buffer);
-
 	mxDestroyArray(traj_os);
 	mxDestroyArray(wps);
 
 	mxDestroyArray(traj_i);
 	mxDestroyArray(P_traj_i);
-	engClose(ep);
+	engClose(ep); 
 
 	return 0;
 }
