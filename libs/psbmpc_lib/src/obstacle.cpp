@@ -36,7 +36,7 @@ Obstacle::Obstacle(
 	const Eigen::VectorXd& xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::Matrix4d& P, 									// In: Obstacle covariance
 	const Eigen::VectorXd Pr_a,									// In: Obstacle intention probability vector
-	const double Pr_cc, 										// In: A priori COLREGS compliance probability
+	const double Pr_CC, 										// In: A priori COLREGS compliance probability
 	const bool filter_on, 										// In: Boolean determining whether KF should be used or not
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
@@ -191,7 +191,8 @@ void Obstacle::predict_independent_trajectories(
 			mu[ps] = determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl.col(k), phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
 			switch (ps_ordering[ps])
 			{
-				case KCC :	// Proceed
+				case KCC :	
+					break; // Proceed
 				case SM || PM:
 					if (k == ps_maneuver_times[ps] && !have_turned)
 					{
@@ -213,9 +214,10 @@ void Obstacle::predict_independent_trajectories(
 				v_p[ps].col(k + 1) = v_p[ps].col(k);
 
 				// Propagate ownship assuming straight line trajectory
-				ownship_state_sl.block<2, 1>(0, k + 1) =  ownship_state_sl.block<2, 1>(0, k) + 
-					dt * rotate_vector_2D(ownship_state_sl.block<2, 1>(3, k), ownship_state_sl(2, k));
-				ownship_state_sl.block<4, 1>(2, k + 1) = ownship_state_sl.block<4, 1>(2, k);
+				std::cout << 
+				ownship_state_sl.block(0, k + 1, 2, 1) =  ownship_state_sl.block(0, k, 2, 1) + 
+					dt * rotate_vector_2D(ownship_state_sl.block(3, k, 2, 1), ownship_state_sl(2, k));
+				ownship_state_sl.block(2, k + 1, 4, 1) = ownship_state_sl.block(2, k, 4, 1);
 			}
 		}
 	}
@@ -230,11 +232,11 @@ void Obstacle::predict_independent_trajectories(
 *  Modified :
 *****************************************************************************************/
 void Obstacle::update(
-	const Eigen::VectorXd& xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
-	const Eigen::Matrix4d& P, 									// In: Obstacle covariance
-	const Eigen::VectorXd Pr_a,									// In: Obstacle intention probability vector
+	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::Matrix4d &P, 									// In: Obstacle covariance
+	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
 	const double Pr_cc, 										// In: A priori COLREGS compliance probability
-	const bool filter_on, 											// In: Indicator of whether the AIS-KF is active
+	const bool filter_on, 										// In: Indicator of whether the AIS-KF is active
 	const double dt 											// In: Prediction time step
 	)
 {
