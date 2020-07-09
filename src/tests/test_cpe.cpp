@@ -278,6 +278,9 @@ int main(){
 	engPutVariable(ep, "P_c_CE", Pcoll_CE);
 	engPutVariable(ep, "P_c_MCSKF", Pcoll_MCSKF);
 	engEvalString(ep, "test_cpe_plot");
+	save_matrix_to_file(P_c_i_CE[0]);
+	
+	save_matrix_to_file(P_c_i_MCSKF[0]);
 
 	printf("%s", buffer);
 	mxDestroyArray(traj_os);

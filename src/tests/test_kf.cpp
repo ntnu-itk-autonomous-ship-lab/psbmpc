@@ -66,7 +66,7 @@ int main()
 			  << xs_i_upd(3) << "]" << std::endl;
 	
 	std::cout << "P_i = " << std::endl;
-	Utilities::print_matrix(kf->get_covariance());
+	print_matrix(kf->get_covariance());
 
 	return 0;
 }
