@@ -40,13 +40,17 @@ private:
 
 	int ID;
 
+	// State and covariance at the current time or last time of update
+	Eigen::Vector4d xs_0;
+	Eigen::Matrix4d P_0;
+
 	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: n_ps x 1
 	std::vector<bool> mu;
 
-	// A priori COLREGS compliance probability
+	// A priori COLREGS compliance probability at the current time or last time of update
 	double Pr_CC;
 
-	// Vector of intention probabilities
+	// Vector of intention probabilities at the current time or last time of update
 	Eigen::VectorXd Pr_a;
 
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
@@ -123,7 +127,7 @@ public:
 
 	void initialize_independent_prediction(	
 		const std::vector<Intention> &ps_ordering,
-		const Eigen::VectorXd &ps_course_change_ordering,
+		const Eigen::VectorXd &ps_course_changes,
 		const Eigen::VectorXd &ps_weights,
 		const Eigen::VectorXd &ps_maneuver_times);
 
@@ -140,11 +144,20 @@ public:
 		const double d_close,
 		const double d_safe);
 
+	// Methods where obstacle COLAV must be activated
 	void set_dependent_trajectory(const Eigen::MatrixXd &xs_colav_p, const Eigen::MatrixXd &P_colav_p) { this->xs_colav_p = xs_colav_p; this->P_colav_p = P_colav_p; };
 
 	Eigen::MatrixXd get_dependent_trajectory() const { return xs_colav_p; };
 
 	Eigen::MatrixXd get_dependent_trajectory_covariance() const { return P_colav_p; };
+
+	void update(
+		const Eigen::VectorXd &xs_aug, 
+		const Eigen::Matrix4d &P, 
+		const Eigen::VectorXd Pr_a, 
+		const double Pr_cc,
+		const bool filter_on,
+		const double dt);
 };
 
 #endif

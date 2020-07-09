@@ -33,7 +33,6 @@
 KF::KF() : 
 	ID(0), initialized(0), t_0(0), t(0)
 {
-
 	xs_p.setZero();
 	xs_upd.setZero();
 
@@ -77,8 +76,7 @@ KF::KF(
 	const double t_0							// In: Initial time
 	) : 	
 	ID(ID), xs_p(xs_0), P_0(P_0), initialized(true), t_0(t_0), t(t_0) 
-	{
-
+{
 	I.setIdentity();
 
 	A << 1, 0, dt, 0,
@@ -117,8 +115,8 @@ KF::KF(
  	const Eigen::Vector4d& xs_0,				// In: Initial filter state
 	const Eigen::Matrix4d& P_0,					// In: Initial filter covariance
  	const double t_0 							// In: Initial time
- 	){
-
+ 	)
+{
  	this->t_0 = t_0;
  	t = t_0;
 
@@ -141,8 +139,8 @@ KF::KF(
 *****************************************************************************************/
 void KF::predict(
 	const double dt 							// In: Sampling interval
-	){
-
+	)
+{
 	A << 1, 0, dt, 0,
 		 0, 1, 0, dt,
 		 0, 0, 1, 0,
@@ -164,8 +162,8 @@ void KF::update(
 	const Eigen::Vector4d &y_m, 				// In: Measurement of cartesian position and velocity
 	const double duration_lost, 				// In: How long a track on an obstacle has been lost
 	const double dt 							// In: Sampling interval
-	){
-
+	)
+{
 	if(!initialized)
 
     	throw std::runtime_error("Filter is not initialized!");
@@ -187,5 +185,4 @@ void KF::update(
     }
 
 	t += dt; // Time used for fault detection (measurement loss)
-
 }

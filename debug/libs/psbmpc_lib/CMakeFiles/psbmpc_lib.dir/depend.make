@@ -433,6 +433,7 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o: ../libs/third_party_libs
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o: ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o: ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o: ../libs/psbmpc_lib/src/kf.cpp
+libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o: /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
 
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o: ../libs/psbmpc_lib/include/mrou.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o: ../libs/third_party_libs/Eigen/Cholesky

@@ -28,7 +28,6 @@
 #include "mrou.h"
 #include "ownship.h"
 #include <iostream>
-#include <variant>
 #include <vector>
 #include "Eigen/StdVector"
 #include "Eigen/Core"
@@ -289,6 +288,9 @@ int main(){
 	mxDestroyArray(traj_i);
 	mxDestroyArray(vtraj_i);
 	mxDestroyArray(P_traj_i);
+
+	mxDestroyArray(Pcoll_CE);
+	mxDestroyArray(Pcoll_MCSKF);
 	engClose(ep);
 
 	return 0;
