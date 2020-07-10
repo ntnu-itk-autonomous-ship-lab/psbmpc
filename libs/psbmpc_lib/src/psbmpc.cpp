@@ -962,6 +962,8 @@ bool PSBMPC::determine_COLREGS_violation(
 
 	is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
+	is_close = d_AB <= d_close;
+
 	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
 					 v_A.norm() < v_B.norm()							  	&&
 					 v_A.norm() > 0.25;
@@ -971,8 +973,6 @@ bool PSBMPC::determine_COLREGS_violation(
 					 v_B.norm() > 0.25;
 
 	B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-	is_close = d_AB <= d_close;
 
 	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
 				!A_is_overtaken) 											||
@@ -1063,10 +1063,10 @@ bool PSBMPC::determine_transitional_cost_indicator(
 	L_AB = L_AB / L_AB.norm();
 
 	// Obstacle on starboard side
-	S_TC = atan2(L_AB(1), L_AB(0)) > psi_A;
+	S_TC = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
 
 	// Ownship on starboard side of obstacle
-	S_i_TC = atan2(-L_AB(1), -L_AB(0)) > psi_B;
+	S_i_TC = angle_difference_pmpi(atan2(-L_AB(1), -L_AB(0)), psi_B) > 0;
 
 	// For ownship overtaking the obstacle: Check if obstacle is on opposite side of 
 	// ownship to what was observed at t0
@@ -1131,11 +1131,17 @@ void PSBMPC::update_transitional_variables()
 
 		AH_0[i] = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
+		std::cout << "Obst i = " << i << " ahead at t0 ? " << AH_0[i] << std::endl;
+		
 		// Obstacle on starboard side
 		S_TC_0[i] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
 
+		std::cout << "Obst i = " << i << " on starboard side at t0 ? " << S_TC_0[i] << std::endl;
+
 		// Ownship on starboard side of obstacle
 		S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
+
+		std::cout << "Own-ship on starboard side of obst i = " << i << " at t0 ? " << S_i_TC_0[i] << std::endl;
 
 		// Ownship overtaking the obstacle
 		O_TC_0[i] = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
@@ -1144,12 +1150,16 @@ void PSBMPC::update_transitional_variables()
 				is_close 													&&
 				AH_0[i];
 
+		std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << O_TC_0[i] << std::endl;
+
 		// Obstacle overtaking the ownship
 		Q_TC_0[i] = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
 				v_A.norm() < v_B.norm()							  			&&
 				v_A.norm() > 0.25 											&&
 				is_close 													&&
 				!AH_0[i];
+
+		std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << Q_TC_0[i] << std::endl;
 
 		// Determine if the obstacle is passed by
 		IP_0[i] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
@@ -1158,18 +1168,27 @@ void PSBMPC::update_transitional_variables()
 				!O_TC_0[i]))		 										&&
 				d_AB > d_safe;
 		
+		std::cout << "Obst i = " << i << " passed by at t0 ? " << IP_0[i] << std::endl;
+
 		// This is not mentioned in article, but also implemented here..				
 		H_TC_0[i] = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
 				v_A.norm() > 0.25											&&
 				v_B.norm() > 0.25											&&
 				AH_0[i];
 		
+		std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << H_TC_0[i] << std::endl;
+
 		// Crossing situation, a bit redundant with the !is_passed condition also, 
 		// but better safe than sorry (could be replaced with B_is_ahead also)
 		X_TC_0[i] = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()	&&
+				!H_TC_0[i]													&&
 				!O_TC_0[i] 													&&
-				!Q_TC_0[i] 													&&
-				!IP_0[i];
+				!Q_TC_0[i] 	 												&&
+				!IP_0[i]													&&
+				v_A.norm() > 0.25											&&
+				v_B.norm() > 0.25;
+
+		std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << X_TC_0[i] << std::endl;
 	}
 }
 

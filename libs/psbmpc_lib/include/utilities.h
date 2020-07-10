@@ -297,6 +297,8 @@ inline bool determine_COLREGS_violation(
 
 	is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
+	is_close = d_AB <= d_close;
+
 	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
 					v_A.norm() < v_B.norm()							  		&&
 					v_A.norm() > 0.25;
@@ -306,13 +308,10 @@ inline bool determine_COLREGS_violation(
 					v_B.norm() > 0.25;
 
 	B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-	is_close = d_AB <= d_close;
-
 	
 	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
 				!A_is_overtaken) 											||
-				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 			&& // Vessel B's perspective	
+				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
 				!B_is_overtaken)) 											&&
 				d_AB > d_safe;
 
