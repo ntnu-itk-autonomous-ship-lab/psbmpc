@@ -34,13 +34,7 @@
 
 int main()
 {
-	Eigen::Matrix<double, 6, 1> xs;
-	xs << 0, 0, 0, 6, 0, 0;
-	std::cout << "xs = [" << xs(0) << ", " << xs(1) << ", " << xs(2) << ", " << xs(3) << ", " << xs(4) << ", " << xs(5) << "]" << std::endl;
-
-	double t = 0, t_0 = 0, T = 300; double dt = 0.5;
-
-	int n_samples = std::round(T / dt);
+	double t = 0, t_0 = 0, dt = 0.5;
 
 	Eigen::VectorXd xs_i(4), xs_i_p, xs_i_upd, y_m(4);
 	xs_i << 0, 0, 2, 2;
