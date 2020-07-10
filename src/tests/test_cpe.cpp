@@ -55,29 +55,11 @@ int main(){
 
 	double u_d = 6.0; double chi_d = 0.0;
 
-	std::vector<Eigen::VectorXd> chi_offsets, value;
-	chi_offsets.resize(3);
-	chi_offsets[0].resize(13); chi_offsets[1].resize(7); chi_offsets[2].resize(5);
-	Eigen::VectorXd v1, v2, v3;
-	v1.resize(13); v2.resize(7); v3.resize(5);
-	v1 << -90, -75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75, 90;
-	v2 << -90, -75, -45, 0, 45, 75, 90;
-	v3 << -90, -45, 0, 45, 90;
-	chi_offsets[0] << v1;
-	chi_offsets[1] << v2;
-	chi_offsets[2] << v3;
-
 	Eigen::VectorXd offset_sequence(6);
 	Eigen::Vector3d maneuver_times;
 	offset_sequence << 1, -90 * M_PI / 180.0, 1, -30 * M_PI / 180.0, 1, 0;
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
-
-	
-	for (std::vector<Eigen::VectorXd>::iterator it = chi_offsets.begin(); it != chi_offsets.end(); it++){
-		std::cout << "chi_offsets(j) = " << *it << " | ";
-	}
-	std::cout << std::endl;
 
 	Ownship* asv = new Ownship(); 
 
@@ -87,8 +69,6 @@ int main(){
 	int n_samples = std::round(T / dt);
 	trajectory.resize(6, n_samples);
 	trajectory.block<6, 1>(0, 0) << xs_os_0;
-	std::cout << "traj init = [" << trajectory(0, 0) << ", " << trajectory(1, 0) << ", " << trajectory(2, 0) << ", " \
-	<< trajectory(3, 0) << ", " << trajectory(4, 0) << ", " << trajectory(5, 0) << "]" << std::endl;
 
 	waypoints.resize(2, 2); 
 	//waypoints << 0, 200, 200, 0,    0, 300, 1000,

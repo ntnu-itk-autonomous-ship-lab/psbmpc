@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test_obstacle.o: test_obstacle.cpp.o
+test_psbmpc.o: test_psbmpc.cpp.o
 
-.PHONY : test_obstacle.o
+.PHONY : test_psbmpc.o
 
 # target to build an object file
-test_obstacle.cpp.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle.cpp.o
-.PHONY : test_obstacle.cpp.o
+test_psbmpc.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.o
+.PHONY : test_psbmpc.cpp.o
 
-test_obstacle.i: test_obstacle.cpp.i
+test_psbmpc.i: test_psbmpc.cpp.i
 
-.PHONY : test_obstacle.i
+.PHONY : test_psbmpc.i
 
 # target to preprocess a source file
-test_obstacle.cpp.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle.cpp.i
-.PHONY : test_obstacle.cpp.i
+test_psbmpc.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.i
+.PHONY : test_psbmpc.cpp.i
 
-test_obstacle.s: test_obstacle.cpp.s
+test_psbmpc.s: test_psbmpc.cpp.s
 
-.PHONY : test_obstacle.s
+.PHONY : test_psbmpc.s
 
 # target to generate assembly for a file
-test_obstacle.cpp.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle.cpp.s
-.PHONY : test_obstacle.cpp.s
+test_psbmpc.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.s
+.PHONY : test_psbmpc.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... test_obstacle.o"
-	@echo "... test_obstacle.i"
-	@echo "... test_obstacle.s"
+	@echo "... test_psbmpc.o"
+	@echo "... test_psbmpc.i"
+	@echo "... test_psbmpc.s"
 .PHONY : help
 
 

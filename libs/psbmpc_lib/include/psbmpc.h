@@ -47,6 +47,7 @@ class PSBMPC
 private:
 
 	int n_cbs, n_M, n_a;
+
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
 
@@ -91,7 +92,7 @@ private:
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
-	Eigen::Matrix<bool, -1, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
+	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
 
 	// Situation type variables at the current time for the own-ship and nearby obstacles
 	ST ST_0;
@@ -235,14 +236,14 @@ public:
 
 	void calculate_optimal_offsets(
 		double &u_opt, 
-		double &psi_opt, 
+		double &chi_opt, 
 		Eigen::Matrix<double, 2, -1> &predicted_trajectory,
 		Eigen::Matrix<double, -1, -1> &obstacle_status,
 		Eigen::Matrix<double, -1, 1> &colav_status,
 		const double u_d, 
-		const double psi_d, 
+		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints,
-		const Eigen::VectorXd &ownship_state,
+		const Eigen::Matrix<double, 6, 1> &ownship_state,
 		const Eigen::Matrix<double, 9, -1> &obstacle_states, 
 		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
 		const Eigen::MatrixXd &obstacle_intention_probabilities,

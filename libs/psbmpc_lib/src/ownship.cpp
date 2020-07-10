@@ -183,7 +183,7 @@ void Ownship::predict_trajectory(
 	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference
-	const double psi_d, 											// In: Heading reference
+	const double chi_d, 											// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Ownship waypoints
 	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
 	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
@@ -198,8 +198,8 @@ void Ownship::predict_trajectory(
 	wp_counter = 0;
 	int man_count = 0;
 	double u_m = 1, u_d_p = u_d;
-	double chi_c = 0, chi_m = 0, psi_d_p = psi_d;
-	Eigen::Matrix<double, 6, 1> xs = trajectory.block<6, 1>(0, 0);
+	double chi_m = 0, chi_d_p = chi_d;
+	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
 
 	for (int k = 0; k < n_samples; k++)
 	{ 
@@ -209,14 +209,13 @@ void Ownship::predict_trajectory(
 			if (man_count < maneuver_times.size() - 1) man_count += 1;
 		}  
 
-		update_guidance_references(u_d_p, psi_d_p, waypoints, xs, k, dt, guidance_method);
-		chi_c = chi_m + psi_d_p;
+		update_guidance_references(u_d_p, chi_d_p, waypoints, xs, dt, guidance_method);
 
-		update_ctrl_input(u_m * u_d_p, chi_c, xs);
+		update_ctrl_input(u_m * u_d_p, chi_m + chi_d_p, xs);
 
 		xs = predict(xs, dt, prediction_method);
 		
-		if (k < n_samples - 1) trajectory.block<6, 1>(0, k + 1) = xs;
+		if (k < n_samples - 1) trajectory.col(k + 1) = xs;
 	}
 }
 
@@ -278,8 +277,7 @@ void Ownship::update_guidance_references(
 	double &u_d,												// Out: Surge reference
 	double &psi_d,												// Out: Heading reference (set equal to course reference, compensating for crab angle through LOS_K_i if at all..)
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
-	const Eigen::Matrix<double, 6, 1> &xs, 						// In: Ownship state
-	const int k, 												// In: Time step index		
+	const Eigen::Matrix<double, 6, 1> &xs, 						// In: Ownship state	
 	const double dt, 											// In: Time step
 	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
@@ -360,6 +358,7 @@ void Ownship::update_guidance_references(
 		default : 
 		{
 			std::cout << "This guidance method does not exist or is not implemented" << std::endl;
+			break;
 		}
 	}
 }
@@ -371,9 +370,9 @@ void Ownship::update_guidance_references(
 *  Modified :
 *****************************************************************************************/
 void Ownship::update_ctrl_input(
-	const double u_d,											// In: Surge reference
-	const double psi_d, 										// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
-	const Eigen::Matrix<double, 6, 1>& xs 						// In: State
+	const double u_d,										// In: Surge reference
+	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
+	const Eigen::Matrix<double, 6, 1>& xs 					// In: State
 	)
 {
 	update_Cvv(xs.block<3, 1>(3, 0));
