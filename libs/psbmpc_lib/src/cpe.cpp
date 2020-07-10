@@ -53,7 +53,6 @@ CPE::CPE(
     // The gate is the CE parameter for the 1 - alpha_p confidense ellipse
     // Predefined inverse chi squared values (chi2inv(p, v) in Matlab) are used here, to
     // escape the need for defining and using chi squared distributions
-
     // gate = 3.218875824868202;    // for 1 - alpha_p = 0.8
     // gate = 3.794239969771763;    // for 1 - alpha_p = 0.85
     // gate = 4.605170185988092;    // for 1 - alpha_p = 0.9

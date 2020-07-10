@@ -34,7 +34,7 @@
 *****************************************************************************************/
 Obstacle::Obstacle(
 	const Eigen::VectorXd& xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
-	const Eigen::Matrix4d& P, 									// In: Obstacle covariance
+	const Eigen::VectorXd& P, 									// In: Obstacle covariance
 	const Eigen::VectorXd Pr_a,									// In: Obstacle intention probability vector
 	const double Pr_CC, 										// In: A priori COLREGS compliance probability
 	const bool filter_on, 										// In: Boolean determining whether KF should be used or not
@@ -42,14 +42,17 @@ Obstacle::Obstacle(
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	ID(xs_aug(8)), P_0(P), filter_on(filter_on), colav_on(colav_on),
+	ID(xs_aug(8)), colav_on(colav_on), filter_on(filter_on),
 	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
 	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
 	duration_lost(0.0)
 {
-	this->Pr_a = Pr_a;
+	this->Pr_a = Pr_a / Pr_a.sum(); 
+	
+	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}
+	else 			{ this->Pr_CC = Pr_CC; }
 
-	this->Pr_CC = Pr_CC;
+	P_0 = reshape(P, 4, 4);
 
 	int n_samples = std::round(T / dt);
 
@@ -245,9 +248,9 @@ void Obstacle::predict_independent_trajectories(
 *****************************************************************************************/
 void Obstacle::update(
 	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
-	const Eigen::Matrix4d &P, 									// In: Obstacle covariance
+	const Eigen::VectorXd &P, 									// In: Obstacle covariance
 	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
-	const double Pr_cc, 										// In: A priori COLREGS compliance probability
+	const double Pr_CC, 										// In: A priori COLREGS compliance probability
 	const bool filter_on, 										// In: Indicator of whether the AIS-KF is active
 	const double dt 											// In: Prediction time step
 	)
@@ -258,17 +261,25 @@ void Obstacle::update(
 	xs_0(2) = xs_aug(2);
 	xs_0(3) = xs_aug(3);
 
-	P_0 = P;
+	P_0 = reshape(P, 4, 4);
 
+	// Depending on if the AIS-based KF is on/off, the state and
+	// covariance are updated, or just reset directly to the input
+	// data
 	if (filter_on)
 	{
 		kf->update(xs_0, duration_lost, dt);
 
 		duration_tracked = kf->get_time();
 	}
-	else { kf->reset(xs_0, P_0, 0.0); }
+	else
+	{ 
+		kf->reset(xs_0, P_0, 0.0); 
+	}
 	
-	this->Pr_a = Pr_a; 
+	this->Pr_a = Pr_a / Pr_a.sum(); 
 	
-	this->Pr_CC = Pr_CC;
+	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}
+	else 			{ this->Pr_CC = Pr_CC; }
+	
 }
