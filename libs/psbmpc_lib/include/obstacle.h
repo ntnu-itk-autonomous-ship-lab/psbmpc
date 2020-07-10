@@ -40,18 +40,29 @@ private:
 
 	int ID;
 
+	bool colav_on, filter_on;
+
+	// Vector of intention probabilities at the current time or last time of update
+	Eigen::VectorXd Pr_a;
+
+	// A priori COLREGS compliance probability at the current time or last time of update
+	double Pr_CC;
+
+	// Obstacle dimension quantifiers, length (l) and width (w)
+	double A, B, C, D, l, w;
+
+	double x_offset, y_offset;
+
+	// If the AIS-based KF is on, the obstacle is tracked until it dies
+	// while the duration lost may be reset if new measurements are aquired
+	double duration_tracked, duration_lost;
+
 	// State and covariance at the current time or last time of update
 	Eigen::Vector4d xs_0;
 	Eigen::Matrix4d P_0;
 
 	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: n_ps x 1
 	std::vector<bool> mu;
-
-	// A priori COLREGS compliance probability at the current time or last time of update
-	double Pr_CC;
-
-	// Vector of intention probabilities at the current time or last time of update
-	Eigen::VectorXd Pr_a;
 
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 	std::vector<Eigen::MatrixXd> xs_p;
@@ -71,15 +82,6 @@ private:
 	// Predicted obstacle trajectory and covariance when it is behaving intelligently
 	Eigen::MatrixXd xs_colav_p, P_colav_p;
 
-	// Obstacle dimension quantifiers, length (l) and width (w)
-	double A, B, C, D, l, w;
-
-	double x_offset, y_offset;
-
-	double duration_tracked, duration_lost;
-
-	bool colav_on, filter_on;
-
 public:
 
 	KF *kf;
@@ -89,9 +91,9 @@ public:
 	~Obstacle();
 
 	Obstacle(const Eigen::VectorXd &xs_aug, 
-			 const Eigen::Matrix4d &P, 
+			 const Eigen::VectorXd &P, 
 			 const Eigen::VectorXd Pr_a, 
-			 const double Pr_cc,
+			 const double Pr_CC,
 			 const bool filter_on, 
 			 const bool colav_on, 
 			 const double T, 
@@ -131,8 +133,9 @@ public:
 		const Eigen::VectorXd &ps_weights,
 		const Eigen::VectorXd &ps_maneuver_times);
 
-	// PSBMPC parameters needed to determine if obstacle breaches cOLREGS 
-	// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
+	// Some PSBMPC parameters needed to determine if obstacle breaches COLREGS 
+	// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation"
+	// function and equal parameters for the phi-angles, d_close and d_safe)
 	void predict_independent_trajectories(
 		const double T, 
 		const double dt, 
@@ -153,9 +156,9 @@ public:
 
 	void update(
 		const Eigen::VectorXd &xs_aug, 
-		const Eigen::Matrix4d &P, 
+		const Eigen::VectorXd &P, 
 		const Eigen::VectorXd &Pr_a, 
-		const double Pr_cc,
+		const double Pr_CC,
 		const bool filter_on,
 		const double dt);
 };

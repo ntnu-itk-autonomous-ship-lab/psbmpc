@@ -123,7 +123,7 @@ int main(){
 
 	bool filter_on = true, colav_on = false;
 
-	Obstacle *obstacle = new Obstacle(xs_aug, P, Pr_a, Pr_CC, filter_on, colav_on, T, dt);
+	Obstacle *obstacle = new Obstacle(xs_aug, flatten(P), Pr_a, Pr_CC, filter_on, colav_on, T, dt);
 
 	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
@@ -169,6 +169,37 @@ int main(){
 
 	std::vector<bool> mu = obstacle->get_COLREGS_violation_indicator();
 
+	// Update tracked duration, input new information, print it.
+	Eigen::VectorXd xs_aug_new(9);
+	xs_aug_new << 900, 0, -6, 0, 5, 5, 5, 5, 0;
+
+	Eigen::MatrixXd P_new(4, 4);
+	P_new << 125, 0, 0, 0,
+	     0, 125, 0, 0,
+		 0, 0, 0.05, 0,
+		 0, 0, 0, 0.05;
+
+	Eigen::VectorXd Pr_a_new(3);
+	Pr_a_new << 0.1, 0.5, 0.4;
+
+	double Pr_CC_new = 0.1;
+
+	obstacle->increment_duration_tracked(dt);
+
+	obstacle->update(xs_aug_new, flatten(P_new), Pr_a_new, Pr_CC_new, !filter_on, dt);
+
+	std::cout << "xs_upd = " << obstacle->kf->get_state().transpose() << std::endl;
+
+	std::cout << "P_upd = " << std::endl;
+	print_matrix(obstacle->kf->get_covariance());
+
+	std::cout << "Pr_CC_new = " << obstacle->get_a_priori_CC_probability() << std::endl;
+
+	std::cout << "Pr_a_new = " << obstacle->get_intention_probabilities().transpose() << std::endl;
+
+	std::cout << "Duration tracked = " << obstacle->get_duration_tracked() << std::endl;
+
+	std::cout << "Duration lost = " << obstacle->get_duration_lost() << std::endl;
 	
 	//*****************************************************************************************************************
 	// Send data to matlab

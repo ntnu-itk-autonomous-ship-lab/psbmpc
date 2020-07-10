@@ -49,8 +49,12 @@ private:
 	int n_CE, n_MCSKF;
 
 	// PRNG-related
+	// IMPORTANT NOTE: Some compilers (Older GCC versions < 9.2) implement this 
+	// random device using a PRNG or if a non-deterministic device is not available
+	// => the same sequence is produced every time, this should be checked before
+	// real-time testing to ensure proper functionality.
 	std::random_device seed;
-	// consider other faster generators than the mersenne twister (xorshof)
+	// Can also Consider other faster generators than the mersenne twister (xorshof)
 	std::mt19937 generator;
 
 	std::normal_distribution<double> std_norm_pdf;

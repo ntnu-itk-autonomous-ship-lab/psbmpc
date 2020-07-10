@@ -260,7 +260,7 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
 	const Eigen::Matrix<double, 9, -1> &obstacle_states, 					// In: Dynamic obstacle states 
 	const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 				// In: Dynamic obstacle covariances
-	const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities,  // In: Intention probabilitiy information for the obstacles
+	const Eigen::MatrixXd &obstacle_intention_probabilities,  				// In: Intention probabilitiy information for the obstacles
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities, 				// In: Information on a priori COLREGS compliance probabilities for the obstacles
 	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
 	)
@@ -1564,7 +1564,7 @@ double PSBMPC::distance_to_static_obstacle(
 void PSBMPC::update_obstacles(
 	const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
 	const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
-	const Eigen::Matrix<double, -1, -1> &obstacle_intention_probabilities, 				// In: Obstacle intention probability information
+	const Eigen::MatrixXd &obstacle_intention_probabilities, 				// In: Obstacle intention probability information
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
 	) 			
 {
@@ -1583,7 +1583,7 @@ void PSBMPC::update_obstacles(
 
 				old_obstacles[j]->update(
 					obstacle_states.col(i), 
-					reshape(obstacle_covariances.col(i), 4, 4), 
+					obstacle_covariances.col(i), 
 					obstacle_intention_probabilities.col(i),
 					obstacle_a_priori_CC_probabilities(i),
 					obstacle_filter_on,
@@ -1598,7 +1598,7 @@ void PSBMPC::update_obstacles(
 		{
 			Obstacle *obstacle = new Obstacle(
 				obstacle_states.col(i), 
-				reshape(obstacle_covariances.col(i), 4, 4),
+				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
 				obstacle_a_priori_CC_probabilities(i),
 				obstacle_filter_on, 
