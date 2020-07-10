@@ -471,6 +471,8 @@ void PSBMPC::initialize_pars()
 		dt = 0.5; 
 		p_step = 10;
 	}
+	t_ts = 25;
+
 	d_init = 700;							//1852.0;	  // should be >= D_CLOSE 300.0 600.0 500.0 700.0 800 1852
 	d_close = 500;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
 	d_safe = 300; 							//185.2; 	  // 40.0, 50.0, 70.0, 80.0, 100, 200, 185.2
@@ -521,14 +523,13 @@ void PSBMPC::initialize_prediction()
 	double Pr_CC_i, t_obst_passed;
 	Eigen::Vector2d p_cpa;
 
-	int spacing = std::round(t_ts / dt), turn_count, course_change_count;
+	int turn_count, course_change_count;
 	for (int i = 0; i < n_obst; i++)
 	{
 		// If only one intention, then only one prediction scenario
 		if (n_a == 1)
 		{
-			n_ps = 1;
-			ps_ordering_i.resize(n_ps);
+			ps_ordering_i.resize(1);
 			ps_ordering_i[0] = KCC;
 			ps_course_changes_i.resize(1);
 			ps_course_changes_i[0] = 0;
@@ -540,8 +541,12 @@ void PSBMPC::initialize_prediction()
 		// Else: typically three intentions: KCC, SM, PM
 		else 
 		{
+			std::cout << trajectory.col(0).transpose() << std::endl;
+			std::cout << new_obstacles[i]->kf->get_state() << std::endl;
 			calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->kf->get_state());
-			
+			std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
+			std::cout << "t_cpa = " << t_cpa(i) << std::endl;
+			std::cout << "d_cpa = " << d_cpa(i) << std::endl;
 			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
 			turn_count = 0;
 			if (d_cpa(i) > d_safe || (d_cpa(i) <= d_safe && t_cpa(i) > T)) // No predicted collision inside time horizon
@@ -553,7 +558,7 @@ void PSBMPC::initialize_prediction()
 			{
 				if (t_cpa(i) > t_ts) // Space evenly until t_cpa
 				{
-					n_turns = std::floor(t_cpa(i) / spacing);
+					n_turns = std::floor(t_cpa(i) / t_ts);
 				}
 				else			// No time to react => only one maneuver
 				{
@@ -909,6 +914,7 @@ void PSBMPC::determine_situation_type(
 		is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
 					v_A.norm() > 0.25											&&
 					v_B.norm() > 0.25											&&
+					!is_head_on 												&&
 					!is_passed;
 		
 		if (A_is_overtaken) 
@@ -988,6 +994,7 @@ bool PSBMPC::determine_COLREGS_violation(
 	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
 				  v_A.norm() > 0.25											&&
 				  v_B.norm() > 0.25											&&
+				  !is_head_on 												&&
 				  !is_passed;
 
 	return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
