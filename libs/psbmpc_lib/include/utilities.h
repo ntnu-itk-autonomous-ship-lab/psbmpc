@@ -323,6 +323,7 @@ inline bool determine_COLREGS_violation(
 	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
 				v_A.norm() > 0.25											&&
 				v_B.norm() > 0.25											&&
+				!is_head_on 												&&
 				!is_passed;
 
 	bool mu = (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
