@@ -551,7 +551,7 @@ void PSBMPC::initialize_prediction()
 			turn_count = 0;
 			if (d_cpa(i) > d_safe || (d_cpa(i) <= d_safe && t_cpa(i) > T)) // No predicted collision inside time horizon
 			{
-				n_turns = std::floor(T / spacing);
+				n_turns = std::floor(T / t_ts);
 			} 
 			// Safety zone violation at CPA inside prediction horizon, as d_cpa <= d_safe
 			else 				
@@ -567,7 +567,7 @@ void PSBMPC::initialize_prediction()
 			}
 			for (int t = 0; t < n_turns; t++)
 			{
-				ps_maneuver_times_i(t) = turn_count * (spacing);
+				ps_maneuver_times_i(t) = turn_count * std::floor(t_ts / dt);
 				turn_count++;
 			}
 
