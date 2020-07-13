@@ -21,7 +21,6 @@
 #include "cpe.h"
 #include "utilities.h"
 #include <iostream>
-#include "engine.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -74,7 +73,7 @@ CPE::CPE(
 
 /****************************************************************************************
 *  Name     : set_number_of_obstacles
-*  Function : 
+*  Function : Set number of obstacles to estimate, update data structures accordingly
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -90,8 +89,29 @@ void CPE::set_number_of_obstacles(
     P_c_p.resize(n_obst); P_c_upd.resize(n_obst);
     var_P_c_p.resize(n_obst); var_P_c_upd.resize(n_obst);
 
-    samples.resize(n_obst); elite_samples.resize(n_obst);
-    valid.resize(n_obst);
+    elite_samples.resize(n_obst);
+    N_e.resize(n_obst); e_count.resize(n_obst);
+    
+    samples.resize(n_obst); valid.resize(n_obst);
+
+    for(int i = 0; i < n_obst; i++)
+    {
+        switch (method)
+        {
+            case CE :
+                samples[i].resize(2, n_CE);
+                elite_samples[i].resize(2, n_CE);
+                valid[i].resize(n_CE);
+                break;
+            case MCSKF4D :
+                samples[i].resize(2, n_MCSKF);
+                valid[i].resize(n_MCSKF);
+                break;
+            default :
+                std::cout << "Invalid method" << std::endl;
+                break; 
+        }  
+    }
 }
 
 /****************************************************************************************
@@ -117,17 +137,11 @@ void CPE::initialize(
         
         P_CE_last[i] = pow(d_safe, 2) * Eigen::Matrix2d::Identity() / 3.0;
         
-        samples[i].resize(2, n_CE);
-        valid[i].resize(n_CE);
-        N_e.resize(n_obst); e_count.resize(n_obst);
         break;
     case MCSKF4D :
         P_c_p(i) = 0; P_c_upd(i) = 0;
         // Ad hoc variance for the probability
         var_P_c_p(i) = 0.3; var_P_c_upd(i) = 0; 
-
-        samples[i].resize(4, n_MCSKF);
-        valid[i].resize(n_MCSKF);
         break;
     default:
         std::cout << "Invalid method" << std::endl;

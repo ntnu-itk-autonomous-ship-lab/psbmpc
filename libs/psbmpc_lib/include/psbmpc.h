@@ -94,9 +94,8 @@ private:
 	// and <obstacle is passed> (IP_0) indicators
 	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
 
-	// Situation type variables at the current time for the own-ship and nearby obstacles
-	ST ST_0;
-	std::vector<ST> ST_i_0;
+	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
+	std::vector<ST> ST_0, ST_i_0;
 
 	std::vector<Obstacle*> old_obstacles;
 	std::vector<Obstacle*> new_obstacles;
@@ -140,17 +139,6 @@ private:
 		const int i,
 		const double chi_m);
 	bool determine_transitional_cost_indicator(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B, const int i, const double chi_m);
-
-	void update_transitional_variables(
-		const Eigen::Vector2d &v_A, 
-		const double psi_A, 
-		const Eigen::Vector2d &v_B,
-		const double psi_B, 
-		const Eigen::Vector2d &L_AB, 
-		const int i,
-		const double chi_m);
-
-	void update_transitional_variables();
 
 	void calculate_collision_probabilities(Eigen::MatrixXd &P_c_i, const int i);
 
@@ -196,6 +184,7 @@ private:
 
 	void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
 
+	void update_situation_type_and_transitional_variables();
 public:
 
 	PSBMPC();
