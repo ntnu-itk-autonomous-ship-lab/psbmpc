@@ -294,8 +294,8 @@ void PSBMPC::calculate_optimal_offsets(
 	}
 
 	double cost;
-	Eigen::VectorXd opt_offset_sequence, cost_i;
-	Eigen::MatrixXd P_c_i;
+	Eigen::VectorXd opt_offset_sequence(2 * n_M), cost_i(n_obst);
+	Eigen::MatrixXd P_c_i(n_ps + 1, n_samples);
 
 	reset_control_behavior();
 	for (int cb = 0; cb < n_cbs; cb++)
@@ -423,6 +423,7 @@ void PSBMPC::initialize_pars()
 	n_cbs = 1;
 	n_M = 2;
 	n_a = 3; // KCC, SM, PM
+	n_ps = 1; // Determined by initialize_prediction();
 
 	offset_sequence_counter.resize(2 * n_M);
 	offset_sequence.resize(2 * n_M);
@@ -456,14 +457,14 @@ void PSBMPC::initialize_pars()
 	u_m_last = 1;
 	chi_m_last = 0;
 
-	course_changes.resize(3);
-	course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
+	course_changes.resize(1);
+	course_changes << 30 * DEG2RAD;
 
 	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 300.0; 	      // 400.0, 300.0, 240 (sim/Euler)
+	T = 100.0; 	      // 400.0, 300.0, 240 (sim/Euler)
 	dt = 5.0;		      // 5.0, 0.5 (sim/Euler)
   	T_static = 60.0;		  // (50.0)
 
@@ -519,7 +520,7 @@ void PSBMPC::initialize_prediction()
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
-	int n_ps, n_turns;
+	int n_turns;
 	std::vector<Intention> ps_ordering_i;
 	Eigen::VectorXd ps_course_changes_i;
 	Eigen::VectorXd ps_weights_i;
@@ -1130,8 +1131,8 @@ bool PSBMPC::determine_transitional_cost_indicator(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::calculate_collision_probabilities(
-	Eigen::MatrixXd& P_c_i,										// In/out: Collision probabilities for 
-	const int i
+	Eigen::MatrixXd &P_c_i,									// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps+1 x n_samples
+	const int i 											// In: Index of obstacle
 	)
 {
 	int n_samples = trajectory.cols();
@@ -1140,8 +1141,7 @@ void PSBMPC::calculate_collision_probabilities(
 	{
 		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
 		std::vector<Eigen::MatrixXd> P_i_p = new_obstacles[i]->get_independent_trajectory_covariances();
-		int n_ps = xs_i_p.size();
-		P_c_i.resize(n_ps, n_samples);
+
 		for (int ps = 0; ps < n_ps; ps++)
 		{
 			cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p[ps].col(0), i);
@@ -1153,13 +1153,13 @@ void PSBMPC::calculate_collision_probabilities(
 	}
 	else
 	{
-		P_c_i.resize(1, n_samples);
 		Eigen::MatrixXd xs_i_p = new_obstacles[i]->get_dependent_trajectory();
 		Eigen::MatrixXd P_i_p = new_obstacles[i]->get_dependent_trajectory_covariance();
 		cpe->initialize(trajectory.col(0), xs_i_p.col(0), P_i_p.col(0), i);
 		for (int k = 0; k < n_samples; k++)
 		{
-			P_c_i(0, k) = cpe->estimate(trajectory.col(k), xs_i_p.col(k), P_i_p.col(k), i);
+			// Last row (with index n_ps) is for the colav active obstacle trajectory
+			P_c_i(n_ps, k) = cpe->estimate(trajectory.col(k), xs_i_p.col(k), P_i_p.col(k), i);
 		}
 	}
 }
@@ -1171,99 +1171,105 @@ void PSBMPC::calculate_collision_probabilities(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_dynamic_obstacle_cost(
-	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps x n_samples
+	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps+1 x n_samples
 	const int i 													// In: Index of obstacle
 	)
 {
 	double cost = 0, cost_ps, coll_cost;
 
 	int n_samples = trajectory.cols();
-
-	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
-	std::vector<Eigen::MatrixXd> P_i_p = new_obstacles[i]->get_independent_trajectory_covariances();
-	int n_ps = xs_i_p.size();
-	Eigen::VectorXd max_cost_ps(n_ps);
-	for (int ps = 0; ps < n_ps; ps++)
+	if (!obstacle_colav_on[i])
 	{
-		max_cost_ps(ps) = 0;
-	}
-	std::vector<bool> mu_i = new_obstacles[i]->get_COLREGS_violation_indicator();
-	double Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
-
-	Eigen::Vector2d v_p, v_i_p, L_0i_p;
-	double psi_p, psi_i_p, d_0i_p;
-	bool mu;
-	for(int k = 0; k < n_samples; k++)
-	{
-		psi_p = trajectory(2, k); 
-		v_p(0) = trajectory(3, k); 
-		v_p(1) = trajectory(4, k); 
-		rotate_vector_2D(v_p, psi_p);
-		for(int ps = 0; ps < n_ps; ps++)
+		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
+		std::vector<Eigen::MatrixXd> P_i_p = new_obstacles[i]->get_independent_trajectory_covariances();
+		int n_ps = xs_i_p.size();
+		Eigen::VectorXd max_cost_ps(n_ps);
+		for (int ps = 0; ps < n_ps; ps++)
 		{
-			L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
-			d_0i_p = L_0i_p.norm();
-			L_0i_p = L_0i_p.normalized();
+			max_cost_ps(ps) = 0;
+		}
+		std::vector<bool> mu_i = new_obstacles[i]->get_COLREGS_violation_indicator();
+		double Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
 
-			v_i_p(0) = xs_i_p[ps](2, k);
-			v_i_p(1) = xs_i_p[ps](3, k);
-
-			coll_cost = calculate_collision_cost(v_p, v_i_p);
-
-			mu = determine_COLREGS_violation(v_p, psi_p, v_i_p, L_0i_p, d_0i_p);
-
-			cost_ps = coll_cost * P_c_i(ps, k) + kappa * mu;
-
-			if (cost_ps > max_cost_ps(ps))
+		Eigen::Vector2d v_p, v_i_p, L_0i_p;
+		double psi_p, psi_i_p, d_0i_p;
+		bool mu;
+		for(int k = 0; k < n_samples; k++)
+		{
+			psi_p = trajectory(2, k); 
+			v_p(0) = trajectory(3, k); 
+			v_p(1) = trajectory(4, k); 
+			v_p = rotate_vector_2D(v_p, psi_p);
+			for(int ps = 0; ps < n_ps; ps++)
 			{
-				max_cost_ps(ps) = cost_ps;
+				L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
+				d_0i_p = L_0i_p.norm();
+				L_0i_p = L_0i_p.normalized();
+
+				v_i_p(0) = xs_i_p[ps](2, k);
+				v_i_p(1) = xs_i_p[ps](3, k);
+
+				coll_cost = calculate_collision_cost(v_p, v_i_p);
+
+				mu = determine_COLREGS_violation(v_p, psi_p, v_i_p, L_0i_p, d_0i_p);
+
+				cost_ps = coll_cost * P_c_i(ps, k) + kappa * mu;
+
+				if (cost_ps > max_cost_ps(ps))
+				{
+					max_cost_ps(ps) = cost_ps;
+				}
 			}
 		}
-	}
-	// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-	// which means that higher cost is applied if the obstacle follows COLREGS
-	// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-	// and the own-ship breaches COLREGS
-	for (int ps = 0; ps < n_ps; ps++)
-	{
-		if (mu_i[ps])
+		// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
+		// which means that higher cost is applied if the obstacle follows COLREGS
+		// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
+		// and the own-ship breaches COLREGS
+		for (int ps = 0; ps < n_ps; ps++)
 		{
-			max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
-		}
-		else
-		{
-			max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
-		}
-	}
-
-	if (n_ps == 1)
-	{
-		cost = max_cost_ps(0);
-	}
-	else // three intentions: KCC, SM, PM
-	{
-		Eigen::Vector3d cost_a = {0, 0, 0};
-		Eigen::VectorXd Pr_a = new_obstacles[i]->get_intention_probabilities();
-		cost_a(0) = max_cost_ps(0); 
-		for(int ps = 1; ps < n_ps; ps++)
-		{
-			// Starboard maneuvers
-			if (ps < (n_ps - 1) / 2 + 1)
+			if (mu_i[ps])
 			{
-				cost_a(1) += max_cost_ps(ps);
+				max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
 			}
-			// Port maneuvers
 			else
 			{
-				cost_a(2) += max_cost_ps(ps);
+				max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
 			}
 		}
-		// Average the cost for the corresponding intention
-		cost_a(1) = cost_a(1) / ((n_ps - 1) / 2);
-		cost_a(2) = cost_a(2) / ((n_ps - 1) / 2);
 
-		// Weight by the intention probabilities
-		cost = Pr_a.dot(cost_a);
+		if (n_ps == 1)
+		{
+			cost = max_cost_ps(0);
+		}
+		else // three intentions: KCC, SM, PM
+		{
+			Eigen::Vector3d cost_a = {0, 0, 0};
+			Eigen::VectorXd Pr_a = new_obstacles[i]->get_intention_probabilities();
+			cost_a(0) = max_cost_ps(0); 
+			for(int ps = 1; ps < n_ps; ps++)
+			{
+				// Starboard maneuvers
+				if (ps < (n_ps - 1) / 2 + 1)
+				{
+					cost_a(1) += max_cost_ps(ps);
+				}
+				// Port maneuvers
+				else
+				{
+					cost_a(2) += max_cost_ps(ps);
+				}
+			}
+			// Average the cost for the corresponding intention
+			cost_a(1) = cost_a(1) / ((n_ps - 1) / 2);
+			cost_a(2) = cost_a(2) / ((n_ps - 1) / 2);
+
+			// Weight by the intention probabilities
+			cost = Pr_a.dot(cost_a);
+		}
+	}
+	else
+	{
+		// Do smth here
 	}
 	return cost;
 }
@@ -1644,6 +1650,7 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
 	bool is_close;
 
+	// A : Own-ship, B : Obstacle i
 	Eigen::Vector2d v_A, v_B, L_AB;
 	double psi_A, psi_B, d_AB;
 	v_A(0) = xs(3);

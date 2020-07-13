@@ -1100,14 +1100,6 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/cpe.cpp
-cpe.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/cpe.h
-utilities.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
-iostream
--
-
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp
 utilities.h
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
