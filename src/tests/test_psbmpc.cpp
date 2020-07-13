@@ -82,7 +82,7 @@ int main(){
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_obst);
 	xs_i_0[0].resize(6);
-	xs_i_0[0] << 1000, 0, 180 * DEG2RAD, 5, 0, 0;
+	xs_i_0[0] << 200, 0, 180 * DEG2RAD, 5, 0, 0;
 
 	// Use constant obstacle uncertainty throughout the simulation, for simplicity
 	Eigen::MatrixXd P_0(4, 4);

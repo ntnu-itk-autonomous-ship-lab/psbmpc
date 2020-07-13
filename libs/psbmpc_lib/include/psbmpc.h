@@ -46,7 +46,7 @@ class PSBMPC
 {
 private:
 
-	int n_cbs, n_M, n_a;
+	int n_cbs, n_M, n_a, n_ps;
 
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
