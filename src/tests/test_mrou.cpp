@@ -1,8 +1,9 @@
 /****************************************************************************************
 *
-*  File name : test_ownship.cpp
+*  File name : test_mrou.cpp
 *
-*  Function  : Test file for the Kalman Filter (KF) class for PSB-MPC
+*  Function  : Test file for the Mean-reverting Ornstein-Uhlenbeck process 
+*			   class for PSB-MPC.
 *			   
 *	           ---------------------
 *

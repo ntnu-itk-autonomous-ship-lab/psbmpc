@@ -7,6 +7,8 @@
 #IncludeRegexTransform: 
 
 ../libs/psbmpc_lib/include/cpe.h
+xoshiro.hpp
+../libs/psbmpc_lib/include/xoshiro.hpp
 Eigen/Dense
 -
 random
@@ -1099,6 +1101,18 @@ lapacke_mangling.h
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
+
+../libs/third_party_libs/xoshiro.hpp
+cstdint
+-
+
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/cpe.cpp
+cpe.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/cpe.h
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
+iostream
+-
 
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp
 utilities.h

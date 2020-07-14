@@ -24,6 +24,7 @@
 #ifndef _CPE_H_
 #define _CPE_H_
 
+#include "xoshiro.hpp"
 #include <Eigen/Dense>
 #include <random>
 
@@ -54,8 +55,8 @@ private:
 	// => the same sequence is produced every time, this should be checked before
 	// real-time testing to ensure proper functionality.
 	std::random_device seed;
-	// Can also Consider other faster generators than the mersenne twister (xorshof)
-	std::mt19937 generator;
+
+	xoshiro256plus64 generator;
 
 	std::normal_distribution<double> std_norm_pdf;
 
@@ -80,7 +81,9 @@ private:
 	std::vector<Eigen::VectorXd> valid;
 
 	// Safety zone parameters
-	double d_safe;
+	std::vector<double> d_safe;
+
+	void resize_matrices();
 
 	void norm_pdf_log(Eigen::VectorXd &result, const Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
@@ -99,7 +102,8 @@ private:
 		Eigen::VectorXd &valid, 
 		const Eigen::MatrixXd &samples, 
 		const Eigen::Vector2d &p_os_cpa, 
-		const double t_cpa);
+		const double t_cpa,
+		const int i );
 
 	double MCSKF4D_estimation(
 		const Eigen::MatrixXd &xs_os,  
@@ -110,7 +114,8 @@ private:
 	void determine_sample_validity_2D(
 		Eigen::VectorXd &valid, 
 		const Eigen::MatrixXd &samples,
-		const Eigen::Vector2d &p_os);
+		const Eigen::Vector2d &p_os,
+		const int i);
 
 	void determine_best_performing_samples(
 		Eigen::VectorXd &valid, 
@@ -118,7 +123,8 @@ private:
 		const Eigen::MatrixXd &samples,
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
-		const Eigen::Matrix2d &P_i);
+		const Eigen::Matrix2d &P_i,
+		const int i);
 
 	double CE_estimation(
 		const Eigen::Vector2d &p_os, 
@@ -128,11 +134,13 @@ private:
 
 public:
 
-	CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const double d_safe, const double dt);
+	CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const int n_obst, const double dt);
 
-	void set_method(const CPE_Method cpe_method) { method = cpe_method; };
+	void set_method(const CPE_Method cpe_method) { method = cpe_method;  resize_matrices(); };
 
-	void set_safety_zone_radius(const double d_safe) { this->d_safe = d_safe; };
+	void set_safety_zone_radius(const double d_safe, const int i) { this->d_safe[i] = d_safe; };
+
+	void set_safety_zone_radius(const std::vector<double> d_safe) { this->d_safe = d_safe; };
 
 	void set_number_of_obstacles(const int n_obst);
 
@@ -140,6 +148,7 @@ public:
 		const Eigen::Matrix<double, 6, 1> &xs_os, 
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::VectorXd &P_i,
+		const double d_safe_i, 
 		const int i);
 	
 	double estimate(
