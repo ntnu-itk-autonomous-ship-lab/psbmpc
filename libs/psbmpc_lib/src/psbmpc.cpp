@@ -301,6 +301,7 @@ void PSBMPC::calculate_optimal_offsets(
 	for (int cb = 0; cb < n_cbs; cb++)
 	{
 		cost = 0;
+		std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
 		std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 		ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, T, dt);
 
@@ -421,7 +422,7 @@ void PSBMPC::initialize_par_limits()
 void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
+	n_M = 1;
 	n_a = 3; // KCC, SM, PM
 	n_ps = 1; // Determined by initialize_prediction();
 
@@ -434,11 +435,12 @@ void PSBMPC::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(3);
-			u_offsets[M] << 1.0, 0.5, 0.0;
+			u_offsets[M].resize(1);
+			u_offsets[M] << 1.0; // 0.5, 0.0;
 
-			chi_offsets[M].resize(13);
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M].resize(7);
+			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -476,24 +478,26 @@ void PSBMPC::initialize_pars()
 	}
 	t_ts = 25;
 
-	d_init = 700;							//1852.0;	  // should be >= D_CLOSE 300.0 600.0 500.0 700.0 800 1852
-	d_close = 500;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
-	d_safe = 300; 							//185.2; 	  // 40.0, 50.0, 70.0, 80.0, 100, 200, 185.2
-	K_coll = 1.0;		  					// 0.5, (1.0), (0.1), 0.5, (10.0), 100.0 ;  need 0.1 when K_P_=10.5!
+	d_init = 1500;							//1852.0;	  // should be >= D_CLOSE 300.0 600.0 500.0 700.0 800 1852
+	d_close = 1000;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
+	d_safe = 50; 							//185.2; 	  // 40.0, 50.0, 70.0, 80.0, 100, 200, 185.2
+	K_coll = 1.0;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
 	kappa = 3.0;		  					
-	kappa_TC = 100.0;						// (10.0) 100.0 
-	K_u = 10.5;		   						 // (1.5), 2.5, (10.5) 100.5
-	K_du = 0.5;		    					// 2.0, (0.5) (cost requires <1)
-	K_chi_strb = 1.5;	  					// 1.5
-	K_chi_port =  10.5;	  					// 100.5, (10.5), 5.5, 2.5, 1.5 (>1.5 red. flexibility to port)
-	K_dchi_strb = 0.5;	 					 // 0.9, (0.5) 0.1 (cost requires <1)
-	K_dchi_port = 0.9;	  					// 1.2, 0.9 (cost requires <1)
+	kappa_TC = 100.0;						 
+	K_u = 3;		   						 
+	K_du = 2.5;		    					
+	K_chi_strb = 1.3;	  					
+	K_chi_port =  1.6;	  					
+	K_dchi_strb = 0.9;	 			
+	K_dchi_port = 1.2;	  					
 	G = 0;		         					 // 1.0e3
 
+	K_sgn = 5;
+	T_sgn = 3 * t_ts;
 
 	obstacle_filter_on = false;
 	obstacle_colav_on.resize(1);
@@ -1265,6 +1269,10 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 
 			// Weight by the intention probabilities
 			cost = Pr_a.dot(cost_a);
+			std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
+			std::cout << "max cost ps = " << max_cost_ps.transpose() << std::endl;
+			std::cout << "cost a = " << cost_a.transpose() << std::endl;
+			std::cout << "cost = " << cost << std::endl;
 		}
 	}
 	else
@@ -1318,7 +1326,9 @@ double PSBMPC::calculate_control_deviation_cost()
 		{
 			cost += K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_m_last) +
 				    K_chi(offset_sequence[1])      + Delta_chi(offset_sequence[1], chi_m_last);
-		}else{
+		}
+		else
+		{
 			cost += K_u * (1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
 				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 		}
@@ -1339,20 +1349,18 @@ double PSBMPC::calculate_chattering_cost()
 
 	if (n_M > 1) 
 	{
-		double delta_t;
+		double delta_t = 0;
 		for(int M = 0; M < n_M; M++)
 		{
-			if (M+1 <= n_M)
+			if (M < n_M - 1)
 			{
-				if ((offset_sequence(M+1) >= 0 && offset_sequence(2 * M + 1) < 0) ||
-					(offset_sequence(M+1) < 0 && offset_sequence(2 * M + 1) >= 0))
+				if ((offset_sequence(M + 1) >= 0 && offset_sequence(2 * M + 1) < 0) ||
+					(offset_sequence(M + 1) < 0 && offset_sequence(2 * M + 1) >= 0))
 				{
 					delta_t = maneuver_times(M+1) - maneuver_times(M);
 					cost += K_sgn * exp( - delta_t / T_sgn);
 				}
-				
 			}
-			
 		}
 	}
 	return cost;
@@ -1604,8 +1612,9 @@ void PSBMPC::update_obstacle_status(
 	)
 {
 	int n_obst = new_obstacles.size();
-	obstacle_status.resize(6, n_obst);
-	double ID_0, RB_0, d_0i, COG_0, SOG_0; 
+	obstacle_status.resize(13, n_obst);
+	double ID_0, RB_0, COG_0, SOG_0; 
+	Eigen::Vector2d d_0i;
 	Eigen::Vector4d xs_i;
 	for(int i = 0; i < n_obst; i++)
 	{
@@ -1613,19 +1622,19 @@ void PSBMPC::update_obstacle_status(
 
 		ID_0 = new_obstacles[i]->get_ID();
 		
-		d_0i = (xs_i.block<2, 1>(0, 0) - trajectory.block<2, 1>(0, 0)).norm();
+		d_0i = (xs_i.block<2, 1>(0, 0) - trajectory.block<2, 1>(0, 0));
 
 		COG_0 = atan2(xs_i(3), xs_i(2));
 
 		SOG_0 = xs_i.block<2, 1>(2, 0).norm();
 
-		RB_0 = angle_difference_pmpi(COG_0, trajectory(2, 0));
+		RB_0 = angle_difference_pmpi(atan2(d_0i(1), d_0i(0)), trajectory(2, 0));
 
 		obstacle_status.col(i) << ID_0, 											// Obstacle ID
 								  SOG_0, 											// Speed over ground of obstacle
-								  wrap_angle_to_02pi(COG_0) * RAD2DEG, 	// Course over ground of obstacle
-								  RB_0, 											// Relative bearing
-								  d_0i,												// Range
+								  wrap_angle_to_02pi(COG_0) * RAD2DEG, 				// Course over ground of obstacle
+								  RB_0 * RAD2DEG, 									// Relative bearing
+								  d_0i.norm(),										// Range
 								  HL_0[i], 											// Hazard level of obstacle at optimum
 								  IP_0[i], 											// If obstacle is passed by or not 
 								  AH_0[i], 											// If obstacle is ahead or not

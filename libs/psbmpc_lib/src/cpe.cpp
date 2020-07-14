@@ -202,7 +202,7 @@ void CPE::norm_pdf_log(
     )
 {
     int n = samples.rows(), n_samples = samples.cols();
-    result.resize(n_samples);
+
     double exp_val = 0;
     double log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
     for (int i = 0; i < n_samples; i++)

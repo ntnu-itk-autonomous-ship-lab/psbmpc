@@ -4,7 +4,7 @@ project(psbmpc_test)
 if (MSVC)
 	add_compile_options(/W4)
 else()
-	add_compile_options(-Wall -Wextra -Wpedantic)
+	add_compile_options(-Wall -Wextra -Wpedantic -fno-omit-frame-pointer -g)
 endif()
 
 add_subdirectory(libs/psbmpc_lib)

@@ -186,7 +186,7 @@ void Obstacle::predict_independent_trajectories(
 		v_p[ps](1, 0) = kf->get_state()(3);
 		xs_p[ps].col(0) = kf->get_state();
 		P_p[ps].col(0) = flatten(P_0);
-		have_turned = false;
+		have_turned = false;	
 		for(int k = 0; k < n_samples; k++)
 		{
 			t = (k + 1) * dt;

@@ -35,17 +35,17 @@
 #define BUFSIZE 1000000
 
 int main(){
-	Engine *ep = engOpen(NULL);
+/* 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1];
+	char buffer[BUFSIZE+1]; */
 
 	//*****************************************************************************************************************
 	// Simulation setup
 	//*****************************************************************************************************************
-	double T_sim = 300; double dt = 0.5;
+	double T_sim = 0.5; double dt = 0.5;
 	int N = std::round(T_sim / dt);
 
 	//*****************************************************************************************************************
@@ -69,10 +69,10 @@ int main(){
 	//			 0, -50,  -200, -200,  0, 300, 0;
 	waypoints << 0, 1000,
 				 0, 0;
-
+/* 
 	mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);
 
-	double *ptraj_os = mxGetPr(traj_os);
+	double *ptraj_os = mxGetPr(traj_os); */
 	
 	//*****************************************************************************************************************
 	// Obstacle sim setup
@@ -146,11 +146,11 @@ int main(){
 	}
 	
 
-	mxArray *traj_i = mxCreateDoubleMatrix(4, N, mxREAL);
+/* 	mxArray *traj_i = mxCreateDoubleMatrix(4, N, mxREAL);
 	mxArray *P_traj_i = mxCreateDoubleMatrix(16, N, mxREAL);
 
 	double *ptraj_i = mxGetPr(traj_i);
-	double *p_P_traj_i = mxGetPr(P_traj_i);
+	double *p_P_traj_i = mxGetPr(P_traj_i); */
 
 	//*****************************************************************************************************************
 	// PSB-MPC setup
@@ -229,7 +229,7 @@ int main(){
 	//*****************************************************************************************************************
 	// Send final trajectory data to matlab
 	//*****************************************************************************************************************
-	Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, N);
+/* 	Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, N);
 	map_traj_os = trajectory;
 	
 	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, N);
@@ -245,7 +245,7 @@ int main(){
 	mxDestroyArray(traj_i);
 	mxDestroyArray(P_traj_i);
 
-	engClose(ep); 
+	engClose(ep);  */
 
 	return 0;
 }
