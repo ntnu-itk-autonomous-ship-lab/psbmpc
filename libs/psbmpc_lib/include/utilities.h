@@ -321,13 +321,17 @@ inline bool determine_COLREGS_violation(
 				is_ahead;
 
 	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
-				v_A.norm() > 0.25											&&
+				v_A.dot(L_AB) > cos(90 * DEG2RAD) * v_A.norm()				&& 	// Its not a crossing situation if A's velocity vector points away from vessel B  
+				v_A.norm() > 0.25											&&	// or does not make a crossing occur. This is not mentioned in Johansen.
 				v_B.norm() > 0.25											&&
 				!is_head_on 												&&
 				!is_passed;
 
 	bool mu = (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
-
+	if (mu)
+	{
+		std::cout << mu << std::endl;
+	}
 	return mu;
 }
 
