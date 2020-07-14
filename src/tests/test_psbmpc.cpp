@@ -1,9 +1,9 @@
 /****************************************************************************************
 *
-*  File name : test_ownship.cpp
+*  File name : test_psbmpc.cpp
 *
-*  Function  : Test file for the Ownship class for PSB-MPC, using Matlab for 
-*			   visualization 
+*  Function  : Test file for the Probabilistic Scenario-based Model Predictive Control
+*			   using Matlab for visualization 
 *			   
 *	           ---------------------
 *

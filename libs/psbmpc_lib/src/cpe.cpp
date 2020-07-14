@@ -38,14 +38,16 @@ CPE::CPE(
     const CPE_Method cpe_method,                                    // In: Method to be used
     const int n_CE,                                                 // In: Number of samples for the Cross-Entropy method
     const int n_MCSKF,                                              // In: Number of samples for the Monte Carlo Simulation + Kalman-filtering method
-    const double d_safe,                                            // In: Safety zone radius around own-ship
+    const int n_obst,                                               // In: Number of obstacles
     const double dt                                                 // In: Time step of calling function simulation environment
     ) :
-    method(cpe_method), n_CE(n_CE), n_MCSKF(n_MCSKF), generator(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1)), d_safe(d_safe)
+    method(cpe_method), n_CE(n_CE), n_MCSKF(n_MCSKF), generator(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1)), n_obst(n_obst)
 {
-    set_number_of_obstacles(1);
+    set_number_of_obstacles(n_obst);
+
     // CE pars
-    sigma_inject = d_safe / 3;
+    
+    sigma_inject = 1 / 3; // dependent on d_safe wrt obstacle i
 
     alpha_n = 0.9;
 
@@ -94,24 +96,8 @@ void CPE::set_number_of_obstacles(
     
     samples.resize(n_obst); valid.resize(n_obst);
 
-    for(int i = 0; i < n_obst; i++)
-    {
-        switch (method)
-        {
-            case CE :
-                samples[i].resize(2, n_CE);
-                elite_samples[i].resize(2, n_CE);
-                valid[i].resize(n_CE);
-                break;
-            case MCSKF4D :
-                samples[i].resize(2, n_MCSKF);
-                valid[i].resize(n_MCSKF);
-                break;
-            default :
-                std::cout << "Invalid method" << std::endl;
-                break; 
-        }  
-    }
+    d_safe.resize(n_obst);
+    resize_matrices();
 }
 
 /****************************************************************************************
@@ -125,6 +111,7 @@ void CPE::initialize(
     const Eigen::Matrix<double, 6, 1> &xs_os,                                   // In: Own-ship state vector
     const Eigen::Vector4d &xs_i,                                                // In: Obstacle i state vector
     const Eigen::VectorXd &P_i,                                                 // In: Obstacle i covariance flattened into n^2 x 1
+    const double d_safe_i,                                                      // In: Safety zone around own-ship when facing obstacle i
     const int i                                                                 // In: Index of obstacle i
     )
 {
@@ -135,7 +122,7 @@ void CPE::initialize(
         // Heuristic initialization
         mu_CE_last[i] = 0.5 * (xs_os.block<2, 1>(0, 0) + xs_i.block<2, 1>(0, 0)); 
         
-        P_CE_last[i] = pow(d_safe, 2) * Eigen::Matrix2d::Identity() / 3.0;
+        P_CE_last[i] = pow(d_safe[i], 2) * Eigen::Matrix2d::Identity() / 3.0;
         
         break;
     case MCSKF4D :
@@ -186,6 +173,27 @@ double CPE::estimate(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+void CPE::resize_matrices()
+{
+    for(int i = 0; i < n_obst; i++)
+    {
+        switch (method)
+        {
+            case CE :
+                samples[i].resize(2, n_CE);
+                elite_samples[i].resize(2, n_CE);
+                valid[i].resize(n_CE);
+                break;
+            case MCSKF4D :
+                samples[i].resize(2, n_MCSKF);
+                valid[i].resize(n_MCSKF);
+                break;
+            default :
+                std::cout << "Invalid method" << std::endl;
+                break; 
+        }  
+    }
+}
 
 /****************************************************************************************
 *  Name     : norm_pdf_log
@@ -229,7 +237,6 @@ void CPE::generate_norm_dist_samples(
     )
 {
     int n = samples.rows(), n_samples = samples.cols();
-    Eigen::MatrixXd std_norm_samples(n, n_samples);
 
     Eigen::LLT<Eigen::MatrixXd> cholesky_decomposition(Sigma);
     Eigen::MatrixXd L = cholesky_decomposition.matrixL();
@@ -239,7 +246,7 @@ void CPE::generate_norm_dist_samples(
     {
         for(int i = 0; i < n_samples; i++)
         {
-            std_norm_samples(c, i) = std_norm_pdf(generator);
+            samples(c, i) = std_norm_pdf(generator);
         }
     }
 
@@ -253,7 +260,7 @@ void CPE::generate_norm_dist_samples(
     }
     */
     // Box-muller transform
-    samples = (L * std_norm_samples).colwise() + mu;
+    samples = (L * samples).colwise() + mu;
 }
 
 /****************************************************************************************
@@ -313,7 +320,7 @@ double CPE::produce_MCS_estimate(
 
     generate_norm_dist_samples(samples[i], xs_i, P_i);
     
-    determine_sample_validity_4D(valid[i], samples[i], p_os_cpa, t_cpa);
+    determine_sample_validity_4D(valid[i], samples[i], p_os_cpa, t_cpa, i);
 
     // The estimate is taken as the ratio of samples inside the integration domain, 
     // to the total number of samples, i.e. the mean of the validity vector
@@ -332,9 +339,10 @@ double CPE::produce_MCS_estimate(
 *****************************************************************************************/
 bool CPE::determine_sample_validity_4D(
     Eigen::VectorXd &valid,                                                     // In: Vector of 0/1s depending on if a sample is valid or not
-    const Eigen::MatrixXd &samples,                                             // In: Normally distributed samples in each column
+    const Eigen::MatrixXd &samples,                                             // In: Normally distributed samples of obstacle states in each column
     const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
-    const double t_cpa                                                          // In: Time to cpa
+    const double t_cpa,                                                         // In: Time to cpa
+    const int i                                                                 // In: Index of obstacle
     )
 {
     int n_samples = samples.cols();
@@ -343,16 +351,16 @@ bool CPE::determine_sample_validity_4D(
     Eigen::Vector2d p_i_sample, v_i_sample;
     double A, B, C;
     Eigen::Vector2d r;
-    for (int i = 0; i < n_samples; i++)
+    for (int j = 0; j < n_samples; j++)
     {
-        valid(i) = 0;
+        valid(j) = 0;
 
-        p_i_sample = samples.block<2, 1>(0, i);
-        v_i_sample = samples.block<2, 1>(2, i);
+        p_i_sample = samples.block<2, 1>(0, j);
+        v_i_sample = samples.block<2, 1>(2, j);
 
         A = v_i_sample.dot(v_i_sample);
         B = 2 * (p_i_sample - p_os_cpa).transpose() * v_i_sample;
-        C = p_i_sample.dot(p_i_sample) - 2 * p_os_cpa.dot(p_i_sample) + p_os_cpa.dot(p_os_cpa) - pow(d_safe, 2);
+        C = p_i_sample.dot(p_i_sample) - 2 * p_os_cpa.dot(p_i_sample) + p_os_cpa.dot(p_os_cpa) - pow(d_safe[i], 2);
 
         calculate_roots_2nd_order(r, complex_roots, A, B, C);
 
@@ -360,14 +368,14 @@ bool CPE::determine_sample_validity_4D(
         // t >= t0, checks if t_cpa occurs inside this root interval <=> inside safety zone
         if (!complex_roots && r(0) != r(1) && t_cpa >= 0 && (r(0) <= t_cpa && t_cpa <= r(1)))
         {
-            valid(i) = 1;
+            valid(j) = 1;
         }
         // Repetitive real positive roots: 1 crossing, this is only possible if the sampled
         // trajectory is tangent to the safety zone at t_cpa, checks if t_cpa = cross time
         // in this case
         else if(!complex_roots && r(0) == r(1) && t_cpa >= 0 && t_cpa == r(0))
         {
-            valid(i) = 1;
+            valid(j) = 1;
         }
         // Negative roots are not considered, as that implies going backwards in time..
     }
@@ -490,18 +498,19 @@ double CPE::MCSKF4D_estimation(
 void CPE::determine_sample_validity_2D(
     Eigen::VectorXd &valid,                                                     // In: Vector of 0/1s depending on if a sample is valid or not
     const Eigen::MatrixXd &samples,                                             // In: Normally distributed samples in each column
-	const Eigen::Vector2d &p_os                                                 // In: Own-ship position vector
+	const Eigen::Vector2d &p_os,                                                 // In: Own-ship position vector
+    const int i                                                                 // In: Index of obstacle
     )
 {
     int n_samples = samples.cols();
     bool inside_safety_zone;
-    for (int i = 0; i < n_samples; i++)
+    for (int j = 0; j < n_samples; j++)
     {
-        valid(i) = 0;
-        inside_safety_zone = (samples.col(i) - p_os).dot(samples.col(i) - p_os) <= pow(d_safe, 2);
+        valid(j) = 0;
+        inside_safety_zone = (samples.col(j) - p_os).dot(samples.col(j) - p_os) <= pow(d_safe[i], 2);
         if (inside_safety_zone)
         {
-            valid(i) = 1;
+            valid(j) = 1;
         }
     }
 }
@@ -518,22 +527,23 @@ void CPE::determine_best_performing_samples(
 	const Eigen::MatrixXd &samples,                                                 // In: Normally distributed samples in each column
     const Eigen::Vector2d &p_os,                                                    // In: Own-ship position vector
     const Eigen::Vector2d &p_i,                                                     // In: Obstacle i position vector
-    const Eigen::Matrix2d &P_i                                                      // In: Obstacle i positional covariance
+    const Eigen::Matrix2d &P_i,                                                      // In: Obstacle i positional covariance
+    const int i                                                                     // In: Index of obstacle
     )
 {
     N_e = 0;
     bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
-    for (int i = 0; i < n_CE; i++)
+    for (int j = 0; j < n_CE; j++)
     {
-        valid(i) = 0;
-        inside_safety_zone = (samples.col(i) - p_os).dot(samples.col(i) - p_os) <= pow(d_safe, 2);
+        valid(j) = 0;
+        inside_safety_zone = (samples.col(j) - p_os).dot(samples.col(j) - p_os) <= pow(d_safe[i], 2);
 
         inside_alpha_p_confidence_ellipse = 
-            (samples.col(i) - p_i).transpose() * P_i.inverse() * (samples.col(i) - p_i) <= gate;
+            (samples.col(j) - p_i).transpose() * P_i.inverse() * (samples.col(j) - p_i) <= gate;
 
         if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
         {
-            valid(i) = 1;
+            valid(j) = 1;
             N_e++;
         }
     }
@@ -563,7 +573,7 @@ double CPE::CE_estimation(
     else                       { var_P_i_largest = P_i(1, 1); }
 
     // This large a distance usually means no effective conflict zone
-    if (d_0i > d_safe + 5 * var_P_i_largest) { P_c = 0; return P_c; }
+    if (d_0i > d_safe[i] + 5 * var_P_i_largest) { P_c = 0; return P_c; }
 
     /******************************************************************************
     * Convergence depedent initialization prior to the run at time t_k
@@ -581,7 +591,7 @@ double CPE::CE_estimation(
     {
         mu_CE_prev = 0.5 * (p_i + p_os);
         mu_CE = mu_CE_prev;
-        P_CE_prev = pow(d_safe, 2) * Eigen::Matrix2d::Identity() / 3;
+        P_CE_prev = pow(d_safe[i], 2) * Eigen::Matrix2d::Identity() / 3;
         P_CE = P_CE_prev;
     }
 
@@ -592,7 +602,7 @@ double CPE::CE_estimation(
     {
         generate_norm_dist_samples(samples[i], mu_CE, P_CE);
 
-        determine_best_performing_samples(valid[i], N_e[i], samples[i], p_os, p_i, P_i);
+        determine_best_performing_samples(valid[i], N_e[i], samples[i], p_os, p_i, P_i, i);
 
         elite_samples[i].resize(2, N_e[i]);
         e_count[i] = 0;
@@ -636,7 +646,7 @@ double CPE::CE_estimation(
     ******************************************************************************/
     generate_norm_dist_samples(samples[i], mu_CE, P_CE);
 
-    determine_sample_validity_2D(valid[i], samples[i], p_os);
+    determine_sample_validity_2D(valid[i], samples[i], p_os, i);
 
     Eigen::VectorXd weights(n_CE), integrand(n_CE), importance(n_CE);
     norm_pdf_log(integrand, samples[i], p_i, P_i);

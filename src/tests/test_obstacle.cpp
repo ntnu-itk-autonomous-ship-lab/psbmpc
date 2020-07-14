@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : test_ownship.cpp
+*  File name : test_obstacle.cpp
 *
-*  Function  : Test file for the Ownship class for PSB-MPC, using Matlab for 
+*  Function  : Test file for the Obstacle class for PSB-MPC, using Matlab for 
 *			   visualization 
 *			   
 *	           ---------------------
