@@ -24,8 +24,11 @@
 #ifndef _CPE_H_
 #define _CPE_H_
 
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
 #include "xoshiro.hpp"
 #include <Eigen/Dense>
+
 #include <random>
 
 // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
@@ -56,6 +59,7 @@ private:
 	// real-time testing to ensure proper functionality.
 	std::random_device seed;
 
+	//std::mt19937_64 generator;
 	xoshiro256plus64 generator;
 
 	std::normal_distribution<double> std_norm_pdf;
@@ -80,14 +84,24 @@ private:
 	std::vector<Eigen::MatrixXd> samples;
 	std::vector<Eigen::VectorXd> valid;
 
+	thrust::host_vector<double> samples_host;
+	thrust::device_vector<double> samples_gpu;
+	
 	// Safety zone parameters
 	std::vector<double> d_safe;
 
+	// Cholesky decomposition matrix
+	Eigen::MatrixXd L;
+
 	void resize_matrices();
 
-	void norm_pdf_log(Eigen::VectorXd &result, const Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	inline void update_L(const Eigen::MatrixXd &in);
 
-	void generate_norm_dist_samples(Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	inline double calculate_2x2_quadratic_form(const Eigen::Vector2d &x, const Eigen::Matrix2d &A);
+
+	inline void norm_pdf_log(Eigen::VectorXd &result, const Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+
+	inline void generate_norm_dist_samples(Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
 	void calculate_roots_2nd_order(Eigen::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
 
@@ -98,7 +112,7 @@ private:
 		const double t_cpa,
 		const int i);
 
-	bool determine_sample_validity_4D(
+	void determine_sample_validity_4D(
 		Eigen::VectorXd &valid, 
 		const Eigen::MatrixXd &samples, 
 		const Eigen::Vector2d &p_os_cpa, 

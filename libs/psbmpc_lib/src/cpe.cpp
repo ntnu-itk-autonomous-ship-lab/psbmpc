@@ -18,6 +18,8 @@
 *
 *****************************************************************************************/
 
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
 #include "cpe.h"
 #include "utilities.h"
 #include <iostream>
@@ -41,13 +43,13 @@ CPE::CPE(
     const int n_obst,                                               // In: Number of obstacles
     const double dt                                                 // In: Time step of calling function simulation environment
     ) :
-    method(cpe_method), n_CE(n_CE), n_MCSKF(n_MCSKF), generator(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1)), n_obst(n_obst)
+    method(cpe_method), n_obst(n_obst), n_CE(n_CE), n_MCSKF(n_MCSKF), generator(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1))
 {
     set_number_of_obstacles(n_obst);
 
     // CE pars
     
-    sigma_inject = 1 / 3; // dependent on d_safe wrt obstacle i
+    sigma_inject = 1 / 3; // dependent on d_safe wrt obstacle i => set in CE-method
 
     alpha_n = 0.9;
 
@@ -115,6 +117,7 @@ void CPE::initialize(
     const int i                                                                 // In: Index of obstacle i
     )
 {
+    set_safety_zone_radius(d_safe_i, i);
     switch (method)
     {
     case CE:
@@ -183,10 +186,12 @@ void CPE::resize_matrices()
                 samples[i].resize(2, n_CE);
                 elite_samples[i].resize(2, n_CE);
                 valid[i].resize(n_CE);
+                L.resize(2, 2);
                 break;
             case MCSKF4D :
-                samples[i].resize(2, n_MCSKF);
+                samples[i].resize(4, n_MCSKF);
                 valid[i].resize(n_MCSKF);
+                L.resize(4, 4);
                 break;
             default :
                 std::cout << "Invalid method" << std::endl;
@@ -196,13 +201,79 @@ void CPE::resize_matrices()
 }
 
 /****************************************************************************************
+*  Name     : update_L
+*  Function : Updates the lower triangular matrix L based on cholesky decomposition 
+*             formulas for the input matrix. For 2x2 and 4x4 matrices only, hence 
+*             why eigen is not used.
+*             Formulas: 
+*             L_jj = sqrt(A_jj - sum_k=0^j-1 (L_jk)^2)
+*             L_ij = (1 / L_jj) * (A_jj) - sum_k=0^j-1 L_ik * L_jk)
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+inline void CPE::update_L(
+    const Eigen::MatrixXd &in                                                     // In: Matrix in consideration
+    )
+{
+    int n = in.rows();
+    L = Eigen::MatrixXd::Zero(n, n);
+    double sum;
+    for (int i = 0; i < n; i++) { 
+        for (int j = 0; j <= i; j++) 
+        { 
+            sum = 0.0; 
+            if (j == i)
+            { 
+                for (int k = 0; k < j; k++) 
+                {
+                    sum += pow(L(j, k), 2); 
+                }
+                L(j, j) = sqrt(in(j, j) - sum); 
+            } 
+            else if (i > j)
+            { 
+                for (int k = 0; k < j; k++) 
+                {
+                    sum += (L(i, k) * L(j, k)); 
+                }
+                L(i, j) = (in(i, j) - sum) / L(j, j); 
+            } 
+            else
+            {
+                L(i, j) = 0;
+            }
+            
+        } 
+    } 
+}
+
+/****************************************************************************************
+*  Name     : calculate_2x2_quadratic_form
+*  Function : Calculates val = x' A^-1 x for 2x2 system, basically hard-coded.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+inline double CPE::calculate_2x2_quadratic_form(
+    const Eigen::Vector2d &x, 
+    const Eigen::Matrix2d &A
+    )
+{
+    Eigen::Matrix2d inv_A;
+    inv_A << A(1, 1), -A(0, 1),
+             -A(1, 0), A(0, 0);
+    inv_A = inv_A / (A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0));
+
+    return x.transpose() * inv_A * x;
+}
+
+/****************************************************************************************
 *  Name     : norm_pdf_log
 *  Function : Calculates the logarithmic value of the multivariate normal distribution
 *             for the internally stored sample matrix
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::norm_pdf_log(
+inline void CPE::norm_pdf_log(
     Eigen::VectorXd &result,                                                    // In/out: Resulting vector of pdf values
     const Eigen::MatrixXd &samples,                                             // In: Samples consisting of normal state vectors in each column
     const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
@@ -215,10 +286,15 @@ void CPE::norm_pdf_log(
     double log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
     for (int i = 0; i < n_samples; i++)
     {
-        // Consider using Cholesky decomposition if you find the direct inverse of
-        // Sigma to be less numerically stable
-        exp_val = - (samples.col(i) - mu).transpose() * Sigma.inverse() * (samples.col(i) - mu);
-        exp_val = exp_val / 2.0;
+        if (n == 2)
+        {
+            exp_val = calculate_2x2_quadratic_form(samples.col(i) - mu, Sigma);
+        }
+        else
+        {
+            exp_val = (samples.col(i) - mu).transpose() * Sigma.inverse() * (samples.col(i) - mu);
+        }
+        exp_val = - exp_val / 2.0;
 
         result(i) = log_val + exp_val;
     }
@@ -230,7 +306,7 @@ void CPE::norm_pdf_log(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::generate_norm_dist_samples(
+inline void CPE::generate_norm_dist_samples(
     Eigen::MatrixXd &samples,                                                   // In/out: Samples to fill.
     const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
     const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
@@ -238,8 +314,8 @@ void CPE::generate_norm_dist_samples(
 {
     int n = samples.rows(), n_samples = samples.cols();
 
-    Eigen::LLT<Eigen::MatrixXd> cholesky_decomposition(Sigma);
-    Eigen::MatrixXd L = cholesky_decomposition.matrixL();
+    update_L(Sigma);
+
     // Check if bigger loop within small loop faster than the other way around
     // if time usage becomes an issue
     for (int c = 0; c < n; c++)
@@ -337,7 +413,7 @@ double CPE::produce_MCS_estimate(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-bool CPE::determine_sample_validity_4D(
+void CPE::determine_sample_validity_4D(
     Eigen::VectorXd &valid,                                                     // In: Vector of 0/1s depending on if a sample is valid or not
     const Eigen::MatrixXd &samples,                                             // In: Normally distributed samples of obstacle states in each column
     const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
@@ -464,7 +540,7 @@ double CPE::MCSKF4D_estimation(
     * Kalman-filtering for simple markov chain model
     * P_c^i_k+1 = P_c^i_k + v^i_k
     * y^i_k     = P_c^i_k + w^i_k
-    /*****************************************************
+    ******************************************************
     * Update using measurement y_P_c
     *****************************************************/
     double K;
@@ -496,9 +572,9 @@ double CPE::MCSKF4D_estimation(
 *  Modified :
 *****************************************************************************************/
 void CPE::determine_sample_validity_2D(
-    Eigen::VectorXd &valid,                                                     // In: Vector of 0/1s depending on if a sample is valid or not
+    Eigen::VectorXd &valid,                                                     // In/out: Vector of 0/1s depending on if a sample is valid or not
     const Eigen::MatrixXd &samples,                                             // In: Normally distributed samples in each column
-	const Eigen::Vector2d &p_os,                                                 // In: Own-ship position vector
+	const Eigen::Vector2d &p_os,                                                // In: Own-ship position vector
     const int i                                                                 // In: Index of obstacle
     )
 {
@@ -580,6 +656,7 @@ double CPE::CE_estimation(
     ******************************************************************************/
     Eigen::Vector2d mu_CE_prev, mu_CE;
     Eigen::Matrix2d P_CE_prev, P_CE;
+    sigma_inject = d_safe[i] / 3;
     if (converged_last)
     {
         mu_CE_prev = mu_CE_last[i]; mu_CE = mu_CE_last[i];

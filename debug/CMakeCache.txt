@@ -232,6 +232,9 @@ PYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.6m.so
 //Path to a library.
 PYTHON_LIBRARY_DEBUG:FILEPATH=PYTHON_LIBRARY_DEBUG-NOTFOUND
 
+//The directory containing a CMake configuration file for Thrust.
+Thrust_DIR:PATH=Thrust_DIR-NOTFOUND
+
 //Dependencies for the target
 psbmpc_lib_LIB_DEPENDS:STATIC=general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmex.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmx.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libeng.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmat.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libMatlabDataArray.so;general;/usr/local/MATLAB/R2019a/extern/bin/glnxa64/libMatlabEngine.so;
 
@@ -354,7 +357,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=3
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=2
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP

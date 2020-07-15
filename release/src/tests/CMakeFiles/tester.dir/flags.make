@@ -6,5 +6,5 @@ CXX_FLAGS = -O3 -DNDEBUG   -Wall -Wextra -Wpedantic -fno-omit-frame-pointer -g
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/include -I/home/trymte/Desktop/cybercolav_cxx/libs/third_party_libs -I/usr/local/MATLAB/R2019a/extern/include 
+CXX_INCLUDES = -I/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/include -I/home/trymte/Desktop/cybercolav_cxx/libs/third_party_libs -I/usr/local/MATLAB/R2019a/extern/include -I/usr/local/cuda-10.2/include 
 

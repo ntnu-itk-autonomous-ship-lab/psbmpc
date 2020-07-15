@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/usr/include/python3.6/",
-                "/usr/local/MATLAB/R2019a/extern/**"
+                "/usr/local/MATLAB/R2019a/extern/**",
+                "/usr/local/cuda/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
