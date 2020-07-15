@@ -1,0 +1,142 @@
+  Error: unknown option `callgraph'
+
+ Usage: perf report [<options>]
+
+    -b, --branch-stack    use branch records for per branch histogram filling
+    -c, --comms <comm[,comm...]>
+                          only consider symbols in these comms
+    -C, --cpu <cpu>       list of cpus to profile
+    -d, --dsos <dso[,dso...]>
+                          only consider symbols in these dsos
+    -D, --dump-raw-trace  dump raw trace in ASCII
+    -F, --fields <key[,keys...]>
+                          output field(s): overhead period sample  overhead overhead_sys
+			  overhead_us overhead_guest_sys overhead_guest_us overhead_children
+			  sample period pid comm dso symbol parent cpu socket
+			  srcline srcfile local_weight weight transaction trace
+			  symbol_size dso_size cgroup_id ipc_null time dso_from
+			  dso_to symbol_from symbol_to mispredict abort in_tx
+			  cycles srcline_from srcline_to ipc_lbr symbol_daddr
+			  dso_daddr locked tlb mem snoop dcacheline symbol_iaddr
+			  phys_daddr
+    -f, --force           don't complain, do it
+    -g, --call-graph <print_type,threshold[,print_limit],order,sort_key[,branch],value>
+                          Display call graph (stack chain/backtrace):
+
+				print_type:	call graph printing style (graph|flat|fractal|folded|none)
+				threshold:	minimum call graph inclusion threshold (<percent>)
+				print_limit:	maximum number of call graph entry (<number>)
+				order:		call graph order (caller|callee)
+				sort_key:	call graph sort key (function|address)
+				branch:		include last branch info to call graph (branch)
+				value:		call graph value (percent|period|count)
+
+				Default: graph,0.5,caller,function,percent
+    -G, --inverted        alias for inverted call graph
+    -i, --input <file>    input file name
+    -I, --show-info       Display extended information about perf.data file
+    -k, --vmlinux <file>  vmlinux pathname
+    -M, --disassembler-style <disassembler style>
+                          Specify disassembler style (e.g. -M intel for intel syntax)
+    -m, --modules         load module symbols - WARNING: use only with -k and LIVE kernel
+    -n, --show-nr-samples
+                          Show a column with the number of samples
+    -p, --parent <regex>  regex filter to identify parent, see: '--sort parent'
+    -q, --quiet           Do not show any message
+    -s, --sort <key[,key2...]>
+                          sort by key(s): overhead overhead_sys overhead_us overhead_guest_sys
+			  overhead_guest_us overhead_children sample period
+			  pid comm dso symbol parent cpu socket srcline srcfile
+			  local_weight weight transaction trace symbol_size
+			  dso_size cgroup_id ipc_null time dso_from dso_to symbol_from
+			  symbol_to mispredict abort in_tx cycles srcline_from
+			  srcline_to ipc_lbr symbol_daddr dso_daddr locked tlb
+			  mem snoop dcacheline symbol_iaddr phys_daddr
+    -S, --symbols <symbol[,symbol...]>
+                          only consider these symbols
+    -t, --field-separator <separator>
+                          separator for columns, no spaces will be added between columns '.' is reserved.
+    -T, --threads         Show per-thread event counters
+    -U, --hide-unresolved
+                          Only display entries resolved to a symbol
+    -v, --verbose         be more verbose (show symbol address, etc)
+    -w, --column-widths <width[,width...]>
+                          don't try to adjust column width, use these fixed values
+    -x, --exclude-other   Only display entries with parent-match
+        --asm-raw         Display raw encoding of assembly instructions (default)
+        --branch-history  add last branch records to call history
+        --children        Accumulate callchains of children and show total overhead as well
+        --demangle        Disable symbol demangling
+        --demangle-kernel
+                          Enable kernel symbol demangling
+        --full-source-path
+                          Show full source file name path for source lines
+        --group           Show event group information together
+        --gtk             Use the GTK2 interface
+        --header          Show data header.
+        --header-only     Show only data header.
+        --hierarchy       Show entries in a hierarchy
+        --ignore-callees <regex>
+                          ignore callees of these functions in call graphs
+        --ignore-vmlinux  don't load vmlinux even if found
+        --inline          Show inline function
+        --itrace[=<opts>]
+                          Instruction Tracing options
+				i:	    		synthesize instructions events
+				b:	    		synthesize branches events
+				c:	    		synthesize branches events (calls only)
+				r:	    		synthesize branches events (returns only)
+				x:	    		synthesize transactions events
+				w:	    		synthesize ptwrite events
+				p:	    		synthesize power events
+				e:	    		synthesize error events
+				d:	    		create a debug log
+				g[len]:     		synthesize a call chain (use with i or x)
+				l[len]:     		synthesize last branch entries (use with i or x)
+				sNUMBER:    		skip initial number of events
+				PERIOD[ns|us|ms|i|t]:   specify period to sample stream
+				concatenate multiple options. Default is ibxwpe or cewp
+
+        --kallsyms <file>
+                          kallsyms pathname
+        --max-stack <n>   Set the maximum stack depth when parsing the callchain, anything beyond the specified depth will be ignored. Default: kernel.perf_event_max_stack or 127
+        --mem-mode        mem access profile
+        --mmaps           Display recorded tasks memory maps
+        --ns              Show times in nanosecs
+        --objdump <path>  objdump binary to use for disassembly and annotations
+        --percent-limit <percent>
+                          Don't show entries under that percent
+        --percent-type <local-period>
+                          Set percent type local/global-period/hits
+        --percentage <relative|absolute>
+                          how to display percentage of filtered entries
+        --pid <pid[,pid...]>
+                          only consider symbols in these pids
+        --pretty <key>    pretty printing style key: normal raw
+        --raw-trace       Show raw trace event output (do not use print fmt or plugins)
+        --samples <n>     Number of samples to save per histogram entry for individual browsing
+        --show-cpu-utilization
+                          Show sample percentage for different cpu modes
+        --show-ref-call-graph
+                          Show callgraph from reference event
+        --show-total-period
+                          Show a column with the sum of periods
+        --socket-filter <n>
+                          only show processor socket that match with this filter
+        --source          Interleave source code with assembly code (default)
+        --stats           Display event stats
+        --stdio           Use the stdio interface
+        --stdio-color <mode>
+                          'always' (default), 'never' or 'auto' only applicable to --stdio mode
+        --symbol-filter <filter>
+                          only show symbols that (partially) match with this filter
+        --symfs <directory>
+                          Look for files with symbols relative to this directory
+        --tasks           Display recorded tasks
+        --tid <tid[,tid...]>
+                          only consider symbols in these tids
+        --time <str>      Time span of interest (start,stop)
+        --time-quantum <time (ms|us|ns|s)>
+                          Set time quantum for time sort key (default 100ms)
+        --tui             Use the TUI interface
+

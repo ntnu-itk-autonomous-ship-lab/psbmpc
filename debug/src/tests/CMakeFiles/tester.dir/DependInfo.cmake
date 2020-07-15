@@ -4,13 +4,12 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/trymte/Desktop/cybercolav_cxx/src/tests/test_cpe.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/src/tests/CMakeFiles/tester.dir/test_cpe.cpp.o"
+  "/home/trymte/Desktop/cybercolav_cxx/src/tests/test_psbmpc.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
-  "../include"
   "../libs/psbmpc_lib/include"
   "../libs/third_party_libs"
   "/usr/local/MATLAB/R2019a/extern/include"

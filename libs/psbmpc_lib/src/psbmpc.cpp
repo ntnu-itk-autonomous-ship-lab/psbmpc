@@ -172,8 +172,6 @@ void PSBMPC::set_par(
 				d_safe = value; 
 				dpar_low[i_dpar_d_close] = d_safe;
 				dpar_low[i_dpar_d_init] = d_safe;
-				// and CPE method
-				cpe->set_safety_zone_radius(d_safe);
 				break;
 			case i_dpar_d_close 			: d_close = value; break;
 			case i_dpar_d_init 				: d_init = value; break;
@@ -301,8 +299,8 @@ void PSBMPC::calculate_optimal_offsets(
 	for (int cb = 0; cb < n_cbs; cb++)
 	{
 		cost = 0;
-		std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
-		std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
+		//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
+		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 		ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, T, dt);
 
 		for (int i = 0; i < n_obst; i++)
@@ -383,8 +381,8 @@ void PSBMPC::initialize_par_limits()
 	}
 	ipar_low[i_ipar_n_M] = 1; ipar_high[i_ipar_n_M] = 5; 
 
-	std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
-	std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
+	//std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
+	//std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
 
 	dpar_low.resize(N_DPAR); dpar_high.resize(N_DPAR);
 	for (int i = 0; i < N_DPAR; i++)
@@ -409,8 +407,8 @@ void PSBMPC::initialize_par_limits()
 	dpar_low[i_dpar_phi_HO] = -180.0; 		dpar_high[i_dpar_phi_HO] = 180.0;
 	dpar_low[i_dpar_phi_CR] = -180.0; 		dpar_high[i_dpar_phi_CR] = 180.0;
 
-	std::cout << "d_par_low = " << dpar_low.transpose() << std::endl;
-	std::cout << "d_par_high = " << dpar_high.transpose() << std::endl;
+	//std::cout << "d_par_low = " << dpar_low.transpose() << std::endl;
+	//std::cout << "d_par_high = " << dpar_high.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -436,7 +434,7 @@ void PSBMPC::initialize_pars()
 		if (M == 0)
 		{
 			u_offsets[M].resize(1);
-			u_offsets[M] << 1.0; // 0.5, 0.0;
+			u_offsets[M] << 1.0; //, 0.5, 0.0;
 
 			chi_offsets[M].resize(7);
 			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
@@ -551,12 +549,12 @@ void PSBMPC::initialize_prediction()
 		// Else: typically three intentions: KCC, SM, PM
 		else 
 		{
-			std::cout << trajectory.col(0).transpose() << std::endl;
-			std::cout << new_obstacles[i]->kf->get_state() << std::endl;
+			//std::cout << trajectory.col(0).transpose() << std::endl;
+			//std::cout << new_obstacles[i]->kf->get_state() << std::endl;
 			calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->kf->get_state());
-			std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
-			std::cout << "t_cpa = " << t_cpa(i) << std::endl;
-			std::cout << "d_cpa = " << d_cpa(i) << std::endl;
+			//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
+			//std::cout << "t_cpa = " << t_cpa(i) << std::endl;
+			//std::cout << "d_cpa = " << d_cpa(i) << std::endl;
 			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
 			
 			if (d_cpa(i) > d_safe || (d_cpa(i) <= d_safe && t_cpa(i) > T)) // No predicted collision inside time horizon
@@ -617,7 +615,7 @@ void PSBMPC::initialize_prediction()
 					} 
 				}	
 			}
-			std::cout << ps_maneuver_times_i.transpose() << std::endl;
+			//std::cout << ps_maneuver_times_i.transpose() << std::endl;
 			// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
 			ps_weights_i.resize(n_ps);
 			Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
@@ -729,7 +727,7 @@ void PSBMPC::initialize_prediction()
 			maneuver_times(M) = maneuver_times(M - 1) + std::round((t_ts + 1) / dt);
 		}
 	}
-
+	std::cout << maneuver_times.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -1140,7 +1138,7 @@ void PSBMPC::calculate_collision_probabilities(
 	)
 {
 	int n_samples = trajectory.cols();
-
+	double d_safe_i = d_safe;
 	if (!obstacle_colav_on[i])
 	{
 		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
@@ -1148,7 +1146,7 @@ void PSBMPC::calculate_collision_probabilities(
 
 		for (int ps = 0; ps < n_ps; ps++)
 		{
-			cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p[ps].col(0), i);
+			cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p[ps].col(0), d_safe_i, i);
 			for (int k = 0; k < n_samples; k++)
 			{
 				P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p[ps].col(k), i);
@@ -1159,7 +1157,7 @@ void PSBMPC::calculate_collision_probabilities(
 	{
 		Eigen::MatrixXd xs_i_p = new_obstacles[i]->get_dependent_trajectory();
 		Eigen::MatrixXd P_i_p = new_obstacles[i]->get_dependent_trajectory_covariance();
-		cpe->initialize(trajectory.col(0), xs_i_p.col(0), P_i_p.col(0), i);
+		cpe->initialize(trajectory.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i, i);
 		for (int k = 0; k < n_samples; k++)
 		{
 			// Last row (with index n_ps) is for the colav active obstacle trajectory
@@ -1269,10 +1267,10 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 
 			// Weight by the intention probabilities
 			cost = Pr_a.dot(cost_a);
-			std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
-			std::cout << "max cost ps = " << max_cost_ps.transpose() << std::endl;
-			std::cout << "cost a = " << cost_a.transpose() << std::endl;
-			std::cout << "cost = " << cost << std::endl;
+			//std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
+			//std::cout << "max cost ps = " << max_cost_ps.transpose() << std::endl;
+			//std::cout << "cost a = " << cost_a.transpose() << std::endl;
+			//std::cout << "cost = " << cost << std::endl;
 		}
 	}
 	else
@@ -1674,9 +1672,9 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 	O_TC_0.resize(n_obst); Q_TC_0.resize(n_obst); IP_0.resize(n_obst); 
 	H_TC_0.resize(n_obst); X_TC_0.resize(n_obst);
 
-	std::cout << "Situation types:: 0 : (ST = Ø), 1 : (ST = OT, SO), 2 : (ST = CR, SO), 3 : (ST = OT, GW), 4 : (ST = HO, GW), 5 : (ST = CR, GW)" << std::endl;
+	//std::cout << "Situation types:: 0 : (ST = Ø), 1 : (ST = OT, SO), 2 : (ST = CR, SO), 3 : (ST = OT, GW), 4 : (ST = HO, GW), 5 : (ST = CR, GW)" << std::endl;
 	ST b = A;
-	std::cout << A << std::endl;
+	//std::cout << A << std::endl;
 	for (int i = 0; i < n_obst; i++)
 	{
 		v_B(0) = new_obstacles[i]->kf->get_state()(2);
@@ -1690,8 +1688,8 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 
 		determine_situation_type(ST_0[i], ST_i_0[i], v_A, psi_A, v_B, L_AB, d_AB);
 		
-		std::cout << "Own-ship situation type wrt obst i = " << i << " ? " << ST_0[i] << std::endl;
-		std::cout << "Obst i = " << i << " situation type wrt ownship ? " << ST_i_0[i] << std::endl;
+		//std::cout << "Own-ship situation type wrt obst i = " << i << " ? " << ST_0[i] << std::endl;
+		//std::cout << "Obst i = " << i << " situation type wrt ownship ? " << ST_i_0[i] << std::endl;
 
 		/*********************************************************************
 		* Transitional variable update
@@ -1700,17 +1698,17 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 
 		AH_0[i] = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
 
-		std::cout << "Obst i = " << i << " ahead at t0 ? " << AH_0[i] << std::endl;
+		//std::cout << "Obst i = " << i << " ahead at t0 ? " << AH_0[i] << std::endl;
 		
 		// Obstacle on starboard side
 		S_TC_0[i] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
 
-		std::cout << "Obst i = " << i << " on starboard side at t0 ? " << S_TC_0[i] << std::endl;
+		//std::cout << "Obst i = " << i << " on starboard side at t0 ? " << S_TC_0[i] << std::endl;
 
 		// Ownship on starboard side of obstacle
 		S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
 
-		std::cout << "Own-ship on starboard side of obst i = " << i << " at t0 ? " << S_i_TC_0[i] << std::endl;
+		//std::cout << "Own-ship on starboard side of obst i = " << i << " at t0 ? " << S_i_TC_0[i] << std::endl;
 
 		// Ownship overtaking the obstacle
 		O_TC_0[i] = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
@@ -1719,7 +1717,7 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 				is_close 													&&
 				AH_0[i];
 
-		std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << O_TC_0[i] << std::endl;
+		//std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << O_TC_0[i] << std::endl;
 
 		// Obstacle overtaking the ownship
 		Q_TC_0[i] = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
@@ -1728,7 +1726,7 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 				is_close 													&&
 				!AH_0[i];
 
-		std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << Q_TC_0[i] << std::endl;
+		//std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << Q_TC_0[i] << std::endl;
 
 		// Determine if the obstacle is passed by
 		IP_0[i] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
@@ -1737,7 +1735,7 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 				!O_TC_0[i]))		 										&&
 				d_AB > d_safe;
 		
-		std::cout << "Obst i = " << i << " passed by at t0 ? " << IP_0[i] << std::endl;
+		//std::cout << "Obst i = " << i << " passed by at t0 ? " << IP_0[i] << std::endl;
 
 		// This is not mentioned in article, but also implemented here..				
 		H_TC_0[i] = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
@@ -1745,7 +1743,7 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 				v_B.norm() > 0.25											&&
 				AH_0[i];
 		
-		std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << H_TC_0[i] << std::endl;
+		//std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << H_TC_0[i] << std::endl;
 
 		// Crossing situation, a bit redundant with the !is_passed condition also, 
 		// but better safe than sorry (could be replaced with B_is_ahead also)
@@ -1757,6 +1755,6 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 				v_A.norm() > 0.25											&&
 				v_B.norm() > 0.25;
 
-		std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << X_TC_0[i] << std::endl;
+		//std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << X_TC_0[i] << std::endl;
 	}
 }

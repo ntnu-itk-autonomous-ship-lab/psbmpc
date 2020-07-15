@@ -13,6 +13,7 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "../libs/psbmpc_lib/include"
   "../libs/third_party_libs"
   "/usr/local/MATLAB/R2019a/extern/include"
+  "/usr/local/cuda-10.2/include"
   )
 
 # Targets to which this target links.

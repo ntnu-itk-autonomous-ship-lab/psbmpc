@@ -31,6 +31,7 @@
 #include "Eigen/StdVector"
 #include "Eigen/Core"
 #include "engine.h"
+#include <chrono>
 
 #define BUFSIZE 1000000
 
@@ -186,6 +187,7 @@ int main(){
 	Eigen::Vector4d xs_i_k;
 
 	Eigen::VectorXd xs_aug(9);
+	double mean_t = 0;
 	for (int k = 0; k < N; k++)
 	{
 		// Aquire obstacle information
@@ -203,6 +205,8 @@ int main(){
 
 		asv_sim->update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
+		auto start = std::chrono::system_clock::now();
+
 		psbmpc->calculate_optimal_offsets(
 			u_opt,
 			chi_opt, 
@@ -219,6 +223,11 @@ int main(){
 			obstacle_a_priori_CC_probabilities,
 			static_obstacles);
 
+		auto end = std::chrono::system_clock::now();
+		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+		mean_t  += elapsed.count();
+
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 
 		asv_sim->update_ctrl_input(u_c, chi_d, trajectory.col(k));
@@ -226,6 +235,8 @@ int main(){
 		if (k < N - 1) { trajectory.col(k + 1) = asv_sim->predict(trajectory.col(k), dt, ERK1); }
 
 	}
+	mean_t /= N;
+	std::cout << "PSBMPC average time usage : " << mean_t << " milliseconds" << std::endl;
 	//*****************************************************************************************************************
 	// Send final trajectory data to matlab
 	//*****************************************************************************************************************

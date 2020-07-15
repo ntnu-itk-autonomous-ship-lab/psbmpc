@@ -7,6 +7,8 @@
 #IncludeRegexTransform: 
 
 ../libs/psbmpc_lib/include/cpe.h
+xoshiro.hpp
+../libs/psbmpc_lib/include/xoshiro.hpp
 Eigen/Dense
 -
 random
@@ -1114,6 +1116,10 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
+../libs/third_party_libs/xoshiro.hpp
+cstdint
+-
+
 /home/trymte/Desktop/cybercolav_cxx/src/tests/test_psbmpc.cpp
 psbmpc.h
 /home/trymte/Desktop/cybercolav_cxx/src/tests/psbmpc.h
@@ -1131,6 +1137,8 @@ Eigen/Core
 /home/trymte/Desktop/cybercolav_cxx/src/tests/Eigen/Core
 engine.h
 /home/trymte/Desktop/cybercolav_cxx/src/tests/engine.h
+chrono
+-
 
 /usr/local/MATLAB/R2019a/extern/include/engine.h
 matrix.h
@@ -1171,4 +1179,26 @@ float.h
 -
 stddef.h
 -
+
+/usr/local/cuda-10.2/include/crt/host_defines.h
+
+/usr/local/cuda-10.2/include/cuda_fp16.h
+cuda_fp16.hpp
+/usr/local/cuda-10.2/include/cuda_fp16.hpp
+
+/usr/local/cuda-10.2/include/cuda_fp16.hpp
+utility
+-
+cstring
+-
+
+/usr/local/cuda-10.2/include/host_defines.h
+crt/host_defines.h
+/usr/local/cuda-10.2/include/crt/host_defines.h
+
+/usr/local/cuda-10.2/include/math_constants.h
+
+/usr/local/cuda-10.2/include/vector_types.h
+crt/host_defines.h
+/usr/local/cuda-10.2/include/crt/host_defines.h
 

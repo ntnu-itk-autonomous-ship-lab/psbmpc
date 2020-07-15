@@ -173,7 +173,7 @@ int main(){
 	//*****************************************************************************************************************
 
 	cpe->set_number_of_obstacles(1);
-	cpe->initialize(trajectory.col(0), xs_p[0].col(0), P_p[0].col(0), 0);
+	cpe->initialize(trajectory.col(0), xs_p[0].col(0), P_p[0].col(0), d_safe, 0);
 
 	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
 
@@ -200,7 +200,7 @@ int main(){
 		}
 		
 		cpe->set_method(MCSKF4D);
-		cpe->initialize(trajectory.col(0), xs_p[ps].col(0), P_p[ps].col(0), 0);
+		cpe->initialize(trajectory.col(0), xs_p[ps].col(0), P_p[ps].col(0), d_safe, 0);
 		for (int k = 0; k < n_samples; k++)
 		{
 			if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
