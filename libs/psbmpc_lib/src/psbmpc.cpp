@@ -347,7 +347,6 @@ void PSBMPC::calculate_optimal_offsets(
 				HL_0(i) = cost_i(i) / cost_i.sum();
 			}	
 		}
-
 		increment_control_behavior();
 	}
 
