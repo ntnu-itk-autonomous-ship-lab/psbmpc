@@ -79,9 +79,12 @@ private:
 	// Course change ordering, weights and maneuvering times for the prediction scenarios: n_ps x 1
 	Eigen::VectorXd ps_course_changes, ps_weights, ps_maneuver_times;
 
+	// Simple sb-mpc class for obstacle
+
+
 	// Predicted obstacle trajectory and covariance when it is behaving intelligently
 	Eigen::MatrixXd xs_colav_p, P_colav_p;
-
+	
 public:
 
 	KF *kf;
