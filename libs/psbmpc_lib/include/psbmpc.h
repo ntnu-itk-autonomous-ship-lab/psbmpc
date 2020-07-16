@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : psb_mpc.h
+*  File name : psbmpc.h
 *
 *  Function  : Header file for Probabilistic Scneario-based Model Predictive Control.
 *			   Extends and modifies the SB-MPC implemented by Inger Berge Hagen and 
@@ -30,7 +30,6 @@
 #include "cpe.h"
 #include "Eigen/Dense"
 #include <vector>
-#include <math.h>
 
 enum ST 
 {
