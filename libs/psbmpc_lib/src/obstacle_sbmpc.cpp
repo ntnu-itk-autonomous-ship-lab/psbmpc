@@ -253,20 +253,17 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 	const double u_d, 														// In: Surge reference
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
+	const Eigen::Vector4d &ownship_state, 									// In: Current ship state
 	const Eigen::Matrix<double, 9, -1> &obstacle_states, 					// In: Dynamic obstacle states 
-	const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 				// In: Dynamic obstacle covariances
-	const Eigen::MatrixXd &obstacle_intention_probabilities,  				// In: Intention probabilitiy information for the obstacles
-	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities, 				// In: Information on a priori COLREGS compliance probabilities for the obstacles
 	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
 	)
 {
 	int n_samples = std::round(T / dt);
 
-	trajectory.resize(6, n_samples);
+	trajectory.resize(4, n_samples);
 	trajectory.col(0) = ownship_state;
 
-	update_obstacles(obstacle_states, obstacle_covariances, obstacle_intention_probabilities, obstacle_a_priori_CC_probabilities);
+	update_obstacles(obstacle_states);
 	int n_obst = new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
@@ -280,7 +277,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 		return;
 	}
 	
-	update_situation_type_and_transitional_variables();
+	update_transitional_variables();
 
 	initialize_prediction();
 
@@ -417,8 +414,6 @@ void Obstacle_SBMPC::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 1;
-	n_a = 3; // KCC, SM, PM
-	n_ps = 1; // Determined by initialize_prediction();
 
 	offset_sequence_counter.resize(2 * n_M);
 	offset_sequence.resize(2 * n_M);
@@ -453,9 +448,6 @@ void Obstacle_SBMPC::initialize_pars()
 	u_m_last = 1;
 	chi_m_last = 0;
 
-	course_changes.resize(1);
-	course_changes << 30 * DEG2RAD;
-
 	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
@@ -470,6 +462,7 @@ void Obstacle_SBMPC::initialize_pars()
 		dt = 0.5; 
 		p_step = 10;
 	}
+	t_ts = 25;
 
 	d_init = 1500;							//1852.0;	  // should be >= D_CLOSE 300.0 600.0 500.0 700.0 800 1852
 	d_close = 1000;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
@@ -496,183 +489,35 @@ void Obstacle_SBMPC::initialize_pars()
 /****************************************************************************************
 *  Name     : initialize_predictions
 *  Function : Sets up the own-ship maneuvering times and number of prediction scenarios 
-*			  for each obstacle based on the current situation
+*			  for each obstacle
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void Obstacle_SBMPC::initialize_prediction()
 {
 	int n_obst = new_obstacles.size();
-	cpe->set_number_of_obstacles(n_obst);
 
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
-	int n_turns;
 	std::vector<Intention> ps_ordering_i;
 	Eigen::VectorXd ps_course_changes_i;
 	Eigen::VectorXd ps_weights_i;
 	Eigen::VectorXd ps_maneuver_times_i;
-	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
-	double Pr_CC_i, t_obst_passed;
-	Eigen::Vector2d p_cpa;
 
 	int turn_count, course_change_count;
 	for (int i = 0; i < n_obst; i++)
 	{
-		// If only one intention, then only one prediction scenario
-		if (n_a == 1)
-		{
-			ps_ordering_i.resize(1);
-			ps_ordering_i[0] = KCC;
-			ps_course_changes_i.resize(1);
-			ps_course_changes_i[0] = 0;
-			ps_weights_i.resize(1);
-			ps_weights_i(0)= 1;
-			ps_maneuver_times_i.resize(1);
-			ps_maneuver_times_i(0) = 0;
-		}
-		// Else: typically three intentions: KCC, SM, PM
-		else 
-		{
-			//std::cout << trajectory.col(0).transpose() << std::endl;
-			//std::cout << new_obstacles[i]->kf->get_state() << std::endl;
-			calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->kf->get_state());
-			//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
-			//std::cout << "t_cpa = " << t_cpa(i) << std::endl;
-			//std::cout << "d_cpa = " << d_cpa(i) << std::endl;
-			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
-			
-			if (d_cpa(i) > d_safe || (d_cpa(i) <= d_safe && t_cpa(i) > T)) // No predicted collision inside time horizon
-			{
-				n_turns = std::floor(T / t_ts);
-			} 
-			// Safety zone violation at CPA inside prediction horizon, as d_cpa <= d_safe
-			else 				
-			{
-				if (t_cpa(i) > t_ts) // Space evenly until t_cpa
-				{
-					n_turns = std::floor(t_cpa(i) / t_ts);
-				}
-				else			// No time to react => only one maneuver
-				{
-					n_turns = 1;
-				}	
-			}
-			
-			// Determine scenario ordering and course changes based on number of turns and course changes
-			n_ps = 1 + 2 * course_changes.size() * n_turns;
-			ps_ordering_i.resize(n_ps);
-			ps_ordering_i[0] = KCC;
-			ps_maneuver_times_i.resize(n_ps);
-			ps_maneuver_times_i[0] = 0;
-			ps_course_changes_i.resize(n_ps);
-			ps_course_changes_i[0] = 0;
-			turn_count = 0;
-			course_change_count = 0;
-			for (int ps = 1; ps < n_ps; ps++)
-			{
-				// Starboard maneuvers
-				if (ps < (n_ps - 1) / 2 + 1)
-				{
-					ps_ordering_i[ps] = SM;
-
-					ps_maneuver_times_i[ps] = turn_count * std::floor(t_ts / dt);
-
-					ps_course_changes_i(ps) = course_changes(course_change_count);
-					if (++course_change_count == course_changes.size())
-					{
-						if(++turn_count == n_turns) turn_count = 0;
-						course_change_count = 0;
-					} 
-				}
-				// Port maneuvers
-				else
-				{
-					ps_ordering_i[ps] = PM;
-
-					ps_maneuver_times_i[ps] = turn_count * std::floor(t_ts / dt);
-
-					ps_course_changes_i(ps) = - course_changes(course_change_count);
-					if (++course_change_count == course_changes.size())
-					{
-						if(++turn_count == n_turns) turn_count = 0;
-						course_change_count = 0;
-					} 
-				}	
-			}
-			//std::cout << ps_maneuver_times_i.transpose() << std::endl;
-			// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
-			ps_weights_i.resize(n_ps);
-			Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
-			switch(ST_i_0[i])
-			{
-				case A : // Outside CC consideration zone
-					ps_weights_i(0) = 1;
-					for (int ps = 1; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = 1;	
-					}
-					break;
-				case B : // OT, SO
-					ps_weights_i(0) = Pr_CC_i;
-					for (int ps = 1; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = 1 - Pr_CC_i;	
-					}
-					break;
-				case C : // CR, SO
-					ps_weights_i(0) = Pr_CC_i;
-					for (int ps = 1; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = 1 - Pr_CC_i;	
-					}
-					break;
-				case D : // OT, GW
-					ps_weights_i(0) = 1 - Pr_CC_i;
-					for (int ps = 1; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = Pr_CC_i;
-					}
-					break;
-				case E : // HO, GW
-					for (int ps = 0; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = 1 - Pr_CC_i;	
-
-						// Starboard maneuvers, which are CC
-						if (ps > 0 && ps < (n_ps - 1) / 2 + 1)
-						{
-							ps_weights_i(ps) = Pr_CC_i;	
-						}
-					}
-					break;
-				case F : // CR, GW
-					t_obst_passed = find_time_of_passing(i);
-					ps_weights_i(0) = 1 - Pr_CC_i;
-					for (int ps = 1; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = 1 - Pr_CC_i;
-						// Starboard maneuvers
-						if (ps < (n_ps - 1) / 2 + 1)
-						{
-							// Crossing obstacle prediction scenario gets COLREGS compliant weight Pr_CC_i
-							// if the course change is COLREGS compliant and happens in good time before
-							// the own-ship is passed
-							if (ps_maneuver_times_i(ps) * dt < t_obst_passed - t_ts)
-							{
-								ps_weights_i(ps) = Pr_CC_i;
-							}							
-						} 
-					}
-					break;
-				default :
-					std::cout << "This situation type does not exist" << std::endl;
-					break;
-			}
-			ps_weights_i = ps_weights_i / ps_weights_i.sum();
-				
-		}
+		// The obstacle SB-MPC assume only one intention for other nearby obstacles: Keep current course (KCC)
+		ps_ordering_i.resize(1);
+		ps_ordering_i[0] = KCC;
+		ps_course_changes_i.resize(1);
+		ps_course_changes_i[0] = 0;
+		ps_weights_i.resize(1);
+		ps_weights_i(0)= 1;
+		ps_maneuver_times_i.resize(1);
+		ps_maneuver_times_i(0) = 0;
+		
 		new_obstacles[i]->initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);
 	}
 	//***********************************************************************************
@@ -775,8 +620,34 @@ void Obstacle_SBMPC::increment_control_behavior()
 }
 
 /****************************************************************************************
+*  Name     : determine_colav_active
+*  Function : Uses the freshly updated new_obstacles vector and the number of static 
+*			  obstacles to determine whether it is necessary to run the PSBMPC
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+bool PSBMPC::determine_colav_active(
+	const int n_static_obst 												// In: Number of static obstacles
+	)
+{
+	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
+	bool colav_active = false;
+	Eigen::Vector2d d_0i;
+	for (int i = 0; i < new_obstacles.size(); i++)
+	{
+		d_0i(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
+		d_0i(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
+		if (d_0i.norm() < d_init) colav_active = true;
+	}
+	colav_active = colav_active || n_static_obst > 0;
+
+	return colav_active;
+}
+
+/****************************************************************************************
 *  Name     : determine_COLREGS_violation
-*  Function : Determine if vessel A violates COLREGS with respect to vessel B.
+*  Function : Determine if vessel A violates COLREGS with respect to vessel B. 
+*			  Two overloads.
 *			  
 *  Author   : Trym Tengesdal
 *  Modified :
@@ -826,6 +697,66 @@ bool Obstacle_SBMPC::determine_COLREGS_violation(
 	return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
 }
 
+bool Obstacle_SBMPC::determine_COLREGS_violation(
+	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A 
+	const Eigen::VectorXd &xs_B, 											// In: State vector of vessel B
+	)
+{
+	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
+	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
+
+	Eigen::Vector2d v_A, v_B, L_AB;
+	double psi_A, psi_B;
+	if (xs_A.size() == 6) { psi_A = xs_A(2); v_A(0) = xs_A(3); v_A(1) = xs_A(4); v_A = rotate_vector_2D(v_A, psi_A); }
+	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
+	
+	if (xs_B.size() == 6) { psi_B = xs_B(2); v_B(0) = xs_B(3); v_B(1) = xs_B(4); v_B = rotate_vector_2D(v_B, psi_B); }
+	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
+
+	L_AB(0) = xs_B(0) - xs_A(0);
+	L_AB(1) = xs_B(1) - xs_A(1);
+	double d_AB = L_AB.norm();
+	L_AB = L_AB / L_AB.norm();
+
+	is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
+
+	is_close = d_AB <= d_close;
+
+	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() < v_B.norm()							  		&&
+					v_A.norm() > 0.25;
+
+	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
+					v_B.norm() < v_A.norm()							  		&&
+					v_B.norm() > 0.25;
+
+	B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+	
+	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+				!A_is_overtaken) 											||
+				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+				!B_is_overtaken)) 											&&
+				d_AB > d_safe;
+
+	is_head_on = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+				v_A.norm() > 0.25											&&
+				v_B.norm() > 0.25											&&
+				is_ahead;
+
+	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
+				v_A.dot(L_AB) > cos(90 * DEG2RAD) * v_A.norm()				&& 	// Its not a crossing situation if A's velocity vector points away from vessel B  
+				v_A.norm() > 0.25											&&	// or does not make a crossing occur. This is not mentioned in Johansen.
+				v_B.norm() > 0.25											&&
+				!is_head_on 												&&
+				!is_passed;
+
+	bool mu = (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
+	if (mu)
+	{
+		std::cout << mu << std::endl;
+	}
+	return mu;
+}
 
 
 /****************************************************************************************
@@ -1188,13 +1119,7 @@ void Obstacle_SBMPC::update_obstacles(
 			{
 				old_obstacles[j]->reset_duration_lost();
 
-				old_obstacles[j]->update(
-					obstacle_states.col(i), 
-					obstacle_covariances.col(i), 
-					obstacle_intention_probabilities.col(i),
-					obstacle_a_priori_CC_probabilities(i),
-					obstacle_filter_on,
-					dt);
+				old_obstacles[j]->update(obstacle_states.col(i), dt);
 
 				new_obstacles.push_back(old_obstacles[j]);
 
@@ -1203,34 +1128,166 @@ void Obstacle_SBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			Obstacle *obstacle = new Obstacle(
-				obstacle_states.col(i), 
-				T, 
-				dt);
+			Obstacle *obstacle = new Obstacle(obstacle_states.col(i), false, T, dt);
+
 			new_obstacles.push_back(obstacle);
 		}
 	}
-	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
-	// Obstacle track may be lost due to sensor/detection failure, or the obstacle may go out of COLAV-target range
-	// Detection failure will lead to the start (creation) of a new track (obstacle), typically after a short duration,
-	// whereas an obstacle that is out of COLAV-target range may re-enter range with the same id.
-	if (obstacle_filter_on)
-	{
-		for (int j = 0; j < old_obstacles.size(); j++)
-		{
-			old_obstacles[j]->increment_duration_lost(dt * p_step);
 
-			if (	old_obstacles[j]->get_duration_tracked() >= T_tracked_limit 	&&
-					(old_obstacles[j]->get_duration_lost() < T_lost_limit || old_obstacles[j]->kf->get_covariance()(0,0) <= 5.0))
-			{
-				new_obstacles.push_back(old_obstacles[j]);
-			}
-		}
-	}
-	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
+	// Clear old obstacle vector
 	for (int i = 0; i < n_obst_old; i++)
 	{
 		delete old_obstacles[i];
 	}
 	old_obstacles.clear();
+}
+
+/****************************************************************************************
+*  Name     : update_obstacle_status
+*  Function : Updates various information on each obstacle at the current time
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void Obstacle_SBMPC::update_obstacle_status(
+	Eigen::Matrix<double,-1,-1> &obstacle_status,							// In/out: Various information on obstacles
+	const Eigen::VectorXd &HL_0 											// In: relative (to total hazard) hazard level of each obstacle
+	)
+{
+	int n_obst = new_obstacles.size();
+	obstacle_status.resize(13, n_obst);
+	double ID_0, RB_0, COG_0, SOG_0; 
+	Eigen::Vector2d d_0i;
+	Eigen::Vector4d xs_i;
+	for(int i = 0; i < n_obst; i++)
+	{
+		xs_i = new_obstacles[i]->kf->get_state();
+
+		ID_0 = new_obstacles[i]->get_ID();
+		
+		d_0i = (xs_i.block<2, 1>(0, 0) - trajectory.block<2, 1>(0, 0));
+
+		COG_0 = atan2(xs_i(3), xs_i(2));
+
+		SOG_0 = xs_i.block<2, 1>(2, 0).norm();
+
+		RB_0 = angle_difference_pmpi(atan2(d_0i(1), d_0i(0)), trajectory(2, 0));
+
+		obstacle_status.col(i) << ID_0, 											// Obstacle ID
+								  SOG_0, 											// Speed over ground of obstacle
+								  wrap_angle_to_02pi(COG_0) * RAD2DEG, 				// Course over ground of obstacle
+								  RB_0 * RAD2DEG, 									// Relative bearing
+								  d_0i.norm(),										// Range
+								  HL_0[i], 											// Hazard level of obstacle at optimum
+								  IP_0[i], 											// If obstacle is passed by or not 
+								  AH_0[i], 											// If obstacle is ahead or not
+								  S_TC_0[i], 										// If obstacle is starboard or not
+								  H_TC_0[i],										// If obstacle is head on or not
+								  X_TC_0[i],										// If crossing situation or not
+								  Q_TC_0[i],										// If obstacle overtakes ownship or not
+								  O_TC_0[i];										// If ownship overtakes obstacle or not
+	}
+}
+
+/****************************************************************************************
+*  Name     : update_transitional_variables
+*  Function : Updates the transitional cost indicators O, Q, X, S 
+*			  at the current time t0 wrt all obstacles.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void Obstacle_SBMPC::update_transitional_variables()
+{
+	Eigen::Vector4d xs = trajectory.col(0);
+	bool is_close;
+
+	// A : Own-ship, B : Obstacle i
+	Eigen::Vector2d v_A, v_B, L_AB;
+	double psi_A, psi_B, d_AB;
+	psi_A = xs[2]; // Crab angle neglected, thus chi = psi
+	v_A(0) = xs(3) * cos(psi_A);
+	v_A(1) = xs(3) * sin(psi_A);
+	
+	int n_obst = new_obstacles.size();
+	
+	AH_0.resize(n_obst);   S_TC_0.resize(n_obst); S_i_TC_0.resize(n_obst); 
+	O_TC_0.resize(n_obst); Q_TC_0.resize(n_obst); IP_0.resize(n_obst); 
+	H_TC_0.resize(n_obst); X_TC_0.resize(n_obst);
+
+	for (int i = 0; i < n_obst; i++)
+	{
+		v_B(0) = new_obstacles[i]->kf->get_state()(2);
+		v_B(1) = new_obstacles[i]->kf->get_state()(3);
+		psi_B = atan2(v_B(1), v_B(0));
+
+		L_AB(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
+		L_AB(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
+		d_AB = L_AB.norm();
+		L_AB = L_AB / L_AB.norm();
+
+		/*********************************************************************
+		* Transitional variable update
+		*********************************************************************/
+		is_close = d_AB <= d_close;
+
+		AH_0[i] = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
+
+		//std::cout << "Obst i = " << i << " ahead at t0 ? " << AH_0[i] << std::endl;
+		
+		// Obstacle on starboard side
+		S_TC_0[i] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+
+		//std::cout << "Obst i = " << i << " on starboard side at t0 ? " << S_TC_0[i] << std::endl;
+
+		// Ownship on starboard side of obstacle
+		S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
+
+		//std::cout << "Own-ship on starboard side of obst i = " << i << " at t0 ? " << S_i_TC_0[i] << std::endl;
+
+		// Ownship overtaking the obstacle
+		O_TC_0[i] = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
+			  	v_B.norm() < v_B.norm()							    		&&
+				v_B.norm() > 0.25											&&
+				is_close 													&&
+				AH_0[i];
+
+		//std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << O_TC_0[i] << std::endl;
+
+		// Obstacle overtaking the ownship
+		Q_TC_0[i] = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
+				v_A.norm() < v_B.norm()							  			&&
+				v_A.norm() > 0.25 											&&
+				is_close 													&&
+				!AH_0[i];
+
+		//std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << Q_TC_0[i] << std::endl;
+
+		// Determine if the obstacle is passed by
+		IP_0[i] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
+				!Q_TC_0[i])		 											||
+				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Obstacle's perspective	
+				!O_TC_0[i]))		 										&&
+				d_AB > d_safe;
+		
+		//std::cout << "Obst i = " << i << " passed by at t0 ? " << IP_0[i] << std::endl;
+
+		// This is not mentioned in article, but also implemented here..				
+		H_TC_0[i] = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+				v_A.norm() > 0.25											&&
+				v_B.norm() > 0.25											&&
+				AH_0[i];
+		
+		//std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << H_TC_0[i] << std::endl;
+
+		// Crossing situation, a bit redundant with the !is_passed condition also, 
+		// but better safe than sorry (could be replaced with B_is_ahead also)
+		X_TC_0[i] = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()	&&
+				!H_TC_0[i]													&&
+				!O_TC_0[i] 													&&
+				!Q_TC_0[i] 	 												&&
+				!IP_0[i]													&&
+				v_A.norm() > 0.25											&&
+				v_B.norm() > 0.25;
+
+		//std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << X_TC_0[i] << std::endl;
+	}
 }

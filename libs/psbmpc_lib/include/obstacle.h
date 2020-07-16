@@ -70,8 +70,9 @@ private:
 	// Mean predicted velocity for the obstacle (MROU): n_ps x n x n_samples, where n = 4
 	std::vector<Eigen::MatrixXd> v_p;
 
-	// Predicted covariance for each prediction scenario: n_ps x n*n x n_samples, i.e. the covariance is flattened for each time step
-	std::vector<Eigen::MatrixXd> P_p;  
+	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
+	// This is equal for all prediction scenarios when using MROU, thus no std::vector needed
+	Eigen::MatrixXd P_p;  
 
 	// Prediction scenario ordering, size n_ps x 1 of intentions
 	std::vector<Intention> ps_ordering;
@@ -79,11 +80,8 @@ private:
 	// Course change ordering, weights and maneuvering times for the prediction scenarios: n_ps x 1
 	Eigen::VectorXd ps_course_changes, ps_weights, ps_maneuver_times;
 
-	// Simple sb-mpc class for obstacle
-
-
-	// Predicted obstacle trajectory and covariance when it is behaving intelligently
-	Eigen::MatrixXd xs_colav_p, P_colav_p;
+	// Predicted obstacle trajectory when it is behaving intelligently
+	Eigen::MatrixXd xs_colav_p;
 	
 public:
 
@@ -91,7 +89,15 @@ public:
 
 	MROU *mrou;
 
+	Obstacle_SBMPC *sbmpc;
+
 	~Obstacle();
+
+	Obstacle(const Eigen::VectorXd &xs_aug, 
+			 const Eigen::VectorXd &P, 
+			 const bool colav_on, 
+			 const double T, 
+			 const double dt);
 
 	Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const Eigen::VectorXd &P, 
@@ -128,7 +134,7 @@ public:
 
 	std::vector<Eigen::MatrixXd> get_independent_trajectories() const { return xs_p; };
 
-	std::vector<Eigen::MatrixXd> get_independent_trajectory_covariances() const { return P_p; };
+	Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
 
 	void initialize_independent_prediction(	
 		const std::vector<Intention> &ps_ordering,
@@ -155,13 +161,16 @@ public:
 
 	Eigen::MatrixXd get_dependent_trajectory() const { return xs_colav_p; };
 
-	Eigen::MatrixXd get_dependent_trajectory_covariance() const { return P_colav_p; };
-
 	void update(
 		const Eigen::VectorXd &xs_aug, 
 		const Eigen::VectorXd &P, 
 		const Eigen::VectorXd &Pr_a, 
 		const double Pr_CC,
+		const bool filter_on,
+		const double dt);
+
+	void update(
+		const Eigen::VectorXd &xs_aug, 
 		const bool filter_on,
 		const double dt);
 };

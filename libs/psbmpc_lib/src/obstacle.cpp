@@ -175,7 +175,8 @@ void Obstacle::predict_independent_trajectories(
 	mu.resize(n_ps);
 	
 	Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
-	Eigen::Matrix4d P_0 = kf->get_covariance();
+	P_p[ps].col(0) = flatten(kf->get_covariance());
+
 	double chi_ps, t = 0;
 	bool have_turned;
 	for(int ps = 0; ps < n_ps; ps++)
@@ -185,7 +186,7 @@ void Obstacle::predict_independent_trajectories(
 		v_p[ps](0, 0) = kf->get_state()(2);
 		v_p[ps](1, 0) = kf->get_state()(3);
 		xs_p[ps].col(0) = kf->get_state();
-		P_p[ps].col(0) = flatten(P_0);
+		
 		have_turned = false;	
 		for(int k = 0; k < n_samples; k++)
 		{
@@ -226,8 +227,9 @@ void Obstacle::predict_independent_trajectories(
 			if (k < n_samples - 1)
 			{
 				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p[ps].col(k), dt);
-				P_p[ps].col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
 				v_p[ps].col(k + 1) = v_p[ps].col(k);
+
+				if (ps == 0) P_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
 
 				// Propagate ownship assuming straight line trajectory
 				ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
@@ -282,4 +284,28 @@ void Obstacle::update(
 	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}
 	else 			{ this->Pr_CC = Pr_CC; }
 	
+}
+
+/****************************************************************************************
+*  Name     : update
+*  Function : Updates the obstacle state, at the current time prior to a run of an
+*			  Obstacle SB-MPC.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void Obstacle::update(
+	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const double dt 											// In: Prediction time step
+	)
+{
+	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
+
+	P_0 = Eigen::Matrix4d::Identity();
+
+	// "Reset" obstacle KF current time state to that in xs_aug.
+	kf->reset(xs_0, P_0, 0.0); 
 }
