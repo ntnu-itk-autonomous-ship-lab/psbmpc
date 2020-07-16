@@ -34,12 +34,12 @@ class Obstacle_SBMPC
 {
 private:
 
-	int n_cbs, n_M, n_a, n_ps;
+	int n_cbs, n_M;
 
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
 
-	Eigen::VectorXd offset_sequence_counter, offset_sequence;
+	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
 
 	double u_m_last;
 	double chi_m_last;
@@ -56,6 +56,7 @@ private:
 	Guidance_Method guidance_method;
 
 	double T, T_static, dt, p_step;
+	double t_ts;
 	double d_safe, d_close, d_init;
 	double K_coll;
 	double phi_AH, phi_OT, phi_HO, phi_CR;
@@ -69,6 +70,10 @@ private:
 
 	Eigen::Matrix<double, 4, -1> trajectory;
 
+	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
+	// and <obstacle is passed> (IP_0) indicators
+	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
+
 	std::vector<Obstacle*> old_obstacles;
 	std::vector<Obstacle*> new_obstacles;
 
@@ -78,12 +83,7 @@ private:
 
 	void initialize_prediction();
 
-	bool determine_COLREGS_violation(
-		const Eigen::Vector2d &v_A, 
-		const double psi_A, 
-		const Eigen::Vector2d &v_B,
-		const Eigen::Vector2d &L_AB, 
-		const double d_AB);
+	bool determine_colav_active(const int n_static_obst);
 
 	bool determine_transitional_cost_indicator(
 		const double psi_A, 
@@ -97,7 +97,7 @@ private:
 	double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
 	// Methods dealing with control deviation cost
-	double calculate_control_deviation_cost();
+	double calculate_control_deviation_cost();	
 
 	double Delta_u(const double u_1, const double u_2) const 		{ return K_du * fabs(u_1 - u_2); }
 
@@ -126,11 +126,22 @@ private:
 
     void update_obstacles(const Eigen::Matrix<double, 9, -1>& obstacle_states);
 
+	void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
+
+	void update_transitional_variables();
+
 public:
 
-	PSBMPC();
+	Obstacle_SBMPC();
 
-	~PSBMPC();
+	~Obstacle_SBMPC();
+
+	bool determine_COLREGS_violation(
+		const Eigen::Vector2d &v_A, 
+		const double psi_A, 
+		const Eigen::Vector2d &v_B,
+		const Eigen::Vector2d &L_AB,	
+		const double d_AB);
 
 	CPE_Method get_cpe_method() const { return cpe_method; }; 
 
@@ -140,9 +151,9 @@ public:
 
 	void set_cpe_method(CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
 
-	void set_prediction_method(Prediction_Method prediction_method) { if(prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
+	void set_prediction_method(Prediction_Method prediction_method) { if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
 
-	void set_guidance_method(Guidance_Method guidance_method) 		{ if(guidance_method >= LOS && guidance_method <= HH) this->guidance_method = guidance_method; };
+	void set_guidance_method(Guidance_Method guidance_method) 		{ if (guidance_method >= LOS && guidance_method <= HH) this->guidance_method = guidance_method; };
 
 	int get_ipar(const int index) const;
 	
