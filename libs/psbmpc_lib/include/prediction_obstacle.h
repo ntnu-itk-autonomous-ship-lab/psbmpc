@@ -1,10 +1,9 @@
 /****************************************************************************************
 *
-*  File name : obstacle.h
+*  File name : prediction_obstacle.h
 *
-*  Function  : Header file for the obstacle class. Modified version of the one created
-*			   for SBMPC by Inger Berge Hagen and Giorgio D. Kwame Minde Kufoalor
-*			   through the Autosea project.
+*  Function  : Header file for the predicion obstacle class. Simpler variant of the 
+*			   obstacle class used in the PSB-MPC.
 *  
 *	           ---------------------
 *
@@ -65,7 +64,7 @@ public:
 	Eigen::MatrixXd get_trajectory() const { return xs_p; };
 
 	void update(
-		const Eigen::VectorXd &xs_aug, 
+		const Eigen::Vector4d &xs, 
 		const bool colav_on,
 		const double dt);
 };
