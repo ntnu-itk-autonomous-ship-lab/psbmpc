@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : Obstacle_Model.cpp
+*  File name : simple_kinematic_model.cpp
 *
-*  Function  : Class functions for the simple kinematic model used in the obstacle
+*  Function  : Class functions for the kinematic model used in the obstacle
 *			   collision avoidance system predictions.
 *  
 *	           ---------------------
@@ -19,7 +19,7 @@
 *****************************************************************************************/
 
 #include "utilities.h"
-#include "Obstacle_Model.h"
+#include "obstacle_model.h"
 #include <vector>
 #include <string>
 #include <iostream>

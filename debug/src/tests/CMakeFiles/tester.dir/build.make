@@ -106,6 +106,8 @@ src/tests/tester: /usr/local/MATLAB/R2019a/bin/glnxa64/libeng.so
 src/tests/tester: /usr/local/MATLAB/R2019a/bin/glnxa64/libmat.so
 src/tests/tester: /usr/local/MATLAB/R2019a/bin/glnxa64/libMatlabDataArray.so
 src/tests/tester: /usr/local/MATLAB/R2019a/extern/bin/glnxa64/libMatlabEngine.so
+src/tests/tester: /usr/local/cuda-10.2/lib64/libcudart_static.a
+src/tests/tester: /usr/lib/x86_64-linux-gnu/librt.so
 src/tests/tester: src/tests/CMakeFiles/tester.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable tester"
 	cd /home/trymte/Desktop/cybercolav_cxx/debug/src/tests && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/tester.dir/link.txt --verbose=$(VERBOSE)
