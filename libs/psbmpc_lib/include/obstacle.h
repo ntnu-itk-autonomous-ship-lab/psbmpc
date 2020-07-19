@@ -28,10 +28,12 @@
 #include "mrou.h"
 #include "kf.h"
 
+class Obstacle_SBMPC;
+
 enum Intention 
 {
 	KCC, 					// Keep current course
-	SM, 						// Starboard maneuver
+	SM, 					// Starboard maneuver
 	PM 						// Port maneuver
 };
 
@@ -95,12 +97,6 @@ public:
 
 	Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const Eigen::VectorXd &P, 
-			 const bool colav_on, 
-			 const double T, 
-			 const double dt);
-
-	Obstacle(const Eigen::VectorXd &xs_aug, 
-			 const Eigen::VectorXd &P, 
 			 const Eigen::VectorXd Pr_a, 
 			 const double Pr_CC,
 			 const bool filter_on, 
@@ -157,7 +153,7 @@ public:
 		const double d_safe);
 
 	// Methods where obstacle COLAV must be activated
-	void set_dependent_trajectory(const Eigen::MatrixXd &xs_colav_p, const Eigen::MatrixXd &P_colav_p) { this->xs_colav_p = xs_colav_p; this->P_colav_p = P_colav_p; };
+	void set_dependent_trajectory(const Eigen::MatrixXd &xs_colav_p) { this->xs_colav_p = xs_colav_p; };
 
 	Eigen::MatrixXd get_dependent_trajectory() const { return xs_colav_p; };
 
@@ -166,11 +162,6 @@ public:
 		const Eigen::VectorXd &P, 
 		const Eigen::VectorXd &Pr_a, 
 		const double Pr_CC,
-		const bool filter_on,
-		const double dt);
-
-	void update(
-		const Eigen::VectorXd &xs_aug, 
 		const bool filter_on,
 		const double dt);
 };

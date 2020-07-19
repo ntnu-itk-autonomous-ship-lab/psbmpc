@@ -60,12 +60,10 @@ Obstacle::Obstacle(
 	xs_p.resize(1);
 	xs_p[0].resize(4, n_samples);
 
-	P_p.resize(1);
-	P_p[0].resize(16, n_samples);
+	P_p.resize(16, n_samples);
+	P_p.col(0) = P;
 
 	xs_colav_p.resize(4, n_samples);
-
-	P_colav_p.resize(16, n_samples);
 
 	double psi = atan2(xs_aug(3), xs_aug(2));
 	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
@@ -74,8 +72,6 @@ Obstacle::Obstacle(
 	xs_0(3) = xs_aug(3);
 	
 	xs_p[0].col(0) = xs_0;
-
-	P_p[0].col(0) = flatten(P_0);
 
 	kf = new KF(xs_0, P_0, ID, dt, 0.0);
 
@@ -111,16 +107,16 @@ void Obstacle::resize_trajectories(const int n_samples)
 {
 	int n_ps = ps_ordering.size();
 	xs_p.resize(n_ps);
-	P_p.resize(n_ps);
 	v_p.resize(n_ps);
 	for(int ps = 0; ps < n_ps; ps++)
 	{
 		xs_p[ps].resize(4, n_samples); 	xs_p[ps].col(0) = kf->get_state();
-		P_p[ps].resize(16, n_samples); 	P_p[ps].col(0) 	= flatten(kf->get_covariance());
 		v_p[ps].resize(2, n_samples); 	v_p[ps].col(0) 	= kf->get_state().block<2, 1>(2, 0);
 	}
 	xs_colav_p.resize(4, n_samples); 	xs_colav_p.col(0) = kf->get_state();
-	P_colav_p.resize(16, n_samples); 	P_colav_p.col(0) = flatten(kf->get_covariance());
+
+	P_p.resize(16, n_samples);
+	P_p.col(0) 	= flatten(kf->get_covariance());
 
 }
 
@@ -175,7 +171,7 @@ void Obstacle::predict_independent_trajectories(
 	mu.resize(n_ps);
 	
 	Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
-	P_p[ps].col(0) = flatten(kf->get_covariance());
+	P_p.col(0) = flatten(kf->get_covariance());
 
 	double chi_ps, t = 0;
 	bool have_turned;
@@ -284,28 +280,4 @@ void Obstacle::update(
 	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}
 	else 			{ this->Pr_CC = Pr_CC; }
 	
-}
-
-/****************************************************************************************
-*  Name     : update
-*  Function : Updates the obstacle state, at the current time prior to a run of an
-*			  Obstacle SB-MPC.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void Obstacle::update(
-	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
-	const double dt 											// In: Prediction time step
-	)
-{
-	double psi = atan2(xs_aug(3), xs_aug(2));
-	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
-	xs_0(2) = xs_aug(2);
-	xs_0(3) = xs_aug(3);
-
-	P_0 = Eigen::Matrix4d::Identity();
-
-	// "Reset" obstacle KF current time state to that in xs_aug.
-	kf->reset(xs_0, P_0, 0.0); 
 }

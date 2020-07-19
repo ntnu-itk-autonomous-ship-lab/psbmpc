@@ -2,7 +2,7 @@
 *
 *  File name : obstacle_sbmpc.h
 *
-*  Function  : Header file for Scneario-based Model Predictive Control used by obstacles
+*  Function  : Header file for Scenario-based Model Predictive Control used by obstacles
 *			   in the PSB-MPC predictions.
 *
 *  
@@ -19,16 +19,16 @@
 *
 *****************************************************************************************/
 
-#ifndef _PSBMPC_H_
-#define _PSBMPC_H_
+#ifndef _OBSTACLE_SBMPC_H_
+#define _OBSTACLE_SBMPC_H_
 
 
 #include "psbmpc_index.h"
-#include "obstacle_model.h"
-#include "obstacle.h"
+#include "predicted_obstacle.h"
 #include "Eigen/Dense"
 #include <vector>
 	
+class Obstacle_Model;
 
 class Obstacle_SBMPC
 {
@@ -48,8 +48,6 @@ private:
 
 	Eigen::VectorXd dpar_low, dpar_high;
 	Eigen::VectorXd ipar_low, ipar_high;
-
-	CPE_Method cpe_method;
 
 	Prediction_Method prediction_method;
 
@@ -74,8 +72,8 @@ private:
 	// and <obstacle is passed> (IP_0) indicators
 	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
 
-	std::vector<Obstacle*> old_obstacles;
-	std::vector<Obstacle*> new_obstacles;
+	std::vector<Prediction_Obstacle*> old_obstacles;
+	std::vector<Prediction_Obstacle*> new_obstacles;
 
 	void initialize_par_limits();
 
@@ -143,13 +141,9 @@ public:
 		const Eigen::Vector2d &L_AB,	
 		const double d_AB);
 
-	CPE_Method get_cpe_method() const { return cpe_method; }; 
-
 	Prediction_Method get_prediction_method() const { return prediction_method; };
 
 	Guidance_Method get_guidance_method() const { return guidance_method; };
-
-	void set_cpe_method(CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
 
 	void set_prediction_method(Prediction_Method prediction_method) { if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
 
@@ -164,7 +158,7 @@ public:
 	void set_par(const int index, const double value);
 
 	void calculate_optimal_offsets(
-		double &u_opt, 
+		double &u_opt, 	
 		double &chi_opt, 
 		Eigen::Matrix<double, 2, -1> &predicted_trajectory,
 		Eigen::Matrix<double, -1, -1> &obstacle_status,

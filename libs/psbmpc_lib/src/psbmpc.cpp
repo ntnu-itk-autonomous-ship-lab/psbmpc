@@ -1137,25 +1137,25 @@ void PSBMPC::calculate_collision_probabilities(
 	)
 {
 	int n_samples = trajectory.cols();
+	Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
 	double d_safe_i = d_safe;
 	if (!obstacle_colav_on[i])
 	{
 		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
-		std::vector<Eigen::MatrixXd> P_i_p = new_obstacles[i]->get_independent_trajectory_covariances();
 
 		for (int ps = 0; ps < n_ps; ps++)
 		{
-			cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p[ps].col(0), d_safe_i, i);
+			cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
 			for (int k = 0; k < n_samples; k++)
 			{
-				P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p[ps].col(k), i);
+				P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
 			}
 		}
 	}
 	else
 	{
 		Eigen::MatrixXd xs_i_p = new_obstacles[i]->get_dependent_trajectory();
-		Eigen::MatrixXd P_i_p = new_obstacles[i]->get_dependent_trajectory_covariance();
+
 		cpe->initialize(trajectory.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i, i);
 		for (int k = 0; k < n_samples; k++)
 		{
@@ -1179,10 +1179,11 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	double cost = 0, cost_ps, coll_cost;
 
 	int n_samples = trajectory.cols();
+	Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
 	if (!obstacle_colav_on[i])
 	{
 		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
-		std::vector<Eigen::MatrixXd> P_i_p = new_obstacles[i]->get_independent_trajectory_covariances();
+	
 		int n_ps = xs_i_p.size();
 		Eigen::VectorXd max_cost_ps(n_ps);
 		for (int ps = 0; ps < n_ps; ps++)
