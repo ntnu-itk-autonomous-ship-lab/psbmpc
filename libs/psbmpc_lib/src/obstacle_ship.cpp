@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : simple_kinematic_model.cpp
+*  File name : obstacle_ship.cpp
 *
-*  Function  : Class functions for the kinematic model used in the obstacle
+*  Function  : Class functions for the obstacle ship used in the obstacle
 *			   collision avoidance system predictions.
 *  
 *	           ---------------------
@@ -19,7 +19,7 @@
 *****************************************************************************************/
 
 #include "utilities.h"
-#include "obstacle_model.h"
+#include "obstacle_ship.h"
 #include <vector>
 #include <string>
 #include <iostream>
@@ -30,7 +30,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Obstacle_Model::Obstacle_Model()
+Obstacle_Ship::Obstacle_Ship()
 {
 	T_chi = 3;
 	T_U = 10;
@@ -53,7 +53,7 @@ Obstacle_Model::Obstacle_Model()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Eigen::Vector4d Obstacle_Model::predict(
+Eigen::Vector4d Obstacle_Ship::predict(
 	const Eigen::Vector4d &xs_old, 									// In: State [x, y, chi, U] to predict forward
 	const double U_d, 												// In: Speed over ground (SOG) reference
 	const double chi_d, 											// In: Course (COG) reference
@@ -104,7 +104,7 @@ Eigen::Vector4d Obstacle_Model::predict(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Model::predict_trajectory(
+void Obstacle_Ship::predict_trajectory(
 	Eigen::Matrix<double, 4, -1>& trajectory, 						// In/out: Own-ship trajectory
 	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd maneuver_times,							// In: Time indices for each Obstacle_Model avoidance maneuver
@@ -154,7 +154,7 @@ void Obstacle_Model::predict_trajectory(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Model::update_guidance_references(
+void Obstacle_Ship::update_guidance_references(
 	double &u_d,												// Out: Surge reference
 	double &chi_d,												// Out: Course reference (set equal to heading reference, compensating for crab angle through LOS_K_i if at all..)
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.

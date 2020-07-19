@@ -1,9 +1,9 @@
 /****************************************************************************************
 *
-*  File name : obstacle_ship.h
+*  File name : obstacle_model.h
 *
-*  Function  : Header file for the simple kinematic model based obstacle ship, used as 
-*			   base for the obstacle collision avoidance system.
+*  Function  : Header file for the simple kinematic model based obstacle ship, 
+*			   used as base for the obstacle collision avoidance system.
 *  
 *	           ---------------------
 *
