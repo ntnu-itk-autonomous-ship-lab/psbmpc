@@ -253,33 +253,6 @@ src/obstacle.cpp.s:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.s
 .PHONY : src/obstacle.cpp.s
 
-src/obstacle_model.o: src/obstacle_model.cpp.o
-
-.PHONY : src/obstacle_model.o
-
-# target to build an object file
-src/obstacle_model.cpp.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_model.cpp.o
-.PHONY : src/obstacle_model.cpp.o
-
-src/obstacle_model.i: src/obstacle_model.cpp.i
-
-.PHONY : src/obstacle_model.i
-
-# target to preprocess a source file
-src/obstacle_model.cpp.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_model.cpp.i
-.PHONY : src/obstacle_model.cpp.i
-
-src/obstacle_model.s: src/obstacle_model.cpp.s
-
-.PHONY : src/obstacle_model.s
-
-# target to generate assembly for a file
-src/obstacle_model.cpp.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_model.cpp.s
-.PHONY : src/obstacle_model.cpp.s
-
 src/obstacle_sbmpc.o: src/obstacle_sbmpc.cpp.o
 
 .PHONY : src/obstacle_sbmpc.o
@@ -307,6 +280,33 @@ src/obstacle_sbmpc.cpp.s:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_sbmpc.cpp.s
 .PHONY : src/obstacle_sbmpc.cpp.s
 
+src/obstacle_ship.o: src/obstacle_ship.cpp.o
+
+.PHONY : src/obstacle_ship.o
+
+# target to build an object file
+src/obstacle_ship.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_ship.cpp.o
+.PHONY : src/obstacle_ship.cpp.o
+
+src/obstacle_ship.i: src/obstacle_ship.cpp.i
+
+.PHONY : src/obstacle_ship.i
+
+# target to preprocess a source file
+src/obstacle_ship.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_ship.cpp.i
+.PHONY : src/obstacle_ship.cpp.i
+
+src/obstacle_ship.s: src/obstacle_ship.cpp.s
+
+.PHONY : src/obstacle_ship.s
+
+# target to generate assembly for a file
+src/obstacle_ship.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_ship.cpp.s
+.PHONY : src/obstacle_ship.cpp.s
+
 src/ownship.o: src/ownship.cpp.o
 
 .PHONY : src/ownship.o
@@ -333,6 +333,33 @@ src/ownship.s: src/ownship.cpp.s
 src/ownship.cpp.s:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.s
 .PHONY : src/ownship.cpp.s
+
+src/prediction_obstacle.o: src/prediction_obstacle.cpp.o
+
+.PHONY : src/prediction_obstacle.o
+
+# target to build an object file
+src/prediction_obstacle.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/prediction_obstacle.cpp.o
+.PHONY : src/prediction_obstacle.cpp.o
+
+src/prediction_obstacle.i: src/prediction_obstacle.cpp.i
+
+.PHONY : src/prediction_obstacle.i
+
+# target to preprocess a source file
+src/prediction_obstacle.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/prediction_obstacle.cpp.i
+.PHONY : src/prediction_obstacle.cpp.i
+
+src/prediction_obstacle.s: src/prediction_obstacle.cpp.s
+
+.PHONY : src/prediction_obstacle.s
+
+# target to generate assembly for a file
+src/prediction_obstacle.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/prediction_obstacle.cpp.s
+.PHONY : src/prediction_obstacle.cpp.s
 
 src/psbmpc.o: src/psbmpc.cpp.o
 
@@ -409,15 +436,18 @@ help:
 	@echo "... src/obstacle.o"
 	@echo "... src/obstacle.i"
 	@echo "... src/obstacle.s"
-	@echo "... src/obstacle_model.o"
-	@echo "... src/obstacle_model.i"
-	@echo "... src/obstacle_model.s"
 	@echo "... src/obstacle_sbmpc.o"
 	@echo "... src/obstacle_sbmpc.i"
 	@echo "... src/obstacle_sbmpc.s"
+	@echo "... src/obstacle_ship.o"
+	@echo "... src/obstacle_ship.i"
+	@echo "... src/obstacle_ship.s"
 	@echo "... src/ownship.o"
 	@echo "... src/ownship.i"
 	@echo "... src/ownship.s"
+	@echo "... src/prediction_obstacle.o"
+	@echo "... src/prediction_obstacle.i"
+	@echo "... src/prediction_obstacle.s"
 	@echo "... src/psbmpc.o"
 	@echo "... src/psbmpc.i"
 	@echo "... src/psbmpc.s"

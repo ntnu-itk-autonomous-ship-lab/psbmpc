@@ -6,9 +6,9 @@ add_library(psbmpc_lib STATIC
 	src/psbmpc.cpp 
 	src/ownship.cpp 
 	src/cpe.cpp 
-	rc/kf.cpp 
+	src/kf.cpp 
 	src/obstacle.cpp 
-	src/simple_kinematic_model.cpp 
+	src/obstacle_ship.cpp 
 	src/obstacle_sbmpc.cpp 
 	src/prediction_obstacle.cpp 
 	src/mrou.cpp 

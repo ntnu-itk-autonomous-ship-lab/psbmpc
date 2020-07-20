@@ -30,7 +30,6 @@ enum Prediction_Method {
 	ERK4 													// Explicit Runge Kutta of fourth order, not implemented.
 };
 
-
 enum Guidance_Method {
 	LOS, 													// Line-of-sight		
 	WPP,													// WP-Pursuit

@@ -32,7 +32,7 @@
 *  Modified :
 *****************************************************************************************/
 Prediction_Obstacle::Prediction_Obstacle(
-	const Eigen::VectorXd& xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::VectorXd& xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
@@ -86,14 +86,13 @@ void Prediction_Obstacle::predict_trajectory(
 *  Modified :
 *****************************************************************************************/
 void Prediction_Obstacle::update(
-	const Eigen::VectorXd &xs_aug, 								// In: Predicted obstacle state [x, y, V_x, V_y]
-	const bool colav_on,										// In: Boolean determining if the prediction obstacle object has an active COLAV system
-	const double dt 											// In: Prediction time step
+	const Eigen::Vector4d &xs, 									// In: Predicted obstacle state [x, y, V_x, V_y]
+	const bool colav_on										// In: Boolean determining if the prediction obstacle object has an active COLAV system
 	)
 {
-	double psi = atan2(xs_aug(3), xs_aug(2));
-	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
-	xs_0(2) = xs_aug(2);
-	xs_0(3) = xs_aug(3);
+	double psi = atan2(xs(3), xs(2));
+	xs_0(0) = xs(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs(2);
+	xs_0(3) = xs(3);
 }

@@ -97,11 +97,11 @@ class Ownship
 	double x_offset, y_offset;
 
 	// Calculates the offsets according to the position of the GPS receiver
-	void calculate_position_offsets();
+	void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
 
-	inline void update_Cvv(const Eigen::Vector3d nu);
+	void update_Cvv(const Eigen::Vector3d &nu);
 
-	inline void update_Dvv(const Eigen::Vector3d nu);
+	void update_Dvv(const Eigen::Vector3d &nu);
 
 	public:
 
@@ -123,8 +123,8 @@ class Ownship
 
 	void predict_trajectory(
 		Eigen::Matrix<double, 6, -1> &trajectory,
-		const Eigen::VectorXd offset_sequence,
-		const Eigen::VectorXd maneuver_times,
+		const Eigen::VectorXd &offset_sequence,
+		const Eigen::VectorXd &maneuver_times,
 		const double u_d,
 		const double chi_d,
 		const Eigen::Matrix<double, 2, -1> &waypoints,

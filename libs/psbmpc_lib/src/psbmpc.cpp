@@ -239,7 +239,7 @@ void PSBMPC::set_par(
 }
 
 /****************************************************************************************
-*  Name     : get_optimal_offsets
+*  Name     : calculate_optimal_offsets
 *  Function : Calculate optimal surge and course offsets for PSB-MPC
 *  Author   : Trym Tengesdal
 *  Modified :
