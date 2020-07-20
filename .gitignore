@@ -1,8 +1,11 @@
 *.mat
 *.o
+*.a
 *.so
 *.asv
 *.exe
+*.make
+*.cmake
 
 
 
