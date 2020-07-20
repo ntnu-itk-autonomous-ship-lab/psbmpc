@@ -43,6 +43,7 @@ Obstacle::Obstacle(
 	const double dt 											// In: Sampling interval
 	) : 
 	ID(xs_aug(8)), colav_on(colav_on), filter_on(filter_on),
+	A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
 	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
 	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
 	duration_lost(0.0)

@@ -8,9 +8,10 @@ set(CMAKE_DEPENDS_CHECK_CXX
   "/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o"
   "/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/mrou.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o"
   "/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o"
-  "/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_model.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_model.cpp.o"
   "/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_sbmpc.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_sbmpc.cpp.o"
+  "/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_ship.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_ship.cpp.o"
   "/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/ownship.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o"
+  "/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/prediction_obstacle.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/prediction_obstacle.cpp.o"
   "/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o"
   "/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o"
   )

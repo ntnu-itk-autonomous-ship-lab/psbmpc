@@ -3,7 +3,8 @@
 *  File name : prediction_obstacle.h
 *
 *  Function  : Header file for the predicion obstacle class. Simpler variant of the 
-*			   obstacle class used in the PSB-MPC.
+*			   obstacle class used in the PSB-MPC, specifically made for the PSB-MPC
+*			   predictions with active obstacle COLAV systems.
 *  
 *	           ---------------------
 *
@@ -26,7 +27,8 @@
 
 class Obstacle_SBMPC;
 
-class Prediction_Obstacle {
+class Prediction_Obstacle 
+{
 private:
 
 	int ID;
@@ -34,7 +36,7 @@ private:
 	bool colav_on;
 
 	// Obstacle dimension quantifiers, length (l) and width (w)
-	double A, B, C, D, l, w;
+	double l, w;
 
 	double x_offset, y_offset;
 
@@ -57,16 +59,15 @@ public:
 
 	int get_ID() const { return ID; };
 
+	Eigen::Vector4d get_state() const { return xs_0; };
+
 	void predict_trajectory(const double T, const double dt);
 
 	void resize_trajectory(const int n_samples) { xs_p.resize(4, n_samples); };
 
 	Eigen::MatrixXd get_trajectory() const { return xs_p; };
 
-	void update(
-		const Eigen::Vector4d &xs, 
-		const bool colav_on,
-		const double dt);
+	void update(const Eigen::Vector4d &xs, const bool colav_on);
 };
 
 #endif

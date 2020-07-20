@@ -180,8 +180,8 @@ Eigen::Matrix<double, 6, 1> Ownship::predict(
 *****************************************************************************************/
 void Ownship::predict_trajectory(
 	Eigen::Matrix<double, 6, -1>& trajectory, 						// In/out: Own-ship trajectory
-	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
-	const Eigen::VectorXd maneuver_times,							// In: Time indices for each ownship avoidance maneuver
+	const Eigen::VectorXd &offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
+	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference
 	const double chi_d, 											// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Ownship waypoints
@@ -225,25 +225,14 @@ void Ownship::predict_trajectory(
 *****************************************************************************************/
 
 /****************************************************************************************
-*  Name     : calculate_position_offsets
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-void Ownship::calculate_position_offsets(){
-	x_offset = A - B;
-	y_offset = D - C;
-}
-
-/****************************************************************************************
 *  Name     : Cvv
 *  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on 
 *			  Fossen 2011. Use the equations for C_RB and C_A in Section 7.1
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-inline void Ownship::update_Cvv(
-	const Eigen::Vector3d nu 									// In: BODY velocity vector nu = [u, v, r]^T				
+void Ownship::update_Cvv(
+	const Eigen::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
 	)
 {
 	Cvv(0) = ((Y_vdot - m) * nu(1) + Y_rdot * nu(2)) * nu(2);
@@ -258,8 +247,8 @@ inline void Ownship::update_Cvv(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-inline void Ownship::update_Dvv(
-	const Eigen::Vector3d nu 									// In: BODY velocity vector nu = [u, v, r]^T
+void Ownship::update_Dvv(
+	const Eigen::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T
 	)
 {
 	Dvv(0) = - (X_u + 						+  X_uu * fabs(nu(0))  		  + X_uuu * nu(0) * nu(0)) * nu(0);
@@ -372,7 +361,7 @@ void Ownship::update_guidance_references(
 void Ownship::update_ctrl_input(
 	const double u_d,										// In: Surge reference
 	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
-	const Eigen::Matrix<double, 6, 1>& xs 					// In: State
+	const Eigen::Matrix<double, 6, 1> &xs 					// In: State
 	)
 {
 	update_Cvv(xs.block<3, 1>(3, 0));

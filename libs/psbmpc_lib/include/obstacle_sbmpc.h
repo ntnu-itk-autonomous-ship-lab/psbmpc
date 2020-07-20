@@ -24,11 +24,10 @@
 
 
 #include "psbmpc_index.h"
-#include "predicted_obstacle.h"
+#include "prediction_obstacle.h"
+#include "obstacle_ship.h"
 #include "Eigen/Dense"
 #include <vector>
-	
-class Obstacle_Model;
 
 class Obstacle_SBMPC
 {
@@ -63,8 +62,9 @@ private:
 	double K_chi_strb, K_dchi_strb;
 	double K_chi_port, K_dchi_port; 
 	double G;
+	double K_sgn, T_sgn;
 
-	Obstacle_Model *ownship;
+	Obstacle_Ship *ownship;
 
 	Eigen::Matrix<double, 4, -1> trajectory;
 
@@ -81,6 +81,10 @@ private:
 
 	void initialize_prediction();
 
+	void reset_control_behavior();
+
+	void increment_control_behavior();
+
 	bool determine_colav_active(const int n_static_obst);
 
 	bool determine_transitional_cost_indicator(
@@ -89,6 +93,8 @@ private:
 		const Eigen::Vector2d &L_AB, 
 		const int i,
 		const double chi_m);
+
+	bool determine_transitional_cost_indicator(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B, const int i, const double chi_m);
 
 	double calculate_dynamic_obstacle_cost(const int i);
 
@@ -133,6 +139,8 @@ public:
 	Obstacle_SBMPC();
 
 	~Obstacle_SBMPC();
+
+	bool determine_COLREGS_violation(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B);
 
 	bool determine_COLREGS_violation(
 		const Eigen::Vector2d &v_A, 

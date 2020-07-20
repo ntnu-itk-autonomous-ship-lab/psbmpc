@@ -42,9 +42,7 @@ Obstacle_SBMPC::Obstacle_SBMPC()
 	
 	initialize_par_limits();
 
-	ownship = new Ownship();
-
-	cpe = new CPE(cpe_method, 1000, 100, d_safe, dt);
+	ownship = new Obstacle_Ship();
 }
 
 /****************************************************************************************
@@ -56,7 +54,6 @@ Obstacle_SBMPC::Obstacle_SBMPC()
 Obstacle_SBMPC::~Obstacle_SBMPC()
 {
 	delete ownship;
-	delete cpe;
 }
 
 /****************************************************************************************
@@ -102,27 +99,8 @@ double Obstacle_SBMPC::get_dpar(
 		case i_dpar_phi_OT 				: return phi_OT;
 		case i_dpar_phi_HO 				: return phi_HO;
 		case i_dpar_phi_CR 				: return phi_CR;
-		case i_dpar_T_lost_limit		: return T_lost_limit;
-		case i_dpar_T_tracked_limit		: return T_tracked_limit;
 
 		default : { std::cout << "Wrong index given" << std::endl; return 0; }
-	}
-}
-
-std::vector<Eigen::VectorXd> Obstacle_SBMPC::get_mpar(
-	const int index															// In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
-	) const
-{
-	switch (index){
-		case i_mpar_u_offsets			: return u_offsets;
-		case i_mpar_chi_offsets 		: return chi_offsets;
-
-		default : 
-		{ 
-			std::cout << "Wrong index given" << std::endl; 
-			std::vector<Eigen::VectorXd> bs;
-			return bs; 
-		}
 	}
 }
 
@@ -191,8 +169,6 @@ void Obstacle_SBMPC::set_par(
 			case i_dpar_phi_OT 				: phi_OT = value; break;
 			case i_dpar_phi_HO 				: phi_HO = value; break;
 			case i_dpar_phi_CR 				: phi_CR = value; break;
-			case i_dpar_T_lost_limit		: T_lost_limit = value; break;
-			case i_dpar_T_tracked_limit		: T_tracked_limit = value; break;
 
 			default : std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the Obstacle_SBMPC class.." << std::endl; break;
 		}
@@ -204,42 +180,8 @@ void Obstacle_SBMPC::set_par(
 	
 }
 
-void Obstacle_SBMPC::set_par(
-	const int index,														// In: Index of parameter to set
-	const std::vector<Eigen::VectorXd> &value 								// In: Value to set for parameter
-	)
-{
-	if (value.size() == n_M)
-	{
-		switch (index){
-			case i_mpar_u_offsets : 
-				for (int j = 0; j < n_M; j++){
-					if (value[j].size() > 0)
-					{
-						u_offsets[j] = value[j];
-					}
-				}
-				break;
-			case i_mpar_chi_offsets : 
-				for (int j = 0; j < n_M; j++)
-				{
-					if (value[j].size() > 0)
-					{
-						chi_offsets[j] = value[j];
-					}
-				}
-				break;
-			default : std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the Obstacle_SBMPC class.." << std::endl; break; 
-		}
-	}
-	else
-	{
-		std::cout << "Update n_M first.." << std::endl;
-	}
-}
-
 /****************************************************************************************
-*  Name     : get_optimal_offsets
+*  Name     : calculate_optimal_offsets
 *  Function : Calculate optimal surge and course offsets for PSB-MPC
 *  Author   : Trym Tengesdal
 *  Modified :
@@ -283,9 +225,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 
 	for (int i = 0; i < n_obst; i++)
 	{
-		// Obstacle_SBMPC parameters needed to determine if obstacle breaches COLREGS 
-		// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
-		new_obstacles[i]->predict_independent_trajectories(T, dt, trajectory.col(0), phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
+		new_obstacles[i]->predict_trajectory(T, dt);
 	}
 
 	double cost;
@@ -301,8 +241,6 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
-
 			cost_i(i) = calculate_dynamic_obstacle_cost(i);
 		}
 
@@ -448,7 +386,6 @@ void Obstacle_SBMPC::initialize_pars()
 	u_m_last = 1;
 	chi_m_last = 0;
 
-	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
@@ -500,25 +437,12 @@ void Obstacle_SBMPC::initialize_prediction()
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
-	std::vector<Intention> ps_ordering_i;
-	Eigen::VectorXd ps_course_changes_i;
-	Eigen::VectorXd ps_weights_i;
-	Eigen::VectorXd ps_maneuver_times_i;
 
-	int turn_count, course_change_count;
+	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
+	Eigen::Vector2d p_cpa;
 	for (int i = 0; i < n_obst; i++)
 	{
-		// The obstacle SB-MPC assume only one intention for other nearby obstacles: Keep current course (KCC)
-		ps_ordering_i.resize(1);
-		ps_ordering_i[0] = KCC;
-		ps_course_changes_i.resize(1);
-		ps_course_changes_i[0] = 0;
-		ps_weights_i.resize(1);
-		ps_weights_i(0)= 1;
-		ps_maneuver_times_i.resize(1);
-		ps_maneuver_times_i(0) = 0;
-		
-		new_obstacles[i]->initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);
+		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->get_state());
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -626,17 +550,17 @@ void Obstacle_SBMPC::increment_control_behavior()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-bool PSBMPC::determine_colav_active(
+bool Obstacle_SBMPC::determine_colav_active(
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
-	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
+	Eigen::Vector4d xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
 	for (int i = 0; i < new_obstacles.size(); i++)
 	{
-		d_0i(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
-		d_0i(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
+		d_0i(0) = new_obstacles[i]->get_state()(0) - xs(0);
+		d_0i(1) = new_obstacles[i]->get_state()(1) - xs(1);
 		if (d_0i.norm() < d_init) colav_active = true;
 	}
 	colav_active = colav_active || n_static_obst > 0;
@@ -699,7 +623,7 @@ bool Obstacle_SBMPC::determine_COLREGS_violation(
 
 bool Obstacle_SBMPC::determine_COLREGS_violation(
 	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A 
-	const Eigen::VectorXd &xs_B, 											// In: State vector of vessel B
+	const Eigen::VectorXd &xs_B 											// In: State vector of vessel B
 	)
 {
 	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
@@ -1103,7 +1027,7 @@ double Obstacle_SBMPC::distance_to_static_obstacle(
 *  Modified :
 *****************************************************************************************/
 void Obstacle_SBMPC::update_obstacles(
-	const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states
+	const Eigen::Matrix<double, 9, -1> &obstacle_states 								// In: Dynamic predicted obstacle states
 	) 			
 {
 	int n_obst_old = old_obstacles.size();
@@ -1117,9 +1041,8 @@ void Obstacle_SBMPC::update_obstacles(
 		{
 			if ((double)old_obstacles[j]->get_ID() == obstacle_states(8, i))
 			{
-				old_obstacles[j]->reset_duration_lost();
 
-				old_obstacles[j]->update(obstacle_states.col(i), dt);
+				old_obstacles[j]->update(obstacle_states.block<4, 1>(0, i), dt);
 
 				new_obstacles.push_back(old_obstacles[j]);
 
@@ -1128,7 +1051,7 @@ void Obstacle_SBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			Obstacle *obstacle = new Obstacle(obstacle_states.col(i), false, T, dt);
+			Prediction_Obstacle *obstacle = new Prediction_Obstacle(obstacle_states.col(i), false, T, dt);
 
 			new_obstacles.push_back(obstacle);
 		}
@@ -1160,7 +1083,7 @@ void Obstacle_SBMPC::update_obstacle_status(
 	Eigen::Vector4d xs_i;
 	for(int i = 0; i < n_obst; i++)
 	{
-		xs_i = new_obstacles[i]->kf->get_state();
+		xs_i = new_obstacles[i]->get_state();
 
 		ID_0 = new_obstacles[i]->get_ID();
 		
@@ -1215,12 +1138,12 @@ void Obstacle_SBMPC::update_transitional_variables()
 
 	for (int i = 0; i < n_obst; i++)
 	{
-		v_B(0) = new_obstacles[i]->kf->get_state()(2);
-		v_B(1) = new_obstacles[i]->kf->get_state()(3);
+		v_B(0) = new_obstacles[i]->get_state()(2);
+		v_B(1) = new_obstacles[i]->get_state()(3);
 		psi_B = atan2(v_B(1), v_B(0));
 
-		L_AB(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
-		L_AB(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
+		L_AB(0) = new_obstacles[i]->get_state()(0) - xs(0);
+		L_AB(1) = new_obstacles[i]->get_state()(1) - xs(1);
 		d_AB = L_AB.norm();
 		L_AB = L_AB / L_AB.norm();
 

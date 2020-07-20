@@ -99,18 +99,18 @@ Eigen::Vector4d Obstacle_Ship::predict(
 
 /****************************************************************************************
 *  Name     : predict_trajectory
-*  Function : Predicts the Obstacle_Model trajectory for a sequence of avoidance maneuvers in the 
+*  Function : Predicts the bbstacle ship trajectory for a sequence of avoidance maneuvers in the 
 *			  offset sequence.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 void Obstacle_Ship::predict_trajectory(
-	Eigen::Matrix<double, 4, -1>& trajectory, 						// In/out: Own-ship trajectory
+	Eigen::Matrix<double, 4, -1>& trajectory, 						// In/out: Obstacle ship trajectory
 	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd maneuver_times,							// In: Time indices for each Obstacle_Model avoidance maneuver
 	const double u_d, 												// In: Surge reference
 	const double chi_d, 											// In: Course reference
-	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Obstacle_Model waypoints
+	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Obstacle waypoints
 	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
 	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
 	const double T,													// In: Prediction horizon
