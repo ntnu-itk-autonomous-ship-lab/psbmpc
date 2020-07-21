@@ -726,7 +726,7 @@ void PSBMPC::initialize_prediction()
 			maneuver_times(M) = maneuver_times(M - 1) + std::round((t_ts + 1) / dt);
 		}
 	}
-	std::cout << maneuver_times.transpose() << std::endl;
+	std::cout << "Maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 
 /****************************************************************************************

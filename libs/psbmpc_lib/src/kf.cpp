@@ -31,7 +31,7 @@
 *  Modified :
 *****************************************************************************************/
 KF::KF() : 
-	ID(0), initialized(0), t_0(0), t(0)
+	ID(0), t_0(0.0), t(0.0), initialized(false) 
 {
 	xs_p.setZero();
 	xs_upd.setZero();
@@ -71,11 +71,11 @@ KF::KF() :
 KF::KF(
 	const Eigen::Vector4d& xs_0, 				// In: Initial filter state
 	const Eigen::Matrix4d& P_0,					// In: Initial filter covariance
-	const int id, 								// In: Filter id
+	const int ID, 								// In: Filter ID
 	const double dt, 							// In: Sampling interval
 	const double t_0							// In: Initial time
 	) : 	
-	ID(ID), xs_p(xs_0), P_0(P_0), initialized(true), t_0(t_0), t(t_0) 
+	ID(ID), t_0(t_0), t(t_0), initialized(true), xs_p(xs_0), P_0(P_0)
 {
 	I.setIdentity();
 

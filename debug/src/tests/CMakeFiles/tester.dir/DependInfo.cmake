@@ -1,15 +1,17 @@
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
-  "CXX"
+  "CUDA"
   )
 # The set of files for implicit dependencies of each language:
-set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/trymte/Desktop/cybercolav_cxx/src/tests/test_psbmpc.cpp" "/home/trymte/Desktop/cybercolav_cxx/debug/src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.o"
+set(CMAKE_DEPENDS_CHECK_CUDA
+  "/home/trymte/Desktop/cybercolav_cxx/src/tests/test_thrust.cu" "/home/trymte/Desktop/cybercolav_cxx/debug/src/tests/CMakeFiles/tester.dir/test_thrust.cu.o"
   )
-set(CMAKE_CXX_COMPILER_ID "GNU")
+set(CMAKE_CUDA_COMPILER_ID "NVIDIA")
 
 # The include file search paths:
-set(CMAKE_CXX_TARGET_INCLUDE_PATH
+set(CMAKE_CUDA_TARGET_INCLUDE_PATH
+  "../include"
+  "../libs"
   "../libs/psbmpc_lib/include"
   "../libs/third_party_libs"
   "/usr/local/MATLAB/R2019a/extern/include"

@@ -22,6 +22,7 @@
 
 
 #include "prediction_obstacle.h"
+#include "obstacle_sbmpc.h"
 #include "utilities.h"
 #include <iostream>
 
