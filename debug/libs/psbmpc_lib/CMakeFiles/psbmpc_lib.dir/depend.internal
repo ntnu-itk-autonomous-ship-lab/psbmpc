@@ -93,11 +93,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/MathFunctions.h
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/PacketMath.h
  ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Complex.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Half.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/MathFunctions.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMath.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/TypeCasting.h
  ../libs/third_party_libs/Eigen/src/Core/arch/Default/Settings.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/Complex.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/MathFunctions.h
@@ -147,11 +142,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/util/ReenableStupidWarnings.h
  ../libs/third_party_libs/Eigen/src/Core/util/StaticAssert.h
  ../libs/third_party_libs/Eigen/src/Core/util/XprHelper.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./ComplexSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./HessenbergDecomposition.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealQZ.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./Tridiagonalization.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexEigenSolver.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h
@@ -219,17 +209,57 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o
  /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/cpe.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-10.2/include/builtin_types.h
+ /usr/local/cuda-10.2/include/channel_descriptor.h
+ /usr/local/cuda-10.2/include/crt/common_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.hpp
+ /usr/local/cuda-10.2/include/crt/device_functions.h
+ /usr/local/cuda-10.2/include/crt/device_functions.hpp
+ /usr/local/cuda-10.2/include/crt/func_macro.h
+ /usr/local/cuda-10.2/include/crt/host_config.h
  /usr/local/cuda-10.2/include/crt/host_defines.h
+ /usr/local/cuda-10.2/include/crt/math_functions.h
+ /usr/local/cuda-10.2/include/crt/math_functions.hpp
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.h
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.hpp
+ /usr/local/cuda-10.2/include/cuda.h
  /usr/local/cuda-10.2/include/cuda_device_runtime_api.h
  /usr/local/cuda-10.2/include/cuda_fp16.h
  /usr/local/cuda-10.2/include/cuda_fp16.hpp
  /usr/local/cuda-10.2/include/cuda_occupancy.h
+ /usr/local/cuda-10.2/include/cuda_runtime.h
  /usr/local/cuda-10.2/include/cuda_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_surface_types.h
+ /usr/local/cuda-10.2/include/cuda_texture_types.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/device_launch_parameters.h
  /usr/local/cuda-10.2/include/device_types.h
+ /usr/local/cuda-10.2/include/driver_functions.h
  /usr/local/cuda-10.2/include/driver_types.h
- /usr/local/cuda-10.2/include/host_defines.h
+ /usr/local/cuda-10.2/include/library_types.h
  /usr/local/cuda-10.2/include/math_constants.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_35_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_35_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.hpp
+ /usr/local/cuda-10.2/include/surface_functions.h
+ /usr/local/cuda-10.2/include/surface_indirect_functions.h
  /usr/local/cuda-10.2/include/surface_types.h
+ /usr/local/cuda-10.2/include/texture_fetch_functions.h
+ /usr/local/cuda-10.2/include/texture_indirect_functions.h
  /usr/local/cuda-10.2/include/texture_types.h
  /usr/local/cuda-10.2/include/thrust/adjacent_difference.h
  /usr/local/cuda-10.2/include/thrust/advance.h
@@ -898,6 +928,8 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o
  /usr/local/cuda-10.2/include/thrust/uninitialized_fill.h
  /usr/local/cuda-10.2/include/thrust/unique.h
  /usr/local/cuda-10.2/include/thrust/version.h
+ /usr/local/cuda-10.2/include/vector_functions.h
+ /usr/local/cuda-10.2/include/vector_functions.hpp
  /usr/local/cuda-10.2/include/vector_types.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o
  ../libs/psbmpc_lib/include/kf.h
@@ -990,11 +1022,7 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/MathFunctions.h
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/PacketMath.h
  ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Complex.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Half.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/MathFunctions.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMath.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/TypeCasting.h
+ ../libs/third_party_libs/Eigen/src/Core/arch/Default/ConjHelper.h
  ../libs/third_party_libs/Eigen/src/Core/arch/Default/Settings.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/Complex.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/MathFunctions.h
@@ -1044,11 +1072,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/util/ReenableStupidWarnings.h
  ../libs/third_party_libs/Eigen/src/Core/util/StaticAssert.h
  ../libs/third_party_libs/Eigen/src/Core/util/XprHelper.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./ComplexSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./HessenbergDecomposition.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealQZ.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./Tridiagonalization.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexEigenSolver.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h
@@ -1114,6 +1137,59 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
  /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
+ /usr/local/cuda-10.2/include/builtin_types.h
+ /usr/local/cuda-10.2/include/channel_descriptor.h
+ /usr/local/cuda-10.2/include/crt/common_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.hpp
+ /usr/local/cuda-10.2/include/crt/device_functions.h
+ /usr/local/cuda-10.2/include/crt/device_functions.hpp
+ /usr/local/cuda-10.2/include/crt/func_macro.h
+ /usr/local/cuda-10.2/include/crt/host_config.h
+ /usr/local/cuda-10.2/include/crt/host_defines.h
+ /usr/local/cuda-10.2/include/crt/math_functions.h
+ /usr/local/cuda-10.2/include/crt/math_functions.hpp
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.h
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.hpp
+ /usr/local/cuda-10.2/include/cuda.h
+ /usr/local/cuda-10.2/include/cuda_device_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_runtime.h
+ /usr/local/cuda-10.2/include/cuda_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_surface_types.h
+ /usr/local/cuda-10.2/include/cuda_texture_types.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/device_launch_parameters.h
+ /usr/local/cuda-10.2/include/device_types.h
+ /usr/local/cuda-10.2/include/driver_functions.h
+ /usr/local/cuda-10.2/include/driver_types.h
+ /usr/local/cuda-10.2/include/library_types.h
+ /usr/local/cuda-10.2/include/math_constants.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_35_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_35_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.hpp
+ /usr/local/cuda-10.2/include/surface_functions.h
+ /usr/local/cuda-10.2/include/surface_indirect_functions.h
+ /usr/local/cuda-10.2/include/surface_types.h
+ /usr/local/cuda-10.2/include/texture_fetch_functions.h
+ /usr/local/cuda-10.2/include/texture_indirect_functions.h
+ /usr/local/cuda-10.2/include/texture_types.h
+ /usr/local/cuda-10.2/include/vector_functions.h
+ /usr/local/cuda-10.2/include/vector_functions.hpp
+ /usr/local/cuda-10.2/include/vector_types.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o
  ../libs/psbmpc_lib/include/mrou.h
  ../libs/third_party_libs/Eigen/Cholesky
@@ -1205,11 +1281,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/MathFunctions.h
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/PacketMath.h
  ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Complex.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Half.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/MathFunctions.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMath.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/TypeCasting.h
  ../libs/third_party_libs/Eigen/src/Core/arch/Default/Settings.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/Complex.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/MathFunctions.h
@@ -1259,11 +1330,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/util/ReenableStupidWarnings.h
  ../libs/third_party_libs/Eigen/src/Core/util/StaticAssert.h
  ../libs/third_party_libs/Eigen/src/Core/util/XprHelper.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./ComplexSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./HessenbergDecomposition.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealQZ.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./Tridiagonalization.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexEigenSolver.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h
@@ -1328,10 +1394,68 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
  /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/mrou.cpp
+ /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
+ /usr/local/cuda-10.2/include/builtin_types.h
+ /usr/local/cuda-10.2/include/channel_descriptor.h
+ /usr/local/cuda-10.2/include/crt/common_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.hpp
+ /usr/local/cuda-10.2/include/crt/device_functions.h
+ /usr/local/cuda-10.2/include/crt/device_functions.hpp
+ /usr/local/cuda-10.2/include/crt/func_macro.h
+ /usr/local/cuda-10.2/include/crt/host_config.h
+ /usr/local/cuda-10.2/include/crt/host_defines.h
+ /usr/local/cuda-10.2/include/crt/math_functions.h
+ /usr/local/cuda-10.2/include/crt/math_functions.hpp
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.h
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.hpp
+ /usr/local/cuda-10.2/include/cuda.h
+ /usr/local/cuda-10.2/include/cuda_device_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_runtime.h
+ /usr/local/cuda-10.2/include/cuda_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_surface_types.h
+ /usr/local/cuda-10.2/include/cuda_texture_types.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/device_launch_parameters.h
+ /usr/local/cuda-10.2/include/device_types.h
+ /usr/local/cuda-10.2/include/driver_functions.h
+ /usr/local/cuda-10.2/include/driver_types.h
+ /usr/local/cuda-10.2/include/library_types.h
+ /usr/local/cuda-10.2/include/math_constants.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_35_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_35_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.hpp
+ /usr/local/cuda-10.2/include/surface_functions.h
+ /usr/local/cuda-10.2/include/surface_indirect_functions.h
+ /usr/local/cuda-10.2/include/surface_types.h
+ /usr/local/cuda-10.2/include/texture_fetch_functions.h
+ /usr/local/cuda-10.2/include/texture_indirect_functions.h
+ /usr/local/cuda-10.2/include/texture_types.h
+ /usr/local/cuda-10.2/include/vector_functions.h
+ /usr/local/cuda-10.2/include/vector_functions.hpp
+ /usr/local/cuda-10.2/include/vector_types.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o
  ../libs/psbmpc_lib/include/kf.h
  ../libs/psbmpc_lib/include/mrou.h
  ../libs/psbmpc_lib/include/obstacle.h
+ ../libs/psbmpc_lib/include/obstacle_sbmpc.h
+ ../libs/psbmpc_lib/include/obstacle_ship.h
+ ../libs/psbmpc_lib/include/prediction_obstacle.h
+ ../libs/psbmpc_lib/include/psbmpc_index.h
  ../libs/psbmpc_lib/include/utilities.h
  ../libs/third_party_libs/Eigen/Cholesky
  ../libs/third_party_libs/Eigen/Core
@@ -1422,11 +1546,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/MathFunctions.h
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/PacketMath.h
  ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Complex.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Half.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/MathFunctions.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMath.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/TypeCasting.h
  ../libs/third_party_libs/Eigen/src/Core/arch/Default/Settings.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/Complex.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/MathFunctions.h
@@ -1476,11 +1595,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/util/ReenableStupidWarnings.h
  ../libs/third_party_libs/Eigen/src/Core/util/StaticAssert.h
  ../libs/third_party_libs/Eigen/src/Core/util/XprHelper.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./ComplexSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./HessenbergDecomposition.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealQZ.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./Tridiagonalization.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexEigenSolver.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h
@@ -1546,11 +1660,58 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
  /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
+ /usr/local/cuda-10.2/include/builtin_types.h
+ /usr/local/cuda-10.2/include/channel_descriptor.h
+ /usr/local/cuda-10.2/include/crt/common_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.hpp
+ /usr/local/cuda-10.2/include/crt/device_functions.h
+ /usr/local/cuda-10.2/include/crt/device_functions.hpp
+ /usr/local/cuda-10.2/include/crt/func_macro.h
+ /usr/local/cuda-10.2/include/crt/host_config.h
  /usr/local/cuda-10.2/include/crt/host_defines.h
- /usr/local/cuda-10.2/include/cuda_fp16.h
- /usr/local/cuda-10.2/include/cuda_fp16.hpp
- /usr/local/cuda-10.2/include/host_defines.h
+ /usr/local/cuda-10.2/include/crt/math_functions.h
+ /usr/local/cuda-10.2/include/crt/math_functions.hpp
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.h
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.hpp
+ /usr/local/cuda-10.2/include/cuda.h
+ /usr/local/cuda-10.2/include/cuda_device_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_runtime.h
+ /usr/local/cuda-10.2/include/cuda_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_surface_types.h
+ /usr/local/cuda-10.2/include/cuda_texture_types.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/device_launch_parameters.h
+ /usr/local/cuda-10.2/include/device_types.h
+ /usr/local/cuda-10.2/include/driver_functions.h
+ /usr/local/cuda-10.2/include/driver_types.h
+ /usr/local/cuda-10.2/include/library_types.h
  /usr/local/cuda-10.2/include/math_constants.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_35_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_35_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.hpp
+ /usr/local/cuda-10.2/include/surface_functions.h
+ /usr/local/cuda-10.2/include/surface_indirect_functions.h
+ /usr/local/cuda-10.2/include/surface_types.h
+ /usr/local/cuda-10.2/include/texture_fetch_functions.h
+ /usr/local/cuda-10.2/include/texture_indirect_functions.h
+ /usr/local/cuda-10.2/include/texture_types.h
+ /usr/local/cuda-10.2/include/vector_functions.h
+ /usr/local/cuda-10.2/include/vector_functions.hpp
  /usr/local/cuda-10.2/include/vector_types.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_sbmpc.cpp.o
  ../libs/psbmpc_lib/include/obstacle_sbmpc.h
@@ -1647,11 +1808,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_sbmpc.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/MathFunctions.h
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/PacketMath.h
  ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Complex.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Half.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/MathFunctions.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMath.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/TypeCasting.h
  ../libs/third_party_libs/Eigen/src/Core/arch/Default/Settings.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/Complex.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/MathFunctions.h
@@ -1701,11 +1857,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_sbmpc.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/util/ReenableStupidWarnings.h
  ../libs/third_party_libs/Eigen/src/Core/util/StaticAssert.h
  ../libs/third_party_libs/Eigen/src/Core/util/XprHelper.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./ComplexSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./HessenbergDecomposition.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealQZ.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./Tridiagonalization.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexEigenSolver.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h
@@ -1771,11 +1922,58 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_sbmpc.cpp.o
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
  /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_sbmpc.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
+ /usr/local/cuda-10.2/include/builtin_types.h
+ /usr/local/cuda-10.2/include/channel_descriptor.h
+ /usr/local/cuda-10.2/include/crt/common_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.hpp
+ /usr/local/cuda-10.2/include/crt/device_functions.h
+ /usr/local/cuda-10.2/include/crt/device_functions.hpp
+ /usr/local/cuda-10.2/include/crt/func_macro.h
+ /usr/local/cuda-10.2/include/crt/host_config.h
  /usr/local/cuda-10.2/include/crt/host_defines.h
- /usr/local/cuda-10.2/include/cuda_fp16.h
- /usr/local/cuda-10.2/include/cuda_fp16.hpp
- /usr/local/cuda-10.2/include/host_defines.h
+ /usr/local/cuda-10.2/include/crt/math_functions.h
+ /usr/local/cuda-10.2/include/crt/math_functions.hpp
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.h
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.hpp
+ /usr/local/cuda-10.2/include/cuda.h
+ /usr/local/cuda-10.2/include/cuda_device_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_runtime.h
+ /usr/local/cuda-10.2/include/cuda_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_surface_types.h
+ /usr/local/cuda-10.2/include/cuda_texture_types.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/device_launch_parameters.h
+ /usr/local/cuda-10.2/include/device_types.h
+ /usr/local/cuda-10.2/include/driver_functions.h
+ /usr/local/cuda-10.2/include/driver_types.h
+ /usr/local/cuda-10.2/include/library_types.h
  /usr/local/cuda-10.2/include/math_constants.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_35_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_35_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.hpp
+ /usr/local/cuda-10.2/include/surface_functions.h
+ /usr/local/cuda-10.2/include/surface_indirect_functions.h
+ /usr/local/cuda-10.2/include/surface_types.h
+ /usr/local/cuda-10.2/include/texture_fetch_functions.h
+ /usr/local/cuda-10.2/include/texture_indirect_functions.h
+ /usr/local/cuda-10.2/include/texture_types.h
+ /usr/local/cuda-10.2/include/vector_functions.h
+ /usr/local/cuda-10.2/include/vector_functions.hpp
  /usr/local/cuda-10.2/include/vector_types.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_ship.cpp.o
  ../libs/psbmpc_lib/include/obstacle_ship.h
@@ -1869,11 +2067,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_ship.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/MathFunctions.h
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/PacketMath.h
  ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Complex.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Half.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/MathFunctions.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMath.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/TypeCasting.h
  ../libs/third_party_libs/Eigen/src/Core/arch/Default/Settings.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/Complex.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/MathFunctions.h
@@ -1923,11 +2116,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_ship.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/util/ReenableStupidWarnings.h
  ../libs/third_party_libs/Eigen/src/Core/util/StaticAssert.h
  ../libs/third_party_libs/Eigen/src/Core/util/XprHelper.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./ComplexSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./HessenbergDecomposition.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealQZ.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./Tridiagonalization.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexEigenSolver.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h
@@ -1993,11 +2181,58 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_ship.cpp.o
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
  /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_ship.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
+ /usr/local/cuda-10.2/include/builtin_types.h
+ /usr/local/cuda-10.2/include/channel_descriptor.h
+ /usr/local/cuda-10.2/include/crt/common_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.hpp
+ /usr/local/cuda-10.2/include/crt/device_functions.h
+ /usr/local/cuda-10.2/include/crt/device_functions.hpp
+ /usr/local/cuda-10.2/include/crt/func_macro.h
+ /usr/local/cuda-10.2/include/crt/host_config.h
  /usr/local/cuda-10.2/include/crt/host_defines.h
- /usr/local/cuda-10.2/include/cuda_fp16.h
- /usr/local/cuda-10.2/include/cuda_fp16.hpp
- /usr/local/cuda-10.2/include/host_defines.h
+ /usr/local/cuda-10.2/include/crt/math_functions.h
+ /usr/local/cuda-10.2/include/crt/math_functions.hpp
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.h
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.hpp
+ /usr/local/cuda-10.2/include/cuda.h
+ /usr/local/cuda-10.2/include/cuda_device_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_runtime.h
+ /usr/local/cuda-10.2/include/cuda_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_surface_types.h
+ /usr/local/cuda-10.2/include/cuda_texture_types.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/device_launch_parameters.h
+ /usr/local/cuda-10.2/include/device_types.h
+ /usr/local/cuda-10.2/include/driver_functions.h
+ /usr/local/cuda-10.2/include/driver_types.h
+ /usr/local/cuda-10.2/include/library_types.h
  /usr/local/cuda-10.2/include/math_constants.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_35_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_35_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.hpp
+ /usr/local/cuda-10.2/include/surface_functions.h
+ /usr/local/cuda-10.2/include/surface_indirect_functions.h
+ /usr/local/cuda-10.2/include/surface_types.h
+ /usr/local/cuda-10.2/include/texture_fetch_functions.h
+ /usr/local/cuda-10.2/include/texture_indirect_functions.h
+ /usr/local/cuda-10.2/include/texture_types.h
+ /usr/local/cuda-10.2/include/vector_functions.h
+ /usr/local/cuda-10.2/include/vector_functions.hpp
  /usr/local/cuda-10.2/include/vector_types.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o
  ../libs/psbmpc_lib/include/ownship.h
@@ -2091,11 +2326,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/MathFunctions.h
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/PacketMath.h
  ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Complex.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Half.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/MathFunctions.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMath.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/TypeCasting.h
  ../libs/third_party_libs/Eigen/src/Core/arch/Default/Settings.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/Complex.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/MathFunctions.h
@@ -2145,11 +2375,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/util/ReenableStupidWarnings.h
  ../libs/third_party_libs/Eigen/src/Core/util/StaticAssert.h
  ../libs/third_party_libs/Eigen/src/Core/util/XprHelper.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./ComplexSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./HessenbergDecomposition.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealQZ.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./Tridiagonalization.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexEigenSolver.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h
@@ -2215,14 +2440,64 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
  /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/ownship.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
+ /usr/local/cuda-10.2/include/builtin_types.h
+ /usr/local/cuda-10.2/include/channel_descriptor.h
+ /usr/local/cuda-10.2/include/crt/common_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.hpp
+ /usr/local/cuda-10.2/include/crt/device_functions.h
+ /usr/local/cuda-10.2/include/crt/device_functions.hpp
+ /usr/local/cuda-10.2/include/crt/func_macro.h
+ /usr/local/cuda-10.2/include/crt/host_config.h
  /usr/local/cuda-10.2/include/crt/host_defines.h
- /usr/local/cuda-10.2/include/cuda_fp16.h
- /usr/local/cuda-10.2/include/cuda_fp16.hpp
- /usr/local/cuda-10.2/include/host_defines.h
+ /usr/local/cuda-10.2/include/crt/math_functions.h
+ /usr/local/cuda-10.2/include/crt/math_functions.hpp
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.h
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.hpp
+ /usr/local/cuda-10.2/include/cuda.h
+ /usr/local/cuda-10.2/include/cuda_device_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_runtime.h
+ /usr/local/cuda-10.2/include/cuda_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_surface_types.h
+ /usr/local/cuda-10.2/include/cuda_texture_types.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/device_launch_parameters.h
+ /usr/local/cuda-10.2/include/device_types.h
+ /usr/local/cuda-10.2/include/driver_functions.h
+ /usr/local/cuda-10.2/include/driver_types.h
+ /usr/local/cuda-10.2/include/library_types.h
  /usr/local/cuda-10.2/include/math_constants.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_35_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_35_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.hpp
+ /usr/local/cuda-10.2/include/surface_functions.h
+ /usr/local/cuda-10.2/include/surface_indirect_functions.h
+ /usr/local/cuda-10.2/include/surface_types.h
+ /usr/local/cuda-10.2/include/texture_fetch_functions.h
+ /usr/local/cuda-10.2/include/texture_indirect_functions.h
+ /usr/local/cuda-10.2/include/texture_types.h
+ /usr/local/cuda-10.2/include/vector_functions.h
+ /usr/local/cuda-10.2/include/vector_functions.hpp
  /usr/local/cuda-10.2/include/vector_types.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/prediction_obstacle.cpp.o
+ ../libs/psbmpc_lib/include/obstacle_sbmpc.h
+ ../libs/psbmpc_lib/include/obstacle_ship.h
  ../libs/psbmpc_lib/include/prediction_obstacle.h
+ ../libs/psbmpc_lib/include/psbmpc_index.h
  ../libs/psbmpc_lib/include/utilities.h
  ../libs/third_party_libs/Eigen/Cholesky
  ../libs/third_party_libs/Eigen/Core
@@ -2313,11 +2588,7 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/prediction_obstacle.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/MathFunctions.h
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/PacketMath.h
  ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Complex.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Half.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/MathFunctions.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMath.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/TypeCasting.h
+ ../libs/third_party_libs/Eigen/src/Core/arch/Default/ConjHelper.h
  ../libs/third_party_libs/Eigen/src/Core/arch/Default/Settings.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/Complex.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/MathFunctions.h
@@ -2367,11 +2638,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/prediction_obstacle.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/util/ReenableStupidWarnings.h
  ../libs/third_party_libs/Eigen/src/Core/util/StaticAssert.h
  ../libs/third_party_libs/Eigen/src/Core/util/XprHelper.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./ComplexSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./HessenbergDecomposition.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealQZ.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./Tridiagonalization.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexEigenSolver.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h
@@ -2437,11 +2703,58 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/prediction_obstacle.cpp.o
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
  /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/prediction_obstacle.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
+ /usr/local/cuda-10.2/include/builtin_types.h
+ /usr/local/cuda-10.2/include/channel_descriptor.h
+ /usr/local/cuda-10.2/include/crt/common_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.hpp
+ /usr/local/cuda-10.2/include/crt/device_functions.h
+ /usr/local/cuda-10.2/include/crt/device_functions.hpp
+ /usr/local/cuda-10.2/include/crt/func_macro.h
+ /usr/local/cuda-10.2/include/crt/host_config.h
  /usr/local/cuda-10.2/include/crt/host_defines.h
- /usr/local/cuda-10.2/include/cuda_fp16.h
- /usr/local/cuda-10.2/include/cuda_fp16.hpp
- /usr/local/cuda-10.2/include/host_defines.h
+ /usr/local/cuda-10.2/include/crt/math_functions.h
+ /usr/local/cuda-10.2/include/crt/math_functions.hpp
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.h
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.hpp
+ /usr/local/cuda-10.2/include/cuda.h
+ /usr/local/cuda-10.2/include/cuda_device_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_runtime.h
+ /usr/local/cuda-10.2/include/cuda_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_surface_types.h
+ /usr/local/cuda-10.2/include/cuda_texture_types.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/device_launch_parameters.h
+ /usr/local/cuda-10.2/include/device_types.h
+ /usr/local/cuda-10.2/include/driver_functions.h
+ /usr/local/cuda-10.2/include/driver_types.h
+ /usr/local/cuda-10.2/include/library_types.h
  /usr/local/cuda-10.2/include/math_constants.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_35_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_35_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.hpp
+ /usr/local/cuda-10.2/include/surface_functions.h
+ /usr/local/cuda-10.2/include/surface_indirect_functions.h
+ /usr/local/cuda-10.2/include/surface_types.h
+ /usr/local/cuda-10.2/include/texture_fetch_functions.h
+ /usr/local/cuda-10.2/include/texture_indirect_functions.h
+ /usr/local/cuda-10.2/include/texture_types.h
+ /usr/local/cuda-10.2/include/vector_functions.h
+ /usr/local/cuda-10.2/include/vector_functions.hpp
  /usr/local/cuda-10.2/include/vector_types.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o
  ../libs/psbmpc_lib/include/cpe.h
@@ -2541,11 +2854,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/MathFunctions.h
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/PacketMath.h
  ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Complex.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Half.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/MathFunctions.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMath.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/TypeCasting.h
  ../libs/third_party_libs/Eigen/src/Core/arch/Default/Settings.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/Complex.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/MathFunctions.h
@@ -2595,11 +2903,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/util/ReenableStupidWarnings.h
  ../libs/third_party_libs/Eigen/src/Core/util/StaticAssert.h
  ../libs/third_party_libs/Eigen/src/Core/util/XprHelper.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./ComplexSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./HessenbergDecomposition.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealQZ.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./Tridiagonalization.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexEigenSolver.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h
@@ -2667,17 +2970,57 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o
  /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-10.2/include/builtin_types.h
+ /usr/local/cuda-10.2/include/channel_descriptor.h
+ /usr/local/cuda-10.2/include/crt/common_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.hpp
+ /usr/local/cuda-10.2/include/crt/device_functions.h
+ /usr/local/cuda-10.2/include/crt/device_functions.hpp
+ /usr/local/cuda-10.2/include/crt/func_macro.h
+ /usr/local/cuda-10.2/include/crt/host_config.h
  /usr/local/cuda-10.2/include/crt/host_defines.h
+ /usr/local/cuda-10.2/include/crt/math_functions.h
+ /usr/local/cuda-10.2/include/crt/math_functions.hpp
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.h
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.hpp
+ /usr/local/cuda-10.2/include/cuda.h
  /usr/local/cuda-10.2/include/cuda_device_runtime_api.h
  /usr/local/cuda-10.2/include/cuda_fp16.h
  /usr/local/cuda-10.2/include/cuda_fp16.hpp
  /usr/local/cuda-10.2/include/cuda_occupancy.h
+ /usr/local/cuda-10.2/include/cuda_runtime.h
  /usr/local/cuda-10.2/include/cuda_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_surface_types.h
+ /usr/local/cuda-10.2/include/cuda_texture_types.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/device_launch_parameters.h
  /usr/local/cuda-10.2/include/device_types.h
+ /usr/local/cuda-10.2/include/driver_functions.h
  /usr/local/cuda-10.2/include/driver_types.h
- /usr/local/cuda-10.2/include/host_defines.h
+ /usr/local/cuda-10.2/include/library_types.h
  /usr/local/cuda-10.2/include/math_constants.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_35_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_35_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.hpp
+ /usr/local/cuda-10.2/include/surface_functions.h
+ /usr/local/cuda-10.2/include/surface_indirect_functions.h
  /usr/local/cuda-10.2/include/surface_types.h
+ /usr/local/cuda-10.2/include/texture_fetch_functions.h
+ /usr/local/cuda-10.2/include/texture_indirect_functions.h
  /usr/local/cuda-10.2/include/texture_types.h
  /usr/local/cuda-10.2/include/thrust/adjacent_difference.h
  /usr/local/cuda-10.2/include/thrust/advance.h
@@ -3346,6 +3689,8 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o
  /usr/local/cuda-10.2/include/thrust/uninitialized_fill.h
  /usr/local/cuda-10.2/include/thrust/unique.h
  /usr/local/cuda-10.2/include/thrust/version.h
+ /usr/local/cuda-10.2/include/vector_functions.h
+ /usr/local/cuda-10.2/include/vector_functions.hpp
  /usr/local/cuda-10.2/include/vector_types.h
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o
  ../libs/psbmpc_lib/include/utilities.h
@@ -3438,11 +3783,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/MathFunctions.h
  ../libs/third_party_libs/Eigen/src/Core/arch/AltiVec/PacketMath.h
  ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Complex.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/Half.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/MathFunctions.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMath.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/PacketMathHalf.h
- ../libs/third_party_libs/Eigen/src/Core/arch/CUDA/TypeCasting.h
  ../libs/third_party_libs/Eigen/src/Core/arch/Default/Settings.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/Complex.h
  ../libs/third_party_libs/Eigen/src/Core/arch/NEON/MathFunctions.h
@@ -3492,11 +3832,6 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o
  ../libs/third_party_libs/Eigen/src/Core/util/ReenableStupidWarnings.h
  ../libs/third_party_libs/Eigen/src/Core/util/StaticAssert.h
  ../libs/third_party_libs/Eigen/src/Core/util/XprHelper.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./ComplexSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./HessenbergDecomposition.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealQZ.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./RealSchur.h
- ../libs/third_party_libs/Eigen/src/Eigenvalues/./Tridiagonalization.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexEigenSolver.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur.h
  ../libs/third_party_libs/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h
@@ -3562,3 +3897,56 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
  /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
+ /usr/local/cuda-10.2/include/builtin_types.h
+ /usr/local/cuda-10.2/include/channel_descriptor.h
+ /usr/local/cuda-10.2/include/crt/common_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.h
+ /usr/local/cuda-10.2/include/crt/device_double_functions.hpp
+ /usr/local/cuda-10.2/include/crt/device_functions.h
+ /usr/local/cuda-10.2/include/crt/device_functions.hpp
+ /usr/local/cuda-10.2/include/crt/func_macro.h
+ /usr/local/cuda-10.2/include/crt/host_config.h
+ /usr/local/cuda-10.2/include/crt/host_defines.h
+ /usr/local/cuda-10.2/include/crt/math_functions.h
+ /usr/local/cuda-10.2/include/crt/math_functions.hpp
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.h
+ /usr/local/cuda-10.2/include/crt/sm_70_rt.hpp
+ /usr/local/cuda-10.2/include/cuda.h
+ /usr/local/cuda-10.2/include/cuda_device_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_runtime.h
+ /usr/local/cuda-10.2/include/cuda_runtime_api.h
+ /usr/local/cuda-10.2/include/cuda_surface_types.h
+ /usr/local/cuda-10.2/include/cuda_texture_types.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.h
+ /usr/local/cuda-10.2/include/device_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/device_launch_parameters.h
+ /usr/local/cuda-10.2/include/device_types.h
+ /usr/local/cuda-10.2/include/driver_functions.h
+ /usr/local/cuda-10.2/include/driver_types.h
+ /usr/local/cuda-10.2/include/library_types.h
+ /usr/local/cuda-10.2/include/math_constants.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_20_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_20_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_30_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_32_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_32_intrinsics.hpp
+ /usr/local/cuda-10.2/include/sm_35_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_35_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.h
+ /usr/local/cuda-10.2/include/sm_60_atomic_functions.hpp
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.h
+ /usr/local/cuda-10.2/include/sm_61_intrinsics.hpp
+ /usr/local/cuda-10.2/include/surface_functions.h
+ /usr/local/cuda-10.2/include/surface_indirect_functions.h
+ /usr/local/cuda-10.2/include/surface_types.h
+ /usr/local/cuda-10.2/include/texture_fetch_functions.h
+ /usr/local/cuda-10.2/include/texture_indirect_functions.h
+ /usr/local/cuda-10.2/include/texture_types.h
+ /usr/local/cuda-10.2/include/vector_functions.h
+ /usr/local/cuda-10.2/include/vector_functions.hpp
+ /usr/local/cuda-10.2/include/vector_types.h

@@ -53,8 +53,6 @@ Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
 vector
 -
-math.h
--
 
 ../libs/psbmpc_lib/include/psbmpc_index.h
 

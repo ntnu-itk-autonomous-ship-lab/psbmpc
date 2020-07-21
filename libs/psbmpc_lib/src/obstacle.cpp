@@ -22,6 +22,7 @@
 
 
 #include "obstacle.h"
+#include "obstacle_sbmpc.h"
 #include "utilities.h"
 #include "kf.h"
 #include "iostream" 
@@ -84,6 +85,8 @@ Obstacle::Obstacle(
 	}
 
 	mrou = new MROU(0.8, 0, 0.8, 0.1, 0.1);
+
+	sbmpc = new Obstacle_SBMPC();
 }
 
 /****************************************************************************************
@@ -191,6 +194,7 @@ void Obstacle::predict_independent_trajectories(
 
 			if (!mu[ps])
 			{
+				mu[ps] = sbmpc->determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl);
 				mu[ps] = determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl, phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
 			}
 		
