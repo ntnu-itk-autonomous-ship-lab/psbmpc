@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test_thrust.o: test_thrust.cu.o
+test_psbmpc.o: test_psbmpc.cpp.o
 
-.PHONY : test_thrust.o
+.PHONY : test_psbmpc.o
 
 # target to build an object file
-test_thrust.cu.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_thrust.cu.o
-.PHONY : test_thrust.cu.o
+test_psbmpc.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.o
+.PHONY : test_psbmpc.cpp.o
 
-test_thrust.i: test_thrust.cu.i
+test_psbmpc.i: test_psbmpc.cpp.i
 
-.PHONY : test_thrust.i
+.PHONY : test_psbmpc.i
 
 # target to preprocess a source file
-test_thrust.cu.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_thrust.cu.i
-.PHONY : test_thrust.cu.i
+test_psbmpc.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.i
+.PHONY : test_psbmpc.cpp.i
 
-test_thrust.s: test_thrust.cu.s
+test_psbmpc.s: test_psbmpc.cpp.s
 
-.PHONY : test_thrust.s
+.PHONY : test_psbmpc.s
 
 # target to generate assembly for a file
-test_thrust.cu.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_thrust.cu.s
-.PHONY : test_thrust.cu.s
+test_psbmpc.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.s
+.PHONY : test_psbmpc.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... test_thrust.o"
-	@echo "... test_thrust.i"
-	@echo "... test_thrust.s"
+	@echo "... test_psbmpc.o"
+	@echo "... test_psbmpc.i"
+	@echo "... test_psbmpc.s"
 .PHONY : help
 
 

@@ -143,7 +143,7 @@ int main(){
 
 	std::vector<Eigen::MatrixXd> xs_p = obstacle->get_independent_trajectories();
 
-	std::vector<Eigen::MatrixXd> P_p = obstacle->get_independent_trajectory_covariances();
+	Eigen::MatrixXd P_p = obstacle->get_trajectory_covariance();
 
 	std::vector<bool> mu = obstacle->get_COLREGS_violation_indicator();
 
@@ -202,15 +202,15 @@ int main(){
 	mxArray *ps_count = mxCreateDoubleScalar(1);
 	double *ps_ptr = mxGetPr(ps_count);
 
+	map_P_traj_i = P_p;
+	engPutVariable(ep, "P_i_flat", P_traj_i);
+
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		std::cout << "Obstacle breaches COLREGS in prediction scenario " << ps << " ? " << mu[ps] << std::endl;
 		std::cout << xs_p[ps].col(300).transpose() << std::endl;
 		map_traj_i = xs_p[ps];
 		engPutVariable(ep, "X_i", traj_i);
-
-		map_P_traj_i = P_p[ps];
-		engPutVariable(ep, "P_i_flat", P_traj_i);
 
 		engPutVariable(ep, "ps_counter", ps_count);
 		*ps_ptr++;
