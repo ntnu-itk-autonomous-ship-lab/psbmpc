@@ -36,17 +36,17 @@
 #define BUFSIZE 1000000
 
 int main(){
-/* 	Engine *ep = engOpen(NULL);
+ 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1]; */
+	char buffer[BUFSIZE+1]; 
 
 	//*****************************************************************************************************************
 	// Simulation setup
 	//*****************************************************************************************************************
-	double T_sim = 0.5; double dt = 0.5;
+	double T_sim = 200; double dt = 0.5;
 	int N = std::round(T_sim / dt);
 
 	//*****************************************************************************************************************
@@ -70,10 +70,12 @@ int main(){
 	//			 0, -50,  -200, -200,  0, 300, 0;
 	waypoints << 0, 1000,
 				 0, 0;
-/* 
+ 
 	mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);
+	mxArray *wps_os = mxCreateDoubleMatrix(2, 2, mxREAL);
 
-	double *ptraj_os = mxGetPr(traj_os); */
+	double *ptraj_os = mxGetPr(traj_os); 
+	double *p_wps_os = mxGetPr(wps_os); 
 	
 	//*****************************************************************************************************************
 	// Obstacle sim setup
@@ -83,7 +85,7 @@ int main(){
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_obst);
 	xs_i_0[0].resize(6);
-	xs_i_0[0] << 200, 0, 180 * DEG2RAD, 5, 0, 0;
+	xs_i_0[0] << 1000, 0, 180 * DEG2RAD, 5, 0, 0;
 
 	// Use constant obstacle uncertainty throughout the simulation, for simplicity
 	Eigen::MatrixXd P_0(4, 4);
@@ -98,9 +100,6 @@ int main(){
 	std::vector<Eigen::VectorXd> Pr_a(n_obst);
 
 	std::vector<double> Pr_CC(n_obst);
-	
-
-	bool filter_on = true, colav_on = false;
 
 	// Simulate obstacles using an ownship model
 	Ownship* obstacle_sim = new Ownship();
@@ -116,6 +115,14 @@ int main(){
 	std::vector<Eigen::Matrix<double, 16, -1>> trajectory_covariances_i(n_obst);
 	std::vector<Eigen::Matrix<double, 2, -1>> waypoints_i(n_obst);
 
+	std::vector<mxArray*> traj_i(n_obst); 
+	std::vector<mxArray*> P_traj_i(n_obst); 
+	std::vector<mxArray*> wps_i(n_obst);
+
+	double* ptraj_i; 
+	double* p_P_traj_i; 
+	double* p_wps_i;
+
 	for (int i = 0; i < n_obst; i++)
 	{
 		u_d_i[i] = 6.0; chi_d_i[i] = 0.0;
@@ -123,7 +130,7 @@ int main(){
 		trajectory_i[i].resize(6, N);
 		trajectory_i[i].col(0) = xs_i_0[i];
 
-		trajectory_covariances_i[i].resize(16, N);
+		trajectory_covariances_i[i].resize(16, 1);
 		trajectory_covariances_i[i].col(0) = flatten(P_0);
 
 		Pr_a[i].resize(3);
@@ -135,6 +142,7 @@ int main(){
 		waypoints_i[i].resize(2, 2); 
 		waypoints_i[i] << 1000, 0,
 					0, 	0;
+		wps_i[i] = mxCreateDoubleMatrix(2, 2, mxREAL);
 
 		offset_sequence_i[i].resize(6);
 		offset_sequence_i[i] << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
@@ -144,14 +152,13 @@ int main(){
 
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim->predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], ERK1, LOS, T_sim, dt);
+
+		traj_i[i] = mxCreateDoubleMatrix(4, N, mxREAL);
+		P_traj_i[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
 	
 
-/* 	mxArray *traj_i = mxCreateDoubleMatrix(4, N, mxREAL);
-	mxArray *P_traj_i = mxCreateDoubleMatrix(16, N, mxREAL);
-
-	double *ptraj_i = mxGetPr(traj_i);
-	double *p_P_traj_i = mxGetPr(P_traj_i); */
+ 	
 
 	//*****************************************************************************************************************
 	// PSB-MPC setup
@@ -161,6 +168,7 @@ int main(){
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
 	mxArray *pred_traj;
+	double *p_pred_traj = mxGetPr(pred_traj);
 
 	Eigen::Matrix<double,-1,-1> obstacle_status; 				
 	Eigen::Matrix<double,-1, 1> colav_status; 
@@ -184,6 +192,30 @@ int main(){
 	//*****************************************************************************************************************
 	// Simulation
 	//*****************************************************************************************************************	
+	
+	Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, N);
+	map_traj_os = trajectory;
+
+	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 6, N);
+	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, 1);
+
+	engPutVariable(ep, "X", traj_os);
+	engPutVariable(ep, "WPs", wps_os);
+
+	engEvalString(ep, "init_psbmpc_plotting");
+
+	for (int i = 0; i < n_obst; i++)
+	{
+		ptraj_i = mxGetPr(traj_i[i]);
+		p_P_traj_i = mxGetPr(P_traj_i[i]);
+
+		map_traj_i = trajectory_i[i];
+		map_P_traj_i = trajectory_covariances_i[i];
+
+		engPutVariable(ep, "X_i", traj_i[i]);
+
+		engEvalString(ep, "init_obstacle_plot")
+	}
 	Eigen::Vector4d xs_i_k;
 
 	Eigen::VectorXd xs_aug(9);
@@ -230,33 +262,30 @@ int main(){
 
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 
-		asv_sim->update_ctrl_input(u_c, chi_d, trajectory.col(k));
+		asv_sim->update_ctrl_input(u_c, chi_c, trajectory.col(k));
 
 		if (k < N - 1) { trajectory.col(k + 1) = asv_sim->predict(trajectory.col(k), dt, ERK1); }
+
+		//===========================================
+		// Send trajectory data to matlab
+		//===========================================
+		buffer[BUFSIZE] = '\0';
+		engOutputBuffer(ep, buffer, BUFSIZE);
+
+		map_traj_os = trajectory;
+		engPutVariable(ep, "X", traj_os);
 
 	}
 	mean_t /= N;
 	std::cout << "PSBMPC average time usage : " << mean_t << " milliseconds" << std::endl;
-	//*****************************************************************************************************************
-	// Send final trajectory data to matlab
-	//*****************************************************************************************************************
-/* 	Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, N);
-	map_traj_os = trajectory;
+
 	
-	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, N);
-	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, N);
-
-	buffer[BUFSIZE] = '\0';
-	engOutputBuffer(ep, buffer, BUFSIZE);
-
-	engPutVariable(ep, "X", traj_os);
 	
 	mxDestroyArray(traj_os);
-
 	mxDestroyArray(traj_i);
 	mxDestroyArray(P_traj_i);
 
-	engClose(ep);  */
+	engClose(ep);  
 
 	return 0;
 }

@@ -64,16 +64,16 @@ int main()
 	// Mean predicted velocity for the obstacle (MROU): n_ps x n x n_samples, where n = 4
 	std::vector<Eigen::MatrixXd> v_p;
 
-	// Predicted covariance for each prediction scenario: n_ps x n*n x n_samples, i.e. the covariance is flattened for each time step
-	std::vector<Eigen::MatrixXd> P_p; 
+	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step
+	Eigen::MatrixXd P_p; 
 
 	MROU *mrou = new MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y);
 
 	// n_ps = 1
 	xs_p.resize(1); xs_p[0].resize(4, n_samples);
 	xs_p[0].col(0) = xs_0;
-	P_p.resize(1); P_p[0].resize(16, n_samples);
-	P_p[0].col(0) = flatten(P_0);
+	P_p.resize(16, n_samples);
+	P_p.col(0) = flatten(P_0);
 
 	v_p.resize(1); v_p[0].resize(2, n_samples);
 	
@@ -123,7 +123,7 @@ int main()
 			if (k < n_samples - 1)
 			{
 				xs_p[ps].col(k + 1) = xs;
-				P_p[ps].col(k + 1) = flatten(P);
+				P_p.col(k + 1) = flatten(P);
 			}
 		}
 	}
@@ -135,7 +135,7 @@ int main()
 	map_vtraj = v_p[0];
 
 	Eigen::Map<Eigen::MatrixXd> map_P_traj(p_P_traj, 16, n_samples);
-	map_P_traj = P_p[0];
+	map_P_traj = P_p;
 
 	buffer[BUFSIZE] = '\0';
 	engOutputBuffer(ep, buffer, BUFSIZE);

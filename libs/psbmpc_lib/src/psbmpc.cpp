@@ -307,12 +307,12 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
 
-			calculate_collision_probabilities(P_c_i, i); 
+			//calculate_collision_probabilities(P_c_i, i); 
 
-			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
+			//cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
 		}
 
-		cost += cost_i.maxCoeff();
+		//cost += cost_i.maxCoeff();
 
 		cost += calculate_grounding_cost(static_obstacles);
 
@@ -419,7 +419,7 @@ void PSBMPC::initialize_par_limits()
 void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 1;
+	n_M = 2;
 	n_a = 3; // KCC, SM, PM
 	n_ps = 1; // Determined by initialize_prediction();
 
@@ -432,12 +432,12 @@ void PSBMPC::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(1);
-			u_offsets[M] << 1.0; //, 0.5, 0.0;
+			u_offsets[M].resize(3);
+			u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(7);
-			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M].resize(13);
+			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -694,7 +694,7 @@ void PSBMPC::initialize_prediction()
 	maneuver_times.resize(n_M);
 	// First avoidance maneuver is always at t0
 	maneuver_times(0) = 0;
-	double d_cpa_min = 1e10, t_cpa_min;
+	double d_cpa_min = 1e10, t_cpa_min = t_cpa(0);
 	for (int M = 1; M < n_M; M++)
 	{
 		for (int i = 0; i < n_obst; i++)
@@ -740,7 +740,7 @@ double PSBMPC::find_time_of_passing(
 	const int i 														// In: Index of relevant obstacle
 	)
 {
-	double t_obst_passed, t, psi_A, d_AB;
+	double t_obst_passed(1e12), t, psi_A, d_AB;
 	Eigen::VectorXd xs_A = trajectory.col(0);
 	Eigen::VectorXd xs_B = new_obstacles[i]->kf->get_state();
 	Eigen::Vector2d p_A, p_B, v_A, v_B, L_AB;
@@ -1673,7 +1673,6 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 	H_TC_0.resize(n_obst); X_TC_0.resize(n_obst);
 
 	//std::cout << "Situation types:: 0 : (ST = Ø), 1 : (ST = OT, SO), 2 : (ST = CR, SO), 3 : (ST = OT, GW), 4 : (ST = HO, GW), 5 : (ST = CR, GW)" << std::endl;
-	ST b = A;
 	//std::cout << A << std::endl;
 	for (int i = 0; i < n_obst; i++)
 	{
