@@ -214,7 +214,7 @@ int main(){
 
 		engPutVariable(ep, "X_i", traj_i[i]);
 
-		engEvalString(ep, "init_obstacle_plot")
+		engEvalString(ep, "init_obstacle_plot");
 	}
 	Eigen::Vector4d xs_i_k;
 
