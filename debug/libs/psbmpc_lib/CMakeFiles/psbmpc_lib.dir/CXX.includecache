@@ -6,9 +6,57 @@
 
 #IncludeRegexTransform: 
 
+../libs/psbmpc_lib/include/cpe.h
+xoshiro.hpp
+../libs/psbmpc_lib/include/xoshiro.hpp
+Eigen/Dense
+-
+random
+-
+
 ../libs/psbmpc_lib/include/kf.h
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
+
+../libs/psbmpc_lib/include/mrou.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+
+../libs/psbmpc_lib/include/obstacle.h
+vector
+-
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+mrou.h
+../libs/psbmpc_lib/include/mrou.h
+kf.h
+../libs/psbmpc_lib/include/kf.h
+
+../libs/psbmpc_lib/include/ownship.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+
+../libs/psbmpc_lib/include/psbmpc.h
+psbmpc_index.h
+../libs/psbmpc_lib/include/psbmpc_index.h
+ownship.h
+../libs/psbmpc_lib/include/ownship.h
+obstacle.h
+../libs/psbmpc_lib/include/obstacle.h
+cpe.h
+../libs/psbmpc_lib/include/cpe.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+vector
+-
+
+../libs/psbmpc_lib/include/psbmpc_index.h
+
+../libs/psbmpc_lib/include/utilities.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+iostream
+../libs/psbmpc_lib/include/iostream
 
 ../libs/third_party_libs/Eigen/Cholesky
 Core
@@ -1106,11 +1154,17 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.cpp
-kf.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.h
-stdexcept
+../libs/third_party_libs/xoshiro.hpp
+cstdint
 -
+
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
+psbmpc.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.h
+iostream
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/iostream
 
 /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
 complex
