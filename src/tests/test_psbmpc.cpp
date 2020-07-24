@@ -65,12 +65,13 @@ int main(){
 	trajectory.resize(6, N);
 	trajectory.col(0) = xs_os_0;
 
-	waypoints.resize(2, 7); 
-	waypoints << 0, 200, 200, 400, 600,  300, 1000,
-				 0, 0,   200, 200,  0,  -300, -300;
-	//waypoints << 0, 1000,
-	//			 0, 0;
-	int n_wps_os = 7;
+	int n_wps_os = 2;
+	waypoints.resize(2, n_wps_os); 
+	/* waypoints << 0, 200, 200, 400, 600,  300, 1000,
+				 0, 0,   200, 200,  0,  -300, -300; */
+	waypoints << 0, 1000,
+				 0, 0;
+	
 
 	mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
@@ -199,13 +200,12 @@ int main(){
 
 	mxArray *T_sim_mx = mxCreateDoubleScalar(T_sim);
 
+	
+
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engPutVariable(ep, "WPs", wps_os);
 
-	buffer[BUFSIZE] = '\0';
-	engOutputBuffer(ep, buffer, BUFSIZE);
 	engEvalString(ep, "init_psbmpc_plotting");
-	printf("%s", buffer);
 	mxArray *i_mx, *k_s;
 
 	for (int i = 0; i < n_obst; i++)
@@ -223,7 +223,6 @@ int main(){
 		engEvalString(ep, "init_obstacle_plot");
 	}
 	
-	printf("%s", buffer);
 	Eigen::Vector4d xs_i_k;
 
 	Eigen::VectorXd xs_aug(9);
@@ -271,7 +270,6 @@ int main(){
 		std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
 
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
-		std::cout << "u_c = " << u_c << " | " << "chi_c = " << chi_c << std::endl;
 		asv_sim->update_ctrl_input(u_c, chi_c, trajectory.col(k));
 
 		if (k < N - 1) { trajectory.col(k + 1) = asv_sim->predict(trajectory.col(k), dt, ERK1); }
