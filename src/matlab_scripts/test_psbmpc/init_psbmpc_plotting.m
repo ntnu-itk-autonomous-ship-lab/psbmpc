@@ -28,15 +28,16 @@ x_cs = cos(th); y_cs = sin(th);
 
 d_safe = 50;
 
-disp(WPs);
 h_wps = plot(ax1, WPs(2, :), WPs(1, :), 'rx', 'Linewidth', 2);
 
 h_X = []; h_X_p = [];
+h_X_text = []; h_X_k = [];
 h_X_ptch = [];
-h_safe = [];
+h_safe = []; h_safe_k = [];
 
 n_obst = 1;
 h_d_i = cell(n_obst, 1);
 h_X_i = cell(n_obst, 1);
 h_X_i_ptch = cell(n_obst, 1);
 h_P_i = cell(n_obst, 1);
+

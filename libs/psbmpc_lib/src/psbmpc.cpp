@@ -281,6 +281,7 @@ void PSBMPC::calculate_optimal_offsets(
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
+	char buffer[1000000 + 1]; 
 	//===============================================================================================================
 
 	int n_samples = std::round(T / dt);
@@ -326,11 +327,15 @@ void PSBMPC::calculate_optimal_offsets(
 	double *ptraj_os = mxGetPr(traj_os); 
 	double *p_wps_os = mxGetPr(wps_os); 
 
-	Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_os, 2, waypoints.cols());
-	map_wps_i = waypoints;
+	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
+	map_wps = waypoints;
 
+	mxArray *T_sim, *k_s;
+	T_sim = mxCreateDoubleScalar(T);
+
+	engPutVariable(ep, "T_sim", T_sim);
 	engPutVariable(ep, "WPs", wps_os);
-	engEvalString(ep, "init_psbmpc_plotting");
+	engEvalString(ep, "inside_psbmpc_init_plot");
 
 	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
@@ -340,14 +345,14 @@ void PSBMPC::calculate_optimal_offsets(
 
 	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
-	
+
 	for(int i = 0; i < n_obst; i++)
 	{
 		Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
 		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
 
 		map_P_traj_i = P_i_p;
-		engPutVariable(ep, "P_flat_i", P_traj_i);
+		engPutVariable(ep, "P_i_flat", P_traj_i);
 		for (int ps = 0; ps < n_ps; ps++)
 		{
 			map_traj_i = xs_i_p[ps];
@@ -356,6 +361,7 @@ void PSBMPC::calculate_optimal_offsets(
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
 	}
+	
 	//===============================================================================================================
 
 	min_cost = 1e12;
@@ -373,8 +379,11 @@ void PSBMPC::calculate_optimal_offsets(
 		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
+		k_s = mxCreateDoubleScalar(n_samples);
+		engPutVariable(ep, "k", k_s);
+
 		engPutVariable(ep, "X", traj_os);
-		
+		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
 		//===============================================================================================================
 
 		for (int i = 0; i < n_obst; i++)
@@ -442,7 +451,7 @@ void PSBMPC::calculate_optimal_offsets(
 	colav_status.resize(2,1);
 	colav_status << CF_0, min_cost;
 
-	
+	/* engClose(ep); */
 }
 
 /****************************************************************************************
@@ -504,7 +513,7 @@ void PSBMPC::initialize_par_limits()
 void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 1;
+	n_M = 2;
 	n_a = 3; // KCC, SM, PM
 	n_ps = 1; // Determined by initialize_prediction();
 
@@ -517,12 +526,12 @@ void PSBMPC::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(1);
-			u_offsets[M] << 1.0;//, 0.5, 0.0;
+			u_offsets[M].resize(2);
+			u_offsets[M] << 1.0, 0.5;
 
-			chi_offsets[M].resize(7);
-			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M].resize(13);
+			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -541,8 +550,8 @@ void PSBMPC::initialize_pars()
 	u_m_last = 1;
 	chi_m_last = 0;
 
-	course_changes.resize(1);
-	course_changes << 30 * DEG2RAD;
+	course_changes.resize(3);
+	course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 
 	cpe_method = CE;
 	prediction_method = ERK1;
@@ -556,9 +565,9 @@ void PSBMPC::initialize_pars()
 	if (prediction_method == ERK1)
 	{ 
 		dt = 0.5; 
-		p_step = 10;
+		p_step = 1;
 	}
-	t_ts = 50;
+	t_ts = 25;
 
 	d_init = 1500;							//1852.0;	  // should be >= D_CLOSE 300.0 600.0 500.0 700.0 800 1852
 	d_close = 1000;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
@@ -633,12 +642,12 @@ void PSBMPC::initialize_prediction()
 		// Else: typically three intentions: KCC, SM, PM
 		else 
 		{
-			//std::cout << trajectory.col(0).transpose() << std::endl;
-			//std::cout << new_obstacles[i]->kf->get_state() << std::endl;
+			std::cout << trajectory.col(0).transpose() << std::endl;
+			std::cout << new_obstacles[i]->kf->get_state() << std::endl;
 			calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->kf->get_state());
 			//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
-			//std::cout << "t_cpa = " << t_cpa(i) << std::endl;
-			//std::cout << "d_cpa = " << d_cpa(i) << std::endl;
+			std::cout << "t_cpa = " << t_cpa(i) << std::endl;
+			std::cout << "d_cpa = " << d_cpa(i) << std::endl;
 			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
 			
 			if (d_cpa(i) > d_safe || (d_cpa(i) <= d_safe && t_cpa(i) > T)) // No predicted collision inside time horizon
@@ -699,7 +708,7 @@ void PSBMPC::initialize_prediction()
 					} 
 				}	
 			}
-			//std::cout << ps_maneuver_times_i.transpose() << std::endl;
+			std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
 			// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
 			ps_weights_i.resize(n_ps);
 			Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
@@ -811,7 +820,7 @@ void PSBMPC::initialize_prediction()
 			maneuver_times(M) = maneuver_times(M - 1) + std::round((t_ts + 1) / dt);
 		}
 	}
-	std::cout << "Maneuver times = " << maneuver_times.transpose() << std::endl;
+	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 
 /****************************************************************************************
