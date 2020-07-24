@@ -167,6 +167,7 @@ double CPE::estimate(
             P_c = MCSKF4D_estimation(xs_os, xs_i, P_i, i);
             break;
         default :
+            P_c = -1;
             std::cout << "Invalid estimation method" << std::endl;
             break;
     }

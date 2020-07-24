@@ -328,10 +328,7 @@ inline bool determine_COLREGS_violation(
 				!is_passed;
 
 	bool mu = (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
-	if (mu)
-	{
-		std::cout << mu << std::endl;
-	}
+
 	return mu;
 }
 

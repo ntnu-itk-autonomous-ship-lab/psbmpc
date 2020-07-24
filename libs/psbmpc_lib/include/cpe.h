@@ -24,8 +24,6 @@
 #ifndef _CPE_H_
 #define _CPE_H_
 
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
 #include "xoshiro.hpp"
 #include <Eigen/Dense>
 
@@ -83,9 +81,6 @@ private:
 	// Common internal sample variables
 	std::vector<Eigen::MatrixXd> samples;
 	std::vector<Eigen::VectorXd> valid;
-
-	thrust::host_vector<double> samples_host;
-	thrust::device_vector<double> samples_gpu;
 	
 	// Safety zone parameters
 	std::vector<double> d_safe;

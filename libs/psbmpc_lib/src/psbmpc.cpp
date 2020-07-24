@@ -20,6 +20,7 @@
 #include "utilities.h"
 #include "psbmpc.h"
 #include "iostream"
+#include "engine.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -44,7 +45,7 @@ PSBMPC::PSBMPC()
 
 	ownship = new Ownship();
 
-	cpe = new CPE(cpe_method, 1000, 100, d_safe, dt);
+	cpe = new CPE(cpe_method, 1000, 100, 1, dt);
 }
 
 /****************************************************************************************
@@ -57,6 +58,17 @@ PSBMPC::~PSBMPC()
 {
 	delete ownship;
 	delete cpe;
+
+	for (int i = 0; i < new_obstacles.size(); i++)
+	{
+		delete new_obstacles[i];
+	}
+	new_obstacles.clear();
+	for (int i = 0; i < old_obstacles.size(); i++)
+	{
+		delete old_obstacles[i];
+	}
+	old_obstacles.clear();
 }
 
 /****************************************************************************************
@@ -260,7 +272,17 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities, 				// In: Information on a priori COLREGS compliance probabilities for the obstacles
 	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
 	)
-{
+{	
+	//===============================================================================================================
+	// MATLAB PLOTTING FOR DEBUGGING
+	//===============================================================================================================
+	Engine *ep = engOpen(NULL);
+	if (ep == NULL)
+	{
+		std::cout << "engine start failed!" << std::endl;
+	}
+	//===============================================================================================================
+
 	int n_samples = std::round(T / dt);
 
 	trajectory.resize(6, n_samples);
@@ -295,6 +317,48 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::VectorXd opt_offset_sequence(2 * n_M), cost_i(n_obst);
 	Eigen::MatrixXd P_c_i(n_ps + 1, n_samples);
 
+	//===============================================================================================================
+	// MATLAB PLOTTING FOR DEBUGGING
+	//===============================================================================================================
+	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
+
+	double *ptraj_os = mxGetPr(traj_os); 
+	double *p_wps_os = mxGetPr(wps_os); 
+
+	Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_os, 2, waypoints.cols());
+	map_wps_i = waypoints;
+
+	engPutVariable(ep, "WPs", wps_os);
+	engEvalString(ep, "init_psbmpc_plotting");
+
+	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
+
+	double *ptraj_i = mxGetPr(traj_i);
+	double *p_P_traj_i = mxGetPr(P_traj_i);
+
+	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
+	
+	for(int i = 0; i < n_obst; i++)
+	{
+		Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
+		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
+
+		map_P_traj_i = P_i_p;
+		engPutVariable(ep, "P_flat_i", P_traj_i);
+		for (int ps = 0; ps < n_ps; ps++)
+		{
+			map_traj_i = xs_i_p[ps];
+			
+			engPutVariable(ep, "X_i", traj_i);
+			engEvalString(ep, "inside_psbmpc_obstacle_plot");
+		}
+	}
+	//===============================================================================================================
+
+	min_cost = 1e12;
 	reset_control_behavior();
 	for (int cb = 0; cb < n_cbs; cb++)
 	{
@@ -303,8 +367,19 @@ void PSBMPC::calculate_optimal_offsets(
 		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 		ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, T, dt);
 
+		//===============================================================================================================
+		// MATLAB PLOTTING FOR DEBUGGING
+		//===============================================================================================================
+		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		map_traj = trajectory;
+
+		engPutVariable(ep, "X", traj_os);
+		
+		//===============================================================================================================
+
 		for (int i = 0; i < n_obst; i++)
 		{
+			
 			if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
 
 			//calculate_collision_probabilities(P_c_i, i); 
@@ -355,9 +430,19 @@ void PSBMPC::calculate_optimal_offsets(
 	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
 	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
 
+	std::cout << "Optimal offset sequence : " << std::endl;
+	for (int M = 0; M < n_M; M++)
+	{
+		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
+		if (M < n_M - 1) std::cout << ", ";
+	}
+	std::cout << std::endl;
+
 	double CF_0 = u_opt * (1 - fabs(chi_opt * RAD2DEG) / 15.0);
 	colav_status.resize(2,1);
 	colav_status << CF_0, min_cost;
+
+	
 }
 
 /****************************************************************************************
@@ -419,7 +504,7 @@ void PSBMPC::initialize_par_limits()
 void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
+	n_M = 1;
 	n_a = 3; // KCC, SM, PM
 	n_ps = 1; // Determined by initialize_prediction();
 
@@ -432,12 +517,12 @@ void PSBMPC::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(3);
-			u_offsets[M] << 1.0, 0.5, 0.0;
+			u_offsets[M].resize(1);
+			u_offsets[M] << 1.0;//, 0.5, 0.0;
 
-			chi_offsets[M].resize(13);
-			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M].resize(7);
+			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -473,7 +558,7 @@ void PSBMPC::initialize_pars()
 		dt = 0.5; 
 		p_step = 10;
 	}
-	t_ts = 25;
+	t_ts = 50;
 
 	d_init = 1500;							//1852.0;	  // should be >= D_CLOSE 300.0 600.0 500.0 700.0 800 1852
 	d_close = 1000;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
@@ -494,7 +579,7 @@ void PSBMPC::initialize_pars()
 	G = 0;		         					 // 1.0e3
 
 	K_sgn = 5;
-	T_sgn = 3 * t_ts;
+	T_sgn = 4 * t_ts;
 
 	obstacle_filter_on = false;
 	obstacle_colav_on.resize(1);
@@ -517,7 +602,7 @@ void PSBMPC::initialize_prediction()
 {
 	int n_obst = new_obstacles.size();
 	cpe->set_number_of_obstacles(n_obst);
-
+	
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
@@ -1352,8 +1437,8 @@ double PSBMPC::calculate_chattering_cost()
 		{
 			if (M < n_M - 1)
 			{
-				if ((offset_sequence(M + 1) >= 0 && offset_sequence(2 * M + 1) < 0) ||
-					(offset_sequence(M + 1) < 0 && offset_sequence(2 * M + 1) >= 0))
+				if ((offset_sequence(2 * M + 1) >= 0 && offset_sequence(2 * M + 3) < 0) ||
+					(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) >= 0))
 				{
 					delta_t = maneuver_times(M+1) - maneuver_times(M);
 					cost += K_sgn * exp( - delta_t / T_sgn);
