@@ -642,12 +642,12 @@ void PSBMPC::initialize_prediction()
 		// Else: typically three intentions: KCC, SM, PM
 		else 
 		{
-			std::cout << trajectory.col(0).transpose() << std::endl;
-			std::cout << new_obstacles[i]->kf->get_state() << std::endl;
+			//std::cout << trajectory.col(0).transpose() << std::endl;
+			//std::cout << new_obstacles[i]->kf->get_state() << std::endl;
 			calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->kf->get_state());
 			//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
-			std::cout << "t_cpa = " << t_cpa(i) << std::endl;
-			std::cout << "d_cpa = " << d_cpa(i) << std::endl;
+			//std::cout << "t_cpa = " << t_cpa(i) << std::endl;
+			//std::cout << "d_cpa = " << d_cpa(i) << std::endl;
 			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
 			
 			if (d_cpa(i) > d_safe || (d_cpa(i) <= d_safe && t_cpa(i) > T)) // No predicted collision inside time horizon
@@ -708,6 +708,7 @@ void PSBMPC::initialize_prediction()
 					} 
 				}	
 			}
+			//std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
 			std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
 			// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
 			ps_weights_i.resize(n_ps);

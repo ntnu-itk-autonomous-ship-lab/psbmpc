@@ -1,4 +1,4 @@
-fig = figure; axis equal
+fig = figure; clf; axis equal
 hold on; grid on;
 ax1 = gca;
 ylimits_ne = [-400 1000];
