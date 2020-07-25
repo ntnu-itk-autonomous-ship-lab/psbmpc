@@ -111,11 +111,9 @@ void Obstacle::resize_trajectories(const int n_samples)
 {
 	int n_ps = ps_ordering.size();
 	xs_p.resize(n_ps);
-	v_p.resize(n_ps);
 	for(int ps = 0; ps < n_ps; ps++)
 	{
 		xs_p[ps].resize(4, n_samples); 	xs_p[ps].col(0) = kf->get_state();
-		v_p[ps].resize(2, n_samples); 	v_p[ps].col(0) 	= kf->get_state().block<2, 1>(2, 0);
 	}
 	xs_colav_p.resize(4, n_samples); 	xs_colav_p.col(0) = kf->get_state();
 
@@ -177,14 +175,14 @@ void Obstacle::predict_independent_trajectories(
 	Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
 	P_p.col(0) = flatten(kf->get_covariance());
 
+	Eigen::Vector2d v_p_new;
 	double chi_ps, t = 0;
 	bool have_turned;
 	for(int ps = 0; ps < n_ps; ps++)
 	{
 		ownship_state_sl = ownship_state;
-
-		v_p[ps](0, 0) = kf->get_state()(2);
-		v_p[ps](1, 0) = kf->get_state()(3);
+		v_p(0) = kf->get_state()(2);
+		v_p(1) = kf->get_state()(3);
 		xs_p[ps].col(0) = kf->get_state();
 		
 		have_turned = false;	
@@ -205,18 +203,20 @@ void Obstacle::predict_independent_trajectories(
 				case SM :
 					if (k == ps_maneuver_times[ps] && !have_turned)
 					{
-						chi_ps = atan2(v_p[ps](1, k), v_p[ps](0, k)); 
-						v_p[ps](0, k) = v_p[ps].col(k).norm() * cos(chi_ps + ps_course_changes[ps]);
-						v_p[ps](1, k) = v_p[ps].col(k).norm() * sin(chi_ps + ps_course_changes[ps]);
+						chi_ps = atan2(v_p(1), v_p(0)); 
+						v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
+						v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
+						v_p = v_p_new;
 						have_turned = true;
 					}
 					break;
 				case PM : 
 					if (k == ps_maneuver_times[ps] && !have_turned)
 					{
-						chi_ps = atan2(v_p[ps](1, k), v_p[ps](0, k)); 
-						v_p[ps](0, k) = v_p[ps].col(k).norm() * cos(chi_ps + ps_course_changes[ps]);
-						v_p[ps](1, k) = v_p[ps].col(k).norm() * sin(chi_ps + ps_course_changes[ps]);
+						chi_ps = atan2(v_p(1), v_p(0)); 
+						v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
+						v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
+						v_p = v_p_new;
 						have_turned = true;
 					}
 					break;
@@ -227,8 +227,7 @@ void Obstacle::predict_independent_trajectories(
 
 			if (k < n_samples - 1)
 			{
-				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p[ps].col(k), dt);
-				v_p[ps].col(k + 1) = v_p[ps].col(k);
+				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p, dt);
 
 				if (ps == 0) P_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
 

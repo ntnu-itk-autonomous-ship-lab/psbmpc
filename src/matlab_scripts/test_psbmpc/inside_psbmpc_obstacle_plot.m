@@ -1,4 +1,4 @@
-
+%delete(h_X_i{i}); delete(h_i_text{i}); delete(h_X_s{i});
 plot(ax1, X_i(2, :), X_i(1, :), 'g', 'Linewidth', 1.2);
 [~, n_samples] = size(X_i);
 for s = 1 : 100 : n_samples
