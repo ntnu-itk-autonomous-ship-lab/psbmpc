@@ -32,27 +32,7 @@ mrou.h
 kf.h
 ../libs/psbmpc_lib/include/kf.h
 
-../libs/psbmpc_lib/include/obstacle_sbmpc.h
-psbmpc_index.h
-../libs/psbmpc_lib/include/psbmpc_index.h
-prediction_obstacle.h
-../libs/psbmpc_lib/include/prediction_obstacle.h
-obstacle_ship.h
-../libs/psbmpc_lib/include/obstacle_ship.h
-Eigen/Dense
-../libs/psbmpc_lib/include/Eigen/Dense
-vector
--
-
-../libs/psbmpc_lib/include/obstacle_ship.h
-Eigen/Dense
-../libs/psbmpc_lib/include/Eigen/Dense
-
 ../libs/psbmpc_lib/include/ownship.h
-Eigen/Dense
-../libs/psbmpc_lib/include/Eigen/Dense
-
-../libs/psbmpc_lib/include/prediction_obstacle.h
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
 
@@ -1177,18 +1157,6 @@ lapacke_mangling.h
 ../libs/third_party_libs/xoshiro.hpp
 cstdint
 -
-
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.cpp
-obstacle.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.h
-obstacle_sbmpc.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_sbmpc.h
-utilities.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
-kf.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.h
-iostream
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/iostream
 
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp
 utilities.h

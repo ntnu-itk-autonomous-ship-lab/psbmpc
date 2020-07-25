@@ -330,9 +330,13 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
 	map_wps = waypoints;
 
-	mxArray *T_sim, *k_s;
+	mxArray *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx;
 	T_sim = mxCreateDoubleScalar(T);
+	n_ps_mx = mxCreateDoubleScalar(n_ps);
+	n_obst_mx = mxCreateDoubleScalar(n_obst);
 
+	engPutVariable(ep, "n_ps", n_ps_mx);
+	engPutVariable(ep, "n_obst", n_obst_mx);
 	engPutVariable(ep, "T_sim", T_sim);
 	engPutVariable(ep, "WPs", wps_os);
 	engEvalString(ep, "inside_psbmpc_init_plot");
@@ -351,10 +355,16 @@ void PSBMPC::calculate_optimal_offsets(
 		Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
 		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
 
+		i_mx = mxCreateDoubleScalar(i + 1);
+		engPutVariable(ep, "i", i_mx);
+
 		map_P_traj_i = P_i_p;
 		engPutVariable(ep, "P_i_flat", P_traj_i);
 		for (int ps = 0; ps < n_ps; ps++)
 		{
+			ps_mx = mxCreateDoubleScalar(ps + 1);
+			engPutVariable(ep, "ps", ps_mx);
+
 			map_traj_i = xs_i_p[ps];
 			
 			engPutVariable(ep, "X_i", traj_i);
