@@ -14,5 +14,3 @@ for s = 1 : 125 : n_samples
     h_X_k = plot(ax1, X(2, s) , X(1, s), 'ko', 'Linewidth', 1.6);
     h_safe_k = plot(ax1, y_cs * 50 + X(2, s), 50 * x_cs + X(1, s), 'r', 'Linewidth', 1.6);
 end
-
-drawnow;
