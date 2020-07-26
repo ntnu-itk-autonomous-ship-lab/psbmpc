@@ -66,24 +66,21 @@ private:
 	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: n_ps x 1
 	std::vector<bool> mu;
 
+	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
+	// This is equal for all prediction scenarios including those with active COLAV (using MROU)
+	Eigen::MatrixXd P_p;  
+
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 	std::vector<Eigen::MatrixXd> xs_p;
 
 	// Mean predicted velocity for the obstacle (MROU): 
 	Eigen::Vector2d v_p;
 
-	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
-	// This is equal for all prediction scenarios when using MROU, thus no std::vector needed
-	Eigen::MatrixXd P_p;  
-
 	// Prediction scenario ordering, size n_ps x 1 of intentions
 	std::vector<Intention> ps_ordering;
 
-	// Course change ordering, weights and maneuvering times for the prediction scenarios: n_ps x 1
+	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
 	Eigen::VectorXd ps_course_changes, ps_weights, ps_maneuver_times;
-
-	// Predicted obstacle trajectory when it is behaving intelligently
-	Eigen::MatrixXd xs_colav_p;
 	
 public:
 
@@ -105,6 +102,8 @@ public:
 			 const double dt);
 
 	int get_ID() const { return ID; };
+
+	void set_colav_indicator(const bool colav_on) { this->colav_on = colav_on; };
 
 	std::vector<bool> get_COLREGS_violation_indicator() const { return mu; };
 
@@ -128,11 +127,11 @@ public:
 	// Trajectory prediction related methods
 	void resize_trajectories(const int n_samples);
 
-	std::vector<Eigen::MatrixXd> get_independent_trajectories() const { return xs_p; };
+	std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; };
 
 	Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
 
-	void initialize_independent_prediction(	
+	void initialize_prediction(	
 		const std::vector<Intention> &ps_ordering,
 		const Eigen::VectorXd &ps_course_changes,
 		const Eigen::VectorXd &ps_weights,
@@ -153,9 +152,8 @@ public:
 		const double d_safe);
 
 	// Methods where obstacle COLAV must be activated
-	void set_dependent_trajectory(const Eigen::MatrixXd &xs_colav_p) { this->xs_colav_p = xs_colav_p; };
-
-	Eigen::MatrixXd get_dependent_trajectory() const { return xs_colav_p; };
+	void set_trajectory(const std::vector<Eigen::MatrixXd> &xs_p) { if (colav_on) { this->xs_p = xs_p; }};
+	//
 
 	void update(
 		const Eigen::VectorXd &xs_aug, 

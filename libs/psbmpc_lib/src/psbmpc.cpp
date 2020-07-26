@@ -276,12 +276,12 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	Engine *ep = engOpen(NULL);
+/* 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[1000000 + 1]; 
+	char buffer[1000000 + 1];  */
 	//===============================================================================================================
 
 	int n_samples = std::round(T / dt);
@@ -309,19 +309,19 @@ void PSBMPC::calculate_optimal_offsets(
 
 	for (int i = 0; i < n_obst; i++)
 	{
-		// PSBMPC parameters needed to determine if obstacle breaches COLREGS 
-		// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
-		new_obstacles[i]->predict_independent_trajectories(T, dt, trajectory.col(0), phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
+		if (!obstacle_colav_on[i])
+		{
+			// PSBMPC parameters needed to determine if obstacle breaches COLREGS 
+			// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
+			new_obstacles[i]->predict_independent_trajectories(T, dt, trajectory.col(0), phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
+		}
 	}
 
-	double cost;
-	Eigen::VectorXd opt_offset_sequence(2 * n_M), cost_i(n_obst);
-	Eigen::MatrixXd P_c_i(n_ps + 1, n_samples);
-
+	
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+/* 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
 	double *ptraj_os = mxGetPr(traj_os); 
@@ -332,7 +332,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	mxArray *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx;
 	T_sim = mxCreateDoubleScalar(T);
-	n_ps_mx = mxCreateDoubleScalar(n_ps);
+	n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
 
 	engPutVariable(ep, "n_ps", n_ps_mx);
@@ -360,7 +360,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		map_P_traj_i = P_i_p;
 		engPutVariable(ep, "P_i_flat", P_traj_i);
-		for (int ps = 0; ps < n_ps; ps++)
+		for (int ps = 0; ps < n_ps[i]; ps++)
 		{
 			ps_mx = mxCreateDoubleScalar(ps + 1);
 			engPutVariable(ep, "ps", ps_mx);
@@ -371,9 +371,11 @@ void PSBMPC::calculate_optimal_offsets(
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
 	}
-	
+	 */
 	//===============================================================================================================
-
+	double cost;
+	Eigen::VectorXd opt_offset_sequence(2 * n_M), cost_i(n_obst);
+	Eigen::MatrixXd P_c_i;
 	min_cost = 1e12;
 	reset_control_behavior();
 	for (int cb = 0; cb < n_cbs; cb++)
@@ -386,54 +388,40 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+/* 		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
 		engPutVariable(ep, "k", k_s);
 
 		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
+		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
 		//===============================================================================================================
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			
 			if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
 
-			//calculate_collision_probabilities(P_c_i, i); 
+			P_c_i.resize(n_ps[i], n_samples);
+			calculate_collision_probabilities(P_c_i, i); 
 
-			//cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
+			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
 		}
 
-		//cost += cost_i.maxCoeff();
+		cost += cost_i.maxCoeff();
 
 		cost += calculate_grounding_cost(static_obstacles);
 
 		cost += calculate_control_deviation_cost();
 
 		cost += calculate_chattering_cost();
-		
+
 		if (cost < min_cost) 
 		{
 			min_cost = cost;
 			opt_offset_sequence = offset_sequence;
 
-			// Set current optimal x-y position trajectory, downsample if linear prediction was not used
-			if (prediction_method > Linear)
-			{
-				int count = 0;
-				predicted_trajectory.resize(2, n_samples / p_step);
-				for (int k = 0; k < n_samples; k+=p_step)
-				{
-					predicted_trajectory.col(count) = trajectory.block<2, 1>(0, k);
-					if (count < std::round(n_samples / p_step) - 1) count++;					
-				}
-			} 
-			else
-			{
-				predicted_trajectory = trajectory.block(2, n_samples, 0, 0);
-			}
+			assign_optimal_trajectory(predicted_trajectory);
 
 			// Assign current optimal hazard level for each obstacle
 			for (int i = 0; i < n_obst; i++)
@@ -524,8 +512,8 @@ void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 2;
-	n_a = 3; // KCC, SM, PM
-	n_ps = 1; // Determined by initialize_prediction();
+	n_a = 1; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
+	n_ps.resize(1); // Determined by initialize_prediction();
 
 	offset_sequence_counter.resize(2 * n_M);
 	offset_sequence.resize(2 * n_M);
@@ -621,6 +609,7 @@ void PSBMPC::initialize_prediction()
 {
 	int n_obst = new_obstacles.size();
 	cpe->set_number_of_obstacles(n_obst);
+	n_ps.resize(n_obst);
 	
 	//***********************************************************************************
 	// Obstacle prediction initialization
@@ -630,18 +619,25 @@ void PSBMPC::initialize_prediction()
 	Eigen::VectorXd ps_course_changes_i;
 	Eigen::VectorXd ps_weights_i;
 	Eigen::VectorXd ps_maneuver_times_i;
-	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
-	double Pr_CC_i, t_obst_passed;
-	Eigen::Vector2d p_cpa;
 
-	int turn_count, course_change_count;
+	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
+	Eigen::Vector2d p_cpa;
 	for (int i = 0; i < n_obst; i++)
 	{
-		// If only one intention, then only one prediction scenario
+		//Typically three intentions: KCC, SM, PM
+		//std::cout << trajectory.col(0).transpose() << std::endl;
+		//std::cout << new_obstacles[i]->kf->get_state() << std::endl;
+		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->kf->get_state());
+		//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
+		//std::cout << "t_cpa = " << t_cpa(i) << std::endl;
+		//std::cout << "d_cpa = " << d_cpa(i) << std::endl;
 		if (n_a == 1)
 		{
+			n_ps[i] = 1;
 			ps_ordering_i.resize(1);
-			ps_ordering_i[0] = KCC;
+			if (!obstacle_colav_on[i])	{ ps_ordering_i[0] = KCC; } // One intention: KCC for independent obstacle prediction
+			else						{ ps_ordering_i[0] = SM;  } // and CC starboard maneuver for dependent obstacle prediction
+			
 			ps_course_changes_i.resize(1);
 			ps_course_changes_i[0] = 0;
 			ps_weights_i.resize(1);
@@ -649,149 +645,31 @@ void PSBMPC::initialize_prediction()
 			ps_maneuver_times_i.resize(1);
 			ps_maneuver_times_i(0) = 0;
 		}
-		// Else: typically three intentions: KCC, SM, PM
-		else 
+		else
 		{
-			//std::cout << trajectory.col(0).transpose() << std::endl;
-			//std::cout << new_obstacles[i]->kf->get_state() << std::endl;
-			calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->kf->get_state());
-			//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
-			//std::cout << "t_cpa = " << t_cpa(i) << std::endl;
-			//std::cout << "d_cpa = " << d_cpa(i) << std::endl;
-			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
-			
-			if (d_cpa(i) > d_safe || (d_cpa(i) <= d_safe && t_cpa(i) > T)) // No predicted collision inside time horizon
+			if (!obstacle_colav_on[i])
 			{
-				n_turns = std::floor(T / t_ts);
-			} 
-			// Safety zone violation at CPA inside prediction horizon, as d_cpa <= d_safe
-			else 				
-			{
-				if (t_cpa(i) > t_ts) // Space evenly until t_cpa
+				// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
+				if (d_cpa(i) > d_safe || (d_cpa(i) <= d_safe && t_cpa(i) > T)) // No predicted collision inside time horizon
 				{
-					n_turns = std::floor(t_cpa(i) / t_ts);
+					n_turns = std::floor(T / t_ts);
+				} 
+				else  // Safety zone violation at CPA inside prediction horizon, as d_cpa <= d_safe				
+				{
+					if (t_cpa(i) > t_ts)	{ n_turns = std::floor(t_cpa(i) / t_ts); }
+					else					{ n_turns = 1; }	
 				}
-				else			// No time to react => only one maneuver
-				{
-					n_turns = 1;
-				}	
+
+				n_ps[i] = 1 + 2 * course_changes.size() * n_turns;
+				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_maneuver_times_i, ps_course_changes_i, ps_weights_i, i, n_turns);
 			}
-			
-			// Determine scenario ordering and course changes based on number of turns and course changes
-			n_ps = 1 + 2 * course_changes.size() * n_turns;
-			ps_ordering_i.resize(n_ps);
-			ps_ordering_i[0] = KCC;
-			ps_maneuver_times_i.resize(n_ps);
-			ps_maneuver_times_i[0] = 0;
-			ps_course_changes_i.resize(n_ps);
-			ps_course_changes_i[0] = 0;
-			turn_count = 0;
-			course_change_count = 0;
-			for (int ps = 1; ps < n_ps; ps++)
+			else // Set up independent obstacle prediction scenarios
 			{
-				// Starboard maneuvers
-				if (ps < (n_ps - 1) / 2 + 1)
-				{
-					ps_ordering_i[ps] = SM;
-
-					ps_maneuver_times_i[ps] = turn_count * std::floor(t_ts / dt);
-
-					ps_course_changes_i(ps) = course_changes(course_change_count);
-					if (++course_change_count == course_changes.size())
-					{
-						if(++turn_count == n_turns) turn_count = 0;
-						course_change_count = 0;
-					} 
-				}
-				// Port maneuvers
-				else
-				{
-					ps_ordering_i[ps] = PM;
-
-					ps_maneuver_times_i[ps] = turn_count * std::floor(t_ts / dt);
-
-					ps_course_changes_i(ps) = - course_changes(course_change_count);
-					if (++course_change_count == course_changes.size())
-					{
-						if(++turn_count == n_turns) turn_count = 0;
-						course_change_count = 0;
-					} 
-				}	
-			}
-			//std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
-			std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
-			// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
-			ps_weights_i.resize(n_ps);
-			Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
-			switch(ST_i_0[i])
-			{
-				case A : // Outside CC consideration zone
-					ps_weights_i(0) = 1;
-					for (int ps = 1; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = 1;	
-					}
-					break;
-				case B : // OT, SO
-					ps_weights_i(0) = Pr_CC_i;
-					for (int ps = 1; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = 1 - Pr_CC_i;	
-					}
-					break;
-				case C : // CR, SO
-					ps_weights_i(0) = Pr_CC_i;
-					for (int ps = 1; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = 1 - Pr_CC_i;	
-					}
-					break;
-				case D : // OT, GW
-					ps_weights_i(0) = 1 - Pr_CC_i;
-					for (int ps = 1; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = Pr_CC_i;
-					}
-					break;
-				case E : // HO, GW
-					for (int ps = 0; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = 1 - Pr_CC_i;	
-
-						// Starboard maneuvers, which are CC
-						if (ps > 0 && ps < (n_ps - 1) / 2 + 1)
-						{
-							ps_weights_i(ps) = Pr_CC_i;	
-						}
-					}
-					break;
-				case F : // CR, GW
-					t_obst_passed = find_time_of_passing(i);
-					ps_weights_i(0) = 1 - Pr_CC_i;
-					for (int ps = 1; ps < n_ps; ps++)
-					{
-						ps_weights_i(ps) = 1 - Pr_CC_i;
-						// Starboard maneuvers
-						if (ps < (n_ps - 1) / 2 + 1)
-						{
-							// Crossing obstacle prediction scenario gets COLREGS compliant weight Pr_CC_i
-							// if the course change is COLREGS compliant and happens in good time before
-							// the own-ship is passed
-							if (ps_maneuver_times_i(ps) * dt < t_obst_passed - t_ts)
-							{
-								ps_weights_i(ps) = Pr_CC_i;
-							}							
-						} 
-					}
-					break;
-				default :
-					std::cout << "This situation type does not exist" << std::endl;
-					break;
-			}
-			ps_weights_i = ps_weights_i / ps_weights_i.sum();
-				
+				n_ps[i] = 3;
+				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_maneuver_times_i, ps_course_changes_i, ps_weights_i, i);
+			}	
 		}
-		new_obstacles[i]->initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);
+		new_obstacles[i]->initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);		
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -833,6 +711,226 @@ void PSBMPC::initialize_prediction()
 	}
 	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
+
+/****************************************************************************************
+*  Name     : set_up_independent_obstacle_prediction_variables
+*  Function : 
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::set_up_independent_obstacle_prediction_variables(
+	std::vector<Intention> &ps_ordering_i,									// In/out: Intention ordering of the independent obstacle prediction scenarios
+	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
+	Eigen::VectorXd &ps_weights_i, 											// In/out: Cost weights of the independent obstacle prediction scenarios
+	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
+	const int i, 															// In: Index of obstacle in consideration
+	const int n_turns 														// In: number of predicted turns for the obstacle 
+	)
+{
+	double Pr_CC_i, t_obst_passed;
+	int turn_count, course_change_count;
+
+	ps_ordering_i.resize(n_ps[i]);
+	ps_ordering_i[0] = KCC;
+	ps_maneuver_times_i.resize(n_ps[i]);
+	ps_maneuver_times_i[0] = 0;
+	ps_course_changes_i.resize(n_ps[i]);
+	ps_course_changes_i[0] = 0;
+	turn_count = 0;
+	course_change_count = 0;
+	for (int ps = 1; ps < n_ps[i]; ps++)
+	{
+		// Starboard maneuvers
+		if (ps < (n_ps[i] - 1) / 2 + 1)
+		{
+			ps_ordering_i[ps] = SM;
+
+			ps_maneuver_times_i[ps] = turn_count * std::floor(t_ts / dt);
+
+			ps_course_changes_i(ps) = course_changes(course_change_count);
+			if (++course_change_count == course_changes.size())
+			{
+				if(++turn_count == n_turns) turn_count = 0;
+				course_change_count = 0;
+			} 
+		}
+		// Port maneuvers
+		else
+		{
+			ps_ordering_i[ps] = PM;
+
+			ps_maneuver_times_i[ps] = turn_count * std::floor(t_ts / dt);
+
+			ps_course_changes_i(ps) = - course_changes(course_change_count);
+			if (++course_change_count == course_changes.size())
+			{
+				if(++turn_count == n_turns) turn_count = 0;
+				course_change_count = 0;
+			} 
+		}	
+	}
+	//std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
+	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
+	// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
+	ps_weights_i.resize(n_ps[i]);
+	Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
+	switch(ST_i_0[i])
+	{
+		case A : // Outside CC consideration zone
+			ps_weights_i(0) = 1;
+			for (int ps = 1; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = 1;	
+			}
+			break;
+		case B : // OT, SO
+			ps_weights_i(0) = Pr_CC_i;
+			for (int ps = 1; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = 1 - Pr_CC_i;	
+			}
+			break;
+		case C : // CR, SO
+			ps_weights_i(0) = Pr_CC_i;
+			for (int ps = 1; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = 1 - Pr_CC_i;	
+			}
+			break;
+		case D : // OT, GW
+			ps_weights_i(0) = 1 - Pr_CC_i;
+			for (int ps = 1; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = Pr_CC_i;
+			}
+			break;
+		case E : // HO, GW
+			for (int ps = 0; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = 1 - Pr_CC_i;	
+
+				// Starboard maneuvers, which are CC
+				if (ps > 0 && ps < (n_ps[i] - 1) / 2 + 1)
+				{
+					ps_weights_i(ps) = Pr_CC_i;	
+				}
+			}
+			break;
+		case F : // CR, GW
+			t_obst_passed = find_time_of_passing(i);
+			ps_weights_i(0) = 1 - Pr_CC_i;
+			for (int ps = 1; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = 1 - Pr_CC_i;
+				// Starboard maneuvers
+				if (ps < (n_ps[i] - 1) / 2 + 1)
+				{
+					// Crossing obstacle prediction scenario gets COLREGS compliant weight Pr_CC_i
+					// if the course change is COLREGS compliant and happens in time before
+					// the own-ship is passed
+					if (ps_maneuver_times_i(ps) * dt < t_obst_passed - t_ts)
+					{
+						ps_weights_i(ps) = Pr_CC_i;
+					}							
+				} 
+			}
+			break;
+		default :
+			std::cout << "This situation type does not exist" << std::endl;
+			break;
+	}
+	ps_weights_i = ps_weights_i / ps_weights_i.sum();
+}
+
+/****************************************************************************************
+*  Name     : set_up_independent_obstacle_prediction_variables
+*  Function : 
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::set_up_dependent_obstacle_prediction_variables(
+	std::vector<Intention> &ps_ordering_i,									// In/out: Intention ordering of the independent obstacle prediction scenarios
+	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
+	Eigen::VectorXd &ps_weights_i, 											// In/out: Cost weights of the independent obstacle prediction scenarios
+	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
+	const int i 															// In: Index of obstacle in consideration
+	)
+{
+	double Pr_CC_i;
+
+	ps_ordering_i.resize(n_ps[i]);
+	ps_ordering_i[0] = KCC; 
+	for (int ps = 1; ps < n_ps[i]; ps++)
+	{
+		// Starboard and port maneuvers, respectively
+		if (ps < (n_ps[i] - 1) / 2 + 1)		{ ps_ordering_i[ps] = SM; }
+		else 								{ ps_ordering_i[ps] = PM; }	
+	}
+	ps_maneuver_times_i.resize(0);
+	ps_course_changes_i.resize(0);
+
+	ps_weights_i.resize(n_ps[i]);
+	Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
+	switch(ST_i_0[i])
+	{
+		case A : // Outside CC consideration zone
+			ps_weights_i(0) = 1;
+			for (int ps = 1; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = 1;	
+			}
+			break;
+		case B : // OT, SO
+			ps_weights_i(0) = Pr_CC_i;
+			for (int ps = 1; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = 1 - Pr_CC_i;	
+			}
+			break;
+		case C : // CR, SO
+			ps_weights_i(0) = Pr_CC_i;
+			for (int ps = 1; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = 1 - Pr_CC_i;	
+			}
+			break;
+		case D : // OT, GW
+			ps_weights_i(0) = 1 - Pr_CC_i;
+			for (int ps = 1; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = Pr_CC_i;
+			}
+			break;
+		case E : // HO, GW
+			for (int ps = 0; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = 1 - Pr_CC_i;	
+				// Starboard maneuvers, which are CC
+				if (ps > 0 && ps < (n_ps[i] - 1) / 2 + 1)
+				{
+					ps_weights_i(ps) = Pr_CC_i;	
+				}
+			}
+			break;
+		case F : // CR, GW
+			ps_weights_i(0) = 1 - Pr_CC_i;
+			for (int ps = 1; ps < n_ps[i]; ps++)
+			{
+				ps_weights_i(ps) = 1 - Pr_CC_i;
+				// Starboard maneuvers
+				if (ps < (n_ps[i] - 1) / 2 + 1)
+				{
+					ps_weights_i(ps) = Pr_CC_i;						
+				} 
+			}
+			break;
+		default :
+			std::cout << "This situation type does not exist" << std::endl;
+			break;
+	}
+	ps_weights_i = ps_weights_i / ps_weights_i.sum();
+}
+
 
 /****************************************************************************************
 *  Name     : find_time_of_passing
@@ -1180,8 +1278,8 @@ bool PSBMPC::determine_transitional_cost_indicator(
 }
 
 bool PSBMPC::determine_transitional_cost_indicator(
-	const Eigen::VectorXd& xs_A,											// In: State vector of vessel A (the ownship)
-	const Eigen::VectorXd& xs_B, 											// In: State vector of vessel B (the obstacle)
+	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A (the ownship)
+	const Eigen::VectorXd &xs_B, 											// In: State vector of vessel B (the obstacle)
 	const int i, 															// In: Index of obstacle
 	const double chi_m 														// In: Candidate course offset currently followed
 	)
@@ -1237,35 +1335,21 @@ bool PSBMPC::determine_transitional_cost_indicator(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::calculate_collision_probabilities(
-	Eigen::MatrixXd &P_c_i,									// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps+1 x n_samples
+	Eigen::MatrixXd &P_c_i,									// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const int i 											// In: Index of obstacle
 	)
 {
 	int n_samples = trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
+	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_trajectories();
 	double d_safe_i = d_safe;
-	if (!obstacle_colav_on[i])
-	{
-		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
 
-		for (int ps = 0; ps < n_ps; ps++)
-		{
-			cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
-			for (int k = 0; k < n_samples; k++)
-			{
-				P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
-			}
-		}
-	}
-	else
+	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		Eigen::MatrixXd xs_i_p = new_obstacles[i]->get_dependent_trajectory();
-
-		cpe->initialize(trajectory.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i, i);
+		cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
 		for (int k = 0; k < n_samples; k++)
 		{
-			// Last row (with index n_ps) is for the colav active obstacle trajectory
-			P_c_i(n_ps, k) = cpe->estimate(trajectory.col(k), xs_i_p.col(k), P_i_p.col(k), i);
+			P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
 		}
 	}
 }
@@ -1277,141 +1361,144 @@ void PSBMPC::calculate_collision_probabilities(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_dynamic_obstacle_cost(
-	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps+1 x n_samples
+	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
 	const int i 													// In: Index of obstacle
 	)
 {
 	double cost = 0, cost_ps, coll_cost;
+	Eigen::VectorXd max_cost_ps(n_ps[i]);
+	for (int ps = 0; ps < n_ps[i]; ps++)
+	{
+		max_cost_ps(ps) = 0;
+	}
 
 	int n_samples = trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
-	if (!obstacle_colav_on[i])
+	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_trajectories();
+	std::vector<bool> mu_i = new_obstacles[i]->get_COLREGS_violation_indicator();
+	double Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
+
+	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
+	double psi_0_p, psi_i_p, d_0i_p, chi_m;
+	bool mu, trans;
+	for(int k = 0; k < n_samples; k++)
 	{
-		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
-	
-		int n_ps = xs_i_p.size();
-		Eigen::VectorXd max_cost_ps(n_ps);
-		for (int ps = 0; ps < n_ps; ps++)
-		{
-			max_cost_ps(ps) = 0;
-		}
-		std::vector<bool> mu_i = new_obstacles[i]->get_COLREGS_violation_indicator();
-		double Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
+		psi_0_p = trajectory(2, k); 
+		v_0_p(0) = trajectory(3, k); 
+		v_0_p(1) = trajectory(4, k); 
+		v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
 
-		Eigen::Vector2d v_p, v_i_p, L_0i_p;
-		double psi_p, psi_i_p, d_0i_p;
-		bool mu;
-		for(int k = 0; k < n_samples; k++)
+		for (int M = 0; M < n_M; M++)
 		{
-			psi_p = trajectory(2, k); 
-			v_p(0) = trajectory(3, k); 
-			v_p(1) = trajectory(4, k); 
-			v_p = rotate_vector_2D(v_p, psi_p);
-			for(int ps = 0; ps < n_ps; ps++)
+			if (M < n_M - 1)
 			{
-				L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
-				d_0i_p = L_0i_p.norm();
-				L_0i_p = L_0i_p.normalized();
-
-				v_i_p(0) = xs_i_p[ps](2, k);
-				v_i_p(1) = xs_i_p[ps](3, k);
-
-				coll_cost = calculate_collision_cost(v_p, v_i_p);
-
-				mu = determine_COLREGS_violation(v_p, psi_p, v_i_p, L_0i_p, d_0i_p);
-
-				cost_ps = coll_cost * P_c_i(ps, k) + kappa * mu;
-
-				if (cost_ps > max_cost_ps(ps))
+				if (k >= maneuver_times[M] && k < maneuver_times[M + 1])
 				{
-					max_cost_ps(ps) = cost_ps;
+					chi_m = offset_sequence[2 * M + 1];
+					
 				}
-			}
-		}
-		// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-		// which means that higher cost is applied if the obstacle follows COLREGS
-		// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-		// and the own-ship breaches COLREGS
-		for (int ps = 0; ps < n_ps; ps++)
-		{
-			if (mu_i[ps])
-			{
-				max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
 			}
 			else
 			{
-				max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
+				if (k >= maneuver_times[M])
+				{
+					chi_m = offset_sequence[2 * M + 1];
+				}
 			}
+			//std::cout << "k = " << k << std::endl;
+			//std::cout << "chi_m = " << chi_m * RAD2DEG << std::endl;
 		}
+		for(int ps = 0; ps < n_ps[i]; ps++)
+		{
+			L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
+			d_0i_p = L_0i_p.norm();
+			L_0i_p = L_0i_p.normalized();
 
-		if (n_ps == 1)
-		{
-			cost = max_cost_ps(0);
-		}
-		else // three intentions: KCC, SM, PM
-		{
-			Eigen::Vector3d cost_a = {0, 0, 0};
-			Eigen::VectorXd Pr_a = new_obstacles[i]->get_intention_probabilities();
-			cost_a(0) = max_cost_ps(0); 
-			for(int ps = 1; ps < n_ps; ps++)
+			v_i_p(0) = xs_i_p[ps](2, k);
+			v_i_p(1) = xs_i_p[ps](3, k);
+			psi_i_p = atan2(v_i_p(1), v_i_p(0));
+
+			coll_cost = calculate_collision_cost(v_0_p, v_i_p);
+
+			mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+
+			trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, i, chi_m);
+
+			cost_ps = coll_cost * P_c_i(ps, k) + kappa * mu  + 0 * kappa_TC * trans;
+
+			// Maximize wrt time
+			if (cost_ps > max_cost_ps(ps))
 			{
-				// Starboard maneuvers
-				if (ps < (n_ps - 1) / 2 + 1)
-				{
-					cost_a(1) += max_cost_ps(ps);
-				}
-				// Port maneuvers
-				else
-				{
-					cost_a(2) += max_cost_ps(ps);
-				}
+				max_cost_ps(ps) = cost_ps;
 			}
-			// Average the cost for the corresponding intention
-			cost_a(1) = cost_a(1) / ((n_ps - 1) / 2);
-			cost_a(2) = cost_a(2) / ((n_ps - 1) / 2);
-
-			// Weight by the intention probabilities
-			cost = Pr_a.dot(cost_a);
-			//std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
-			//std::cout << "max cost ps = " << max_cost_ps.transpose() << std::endl;
-			//std::cout << "cost a = " << cost_a.transpose() << std::endl;
-			//std::cout << "cost = " << cost << std::endl;
 		}
 	}
-	else
+
+	// If only 1 prediction scenario
+	// => Original PSB-MPC formulation
+	if (n_ps[i] == 1)
 	{
-		// Do smth here
+		cost = max_cost_ps(0);
+		return cost;
 	}
+	// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
+	// which means that higher cost is applied if the obstacle follows COLREGS
+	// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
+	// and the own-ship breaches COLREGS
+	for (int ps = 0; ps < n_ps[i]; ps++)
+	{
+		if (mu_i[ps])
+		{
+			max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
+		}
+		else
+		{
+			max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
+		}
+	}
+
+	Eigen::Vector3d cost_a = {0, 0, 0};
+	Eigen::VectorXd Pr_a = new_obstacles[i]->get_intention_probabilities();
+	cost_a(0) = max_cost_ps(0); 
+	for(int ps = 1; ps < n_ps[i]; ps++)
+	{
+		// Starboard maneuvers
+		if (ps < (n_ps[i] - 1) / 2 + 1)
+		{
+			cost_a(1) += max_cost_ps(ps);
+		}
+		// Port maneuvers
+		else
+		{
+			cost_a(2) += max_cost_ps(ps);
+		}
+	}
+	// Average the cost for the corresponding intention
+	cost_a(1) = cost_a(1) / ((n_ps[i] - 1) / 2);
+	cost_a(2) = cost_a(2) / ((n_ps[i] - 1) / 2);
+
+	// Weight by the intention probabilities
+	cost = Pr_a.dot(cost_a);
+	//std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
+	//std::cout << "max cost ps = " << max_cost_ps.transpose() << std::endl;
+	//std::cout << "cost a = " << cost_a.transpose() << std::endl;
+	//std::cout << "cost = " << cost << std::endl;
+
 	return cost;
 }
 
 /****************************************************************************************
 *  Name     : calculate_collision_cost
-*  Function : Overloaded for 2 x 1 and 2 x n_samples inputs
+*  Function : 
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_collision_cost(
-	const Eigen::Vector2d &v_1, 												// In: Velocity v_1
+	const Eigen::Vector2d &v_1, 											// In: Velocity v_1
 	const Eigen::Vector2d &v_2 												// In: Velocity v_2
 	)
 {
 	return K_coll * (v_1 - v_2).norm();
-}
-
-void PSBMPC::calculate_collision_cost(
-	Eigen::VectorXd &cost,													// Out: Collision cost
-	const Eigen::Matrix<double, 2, -1> &v_1, 								// In: Velocity v_1
-	const Eigen::Matrix<double, 2, -1> &v_2 								// In: Velocity v_2
-	)
-{
-	int n_samples = v_1.cols();
-	cost.resize(n_samples);
-	Eigen::MatrixXd v_diff = v_1 - v_2;
-	for (int i = 0; i < n_samples; i++)
-	{
-		cost[i] = K_coll * v_diff.block<2, 1>(0, i).norm();
-	}
 }
 
 /****************************************************************************************
@@ -1626,6 +1713,35 @@ double PSBMPC::distance_to_static_obstacle(
 }
 
 /****************************************************************************************
+*  Name     : assign_optimal_trajectory
+*  Function : Set the optimal trajectory to the current predicted trajectory
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::assign_optimal_trajectory(
+	Eigen::Matrix<double, 2, -1> &optimal_trajectory 									// In/out: Optimal PSB-MPC trajectory
+	)
+{
+	int n_samples = std::round(T / dt);
+	// Set current optimal x-y position trajectory, downsample if linear prediction was not used
+	if (prediction_method > Linear)
+	{
+		int count = 0;
+		optimal_trajectory.resize(2, n_samples / p_step);
+		for (int k = 0; k < n_samples; k+=p_step)
+		{
+			optimal_trajectory.col(count) = trajectory.block<2, 1>(0, k);
+			if (count < std::round(n_samples / p_step) - 1) count++;					
+		}
+	} 
+	else
+	{
+		optimal_trajectory.resize(2, n_samples);
+		optimal_trajectory = trajectory.block(2, n_samples, 0, 0);
+	}
+}
+
+/****************************************************************************************
 *  Name     : update_obstacles
 *  Function : Takes in new obstacle information and updates the obstacle data structures
 *  Author   :
@@ -1634,7 +1750,7 @@ double PSBMPC::distance_to_static_obstacle(
 void PSBMPC::update_obstacles(
 	const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
 	const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
-	const Eigen::MatrixXd &obstacle_intention_probabilities, 				// In: Obstacle intention probability information
+	const Eigen::MatrixXd &obstacle_intention_probabilities, 							// In: Obstacle intention probability information
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
 	) 			
 {
@@ -1672,7 +1788,7 @@ void PSBMPC::update_obstacles(
 				obstacle_intention_probabilities.col(i), 
 				obstacle_a_priori_CC_probabilities(i),
 				obstacle_filter_on, 
-				obstacle_colav_on[i], 
+				false, 
 				T, 
 				dt);
 			new_obstacles.push_back(obstacle);
