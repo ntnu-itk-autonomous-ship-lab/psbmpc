@@ -1329,7 +1329,7 @@ bool PSBMPC::determine_transitional_cost_indicator(
 
 /****************************************************************************************
 *  Name     : calculate_collision_probabilities
-*  Function : Estimates collision probabilities for own-ship and an obstacle i in
+*  Function : Estimates collision probabilities for the own-ship and an obstacle i in
 *			  consideration
 *  Author   : Trym Tengesdal
 *  Modified :
@@ -1388,6 +1388,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 		v_0_p(1) = trajectory(4, k); 
 		v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
 
+		// Determine active course modification at sample k
 		for (int M = 0; M < n_M; M++)
 		{
 			if (M < n_M - 1)
@@ -1408,6 +1409,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			//std::cout << "k = " << k << std::endl;
 			//std::cout << "chi_m = " << chi_m * RAD2DEG << std::endl;
 		}
+		
 		for(int ps = 0; ps < n_ps[i]; ps++)
 		{
 			L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
