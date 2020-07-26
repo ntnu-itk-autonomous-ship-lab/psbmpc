@@ -45,7 +45,8 @@ class PSBMPC
 {
 private:
 
-	int n_cbs, n_M, n_a, n_ps;
+	int n_cbs, n_M, n_a;
+	std::vector<int> n_ps;
 
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
@@ -104,6 +105,21 @@ private:
 	void initialize_pars();
 
 	void initialize_prediction();
+
+	void set_up_independent_obstacle_prediction_variables(
+		std::vector<Intention> &ps_ordering,
+		Eigen::VectorXd &ps_course_changes,
+		Eigen::VectorXd &ps_weights,
+		Eigen::VectorXd &ps_maneuver_times,
+		const int i,
+		const int n_turns);
+
+	void set_up_dependent_obstacle_prediction_variables(
+		std::vector<Intention> &ps_ordering,
+		Eigen::VectorXd &ps_course_changes,
+		Eigen::VectorXd &ps_weights,
+		Eigen::VectorXd &ps_maneuver_times,
+		const int i);
 
 	double find_time_of_passing(const int i);
 
@@ -174,6 +190,7 @@ private:
 
     double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
+	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
     void update_obstacles(
 		const Eigen::Matrix<double, 9, -1>& obstacle_states, 

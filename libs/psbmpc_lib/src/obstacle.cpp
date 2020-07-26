@@ -65,8 +65,6 @@ Obstacle::Obstacle(
 	P_p.resize(16, n_samples);
 	P_p.col(0) = P;
 
-	xs_colav_p.resize(4, n_samples);
-
 	double psi = atan2(xs_aug(3), xs_aug(2));
 	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
 	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
@@ -103,7 +101,8 @@ Obstacle::~Obstacle()
 
 /****************************************************************************************
 *  Name     : resize_trajectories
-*  Function : Resizes trajectory and preserves old values inside new range of samples
+*  Function : Resizes independent trajectories, and also the trajectory covariance
+*			  which is the same for all trajectories.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -115,24 +114,23 @@ void Obstacle::resize_trajectories(const int n_samples)
 	{
 		xs_p[ps].resize(4, n_samples); 	xs_p[ps].col(0) = kf->get_state();
 	}
-	xs_colav_p.resize(4, n_samples); 	xs_colav_p.col(0) = kf->get_state();
-
 	P_p.resize(16, n_samples);
 	P_p.col(0) 	= flatten(kf->get_covariance());
-
 }
 
 /****************************************************************************************
-*  Name     : initialize_independent_prediction
-*  Function : Sets up prediction scenario ordering, maneuvering times for the different
-* 			  obstacle alternative maneuvers
+*  Name     : initialize_prediction
+*  Function : Sets up independent or dependent obstacle prediction, depending on if
+*		      colav is active or not. For the dependent obstacle prediction,
+*			  ps_course_changes and ps_maneuver_times are "dont care" variables, hence
+*		      two overloads.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Obstacle::initialize_independent_prediction(
+void Obstacle::initialize_prediction(
 	const std::vector<Intention> &ps_ordering, 						// In: Prediction scenario ordering
 	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
-	const Eigen::VectorXd &ps_weights,	 							// In: The different course changes employed in the prediction scenarios
+	const Eigen::VectorXd &ps_weights,	 							// In: The cost function weights for the prediction scenarios
 	const Eigen::VectorXd &ps_maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios	
 	)
 {
@@ -267,7 +265,7 @@ void Obstacle::update(
 
 	// Depending on if the AIS-based KF is on/off, the state and
 	// covariance are updated, or just reset directly to the input
-	// data
+	// data (xs_0 and P_0)
 	if (filter_on)
 	{
 		kf->update(xs_0, duration_lost, dt);
@@ -283,5 +281,4 @@ void Obstacle::update(
 	
 	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}
 	else 			{ this->Pr_CC = Pr_CC; }
-	
 }
