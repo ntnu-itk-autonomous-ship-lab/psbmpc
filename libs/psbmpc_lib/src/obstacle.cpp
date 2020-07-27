@@ -43,7 +43,7 @@ Obstacle::Obstacle(
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	ID(xs_aug(8)), colav_on(colav_on), filter_on(filter_on),
+	ID(xs_aug(8)), colav_on(colav_on),
 	A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
 	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
 	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
@@ -242,10 +242,35 @@ void Obstacle::predict_independent_trajectories(
 *  Name     : update
 *  Function : Updates the obstacle state, covariance, intention probabilities, a priori
 * 			  COLREGS compliance probability at the current time prior to a run of the
-*			  PSB-MPC.
+*			  PSB-MPC. Two overloads depending on if obstacle is lost or not, respectively
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
+void Obstacle::update(
+	const bool filter_on, 										// In: Indicator of whether the AIS-KF is active
+	const double dt 											// In: Prediction time step
+	)
+{
+	// Depending on if the AIS-based KF is on/off, the state and
+	// covariance are updated, or just reset directly to the input
+	// data (xs_0 and P_0)
+	if (filter_on)
+	{
+		kf->update(xs_0, duration_lost, dt);
+
+		duration_tracked = kf->get_time();
+
+		xs_0 = kf->get_state();
+
+		P_0 = kf->get_covariance();
+	}
+	else
+	{ 
+		kf->reset(xs_0, P_0, 0.0); 
+	}
+	std::cout << "Inside obstacle update 1: xs_0 = " << xs_0.transpose() << std::endl;
+}
+
 void Obstacle::update(
 	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
@@ -271,11 +296,16 @@ void Obstacle::update(
 		kf->update(xs_0, duration_lost, dt);
 
 		duration_tracked = kf->get_time();
+
+		xs_0 = kf->get_state();
+
+		P_0 = kf->get_covariance();
 	}
 	else
 	{ 
 		kf->reset(xs_0, P_0, 0.0); 
 	}
+	std::cout << "Inside obstacle update 2: xs_0 = " << xs_0.transpose() << std::endl;
 	
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	

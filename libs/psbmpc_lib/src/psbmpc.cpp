@@ -273,17 +273,6 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
 	)
 {	
-	//===============================================================================================================
-	// MATLAB PLOTTING FOR DEBUGGING
-	//===============================================================================================================
-/* 	Engine *ep = engOpen(NULL);
-	if (ep == NULL)
-	{
-		std::cout << "engine start failed!" << std::endl;
-	}
-	char buffer[1000000 + 1];  */
-	//===============================================================================================================
-
 	int n_samples = std::round(T / dt);
 
 	trajectory.resize(6, n_samples);
@@ -317,11 +306,16 @@ void PSBMPC::calculate_optimal_offsets(
 		}
 	}
 
-	
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-/* 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+/* 	Engine *ep = engOpen(NULL);
+	if (ep == NULL)
+	{
+		std::cout << "engine start failed!" << std::endl;
+	}
+	char buffer[1000000 + 1]; 
+ 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
 	double *ptraj_os = mxGetPr(traj_os); 
@@ -353,7 +347,7 @@ void PSBMPC::calculate_optimal_offsets(
 	for(int i = 0; i < n_obst; i++)
 	{
 		Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
-		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_independent_trajectories();
+		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_trajectories();
 
 		i_mx = mxCreateDoubleScalar(i + 1);
 		engPutVariable(ep, "i", i_mx);
@@ -370,8 +364,8 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	}
-	 */
+	} */
+	
 	//===============================================================================================================
 	double cost;
 	Eigen::VectorXd opt_offset_sequence(2 * n_M), cost_i(n_obst);
@@ -403,12 +397,12 @@ void PSBMPC::calculate_optimal_offsets(
 			if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
 
 			P_c_i.resize(n_ps[i], n_samples);
-			calculate_collision_probabilities(P_c_i, i); 
+			//calculate_collision_probabilities(P_c_i, i); 
 
-			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
+			//cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
 		}
 
-		cost += cost_i.maxCoeff();
+		//cost += cost_i.maxCoeff();
 
 		cost += calculate_grounding_cost(static_obstacles);
 
@@ -449,7 +443,7 @@ void PSBMPC::calculate_optimal_offsets(
 	colav_status.resize(2,1);
 	colav_status << CF_0, min_cost;
 
-	/* engClose(ep); */
+	/* engClose(ep);  */
 }
 
 /****************************************************************************************
@@ -512,7 +506,7 @@ void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 2;
-	n_a = 1; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
+	n_a = 3; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
 	n_ps.resize(1); // Determined by initialize_prediction();
 
 	offset_sequence_counter.resize(2 * n_M);
@@ -661,12 +655,12 @@ void PSBMPC::initialize_prediction()
 				}
 
 				n_ps[i] = 1 + 2 * course_changes.size() * n_turns;
-				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_maneuver_times_i, ps_course_changes_i, ps_weights_i, i, n_turns);
+				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, i, n_turns);
 			}
-			else // Set up independent obstacle prediction scenarios
+			else // Set up dependent obstacle prediction scenarios
 			{
 				n_ps[i] = 3;
-				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_maneuver_times_i, ps_course_changes_i, ps_weights_i, i);
+				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, i);
 			}	
 		}
 		new_obstacles[i]->initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);		
@@ -1756,6 +1750,13 @@ void PSBMPC::update_obstacles(
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
 	) 			
 {
+	// Clear the "old" new obstacles before the update
+	for (int i = 0; i < new_obstacles.size(); i++)
+	{
+			delete new_obstacles[i];
+	}
+	new_obstacles.clear();
+	
 	int n_obst_old = old_obstacles.size();
 	int n_obst_new = obstacle_states.cols();
 
@@ -1780,6 +1781,8 @@ void PSBMPC::update_obstacles(
 				new_obstacles.push_back(old_obstacles[j]);
 
 				obstacle_exist = true;
+
+				break;
 			}
 		}
 		if (!obstacle_exist)
@@ -1793,6 +1796,7 @@ void PSBMPC::update_obstacles(
 				false, 
 				T, 
 				dt);
+
 			new_obstacles.push_back(obstacle);
 		}
 	}
@@ -1809,6 +1813,8 @@ void PSBMPC::update_obstacles(
 			if (	old_obstacles[j]->get_duration_tracked() >= T_tracked_limit 	&&
 					(old_obstacles[j]->get_duration_lost() < T_lost_limit || old_obstacles[j]->kf->get_covariance()(0,0) <= 5.0))
 			{
+				old_obstacles[j]->update(obstacle_filter_on, dt);
+
 				new_obstacles.push_back(old_obstacles[j]);
 			}
 		}
@@ -1819,6 +1825,10 @@ void PSBMPC::update_obstacles(
 		delete old_obstacles[i];
 	}
 	old_obstacles.clear();
+
+	// Then set equal to the new obstacle vector
+	old_obstacles.resize(new_obstacles.size());
+	old_obstacles = new_obstacles;
 }
 
 /****************************************************************************************
