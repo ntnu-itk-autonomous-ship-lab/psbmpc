@@ -46,6 +46,72 @@ Obstacle_SBMPC::Obstacle_SBMPC()
 }
 
 /****************************************************************************************
+*  Name     : Obstacle_SBMPC
+*  Function : Copy constructor, prevents shallow copies and bad pointer management
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
+{
+	this->n_cbs = o_sbmpc.n_cbs;
+	this->n_M = o_sbmpc.n_M;
+
+	this->u_offsets = o_sbmpc.u_offsets;
+	this->chi_offsets = o_sbmpc.chi_offsets;
+
+	this->offset_sequence_counter = o_sbmpc.offset_sequence_counter;
+	this->offset_sequence = o_sbmpc.offset_sequence;
+	this->maneuver_times = o_sbmpc.maneuver_times;
+
+	this->u_m_last = o_sbmpc.u_m_last;
+	this->chi_m_last = o_sbmpc.chi_m_last;
+
+	this->min_cost = o_sbmpc.min_cost;
+
+	this->dpar_low = o_sbmpc.dpar_low;
+	this->dpar_high = o_sbmpc.dpar_high;
+	this->ipar_low = o_sbmpc.ipar_low;
+	this->ipar_high = o_sbmpc.ipar_high;
+
+	this->prediction_method = o_sbmpc.prediction_method;
+	this->guidance_method = o_sbmpc.guidance_method;
+
+	this->T = o_sbmpc.T; this->T_static = o_sbmpc.T_static;
+	this->dt = o_sbmpc.dt; 
+	this->p_step = o_sbmpc.p_step;
+	this->t_ts = o_sbmpc.t_ts;
+	
+	this->d_safe = o_sbmpc.d_safe; this->d_close = o_sbmpc.d_close; this->d_init = o_sbmpc.d_init;
+	
+	this->K_coll = o_sbmpc.K_coll;
+
+	this->phi_AH = o_sbmpc.phi_AH; this->phi_OT = o_sbmpc.phi_OT; this->phi_HO = o_sbmpc.phi_HO; this->phi_CR = o_sbmpc.phi_CR;
+
+	this->kappa = o_sbmpc.kappa; this->kappa_TC = o_sbmpc.kappa_TC;
+
+	this->K_u = o_sbmpc.K_u; this->K_du = o_sbmpc.K_du;
+
+	this->K_chi_strb = o_sbmpc.K_chi_strb; this->K_dchi_strb = o_sbmpc.K_dchi_strb;
+	this->K_chi_port = o_sbmpc.K_chi_port; this->K_dchi_port = o_sbmpc.K_dchi_port;
+
+	this->G = o_sbmpc.G;
+
+	this->K_sgn = o_sbmpc.K_sgn; this->T_sgn = o_sbmpc.T_sgn;
+
+	this->trajectory = o_sbmpc.trajectory;
+
+	this->AH_0 = o_sbmpc.AH_0; this->S_TC_0 = o_sbmpc.S_TC_0; this->S_i_TC_0 = o_sbmpc.S_i_TC_0;
+	this->O_TC_0 = o_sbmpc.O_TC_0; this->Q_TC_0 = o_sbmpc.Q_TC_0; this->IP_0 = o_sbmpc.IP_0;
+	this->H_TC_0 = o_sbmpc.H_TC_0; this->X_TC_0 = o_sbmpc.X_TC_0;
+
+	this->ownship = new Obstacle_Ship(*(o_sbmpc.ownship));
+
+	this->new_obstacles = o_sbmpc.new_obstacles;
+	this->old_obstacles = o_sbmpc.old_obstacles;
+
+}
+
+/****************************************************************************************
 *  Name     : Obstacle_SBMPC~
 *  Function : Class destructor
 *  Author   : 
@@ -54,6 +120,18 @@ Obstacle_SBMPC::Obstacle_SBMPC()
 Obstacle_SBMPC::~Obstacle_SBMPC()
 {
 	delete ownship;
+	
+	for (int i = 0; i < new_obstacles.size(); i++)
+	{
+		delete new_obstacles[i];
+	}
+	new_obstacles.clear();
+
+	for (int i = 0; i < old_obstacles.size(); i++)
+	{
+		delete old_obstacles[i];
+	}
+	old_obstacles.clear();
 }
 
 /****************************************************************************************

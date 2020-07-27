@@ -1753,7 +1753,7 @@ void PSBMPC::update_obstacles(
 	// Clear the "old" new obstacles before the update
 	for (int i = 0; i < new_obstacles.size(); i++)
 	{
-			delete new_obstacles[i];
+		delete new_obstacles[i];
 	}
 	new_obstacles.clear();
 	
