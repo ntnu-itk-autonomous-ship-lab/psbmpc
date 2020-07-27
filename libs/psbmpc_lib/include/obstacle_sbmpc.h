@@ -138,6 +138,8 @@ public:
 
 	Obstacle_SBMPC();
 
+	Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc);
+
 	~Obstacle_SBMPC();
 
 	bool determine_COLREGS_violation(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B);

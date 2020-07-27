@@ -90,8 +90,6 @@ public:
 
 	Obstacle_SBMPC *sbmpc;
 
-	~Obstacle();
-
 	Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const Eigen::VectorXd &P, 
 			 const Eigen::VectorXd Pr_a, 
@@ -100,6 +98,12 @@ public:
 			 const bool colav_on, 
 			 const double T, 
 			 const double dt);
+
+	Obstacle(const Obstacle &obstacle);
+
+	~Obstacle();
+
+	Obstacle& operator=(const Obstacle &obstacle);
 
 	int get_ID() const { return ID; };
 
