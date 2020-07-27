@@ -42,7 +42,7 @@ private:
 
 	int ID;
 
-	bool colav_on, filter_on;
+	bool colav_on;
 
 	// Vector of intention probabilities at the current time or last time of update
 	Eigen::VectorXd Pr_a;
@@ -160,6 +160,10 @@ public:
 		const Eigen::VectorXd &P, 
 		const Eigen::VectorXd &Pr_a, 
 		const double Pr_CC,
+		const bool filter_on,
+		const double dt);
+
+	void update(
 		const bool filter_on,
 		const double dt);
 };

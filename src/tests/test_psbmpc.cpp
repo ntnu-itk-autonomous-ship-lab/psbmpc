@@ -54,7 +54,7 @@ int main(){
 	//*****************************************************************************************************************
 
 	Eigen::Matrix<double, 6, 1> xs_os_0;
-	xs_os_0 << 0, 0, 0, 9, 0, 0;
+	xs_os_0 << 0, 0, 0, 4, 0, 0;
 	double u_d = 9, chi_d, u_c, chi_c;
 	
 	Ownship* asv_sim = new Ownship();
@@ -65,12 +65,12 @@ int main(){
 	trajectory.resize(6, N);
 	trajectory.col(0) = xs_os_0;
 
-	int n_wps_os = 2;
+	int n_wps_os = 7;
 	waypoints.resize(2, n_wps_os); 
-	/* waypoints << 0, 200, 200, 400, 600,  300, 1000,
-				 0, 0,   200, 200,  0,  -300, -300; */
-	waypoints << 0, 1000,
-				 0, 0;
+	waypoints << 0, 200, 200, 400, 600,  300, 1000,
+				 0, 0,   200, 200,  0,  -300, -300;
+	/* waypoints << 0, 1000,
+				 0, 0; */
 	
 
 	mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);
@@ -90,7 +90,7 @@ int main(){
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_obst);
 	xs_i_0[0].resize(6);
-	xs_i_0[0] << 300, 0, 180 * DEG2RAD, 5, 0, 0;
+	xs_i_0[0] << 1000, 0, 180 * DEG2RAD, 5, 0, 0;
 
 	// Use constant obstacle uncertainty throughout the simulation, for simplicity
 	Eigen::MatrixXd P_0(4, 4);
