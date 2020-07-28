@@ -145,6 +145,12 @@ public:
 
 	CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const int n_obst, const double dt);
 
+	CPE(const CPE &cpe);
+
+	~CPE();
+
+	CPE& operator=(const CPE &cpe);
+
 	void set_method(const CPE_Method cpe_method) { method = cpe_method;  resize_matrices(); };
 
 	void set_safety_zone_radius(const double d_safe, const int i) { this->d_safe[i] = d_safe; };

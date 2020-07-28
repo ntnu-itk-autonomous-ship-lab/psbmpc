@@ -205,7 +205,11 @@ public:
 
 	PSBMPC();
 
+	PSBMPC(const PSBMPC &psbmpc);
+
 	~PSBMPC();
+
+	PSBMPC& operator=(const PSBMPC &psbmpc);
 
 	CPE_Method get_cpe_method() const { return cpe_method; }; 
 
