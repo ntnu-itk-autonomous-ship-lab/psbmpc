@@ -57,6 +57,8 @@ Prediction_Obstacle::Prediction_Obstacle(
 
 	xs_p.resize(4, n_samples);
 	xs_p.col(0) = xs_0;
+
+	sbmpc = new Obstacle_SBMPC();
 }
 
 /****************************************************************************************

@@ -34,9 +34,9 @@
 *  Modified :
 *****************************************************************************************/
 Obstacle::Obstacle(
-	const Eigen::VectorXd& xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
-	const Eigen::VectorXd& P, 									// In: Obstacle covariance
-	const Eigen::VectorXd Pr_a,									// In: Obstacle intention probability vector
+	const Eigen::VectorXd &xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::VectorXd &P, 									// In: Obstacle covariance
+	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
 	const double Pr_CC, 										// In: A priori COLREGS compliance probability
 	const bool filter_on, 										// In: Boolean determining whether KF should be used or not
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions

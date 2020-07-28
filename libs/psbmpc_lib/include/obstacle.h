@@ -92,18 +92,18 @@ public:
 
 	Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const Eigen::VectorXd &P, 
-			 const Eigen::VectorXd Pr_a, 
+			 const Eigen::VectorXd &Pr_a, 
 			 const double Pr_CC,
 			 const bool filter_on, 
 			 const bool colav_on, 
 			 const double T, 
 			 const double dt);
 
-	Obstacle(const Obstacle &obstacle);
+	Obstacle(const Obstacle &o);
 
 	~Obstacle();
 
-	Obstacle& operator=(const Obstacle &obstacle);
+	Obstacle& operator=(const Obstacle &o);
 
 	int get_ID() const { return ID; };
 

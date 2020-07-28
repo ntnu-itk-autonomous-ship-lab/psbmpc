@@ -1178,6 +1178,12 @@ lapacke_mangling.h
 cstdint
 -
 
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.cpp
+kf.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.h
+stdexcept
+-
+
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.cpp
 obstacle.h
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle.h
@@ -1189,24 +1195,6 @@ kf.h
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/kf.h
 iostream
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/iostream
-
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_sbmpc.cpp
-utilities.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
-obstacle_sbmpc.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_sbmpc.h
-iostream
--
-
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/prediction_obstacle.cpp
-prediction_obstacle.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/prediction_obstacle.h
-obstacle_sbmpc.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_sbmpc.h
-utilities.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
-iostream
--
 
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp
 utilities.h

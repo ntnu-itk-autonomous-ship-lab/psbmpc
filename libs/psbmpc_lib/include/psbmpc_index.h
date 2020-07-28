@@ -30,8 +30,8 @@
 #define i_bpar_obstacle_filter_on	0
 
 // Indices for parameters of type int
-#define i_ipar_n_cbs				0
-#define i_ipar_n_M					1
+#define i_ipar_n_M					0
+#define i_ipar_n_a                  1
 
 // Indices for parameters of type double
 #define i_dpar_T 					0
@@ -47,31 +47,31 @@
 
 #define i_dpar_K_coll				8
 
-#define i_dpar_kappa				9
-#define i_dpar_kappa_TC				10
+#define i_dpar_phi_AH				9
+#define i_dpar_phi_OT				10
+#define i_dpar_phi_HO				11
+#define i_dpar_phi_CR				12
 
-#define i_dpar_K_u					11
-#define i_dpar_K_du					12
+#define i_dpar_kappa				13
+#define i_dpar_kappa_TC				14
 
-#define i_dpar_K_chi_strb			13
-#define i_dpar_K_dchi_strb			14
-#define i_dpar_K_chi_port			15
-#define i_dpar_K_dchi_port			16
+#define i_dpar_K_u					15
+#define i_dpar_K_du					16
 
-#define i_dpar_G 					17
+#define i_dpar_K_chi_strb			17
+#define i_dpar_K_dchi_strb			18
+#define i_dpar_K_chi_port			19
+#define i_dpar_K_dchi_port			20
 
-#define i_dpar_K_sgn				18
-#define i_dpar_T_sgn				19
+#define i_dpar_K_sgn				21
+#define i_dpar_T_sgn				22
 
-#define i_dpar_phi_AH				20
-#define i_dpar_phi_OT				21
-#define i_dpar_phi_HO				22
-#define i_dpar_phi_CR				23
+#define i_dpar_G 					23
 
 #define i_dpar_T_lost_limit			24
 #define i_dpar_T_tracked_limit		25
 
-// Indices for parameters of type std::vector<Eigen::VectorXd>
+// Indices for parameters of type std::vector/Eigen::MatrixXd/etc..
 #define i_mpar_u_offsets			0
 #define i_mpar_chi_offsets			1
 
