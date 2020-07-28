@@ -43,7 +43,48 @@ Prediction_Obstacle::Prediction_Obstacle(
 	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6))
 {
 	int n_samples = std::round(T / dt);
-	resize_trajectory(n_samples);
+	
+	A << 1, 0, dt, 0,
+		 0, 1, 0, dt,
+		 0, 0, 1, 0,
+		 0, 0, 0, 1;
+
+	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3); 
+
+	xs_p.resize(4, n_samples);
+	xs_p.col(0) = xs_0;
+}
+
+/****************************************************************************************
+*  Name     : Prediction_Obstacle
+*  Function : Copy constructor, prevents shallow copies and bad pointer management
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+Prediction_Obstacle::Prediction_Obstacle(
+	const Prediction_Obstacle &po 												// In: Prediction obstacle to copy
+	)
+{
+	this->ID = po.ID;
+
+	this->colav_on = po.colav_on;
+
+	this->l = po.l; this->w = po.w;
+
+	this->x_offset = po.x_offset; this->y_offset = po.y_offset;
+
+	this->A = po.A;
+
+	this->xs_0 = po.xs_0;
+
+	//this->xs_p.resize(po.xs_p.rows(), po.xs_p.cols());
+	this->xs_p = po.xs_p;
+
+	this->sbmpc = new Obstacle_SBMPC(*(po.sbmpc));
 }
 
 /****************************************************************************************
@@ -58,36 +99,63 @@ Prediction_Obstacle::~Prediction_Obstacle()
 }
 
 /****************************************************************************************
-*  Name     : predict_independent_trajectories
-*  Function : Predicts the straight line obstacle trajectory for use in the obstacle
-*			  SB-MPCs
+*  Name     : operator=
+*  Function : Assignment operator to prevent shallow assignments and bad pointer management
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Prediction_Obstacle::predict_trajectory(						
+Prediction_Obstacle& Prediction_Obstacle::operator=(
+	const Prediction_Obstacle &po 										// In: Rhs prediction obstacle to assign
+	)
+{
+	if (this == &po)
+	{
+		return *this;
+	}
+	if (sbmpc != NULL) 	{ delete sbmpc; }
+
+	return *this = Prediction_Obstacle(po);
+}
+
+/****************************************************************************************
+*  Name     : predict_independent_trajectory
+*  Function : Predicts the straight line obstacle trajectory for use in other obstacle
+*			  SB-MPC predictions (if this obstacle's COLAV is not assumed to be acting).
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void Prediction_Obstacle::predict_independent_trajectory(						
 	const double T, 											// In: Time horizon
 	const double dt 											// In: Time step
 	)
 {
 	int n_samples = std::round(T / dt);
-	resize_trajectory(n_samples);
+	xs_p.resize(4, n_samples);
+	xs_p.col(0) = xs_0;
+
+	A << 1, 0, dt, 0,
+		 0, 1, 0, dt,
+		 0, 0, 1, 0,
+		 0, 0, 0, 1;
 
 	for(int k = 0; k < n_samples; k++)
 	{
-		
+		if (k < n_samples - 1) 
+		{
+			xs_p.col(k + 1) = A * xs_p.col(k);
+		}
 	}
 }
 
-
 /****************************************************************************************
 *  Name     : update
-*  Function : Updates the predicted obstacle state, at the current time prior to a run of
-*			  the predicted obstacle SB-MPC.
+*  Function : Updates the predicted obstacle state, at the current prediction time prior 
+*			  to a run of the obstacle SB-MPC.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void Prediction_Obstacle::update(
-	const Eigen::Vector4d &xs, 									// In: Predicted obstacle state [x, y, V_x, V_y]
+	const Eigen::Vector4d &xs, 								// In: Predicted obstacle state [x, y, V_x, V_y]
 	const bool colav_on										// In: Boolean determining if the prediction obstacle object has an active COLAV system
 	)
 {
@@ -96,4 +164,6 @@ void Prediction_Obstacle::update(
 	xs_0(1) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
 	xs_0(2) = xs(2);
 	xs_0(3) = xs(3);
+
+	this->colav_on = colav_on;
 }

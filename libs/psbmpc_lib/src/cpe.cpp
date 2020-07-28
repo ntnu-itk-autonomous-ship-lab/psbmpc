@@ -18,8 +18,6 @@
 *
 *****************************************************************************************/
 
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
 #include "cpe.h"
 #include "utilities.h"
 #include <iostream>
@@ -75,6 +73,79 @@ CPE::CPE(
     dt_seg = dt;
 }
 
+/****************************************************************************************
+*  Name     : CPE
+*  Function : Copy constructor, prevents shallow copies and bad pointer management
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+CPE::CPE(
+    const CPE &cpe                                                   // In: CPE object to copy
+    )
+{
+    this->method = cpe.method;
+
+    this->n_obst = cpe.n_obst;
+
+    this->n_CE = cpe.n_CE; this->n_MCSKF = cpe.n_MCSKF;
+
+    this->generator = xoshiro256plus64(seed());
+
+    this->std_norm_pdf = std::normal_distribution<double>(0, 1);
+
+    this->sigma_inject = cpe.sigma_inject;
+    this->alpha_n = cpe.alpha_n;
+    this->gate = cpe.gate;
+    this->rho = cpe.rho;
+    this->max_it = cpe.max_it;
+
+    this->converged_last = cpe.converged_last;
+
+    this->mu_CE_last = cpe.mu_CE_last;
+    this->P_CE_last = cpe.P_CE_last;
+
+    this->N_e = cpe.N_e; this->e_count = cpe.e_count;
+    this->elite_samples = cpe.elite_samples;
+
+    this->q = cpe.q; this->r = cpe.r; this->dt_seg = cpe.dt_seg;
+
+    this->P_c_p = cpe.P_c_p; this->var_P_c_p = cpe.var_P_c_p;
+    this->P_c_upd = cpe.P_c_upd; this->var_P_c_upd = cpe.var_P_c_upd;
+
+    this->samples = cpe.samples; this->valid = cpe.valid;
+
+    this->d_safe = cpe.d_safe;
+
+    this->L = cpe.L;
+}
+
+/****************************************************************************************
+*  Name     : CPE~
+*  Function : Class destructor
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+CPE::~CPE()
+{
+
+}
+
+/****************************************************************************************
+*  Name     : operator=
+*  Function : Assignment operator to prevent shallow assignments and bad pointer management
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+CPE& CPE::operator=(
+    const CPE &cpe                                              // In: Rhs CPE object to assign
+    )
+{
+    if (this == &cpe)
+    {
+        return *this;
+    }
+    return *this = CPE(cpe);
+}
 /****************************************************************************************
 *  Name     : set_number_of_obstacles
 *  Function : Set number of obstacles to estimate, update data structures accordingly

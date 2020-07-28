@@ -61,8 +61,10 @@ private:
 	double K_u, K_du;
 	double K_chi_strb, K_dchi_strb;
 	double K_chi_port, K_dchi_port; 
-	double G;
 	double K_sgn, T_sgn;
+	double G;
+	
+	bool obstacle_colav_on;
 
 	Obstacle_Ship *ownship;
 
@@ -141,6 +143,8 @@ public:
 	Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc);
 
 	~Obstacle_SBMPC();
+
+	Obstacle_SBMPC& operator=(const Obstacle_SBMPC &o_sbmpc);
 
 	bool determine_COLREGS_violation(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B);
 

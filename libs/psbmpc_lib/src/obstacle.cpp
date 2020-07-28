@@ -154,47 +154,12 @@ Obstacle& Obstacle::operator=(
 	if (mrou != NULL) 	{ delete mrou; }
 	if (sbmpc != NULL) 	{ delete sbmpc; }
 
-	// Boring non-pointer class member copy
-	this->ID = o.ID;
-
-	this->colav_on = o.colav_on;
-
-	this->Pr_a = o.Pr_a;
-
-	this->Pr_CC = o.Pr_CC;
-
-	this->A = o.A; this->B = o.B; this->C = o.C; this->D = o.D;
-	this->l = o.l; this->w = o.w;
-
-	this->x_offset = o.x_offset; this->y_offset = o.y_offset;
-
-	this->duration_tracked = o.duration_tracked;
-	this->duration_lost = o.duration_lost;
-
-	this->xs_0 = o.xs_0;
-	this->P_0 = o.P_0;
-
-	this->mu = o.mu;
-
-	this->P_p = o.P_p;
-	this->xs_p = o.xs_p;
-	this->v_p = o.v_p;
-
-	this->ps_ordering = o.ps_ordering;
-	this->ps_course_changes = o.ps_course_changes;
-	this->ps_weights = o.ps_weights;
-	this->ps_maneuver_times = o.ps_maneuver_times;
-
-	// Allocate memory and use copy constructors to perform correct copy of the class pointers
-	// such that the pointers do not point to the same objects as "o" does.
-	this->kf = new KF(*(o.kf));
-	this->mrou = new MROU(*(o.mrou));
-	this->sbmpc = new Obstacle_SBMPC(*(o.sbmpc));
+	return *this = Obstacle(o);
 }
 
 /****************************************************************************************
 *  Name     : ~Obstacle
-*  Function : Class destructor, clears the dynamic kalman filter object
+*  Function : Class destructor, clears the dynamically allocated objects.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/

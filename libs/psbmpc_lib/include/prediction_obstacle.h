@@ -40,6 +40,8 @@ private:
 
 	double x_offset, y_offset;
 
+	Eigen::Matrix4d A;
+
 	// State at the current predicted time
 	Eigen::Vector4d xs_0;
 
@@ -50,22 +52,26 @@ public:
 
 	Obstacle_SBMPC *sbmpc;
 
-	~Prediction_Obstacle();
-
 	Prediction_Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const bool colav_on, 
 			 const double T, 
 			 const double dt);
 
+	Prediction_Obstacle(const Prediction_Obstacle &po);
+
+	~Prediction_Obstacle();
+
+	Prediction_Obstacle& operator=(const Prediction_Obstacle &po);
+
 	int get_ID() const { return ID; };
 
 	Eigen::Vector4d get_state() const { return xs_0; };
 
-	void predict_trajectory(const double T, const double dt);
-
-	void resize_trajectory(const int n_samples) { xs_p.resize(4, n_samples); };
-
 	Eigen::MatrixXd get_trajectory() const { return xs_p; };
+
+	void set_trajectory(const Eigen::MatrixXd &xs_p) { if (colav_on) { this->xs_p = xs_p; }};
+
+	void predict_independent_trajectory(const double T, const double dt);
 
 	void update(const Eigen::Vector4d &xs, const bool colav_on);
 };

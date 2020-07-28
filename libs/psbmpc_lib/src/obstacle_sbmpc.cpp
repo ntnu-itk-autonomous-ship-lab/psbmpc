@@ -94,9 +94,9 @@ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
 	this->K_chi_strb = o_sbmpc.K_chi_strb; this->K_dchi_strb = o_sbmpc.K_dchi_strb;
 	this->K_chi_port = o_sbmpc.K_chi_port; this->K_dchi_port = o_sbmpc.K_dchi_port;
 
-	this->G = o_sbmpc.G;
-
 	this->K_sgn = o_sbmpc.K_sgn; this->T_sgn = o_sbmpc.T_sgn;
+	
+	this->G = o_sbmpc.G;
 
 	this->trajectory = o_sbmpc.trajectory;
 
@@ -106,9 +106,8 @@ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
 
 	this->ownship = new Obstacle_Ship(*(o_sbmpc.ownship));
 
-	this->new_obstacles = o_sbmpc.new_obstacles;
 	this->old_obstacles = o_sbmpc.old_obstacles;
-
+	this->new_obstacles = o_sbmpc.new_obstacles;
 }
 
 /****************************************************************************************
@@ -132,6 +131,43 @@ Obstacle_SBMPC::~Obstacle_SBMPC()
 		delete old_obstacles[i];
 	}
 	old_obstacles.clear();
+}
+
+/****************************************************************************************
+*  Name     : operator=
+*  Function : Assignment operator to prevent shallow assignments and bad pointer management
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+Obstacle_SBMPC& Obstacle_SBMPC::operator=(
+	const Obstacle_SBMPC &o_sbmpc
+	)
+{
+	if (this == &o_sbmpc)
+	{
+		return *this;
+	}
+	if (ownship != NULL) 	{ delete ownship; }
+
+	if (!new_obstacles.empty())
+	{
+		for (int i = 0; i < new_obstacles.size(); i++)
+		{
+			delete new_obstacles[i];
+		}
+		new_obstacles.clear();
+	}
+
+	if (!old_obstacles.empty())
+	{
+		for (int i = 0; i < old_obstacles.size(); i++)
+		{
+			delete old_obstacles[i];
+		}
+		old_obstacles.clear();
+	}
+
+	return *this = Obstacle_SBMPC(o_sbmpc);
 }
 
 /****************************************************************************************
@@ -301,9 +337,12 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 
 	initialize_prediction();
 
-	for (int i = 0; i < n_obst; i++)
+	if (!obstacle_colav_on)
 	{
-		new_obstacles[i]->predict_trajectory(T, dt);
+		for (int i = 0; i < n_obst; i++)
+		{
+			new_obstacles[i]->predict_independent_trajectory(T, dt);
+		}
 	}
 
 	double cost;
@@ -1122,14 +1161,18 @@ void Obstacle_SBMPC::update_obstacles(
 
 				old_obstacles[j]->update(obstacle_states.block<4, 1>(0, i), dt);
 
-				new_obstacles.push_back(old_obstacles[j]);
+				new_obstacles.resize(new_obstacles.size() + 1);
+
+				new_obstacles[new_obstacles.size() - 1] = new Prediction_Obstacle(*(old_obstacles[j]));
 
 				obstacle_exist = true;
+
+				break;
 			}
 		}
 		if (!obstacle_exist)
 		{
-			Prediction_Obstacle *obstacle = new Prediction_Obstacle(obstacle_states.col(i), false, T, dt);
+			Prediction_Obstacle *obstacle = new Prediction_Obstacle(obstacle_states.col(i), obstacle_colav_on, T, dt);
 
 			new_obstacles.push_back(obstacle);
 		}
@@ -1141,6 +1184,10 @@ void Obstacle_SBMPC::update_obstacles(
 		delete old_obstacles[i];
 	}
 	old_obstacles.clear();
+
+	// Then set equal to the new obstacle vector
+	old_obstacles.resize(new_obstacles.size());
+	old_obstacles = new_obstacles;
 }
 
 /****************************************************************************************

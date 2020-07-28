@@ -49,6 +49,81 @@ PSBMPC::PSBMPC()
 }
 
 /****************************************************************************************
+*  Name     : PSBMPC
+*  Function : Copy constructor, prevents shallow copies and bad pointer management
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+PSBMPC::PSBMPC(const PSBMPC &psbmpc)
+{
+	this->n_cbs = psbmpc.n_cbs;
+	this->n_M = psbmpc.n_M;
+	this->n_a = psbmpc.n_a;
+	this->n_ps = psbmpc.n_ps;
+
+	this->u_offsets = psbmpc.u_offsets;
+	this->chi_offsets = psbmpc.chi_offsets;
+
+	this->offset_sequence_counter = psbmpc.offset_sequence_counter;
+	this->offset_sequence = psbmpc.offset_sequence;
+	this->maneuver_times = psbmpc.maneuver_times;
+
+	this->u_m_last = psbmpc.u_m_last;
+	this->chi_m_last = psbmpc.chi_m_last;
+
+	this->min_cost = psbmpc.min_cost;
+
+	this->dpar_low = psbmpc.dpar_low;
+	this->dpar_high = psbmpc.dpar_high;
+	this->ipar_low = psbmpc.ipar_low;
+	this->ipar_high = psbmpc.ipar_high;
+
+	this->prediction_method = psbmpc.prediction_method;
+	this->guidance_method = psbmpc.guidance_method;
+
+	this->T = psbmpc.T; this->T_static = psbmpc.T_static;
+	this->dt = psbmpc.dt; 
+	this->p_step = psbmpc.p_step;
+	this->t_ts = psbmpc.t_ts;
+	
+	this->d_safe = psbmpc.d_safe; this->d_close = psbmpc.d_close; this->d_init = psbmpc.d_init;
+	
+	this->K_coll = psbmpc.K_coll;
+
+	this->phi_AH = psbmpc.phi_AH; this->phi_OT = psbmpc.phi_OT; this->phi_HO = psbmpc.phi_HO; this->phi_CR = psbmpc.phi_CR;
+
+	this->kappa = psbmpc.kappa; this->kappa_TC = psbmpc.kappa_TC;
+
+	this->K_u = psbmpc.K_u; this->K_du = psbmpc.K_du;
+
+	this->K_chi_strb = psbmpc.K_chi_strb; this->K_dchi_strb = psbmpc.K_dchi_strb;
+	this->K_chi_port = psbmpc.K_chi_port; this->K_dchi_port = psbmpc.K_dchi_port;
+
+	this->K_sgn = psbmpc.K_sgn; this->T_sgn = psbmpc.T_sgn;
+
+	this->G = psbmpc.G;
+
+	this->obstacle_filter_on = psbmpc.obstacle_filter_on;
+	this->obstacle_colav_on = psbmpc.obstacle_colav_on;
+	
+	this->T_lost_limit = psbmpc.T_lost_limit; this->T_tracked_limit = psbmpc.T_tracked_limit;
+
+	this->ownship = new Ownship(*(psbmpc.ownship));
+	this->cpe = new CPE(*(psbmpc.cpe));
+
+	this->trajectory = psbmpc.trajectory;
+
+	this->AH_0 = psbmpc.AH_0; this->S_TC_0 = psbmpc.S_TC_0; this->S_i_TC_0 = psbmpc.S_i_TC_0;
+	this->O_TC_0 = psbmpc.O_TC_0; this->Q_TC_0 = psbmpc.Q_TC_0; this->IP_0 = psbmpc.IP_0;
+	this->H_TC_0 = psbmpc.H_TC_0; this->X_TC_0 = psbmpc.X_TC_0;
+
+	this->ST_0 = psbmpc.ST_0; this->ST_i_0 = psbmpc.ST_i_0;
+
+	this->old_obstacles = psbmpc.old_obstacles;
+	this->new_obstacles = psbmpc.new_obstacles;
+}
+
+/****************************************************************************************
 *  Name     : PSBMPC~
 *  Function : Class destructor
 *  Author   : 
@@ -69,6 +144,41 @@ PSBMPC::~PSBMPC()
 		delete old_obstacles[i];
 	}
 	old_obstacles.clear();
+}
+
+/****************************************************************************************
+*  Name     : operator=
+*  Function : Assignment operator to prevent shallow assignments and bad pointer management
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+PSBMPC& PSBMPC::operator=(const PSBMPC &psbmpc)
+{
+	if (this == &psbmpc)
+	{
+		return *this;
+	}
+
+	if (ownship != NULL) 	{ delete ownship; }
+	if (cpe != NULL) 		{ delete cpe; }
+	if (!new_obstacles.empty())
+	{
+		for (int i = 0; i < new_obstacles.size(); i++)
+		{
+			delete new_obstacles[i];
+		}
+		new_obstacles.clear();
+	}
+	if (!old_obstacles.empty())
+	{
+		for (int i = 0; i < old_obstacles.size(); i++)
+		{
+			delete old_obstacles[i];
+		}
+		old_obstacles.clear();
+	}
+
+	return *this = PSBMPC(psbmpc);
 }
 
 /****************************************************************************************
@@ -1778,7 +1888,9 @@ void PSBMPC::update_obstacles(
 					obstacle_filter_on,
 					dt);
 
-				new_obstacles.push_back(old_obstacles[j]);
+				new_obstacles.resize(new_obstacles.size() + 1);
+
+				new_obstacles[new_obstacles.size() - 1] = new Obstacle(*(old_obstacles[j]));
 
 				obstacle_exist = true;
 
