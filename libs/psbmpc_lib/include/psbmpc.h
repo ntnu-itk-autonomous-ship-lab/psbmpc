@@ -192,6 +192,8 @@ private:
 
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
+	void assign_obstacle_vector(std::vector<Obstacle*> &lhs, const std::vector<Obstacle*> &rhs);
+
     void update_obstacles(
 		const Eigen::Matrix<double, 9, -1>& obstacle_states, 
 		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
@@ -201,6 +203,7 @@ private:
 	void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
 
 	void update_situation_type_and_transitional_variables();
+
 public:
 
 	PSBMPC();
@@ -208,6 +211,8 @@ public:
 	PSBMPC(const PSBMPC &psbmpc);
 
 	~PSBMPC();
+
+	void clean();
 
 	PSBMPC& operator=(const PSBMPC &psbmpc);
 

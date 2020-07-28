@@ -52,15 +52,6 @@ int main(){
 	//*****************************************************************************************************************
 	// Own-ship sim setup
 	//*****************************************************************************************************************
-	Eigen::MatrixXd test(2, 2), assign(3, 4);
-	test = assign;
-	std::cout <<  test.rows() << ", " << test.cols() << std::endl;
-	std::vector<Eigen::MatrixXd> test2(1), assign2(3);
-	test2[0].resize(2, 100);
-	assign2[0].resize(4, 200); assign2[1].resize(4, 200); assign2[2].resize(4, 200);
-	test2 = assign2;
-	std::cout << test2.size() << ", " << test2[0].rows() << ", " << test2[0].cols() << std::endl;
-
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 4, 0, 0;
 	double u_d = 9, chi_d, u_c, chi_c;
@@ -141,7 +132,7 @@ int main(){
 	{
 		ID[i] = i;
 
-		u_d_i[i] = 6.0; chi_d_i[i] = 0.0;
+		u_d_i[i] = 5.0; chi_d_i[i] = 0.0;
 
 		trajectory_i[i].resize(6, N);
 		trajectory_i[i].col(0) = xs_i_0[i];
@@ -174,6 +165,8 @@ int main(){
 		traj_i[i] = mxCreateDoubleMatrix(6, N, mxREAL);
 		P_traj_i[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
+
+
 	
 	//*****************************************************************************************************************
 	// PSB-MPC setup
@@ -209,8 +202,6 @@ int main(){
 	//*****************************************************************************************************************	
 
 	mxArray *T_sim_mx = mxCreateDoubleScalar(T_sim);
-
-	
 
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engPutVariable(ep, "WPs", wps_os);

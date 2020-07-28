@@ -37,9 +37,9 @@ private:
 
   Eigen::Vector4d xs_p, xs_upd;
 
-  Eigen::Matrix<double, 4, 4> A, C, Q, R, I;
+  Eigen::Matrix4d A, C, Q, R, I;
 
-  Eigen::Matrix<double, 4, 4> P_0, P_p, P_upd;
+  Eigen::Matrix4d P_0, P_p, P_upd;
 
 public:
 
@@ -51,9 +51,9 @@ public:
 
   double get_time() const { return t; };
 
-  Eigen::VectorXd get_state() const { return xs_upd; };
+  Eigen::Vector4d get_state() const { return xs_upd; };
 
-  Eigen::MatrixXd get_covariance() const { return P_upd; };
+  Eigen::Matrix4d get_covariance() const { return P_upd; };
 
   void reset(const Eigen::Vector4d &xs_0, const Eigen::Matrix4d &P_0, const double t_0);
 

@@ -98,16 +98,18 @@ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
 	
 	this->G = o_sbmpc.G;
 
+	this->obstacle_colav_on = o_sbmpc.obstacle_colav_on;
+
+	this->ownship = new Obstacle_Ship(*(o_sbmpc.ownship));
+
 	this->trajectory = o_sbmpc.trajectory;
 
 	this->AH_0 = o_sbmpc.AH_0; this->S_TC_0 = o_sbmpc.S_TC_0; this->S_i_TC_0 = o_sbmpc.S_i_TC_0;
 	this->O_TC_0 = o_sbmpc.O_TC_0; this->Q_TC_0 = o_sbmpc.Q_TC_0; this->IP_0 = o_sbmpc.IP_0;
 	this->H_TC_0 = o_sbmpc.H_TC_0; this->X_TC_0 = o_sbmpc.X_TC_0;
 
-	this->ownship = new Obstacle_Ship(*(o_sbmpc.ownship));
-
-	this->old_obstacles = o_sbmpc.old_obstacles;
-	this->new_obstacles = o_sbmpc.new_obstacles;
+	assign_obstacle_vector(old_obstacles, o_sbmpc.old_obstacles);
+	assign_obstacle_vector(new_obstacles, o_sbmpc.new_obstacles);
 }
 
 /****************************************************************************************
@@ -118,19 +120,34 @@ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
 *****************************************************************************************/
 Obstacle_SBMPC::~Obstacle_SBMPC()
 {
-	delete ownship;
-	
-	for (int i = 0; i < new_obstacles.size(); i++)
-	{
-		delete new_obstacles[i];
-	}
-	new_obstacles.clear();
+	clean();
+}
 
-	for (int i = 0; i < old_obstacles.size(); i++)
+/****************************************************************************************
+*  Name     : clean
+*  Function : Clears dynamically allocated memory in a sound manner.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void Obstacle_SBMPC::clean()
+{
+	if (ownship != NULL) 	{ delete ownship; }
+	if (!new_obstacles.empty())
 	{
-		delete old_obstacles[i];
+		for (int i = 0; i < new_obstacles.size(); i++)
+		{
+			delete new_obstacles[i];
+		}
+		new_obstacles.clear();
 	}
-	old_obstacles.clear();
+	if (!old_obstacles.empty())
+	{
+		for (int i = 0; i < old_obstacles.size(); i++)
+		{
+			delete old_obstacles[i];
+		}
+		old_obstacles.clear();
+	}
 }
 
 /****************************************************************************************
@@ -147,27 +164,124 @@ Obstacle_SBMPC& Obstacle_SBMPC::operator=(
 	{
 		return *this;
 	}
-	if (ownship != NULL) 	{ delete ownship; }
-
-	if (!new_obstacles.empty())
-	{
-		for (int i = 0; i < new_obstacles.size(); i++)
-		{
-			delete new_obstacles[i];
-		}
-		new_obstacles.clear();
-	}
-
-	if (!old_obstacles.empty())
-	{
-		for (int i = 0; i < old_obstacles.size(); i++)
-		{
-			delete old_obstacles[i];
-		}
-		old_obstacles.clear();
-	}
+	
+	clean();
 
 	return *this = Obstacle_SBMPC(o_sbmpc);
+}
+
+/****************************************************************************************
+*  Name     : determine_COLREGS_violation
+*  Function : Determine if vessel A violates COLREGS with respect to vessel B. 
+*			  Two overloads.
+*			  
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+bool Obstacle_SBMPC::determine_COLREGS_violation(
+	const Eigen::Vector2d& v_A,												// In: (NE) Velocity vector of vessel A
+	const double psi_A, 													// In: Heading of vessel A
+	const Eigen::Vector2d& v_B, 											// In: (NE) Velocity vector of vessel B
+	const Eigen::Vector2d& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
+	const double d_AB 														// In: Distance from vessel A to vessel B
+	)
+{
+	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
+	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
+
+	is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
+
+	is_close = d_AB <= d_close;
+
+	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
+					 v_A.norm() < v_B.norm()							  	&&
+					 v_A.norm() > 0.25;
+
+	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
+					 v_B.norm() < v_A.norm()							  	&&
+					 v_B.norm() > 0.25;
+
+	B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+
+	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+				!A_is_overtaken) 											||
+				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+				!B_is_overtaken)) 											&&
+				d_AB > d_safe;
+
+	is_head_on = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+				 v_A.norm() > 0.25											&&
+				 v_B.norm() > 0.25											&&
+				 is_ahead;
+
+	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
+				  v_A.norm() > 0.25											&&
+				  v_B.norm() > 0.25											&&
+				  !is_head_on 												&&
+				  !is_passed;
+
+	return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
+}
+
+bool Obstacle_SBMPC::determine_COLREGS_violation(
+	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A 
+	const Eigen::VectorXd &xs_B 											// In: State vector of vessel B
+	)
+{
+	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
+	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
+
+	Eigen::Vector2d v_A, v_B, L_AB;
+	double psi_A, psi_B;
+	if (xs_A.size() == 6) { psi_A = xs_A(2); v_A(0) = xs_A(3); v_A(1) = xs_A(4); v_A = rotate_vector_2D(v_A, psi_A); }
+	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
+	
+	if (xs_B.size() == 6) { psi_B = xs_B(2); v_B(0) = xs_B(3); v_B(1) = xs_B(4); v_B = rotate_vector_2D(v_B, psi_B); }
+	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
+
+	L_AB(0) = xs_B(0) - xs_A(0);
+	L_AB(1) = xs_B(1) - xs_A(1);
+	double d_AB = L_AB.norm();
+	L_AB = L_AB / L_AB.norm();
+
+	is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
+
+	is_close = d_AB <= d_close;
+
+	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() < v_B.norm()							  		&&
+					v_A.norm() > 0.25;
+
+	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
+					v_B.norm() < v_A.norm()							  		&&
+					v_B.norm() > 0.25;
+
+	B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+	
+	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+				!A_is_overtaken) 											||
+				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+				!B_is_overtaken)) 											&&
+				d_AB > d_safe;
+
+	is_head_on = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+				v_A.norm() > 0.25											&&
+				v_B.norm() > 0.25											&&
+				is_ahead;
+
+	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
+				v_A.dot(L_AB) > cos(90 * DEG2RAD) * v_A.norm()				&& 	// Its not a crossing situation if A's velocity vector points away from vessel B  
+				v_A.norm() > 0.25											&&	// or does not make a crossing occur. This is not mentioned in Johansen.
+				v_B.norm() > 0.25											&&
+				!is_head_on 												&&
+				!is_passed;
+
+	bool mu = (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
+	if (mu)
+	{
+		std::cout << mu << std::endl;
+	}
+	return mu;
 }
 
 /****************************************************************************************
@@ -199,6 +313,10 @@ double Obstacle_SBMPC::get_dpar(
 		case i_dpar_d_safe 				: return d_safe;
 		case i_dpar_d_close 			: return d_close;
 		case i_dpar_K_coll 				: return K_coll;
+		case i_dpar_phi_AH 				: return phi_AH;
+		case i_dpar_phi_OT 				: return phi_OT;
+		case i_dpar_phi_HO 				: return phi_HO;
+		case i_dpar_phi_CR 				: return phi_CR;
 		case i_dpar_kappa 				: return kappa;
 		case i_dpar_kappa_TC 			: return kappa_TC;
 		case i_dpar_K_u 				: return K_u;
@@ -209,11 +327,7 @@ double Obstacle_SBMPC::get_dpar(
 		case i_dpar_K_dchi_port 		: return K_dchi_port;
 		case i_dpar_K_sgn 				: return K_sgn;
 		case i_dpar_T_sgn 				: return T_sgn;
-		case i_dpar_phi_AH 				: return phi_AH;
-		case i_dpar_phi_OT 				: return phi_OT;
-		case i_dpar_phi_HO 				: return phi_HO;
-		case i_dpar_phi_CR 				: return phi_CR;
-
+		case i_dpar_G					: return G;
 		default : { std::cout << "Wrong index given" << std::endl; return 0; }
 	}
 }
@@ -268,6 +382,10 @@ void Obstacle_SBMPC::set_par(
 			case i_dpar_d_close 			: d_close = value; break;
 			case i_dpar_d_init 				: d_init = value; break;
 			case i_dpar_K_coll 				: K_coll = value; break;
+			case i_dpar_phi_AH 				: phi_AH = value; break;
+			case i_dpar_phi_OT 				: phi_OT = value; break;
+			case i_dpar_phi_HO 				: phi_HO = value; break;
+			case i_dpar_phi_CR 				: phi_CR = value; break;
 			case i_dpar_kappa 				: kappa = value; break;
 			case i_dpar_kappa_TC 			: kappa_TC = value; break;
 			case i_dpar_K_u 				: K_u = value; break;
@@ -276,13 +394,9 @@ void Obstacle_SBMPC::set_par(
 			case i_dpar_K_dchi_strb 		: K_dchi_strb = value; break;
 			case i_dpar_K_chi_port 			: K_chi_port = value; break;
 			case i_dpar_K_dchi_port 		: K_dchi_port = value; break;
-			case i_dpar_G 					: G = value; break;
 			case i_dpar_K_sgn 				: K_sgn = value; break;
 			case i_dpar_T_sgn 				: T_sgn = value; break;
-			case i_dpar_phi_AH 				: phi_AH = value; break;
-			case i_dpar_phi_OT 				: phi_OT = value; break;
-			case i_dpar_phi_HO 				: phi_HO = value; break;
-			case i_dpar_phi_CR 				: phi_CR = value; break;
+			case i_dpar_G 					: G = value; break;
 
 			default : std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the Obstacle_SBMPC class.." << std::endl; break;
 		}
@@ -686,121 +800,6 @@ bool Obstacle_SBMPC::determine_colav_active(
 }
 
 /****************************************************************************************
-*  Name     : determine_COLREGS_violation
-*  Function : Determine if vessel A violates COLREGS with respect to vessel B. 
-*			  Two overloads.
-*			  
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-bool Obstacle_SBMPC::determine_COLREGS_violation(
-	const Eigen::Vector2d& v_A,												// In: (NE) Velocity vector of vessel A
-	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d& v_B, 											// In: (NE) Velocity vector of vessel B
-	const Eigen::Vector2d& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-	const double d_AB 														// In: Distance from vessel A to vessel B
-	)
-{
-	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
-
-	is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
-
-	is_close = d_AB <= d_close;
-
-	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
-					 v_A.norm() < v_B.norm()							  	&&
-					 v_A.norm() > 0.25;
-
-	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
-					 v_B.norm() < v_A.norm()							  	&&
-					 v_B.norm() > 0.25;
-
-	B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-				!A_is_overtaken) 											||
-				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-				!B_is_overtaken)) 											&&
-				d_AB > d_safe;
-
-	is_head_on = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
-				 v_A.norm() > 0.25											&&
-				 v_B.norm() > 0.25											&&
-				 is_ahead;
-
-	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
-				  v_A.norm() > 0.25											&&
-				  v_B.norm() > 0.25											&&
-				  !is_head_on 												&&
-				  !is_passed;
-
-	return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
-}
-
-bool Obstacle_SBMPC::determine_COLREGS_violation(
-	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A 
-	const Eigen::VectorXd &xs_B 											// In: State vector of vessel B
-	)
-{
-	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
-
-	Eigen::Vector2d v_A, v_B, L_AB;
-	double psi_A, psi_B;
-	if (xs_A.size() == 6) { psi_A = xs_A(2); v_A(0) = xs_A(3); v_A(1) = xs_A(4); v_A = rotate_vector_2D(v_A, psi_A); }
-	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
-	
-	if (xs_B.size() == 6) { psi_B = xs_B(2); v_B(0) = xs_B(3); v_B(1) = xs_B(4); v_B = rotate_vector_2D(v_B, psi_B); }
-	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
-
-	L_AB(0) = xs_B(0) - xs_A(0);
-	L_AB(1) = xs_B(1) - xs_A(1);
-	double d_AB = L_AB.norm();
-	L_AB = L_AB / L_AB.norm();
-
-	is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
-
-	is_close = d_AB <= d_close;
-
-	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() < v_B.norm()							  		&&
-					v_A.norm() > 0.25;
-
-	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
-					v_B.norm() < v_A.norm()							  		&&
-					v_B.norm() > 0.25;
-
-	B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-	
-	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-				!A_is_overtaken) 											||
-				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-				!B_is_overtaken)) 											&&
-				d_AB > d_safe;
-
-	is_head_on = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
-				v_A.norm() > 0.25											&&
-				v_B.norm() > 0.25											&&
-				is_ahead;
-
-	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
-				v_A.dot(L_AB) > cos(90 * DEG2RAD) * v_A.norm()				&& 	// Its not a crossing situation if A's velocity vector points away from vessel B  
-				v_A.norm() > 0.25											&&	// or does not make a crossing occur. This is not mentioned in Johansen.
-				v_B.norm() > 0.25											&&
-				!is_head_on 												&&
-				!is_passed;
-
-	bool mu = (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
-	if (mu)
-	{
-		std::cout << mu << std::endl;
-	}
-	return mu;
-}
-
-
-/****************************************************************************************
 *  Name     : determine_transitional_cost_indicator
 *  Function : Determine if a transitional cost should be applied for the current
 *			  control behavior, using the method in Hagen, 2018. Two overloads
@@ -1138,6 +1137,24 @@ double Obstacle_SBMPC::distance_to_static_obstacle(
 }
 
 /****************************************************************************************
+*  Name     : assign_obstacle_vector
+*  Function : Assumes that the left-hand side has not allocated dynamic memory yet.
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+void Obstacle_SBMPC::assign_obstacle_vector(
+	std::vector<Prediction_Obstacle*> &lhs,  								// Resultant vector
+	const std::vector<Prediction_Obstacle*> &rhs 							// Vector to assign
+	)
+{
+	lhs.resize(rhs.size());
+	for (int i = 0; i < rhs.size(); i++)
+	{
+		lhs[i] = new Prediction_Obstacle(*(rhs[i]));
+	}
+}
+
+/****************************************************************************************
 *  Name     : update_obstacles
 *  Function : Takes in new obstacle information and updates the obstacle data structures
 *  Author   :
@@ -1147,6 +1164,13 @@ void Obstacle_SBMPC::update_obstacles(
 	const Eigen::Matrix<double, 9, -1> &obstacle_states 								// In: Dynamic predicted obstacle states
 	) 			
 {
+	// Clear "old" new obstacle vector before the update
+	for (int i = 0; i < new_obstacles.size(); i++)
+	{
+		delete new_obstacles[i];
+	}
+	new_obstacles.clear();
+
 	int n_obst_old = old_obstacles.size();
 	int n_obst_new = obstacle_states.cols();
 
@@ -1172,22 +1196,21 @@ void Obstacle_SBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			Prediction_Obstacle *obstacle = new Prediction_Obstacle(obstacle_states.col(i), obstacle_colav_on, T, dt);
+			new_obstacles.resize(new_obstacles.size() + 1);
 
-			new_obstacles.push_back(obstacle);
+			new_obstacles[new_obstacles.size() - 1] = new Prediction_Obstacle(obstacle_states.col(i), obstacle_colav_on, T, dt);
 		}
 	}
 
-	// Clear old obstacle vector
+	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
 	for (int i = 0; i < n_obst_old; i++)
 	{
 		delete old_obstacles[i];
 	}
 	old_obstacles.clear();
 
-	// Then set equal to the new obstacle vector
-	old_obstacles.resize(new_obstacles.size());
-	old_obstacles = new_obstacles;
+	// Then set equal to the new obstacle vector (with fresh pointer addresses ofc)
+	assign_obstacle_vector(old_obstacles, new_obstacles);
 }
 
 /****************************************************************************************

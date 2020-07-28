@@ -129,6 +129,7 @@ private:
 
     double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
+	void assign_obstacle_vector(std::vector<Prediction_Obstacle*> &lhs, const std::vector<Prediction_Obstacle*> &rhs);
 
     void update_obstacles(const Eigen::Matrix<double, 9, -1>& obstacle_states);
 
@@ -143,6 +144,8 @@ public:
 	Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc);
 
 	~Obstacle_SBMPC();
+
+	void clean();
 
 	Obstacle_SBMPC& operator=(const Obstacle_SBMPC &o_sbmpc);
 

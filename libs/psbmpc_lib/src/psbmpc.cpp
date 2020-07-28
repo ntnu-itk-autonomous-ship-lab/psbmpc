@@ -119,8 +119,8 @@ PSBMPC::PSBMPC(const PSBMPC &psbmpc)
 
 	this->ST_0 = psbmpc.ST_0; this->ST_i_0 = psbmpc.ST_i_0;
 
-	this->old_obstacles = psbmpc.old_obstacles;
-	this->new_obstacles = psbmpc.new_obstacles;
+	assign_obstacle_vector(old_obstacles, psbmpc.old_obstacles);
+	assign_obstacle_vector(new_obstacles, psbmpc.new_obstacles);
 }
 
 /****************************************************************************************
@@ -131,34 +131,17 @@ PSBMPC::PSBMPC(const PSBMPC &psbmpc)
 *****************************************************************************************/
 PSBMPC::~PSBMPC()
 {
-	delete ownship;
-	delete cpe;
-
-	for (int i = 0; i < new_obstacles.size(); i++)
-	{
-		delete new_obstacles[i];
-	}
-	new_obstacles.clear();
-	for (int i = 0; i < old_obstacles.size(); i++)
-	{
-		delete old_obstacles[i];
-	}
-	old_obstacles.clear();
+	clean();
 }
 
 /****************************************************************************************
-*  Name     : operator=
-*  Function : Assignment operator to prevent shallow assignments and bad pointer management
+*  Name     : clean
+*  Function : Clears dynamically allocated memory in a sound manner.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-PSBMPC& PSBMPC::operator=(const PSBMPC &psbmpc)
+void PSBMPC::clean()
 {
-	if (this == &psbmpc)
-	{
-		return *this;
-	}
-
 	if (ownship != NULL) 	{ delete ownship; }
 	if (cpe != NULL) 		{ delete cpe; }
 	if (!new_obstacles.empty())
@@ -177,6 +160,22 @@ PSBMPC& PSBMPC::operator=(const PSBMPC &psbmpc)
 		}
 		old_obstacles.clear();
 	}
+}
+
+/****************************************************************************************
+*  Name     : operator=
+*  Function : Assignment operator to prevent shallow assignments and bad pointer management
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+PSBMPC& PSBMPC::operator=(const PSBMPC &psbmpc)
+{
+	if (this == &psbmpc)
+	{
+		return *this;
+	}
+
+	clean();
 
 	return *this = PSBMPC(psbmpc);
 }
@@ -193,6 +192,7 @@ int PSBMPC::get_ipar(
 {
 	switch(index){
 		case i_ipar_n_M 				: return n_M; 
+		case i_ipar_n_a					: return n_a;
 
 		default : { std::cout << "Wrong index given" << std::endl; return 0;}
 	}
@@ -206,10 +206,15 @@ double PSBMPC::get_dpar(
 		case i_dpar_T 					: return T;
 		case i_dpar_T_static 			: return T_static;
 		case i_dpar_dt 					: return dt;
+		case i_dpar_p_step				: return p_step;
 		case i_dpar_t_ts 				: return t_ts;
 		case i_dpar_d_safe 				: return d_safe;
 		case i_dpar_d_close 			: return d_close;
 		case i_dpar_K_coll 				: return K_coll;
+		case i_dpar_phi_AH 				: return phi_AH;
+		case i_dpar_phi_OT 				: return phi_OT;
+		case i_dpar_phi_HO 				: return phi_HO;
+		case i_dpar_phi_CR 				: return phi_CR;
 		case i_dpar_kappa 				: return kappa;
 		case i_dpar_kappa_TC 			: return kappa_TC;
 		case i_dpar_K_u 				: return K_u;
@@ -220,10 +225,7 @@ double PSBMPC::get_dpar(
 		case i_dpar_K_dchi_port 		: return K_dchi_port;
 		case i_dpar_K_sgn 				: return K_sgn;
 		case i_dpar_T_sgn 				: return T_sgn;
-		case i_dpar_phi_AH 				: return phi_AH;
-		case i_dpar_phi_OT 				: return phi_OT;
-		case i_dpar_phi_HO 				: return phi_HO;
-		case i_dpar_phi_CR 				: return phi_CR;
+		case i_dpar_G					: return G;
 		case i_dpar_T_lost_limit		: return T_lost_limit;
 		case i_dpar_T_tracked_limit		: return T_tracked_limit;
 
@@ -264,7 +266,8 @@ void PSBMPC::set_par(
 	{	
 		switch(index)
 		{
-			case i_ipar_n_M : n_M = value; break;
+			case i_ipar_n_M 				: n_M = value; break;
+			case i_ipar_n_a 				: n_a = value; break;
 
 			default : std::cout << "Wrong index given" << std::endl; break;
 		}
@@ -298,6 +301,10 @@ void PSBMPC::set_par(
 			case i_dpar_d_close 			: d_close = value; break;
 			case i_dpar_d_init 				: d_init = value; break;
 			case i_dpar_K_coll 				: K_coll = value; break;
+			case i_dpar_phi_AH 				: phi_AH = value; break;
+			case i_dpar_phi_OT 				: phi_OT = value; break;
+			case i_dpar_phi_HO 				: phi_HO = value; break;
+			case i_dpar_phi_CR 				: phi_CR = value; break;
 			case i_dpar_kappa 				: kappa = value; break;
 			case i_dpar_kappa_TC 			: kappa_TC = value; break;
 			case i_dpar_K_u 				: K_u = value; break;
@@ -306,13 +313,9 @@ void PSBMPC::set_par(
 			case i_dpar_K_dchi_strb 		: K_dchi_strb = value; break;
 			case i_dpar_K_chi_port 			: K_chi_port = value; break;
 			case i_dpar_K_dchi_port 		: K_dchi_port = value; break;
-			case i_dpar_G 					: G = value; break;
 			case i_dpar_K_sgn 				: K_sgn = value; break;
 			case i_dpar_T_sgn 				: T_sgn = value; break;
-			case i_dpar_phi_AH 				: phi_AH = value; break;
-			case i_dpar_phi_OT 				: phi_OT = value; break;
-			case i_dpar_phi_HO 				: phi_HO = value; break;
-			case i_dpar_phi_CR 				: phi_CR = value; break;
+			case i_dpar_G 					: G = value; break;
 			case i_dpar_T_lost_limit		: T_lost_limit = value; break;
 			case i_dpar_T_tracked_limit		: T_tracked_limit = value; break;
 
@@ -1848,6 +1851,24 @@ void PSBMPC::assign_optimal_trajectory(
 }
 
 /****************************************************************************************
+*  Name     : assign_obstacle_vector
+*  Function : Assumes that the left-hand side has not allocated dynamic memory yet.
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::assign_obstacle_vector(
+	std::vector<Obstacle*> &lhs,  														// Resultant vector
+	const std::vector<Obstacle*> &rhs 													// Vector to assign
+	)
+{
+	lhs.resize(rhs.size());
+	for (int i = 0; i < rhs.size(); i++)
+	{
+		lhs[i] = new Obstacle(*(rhs[i]));
+	}
+}
+
+/****************************************************************************************
 *  Name     : update_obstacles
 *  Function : Takes in new obstacle information and updates the obstacle data structures
 *  Author   :
@@ -1860,7 +1881,7 @@ void PSBMPC::update_obstacles(
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
 	) 			
 {
-	// Clear the "old" new obstacles before the update
+	// Clear "old" new obstacles before the update
 	for (int i = 0; i < new_obstacles.size(); i++)
 	{
 		delete new_obstacles[i];
@@ -1899,7 +1920,9 @@ void PSBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			Obstacle *obstacle = new Obstacle(
+			new_obstacles.resize(new_obstacles.size() + 1);
+
+			new_obstacles[new_obstacles.size() - 1] = new Obstacle(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
@@ -1908,8 +1931,6 @@ void PSBMPC::update_obstacles(
 				false, 
 				T, 
 				dt);
-
-			new_obstacles.push_back(obstacle);
 		}
 	}
 	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
@@ -1927,10 +1948,13 @@ void PSBMPC::update_obstacles(
 			{
 				old_obstacles[j]->update(obstacle_filter_on, dt);
 
-				new_obstacles.push_back(old_obstacles[j]);
+				new_obstacles.resize(new_obstacles.size() + 1);
+
+				new_obstacles[new_obstacles.size() - 1] = new Obstacle(*(old_obstacles[j]));
 			}
 		}
 	}
+
 	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
 	for (int i = 0; i < n_obst_old; i++)
 	{
@@ -1938,9 +1962,8 @@ void PSBMPC::update_obstacles(
 	}
 	old_obstacles.clear();
 
-	// Then set equal to the new obstacle vector
-	old_obstacles.resize(new_obstacles.size());
-	old_obstacles = new_obstacles;
+	// Then set equal to the new obstacle vector (with fresh pointer addresses ofc)
+	assign_obstacle_vector(old_obstacles, new_obstacles);
 }
 
 /****************************************************************************************
