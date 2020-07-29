@@ -404,6 +404,9 @@ Thrust_DIR:PATH=Thrust_DIR-NOTFOUND
 //Dependencies for the target
 psbmpc_lib_LIB_DEPENDS:STATIC=general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmex.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmx.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libeng.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmat.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libMatlabDataArray.so;general;/usr/local/MATLAB/R2019a/extern/bin/glnxa64/libMatlabEngine.so;general;/usr/local/cuda-10.2/lib64/libcudart_static.a;general;dl;general;/usr/lib/x86_64-linux-gnu/librt.so;
 
+//Dependencies for the target
+psbmpc_lib_gpu_LIB_DEPENDS:STATIC=general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmex.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmx.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libeng.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmat.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libMatlabDataArray.so;general;/usr/local/MATLAB/R2019a/extern/bin/glnxa64/libMatlabEngine.so;general;/usr/local/cuda-10.2/lib64/libcudart_static.a;general;dl;general;/usr/lib/x86_64-linux-gnu/librt.so;
+
 //Value Computed by CMake
 psbmpc_test_BINARY_DIR:STATIC=/home/trymte/Desktop/cybercolav_cxx/debug
 

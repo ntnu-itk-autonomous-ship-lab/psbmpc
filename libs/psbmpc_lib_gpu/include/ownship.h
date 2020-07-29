@@ -24,6 +24,7 @@
 #ifndef _Ownship_H_
 #define _Ownship_H_
 
+#include <thrust/device_vector.h>
 #include "Eigen/Dense"
 
 enum Prediction_Method {
@@ -41,7 +42,7 @@ enum Guidance_Method {
 
 class Ownship
 {
-	private:
+private:
 
 	Eigen::Vector3d tau;
 	Eigen::Matrix3d M_inv;
@@ -98,19 +99,19 @@ class Ownship
 	double x_offset, y_offset;
 
 	// Calculates the offsets according to the position of the GPS receiver
-	void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
+	__host__ __device__ void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
 
-	void update_Cvv(const Eigen::Vector3d &nu);
+	__host__ __device__ void update_Cvv(const Eigen::Vector3d &nu);
 
-	void update_Dvv(const Eigen::Vector3d &nu);
+	__host__ __device__ void update_Dvv(const Eigen::Vector3d &nu);
 
-	public:
+public:
 
-	Ownship();
+	__host__ __device__ Ownship();
 
-	void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
+	__host__ __device__ void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 
-	void update_guidance_references(
+	__host__ __device__ void update_guidance_references(
 		double &u_d, 
 		double &chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
@@ -118,11 +119,14 @@ class Ownship
 		const double dt,
 		const Guidance_Method guidance_method);
 
-	void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
+	__host__ __device__ void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
-	Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
+	__host__ __device__ Eigen::Matrix<double, 6, 1> predict(
+		const Eigen::Matrix<double, 6, 1> &xs_old, 
+		const double dt, 
+		const Prediction_Method prediction_method);
 
-	void predict_trajectory(
+	__host__ __device__ void predict_trajectory(
 		Eigen::Matrix<double, 6, -1> &trajectory,
 		const Eigen::VectorXd &offset_sequence,
 		const Eigen::VectorXd &maneuver_times,
@@ -135,9 +139,9 @@ class Ownship
 		const double dt
 	);
 
-	double get_length() const { return l; };
+	__host__ __device__ double get_length() const { return l; };
 
-	double get_width() const { return w; };
+	__host__ __device__ double get_width() const { return w; };
 
 };
 

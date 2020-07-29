@@ -23,6 +23,7 @@
 #ifndef _OBSTACLE_H_
 #define _OBSTACLE_H_
 
+#include <thrust/device_vector.h>
 #include <vector>
 #include "Eigen/Dense"
 #include "mrou.h"
