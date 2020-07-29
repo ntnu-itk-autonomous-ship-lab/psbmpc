@@ -20,7 +20,7 @@
 *
 *****************************************************************************************/
 
-
+#include <thrust/device_vector.h>
 #include "prediction_obstacle.h"
 #include "obstacle_sbmpc.h"
 #include "utilities.h"
@@ -32,7 +32,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Prediction_Obstacle::Prediction_Obstacle(
+__device__ Prediction_Obstacle::Prediction_Obstacle(
 	const Eigen::VectorXd& xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
@@ -67,7 +67,7 @@ Prediction_Obstacle::Prediction_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Prediction_Obstacle::Prediction_Obstacle(
+__device__ Prediction_Obstacle::Prediction_Obstacle(
 	const Prediction_Obstacle &po 												// In: Prediction obstacle to copy
 	)
 {
@@ -95,7 +95,7 @@ Prediction_Obstacle::Prediction_Obstacle(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Prediction_Obstacle::~Prediction_Obstacle()
+__device__ Prediction_Obstacle::~Prediction_Obstacle()
 {
 	delete sbmpc;
 }
@@ -106,7 +106,7 @@ Prediction_Obstacle::~Prediction_Obstacle()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Prediction_Obstacle& Prediction_Obstacle::operator=(
+__device__ Prediction_Obstacle& Prediction_Obstacle::operator=(
 	const Prediction_Obstacle &po 										// In: Rhs prediction obstacle to assign
 	)
 {
@@ -126,7 +126,7 @@ Prediction_Obstacle& Prediction_Obstacle::operator=(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Prediction_Obstacle::predict_independent_trajectory(						
+__device__ void Prediction_Obstacle::predict_independent_trajectory(						
 	const double T, 											// In: Time horizon
 	const double dt 											// In: Time step
 	)
@@ -156,7 +156,7 @@ void Prediction_Obstacle::predict_independent_trajectory(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Prediction_Obstacle::update(
+__device__ void Prediction_Obstacle::update(
 	const Eigen::Vector4d &xs, 								// In: Predicted obstacle state [x, y, V_x, V_y]
 	const bool colav_on										// In: Boolean determining if the prediction obstacle object has an active COLAV system
 	)

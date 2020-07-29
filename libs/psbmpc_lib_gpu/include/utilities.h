@@ -29,6 +29,7 @@
 #define RAD2DEG 180.0f / M_PI
 
 #include "Eigen/Dense"
+#include <thrust/device_vector.h>
 #include "iostream"
 
 
@@ -53,7 +54,7 @@ void save_matrix_to_file(const Eigen::MatrixXd &in);
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline void print_matrix(const Eigen::MatrixXd &in)
+__host__ __device__ inline void print_matrix(const Eigen::MatrixXd &in)
 {
 	int n_rows = in.rows();
 	int n_cols = in.cols();
@@ -87,7 +88,7 @@ inline void print_matrix(const Eigen::MatrixXd &in)
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline double wrap_angle_to_pmpi(const double angle) 
+__host__ __device__ inline double wrap_angle_to_pmpi(const double angle) 
 {
 	double a = fmod(angle, 2 * M_PI);
 	if (a <= -M_PI) a += 2 * M_PI;
@@ -101,7 +102,7 @@ inline double wrap_angle_to_pmpi(const double angle)
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline double wrap_angle_to_02pi(const double angle) 
+__host__ __device__ inline double wrap_angle_to_02pi(const double angle) 
 {
 	double a = fmod(angle, 2 * M_PI);
 	if (a < 0) a += 2 * M_PI;
@@ -114,7 +115,7 @@ inline double wrap_angle_to_02pi(const double angle)
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline double angle_difference_pmpi(const double a_1, const double a_2) 
+__host__ __device__ inline double angle_difference_pmpi(const double a_1, const double a_2) 
 {
 	double diff = wrap_angle_to_pmpi(a_1) - wrap_angle_to_pmpi(a_2);
 	while (diff > M_PI) diff -= 2 * M_PI;
@@ -128,7 +129,7 @@ inline double angle_difference_pmpi(const double a_1, const double a_2)
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d &v, const double angle)
+__host__ __device__ inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d &v, const double angle)
 {
 	Eigen::Vector2d v_temp;
 	v_temp(0) = v(0) * cos(angle) - v(1) * sin(angle);
@@ -142,7 +143,7 @@ inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d &v, const double a
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3d &v, const double angle, const Axis axis)
+__host__ __device__ inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3d &v, const double angle, const Axis axis)
 {
 	Eigen::Vector3d v_temp;
 	switch (axis) 
@@ -179,7 +180,7 @@ inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3d &v, const double a
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline Eigen::MatrixXd flatten(const Eigen::MatrixXd &in)
+__host__ __device__ inline Eigen::MatrixXd flatten(const Eigen::MatrixXd &in)
 {
 	int n_rows = in.rows();
 	int n_cols = in.cols();
@@ -205,7 +206,7 @@ inline Eigen::MatrixXd flatten(const Eigen::MatrixXd &in)
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline Eigen::MatrixXd reshape(const Eigen::VectorXd &in, const int n_rows, const int n_cols)
+__host__ __device__ inline Eigen::MatrixXd reshape(const Eigen::VectorXd &in, const int n_rows, const int n_cols)
 {
 	Eigen::MatrixXd out;
 	out.resize(n_rows, n_cols);
@@ -228,7 +229,7 @@ inline Eigen::MatrixXd reshape(const Eigen::VectorXd &in, const int n_rows, cons
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-inline void calculate_cpa(
+__host__ __device__ inline void calculate_cpa(
 	Eigen::Vector2d &p_cpa, 												// In/out: Position of vessel A at CPA
 	double &t_cpa, 															// In/out: Time to CPA
 	double &d_cpa, 															// In/out: Distance at CPA
@@ -268,7 +269,7 @@ inline void calculate_cpa(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-inline bool determine_COLREGS_violation(
+__host__ __device__ inline bool determine_COLREGS_violation(
 	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A (most often the ownship)
 	const Eigen::VectorXd &xs_B, 											// In: State vector of vessel B (most often an obstacle)
 	const double phi_AH,

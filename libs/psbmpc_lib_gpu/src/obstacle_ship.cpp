@@ -18,6 +18,7 @@
 *
 *****************************************************************************************/
 
+#include <thrust/device_vector.h>
 #include "utilities.h"
 #include "obstacle_ship.h"
 #include <vector>
@@ -29,7 +30,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Obstacle_Ship::Obstacle_Ship()
+__host__ __device__ Obstacle_Ship::Obstacle_Ship()
 {
 	T_chi = 3;
 	T_U = 10;
@@ -51,7 +52,7 @@ Obstacle_Ship::Obstacle_Ship()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Ship::determine_active_waypoint_segment(
+__device__ void Obstacle_Ship::determine_active_waypoint_segment(
 	const Eigen::Matrix<double, 2, -1> &waypoints,  				// In: Waypoints to follow
 	const Eigen::Vector4d &xs 										// In: Ownship state
 	)	
@@ -87,7 +88,7 @@ void Obstacle_Ship::determine_active_waypoint_segment(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Ship::update_guidance_references(
+__device__ void Obstacle_Ship::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
 	double &chi_d,												// In/out: Course reference 
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
@@ -174,7 +175,7 @@ void Obstacle_Ship::update_guidance_references(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Eigen::Vector4d Obstacle_Ship::predict(
+__device__ Eigen::Vector4d Obstacle_Ship::predict(
 	const Eigen::Vector4d &xs_old, 									// In: State [x, y, chi, U] to predict forward
 	const double U_d, 												// In: Speed over ground (SOG) reference
 	const double chi_d, 											// In: Course (COG) reference
@@ -217,7 +218,7 @@ Eigen::Vector4d Obstacle_Ship::predict(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Ship::predict_trajectory(
+__device__ void Obstacle_Ship::predict_trajectory(
 	Eigen::Matrix<double, 4, -1>& trajectory, 						// In/out: Obstacle ship trajectory
 	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd maneuver_times,							// In: Time indices for each Obstacle_Model avoidance maneuver

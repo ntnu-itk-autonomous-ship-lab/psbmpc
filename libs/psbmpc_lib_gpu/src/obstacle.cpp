@@ -20,7 +20,7 @@
 *
 *****************************************************************************************/
 
-
+#include <thrust/device_vector.h>
 #include "obstacle.h"
 #include "obstacle_sbmpc.h"
 #include "utilities.h"
@@ -33,7 +33,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Obstacle::Obstacle(
+__host__ __device__ Obstacle::Obstacle(
 	const Eigen::VectorXd &xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
 	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
@@ -93,7 +93,7 @@ Obstacle::Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Obstacle::Obstacle(
+__host__ __device__ Obstacle::Obstacle(
 	const Obstacle &o 													// In: Obstacle to copy
 	)
 {
@@ -141,7 +141,7 @@ Obstacle::Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Obstacle& Obstacle::operator=(
+__host__ __device__ Obstacle& Obstacle::operator=(
 	const Obstacle &o 													// In: Rhs Obstacle to assign to lhs
 	)
 {
@@ -163,7 +163,7 @@ Obstacle& Obstacle::operator=(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Obstacle::~Obstacle()
+__host__ __device__ Obstacle::~Obstacle()
 {
 	delete kf;
 	delete mrou;
@@ -177,7 +177,7 @@ Obstacle::~Obstacle()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Obstacle::resize_trajectories(const int n_samples)
+__host__ __device__ void Obstacle::resize_trajectories(const int n_samples)
 {
 	int n_ps = ps_ordering.size();
 	xs_p.resize(n_ps);
