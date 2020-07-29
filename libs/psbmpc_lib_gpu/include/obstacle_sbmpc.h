@@ -22,7 +22,7 @@
 #ifndef _OBSTACLE_SBMPC_H_
 #define _OBSTACLE_SBMPC_H_
 
-
+#include <thrust/device_vector.h>
 #include "psbmpc_index.h"
 #include "prediction_obstacle.h"
 #include "obstacle_ship.h"
@@ -77,104 +77,104 @@ private:
 	std::vector<Prediction_Obstacle*> old_obstacles;
 	std::vector<Prediction_Obstacle*> new_obstacles;
 
-	void initialize_par_limits();
+	__host__ __device__ void initialize_par_limits();
 
-	void initialize_pars();
+	__host__ __device__ void initialize_pars();
 
-	void initialize_prediction();
+	__host__ __device__ void initialize_prediction();
 
-	void reset_control_behavior();
+	__host__ __device__ void reset_control_behavior();
 
-	void increment_control_behavior();
+	__host__ __device__ void increment_control_behavior();
 
-	bool determine_colav_active(const int n_static_obst);
+	__host__ __device__ bool determine_colav_active(const int n_static_obst);
 
-	bool determine_transitional_cost_indicator(
+	__host__ __device__ bool determine_transitional_cost_indicator(
 		const double psi_A, 
 		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
 		const int i,
 		const double chi_m);
 
-	bool determine_transitional_cost_indicator(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B, const int i, const double chi_m);
+	__host__ __device__ bool determine_transitional_cost_indicator(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B, const int i, const double chi_m);
 
-	double calculate_dynamic_obstacle_cost(const int i);
+	__host__ __device__ double calculate_dynamic_obstacle_cost(const int i);
 
-	double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
+	__host__ __device__ double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
 	// Methods dealing with control deviation cost
-	double calculate_control_deviation_cost();	
+	__host__ __device__ double calculate_control_deviation_cost();	
 
-	double Delta_u(const double u_1, const double u_2) const 		{ return K_du * fabs(u_1 - u_2); }
+	__host__ __device__ double Delta_u(const double u_1, const double u_2) const 		{ return K_du * fabs(u_1 - u_2); }
 
-	double K_chi(const double chi) const 							{ if (chi > 0) return K_chi_strb * pow(chi, 2); else return K_chi_port * pow(chi, 2); };
+	__host__ __device__ double K_chi(const double chi) const 							{ if (chi > 0) return K_chi_strb * pow(chi, 2); else return K_chi_port * pow(chi, 2); };
 
-	double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
+	__host__ __device__ double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
-	double calculate_chattering_cost();
+	__host__ __device__ double calculate_chattering_cost();
 
 	// Methods dealing with geographical constraints
-	double calculate_grounding_cost(const Eigen::Matrix<double, 4, -1>& static_obstacles);
+	__host__ __device__ double calculate_grounding_cost(const Eigen::Matrix<double, 4, -1>& static_obstacles);
 
-    int find_triplet_orientation(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);                           
+    __host__ __device__ int find_triplet_orientation(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);                           
 
-    bool determine_if_on_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);   
+    __host__ __device__ bool determine_if_on_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);   
 
-    bool determine_if_behind(const Eigen::Vector2d &p_1, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2, const double d_to_line);                         
+    __host__ __device__ bool determine_if_behind(const Eigen::Vector2d &p_1, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2, const double d_to_line);                         
 
-    bool determine_if_lines_intersect(const Eigen::Vector2d &p_1, const Eigen::Vector2d &q_1, const Eigen::Vector2d &p_2, const Eigen::Vector2d &q_2);   
+    __host__ __device__ bool determine_if_lines_intersect(const Eigen::Vector2d &p_1, const Eigen::Vector2d &q_1, const Eigen::Vector2d &p_2, const Eigen::Vector2d &q_2);   
 
-    double distance_from_point_to_line(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2);                  
+    __host__ __device__ double distance_from_point_to_line(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2);                  
 
-    double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
+    __host__ __device__ double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
-	void assign_obstacle_vector(std::vector<Prediction_Obstacle*> &lhs, const std::vector<Prediction_Obstacle*> &rhs);
+	__host__ __device__ void assign_obstacle_vector(std::vector<Prediction_Obstacle*> &lhs, const std::vector<Prediction_Obstacle*> &rhs);
 
-    void update_obstacles(const Eigen::Matrix<double, 9, -1>& obstacle_states);
+    __host__ __device__ void update_obstacles(const Eigen::Matrix<double, 9, -1>& obstacle_states);
 
-	void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
+	__host__ __device__ void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
 
-	void update_transitional_variables();
+	__host__ __device__ void update_transitional_variables();
 
 public:
 
-	Obstacle_SBMPC();
+	__host__ __device__ Obstacle_SBMPC();
 
-	Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc);
+	__host__ __device__ Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc);
 
-	~Obstacle_SBMPC();
+	__host__ __device__ ~Obstacle_SBMPC();
 
-	void clean();
+	__host__ __device__ void clean();
 
-	Obstacle_SBMPC& operator=(const Obstacle_SBMPC &o_sbmpc);
+	__host__ __device__ Obstacle_SBMPC& operator=(const Obstacle_SBMPC &o_sbmpc);
 
-	bool determine_COLREGS_violation(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B);
+	__host__ __device__ bool determine_COLREGS_violation(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B);
 
-	bool determine_COLREGS_violation(
+	__host__ __device__ bool determine_COLREGS_violation(
 		const Eigen::Vector2d &v_A, 
 		const double psi_A, 
 		const Eigen::Vector2d &v_B,
 		const Eigen::Vector2d &L_AB,	
 		const double d_AB);
 
-	Prediction_Method get_prediction_method() const { return prediction_method; };
+	__host__ __device__ Prediction_Method get_prediction_method() const { return prediction_method; };
 
-	Guidance_Method get_guidance_method() const { return guidance_method; };
+	__host__ __device__ Guidance_Method get_guidance_method() const { return guidance_method; };
 
-	void set_prediction_method(Prediction_Method prediction_method) { if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
+	__host__ __device__ void set_prediction_method(Prediction_Method prediction_method) { if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
 
-	void set_guidance_method(Guidance_Method guidance_method) 		{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
+	__host__ __device__ void set_guidance_method(Guidance_Method guidance_method) 		{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
 
-	int get_ipar(const int index) const;
+	__host__ __device__ int get_ipar(const int index) const;
 	
-	double get_dpar(const int index) const;
+	__host__ __device__ double get_dpar(const int index) const;
 
-	void set_par(const int index, const int value);
+	__host__ __device__ void set_par(const int index, const int value);
 
-	void set_par(const int index, const double value);
+	__host__ __device__ void set_par(const int index, const double value);
 
-	void calculate_optimal_offsets(
+	__host__ __device__ void calculate_optimal_offsets(
 		double &u_opt, 	
 		double &chi_opt, 
 		Eigen::Matrix<double, 2, -1> &predicted_trajectory,

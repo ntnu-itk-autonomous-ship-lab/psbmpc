@@ -21,6 +21,7 @@
 
 #include "utilities.h"
 #include "ownship.h"
+#include <thrust/device_vector.h>
 #include <vector>
 #include <iostream>
 
@@ -36,7 +37,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Ownship::Ownship()
+__host__ __device__ Ownship::Ownship()
 {
 	tau = Eigen::Vector3d::Zero();
 
@@ -112,14 +113,13 @@ Ownship::Ownship()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ownship::determine_active_waypoint_segment(
+__host__ __device__ void Ownship::determine_active_waypoint_segment(
 	const Eigen::Matrix<double, 2, -1> &waypoints,  			// In: Waypoints to follow
 	const Eigen::Matrix<double, 6, 1> &xs 						// In: Ownship state
 	)	
 {
 	int n_wps = waypoints.cols();
 	Eigen::Vector2d d_0_wp, L_wp_segment, L_0wp;
-	double e = 0, s = 0, alpha = 0;
 	bool segment_passed = false;
 
 	if (n_wps <= 2) { wp_c_0 = 0; wp_c_p = 0; return; }
@@ -149,7 +149,7 @@ void Ownship::determine_active_waypoint_segment(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ownship::update_guidance_references(
+__host__ __device__ void Ownship::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
 	double &chi_d,												// In/out: Course reference 
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
@@ -235,7 +235,7 @@ void Ownship::update_guidance_references(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ownship::update_ctrl_input(
+__host__ __device__ void Ownship::update_ctrl_input(
 	const double u_d,										// In: Surge reference
 	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
 	const Eigen::Matrix<double, 6, 1> &xs 					// In: State
@@ -268,7 +268,7 @@ void Ownship::update_ctrl_input(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Eigen::Matrix<double, 6, 1> Ownship::predict(
+__host__ __device__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
 	const double dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
@@ -315,7 +315,7 @@ Eigen::Matrix<double, 6, 1> Ownship::predict(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ownship::predict_trajectory(
+__host__ __device__ void Ownship::predict_trajectory(
 	Eigen::Matrix<double, 6, -1>& trajectory, 						// In/out: Own-ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
@@ -369,7 +369,7 @@ void Ownship::predict_trajectory(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ownship::update_Cvv(
+__host__ __device__ void Ownship::update_Cvv(
 	const Eigen::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
 	)
 {
@@ -385,7 +385,7 @@ void Ownship::update_Cvv(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ownship::update_Dvv(
+__host__ __device__ void Ownship::update_Dvv(
 	const Eigen::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T
 	)
 {

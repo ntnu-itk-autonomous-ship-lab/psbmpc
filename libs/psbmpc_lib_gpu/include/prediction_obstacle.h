@@ -24,6 +24,7 @@
 #define _PREDICTION_OBSTACLE_H_
 
 #include "Eigen/Dense"
+#include <thrust/device_vector.h>
 
 class Obstacle_SBMPC;
 
@@ -52,28 +53,28 @@ public:
 
 	Obstacle_SBMPC *sbmpc;
 
-	Prediction_Obstacle(const Eigen::VectorXd &xs_aug, 
+	__host__ __device__ Prediction_Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const bool colav_on, 
 			 const double T, 
 			 const double dt);
 
-	Prediction_Obstacle(const Prediction_Obstacle &po);
+	__host__ __device__ Prediction_Obstacle(const Prediction_Obstacle &po);
 
-	~Prediction_Obstacle();
+	__host__ __device__ ~Prediction_Obstacle();
 
-	Prediction_Obstacle& operator=(const Prediction_Obstacle &po);
+	__host__ __device__ Prediction_Obstacle& operator=(const Prediction_Obstacle &po);
 
-	int get_ID() const { return ID; };
+	__host__ __device__ int get_ID() const { return ID; };
 
-	Eigen::Vector4d get_state() const { return xs_0; };
+	__host__ __device__ Eigen::Vector4d get_state() const { return xs_0; };
 
-	Eigen::MatrixXd get_trajectory() const { return xs_p; };
+	__host__ __device__ Eigen::MatrixXd get_trajectory() const { return xs_p; };
 
-	void set_trajectory(const Eigen::MatrixXd &xs_p) { if (colav_on) { this->xs_p = xs_p; }};
+	__host__ __device__ void set_trajectory(const Eigen::MatrixXd &xs_p) { if (colav_on) { this->xs_p = xs_p; }};
 
-	void predict_independent_trajectory(const double T, const double dt);
+	__host__ __device__ void predict_independent_trajectory(const double T, const double dt);
 
-	void update(const Eigen::Vector4d &xs, const bool colav_on);
+	__host__ __device__ void update(const Eigen::Vector4d &xs, const bool colav_on);
 };
 
 #endif

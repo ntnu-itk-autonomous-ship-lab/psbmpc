@@ -58,7 +58,6 @@ void Obstacle_Ship::determine_active_waypoint_segment(
 {
 	int n_wps = waypoints.cols();
 	Eigen::Vector2d d_0_wp, L_wp_segment, L_0wp;
-	double e = 0, s = 0, alpha = 0;
 	bool segment_passed = false;
 
 	if (n_wps <= 2) { wp_c_0 = 0; wp_c_p = 0; return; }
