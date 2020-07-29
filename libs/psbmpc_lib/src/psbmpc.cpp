@@ -391,6 +391,8 @@ void PSBMPC::calculate_optimal_offsets(
 	trajectory.resize(6, n_samples);
 	trajectory.col(0) = ownship_state;
 
+	ownship->determine_active_waypoint_segment(waypoints, ownship_state);
+
 	update_obstacles(obstacle_states, obstacle_covariances, obstacle_intention_probabilities, obstacle_a_priori_CC_probabilities);
 	int n_obst = new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
@@ -422,7 +424,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-/* 	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -457,7 +459,7 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 
-	for(int i = 0; i < n_obst; i++)
+ 	for(int i = 0; i < n_obst; i++)
 	{
 		Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
 		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_trajectories();
@@ -475,7 +477,7 @@ void PSBMPC::calculate_optimal_offsets(
 			map_traj_i = xs_i_p[ps];
 			
 			engPutVariable(ep, "X_i", traj_i);
-			engEvalString(ep, "inside_psbmpc_obstacle_plot");
+			//engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
 	} */
 	
@@ -495,7 +497,7 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-/* 		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
@@ -512,7 +514,7 @@ void PSBMPC::calculate_optimal_offsets(
 			P_c_i.resize(n_ps[i], n_samples);
 			//calculate_collision_probabilities(P_c_i, i); 
 
-			//cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
+			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
 		}
 
 		//cost += cost_i.maxCoeff();
@@ -544,7 +546,7 @@ void PSBMPC::calculate_optimal_offsets(
 	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
 	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
 
-	std::cout << "Optimal offset sequence : " << std::endl;
+	std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < n_M; M++)
 	{
 		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
@@ -619,7 +621,7 @@ void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 2;
-	n_a = 3; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
+	n_a = 1; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
 	n_ps.resize(1); // Determined by initialize_prediction();
 
 	offset_sequence_counter.resize(2 * n_M);
@@ -631,12 +633,14 @@ void PSBMPC::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(2);
-			u_offsets[M] << 1.0, 0.5;
+			u_offsets[M].resize(1);
+			u_offsets[M] << 1.0;
+			//u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(13);
-			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M].resize(7);
+			//chi_offsets[M] << 0.0;
+			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -644,8 +648,9 @@ void PSBMPC::initialize_pars()
 			u_offsets[M].resize(2);
 			u_offsets[M] << 1.0, 0.5;
 
-			chi_offsets[M].resize(7);
-			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			chi_offsets[M].resize(5);
+			//chi_offsets[M] << 0.0;
+			chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
@@ -655,8 +660,8 @@ void PSBMPC::initialize_pars()
 	u_m_last = 1;
 	chi_m_last = 0;
 
-	course_changes.resize(3);
-	course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
+	course_changes.resize(1);
+	course_changes << 30 * DEG2RAD; //60 * DEG2RAD, 90 * DEG2RAD;
 
 	cpe_method = CE;
 	prediction_method = ERK1;
@@ -672,10 +677,10 @@ void PSBMPC::initialize_pars()
 		dt = 0.5; 
 		p_step = 1;
 	}
-	t_ts = 25;
+	t_ts = 50;
 
 	d_init = 1500;							//1852.0;	  // should be >= D_CLOSE 300.0 600.0 500.0 700.0 800 1852
-	d_close = 1000;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
+	d_close = 500;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
 	d_safe = 50; 							//185.2; 	  // 40.0, 50.0, 70.0, 80.0, 100, 200, 185.2
 	K_coll = 1.0;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
@@ -1458,6 +1463,7 @@ void PSBMPC::calculate_collision_probabilities(
 		{
 			P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
 		}
+		save_matrix_to_file(P_c_i);
 	}
 }
 
@@ -1653,10 +1659,10 @@ double PSBMPC::calculate_chattering_cost()
 		{
 			if (M < n_M - 1)
 			{
-				if ((offset_sequence(2 * M + 1) >= 0 && offset_sequence(2 * M + 3) < 0) ||
-					(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) >= 0))
+				if ((offset_sequence(2 * M + 1) > 0 && offset_sequence(2 * M + 3) < 0) ||
+					(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) > 0))
 				{
-					delta_t = maneuver_times(M+1) - maneuver_times(M);
+					delta_t = maneuver_times(M + 1) - maneuver_times(M);
 					cost += K_sgn * exp( - delta_t / T_sgn);
 				}
 			}
@@ -1846,7 +1852,7 @@ void PSBMPC::assign_optimal_trajectory(
 	else
 	{
 		optimal_trajectory.resize(2, n_samples);
-		optimal_trajectory = trajectory.block(2, n_samples, 0, 0);
+		optimal_trajectory = trajectory.block(0, 0, 2, n_samples);
 	}
 }
 
@@ -2007,8 +2013,8 @@ void PSBMPC::update_obstacle_status(
 								  S_TC_0[i], 										// If obstacle is starboard or not
 								  H_TC_0[i],										// If obstacle is head on or not
 								  X_TC_0[i],										// If crossing situation or not
-								  Q_TC_0[i],										// If obstacle overtakes ownship or not
-								  O_TC_0[i];										// If ownship overtakes obstacle or not
+								  O_TC_0[i],										// If ownship overtakes obstacle or not
+								  Q_TC_0[i];										// If obstacle overtakes ownship or not
 	}
 }
 
@@ -2051,7 +2057,7 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 		L_AB(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
 		L_AB(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
 		d_AB = L_AB.norm();
-		L_AB = L_AB / L_AB.norm();
+		L_AB = L_AB.normalized();
 
 		determine_situation_type(ST_0[i], ST_i_0[i], v_A, psi_A, v_B, L_AB, d_AB);
 		

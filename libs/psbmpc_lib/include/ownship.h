@@ -2,7 +2,7 @@
 *
 *  File name : ownship.h
 *
-*  Function  : header file for the ownship class. Modified and extended version of the
+*  Function  : Header file for the ownship class. Modified and extended version of the
 *			   "Ship_Model" class created for SBMPC by Inger Berge Hagen and Giorgio D. 
 *			   Kwame Minde Kufoalor through the Autosea project. Facilitates Guidance,
 *			   Navigation and Control (GNC) of a surface vessel 
@@ -36,8 +36,7 @@ enum Prediction_Method {
 enum Guidance_Method {
 	LOS, 													// Line-of-sight		
 	WPP,													// WP-Pursuit
-	CH, 													// Course Hold
-	HH 														// Heading Hold
+	CH 														// Course Hold
 };
 
 class Ownship
@@ -83,7 +82,9 @@ class Ownship
 	double R_a;
 	double LOS_LD, LOS_K_i;
 
-	int wp_counter;
+	// Counter variables to keep track of the active WP segment at the current 
+	// time and predicted time
+	int wp_c_0, wp_c_p;
 
 	// Controller parameters
 	double Kp_u;
@@ -105,19 +106,19 @@ class Ownship
 
 	public:
 
+	Ownship();
+
+	void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
+
 	void update_guidance_references(
 		double &u_d, 
-		double &psi_d, 
+		double &chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
 		const Eigen::Matrix<double, 6, 1> &xs,
 		const double dt,
 		const Guidance_Method guidance_method);
 
 	void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
-
-	
-
-	Ownship();
 
 	Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 

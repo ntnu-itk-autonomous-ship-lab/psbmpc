@@ -21,7 +21,6 @@
 #include "utilities.h"
 #include "obstacle_ship.h"
 #include <vector>
-#include <string>
 #include <iostream>
 
 /****************************************************************************************
@@ -39,11 +38,134 @@ Obstacle_Ship::Obstacle_Ship()
 	e_int = 0;
 	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
 	R_a = 20.0; 			    // WP acceptance radius (20.0)
-	LOS_LD = 145.0; 			// LOS lookahead distance (100.0) 
+	LOS_LD = 150.0; 			// LOS lookahead distance (100.0) 
 	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
-	wp_counter = 0;				// Determines the active waypoint segment
+	wp_c_0 = 0;	wp_c_p = 0;
 		
+}
+
+/****************************************************************************************
+*  Name     : determine_active_waypoint_segment
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void Obstacle_Ship::determine_active_waypoint_segment(
+	const Eigen::Matrix<double, 2, -1> &waypoints,  				// In: Waypoints to follow
+	const Eigen::Vector4d &xs 										// In: Ownship state
+	)	
+{
+	int n_wps = waypoints.cols();
+	Eigen::Vector2d d_0_wp, L_wp_segment, L_0wp;
+	double e = 0, s = 0, alpha = 0;
+	bool segment_passed = false;
+
+	if (n_wps <= 2) { wp_c_0 = 0; wp_c_p = 0; return; }
+
+	for (int i = wp_c_0; i < n_wps - 1; i++)
+	{
+		d_0_wp(0) = waypoints(0, i + 1) - xs(0);
+		d_0_wp(1) = waypoints(1, i + 1) - xs(1);
+
+		L_wp_segment(0) = waypoints(0, i + 1) - waypoints(0, i);
+		L_wp_segment(1) = waypoints(1, i + 1) - waypoints(1, i);
+		L_wp_segment = L_wp_segment.normalized();
+
+		segment_passed = L_wp_segment.dot(d_0_wp.normalized()) < cos(90 * DEG2RAD);
+
+		//(s > R_a && fabs(e) <= R_a))) 	
+		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
+		else										{ break; }		
+		
+	}
+	wp_c_p = wp_c_0;
+}
+
+/****************************************************************************************
+*  Name     : update_guidance_references 
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void Obstacle_Ship::update_guidance_references(
+	double &u_d,												// In/out: Surge reference
+	double &chi_d,												// In/out: Course reference 
+	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
+	const Eigen::Vector4d &xs, 									// In: Ownship state	
+	const double dt, 											// In: Time step
+	const Guidance_Method guidance_method						// In: Type of guidance used	
+	)
+{
+	int n_wps = waypoints.cols();
+	double alpha, e, s;
+	Eigen::Vector2d d_next_wp, L_wp_segment;
+	bool segment_passed = false;
+	
+	if (wp_c_p < n_wps - 1 && (guidance_method == LOS || guidance_method == WPP))
+	{
+		// Determine if a switch must be made to the next waypoint segment, for LOS and WPP
+		d_next_wp(0) = waypoints(0, wp_c_p + 1) - xs(0);
+		d_next_wp(1) = waypoints(1, wp_c_p + 1) - xs(1);
+
+		L_wp_segment(0) = waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p);
+		L_wp_segment(1) = waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p);
+		L_wp_segment = L_wp_segment.normalized();
+
+		segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
+
+		if (d_next_wp.norm() <= R_a || segment_passed) //(s > 0 && e <= R_a))
+		{
+			e_int = 0;
+			wp_c_p ++;
+		} 
+	}
+
+	switch (guidance_method)
+	{
+		case LOS : 
+			// Compute path tangential angle
+			if (wp_c_p == n_wps - 1)
+			{
+				alpha = atan2(waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1), 
+							waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1));
+			}
+			else
+			{
+				alpha = atan2(waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p), 
+							waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p));
+			}
+			// Compute cross track error and integrate it
+			e = - (xs(0) - waypoints(0, wp_c_p)) * sin(alpha) + (xs(1) - waypoints(1, wp_c_p)) * cos(alpha);
+			e_int += e * dt;
+			if (e_int >= e_int_max) e_int -= e * dt;
+
+			chi_d = alpha + atan2( - (e + LOS_K_i * e_int), LOS_LD);
+			break;
+		case WPP :
+			// Note that the WPP method will make the own-ship drive in roundabouts
+			// around and towards the last waypoint, unless some LOS-element such 
+			// as cross-track error and path tangential angle is used, or a 
+			// forced keep current course is implemented
+			if (wp_c_p == n_wps - 1)
+			{
+				d_next_wp(0) = waypoints(0, wp_c_p) - xs(0);
+				d_next_wp(1) = waypoints(1, wp_c_p) - xs(1);
+			}
+			else
+			{
+				d_next_wp(0) = waypoints(0, wp_c_p + 1) - xs(0);
+				d_next_wp(1) = waypoints(1, wp_c_p + 1) - xs(1);
+			}
+			chi_d = atan2(d_next_wp(1), d_next_wp(0));	
+			break;
+		case CH :
+			chi_d = xs(2);
+			break;
+		default : 
+			std::cout << "This guidance method does not exist or is not implemented" << std::endl;
+			break;
+	}
 }
 
 /****************************************************************************************
@@ -66,17 +188,12 @@ Eigen::Vector4d Obstacle_Ship::predict(
 	switch (prediction_method)
 	{
 		case Linear : 
-		{
 			// Straight line trajectory with the current heading and surge speed
 			xs_new(0) = xs_old(0) + dt * xs_old(3) * cos(xs_old(2));
 			xs_new(1) = xs_old(1) + dt * xs_old(3) * sin(xs_old(2));
-			xs_new(2) = xs_old(2);
-			xs_new(3) = xs_old(3);
-
+			xs_new.block<2, 1>(2, 0) = xs_old.block<2, 1>(2, 0);
 			break;
-		}
 		case ERK1 : 
-		{
 			// First set xs_new to the continuous time derivative of the model
 			xs_new(0) = xs_old(3) * cos(xs_old(2));
 			xs_new(1) = xs_old(3) * sin(xs_old(2));
@@ -86,12 +203,9 @@ Eigen::Vector4d Obstacle_Ship::predict(
 			// Then use forward euler to obtain new states
 			xs_new = xs_old + dt * xs_new;
 			break;
-		}
 		default :
-		{
 			std::cout << "The prediction method does not exist or is not implemented" << std::endl;
 			xs_new.setZero(); 
-		}
 	}
 	xs_new(2) = wrap_angle_to_pmpi(xs_new(2));
 	return xs_new;
@@ -99,8 +213,8 @@ Eigen::Vector4d Obstacle_Ship::predict(
 
 /****************************************************************************************
 *  Name     : predict_trajectory
-*  Function : Predicts the bbstacle ship trajectory for a sequence of avoidance maneuvers in the 
-*			  offset sequence.
+*  Function : Predicts the bbstacle ship trajectory for a sequence of avoidance maneuvers
+*			  in the offset sequence.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -121,7 +235,8 @@ void Obstacle_Ship::predict_trajectory(
 	
 	trajectory.conservativeResize(4, n_samples);
 
-	wp_counter = 0;
+	wp_c_p = wp_c_0;
+
 	int man_count = 0;
 	double u_m = 1, u_d_p = u_d;
 	double chi_m = 0, chi_d_p = chi_d;
@@ -148,98 +263,3 @@ void Obstacle_Ship::predict_trajectory(
 		Private functions
 *****************************************************************************************/
 
-/****************************************************************************************
-*  Name     : update_guidance_references 
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-void Obstacle_Ship::update_guidance_references(
-	double &u_d,												// Out: Surge reference
-	double &chi_d,												// Out: Course reference (set equal to heading reference, compensating for crab angle through LOS_K_i if at all..)
-	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
-	const Eigen::Vector4d &xs, 									// In: Obstacle state [x, y, chi, U]	
-	const double dt, 											// In: Time step
-	const Guidance_Method guidance_method						// In: Type of guidance used	
-	)
-{
-	int n_wps = waypoints.cols();
-	double alpha, e, s;
-	Eigen::Vector2d d_next_wp;
-
-	
-	if (wp_counter < n_wps - 1 && (guidance_method == LOS || guidance_method == WPP))
-	{
-		// Determine if a switch must be made to the next waypoint segment, for LOS and WPP
-		d_next_wp(0) = waypoints(0, wp_counter + 1) - xs(0);
-		d_next_wp(1) = waypoints(1, wp_counter + 1) - xs(1);
-
-		alpha = atan2(waypoints(1, wp_counter + 1) - waypoints(1, wp_counter), 
-					waypoints(0, wp_counter + 1) - waypoints(0, wp_counter));
-
-		s =   (xs(0) - waypoints(0, wp_counter + 1)) * cos(alpha) + (xs(1) - waypoints(1, wp_counter + 1)) * sin(alpha);
-		e = - (xs(0) - waypoints(0, wp_counter + 1)) * sin(alpha) + (xs(1) - waypoints(1, wp_counter + 1)) * cos(alpha);
-		// Positive along-track error with respect to the furthest waypoint in the active segment (for cross-track
-		// this does not matter) means the segment is passed by, not neccessarily within R_a, which can be the case 
-		// when using avoidance maneuvers
-
-		if (d_next_wp.norm() <= R_a || (s > R_a && e <= R_a))
-		{
-			e_int = 0;
-			if (wp_counter < n_wps - 1)	wp_counter += 1;
-		} 
-	}
-
-	switch (guidance_method)
-	{
-		case LOS : 
-		{
-			// Compute path tangential angle
-			if (wp_counter == n_wps - 1)
-			{
-				alpha = atan2(waypoints(1, wp_counter) - waypoints(1, wp_counter - 1), 
-							waypoints(0, wp_counter) - waypoints(0, wp_counter - 1));
-			}
-			else
-			{
-				alpha = atan2(waypoints(1, wp_counter + 1) - waypoints(1, wp_counter), 
-							waypoints(0, wp_counter + 1) - waypoints(0, wp_counter));
-			}
-			// Compute cross track error and integrate it
-			e = - (xs(0) - waypoints(0, wp_counter)) * sin(alpha) + (xs(1) - waypoints(1, wp_counter)) * cos(alpha);
-			e_int += e * dt;
-			if (e_int >= e_int_max) e_int -= e * dt;
-
-			chi_d = alpha + atan2( - (e + LOS_K_i * e_int), LOS_LD);
-			break;
-		}
-		case WPP :
-		{
-			// Note that the WPP method will make the own-ship drive in roundabouts
-			// around and towards the last waypoint, unless some LOS-element such 
-			// as cross-track error and path tangential angle is used
-			if (wp_counter == n_wps - 1)
-			{
-				d_next_wp(0) = waypoints(0, wp_counter) - xs(0);
-				d_next_wp(1) = waypoints(1, wp_counter) - xs(1);
-			}
-			else
-			{
-				d_next_wp(0) = waypoints(0, wp_counter + 1) - xs(0);
-				d_next_wp(1) = waypoints(1, wp_counter + 1) - xs(1);
-			}
-			chi_d = atan2(d_next_wp(1), d_next_wp(0));	
-			break;
-		}
-		case CH :
-		{
-			chi_d = xs(2);
-			break;
-		}
-		default : 
-		{
-			std::cout << "This guidance method does not exist or is not implemented" << std::endl;
-			break;
-		}
-	}
-}
