@@ -131,8 +131,8 @@ inline double angle_difference_pmpi(const double a_1, const double a_2)
 inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d &v, const double angle)
 {
 	Eigen::Vector2d v_temp;
-	v_temp(0) = v(0) * cos(angle) - v(0) * sin(angle);
-	v_temp(1) = v(1) * sin(angle) - v(1) * cos(angle);
+	v_temp(0) = v(0) * cos(angle) - v(1) * sin(angle);
+	v_temp(1) = v(0) * sin(angle) - v(1) * cos(angle);
 	return v_temp;
 }
 

@@ -33,8 +33,7 @@ enum Prediction_Method {
 enum Guidance_Method {
 	LOS, 													// Line-of-sight		
 	WPP,													// WP-Pursuit
-	CH, 													// Course Hold
-	HH 														// Heading Hold
+	CH 														// Course Hold
 };
 
 class Obstacle_Ship
@@ -49,7 +48,15 @@ private:
 	double R_a;
 	double LOS_LD, LOS_K_i;
 
-	int wp_counter;
+	// Counter variables to keep track of the active WP segment at the current 
+	// time and predicted time
+	int wp_c_0, wp_c_p;
+
+public:
+
+	Obstacle_Ship();
+
+	void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Vector4d &xs);
 
 	void update_guidance_references(
 		double &u_d, 
@@ -58,10 +65,6 @@ private:
 		const Eigen::Vector4d &xs,
 		const double dt,
 		const Guidance_Method guidance_method);
-
-public:
-
-	Obstacle_Ship();
 
 	Eigen::Vector4d predict(
 		const Eigen::Vector4d &xs_old, 

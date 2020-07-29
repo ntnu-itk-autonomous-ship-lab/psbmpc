@@ -53,7 +53,7 @@ int main(){
 	// Own-ship sim setup
 	//*****************************************************************************************************************
 	Eigen::Matrix<double, 6, 1> xs_os_0;
-	xs_os_0 << 0, 0, 0, 4, 0, 0;
+	xs_os_0 << 0, 0, 0, 9, 0, 0;
 	double u_d = 9, chi_d, u_c, chi_c;
 	
 	Ownship* asv_sim = new Ownship();
@@ -64,12 +64,12 @@ int main(){
 	trajectory.resize(6, N);
 	trajectory.col(0) = xs_os_0;
 
-	int n_wps_os = 7;
+	int n_wps_os = 2;
 	waypoints.resize(2, n_wps_os); 
-	waypoints << 0, 200, 200, 400, 600,  300, 1000,
-				 0, 0,   200, 200,  0,  -300, -300;
-	/* waypoints << 0, 1000,
-				 0, 0; */
+	/* waypoints << 0, 200, 200, 400, 600,  300, 500,
+				 0, 0,   200, 200,  0,  0, -200; */
+	waypoints << 0, 1000,
+				 0, 0;
 	
 
 	mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);
@@ -89,7 +89,7 @@ int main(){
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_obst);
 	xs_i_0[0].resize(6);
-	xs_i_0[0] << 1000, 0, 180 * DEG2RAD, 5, 0, 0;
+	xs_i_0[0] << 500, 300, -90 * DEG2RAD, 5, 0, 0;
 
 	// Use constant obstacle uncertainty throughout the simulation, for simplicity
 	Eigen::MatrixXd P_0(4, 4);
@@ -149,8 +149,8 @@ int main(){
 		Pr_CC[i] = 1;
 
 		waypoints_i[i].resize(2, 2); 
-		waypoints_i[i] << 1000, 0,
-					0, 	0;
+		waypoints_i[i] << 500, 500,
+					300, 	-300;
 		wps_i[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
 
 		offset_sequence_i[i].resize(6);
@@ -225,7 +225,6 @@ int main(){
 	}
 	
 	Eigen::Vector4d xs_i_k;
-
 	Eigen::VectorXd xs_aug(9);
 	double mean_t = 0;
 	for (int k = 0; k < N; k++)
@@ -245,7 +244,7 @@ int main(){
 
 		asv_sim->update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
-		auto start = std::chrono::system_clock::now();
+		auto start = std::chrono::system_clock::now();		
 
 		psbmpc->calculate_optimal_offsets(
 			u_opt,
@@ -269,6 +268,11 @@ int main(){
 		mean_t = elapsed.count();
 
 		std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
+
+		std::cout << "Status: ID    SOG    COG    R-BRG	  RNG	  HL	 IP	  AH    SB    	HO    	CRG    	OTG   	OT" << std::endl;
+		std::cout << "   " << obstacle_status.transpose() << std::endl;
+	
+		std::cout << "Colav_status (CF, cost): " << colav_status.transpose() << std::endl;
 
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 		asv_sim->update_ctrl_input(u_c, chi_c, trajectory.col(k));

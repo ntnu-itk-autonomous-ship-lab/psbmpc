@@ -16,7 +16,7 @@ target_include_directories(tester PUBLIC
 
 
 
-target_link_libraries(tester psbmpc_lib) # ${Matlab_LIBRARIES})
+target_link_libraries(tester psbmpc_lib_gpu)
 
 target_compile_features(tester PUBLIC cxx_std_11)
 
