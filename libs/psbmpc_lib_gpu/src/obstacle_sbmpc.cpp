@@ -17,6 +17,7 @@
 *
 *****************************************************************************************/
 
+#include <thrust/device_vector.h>
 #include "utilities.h"
 #include "obstacle_sbmpc.h"
 #include <iostream>
@@ -34,7 +35,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Obstacle_SBMPC::Obstacle_SBMPC()
+__host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC()
 {
 	// Initialize parameters before parameter limits, as some limits depend on the
 	// parameter values set.
@@ -51,7 +52,7 @@ Obstacle_SBMPC::Obstacle_SBMPC()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
+__host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
 {
 	this->n_cbs = o_sbmpc.n_cbs;
 	this->n_M = o_sbmpc.n_M;
@@ -118,7 +119,7 @@ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Obstacle_SBMPC::~Obstacle_SBMPC()
+__host__ __device__ Obstacle_SBMPC::~Obstacle_SBMPC()
 {
 	clean();
 }
@@ -129,7 +130,7 @@ Obstacle_SBMPC::~Obstacle_SBMPC()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::clean()
+__host__ __device__ void Obstacle_SBMPC::clean()
 {
 	if (ownship != NULL) 	{ delete ownship; }
 	if (!new_obstacles.empty())
@@ -156,7 +157,7 @@ void Obstacle_SBMPC::clean()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Obstacle_SBMPC& Obstacle_SBMPC::operator=(
+__host__ __device__ Obstacle_SBMPC& Obstacle_SBMPC::operator=(
 	const Obstacle_SBMPC &o_sbmpc
 	)
 {
@@ -178,7 +179,7 @@ Obstacle_SBMPC& Obstacle_SBMPC::operator=(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-bool Obstacle_SBMPC::determine_COLREGS_violation(
+__host__ __device__ bool Obstacle_SBMPC::determine_COLREGS_violation(
 	const Eigen::Vector2d& v_A,												// In: (NE) Velocity vector of vessel A
 	const double psi_A, 													// In: Heading of vessel A
 	const Eigen::Vector2d& v_B, 											// In: (NE) Velocity vector of vessel B
@@ -223,7 +224,7 @@ bool Obstacle_SBMPC::determine_COLREGS_violation(
 	return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
 }
 
-bool Obstacle_SBMPC::determine_COLREGS_violation(
+__host__ __device__ bool Obstacle_SBMPC::determine_COLREGS_violation(
 	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A 
 	const Eigen::VectorXd &xs_B 											// In: State vector of vessel B
 	)
@@ -290,7 +291,7 @@ bool Obstacle_SBMPC::determine_COLREGS_violation(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-int Obstacle_SBMPC::get_ipar(
+__host__ __device__ int Obstacle_SBMPC::get_ipar(
 	const int index															// In: Index of parameter to return (Must be of int type)
 	) const
 {
@@ -301,7 +302,7 @@ int Obstacle_SBMPC::get_ipar(
 	}
 }
 	
-double Obstacle_SBMPC::get_dpar(
+__host__ __device__ double Obstacle_SBMPC::get_dpar(
 	const int index															// In: Index of parameter to return (Must be of double type)
 	) const
 {
@@ -339,7 +340,7 @@ double Obstacle_SBMPC::get_dpar(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::set_par(
+__host__ __device__ void Obstacle_SBMPC::set_par(
 	const int index, 														// In: Index of parameter to set
 	const int value 														// In: Value to set for parameter
 	)
@@ -360,7 +361,7 @@ void Obstacle_SBMPC::set_par(
 	
 }
 
-void Obstacle_SBMPC::set_par(
+__host__ __device__ void Obstacle_SBMPC::set_par(
 	const int index, 														// In: Index of parameter to set
 	const double value 														// In: Value to set for parameter
 	)
@@ -414,7 +415,7 @@ void Obstacle_SBMPC::set_par(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::calculate_optimal_offsets(									
+__device__ void Obstacle_SBMPC::calculate_optimal_offsets(									
 	double &u_opt, 															// In/out: Optimal surge offset
 	double &chi_opt, 														// In/out: Optimal course offset
 	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
@@ -533,7 +534,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::initialize_par_limits()
+__host__ __device__ void Obstacle_SBMPC::initialize_par_limits()
 {
 	ipar_low.resize(N_IPAR); ipar_high.resize(N_IPAR);
 	for (int i = 0; i < N_IPAR; i++)
@@ -579,7 +580,7 @@ void Obstacle_SBMPC::initialize_par_limits()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::initialize_pars()
+__host__ __device__ void Obstacle_SBMPC::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 1;
@@ -661,7 +662,7 @@ void Obstacle_SBMPC::initialize_pars()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::initialize_prediction()
+__device__ void Obstacle_SBMPC::initialize_prediction()
 {
 	int n_obst = new_obstacles.size();
 
@@ -723,7 +724,7 @@ void Obstacle_SBMPC::initialize_prediction()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::reset_control_behavior()
+__device__ void Obstacle_SBMPC::reset_control_behavior()
 {
 	offset_sequence_counter.setZero();
 	for (int M = 0; M < n_M; M++)
@@ -740,7 +741,7 @@ void Obstacle_SBMPC::reset_control_behavior()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::increment_control_behavior()
+__device__ void Obstacle_SBMPC::increment_control_behavior()
 {
 	for (int M = n_M - 1; M > -1; M--)
 	{
@@ -781,7 +782,7 @@ void Obstacle_SBMPC::increment_control_behavior()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-bool Obstacle_SBMPC::determine_colav_active(
+__device__ bool Obstacle_SBMPC::determine_colav_active(
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
@@ -806,7 +807,7 @@ bool Obstacle_SBMPC::determine_colav_active(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-bool Obstacle_SBMPC::determine_transitional_cost_indicator(
+__device__ bool Obstacle_SBMPC::determine_transitional_cost_indicator(
 	const double psi_A, 													// In: Heading of vessel A
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
@@ -846,7 +847,7 @@ bool Obstacle_SBMPC::determine_transitional_cost_indicator(
 	return O_TC || Q_TC || X_TC || H_TC;
 }
 
-bool Obstacle_SBMPC::determine_transitional_cost_indicator(
+__device__ bool Obstacle_SBMPC::determine_transitional_cost_indicator(
 	const Eigen::VectorXd& xs_A,											// In: State vector of vessel A (the ownship)
 	const Eigen::VectorXd& xs_B, 											// In: State vector of vessel B (the obstacle)
 	const int i, 															// In: Index of obstacle
@@ -903,7 +904,7 @@ bool Obstacle_SBMPC::determine_transitional_cost_indicator(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
+__device__ double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
 	const int i 													// In: Index of obstacle
 	)
 {
@@ -917,7 +918,7 @@ double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-double Obstacle_SBMPC::calculate_collision_cost(
+__device__ double Obstacle_SBMPC::calculate_collision_cost(
 	const Eigen::Vector2d &v_1, 												// In: Velocity v_1
 	const Eigen::Vector2d &v_2 												// In: Velocity v_2
 	)
@@ -931,7 +932,7 @@ double Obstacle_SBMPC::calculate_collision_cost(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double Obstacle_SBMPC::calculate_control_deviation_cost()
+__device__ double Obstacle_SBMPC::calculate_control_deviation_cost()
 {
 	double cost = 0;
 	for (int i = 0; i < n_M; i++)
@@ -957,7 +958,7 @@ double Obstacle_SBMPC::calculate_control_deviation_cost()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double Obstacle_SBMPC::calculate_chattering_cost()
+__device__ double Obstacle_SBMPC::calculate_chattering_cost()
 {
 	double cost = 0;
 
@@ -986,7 +987,7 @@ double Obstacle_SBMPC::calculate_chattering_cost()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-double Obstacle_SBMPC::calculate_grounding_cost(
+__device__ double Obstacle_SBMPC::calculate_grounding_cost(
 	const Eigen::Matrix<double, 4, -1>& static_obstacles						// In: Static obstacle information
 	)
 {
@@ -1001,7 +1002,7 @@ double Obstacle_SBMPC::calculate_grounding_cost(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-int Obstacle_SBMPC::find_triplet_orientation(
+__device__ int Obstacle_SBMPC::find_triplet_orientation(
 	const Eigen::Vector2d &p, 
 	const Eigen::Vector2d &q, 
 	const Eigen::Vector2d &r
@@ -1021,7 +1022,7 @@ int Obstacle_SBMPC::find_triplet_orientation(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-bool Obstacle_SBMPC::determine_if_on_segment(
+__device__ bool Obstacle_SBMPC::determine_if_on_segment(
 	const Eigen::Vector2d &p, 
 	const Eigen::Vector2d &q, 
 	const Eigen::Vector2d &r
@@ -1039,7 +1040,7 @@ bool Obstacle_SBMPC::determine_if_on_segment(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-bool Obstacle_SBMPC::determine_if_behind(
+__device__ bool Obstacle_SBMPC::determine_if_behind(
 	const Eigen::Vector2d &p_1, 
 	const Eigen::Vector2d &v_1, 
 	const Eigen::Vector2d &v_2, 
@@ -1062,7 +1063,7 @@ bool Obstacle_SBMPC::determine_if_behind(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-bool Obstacle_SBMPC::determine_if_lines_intersect(
+__device__ bool Obstacle_SBMPC::determine_if_lines_intersect(
 	const Eigen::Vector2d &p_1, 
 	const Eigen::Vector2d &q_1, 
 	const Eigen::Vector2d &p_2, 
@@ -1102,7 +1103,7 @@ bool Obstacle_SBMPC::determine_if_lines_intersect(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-double Obstacle_SBMPC::distance_from_point_to_line(
+__device__ double Obstacle_SBMPC::distance_from_point_to_line(
 	const Eigen::Vector2d &p, 
 	const Eigen::Vector2d &q_1, 
 	const Eigen::Vector2d &q_2
@@ -1124,7 +1125,7 @@ double Obstacle_SBMPC::distance_from_point_to_line(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-double Obstacle_SBMPC::distance_to_static_obstacle(
+__device__ double Obstacle_SBMPC::distance_to_static_obstacle(
 	const Eigen::Vector2d &p, 
 	const Eigen::Vector2d &v_1, 
 	const Eigen::Vector2d &v_2
@@ -1142,7 +1143,7 @@ double Obstacle_SBMPC::distance_to_static_obstacle(
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::assign_obstacle_vector(
+__device__ void Obstacle_SBMPC::assign_obstacle_vector(
 	std::vector<Prediction_Obstacle*> &lhs,  								// Resultant vector
 	const std::vector<Prediction_Obstacle*> &rhs 							// Vector to assign
 	)
@@ -1160,7 +1161,7 @@ void Obstacle_SBMPC::assign_obstacle_vector(
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::update_obstacles(
+__device__ void Obstacle_SBMPC::update_obstacles(
 	const Eigen::Matrix<double, 9, -1> &obstacle_states 								// In: Dynamic predicted obstacle states
 	) 			
 {
@@ -1219,7 +1220,7 @@ void Obstacle_SBMPC::update_obstacles(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::update_obstacle_status(
+__device__ void Obstacle_SBMPC::update_obstacle_status(
 	Eigen::Matrix<double,-1,-1> &obstacle_status,							// In/out: Various information on obstacles
 	const Eigen::VectorXd &HL_0 											// In: relative (to total hazard) hazard level of each obstacle
 	)
@@ -1266,7 +1267,7 @@ void Obstacle_SBMPC::update_obstacle_status(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::update_transitional_variables()
+__device__ void Obstacle_SBMPC::update_transitional_variables()
 {
 	Eigen::Vector4d xs = trajectory.col(0);
 	bool is_close;

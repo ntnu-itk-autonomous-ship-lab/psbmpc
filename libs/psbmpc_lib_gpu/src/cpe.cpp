@@ -18,6 +18,7 @@
 *
 *****************************************************************************************/
 
+#include <thrust/device_vector.h>
 #include "cpe.h"
 #include "utilities.h"
 #include <iostream>
@@ -34,7 +35,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-CPE::CPE(
+__host__ __device__ CPE::CPE(
     const CPE_Method cpe_method,                                    // In: Method to be used
     const int n_CE,                                                 // In: Number of samples for the Cross-Entropy method
     const int n_MCSKF,                                              // In: Number of samples for the Monte Carlo Simulation + Kalman-filtering method
@@ -79,7 +80,7 @@ CPE::CPE(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-CPE::CPE(
+__host__ __device__ CPE::CPE(
     const CPE &cpe                                                   // In: CPE object to copy
     )
 {
@@ -125,7 +126,7 @@ CPE::CPE(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-CPE::~CPE()
+__host__ __device__ CPE::~CPE()
 {
 
 }
@@ -136,7 +137,7 @@ CPE::~CPE()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-CPE& CPE::operator=(
+__host__ __device__ CPE& CPE::operator=(
     const CPE &cpe                                              // In: Rhs CPE object to assign
     )
 {
@@ -152,7 +153,7 @@ CPE& CPE::operator=(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::set_number_of_obstacles(
+__host__ __device__ void CPE::set_number_of_obstacles(
     const int n_obst                                            // In: Number of obstacles
     ) 
 { 
@@ -180,7 +181,7 @@ void CPE::set_number_of_obstacles(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::initialize(
+__device__ void CPE::initialize(
     const Eigen::Matrix<double, 6, 1> &xs_os,                                   // In: Own-ship state vector
     const Eigen::Vector4d &xs_i,                                                // In: Obstacle i state vector
     const Eigen::VectorXd &P_i,                                                 // In: Obstacle i covariance flattened into n^2 x 1
@@ -216,7 +217,7 @@ void CPE::initialize(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double CPE::estimate(
+__device__ double CPE::estimate(
 	const Eigen::MatrixXd &xs_os,                       // In: Own-ship state vector(s)
     const Eigen::MatrixXd &xs_i,                        // In: Obstacle i state vector(s)
     const Eigen::MatrixXd &P_i,                         // In: Obstacle i covariance(s), flattened into n² x n_cols
@@ -248,7 +249,7 @@ double CPE::estimate(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
-void CPE::resize_matrices()
+__host__ __device__ void CPE::resize_matrices()
 {
     for(int i = 0; i < n_obst; i++)
     {
@@ -283,7 +284,7 @@ void CPE::resize_matrices()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-inline void CPE::update_L(
+__device__ inline void CPE::update_L(
     const Eigen::MatrixXd &in                                                     // In: Matrix in consideration
     )
 {
@@ -325,7 +326,7 @@ inline void CPE::update_L(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-inline double CPE::calculate_2x2_quadratic_form(
+__device__ inline double CPE::calculate_2x2_quadratic_form(
     const Eigen::Vector2d &x, 
     const Eigen::Matrix2d &A
     )
@@ -345,7 +346,7 @@ inline double CPE::calculate_2x2_quadratic_form(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-inline void CPE::norm_pdf_log(
+__device__ inline void CPE::norm_pdf_log(
     Eigen::VectorXd &result,                                                    // In/out: Resulting vector of pdf values
     const Eigen::MatrixXd &samples,                                             // In: Samples consisting of normal state vectors in each column
     const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
@@ -378,7 +379,7 @@ inline void CPE::norm_pdf_log(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-inline void CPE::generate_norm_dist_samples(
+__device__ inline void CPE::generate_norm_dist_samples(
     Eigen::MatrixXd &samples,                                                   // In/out: Samples to fill.
     const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
     const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
@@ -417,7 +418,7 @@ inline void CPE::generate_norm_dist_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::calculate_roots_2nd_order(
+__device__ void CPE::calculate_roots_2nd_order(
     Eigen::Vector2d &r,                                                 // In: vector of roots to find
     bool &is_complex,                                                   // In: Indicator of real/complex roots
     const double A,                                                     // In: Coefficient in polynomial 
@@ -456,7 +457,7 @@ void CPE::calculate_roots_2nd_order(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double CPE::produce_MCS_estimate(
+__device__ double CPE::produce_MCS_estimate(
 	const Eigen::Vector4d &xs_i,                                                // In: Obstacle state vector
 	const Eigen::Matrix4d &P_i,                                                 // In: Obstacle covariance
 	const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
@@ -485,7 +486,7 @@ double CPE::produce_MCS_estimate(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::determine_sample_validity_4D(
+__device__ void CPE::determine_sample_validity_4D(
     Eigen::VectorXd &valid,                                                     // In: Vector of 0/1s depending on if a sample is valid or not
     const Eigen::MatrixXd &samples,                                             // In: Normally distributed samples of obstacle states in each column
     const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
@@ -538,7 +539,7 @@ void CPE::determine_sample_validity_4D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double CPE::MCSKF4D_estimation(
+__device__ double CPE::MCSKF4D_estimation(
 	const Eigen::MatrixXd &xs_os,                                               // In: Own-ship states for the active segment
     const Eigen::MatrixXd &xs_i,                                                // In: Obstacle i states for the active segment
     const Eigen::MatrixXd &P_i,                                                 // In: Obstacle i covariance for the active segment
@@ -643,7 +644,7 @@ double CPE::MCSKF4D_estimation(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::determine_sample_validity_2D(
+__device__ void CPE::determine_sample_validity_2D(
     Eigen::VectorXd &valid,                                                     // In/out: Vector of 0/1s depending on if a sample is valid or not
     const Eigen::MatrixXd &samples,                                             // In: Normally distributed samples in each column
 	const Eigen::Vector2d &p_os,                                                // In: Own-ship position vector
@@ -669,7 +670,7 @@ void CPE::determine_sample_validity_2D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::determine_best_performing_samples(
+__device__ void CPE::determine_best_performing_samples(
     Eigen::VectorXd &valid,                                                         // In/out: Vector of 0/1s depending on if a sample is valid or not                                                    
 	int &N_e,                                                                       // In/out: Number of best performing samples
 	const Eigen::MatrixXd &samples,                                                 // In: Normally distributed samples in each column
@@ -703,7 +704,7 @@ void CPE::determine_best_performing_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double CPE::CE_estimation(
+__device__ double CPE::CE_estimation(
 	const Eigen::Vector2d &p_os,                                                // In: Own-ship position vector
     const Eigen::Vector2d &p_i,                                                 // In: Obstacle i position vector
     const Eigen::Matrix2d &P_i,                                                 // In: Obstacle i positional covariance

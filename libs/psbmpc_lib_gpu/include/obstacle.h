@@ -91,7 +91,7 @@ public:
 
 	Obstacle_SBMPC *sbmpc;
 
-	Obstacle(const Eigen::VectorXd &xs_aug, 
+	__host__ __device__ Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const Eigen::VectorXd &P, 
 			 const Eigen::VectorXd &Pr_a, 
 			 const double Pr_CC,
@@ -100,21 +100,21 @@ public:
 			 const double T, 
 			 const double dt);
 
-	Obstacle(const Obstacle &o);
+	__host__ __device__ Obstacle(const Obstacle &o);
 
-	~Obstacle();
+	__host__ __device__ ~Obstacle();
 
-	Obstacle& operator=(const Obstacle &o);
+	__host__ __device__ Obstacle& operator=(const Obstacle &o);
 
-	int get_ID() const { return ID; };
+	__host__ __device__ int get_ID() const { return ID; };
 
-	void set_colav_indicator(const bool colav_on) { this->colav_on = colav_on; };
+	__host__ __device__ void set_colav_on(const bool colav_on) { this->colav_on = colav_on; };
 
-	std::vector<bool> get_COLREGS_violation_indicator() const { return mu; };
+	__host__ __device__ std::vector<bool> get_COLREGS_violation_indicator() const { return mu; };
 
-	double get_a_priori_CC_probability() const { return Pr_CC; };
+	__host__ __device__ double get_a_priori_CC_probability() const { return Pr_CC; };
 
-	Eigen::VectorXd get_intention_probabilities() const { return Pr_a; };
+	__host__ __device__ Eigen::VectorXd get_intention_probabilities() const { return Pr_a; };
 
 	// AIS-based KF related methods
 	double get_duration_tracked() const { return duration_tracked; };
@@ -130,11 +130,11 @@ public:
 	void increment_duration_lost(const double dt) { duration_lost += dt; };
 
 	// Trajectory prediction related methods
-	void resize_trajectories(const int n_samples);
+	__host__ __device__ void resize_trajectories(const int n_samples);
 
-	std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; };
+	__host__ __device__ std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; };
 
-	Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
+	__host__ __device__ Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
 
 	void initialize_prediction(	
 		const std::vector<Intention> &ps_ordering,
@@ -157,7 +157,7 @@ public:
 		const double d_safe);
 
 	// Methods where obstacle COLAV must be activated
-	void set_trajectory(const std::vector<Eigen::MatrixXd> &xs_p) { if (colav_on) { this->xs_p = xs_p; }};
+	__host__ __device__ void set_trajectory(const std::vector<Eigen::MatrixXd> &xs_p) { if (colav_on) { this->xs_p = xs_p; }};
 	//
 
 	void update(
