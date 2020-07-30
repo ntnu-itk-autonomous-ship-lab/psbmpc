@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : psb_mpc.h
+*  File name : obstacle_sbmpc.cu
 *
 *  Function  : Class functions for Probabilistic Scenario-based Model Predictive Control
 *
@@ -18,8 +18,8 @@
 *****************************************************************************************/
 
 #include <thrust/device_vector.h>
-#include "utilities.h"
-#include "obstacle_sbmpc.h"
+#include "utilities.cuh"
+#include "obstacle_sbmpc.cuh"
 #include <iostream>
 
 #ifndef M_PI

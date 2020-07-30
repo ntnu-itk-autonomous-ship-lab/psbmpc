@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : utilities.h
+*  File name : utilities.cpp
 *
-*  Function  : Header file for all-purpose math functions which are used by multiple 
+*  Function  : Function file for all-purpose math functions which are used by multiple 
 *			   library files. Thus, do NOT add a function here if it belongs to one 
 *			   distinct class.
 *  

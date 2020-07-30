@@ -1,9 +1,10 @@
 /****************************************************************************************
 *
-*  File name : obstacle_ship.cpp
+*  File name : ownship.cu
 *
-*  Function  : Class functions for the obstacle ship used in the obstacle
-*			   collision avoidance system predictions.
+*  Function  : Class functions for the ownship. Modified and extended version of the
+*			   "Ship_Model" class created for SBMPC by Inger Berge Hagen and Giorgio D. 
+*			   Kwame Minde Kufoalor through the Autosea project.
 *  
 *	           ---------------------
 *
@@ -18,22 +19,74 @@
 *
 *****************************************************************************************/
 
+#include "utilities.cuh"
+#include "ownship.cuh"
 #include <thrust/device_vector.h>
-#include "utilities.h"
-#include "obstacle_ship.h"
 #include <vector>
 #include <iostream>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#define DEG2RAD M_PI / 180.0f
+#define RAD2DEG 180.0f / M_PI
+
 /****************************************************************************************
-*  Name     : Obstacle_Model
+*  Name     : Ownship
 *  Function : Class constructor
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ Obstacle_Ship::Obstacle_Ship()
+__host__ __device__ Ownship::Ownship()
 {
-	T_chi = 3;
-	T_U = 10;
+	tau = Eigen::Vector3d::Zero();
+
+	// Model parameters
+	l_r = 4.0; // distance from rudder to CG
+	A = 5; // [m]  in reality the length is 14,5 m.
+	B = 5; // [m]
+	C = 1.5; // [m]
+	D = 1.5; // [m]
+	l = (A + B);
+	w = (C + D);
+	calculate_position_offsets();
+
+	m = 3980.0; // [kg]
+	I_z = 19703.0; // [kg m2]
+
+	// Added M terms
+	X_udot = 0.0;
+	Y_vdot = 0.0;
+	Y_rdot = 0.0;
+	N_vdot = 0.0;
+	N_rdot = 0.0;
+
+	// Linear damping terms [X_u, Y_v, Y_r, N_v, N_r]
+	X_u	= -50.0;
+	Y_v = -200.0;
+	Y_r = 0.0;
+	N_v = 0.0;
+	N_r = -1281.0;//-3224.0;
+
+	// Nonlinear damping terms [X_|u|u, Y_|v|v, N_|r|r, X_uuu, Y_vvv, N_rrr]
+	X_uu = -135.0;
+	Y_vv = -2000.0;
+	N_rr = 0.0;
+	X_uuu = 0.0;
+	Y_vvv = 0.0;
+	N_rrr = -3224.0;
+
+	Eigen::Matrix3d M_tot;
+	M_tot << m - X_udot, 0, 0,
+	        0, m - Y_vdot, -Y_rdot,
+	        0, -Y_rdot, I_z - N_rdot;
+	M_inv = M_tot.inverse();
+
+	//Force limits
+	Fx_min = -6550.0;
+	Fx_max = 13100.0;
+	Fy_min = -645.0;
+	Fy_max = 645.0;
 
 	// Guidance parameters
 	e_int = 0;
@@ -43,7 +96,15 @@ __host__ __device__ Obstacle_Ship::Obstacle_Ship()
 	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
+
+	// Controller parameters
+	Kp_u = 1.0;
+	Kp_psi = 5.0;
+	Kd_psi = 1.0;
+	Kp_r = 8.0;
 		
+	//Motion limits
+	r_max = 0.34 * DEG2RAD; // [rad/s] default max yaw rate
 }
 
 /****************************************************************************************
@@ -52,9 +113,9 @@ __host__ __device__ Obstacle_Ship::Obstacle_Ship()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_Ship::determine_active_waypoint_segment(
-	const Eigen::Matrix<double, 2, -1> &waypoints,  				// In: Waypoints to follow
-	const Eigen::Vector4d &xs 										// In: Ownship state
+__host__ __device__ void Ownship::determine_active_waypoint_segment(
+	const Eigen::Matrix<double, 2, -1> &waypoints,  			// In: Waypoints to follow
+	const Eigen::Matrix<double, 6, 1> &xs 						// In: Ownship state
 	)	
 {
 	int n_wps = waypoints.cols();
@@ -75,7 +136,7 @@ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
 		segment_passed = L_wp_segment.dot(d_0_wp.normalized()) < cos(90 * DEG2RAD);
 
 		//(s > R_a && fabs(e) <= R_a))) 	
-		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
+		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; std::cout << "Segment " << i << " passed" << std::endl; } 
 		else										{ break; }		
 		
 	}
@@ -88,11 +149,11 @@ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_Ship::update_guidance_references(
+__host__ __device__ void Ownship::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
 	double &chi_d,												// In/out: Course reference 
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
-	const Eigen::Vector4d &xs, 									// In: Ownship state	
+	const Eigen::Matrix<double, 6, 1> &xs, 						// In: Ownship state	
 	const double dt, 											// In: Time step
 	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
@@ -169,39 +230,75 @@ __device__ void Obstacle_Ship::update_guidance_references(
 }
 
 /****************************************************************************************
+*  Name     : update_ctrl_input
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ void Ownship::update_ctrl_input(
+	const double u_d,										// In: Surge reference
+	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
+	const Eigen::Matrix<double, 6, 1> &xs 					// In: State
+	)
+{
+	update_Cvv(xs.block<3, 1>(3, 0));
+	update_Dvv(xs.block<3, 1>(3, 0));
+
+	double Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
+	
+	double psi_diff = angle_difference_pmpi(psi_d, xs(2));
+	double Fy = (Kp_psi * I_z ) * (psi_diff - Kd_psi * xs(5));
+    Fy *= 1.0 / l_r;
+
+	// Saturate
+	if (Fx < Fx_min)  Fx = Fx_min;
+	if (Fx > Fx_max)  Fx = Fx_max;
+	if (Fy < Fy_min)  Fy = Fy_min;
+	if (Fy > Fy_max)  Fy = Fy_max;
+
+	tau[0] = Fx;
+	tau[1] = Fy;
+	tau[2] = l_r * Fy;
+}
+
+/****************************************************************************************
 *  Name     : predict
-*  Function : Predicts obstacle state xs a number of dt units forward in time with the 
+*  Function : Predicts ownship state xs a number of dt units forward in time with the 
 *			  chosen prediction method
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ Eigen::Vector4d Obstacle_Ship::predict(
-	const Eigen::Vector4d &xs_old, 									// In: State [x, y, chi, U] to predict forward
-	const double U_d, 												// In: Speed over ground (SOG) reference
-	const double chi_d, 											// In: Course (COG) reference
+__host__ __device__ Eigen::Matrix<double, 6, 1> Ownship::predict(
+	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
 	const double dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
 	)
 {
-	Eigen::Vector4d xs_new;
+	Eigen::Matrix<double, 6, 1> xs_new;
+	Eigen::Vector3d eta, nu;
+	eta = xs_old.block<3, 1>(0, 0);
+	nu = xs_old.block<3, 1>(3, 0);
 
 	switch (prediction_method)
 	{
 		case Linear : 
 			// Straight line trajectory with the current heading and surge speed
-			xs_new(0) = xs_old(0) + dt * xs_old(3) * cos(xs_old(2));
-			xs_new(1) = xs_old(1) + dt * xs_old(3) * sin(xs_old(2));
-			xs_new.block<2, 1>(2, 0) = xs_old.block<2, 1>(2, 0);
+			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
+			nu(0) = nu(0);
+			nu(1) = 0;
+			nu(2) = 0;
+			xs_new.block<3, 1>(0, 0) = eta; 
+			xs_new.block<3, 1>(3, 0) = nu;
 			break;
 		case ERK1 : 
-			// First set xs_new to the continuous time derivative of the model
-			xs_new(0) = xs_old(3) * cos(xs_old(2));
-			xs_new(1) = xs_old(3) * sin(xs_old(2));
-			xs_new(2) = (1 / T_chi) * (chi_d - xs_old(2));
-			xs_new(3) = (1 / T_U) * (U_d - xs_old(3));
+			update_Cvv(nu); 
+			update_Dvv(nu);
 
-			// Then use forward euler to obtain new states
-			xs_new = xs_old + dt * xs_new;
+			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
+			nu  = nu  + dt * M_inv * (- Cvv - Dvv + tau);
+			
+			xs_new.block<3, 1>(0, 0) = eta; 
+			xs_new.block<3, 1>(3, 0) = nu;
 			break;
 		default :
 			std::cout << "The prediction method does not exist or is not implemented" << std::endl;
@@ -213,18 +310,18 @@ __device__ Eigen::Vector4d Obstacle_Ship::predict(
 
 /****************************************************************************************
 *  Name     : predict_trajectory
-*  Function : Predicts the bbstacle ship trajectory for a sequence of avoidance maneuvers
-*			  in the offset sequence.
+*  Function : Predicts the ownship trajectory for a sequence of avoidance maneuvers in the 
+*			  offset sequence.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_Ship::predict_trajectory(
-	Eigen::Matrix<double, 4, -1>& trajectory, 						// In/out: Obstacle ship trajectory
-	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
-	const Eigen::VectorXd maneuver_times,							// In: Time indices for each Obstacle_Model avoidance maneuver
+__host__ __device__ void Ownship::predict_trajectory(
+	Eigen::Matrix<double, 6, -1>& trajectory, 						// In/out: Own-ship trajectory
+	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
+	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference
 	const double chi_d, 											// In: Course reference
-	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Obstacle waypoints
+	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Ownship waypoints
 	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
 	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
 	const double T,													// In: Prediction horizon
@@ -233,14 +330,14 @@ __device__ void Obstacle_Ship::predict_trajectory(
 {
 	int n_samples = T / dt;
 	
-	trajectory.conservativeResize(4, n_samples);
+	trajectory.conservativeResize(6, n_samples);
 
 	wp_c_p = wp_c_0;
 
 	int man_count = 0;
 	double u_m = 1, u_d_p = u_d;
 	double chi_m = 0, chi_d_p = chi_d;
-	Eigen::Vector4d xs = trajectory.col(0);
+	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
 
 	for (int k = 0; k < n_samples; k++)
 	{ 
@@ -252,7 +349,9 @@ __device__ void Obstacle_Ship::predict_trajectory(
 
 		update_guidance_references(u_d_p, chi_d_p, waypoints, xs, dt, guidance_method);
 
-		xs = predict(xs, u_m * u_d_p , chi_d_p + chi_m, dt, prediction_method);
+		update_ctrl_input(u_m * u_d_p, chi_m + chi_d_p, xs);
+
+		xs = predict(xs, dt, prediction_method);
 		
 		if (k < n_samples - 1) trajectory.col(k + 1) = xs;
 	}
@@ -263,3 +362,34 @@ __device__ void Obstacle_Ship::predict_trajectory(
 		Private functions
 *****************************************************************************************/
 
+/****************************************************************************************
+*  Name     : Cvv
+*  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on 
+*			  Fossen 2011. Use the equations for C_RB and C_A in Section 7.1
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ void Ownship::update_Cvv(
+	const Eigen::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
+	)
+{
+	Cvv(0) = ((Y_vdot - m) * nu(1) + Y_rdot * nu(2)) * nu(2);
+	Cvv(1) = (m      - X_udot) * nu(0) * nu(2);
+	Cvv(2) = (X_udot - Y_vdot) * nu(0) * nu(1) - Y_rdot * nu(0) * nu(2);
+}
+
+/****************************************************************************************
+*  Name     : Dvv
+*  Function : Calculates the "damping vector" for the 3DOF surface vessel based on 
+*			  Fossen 2011
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ void Ownship::update_Dvv(
+	const Eigen::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T
+	)
+{
+	Dvv(0) = - (X_u + 						+  X_uu * fabs(nu(0))  		  + X_uuu * nu(0) * nu(0)) * nu(0);
+	Dvv(1) = - ((Y_v * nu(1) + Y_r * nu(2)) + (Y_vv * fabs(nu(1)) * nu(1) + Y_vvv * nu(1) * nu(1) * nu(1)));
+	Dvv(2) = - ((N_v * nu(1) + N_r * nu(2)) + (N_rr * fabs(nu(2)) * nu(2) + N_rrr * nu(2) * nu(2) * nu(2)));
+}

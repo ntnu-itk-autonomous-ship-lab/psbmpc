@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : prediction_obstacle.cpp
+*  File name : prediction_obstacle.cu
 *
 *  Function  : Class functions for a predicted obstacle in the PSB-MPC. Only used in the
 *			   MPC-predictions for cases where the obstacle has its own SB-MPC/COLAV
@@ -21,9 +21,9 @@
 *****************************************************************************************/
 
 #include <thrust/device_vector.h>
-#include "prediction_obstacle.h"
-#include "obstacle_sbmpc.h"
-#include "utilities.h"
+#include "prediction_obstacle.cuh"
+#include "obstacle_sbmpc.cuh"
+#include "utilities.cuh"
 #include <iostream>
 
 /****************************************************************************************

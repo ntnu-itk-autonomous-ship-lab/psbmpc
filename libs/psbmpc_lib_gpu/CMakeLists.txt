@@ -3,14 +3,15 @@ find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 find_package(CUDA COMPONENTS THRUST REQUIRED)
 
 add_library(psbmpc_lib_gpu STATIC 
-	src/psbmpc.cpp 
-	src/ownship.cpp 
-	src/cpe.cpp 
+	src/psbmpc.cu 
+	src/cb_cost_functor.cu
+	src/ownship.cu 
+	src/cpe.cu 
 	src/kf.cpp 
-	src/obstacle.cpp 
-	src/obstacle_ship.cpp 
-	src/obstacle_sbmpc.cpp 
-	src/prediction_obstacle.cpp 
+	src/obstacle.cu
+	src/obstacle_ship.cu 
+	src/obstacle_sbmpc.cu 
+	src/prediction_obstacle.cu 
 	src/mrou.cpp 
 	src/utilities.cpp)
 

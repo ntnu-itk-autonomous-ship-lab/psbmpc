@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : obstacle.h
+*  File name : obstacle.cuh
 *
 *  Function  : Header file for the obstacle class. Modified version of the one created
 *			   for SBMPC by Inger Berge Hagen and Giorgio D. Kwame Minde Kufoalor

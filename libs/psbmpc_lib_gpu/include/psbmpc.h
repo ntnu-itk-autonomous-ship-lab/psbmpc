@@ -3,8 +3,8 @@
 *  File name : psbmpc.h
 *
 *  Function  : Header file for Probabilistic Scneario-based Model Predictive Control.
-*			   Extends and modifies the SB-MPC implemented by Inger Berge Hagen and 
-*			   Giorgio D. Kwame Minde Kufoalor through the Autosea project.
+*			   Brand new extended version of the SB-MPC implemented by Inger Berge Hagen 
+*			   and Giorgio D. Kwame Minde Kufoalor through the Autosea project.
 *
 *  
 *	           ---------------------
@@ -25,9 +25,9 @@
 
 
 #include "psbmpc_index.h"
-#include "ownship.h"
-#include "obstacle.h"
-#include "cpe.h"
+#include "ownship.cuh"
+#include "obstacle.cuh"
+#include "cpe.cuh"
 #include "Eigen/Dense"
 #include <vector>
 
@@ -51,13 +51,15 @@ private:
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
 
-	Eigen::VectorXd maneuver_times, course_changes;
 	Eigen::MatrixXd control_behaviours;
 
+	Eigen::VectorXd maneuver_times, obstacle_course_changes;
+	
 	double u_m_last;
 	double chi_m_last;
 
 	double min_cost;
+	int min_index;
 
 	Eigen::VectorXd dpar_low, dpar_high;
 	Eigen::VectorXd ipar_low, ipar_high;
@@ -93,7 +95,7 @@ private:
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
-	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
+	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
 
 	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
 	std::vector<ST> ST_0, ST_i_0;
@@ -101,81 +103,12 @@ private:
 	std::vector<Obstacle*> old_obstacles;
 	std::vector<Obstacle*> new_obstacles;
 
-	// DEVICE methods
-	// Functor for use in thrust transform
-	class evaluate_cb_cost
-	{
-	private: 
-		Ownship ownship;
+	void map_offset_sequences();
 
-		CPE cpe;
+	void reset_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
-		std::vector<Obstacle*> old_obstacles;
-		std::vector<Obstacle*> new_obstacles;
+	void increment_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
-		bool determine_COLREGS_violation(
-			const Eigen::Vector2d &v_A, 
-			const double psi_A, 
-			const Eigen::Vector2d &v_B,
-			const Eigen::Vector2d &L_AB, 
-			const double d_AB);
-
-		bool determine_transitional_cost_indicator(
-			const double psi_A, 
-			const double psi_B, 
-			const Eigen::Vector2d &L_AB, 
-			const int i,
-			const double chi_m);
-		bool determine_transitional_cost_indicator(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B, const int i, const double chi_m);
-
-		void calculate_collision_probabilities(Eigen::MatrixXd &P_c_i, const int i);
-
-		double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const int i);
-
-		double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
-
-		void calculate_collision_cost(Eigen::VectorXd &cost, const Eigen::Matrix<double, 2, -1> &v_1, const Eigen::Matrix<double, 2, -1> &v_2);
-
-		// Methods dealing with control deviation cost
-		double calculate_control_deviation_cost();
-
-		double Delta_u(const double u_1, const double u_2) const 		{ return K_du * fabs(u_1 - u_2); }
-
-		double K_chi(const double chi) const 							{ if (chi > 0) return K_chi_strb * pow(chi, 2); else return K_chi_port * pow(chi, 2); };
-
-		double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
-
-		//
-		double calculate_chattering_cost();
-
-		// Methods dealing with geographical constraints
-		double calculate_grounding_cost(const Eigen::Matrix<double, 4, -1>& static_obstacles);
-
-		int find_triplet_orientation(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);                           
-
-		bool determine_if_on_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);   
-
-		bool determine_if_behind(const Eigen::Vector2d &p_1, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2, const double d_to_line);                         
-
-		bool determine_if_lines_intersect(const Eigen::Vector2d &p_1, const Eigen::Vector2d &q_1, const Eigen::Vector2d &p_2, const Eigen::Vector2d &q_2);   
-
-		double distance_from_point_to_line(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2);                  
-
-		double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
-
-		void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
-
-		void assign_obstacle_vector(std::vector<Obstacle*> &lhs, const std::vector<Obstacle*> &rhs);
-
-		void predict_trajectories_jointly();
-	public: 
-		
-
-		
-	};
-	
-
-	// Non-device methods
 	void initialize_par_limits();
 
 	void initialize_pars();
@@ -209,6 +142,10 @@ private:
 		const Eigen::Vector2d &v_B,
 		const Eigen::Vector2d &L_AB, 
 		const double d_AB);
+
+	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
+
+	void assign_obstacle_vector(std::vector<Obstacle*> &lhs, const std::vector<Obstacle*> &rhs);
 
     void update_obstacles(
 		const Eigen::Matrix<double, 9, -1>& obstacle_states, 

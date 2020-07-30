@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : psb_mpc.h
+*  File name : psbmpc.cu
 *
 *  Function  : Class functions for Probabilistic Scenario-based Model Predictive Control
 *
@@ -17,7 +17,11 @@
 *
 *****************************************************************************************/
 
-#include "utilities.h"
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
+#include "utilities.cuh"
+#include "cb_cost_functor.cuh"
 #include "psbmpc.h"
 #include "iostream"
 #include "engine.h"
@@ -64,14 +68,14 @@ PSBMPC::PSBMPC(const PSBMPC &psbmpc)
 	this->u_offsets = psbmpc.u_offsets;
 	this->chi_offsets = psbmpc.chi_offsets;
 
-	this->offset_sequence_counter = psbmpc.offset_sequence_counter;
-	this->offset_sequence = psbmpc.offset_sequence;
 	this->maneuver_times = psbmpc.maneuver_times;
+	this->obstacle_course_changes = psbmpc.obstacle_course_changes;
 
 	this->u_m_last = psbmpc.u_m_last;
 	this->chi_m_last = psbmpc.chi_m_last;
 
 	this->min_cost = psbmpc.min_cost;
+	this->min_index = psbmpc.min_index;
 
 	this->dpar_low = psbmpc.dpar_low;
 	this->dpar_high = psbmpc.dpar_high;
@@ -119,8 +123,8 @@ PSBMPC::PSBMPC(const PSBMPC &psbmpc)
 
 	this->ST_0 = psbmpc.ST_0; this->ST_i_0 = psbmpc.ST_i_0;
 
-	assign_obstacle_vector(old_obstacles, psbmpc.old_obstacles);
-	assign_obstacle_vector(new_obstacles, psbmpc.new_obstacles);
+	assign_obstacle_vector(this->old_obstacles, psbmpc.old_obstacles);
+	assign_obstacle_vector(this->new_obstacles, psbmpc.new_obstacles);
 }
 
 /****************************************************************************************
@@ -482,74 +486,58 @@ void PSBMPC::calculate_optimal_offsets(
 	} */
 	
 	//===============================================================================================================
-	double cost;
-	Eigen::VectorXd opt_offset_sequence(2 * n_M), cost_i(n_obst);
-	Eigen::MatrixXd P_c_i;
-	min_cost = 1e12;
-	reset_control_behavior();
-	for (int cb = 0; cb < n_cbs; cb++)
-	{
-		cost = 0;
-		//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
-		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
-		ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, T, dt);
 
-		//===============================================================================================================
-		// MATLAB PLOTTING FOR DEBUGGING
-		//===============================================================================================================
-		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
-		map_traj = trajectory;
+	//===============================================================================================================
+	// Cost evaluation
+	//===============================================================================================================
 
-		k_s = mxCreateDoubleScalar(n_samples);
-		engPutVariable(ep, "k", k_s);
+	// Allocate device vector for computing CB costs
+	thrust::device_vector<double> cb_costs(n_cbs);
+	
+	// Allocate iterator for passing the index of the control behavior to the kernels
+	thrust::counting_iterator<unsigned int> index_iter(0);
+	
+	// Perform the calculations on the GPU
+    thrust::transform(thrust::device, index_iter, index_iter + n_cbs, cb_costs.begin(), CB_Cost_Functor(*this, u_d, chi_d, waypoints));
 
-		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
-		//===============================================================================================================
+	// Extract minimum cost
+	thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
+	min_index = min_cost_iter - cb_costs.begin();
+	min_cost = cb_costs[min_index];
 
-		for (int i = 0; i < n_obst; i++)
-		{
-			if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
+	// Set the trajectory to the optimal one and assign to the output trajectory
+	Eigen::VectorXd offset_sequence(2 * n_M);
+	offset_sequence = control_behaviours.col(min_index);
+	ownship->predict_trajectory(trajectory, control_behaviours.col(min_index), maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, T, dt);
+	assign_optimal_trajectory(predicted_trajectory);
 
-			P_c_i.resize(n_ps[i], n_samples);
-			//calculate_collision_probabilities(P_c_i, i); 
+	HL_0.setZero();
+	//===============================================================================================================
 
-			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
-		}
+	//===============================================================================================================
+	// MATLAB PLOTTING FOR DEBUGGING
+	//===============================================================================================================
+	/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+	map_traj = trajectory;
 
-		//cost += cost_i.maxCoeff();
+	k_s = mxCreateDoubleScalar(n_samples);
+	engPutVariable(ep, "k", k_s);
 
-		cost += calculate_grounding_cost(static_obstacles);
+	engPutVariable(ep, "X", traj_os);
+	engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); 
 
-		cost += calculate_control_deviation_cost();
-
-		cost += calculate_chattering_cost();
-
-		if (cost < min_cost) 
-		{
-			min_cost = cost;
-			opt_offset_sequence = offset_sequence;
-
-			assign_optimal_trajectory(predicted_trajectory);
-
-			// Assign current optimal hazard level for each obstacle
-			for (int i = 0; i < n_obst; i++)
-			{
-				HL_0(i) = cost_i(i) / cost_i.sum();
-			}	
-		}
-		increment_control_behavior();
-	}
+	engClose(ep); */
+	//===============================================================================================================
 
 	update_obstacle_status(obstacle_status, HL_0);
 
-	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
-	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
+	u_opt = control_behaviours(0, min_index); 		u_m_last = u_opt;
+	chi_opt = control_behaviours(1, min_index); 	chi_m_last = chi_opt;
 
 	std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < n_M; M++)
 	{
-		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
+		std::cout << control_behaviours(2 * M, min_index) << ", " << control_behaviours(2 * M + 1, min_index) * RAD2DEG;
 		if (M < n_M - 1) std::cout << ", ";
 	}
 	std::cout << std::endl;
@@ -557,13 +545,98 @@ void PSBMPC::calculate_optimal_offsets(
 	double CF_0 = u_opt * (1 - fabs(chi_opt * RAD2DEG) / 15.0);
 	colav_status.resize(2,1);
 	colav_status << CF_0, min_cost;
-
-	/* engClose(ep);  */
 }
 
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : map_offset_sequences
+*  Function : Maps the currently set surge and course modifications into a matrix of 
+*			  offset sequences or control behaviours
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::map_offset_sequences()
+{
+	Eigen::VectorXd offset_sequence_counter(2 * n_M), offset_sequence(2 * n_M);
+	reset_control_behaviour(offset_sequence_counter, offset_sequence);
+
+	control_behaviours.resize(2 * n_M, n_cbs);
+	for (int cb = 0; cb < n_cbs; cb++)
+	{
+		control_behaviours.col(cb) = offset_sequence;
+
+		increment_control_behaviour(offset_sequence_counter, offset_sequence);
+	}
+	std::cout << "Control behaviours: " << std::endl;
+	std::cout << control_behaviours << std::endl;
+}
+
+/****************************************************************************************
+*  Name     : reset_control_behavior
+*  Function : Sets the offset sequence back to the initial starting point, i.e. the 
+*			  leftmost branches of the control behavior tree
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::reset_control_behaviour(
+	Eigen::VectorXd &offset_sequence_counter, 									// In/out: Counter to keep track of current offset sequence
+	Eigen::VectorXd &offset_sequence 											// In/out: Control behaviour to increment
+)
+{
+	offset_sequence_counter.setZero();
+	for (int M = 0; M < n_M; M++)
+	{
+		offset_sequence(2 * M) = u_offsets[M](0);
+		offset_sequence(2 * M + 1) = chi_offsets[M](0);
+	}
+}
+
+/****************************************************************************************
+*  Name     : increment_control_behavior
+*  Function : Increments the control behavior counter and changes the offset sequence 
+*			  accordingly. Backpropagation is used for the incrementation
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::increment_control_behaviour(
+	Eigen::VectorXd &offset_sequence_counter, 									// In/out: Counter to keep track of current offset sequence
+	Eigen::VectorXd &offset_sequence 											// In/out: Control behaviour to increment
+	)
+{
+	for (int M = n_M - 1; M > -1; M--)
+	{
+		// Only increment counter for "leaf node offsets" on each iteration, which are the
+		// course offsets in the last maneuver
+		if (M == n_M - 1)
+		{
+			offset_sequence_counter(2 * M + 1) += 1;
+		}
+
+		// If one reaches the end of maneuver M's course offsets, reset corresponding
+		// counter and increment surge offset counter above
+		if (offset_sequence_counter(2 * M + 1) == chi_offsets[M].size())
+		{
+			offset_sequence_counter(2 * M + 1) = 0;
+			offset_sequence_counter(2 * M) += 1;
+		}
+		offset_sequence(2 * M + 1) = chi_offsets[M](offset_sequence_counter(2 * M + 1));
+
+		// If one reaches the end of maneuver M's surge offsets, reset corresponding
+		// counter and increment course offset counter above (if any)
+		if (offset_sequence_counter(2 * M) == u_offsets[M].size())
+		{
+			offset_sequence_counter(2 * M) = 0;
+			if (M > 0)
+			{
+				offset_sequence_counter(2 * M - 1) += 1;
+			}
+		}
+		offset_sequence(2 * M) = u_offsets[M](offset_sequence_counter(2 * M));
+	}
+}
+
 
 /****************************************************************************************
 *  Name     : initialize_par_limits
@@ -624,9 +697,6 @@ void PSBMPC::initialize_pars()
 	n_a = 1; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
 	n_ps.resize(1); // Determined by initialize_prediction();
 
-	offset_sequence_counter.resize(2 * n_M);
-	offset_sequence.resize(2 * n_M);
-
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
 	for (int M = 0; M < n_M; M++)
@@ -655,13 +725,14 @@ void PSBMPC::initialize_pars()
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
 	}
-	reset_control_behavior();
+	
+	map_offset_sequences();
 
 	u_m_last = 1;
 	chi_m_last = 0;
 
-	course_changes.resize(1);
-	course_changes << 30 * DEG2RAD; //60 * DEG2RAD, 90 * DEG2RAD;
+	obstacle_course_changes.resize(1);
+	obstacle_course_changes << 30 * DEG2RAD; //60 * DEG2RAD, 90 * DEG2RAD;
 
 	cpe_method = CE;
 	prediction_method = ERK1;
@@ -708,6 +779,7 @@ void PSBMPC::initialize_pars()
 	T_tracked_limit = 15.0; // 15.0 s obstacle still relevant if tracked for so long, choice depends on survival rate
 
 	min_cost = 1e10;
+
 }
 
 /****************************************************************************************
@@ -772,7 +844,7 @@ void PSBMPC::initialize_prediction()
 					else					{ n_turns = 1; }	
 				}
 
-				n_ps[i] = 1 + 2 * course_changes.size() * n_turns;
+				n_ps[i] = 1 + 2 * obstacle_course_changes.size() * n_turns;
 				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, i, n_turns);
 			}
 			else // Set up dependent obstacle prediction scenarios
@@ -859,8 +931,8 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 
 			ps_maneuver_times_i[ps] = turn_count * std::floor(t_ts / dt);
 
-			ps_course_changes_i(ps) = course_changes(course_change_count);
-			if (++course_change_count == course_changes.size())
+			ps_course_changes_i(ps) = obstacle_course_changes(course_change_count);
+			if (++course_change_count == obstacle_course_changes.size())
 			{
 				if(++turn_count == n_turns) turn_count = 0;
 				course_change_count = 0;
@@ -873,8 +945,8 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 
 			ps_maneuver_times_i[ps] = turn_count * std::floor(t_ts / dt);
 
-			ps_course_changes_i(ps) = - course_changes(course_change_count);
-			if (++course_change_count == course_changes.size())
+			ps_course_changes_i(ps) = - obstacle_course_changes(course_change_count);
+			if (++course_change_count == obstacle_course_changes.size())
 			{
 				if(++turn_count == n_turns) turn_count = 0;
 				course_change_count = 0;
@@ -1102,76 +1174,6 @@ double PSBMPC::find_time_of_passing(
 }
 
 /****************************************************************************************
-*  Name     : reset_control_behavior
-*  Function : Sets the offset sequence back to the initial starting point, i.e. the 
-*			  leftmost branches of the control behavior tree
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::reset_control_behavior()
-{
-	offset_sequence_counter.setZero();
-	for (int M = 0; M < n_M; M++)
-	{
-		offset_sequence(2 * M) = u_offsets[M](0);
-		offset_sequence(2 * M + 1) = chi_offsets[M](0);
-	}
-}
-
-/****************************************************************************************
-*  Name     : increment_control_behavior
-*  Function : Increments the control behavior counter and changes the offset sequence 
-*			  accordingly. Backpropagation is used for the incrementation
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::increment_control_behavior()
-{
-	for (int M = n_M - 1; M > -1; M--)
-	{
-		// Only increment counter for "leaf node offsets" on each iteration, which are the
-		// course offsets in the last maneuver
-		if (M == n_M - 1)
-		{
-			offset_sequence_counter(2 * M + 1) += 1;
-		}
-
-		// If one reaches the end of maneuver M's course offsets, reset corresponding
-		// counter and increment surge offset counter above
-		if (offset_sequence_counter(2 * M + 1) == chi_offsets[M].size())
-		{
-			offset_sequence_counter(2 * M + 1) = 0;
-			offset_sequence_counter(2 * M) += 1;
-		}
-		offset_sequence(2 * M + 1) = chi_offsets[M](offset_sequence_counter(2 * M + 1));
-
-		// If one reaches the end of maneuver M's surge offsets, reset corresponding
-		// counter and increment course offset counter above (if any)
-		if (offset_sequence_counter(2 * M) == u_offsets[M].size())
-		{
-			offset_sequence_counter(2 * M) = 0;
-			if (M > 0)
-			{
-				offset_sequence_counter(2 * M - 1) += 1;
-			}
-		}
-		offset_sequence(2 * M) = u_offsets[M](offset_sequence_counter(2 * M));
-	}
-}
-
-/****************************************************************************************
-*  Name     : predict_trajectories_jointly
-*  Function : Predicts the trajectory of the ownship and obstacles with an active COLAV
-*			  system
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::predict_trajectories_jointly()
-{
-
-}
-
-/****************************************************************************************
 *  Name     : determine_colav_active
 *  Function : Uses the freshly updated new_obstacles vector and the number of static 
 *			  obstacles to determine whether it is necessary to run the PSBMPC
@@ -1289,545 +1291,6 @@ void PSBMPC::determine_situation_type(
 }
 
 /****************************************************************************************
-*  Name     : determine_COLREGS_violation
-*  Function : Determine if vessel A violates COLREGS with respect to vessel B.
-*			  
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-bool PSBMPC::determine_COLREGS_violation(
-	const Eigen::Vector2d& v_A,												// In: (NE) Velocity vector of vessel A
-	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d& v_B, 											// In: (NE) Velocity vector of vessel B
-	const Eigen::Vector2d& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-	const double d_AB 														// In: Distance from vessel A to vessel B
-	)
-{
-	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
-
-	is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
-
-	is_close = d_AB <= d_close;
-
-	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
-					 v_A.norm() < v_B.norm()							  	&&
-					 v_A.norm() > 0.25;
-
-	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
-					 v_B.norm() < v_A.norm()							  	&&
-					 v_B.norm() > 0.25;
-
-	B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-				!A_is_overtaken) 											||
-				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-				!B_is_overtaken)) 											&&
-				d_AB > d_safe;
-
-	is_head_on = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
-				 v_A.norm() > 0.25											&&
-				 v_B.norm() > 0.25											&&
-				 is_ahead;
-
-	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
-				  v_A.norm() > 0.25											&&
-				  v_B.norm() > 0.25											&&
-				  !is_head_on 												&&
-				  !is_passed;
-
-	return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
-}
-
-
-
-/****************************************************************************************
-*  Name     : determine_transitional_cost_indicator
-*  Function : Determine if a transitional cost should be applied for the current
-*			  control behavior, using the method in Hagen, 2018. Two overloads
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-bool PSBMPC::determine_transitional_cost_indicator(
-	const double psi_A, 													// In: Heading of vessel A
-	const double psi_B, 													// In: Heading of vessel B
-	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-	const int i, 															// In: Index of obstacle
-	const double chi_m 														// In: Candidate course offset currently followed
-	)
-{
-	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
-
-	// Obstacle on starboard side
-	S_TC = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-	// Ownship on starboard side of obstacle
-	S_i_TC = angle_difference_pmpi(atan2(-L_AB(1), -L_AB(0)), psi_B) > 0;
-
-	// For ownship overtaking the obstacle: Check if obstacle is on opposite side of 
-	// ownship to what was observed at t0
-	if (!S_TC_0[i]) { O_TC = O_TC_0[i] && S_TC; }
-	else { O_TC = O_TC_0[i] && !S_TC; };
-
-	// For obstacle overtaking the ownship: Check if ownship is on opposite side of 
-	// obstacle to what was observed at t0
-	if (!S_i_TC_0[i]) { Q_TC = Q_TC_0[i] && S_i_TC; }
-	else { Q_TC = Q_TC_0[i] && !S_i_TC; };
-
-	// For crossing: Check if obstacle is on opposite side of ownship to what was
-	// observed at t0
-	X_TC = X_TC_0[i] && S_TC_0[i] && S_TC && (chi_m < 0);
-
-	// This is not mentioned in article, but also implemented here..
-	// Transitional cost only valid by going from having obstacle on port side at
-	// t0, to starboard side at time t
-	if (!S_TC_0[i]) { H_TC = H_TC_0[i] && S_TC; }
-	else { H_TC = false; }
-	H_TC = H_TC && !X_TC;
-
-	return O_TC || Q_TC || X_TC || H_TC;
-}
-
-bool PSBMPC::determine_transitional_cost_indicator(
-	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A (the ownship)
-	const Eigen::VectorXd &xs_B, 											// In: State vector of vessel B (the obstacle)
-	const int i, 															// In: Index of obstacle
-	const double chi_m 														// In: Candidate course offset currently followed
-	)
-{
-	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
-	double psi_A, psi_B;
-	Eigen::Vector2d L_AB;
-	if (xs_A.size() == 6) { psi_A = xs_A[2]; }
-	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); }
-	
-	if (xs_B.size() == 6) { psi_B = xs_B[2]; }
-	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); }
-
-	L_AB(0) = xs_B(0) - xs_A(0);
-	L_AB(1) = xs_B(1) - xs_A(1);
-	L_AB = L_AB / L_AB.norm();
-
-	// Obstacle on starboard side
-	S_TC = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-	// Ownship on starboard side of obstacle
-	S_i_TC = angle_difference_pmpi(atan2(-L_AB(1), -L_AB(0)), psi_B) > 0;
-
-	// For ownship overtaking the obstacle: Check if obstacle is on opposite side of 
-	// ownship to what was observed at t0
-	if (!S_TC_0[i]) { O_TC = O_TC_0[i] && S_TC; }
-	else { O_TC = O_TC_0[i] && !S_TC; };
-
-	// For obstacle overtaking the ownship: Check if ownship is on opposite side of 
-	// obstacle to what was observed at t0
-	if (!S_i_TC_0[i]) { Q_TC = Q_TC_0[i] && S_i_TC; }
-	else { Q_TC = Q_TC_0[i] && !S_i_TC; };
-
-	// For crossing: Check if obstacle is on opposite side of ownship to what was
-	// observed at t0
-	X_TC = X_TC_0[i] && S_TC_0[i] && S_TC && (chi_m < 0);
-
-	// This is not mentioned in article, but also implemented here..
-	// Transitional cost only valid by going from having obstacle on port side at
-	// t0, to starboard side at time t
-	if (!S_TC_0[i]) { H_TC = H_TC_0[i] && S_TC; }
-	else { H_TC = false; }
-	H_TC = H_TC && !X_TC;
-
-	return O_TC || Q_TC || X_TC || H_TC;
-}
-
-/****************************************************************************************
-*  Name     : calculate_collision_probabilities
-*  Function : Estimates collision probabilities for the own-ship and an obstacle i in
-*			  consideration
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::calculate_collision_probabilities(
-	Eigen::MatrixXd &P_c_i,									// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
-	const int i 											// In: Index of obstacle
-	)
-{
-	int n_samples = trajectory.cols();
-	Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
-	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_trajectories();
-	double d_safe_i = d_safe;
-
-	for (int ps = 0; ps < n_ps[i]; ps++)
-	{
-		cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
-		for (int k = 0; k < n_samples; k++)
-		{
-			P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
-		}
-		save_matrix_to_file(P_c_i);
-	}
-}
-
-/****************************************************************************************
-*  Name     : calculate_dynamic_obstacle_cost
-*  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-double PSBMPC::calculate_dynamic_obstacle_cost(
-	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
-	const int i 													// In: Index of obstacle
-	)
-{
-	double cost = 0, cost_ps, coll_cost;
-	Eigen::VectorXd max_cost_ps(n_ps[i]);
-	for (int ps = 0; ps < n_ps[i]; ps++)
-	{
-		max_cost_ps(ps) = 0;
-	}
-
-	int n_samples = trajectory.cols();
-	Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
-	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_trajectories();
-	std::vector<bool> mu_i = new_obstacles[i]->get_COLREGS_violation_indicator();
-	double Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
-
-	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
-	double psi_0_p, psi_i_p, d_0i_p, chi_m;
-	bool mu, trans;
-	for(int k = 0; k < n_samples; k++)
-	{
-		psi_0_p = trajectory(2, k); 
-		v_0_p(0) = trajectory(3, k); 
-		v_0_p(1) = trajectory(4, k); 
-		v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
-
-		// Determine active course modification at sample k
-		for (int M = 0; M < n_M; M++)
-		{
-			if (M < n_M - 1)
-			{
-				if (k >= maneuver_times[M] && k < maneuver_times[M + 1])
-				{
-					chi_m = offset_sequence[2 * M + 1];
-					
-				}
-			}
-			else
-			{
-				if (k >= maneuver_times[M])
-				{
-					chi_m = offset_sequence[2 * M + 1];
-				}
-			}
-			//std::cout << "k = " << k << std::endl;
-			//std::cout << "chi_m = " << chi_m * RAD2DEG << std::endl;
-		}
-		
-		for(int ps = 0; ps < n_ps[i]; ps++)
-		{
-			L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
-			d_0i_p = L_0i_p.norm();
-			L_0i_p = L_0i_p.normalized();
-
-			v_i_p(0) = xs_i_p[ps](2, k);
-			v_i_p(1) = xs_i_p[ps](3, k);
-			psi_i_p = atan2(v_i_p(1), v_i_p(0));
-
-			coll_cost = calculate_collision_cost(v_0_p, v_i_p);
-
-			mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
-
-			trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, i, chi_m);
-
-			cost_ps = coll_cost * P_c_i(ps, k) + kappa * mu  + 0 * kappa_TC * trans;
-
-			// Maximize wrt time
-			if (cost_ps > max_cost_ps(ps))
-			{
-				max_cost_ps(ps) = cost_ps;
-			}
-		}
-	}
-
-	// If only 1 prediction scenario
-	// => Original PSB-MPC formulation
-	if (n_ps[i] == 1)
-	{
-		cost = max_cost_ps(0);
-		return cost;
-	}
-	// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-	// which means that higher cost is applied if the obstacle follows COLREGS
-	// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-	// and the own-ship breaches COLREGS
-	for (int ps = 0; ps < n_ps[i]; ps++)
-	{
-		if (mu_i[ps])
-		{
-			max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
-		}
-		else
-		{
-			max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
-		}
-	}
-
-	Eigen::Vector3d cost_a = {0, 0, 0};
-	Eigen::VectorXd Pr_a = new_obstacles[i]->get_intention_probabilities();
-	cost_a(0) = max_cost_ps(0); 
-	for(int ps = 1; ps < n_ps[i]; ps++)
-	{
-		// Starboard maneuvers
-		if (ps < (n_ps[i] - 1) / 2 + 1)
-		{
-			cost_a(1) += max_cost_ps(ps);
-		}
-		// Port maneuvers
-		else
-		{
-			cost_a(2) += max_cost_ps(ps);
-		}
-	}
-	// Average the cost for the corresponding intention
-	cost_a(1) = cost_a(1) / ((n_ps[i] - 1) / 2);
-	cost_a(2) = cost_a(2) / ((n_ps[i] - 1) / 2);
-
-	// Weight by the intention probabilities
-	cost = Pr_a.dot(cost_a);
-	//std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
-	//std::cout << "max cost ps = " << max_cost_ps.transpose() << std::endl;
-	//std::cout << "cost a = " << cost_a.transpose() << std::endl;
-	//std::cout << "cost = " << cost << std::endl;
-
-	return cost;
-}
-
-/****************************************************************************************
-*  Name     : calculate_collision_cost
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-double PSBMPC::calculate_collision_cost(
-	const Eigen::Vector2d &v_1, 											// In: Velocity v_1
-	const Eigen::Vector2d &v_2 												// In: Velocity v_2
-	)
-{
-	return K_coll * (v_1 - v_2).norm();
-}
-
-/****************************************************************************************
-*  Name     : calculate_control_deviation_cost
-*  Function : Determines penalty due to using offsets to guidance references ++
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-double PSBMPC::calculate_control_deviation_cost()
-{
-	double cost = 0;
-	for (int i = 0; i < n_M; i++)
-	{
-		if (i == 0)
-		{
-			cost += K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_m_last) +
-				    K_chi(offset_sequence[1])      + Delta_chi(offset_sequence[1], chi_m_last);
-		}
-		else
-		{
-			cost += K_u * (1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
-				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
-		}
-	}
-	return cost / n_M;
-}
-
-/****************************************************************************************
-*  Name     : calculate_chattering_cost
-*  Function : Determines penalty due to using wobly (changing between positive and negative)
-* 			  course modifications
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-double PSBMPC::calculate_chattering_cost()
-{
-	double cost = 0;
-
-	if (n_M > 1) 
-	{
-		double delta_t = 0;
-		for(int M = 0; M < n_M; M++)
-		{
-			if (M < n_M - 1)
-			{
-				if ((offset_sequence(2 * M + 1) > 0 && offset_sequence(2 * M + 3) < 0) ||
-					(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) > 0))
-				{
-					delta_t = maneuver_times(M + 1) - maneuver_times(M);
-					cost += K_sgn * exp( - delta_t / T_sgn);
-				}
-			}
-		}
-	}
-	return cost;
-}
-
-/****************************************************************************************
-*  Name     : calculate_grounding_cost
-*  Function : Determines penalty due grounding ownship on static obstacles (no-go zones)
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-double PSBMPC::calculate_grounding_cost(
-	const Eigen::Matrix<double, 4, -1>& static_obstacles						// In: Static obstacle information
-	)
-{
-	double cost = 0;
-
-	return cost;
-}
-
-/****************************************************************************************
-*  Name     : find_triplet_orientation
-*  Function : Find orientation of ordered triplet (p, q, r)
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
-int PSBMPC::find_triplet_orientation(
-	const Eigen::Vector2d &p, 
-	const Eigen::Vector2d &q, 
-	const Eigen::Vector2d &r
-	)
-{
-	// Calculate z-component of cross product (q - p) x (r - q)
-    int val = (q[0] - p[0]) * (r[1] - q[1]) - (q[1] - p[1]) * (r[0] - q[0]);
-
-    if (val == 0) return 0; // colinear
-    return val < 0 ? 1 : 2; // clock or counterclockwise
-}
-
-/****************************************************************************************
-*  Name     : determine_if_on_segment
-*  Function : Determine if the point q is on the segment pr
-*			  (really if q is inside the rectangle with diagonal pr...)
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
-bool PSBMPC::determine_if_on_segment(
-	const Eigen::Vector2d &p, 
-	const Eigen::Vector2d &q, 
-	const Eigen::Vector2d &r
-	)
-{
-    if (q[0] <= std::max(p[0], r[0]) && q[0] >= std::min(p[0], r[0]) &&
-        q[1] <= std::max(p[1], r[1]) && q[1] >= std::min(p[1], r[1]))
-        return true;
-    return false;
-}
-
-/****************************************************************************************
-*  Name     : determine_if_behind
-*  Function : Check if the point p_1 is behind the line defined by v_1 and v_2
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
-bool PSBMPC::determine_if_behind(
-	const Eigen::Vector2d &p_1, 
-	const Eigen::Vector2d &v_1, 
-	const Eigen::Vector2d &v_2, 
-	const double distance_to_line
-	)
-{
-    Eigen::Vector2d v_diff, n;
-    
-    v_diff = v_2 - v_1;
-
-    n << -v_diff[1], v_diff[0];
-    n = n / n.norm() * distance_to_line;
-
-    return (determine_if_on_segment(v_1 + n, p_1, v_2 + n));
-}
-
-/****************************************************************************************
-*  Name     : determine_if_lines_intersect
-*  Function : Determine if the line segments defined by p_1, q_1 and p_2, q_2 intersects 
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
-bool PSBMPC::determine_if_lines_intersect(
-	const Eigen::Vector2d &p_1, 
-	const Eigen::Vector2d &q_1, 
-	const Eigen::Vector2d &p_2, 
-	const Eigen::Vector2d &q_2
-	)
-{
-    // Find the four orientations needed for general and
-    // special cases
-    int o_1 = find_triplet_orientation(p_1, q_1, p_2);
-    int o_2 = find_triplet_orientation(p_1, q_1, q_2);
-    int o_3 = find_triplet_orientation(p_2, q_2, p_1);
-    int o_4 = find_triplet_orientation(p_2, q_2, q_1);
-
-    // General case
-    if (o_1 != o_2 && o_3 != o_4)
-        return true;
-
-    // Special Cases
-    // p_1, q_1 and p_2 are colinear and p_2 lies on segment p_1q_1
-    if (o_1 == 0 && determine_if_on_segment(p_1, p_2, q_1)) return true;
-
-    // p_1, q_1 and q_2 are colinear and q_2 lies on segment p_1q_1
-    if (o_2 == 0 && determine_if_on_segment(p_1, q_2, q_1)) return true;
-
-    // p_2, q_2 and p_1 are colinear and p_1 lies on segment p_2q_2
-    if (o_3 == 0 && determine_if_on_segment(p_2, p_1, q_2)) return true;
-
-    // p_2, q_2 and q_1 are colinear and q_1 lies on segment p2q2
-    if (o_4 == 0 && determine_if_on_segment(p_2, q_1, q_2)) return true;
-
-    return false; // Doesn't fall in any of the above cases
-}
-
-/****************************************************************************************
-*  Name     : distance_from_point_to_line
-*  Function : Calculate distance from p to the line segment defined by q_1 and q_2
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
-double PSBMPC::distance_from_point_to_line(
-	const Eigen::Vector2d &p, 
-	const Eigen::Vector2d &q_1, 
-	const Eigen::Vector2d &q_2
-	)
-{   
-	Eigen::Vector3d a;
-    Eigen::Vector3d b;
-    a << (q_1 - q_2), 0;
-    b << (p - q_2), 0;
-
-    Eigen::Vector3d c = a.cross(b);
-    if (a.norm() > 0) return c.norm() / a.norm();
-    else return -1;
-}
-
-/****************************************************************************************
-*  Name     : distance_to_static_obstacle
-*  Function : Calculate distance from p to obstacle defined by line segment {v_1, v_2}
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
-double PSBMPC::distance_to_static_obstacle(
-	const Eigen::Vector2d &p, 
-	const Eigen::Vector2d &v_1, 
-	const Eigen::Vector2d &v_2
-	)
-{
-    double d2line = distance_from_point_to_line(p, v_1, v_2);
-
-    if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line)) return d2line;
-    else return std::min((v_1-p).norm(),(v_2-p).norm());
-}
-
-/****************************************************************************************
 *  Name     : assign_optimal_trajectory
 *  Function : Set the optimal trajectory to the current predicted trajectory
 *  Author   :
@@ -1863,8 +1326,8 @@ void PSBMPC::assign_optimal_trajectory(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::assign_obstacle_vector(
-	std::vector<Obstacle*> &lhs,  														// Resultant vector
-	const std::vector<Obstacle*> &rhs 													// Vector to assign
+	std::vector<Obstacle*> &lhs,  														// In/out: Resultant vector
+	const std::vector<Obstacle*> &rhs 													// In: Vector to assign
 	)
 {
 	lhs.resize(rhs.size());
