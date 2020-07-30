@@ -42,34 +42,65 @@ __host__ __device__ CB_Cost_Functor::CB_Cost_Functor(
 	const PSBMPC &master, 												// In: Parent class
 	const double u_d,  													// In: Surge reference
 	const double chi_d, 												// In: Course reference
-	const Eigen::MatrixXd &waypoints 									// In: Waypoints to follow
-	) : 
-	n_M(master.n_M), n_a(master.n_a), 
-	maneuver_times(master.maneuver_times), 
-	control_behaviours(master.control_behaviours),
-	u_d(u_d), chi_d(chi_d),
-	u_m_last(master.u_m_last), chi_m_last(master.chi_m_last), 
-	prediction_method(master.prediction_method), 
-	guidance_method(master.guidance_method), 
-	T(master.T), T_static(master.T_static), dt(master.dt), 
-	d_safe(master.d_safe), d_close(master.d_close), d_init(master.d_init),
-	K_coll(master.K_coll),
-	phi_AH(master.phi_AH), phi_OT(master.phi_OT), phi_HO(master.phi_OT), phi_CR(master.phi_CR),
-	kappa(master.kappa), kappa_TC(master.kappa_TC),
-	K_u(master.K_u), K_du(master.K_du),
-	K_chi_strb(master.K_chi_strb), K_dchi_strb(master.K_dchi_strb),
-	K_chi_port(master.K_chi_port), K_dchi_port(master.K_dchi_port),
-	K_sgn(master.K_sgn), T_sgn(master.T_sgn),
-	G(master.G), 
-	obstacle_filter_on(master.obstacle_filter_on),
-	T_lost_limit(master.T_lost_limit), T_tracked_limit(master.T_tracked_limit),
-	waypoints(waypoints),
-	ownship(*(master.ownship)), 
-	cpe(*(master.cpe)),
-	trajectory(master.trajectory)
+	const Eigen::Matrix<double, 2, -1> &waypoints 						// In: Waypoints to follow
+	) 
 {	
-	// Allocate standard C++/C arrays for the std::vector types
 	int n_obst = master.new_obstacles.size();
+
+	vars = new CB_Functor_Vars;
+	vars->n_M = master.n_M;
+	vars->n_a = master.n_a;
+	vars->n_obst = n_obst;
+
+	vars->maneuver_times = master.maneuver_times;
+	vars->control_behaviours = master.control_behaviours;
+
+	vars->u_d = u_d;
+	vars->chi_d = chi_d;
+
+	vars->u_m_last = master.u_m_last;
+	vars->chi_m_last = master.chi_m_last;
+
+	vars->cpe_method = master.cpe_method;
+	vars->prediction_method = master.prediction_method;
+	vars->guidance_method = master.guidance_method;
+
+	vars->T = master.T; vars->T_static = master.T_static; vars->dt = master.dt;
+
+	vars->d_safe = master.d_safe; vars->d_close = master.d_close; vars->d_init = master.d_init;
+
+	vars->K_coll = master.K_coll;
+
+	vars->phi_AH = master.phi_AH; vars->phi_OT = master.phi_OT; vars->phi_HO = master.phi_HO; vars->phi_CR = master.phi_CR;
+
+	vars->kappa = master.kappa; vars->kappa_TC = master.kappa_TC;
+
+	vars->K_u = master.K_u; vars->K_du = master.K_du;
+
+	vars->K_chi_strb = master.K_chi_strb;
+	vars->K_dchi_strb = master.K_dchi_strb;
+	vars->K_chi_port = master.K_chi_port;
+	vars->K_dchi_port = master.K_dchi_port;
+
+	vars->K_sgn = master.K_sgn;
+	vars->T_sgn = master.T_sgn;
+	
+	vars->G = master.G;
+
+	vars->obstacle_filter_on = master.obstacle_filter_on;
+
+	vars->T_lost_limit = master.T_lost_limit;
+	vars->T_tracked_limit = master.T_tracked_limit;
+
+	vars->waypoints = waypoints;
+
+	vars->ownship = *(master.ownship);
+
+	vars->cpe = *(master.cpe);
+
+	vars->trajectory = master.trajectory;
+
+	// Allocate standard C++/C arrays for the std::vector types
 	n_ps = new int[n_obst];
 
 	obstacle_colav_on = new bool[n_obst];
@@ -104,6 +135,7 @@ __host__ __device__ CB_Cost_Functor::CB_Cost_Functor(
 
 __host__ CB_Cost_Functor::~CB_Cost_Functor()
  {
+	 delete vars;
 	 delete[] n_ps;
 	 delete[] obstacle_colav_on;
 	 delete[] AH_0;
@@ -130,18 +162,19 @@ __device__ double CB_Cost_Functor::operator()(const int cb_index)
 	Eigen::MatrixXd P_c_i;
 
 	ownship.predict_trajectory(
-		trajectory, 
-		control_behaviours.col(cb_index), 
-		maneuver_times, 
-		u_d, 
-		chi_d, 
-		waypoints, 
-		prediction_method, 
-		guidance_method, 
-		T, 
-		dt);
+		vars->trajectory, 
+		vars->control_behaviours.col(cb_index), 
+		vars->maneuver_times, 
+		vars->u_d, 
+		vars->chi_d, 
+		vars->waypoints, 
+		vars->prediction_method, 
+		vars->guidance_method, 
+		vars->T, 
+		vars->dt);
 
-	for (int i = 0; i < n_obst; i++)
+	int n_samples = vars->trajectory.cols();
+	for (int i = 0; i < vars->n_obst; i++)
 	{
 		if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
 
@@ -166,24 +199,6 @@ __device__ double CB_Cost_Functor::operator()(const int cb_index)
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
-
-/****************************************************************************************
-*  Name     : assign_obstacle_vector
-*  Function :
-*  Author   :
-*  Modified :
-*****************************************************************************************/
-__host__ __device__ void CB_Cost_Functor::assign_obstacle_vector(
-	thrust::device_vector<Obstacle> &lhs,  								 // In/out: Resultant vector
-	const std::vector<Obstacle*> &rhs 									// In: Vector to assign
-	)
-{
-	lhs.resize(rhs.size());
-	for (int i = 0; i < rhs.size(); i++)
-	{
-		lhs[i] = Obstacle(*(rhs[i]));
-	}
-}
 
 /****************************************************************************************
 *  Name     : predict_trajectories_jointly
@@ -215,15 +230,15 @@ __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
 	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
 	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
 
-	is_ahead = v_A.dot(L_AB) > cos(phi_AH) * v_A.norm();
+	is_ahead = v_A.dot(L_AB) > cos(vars->phi_AH) * v_A.norm();
 
-	is_close = d_AB <= d_close;
+	is_close = d_AB <= vars->d_close;
 
-	A_is_overtaken = v_A.dot(v_B) > cos(phi_OT) * v_A.norm() * v_B.norm() 	&&
+	A_is_overtaken = v_A.dot(v_B) > cos(vars->phi_OT) * v_A.norm() * v_B.norm() 	&&
 					 v_A.norm() < v_B.norm()							  	&&
 					 v_A.norm() > 0.25;
 
-	B_is_overtaken = v_B.dot(v_A) > cos(phi_OT) * v_B.norm() * v_A.norm() 	&&
+	B_is_overtaken = v_B.dot(v_A) > cos(vars->phi_OT) * v_B.norm() * v_A.norm() 	&&
 					 v_B.norm() < v_A.norm()							  	&&
 					 v_B.norm() > 0.25;
 
@@ -233,14 +248,14 @@ __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
 				!A_is_overtaken) 											||
 				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
 				!B_is_overtaken)) 											&&
-				d_AB > d_safe;
+				d_AB > vars->d_safe;
 
-	is_head_on = v_A.dot(v_B) < - cos(phi_HO) * v_A.norm() * v_B.norm() 	&&
+	is_head_on = v_A.dot(v_B) < - cos(vars->phi_HO) * v_A.norm() * v_B.norm() 	&&
 				 v_A.norm() > 0.25											&&
 				 v_B.norm() > 0.25											&&
 				 is_ahead;
 
-	is_crossing = v_A.dot(v_B) < cos(phi_CR) * v_A.norm() * v_B.norm()  	&&
+	is_crossing = v_A.dot(v_B) < cos(vars->phi_CR) * v_A.norm() * v_B.norm()  	&&
 				  v_A.norm() > 0.25											&&
 				  v_B.norm() > 0.25											&&
 				  !is_head_on 												&&
@@ -360,17 +375,17 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 	const int i 											// In: Index of obstacle
 	)
 {
-	int n_samples = trajectory.cols();
+	int n_samples = vars->trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
 	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i].get_trajectories();
-	double d_safe_i = d_safe;
+	double d_safe_i = vars->d_safe;
 
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		cpe.initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
+		vars->cpe.initialize(vars->trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
 		for (int k = 0; k < n_samples; k++)
 		{
-			P_c_i(ps, k) = cpe.estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
+			P_c_i(ps, k) = vars->cpe.estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
 		}
 	}
 }
@@ -383,7 +398,8 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
-	const int i 													// In: Index of obstacle
+	const int i, 													// In: Index of obstacle
+	const int cb_index 												// In: Index of control behaviour
 	)
 {
 	double cost = 0, cost_ps, coll_cost;
@@ -393,7 +409,7 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 		max_cost_ps(ps) = 0;
 	}
 
-	int n_samples = trajectory.cols();
+	int n_samples = vars->trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
 	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i].get_trajectories();
 	std::vector<bool> mu_i = new_obstacles[i].get_COLREGS_violation_indicator();
@@ -404,9 +420,9 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	bool mu, trans;
 	for(int k = 0; k < n_samples; k++)
 	{
-		psi_0_p = trajectory(2, k); 
-		v_0_p(0) = trajectory(3, k); 
-		v_0_p(1) = trajectory(4, k); 
+		psi_0_p = vars->trajectory(2, k); 
+		v_0_p(0) = vars->trajectory(3, k); 
+		v_0_p(1) = vars->trajectory(4, k); 
 		v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
 
 		// Determine active course modification at sample k
@@ -414,24 +430,23 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 		{
 			if (M < n_M - 1)
 			{
-				if (k >= maneuver_times[M] && k < maneuver_times[M + 1])
+				if (k >= vars->maneuver_times[M] && k < vars->maneuver_times[M + 1])
 				{
-					chi_m = offset_sequence[2 * M + 1];
-					
+					chi_m = vars->control_behaviours.col(cb_index)[2 * M + 1];
 				}
 			}
 			else
 			{
-				if (k >= maneuver_times[M])
+				if (k >= vars->maneuver_times[M])
 				{
-					chi_m = offset_sequence[2 * M + 1];
+					chi_m = vars->control_behaviours.col(cb_index)[2 * M + 1];
 				}
 			}
 		}
 		
 		for(int ps = 0; ps < n_ps[i]; ps++)
 		{
-			L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
+			L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - vars->trajectory.block<2, 1>(0, k);
 			d_0i_p = L_0i_p.norm();
 			L_0i_p = L_0i_p.normalized();
 
@@ -515,7 +530,7 @@ __device__ double CB_Cost_Functor::calculate_collision_cost(
 	const Eigen::Vector2d &v_2 												// In: Velocity v_2
 	)
 {
-	return K_coll * (v_1 - v_2).norm();
+	return vars->K_coll * (v_1 - v_2).norm();
 }
 
 /****************************************************************************************
@@ -531,12 +546,12 @@ __device__ double CB_Cost_Functor::calculate_control_deviation_cost()
 	{
 		if (i == 0)
 		{
-			cost += K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_m_last) +
+			cost += vars->K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_m_last) +
 				    K_chi(offset_sequence[1])      + Delta_chi(offset_sequence[1], chi_m_last);
 		}
 		else
 		{
-			cost += K_u * (1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
+			cost += vars->K_u * (1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
 				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 		}
 	}
@@ -564,8 +579,8 @@ __device__ double CB_Cost_Functor::calculate_chattering_cost()
 				if ((offset_sequence(2 * M + 1) > 0 && offset_sequence(2 * M + 3) < 0) ||
 					(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) > 0))
 				{
-					delta_t = maneuver_times(M + 1) - maneuver_times(M);
-					cost += K_sgn * exp( - delta_t / T_sgn);
+					delta_t = vars->maneuver_times(M + 1) - vars->maneuver_times(M);
+					cost += vars->K_sgn * exp( - delta_t / vars->T_sgn);
 				}
 			}
 		}
