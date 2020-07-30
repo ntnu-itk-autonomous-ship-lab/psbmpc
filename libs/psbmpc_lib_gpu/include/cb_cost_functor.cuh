@@ -30,16 +30,14 @@
 #include "Eigen/Dense"
 #include <vector>
 
-// DEVICE methods
-// Functor for use in thrust transform
-class CB_Cost_Functor
+struct CB_Functor_Vars
 {
-private: 
-	int n_M, n_a;
-	int *n_ps;
+	int n_M, n_a, n_obst;
 
 	Eigen::VectorXd maneuver_times;
 	Eigen::MatrixXd control_behaviours;
+
+	double u_d, chi_d;
 
 	double u_m_last;
 	double chi_m_last;
@@ -62,15 +60,29 @@ private:
 	double G;
 	
 	bool obstacle_filter_on;
-	bool *obstacle_colav_on;
 
 	double T_lost_limit, T_tracked_limit;
+
+	Eigen::Matrix<double, 2, -1> waypoints;
 
 	Ownship ownship;
 
 	CPE cpe;
 
 	Eigen::Matrix<double, 6, -1> trajectory;
+};
+
+// DEVICE methods
+// Functor for use in thrust transform
+class CB_Cost_Functor
+{
+private: 
+	
+	int *n_ps;
+
+	CB_Functor_Vars *vars;
+
+	bool *obstacle_colav_on;
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
@@ -100,18 +112,18 @@ private:
 
 	__device__ void calculate_collision_probabilities(Eigen::MatrixXd &P_c_i, const int i);
 
-	__device__ double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const int i);
+	__device__ double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const int i, const int cb_index);
 
 	__device__ double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
 	// Methods dealing with control deviation cost
 	__device__ double calculate_control_deviation_cost();
 
-	__device__ double Delta_u(const double u_1, const double u_2) const 		{ return K_du * fabs(u_1 - u_2); }
+	__device__ double Delta_u(const double u_1, const double u_2) const 		{ return vars->K_du * fabs(u_1 - u_2); }
 
-	__device__ double K_chi(const double chi) const 							{ if (chi > 0) return K_chi_strb * pow(chi, 2); else return K_chi_port * pow(chi, 2); };
+	__device__ double K_chi(const double chi) const 							{ if (chi > 0) return vars->K_chi_strb * pow(chi, 2); else return vars->K_chi_port * pow(chi, 2); };
 
-	__device__ double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
+	__device__ double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return vars->K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return vars->K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
 	__device__ double calculate_chattering_cost();
