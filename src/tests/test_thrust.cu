@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : test_thrust.cpp
+*  File name : test_thrust.cu
 *
 *  Function  : Test file for the thrust library functionality
 *			   

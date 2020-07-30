@@ -123,9 +123,9 @@ private:
 
 	double find_time_of_passing(const int i);
 
-	void reset_control_behavior();
+	void reset_control_behaviour();
 
-	void increment_control_behavior();
+	void increment_control_behaviour();
 
 	void predict_trajectories_jointly();
 

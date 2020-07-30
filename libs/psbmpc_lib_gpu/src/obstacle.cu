@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : obstacle.cpp
+*  File name : obstacle.cu
 *
 *  Function  : Obstacle class functions. Modified version of the one created for SBMPC 
 *			   by Inger Berge Hagen and Giorgio D. Kwame Minde Kufoalor through the 
@@ -21,9 +21,9 @@
 *****************************************************************************************/
 
 #include <thrust/device_vector.h>
-#include "obstacle.h"
-#include "obstacle_sbmpc.h"
-#include "utilities.h"
+#include "obstacle.cuh"
+#include "obstacle_sbmpc.cuh"
+#include "utilities.cuh"
 #include "kf.h"
 #include "iostream" 
 

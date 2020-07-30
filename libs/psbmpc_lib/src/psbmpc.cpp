@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : psb_mpc.h
+*  File name : psbmpc.cpp
 *
 *  Function  : Class functions for Probabilistic Scenario-based Model Predictive Control
 *
@@ -67,6 +67,7 @@ PSBMPC::PSBMPC(const PSBMPC &psbmpc)
 	this->offset_sequence_counter = psbmpc.offset_sequence_counter;
 	this->offset_sequence = psbmpc.offset_sequence;
 	this->maneuver_times = psbmpc.maneuver_times;
+	this->course_changes = psbmpc.course_changes;
 
 	this->u_m_last = psbmpc.u_m_last;
 	this->chi_m_last = psbmpc.chi_m_last;
@@ -486,7 +487,7 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::VectorXd opt_offset_sequence(2 * n_M), cost_i(n_obst);
 	Eigen::MatrixXd P_c_i;
 	min_cost = 1e12;
-	reset_control_behavior();
+	reset_control_behaviour();
 	for (int cb = 0; cb < n_cbs; cb++)
 	{
 		cost = 0;
@@ -538,7 +539,7 @@ void PSBMPC::calculate_optimal_offsets(
 				HL_0(i) = cost_i(i) / cost_i.sum();
 			}	
 		}
-		increment_control_behavior();
+		increment_control_behaviour();
 	}
 
 	update_obstacle_status(obstacle_status, HL_0);
@@ -655,7 +656,7 @@ void PSBMPC::initialize_pars()
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
 	}
-	reset_control_behavior();
+	reset_control_behaviour();
 
 	u_m_last = 1;
 	chi_m_last = 0;
@@ -1108,7 +1109,7 @@ double PSBMPC::find_time_of_passing(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::reset_control_behavior()
+void PSBMPC::reset_control_behaviour()
 {
 	offset_sequence_counter.setZero();
 	for (int M = 0; M < n_M; M++)
@@ -1125,7 +1126,7 @@ void PSBMPC::reset_control_behavior()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::increment_control_behavior()
+void PSBMPC::increment_control_behaviour()
 {
 	for (int M = n_M - 1; M > -1; M--)
 	{

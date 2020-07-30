@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : utilities.h
+*  File name : utilities.cuh
 *
 *  Function  : Header file for all-purpose math functions which are used by multiple 
 *			   library files. Thus, do NOT add a function here if it belongs to one 
@@ -54,7 +54,7 @@ void save_matrix_to_file(const Eigen::MatrixXd &in);
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline void print_matrix(const Eigen::MatrixXd &in)
+inline void print_matrix(const Eigen::MatrixXd &in)
 {
 	int n_rows = in.rows();
 	int n_cols = in.cols();
@@ -169,7 +169,7 @@ __host__ __device__ inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3
 			v_temp(2) = v(2);
 			break;
 		}
-		default : std::cout << "Invalid axis specified!" << std::endl;
+		default : return v_temp.setZero();
 	}
 	return v_temp;
 }

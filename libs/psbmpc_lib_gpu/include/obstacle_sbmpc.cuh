@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : obstacle_sbmpc.h
+*  File name : obstacle_sbmpc.cuh
 *
 *  Function  : Header file for Scenario-based Model Predictive Control used by obstacles
 *			   in the PSB-MPC predictions.

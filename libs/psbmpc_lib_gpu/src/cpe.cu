@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : cpe.cpp
+*  File name : cpe.cu
 *
 *  Function  : Class functions for the collision probability estimator
 *
@@ -19,8 +19,8 @@
 *****************************************************************************************/
 
 #include <thrust/device_vector.h>
-#include "cpe.h"
-#include "utilities.h"
+#include "cpe.cuh"
+#include "utilities.cuh"
 #include <iostream>
 
 #ifndef M_PI

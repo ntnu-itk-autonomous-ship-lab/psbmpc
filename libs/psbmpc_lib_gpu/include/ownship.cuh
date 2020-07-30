@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : ownship.h
+*  File name : ownship.cuh
 *
 *  Function  : Header file for the ownship class. Modified and extended version of the
 *			   "Ship_Model" class created for SBMPC by Inger Berge Hagen and Giorgio D. 
@@ -109,7 +109,7 @@ public:
 
 	__host__ __device__ Ownship();
 
-	__host__ __device__ void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
+	void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 
 	__host__ __device__ void update_guidance_references(
 		double &u_d, 

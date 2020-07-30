@@ -2,9 +2,9 @@
 *
 *  File name : obstacle.h
 *
-*  Function  : Header file for the obstacle class. Modified version of the one created
-*			   for SBMPC by Inger Berge Hagen and Giorgio D. Kwame Minde Kufoalor
-*			   through the Autosea project.
+*  Function  : Header file for the obstacle class. Brand new and modified version of 
+*			   the one created for SBMPC by Inger Berge Hagen and Giorgio D. Kwame 
+*			   Minde Kufoalor through the Autosea project.
 *  
 *	           ---------------------
 *

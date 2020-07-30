@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : prediction_obstacle.h
+*  File name : prediction_obstacle.cuh
 *
 *  Function  : Header file for the predicion obstacle class. Simpler variant of the 
 *			   obstacle class used in the PSB-MPC, specifically made for the PSB-MPC

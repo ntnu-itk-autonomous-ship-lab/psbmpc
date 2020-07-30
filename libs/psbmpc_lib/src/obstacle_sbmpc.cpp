@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : psb_mpc.h
+*  File name : obstacle_sbmpc.cpp
 *
 *  Function  : Class functions for Probabilistic Scenario-based Model Predictive Control
 *
