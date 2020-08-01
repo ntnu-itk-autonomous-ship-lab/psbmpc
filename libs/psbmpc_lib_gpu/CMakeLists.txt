@@ -15,7 +15,7 @@ add_library(psbmpc_lib_gpu STATIC
 	src/mrou.cpp 
 	src/utilities.cpp)
 
-message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
+set_target_properties(psbmpc_lib_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 target_include_directories(psbmpc_lib_gpu PUBLIC 
 	include
@@ -24,8 +24,12 @@ target_include_directories(psbmpc_lib_gpu PUBLIC
 	${CUDA_INCLUDE_DIRS}
 	)
 
+message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
 message("CUDA_LIBARIES: ${CUDA_LIBRARIES}")
 
-target_link_libraries(psbmpc_lib_gpu ${Matlab_LIBRARIES} ${CUDA_LIBRARIES})
+target_compile_options(psbmpc_lib_gpu
+	PUBLIC
+	$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -fPIC -Wno-pedantic -gencode arch=compute_61,code=sm_61 -dc >
+)
 
-target_compile_features(psbmpc_lib_gpu PUBLIC cxx_std_11)
+target_link_libraries(psbmpc_lib_gpu ${Matlab_LIBRARIES} ${CUDA_LIBRARIES})
