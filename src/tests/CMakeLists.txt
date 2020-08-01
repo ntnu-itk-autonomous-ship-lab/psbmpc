@@ -14,12 +14,6 @@ target_include_directories(tester PUBLIC
 	${CMAKE_SOURCE_DIR}/libs
 	)
 
-
-
 target_link_libraries(tester psbmpc_lib_gpu)
 
 target_compile_features(tester PUBLIC cxx_std_11)
-
-target_compile_options(tester 
-	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Wno-pedantic -gencode arch=compute_61, code=sm_61 -dc>
-	)

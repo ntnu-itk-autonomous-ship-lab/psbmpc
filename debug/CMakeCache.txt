@@ -24,9 +24,6 @@ CMAKE_AR:FILEPATH=/usr/bin/ar
 // MinSizeRel ...
 CMAKE_BUILD_TYPE:STRING=debug
 
-//No help, variable specified on the command line.
-CMAKE_BUILD_Type:UNINITIALIZED=debug
-
 //Enable/Disable color output during build.
 CMAKE_COLOR_MAKEFILE:BOOL=ON
 
@@ -59,69 +56,41 @@ CMAKE_CXX_COMPILER_AR:FILEPATH=/usr/bin/gcc-ar-7
 // for the GCC compiler
 CMAKE_CXX_COMPILER_RANLIB:FILEPATH=/usr/bin/gcc-ranlib-7
 
-//Flags used by the compiler during all build types.
+//Flags used by the CXX compiler during all build types.
 CMAKE_CXX_FLAGS:STRING=
 
-//Flags used by the compiler during debug builds.
+//Flags used by the CXX compiler during DEBUG builds.
 CMAKE_CXX_FLAGS_DEBUG:STRING=-g
 
-//Flags used by the compiler during release builds for minimum
-// size.
+//Flags used by the CXX compiler during MINSIZEREL builds.
 CMAKE_CXX_FLAGS_MINSIZEREL:STRING=-Os -DNDEBUG
 
-//Flags used by the compiler during release builds.
+//Flags used by the CXX compiler during RELEASE builds.
 CMAKE_CXX_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
 
-//Flags used by the compiler during release builds with debug info.
+//Flags used by the CXX compiler during RELWITHDEBINFO builds.
 CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
-
-//C compiler
-CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc
-
-//A wrapper around 'ar' adding the appropriate '--plugin' option
-// for the GCC compiler
-CMAKE_C_COMPILER_AR:FILEPATH=/usr/bin/gcc-ar-7
-
-//A wrapper around 'ranlib' adding the appropriate '--plugin' option
-// for the GCC compiler
-CMAKE_C_COMPILER_RANLIB:FILEPATH=/usr/bin/gcc-ranlib-7
-
-//Flags used by the compiler during all build types.
-CMAKE_C_FLAGS:STRING=
-
-//Flags used by the compiler during debug builds.
-CMAKE_C_FLAGS_DEBUG:STRING=-g
-
-//Flags used by the compiler during release builds for minimum
-// size.
-CMAKE_C_FLAGS_MINSIZEREL:STRING=-Os -DNDEBUG
-
-//Flags used by the compiler during release builds.
-CMAKE_C_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
-
-//Flags used by the compiler during release builds with debug info.
-CMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
 //Path to a program.
 CMAKE_DLLTOOL:FILEPATH=CMAKE_DLLTOOL-NOTFOUND
 
-//Flags used by the linker.
+//Flags used by the linker during all build types.
 CMAKE_EXE_LINKER_FLAGS:STRING=
 
-//Flags used by the linker during debug builds.
+//Flags used by the linker during DEBUG builds.
 CMAKE_EXE_LINKER_FLAGS_DEBUG:STRING=
 
-//Flags used by the linker during release minsize builds.
+//Flags used by the linker during MINSIZEREL builds.
 CMAKE_EXE_LINKER_FLAGS_MINSIZEREL:STRING=
 
-//Flags used by the linker during release builds.
+//Flags used by the linker during RELEASE builds.
 CMAKE_EXE_LINKER_FLAGS_RELEASE:STRING=
 
-//Flags used by the linker during Release with Debug Info builds.
+//Flags used by the linker during RELWITHDEBINFO builds.
 CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 
 //Enable/Disable output of compile commands during generation.
-CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=OFF
+CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=
 
 //Install path prefix, prepended onto install directories.
 CMAKE_INSTALL_PREFIX:PATH=/usr/local
@@ -132,19 +101,24 @@ CMAKE_LINKER:FILEPATH=/usr/bin/ld
 //Path to a program.
 CMAKE_MAKE_PROGRAM:FILEPATH=/usr/bin/make
 
-//Flags used by the linker during the creation of modules.
+//Flags used by the linker during the creation of modules during
+// all build types.
 CMAKE_MODULE_LINKER_FLAGS:STRING=
 
-//Flags used by the linker during debug builds.
+//Flags used by the linker during the creation of modules during
+// DEBUG builds.
 CMAKE_MODULE_LINKER_FLAGS_DEBUG:STRING=
 
-//Flags used by the linker during release minsize builds.
+//Flags used by the linker during the creation of modules during
+// MINSIZEREL builds.
 CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL:STRING=
 
-//Flags used by the linker during release builds.
+//Flags used by the linker during the creation of modules during
+// RELEASE builds.
 CMAKE_MODULE_LINKER_FLAGS_RELEASE:STRING=
 
-//Flags used by the linker during Release with Debug Info builds.
+//Flags used by the linker during the creation of modules during
+// RELWITHDEBINFO builds.
 CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 
 //Path to a program.
@@ -171,19 +145,24 @@ CMAKE_RANLIB:FILEPATH=/usr/bin/ranlib
 //Path to a program.
 CMAKE_READELF:FILEPATH=/usr/bin/readelf
 
-//Flags used by the linker during the creation of dll's.
+//Flags used by the linker during the creation of shared libraries
+// during all build types.
 CMAKE_SHARED_LINKER_FLAGS:STRING=
 
-//Flags used by the linker during debug builds.
+//Flags used by the linker during the creation of shared libraries
+// during DEBUG builds.
 CMAKE_SHARED_LINKER_FLAGS_DEBUG:STRING=
 
-//Flags used by the linker during release minsize builds.
+//Flags used by the linker during the creation of shared libraries
+// during MINSIZEREL builds.
 CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL:STRING=
 
-//Flags used by the linker during release builds.
+//Flags used by the linker during the creation of shared libraries
+// during RELEASE builds.
 CMAKE_SHARED_LINKER_FLAGS_RELEASE:STRING=
 
-//Flags used by the linker during Release with Debug Info builds.
+//Flags used by the linker during the creation of shared libraries
+// during RELWITHDEBINFO builds.
 CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 
 //If set, runtime paths are not added when installing shared libraries,
@@ -193,19 +172,24 @@ CMAKE_SKIP_INSTALL_RPATH:BOOL=NO
 //If set, runtime paths are not added when using shared libraries.
 CMAKE_SKIP_RPATH:BOOL=NO
 
-//Flags used by the linker during the creation of static libraries.
+//Flags used by the linker during the creation of static libraries
+// during all build types.
 CMAKE_STATIC_LINKER_FLAGS:STRING=
 
-//Flags used by the linker during debug builds.
+//Flags used by the linker during the creation of static libraries
+// during DEBUG builds.
 CMAKE_STATIC_LINKER_FLAGS_DEBUG:STRING=
 
-//Flags used by the linker during release minsize builds.
+//Flags used by the linker during the creation of static libraries
+// during MINSIZEREL builds.
 CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL:STRING=
 
-//Flags used by the linker during release builds.
+//Flags used by the linker during the creation of static libraries
+// during RELEASE builds.
 CMAKE_STATIC_LINKER_FLAGS_RELEASE:STRING=
 
-//Flags used by the linker during Release with Debug Info builds.
+//Flags used by the linker during the creation of static libraries
+// during RELWITHDEBINFO builds.
 CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 
 //Path to a program.
@@ -244,7 +228,7 @@ CUDA_GENERATED_OUTPUT_DIR:PATH=
 CUDA_HOST_COMPILATION_CPP:BOOL=ON
 
 //Host side compiler used by NVCC
-CUDA_HOST_COMPILER:FILEPATH=/usr/bin/cc
+CUDA_HOST_COMPILER:FILEPATH=
 
 //Path to a program.
 CUDA_NVCC_EXECUTABLE:FILEPATH=/usr/local/cuda-10.2/bin/nvcc
@@ -374,9 +358,6 @@ Matlab_ENG_LIBRARY:FILEPATH=/usr/local/MATLAB/R2019a/bin/glnxa64/libeng.so
 //Path to a file.
 Matlab_INCLUDE_DIRS:PATH=/usr/local/MATLAB/R2019a/extern/include
 
-//Path to a library.
-Matlab_MAT_LIBRARY:FILEPATH=/usr/local/MATLAB/R2019a/bin/glnxa64/libmat.so
-
 //Extensions for the mex targets (automatically given by Matlab)
 Matlab_MEX_EXTENSION:STRING=mexa64
 
@@ -388,24 +369,6 @@ Matlab_MX_LIBRARY:FILEPATH=/usr/local/MATLAB/R2019a/bin/glnxa64/libmx.so
 
 //Matlab installation root path
 Matlab_ROOT_DIR:PATH=/usr/local/MATLAB/R2019a
-
-//Path to a file.
-PYTHON_INCLUDE_DIR:PATH=/usr/include/python3.6m
-
-//Path to a library.
-PYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.6m.so
-
-//Path to a library.
-PYTHON_LIBRARY_DEBUG:FILEPATH=PYTHON_LIBRARY_DEBUG-NOTFOUND
-
-//The directory containing a CMake configuration file for Thrust.
-Thrust_DIR:PATH=Thrust_DIR-NOTFOUND
-
-//Dependencies for the target
-psbmpc_lib_LIB_DEPENDS:STATIC=general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmex.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmx.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libeng.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmat.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libMatlabDataArray.so;general;/usr/local/MATLAB/R2019a/extern/bin/glnxa64/libMatlabEngine.so;general;/usr/local/cuda-10.2/lib64/libcudart_static.a;general;dl;general;/usr/lib/x86_64-linux-gnu/librt.so;
-
-//Dependencies for the target
-psbmpc_lib_gpu_LIB_DEPENDS:STATIC=general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmex.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmx.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libeng.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libmat.so;general;/usr/local/MATLAB/R2019a/bin/glnxa64/libMatlabDataArray.so;general;/usr/local/MATLAB/R2019a/extern/bin/glnxa64/libMatlabEngine.so;general;/usr/local/cuda-10.2/lib64/libcudart_static.a;general;dl;general;/usr/lib/x86_64-linux-gnu/librt.so;
 
 //Value Computed by CMake
 psbmpc_test_BINARY_DIR:STATIC=/home/trymte/Desktop/cybercolav_cxx/debug
@@ -466,22 +429,6 @@ CMAKE_CXX_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
 CMAKE_CXX_FLAGS_RELEASE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_CXX_FLAGS_RELWITHDEBINFO
 CMAKE_CXX_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_COMPILER
-CMAKE_C_COMPILER-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_COMPILER_AR
-CMAKE_C_COMPILER_AR-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_COMPILER_RANLIB
-CMAKE_C_COMPILER_RANLIB-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_FLAGS
-CMAKE_C_FLAGS-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_FLAGS_DEBUG
-CMAKE_C_FLAGS_DEBUG-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_FLAGS_MINSIZEREL
-CMAKE_C_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_FLAGS_RELEASE
-CMAKE_C_FLAGS_RELEASE-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CMAKE_C_FLAGS_RELWITHDEBINFO
-CMAKE_C_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_DLLTOOL
 CMAKE_DLLTOOL-ADVANCED:INTERNAL=1
 //Executable file format
@@ -682,8 +629,6 @@ CUDA_run_nvcc:INTERNAL=/usr/local/share/cmake-3.17/Modules/FindCUDA/run_nvcc.cma
 FIND_PACKAGE_MESSAGE_DETAILS_CUDA:INTERNAL=[/usr/local/cuda-10.2][/usr/local/cuda-10.2/bin/nvcc][/usr/local/cuda-10.2/include][/usr/local/cuda-10.2/lib64/libcudart_static.a][v10.2()]
 //Details about finding Matlab
 FIND_PACKAGE_MESSAGE_DETAILS_Matlab:INTERNAL=[/usr/local/MATLAB/R2019a/extern/include][/usr/local/MATLAB/R2019a/bin/glnxa64/libmex.so][mexa64][/usr/local/MATLAB/R2019a][/usr/local/MATLAB/R2019a/bin/glnxa64/libmx.so][/usr/local/MATLAB/R2019a/extern/bin/glnxa64/libMatlabEngine.so][/usr/local/MATLAB/R2019a/bin/glnxa64/libMatlabDataArray.so][cfound components: MX_LIBRARY ENG_LIBRARY ][v9.6()]
-//Details about finding PythonLibs
-FIND_PACKAGE_MESSAGE_DETAILS_PythonLibs:INTERNAL=[/usr/lib/x86_64-linux-gnu/libpython3.6m.so][/usr/include/python3.6m][v3.6.9()]
 //Details about finding Threads
 FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
 //ADVANCED property for variable: Matlab_DATAARRAY_LIBRARY
@@ -694,8 +639,6 @@ Matlab_ENGINE_LIBRARY-ADVANCED:INTERNAL=1
 Matlab_ENG_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: Matlab_INCLUDE_DIRS
 Matlab_INCLUDE_DIRS-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: Matlab_MAT_LIBRARY
-Matlab_MAT_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: Matlab_MEX_EXTENSION
 Matlab_MEX_EXTENSION-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: Matlab_MEX_LIBRARY
@@ -708,10 +651,4 @@ Matlab_PROG_VERSION_STRING_AUTO_DETECT:INTERNAL=/usr/local/MATLAB/R2019a/bin/mat
 Matlab_ROOT_DIR_LAST_CACHED:INTERNAL=/usr/local/MATLAB/R2019a
 //Matlab version (automatically determined)
 Matlab_VERSION_STRING_INTERNAL:INTERNAL=9.6
-//ADVANCED property for variable: PYTHON_INCLUDE_DIR
-PYTHON_INCLUDE_DIR-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: PYTHON_LIBRARY
-PYTHON_LIBRARY-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: PYTHON_LIBRARY_DEBUG
-PYTHON_LIBRARY_DEBUG-ADVANCED:INTERNAL=1
 
