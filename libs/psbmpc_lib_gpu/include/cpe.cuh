@@ -144,6 +144,8 @@ private:
 
 public:
 
+	__host__ __device__ CPE() {};
+
 	__host__ __device__ CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const int n_obst, const double dt);
 
 	__host__ __device__ CPE(const CPE &cpe);

@@ -22,8 +22,7 @@
 #include "utilities.cuh"
 #include "psbmpc.h"
 #include "cb_cost_functor.cuh"
-#include "iostream"
-#include "engine.h"
+#include <math.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -34,15 +33,16 @@
 
 /****************************************************************************************
 *  Name     : CB_Cost_Functor
-*  Function : Class constructor, initializes parameters and variables
+*  Function : Class constructors, initializes parameters and variables.
 *  Author   : 
 *  Modified :
-*****************************************************************************************/
+****************************************************************************************/
 __host__ __device__ CB_Cost_Functor::CB_Cost_Functor(
 	const PSBMPC &master, 												// In: Parent class
 	const double u_d,  													// In: Surge reference
 	const double chi_d, 												// In: Course reference
-	const Eigen::Matrix<double, 2, -1> &waypoints 						// In: Waypoints to follow
+	const Eigen::Matrix<double, 2, -1> &waypoints, 						// In: Waypoints to follow
+	const Eigen::Matrix<double, 4, -1> &static_obstacles				// In: Static obstacle information
 	) 
 {	
 	int n_obst = master.new_obstacles.size();
@@ -100,6 +100,8 @@ __host__ __device__ CB_Cost_Functor::CB_Cost_Functor(
 
 	vars->trajectory = master.trajectory;
 
+	vars->static_obstacles = static_obstacles;
+
 	// Allocate standard C++/C arrays for the std::vector types
 	n_ps = new int[n_obst];
 
@@ -131,12 +133,14 @@ __host__ __device__ CB_Cost_Functor::CB_Cost_Functor(
 		old_obstacles[i] = *(master.old_obstacles[i]);
 		new_obstacles[i] = *(master.new_obstacles[i]);
 	}
+
+	
 }
 
 __host__ CB_Cost_Functor::~CB_Cost_Functor()
  {
-	 delete vars;
 	 delete[] n_ps;
+	 delete vars;
 	 delete[] obstacle_colav_on;
 	 delete[] AH_0;
 	 delete[] S_TC_0;
@@ -158,12 +162,14 @@ __host__ CB_Cost_Functor::~CB_Cost_Functor()
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::operator()(const int cb_index)
 {
+	int n_samples = vars->trajectory.cols();
 	double cost = 0;
 	Eigen::MatrixXd P_c_i;
+	Eigen::VectorXd cost_i(vars->n_obst), offset_sequence = vars->control_behaviours.col(cb_index);
 
-	ownship.predict_trajectory(
+	vars->ownship.predict_trajectory(
 		vars->trajectory, 
-		vars->control_behaviours.col(cb_index), 
+		offset_sequence, 
 		vars->maneuver_times, 
 		vars->u_d, 
 		vars->chi_d, 
@@ -173,7 +179,7 @@ __device__ double CB_Cost_Functor::operator()(const int cb_index)
 		vars->T, 
 		vars->dt);
 
-	int n_samples = vars->trajectory.cols();
+	
 	for (int i = 0; i < vars->n_obst; i++)
 	{
 		if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
@@ -181,16 +187,16 @@ __device__ double CB_Cost_Functor::operator()(const int cb_index)
 		P_c_i.resize(n_ps[i], n_samples);
 		calculate_collision_probabilities(P_c_i, i); 
 
-		cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
+		cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i, offset_sequence);
 	}
 
 	cost += cost_i.maxCoeff();
 
-	cost += calculate_grounding_cost(static_obstacles);
+	cost += calculate_grounding_cost();
 
-	cost += calculate_control_deviation_cost();
+	cost += calculate_control_deviation_cost(offset_sequence);
 
-	cost += calculate_chattering_cost();
+	cost += calculate_chattering_cost(offset_sequence);
 	
 	return cost;
 }
@@ -377,15 +383,15 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 {
 	int n_samples = vars->trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
-	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i].get_trajectories();
 	double d_safe_i = vars->d_safe;
 
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
+		Eigen::MatrixXd xs_i_p = new_obstacles[i].get_ps_trajectory(ps);
 		vars->cpe.initialize(vars->trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
 		for (int k = 0; k < n_samples; k++)
 		{
-			P_c_i(ps, k) = vars->cpe.estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
+			P_c_i(ps, k) = vars->cpe.estimate(vars->trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
 		}
 	}
 }
@@ -399,19 +405,20 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
 	const int i, 													// In: Index of obstacle
-	const int cb_index 												// In: Index of control behaviour
+	const Eigen::VectorXd &offset_sequence 							// In: Control behaviour currently followed
 	)
 {
 	double cost = 0, cost_ps, coll_cost;
 	Eigen::VectorXd max_cost_ps(n_ps[i]);
+	Eigen::MatrixXd *xs_i_p[n_ps[i]];
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
+		xs_i_p[ps] = new_obstacles[i].get_ps_trajectory(ps);
 		max_cost_ps(ps) = 0;
 	}
 
 	int n_samples = vars->trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
-	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i].get_trajectories();
 	std::vector<bool> mu_i = new_obstacles[i].get_COLREGS_violation_indicator();
 	double Pr_CC_i = new_obstacles[i].get_a_priori_CC_probability();
 
@@ -426,20 +433,20 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 		v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
 
 		// Determine active course modification at sample k
-		for (int M = 0; M < n_M; M++)
+		for (int M = 0; M < vars->n_M; M++)
 		{
-			if (M < n_M - 1)
+			if (M < vars->n_M - 1)
 			{
 				if (k >= vars->maneuver_times[M] && k < vars->maneuver_times[M + 1])
 				{
-					chi_m = vars->control_behaviours.col(cb_index)[2 * M + 1];
+					chi_m = offset_sequence[2 * M + 1];
 				}
 			}
 			else
 			{
 				if (k >= vars->maneuver_times[M])
 				{
-					chi_m = vars->control_behaviours.col(cb_index)[2 * M + 1];
+					chi_m = offset_sequence[2 * M + 1];
 				}
 			}
 		}
@@ -460,7 +467,7 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 
 			trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, i, chi_m);
 
-			cost_ps = coll_cost * P_c_i(ps, k) + kappa * mu  + 0 * kappa_TC * trans;
+			cost_ps = coll_cost * P_c_i(ps, k) + vars->kappa * mu  + 0 * vars->kappa_TC * trans;
 
 			// Maximize wrt time
 			if (cost_ps > max_cost_ps(ps))
@@ -539,15 +546,17 @@ __device__ double CB_Cost_Functor::calculate_collision_cost(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double CB_Cost_Functor::calculate_control_deviation_cost()
+__device__ double CB_Cost_Functor::calculate_control_deviation_cost(
+	const Eigen::VectorXd &offset_sequence 								// In: Control behaviour currently followed
+	)
 {
 	double cost = 0;
-	for (int i = 0; i < n_M; i++)
+	for (int i = 0; i < vars->n_M; i++)
 	{
 		if (i == 0)
 		{
-			cost += vars->K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_m_last) +
-				    K_chi(offset_sequence[1])      + Delta_chi(offset_sequence[1], chi_m_last);
+			cost += vars->K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], vars->u_m_last) +
+				    K_chi(offset_sequence[1])      + Delta_chi(offset_sequence[1], vars->chi_m_last);
 		}
 		else
 		{
@@ -555,7 +564,7 @@ __device__ double CB_Cost_Functor::calculate_control_deviation_cost()
 				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 		}
 	}
-	return cost / n_M;
+	return cost / vars->n_M;
 }
 
 /****************************************************************************************
@@ -565,23 +574,22 @@ __device__ double CB_Cost_Functor::calculate_control_deviation_cost()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double CB_Cost_Functor::calculate_chattering_cost()
+__device__ double CB_Cost_Functor::calculate_chattering_cost(
+	const Eigen::VectorXd &offset_sequence 								// In: Control behaviour currently followed
+)
 {
 	double cost = 0;
 
-	if (n_M > 1) 
+	if (vars->n_M > 1) 
 	{
 		double delta_t = 0;
-		for(int M = 0; M < n_M; M++)
+		for(int M = 0; M < vars->n_M - 1; M++)
 		{
-			if (M < n_M - 1)
+			if ((offset_sequence(2 * M + 1) > 0 && offset_sequence(2 * M + 3) < 0) ||
+				(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) > 0))
 			{
-				if ((offset_sequence(2 * M + 1) > 0 && offset_sequence(2 * M + 3) < 0) ||
-					(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) > 0))
-				{
-					delta_t = vars->maneuver_times(M + 1) - vars->maneuver_times(M);
-					cost += vars->K_sgn * exp( - delta_t / vars->T_sgn);
-				}
+				delta_t = vars->maneuver_times(M + 1) - vars->maneuver_times(M);
+				cost += vars->K_sgn * exp( - delta_t / vars->T_sgn);
 			}
 		}
 	}
@@ -594,9 +602,7 @@ __device__ double CB_Cost_Functor::calculate_chattering_cost()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ double CB_Cost_Functor::calculate_grounding_cost(
-	const Eigen::Matrix<double, 4, -1>& static_obstacles						// In: Static obstacle information
-	)
+__device__ double CB_Cost_Functor::calculate_grounding_cost()
 {
 	double cost = 0;
 
@@ -635,8 +641,8 @@ __device__ bool CB_Cost_Functor::determine_if_on_segment(
 	const Eigen::Vector2d &r
 	)
 {
-    if (q[0] <= std::max(p[0], r[0]) && q[0] >= std::min(p[0], r[0]) &&
-        q[1] <= std::max(p[1], r[1]) && q[1] >= std::min(p[1], r[1]))
+    if (q[0] <= max(p[0], r[0]) && q[0] >= min(p[0], r[0]) &&
+        q[1] <= max(p[1], r[1]) && q[1] >= min(p[1], r[1]))
         return true;
     return false;
 }
@@ -741,5 +747,5 @@ __device__ double CB_Cost_Functor::distance_to_static_obstacle(
     double d2line = distance_from_point_to_line(p, v_1, v_2);
 
     if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line)) return d2line;
-    else return std::min((v_1-p).norm(),(v_2-p).norm());
+    else return min((v_1-p).norm(),(v_2-p).norm());
 }
