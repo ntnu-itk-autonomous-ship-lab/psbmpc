@@ -31,6 +31,8 @@
 #include "Eigen/Dense"
 #include <vector>
 
+class CB_Cost_Functor;
+
 enum ST 
 {
 	A, 														// Non-COLREGS situation	(ST = Ø)
@@ -102,6 +104,10 @@ private:
 
 	std::vector<Obstacle*> old_obstacles;
 	std::vector<Obstacle*> new_obstacles;
+
+	// Thrust functor
+	friend class CB_Cost_Functor;
+	CB_Cost_Functor *op;
 
 	void map_offset_sequences();
 

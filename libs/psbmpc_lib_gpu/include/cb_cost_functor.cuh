@@ -23,7 +23,6 @@
 
 #include <thrust/device_vector.h>
 #include "psbmpc.h"
-#include "psbmpc_index.h"
 #include "ownship.cuh"
 #include "obstacle.cuh"
 #include "cpe.cuh"
@@ -70,6 +69,10 @@ struct CB_Functor_Vars
 	CPE cpe;
 
 	Eigen::Matrix<double, 6, -1> trajectory;
+
+	Eigen::Matrix<double, 4, -1> static_obstacles;
+
+	__host__ __device__ CB_Functor_Vars() {};
 };
 
 // DEVICE methods
@@ -91,7 +94,6 @@ private:
 	Obstacle *old_obstacles;
 	Obstacle *new_obstacles;
 
-
 	__device__ void predict_trajectories_jointly();
 
 	__device__ bool determine_COLREGS_violation(
@@ -112,12 +114,12 @@ private:
 
 	__device__ void calculate_collision_probabilities(Eigen::MatrixXd &P_c_i, const int i);
 
-	__device__ double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const int i, const int cb_index);
+	__device__ double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const int i, const Eigen::VectorXd &offset_sequence);
 
 	__device__ double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
 	// Methods dealing with control deviation cost
-	__device__ double calculate_control_deviation_cost();
+	__device__ double calculate_control_deviation_cost(const Eigen::VectorXd &offset_sequence);
 
 	__device__ double Delta_u(const double u_1, const double u_2) const 		{ return vars->K_du * fabs(u_1 - u_2); }
 
@@ -126,10 +128,10 @@ private:
 	__device__ double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return vars->K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return vars->K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
-	__device__ double calculate_chattering_cost();
+	__device__ double calculate_chattering_cost(const Eigen::VectorXd &offset_sequence);
 
 	// Methods dealing with geographical constraints
-	__device__ double calculate_grounding_cost(const Eigen::Matrix<double, 4, -1>& static_obstacles);
+	__device__ double calculate_grounding_cost();
 
 	__device__ int find_triplet_orientation(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);                           
 
@@ -144,8 +146,14 @@ private:
 	__device__ double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
 public: 
+	//__host__ CB_Cost_Functor();
 
-	__host__ CB_Cost_Functor(const PSBMPC &master, const double u_d, const double chi_d, const Eigen::MatrixXd &waypoints);
+	__host__ CB_Cost_Functor(
+		const PSBMPC &master, 
+		const double u_d, 
+		const double chi_d, 
+		const Eigen::Matrix<double, 2, -1> &waypoints, 
+		const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
 	__host__ __device__ ~CB_Cost_Functor();
 	

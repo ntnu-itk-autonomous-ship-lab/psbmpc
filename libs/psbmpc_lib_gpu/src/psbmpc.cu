@@ -490,7 +490,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// Cost evaluation
 	//===============================================================================================================
-	CB_Cost_Functor op(*this, u_d, chi_d, waypoints);
+	op = new CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles);
 
 	// Allocate device vector for computing CB costs
 	thrust::device_vector<double> cb_costs(n_cbs);
@@ -499,7 +499,7 @@ void PSBMPC::calculate_optimal_offsets(
 	thrust::counting_iterator<unsigned int> index_iter(0);
 	
 	// Perform the calculations on the GPU
-    thrust::transform(thrust::device, index_iter, index_iter + n_cbs, cb_costs.begin(), op);
+    thrust::transform(thrust::device, index_iter, index_iter + n_cbs, cb_costs.begin(), *op);
 
 	// Extract minimum cost
 	thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
@@ -513,6 +513,9 @@ void PSBMPC::calculate_optimal_offsets(
 	assign_optimal_trajectory(predicted_trajectory);
 
 	HL_0.setZero();
+
+	// Free space for cost functor
+	delete op;
 	//===============================================================================================================
 
 	//===============================================================================================================

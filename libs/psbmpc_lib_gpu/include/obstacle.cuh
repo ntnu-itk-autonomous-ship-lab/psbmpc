@@ -91,6 +91,8 @@ public:
 
 	Obstacle_SBMPC *sbmpc;
 
+	__host__ __device__ Obstacle() {};
+
 	__host__ __device__ Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const Eigen::VectorXd &P, 
 			 const Eigen::VectorXd &Pr_a, 
@@ -132,7 +134,9 @@ public:
 	// Trajectory prediction related methods
 	__host__ __device__ void resize_trajectories(const int n_samples);
 
-	__host__ __device__ std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; };
+	__host__ std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; };
+
+	__device__ Eigen::MatrixXd get_ps_trajectory(const int ps_index) const { return xs_p[ps]; };
 
 	__host__ __device__ Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
 
