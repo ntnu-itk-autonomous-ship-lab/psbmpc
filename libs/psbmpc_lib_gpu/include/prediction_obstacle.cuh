@@ -2,8 +2,8 @@
 *
 *  File name : prediction_obstacle.cuh
 *
-*  Function  : Header file for the predicion obstacle class. Simpler variant of the 
-*			   obstacle class used in the PSB-MPC, specifically made for the PSB-MPC
+*  Function  : Header file for the predicion obstacle class. Derived simpler variant of  
+*			   the obstacle class used in the PSB-MPC, specifically made for the PSB-MPC
 *			   predictions with active obstacle COLAV systems.
 *  
 *	           ---------------------
@@ -24,27 +24,16 @@
 #define _PREDICTION_OBSTACLE_H_
 
 #include "Eigen/Dense"
+#include "obstacle.cuh"
 #include <thrust/device_vector.h>
 
 class Obstacle_SBMPC;
 
-class Prediction_Obstacle 
+class Prediction_Obstacle : public Obstacle
 {
 private:
 
-	int ID;
-
-	bool colav_on;
-
-	// Obstacle dimension quantifiers, length (l) and width (w)
-	double l, w;
-
-	double x_offset, y_offset;
-
 	Eigen::Matrix4d A;
-
-	// State at the current predicted time
-	Eigen::Vector4d xs_0;
 
 	// Predicted state trajectory
 	Eigen::MatrixXd xs_p;
@@ -53,18 +42,15 @@ public:
 
 	Obstacle_SBMPC *sbmpc;
 
-	__device__ Prediction_Obstacle(const Eigen::VectorXd &xs_aug, 
+	__device__ Prediction_Obstacle(const Eigen::VectorXd &xs_aug,
+			 const Eigen::VectorXd &P,	 
 			 const bool colav_on, 
 			 const double T, 
 			 const double dt);
 
 	__device__ Prediction_Obstacle(const Prediction_Obstacle &po);
 
-	__device__ ~Prediction_Obstacle();
-
 	__device__ Prediction_Obstacle& operator=(const Prediction_Obstacle &po);
-
-	__device__ int get_ID() const { return ID; };
 
 	__device__ Eigen::Vector4d get_state() const { return xs_0; };
 

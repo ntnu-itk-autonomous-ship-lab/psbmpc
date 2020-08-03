@@ -5,17 +5,18 @@ find_package(CUDA COMPONENTS THRUST REQUIRED)
 add_library(psbmpc_lib_gpu STATIC 
 	src/psbmpc.cu 
 	src/cb_cost_functor.cu
-	src/ownship.cu 
-	src/cpe.cu 
-	src/kf.cpp 
 	src/obstacle.cu
 	src/obstacle_ship.cu 
 	src/obstacle_sbmpc.cu 
-	src/prediction_obstacle.cu 
+	src/tracked_obstacle.cpp
+	src/prediction_obstacle.cu
+	src/ownship.cu 
+	src/cpe.cu 
+	src/kf.cpp  
 	src/mrou.cpp 
 	src/utilities.cpp)
 
-set_target_properties(psbmpc_lib_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+#set_target_properties(psbmpc_lib_gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 target_include_directories(psbmpc_lib_gpu PUBLIC 
 	include

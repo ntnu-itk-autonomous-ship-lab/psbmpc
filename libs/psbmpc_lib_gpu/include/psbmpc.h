@@ -26,10 +26,11 @@
 
 #include "psbmpc_index.h"
 #include "ownship.cuh"
-#include "obstacle.cuh"
+#include "tracked_obstacle.h"
 #include "cpe.cuh"
 #include "Eigen/Dense"
 #include <vector>
+#include <memory>
 
 class CB_Cost_Functor;
 
@@ -89,9 +90,9 @@ private:
 
 	double T_lost_limit, T_tracked_limit;
 
-	Ownship *ownship;
+	std::unique_ptr<Ownship> ownship;
 
-	CPE *cpe;
+	std::unique_ptr<CPE> cpe;
 
 	Eigen::Matrix<double, 6, -1> trajectory;
 
@@ -102,12 +103,12 @@ private:
 	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
 	std::vector<ST> ST_0, ST_i_0;
 
-	std::vector<Obstacle*> old_obstacles;
-	std::vector<Obstacle*> new_obstacles;
+	std::vector<std::unique_ptr<Tracked_Obstacle>> old_obstacles;
+	std::vector<std::unique_ptr<Tracked_Obstacle>> new_obstacles;
 
 	// Thrust functor
 	friend class CB_Cost_Functor;
-	CB_Cost_Functor *op;
+	std::unique_ptr<CB_Cost_Functor> op;
 
 	void map_offset_sequences();
 
@@ -167,13 +168,13 @@ public:
 
 	PSBMPC();
 
-	PSBMPC(const PSBMPC &psbmpc);
+	//PSBMPC(const PSBMPC &psbmpc);
 
-	~PSBMPC();
-
-	void clean();
-
-	PSBMPC& operator=(const PSBMPC &psbmpc);
+/* 	PSBMPC& operator=(const PSBMPC &psbmpc)
+	{
+		if (this == &psbmpc) { return *this; }
+		return *this = PSBMPC(psbmpc);
+	}; */
 
 	CPE_Method get_cpe_method() const { return cpe_method; }; 
 

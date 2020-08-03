@@ -24,7 +24,7 @@
 #include <thrust/device_vector.h>
 #include "psbmpc.h"
 #include "ownship.cuh"
-#include "obstacle.cuh"
+#include "cuda_obstacle.cuh"
 #include "cpe.cuh"
 #include "Eigen/Dense"
 #include <vector>
@@ -91,8 +91,8 @@ private:
 	// and <obstacle is passed> (IP_0) indicators
 	bool *AH_0, *S_TC_0, *S_i_TC_0, *O_TC_0, *Q_TC_0, *IP_0, *H_TC_0, *X_TC_0; 
 
-	Obstacle *old_obstacles;
-	Obstacle *new_obstacles;
+	Cuda_Obstacle *old_obstacles;
+	Cuda_Obstacle *new_obstacles;
 
 	__device__ void predict_trajectories_jointly();
 
@@ -155,7 +155,7 @@ public:
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
 		const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
-	__host__ __device__ ~CB_Cost_Functor();
+	__host__ ~CB_Cost_Functor();
 	
 	__device__ double operator()(const int cb_index);
 	

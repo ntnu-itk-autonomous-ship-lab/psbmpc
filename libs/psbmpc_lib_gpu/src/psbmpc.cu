@@ -39,25 +39,24 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-PSBMPC::PSBMPC()
+PSBMPC::PSBMPC() 
+	: 
+	ownship(new Ownship()),
+	cpe(new CPE(cpe_method, 1000, 100, 1, dt))
 {
 	// Initialize parameters before parameter limits, as some limits depend on the
 	// parameter values set.
 	initialize_pars();
 	
 	initialize_par_limits();
-
-	ownship = new Ownship();
-
-	cpe = new CPE(cpe_method, 1000, 100, 1, dt);
 }
 
-/****************************************************************************************
+/* /****************************************************************************************
 *  Name     : PSBMPC
 *  Function : Copy constructor, prevents shallow copies and bad pointer management
 *  Author   : Trym Tengesdal
 *  Modified :
-*****************************************************************************************/
+****************************************************************************************
 PSBMPC::PSBMPC(const PSBMPC &psbmpc)
 {
 	this->n_cbs = psbmpc.n_cbs;
@@ -112,8 +111,8 @@ PSBMPC::PSBMPC(const PSBMPC &psbmpc)
 	
 	this->T_lost_limit = psbmpc.T_lost_limit; this->T_tracked_limit = psbmpc.T_tracked_limit;
 
-	this->ownship = new Ownship(*(psbmpc.ownship));
-	this->cpe = new CPE(*(psbmpc.cpe));
+	this->ownship = psbmpc.ownship;
+	this->cpe = psbmpc.cpe;
 
 	this->trajectory = psbmpc.trajectory;
 
@@ -123,66 +122,11 @@ PSBMPC::PSBMPC(const PSBMPC &psbmpc)
 
 	this->ST_0 = psbmpc.ST_0; this->ST_i_0 = psbmpc.ST_i_0;
 
-	assign_obstacle_vector(this->old_obstacles, psbmpc.old_obstacles);
-	assign_obstacle_vector(this->new_obstacles, psbmpc.new_obstacles);
-}
-
-/****************************************************************************************
-*  Name     : PSBMPC~
-*  Function : Class destructor
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-PSBMPC::~PSBMPC()
-{
-	clean();
-}
-
-/****************************************************************************************
-*  Name     : clean
-*  Function : Clears dynamically allocated memory in a sound manner.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::clean()
-{
-	if (ownship != NULL) 	{ delete ownship; }
-	if (cpe != NULL) 		{ delete cpe; }
-	if (!new_obstacles.empty())
-	{
-		for (int i = 0; i < new_obstacles.size(); i++)
-		{
-			delete new_obstacles[i];
-		}
-		new_obstacles.clear();
-	}
-	if (!old_obstacles.empty())
-	{
-		for (int i = 0; i < old_obstacles.size(); i++)
-		{
-			delete old_obstacles[i];
-		}
-		old_obstacles.clear();
-	}
-}
-
-/****************************************************************************************
-*  Name     : operator=
-*  Function : Assignment operator to prevent shallow assignments and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-PSBMPC& PSBMPC::operator=(const PSBMPC &psbmpc)
-{
-	if (this == &psbmpc)
-	{
-		return *this;
-	}
-
-	clean();
-
-	return *this = PSBMPC(psbmpc);
-}
+	//assign_obstacle_vector(this->old_obstacles, psbmpc.old_obstacles);
+	//assign_obstacle_vector(this->new_obstacles, psbmpc.new_obstacles);
+	this->old_obstacles = psbmpc.old_obstacles;
+	this->new_obstacles = psbmpc.new_obstacles;
+} */
 
 /****************************************************************************************
 *  Name     : get_<type>par
@@ -513,9 +457,6 @@ void PSBMPC::calculate_optimal_offsets(
 	assign_optimal_trajectory(predicted_trajectory);
 
 	HL_0.setZero();
-
-	// Free space for cost functor
-	delete op;
 	//===============================================================================================================
 
 	//===============================================================================================================
