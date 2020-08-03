@@ -24,19 +24,19 @@
 
 #include <thrust/device_vector.h>
 #include "psbmpc_index.h"
-#include "prediction_obstacle.h"
-#include "obstacle_ship.h"
+#include "prediction_obstacle.cuh"
+#include "obstacle_ship.cuh"
 #include "Eigen/Dense"
 #include <vector>
-
+// MUST REPLACE std::vector with *ers...
 class Obstacle_SBMPC
 {
 private:
 
 	int n_cbs, n_M;
 
-	std::vector<Eigen::VectorXd> u_offsets;
-	std::vector<Eigen::VectorXd> chi_offsets;
+	Eigen::VectorXd *u_offsets;
+	Eigen::VectorXd *chi_offsets;
 
 	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
 
@@ -72,10 +72,10 @@ private:
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
-	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
+	bool *AH_0, *S_TC_0, *S_i_TC_0, *O_TC_0, *Q_TC_0, *IP_0, *H_TC_0, *X_TC_0;
 
-	std::vector<Prediction_Obstacle*> old_obstacles;
-	std::vector<Prediction_Obstacle*> new_obstacles;
+	Prediction_Obstacle* old_obstacles;
+	Prediction_Obstacle* new_obstacles;
 
 	__host__ __device__ void initialize_par_limits();
 

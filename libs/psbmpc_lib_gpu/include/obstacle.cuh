@@ -30,6 +30,12 @@
 
 class Obstacle_SBMPC;
 
+enum Intention 
+{
+	KCC, 					// Keep current course
+	SM, 					// Starboard maneuver
+	PM 						// Port maneuver
+};
 class Obstacle 
 {
 protected:
@@ -55,7 +61,7 @@ public:
 
 	__host__ __device__ Obstacle(const Obstacle &o); 
 
-	//__host__ __device__ Obstacle& operator=(const Obstacle &o);
+	__host__ __device__ Obstacle& operator=(const Obstacle &o);
 
 	__host__ __device__ int get_ID() const { return ID; };
 

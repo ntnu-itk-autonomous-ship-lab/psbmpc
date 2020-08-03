@@ -30,7 +30,7 @@ message("CUDA_LIBARIES: ${CUDA_LIBRARIES}")
 
 target_compile_options(psbmpc_lib_gpu
 	PUBLIC
-	$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -fPIC -Wno-pedantic -gencode arch=compute_61,code=sm_61 -dc >
+	$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -fPIC -Wno-pedantic -gencode arch=compute_61,code=sm_61 -dc --expt-relaxed-constexpr>
 )
 
 target_link_libraries(psbmpc_lib_gpu ${Matlab_LIBRARIES} ${CUDA_LIBRARIES})

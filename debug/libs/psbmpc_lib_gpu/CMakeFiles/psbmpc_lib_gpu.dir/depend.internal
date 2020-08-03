@@ -4,10 +4,14 @@
 libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.o
  ../libs/psbmpc_lib_gpu/include/cb_cost_functor.cuh
  ../libs/psbmpc_lib_gpu/include/cpe.cuh
+ ../libs/psbmpc_lib_gpu/include/cuda_obstacle.cuh
+ ../libs/psbmpc_lib_gpu/include/kf.h
+ ../libs/psbmpc_lib_gpu/include/mrou.h
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/ownship.cuh
  ../libs/psbmpc_lib_gpu/include/psbmpc.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
+ ../libs/psbmpc_lib_gpu/include/tracked_obstacle.h
  ../libs/psbmpc_lib_gpu/include/utilities.cuh
  ../libs/third_party_libs/Eigen/Cholesky
  ../libs/third_party_libs/Eigen/Core
@@ -1881,7 +1885,10 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cpe.cu.o
 libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle.cu.o
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/obstacle_sbmpc.cuh
+ ../libs/psbmpc_lib_gpu/include/obstacle_ship.cuh
+ ../libs/psbmpc_lib_gpu/include/prediction_obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
+ ../libs/psbmpc_lib_gpu/include/utilities.cuh
  ../libs/third_party_libs/Eigen/Cholesky
  ../libs/third_party_libs/Eigen/Core
  ../libs/third_party_libs/Eigen/Dense
@@ -2815,7 +2822,10 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle.cu.o
  /usr/local/cuda-10.2/include/vector_functions.hpp
  /usr/local/cuda-10.2/include/vector_types.h
 libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_sbmpc.cu.o
+ ../libs/psbmpc_lib_gpu/include/obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/obstacle_sbmpc.cuh
+ ../libs/psbmpc_lib_gpu/include/obstacle_ship.cuh
+ ../libs/psbmpc_lib_gpu/include/prediction_obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
  ../libs/psbmpc_lib_gpu/include/utilities.cuh
  ../libs/third_party_libs/Eigen/Cholesky
@@ -5623,6 +5633,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/ownship.cu.o
 libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/prediction_obstacle.cu.o
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/obstacle_sbmpc.cuh
+ ../libs/psbmpc_lib_gpu/include/obstacle_ship.cuh
  ../libs/psbmpc_lib_gpu/include/prediction_obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
  ../libs/psbmpc_lib_gpu/include/utilities.cuh
@@ -6561,10 +6572,14 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/prediction_obstacle.cu.o
 libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cu.o
  ../libs/psbmpc_lib_gpu/include/cb_cost_functor.cuh
  ../libs/psbmpc_lib_gpu/include/cpe.cuh
+ ../libs/psbmpc_lib_gpu/include/cuda_obstacle.cuh
+ ../libs/psbmpc_lib_gpu/include/kf.h
+ ../libs/psbmpc_lib_gpu/include/mrou.h
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/ownship.cuh
  ../libs/psbmpc_lib_gpu/include/psbmpc.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
+ ../libs/psbmpc_lib_gpu/include/tracked_obstacle.h
  ../libs/psbmpc_lib_gpu/include/utilities.cuh
  ../libs/third_party_libs/Eigen/Cholesky
  ../libs/third_party_libs/Eigen/Core
@@ -8039,6 +8054,8 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cpp.o
  ../libs/psbmpc_lib_gpu/include/mrou.h
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/obstacle_sbmpc.cuh
+ ../libs/psbmpc_lib_gpu/include/obstacle_ship.cuh
+ ../libs/psbmpc_lib_gpu/include/prediction_obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
  ../libs/psbmpc_lib_gpu/include/tracked_obstacle.h
  ../libs/psbmpc_lib_gpu/include/utilities.cuh

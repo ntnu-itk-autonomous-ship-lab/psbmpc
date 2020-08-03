@@ -52,7 +52,7 @@ __host__ __device__ Obstacle_Ship::Obstacle_Ship()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_Ship::determine_active_waypoint_segment(
+__host__ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
 	const Eigen::Matrix<double, 2, -1> &waypoints,  				// In: Waypoints to follow
 	const Eigen::Vector4d &xs 										// In: Ownship state
 	)	
@@ -88,7 +88,7 @@ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_Ship::update_guidance_references(
+__host__ __device__ void Obstacle_Ship::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
 	double &chi_d,												// In/out: Course reference 
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
@@ -163,7 +163,6 @@ __device__ void Obstacle_Ship::update_guidance_references(
 			chi_d = xs(2);
 			break;
 		default : 
-			std::cout << "This guidance method does not exist or is not implemented" << std::endl;
 			break;
 	}
 }
@@ -175,7 +174,7 @@ __device__ void Obstacle_Ship::update_guidance_references(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ Eigen::Vector4d Obstacle_Ship::predict(
+__host__ __device__ Eigen::Vector4d Obstacle_Ship::predict(
 	const Eigen::Vector4d &xs_old, 									// In: State [x, y, chi, U] to predict forward
 	const double U_d, 												// In: Speed over ground (SOG) reference
 	const double chi_d, 											// In: Course (COG) reference
@@ -204,7 +203,6 @@ __device__ Eigen::Vector4d Obstacle_Ship::predict(
 			xs_new = xs_old + dt * xs_new;
 			break;
 		default :
-			std::cout << "The prediction method does not exist or is not implemented" << std::endl;
 			xs_new.setZero(); 
 	}
 	xs_new(2) = wrap_angle_to_pmpi(xs_new(2));
@@ -218,7 +216,7 @@ __device__ Eigen::Vector4d Obstacle_Ship::predict(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_Ship::predict_trajectory(
+__host__ __device__ void Obstacle_Ship::predict_trajectory(
 	Eigen::Matrix<double, 4, -1>& trajectory, 						// In/out: Obstacle ship trajectory
 	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd maneuver_times,							// In: Time indices for each Obstacle_Model avoidance maneuver

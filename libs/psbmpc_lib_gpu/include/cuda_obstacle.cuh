@@ -19,21 +19,15 @@
 *****************************************************************************************/
 
 
-#ifndef _TRACKED_OBSTACLE_H_
-#define _TRACKED_OBSTACLE_H_
+#ifndef _CUDA_OBSTACLE_H_
+#define _CUDA_OBSTACLE_H_
 
 #include <thrust/device_vector.h>
 #include "Eigen/Dense"
 #include "obstacle.cuh"
+#include "tracked_obstacle.h"
 #include "mrou.h"
 #include "kf.h"
-
-enum Intention 
-{
-	KCC, 					// Keep current course
-	SM, 					// Starboard maneuver
-	PM 						// Port maneuver
-};
 
 class Cuda_Obstacle : public Obstacle
 {
@@ -80,20 +74,15 @@ public:
 
 	__host__ __device__ Cuda_Obstacle() {};
 
-	__host__ __device__ Cuda_Obstacle(const Eigen::VectorXd &xs_aug, 
-			 const Eigen::VectorXd &P, 
-			 const Eigen::VectorXd &Pr_a, 
-			 const double Pr_CC,
-			 const bool filter_on, 
-			 const bool colav_on, 
-			 const double T, 
-			 const double dt);
+	__host__ __device__ Cuda_Obstacle(const Cuda_Obstacle &co);
 
-	__host__ __device__ Cuda_Obstacle(const Cuda_Obstacle &o);
+	__host__ __device__ Cuda_Obstacle(const Tracked_Obstacle &to);
 
 	__host__ __device__ ~Cuda_Obstacle();
 
-	__host__ __device__ Cuda_Obstacle& operator=(const Cuda_Obstacle &o);
+	__host__ __device__ Cuda_Obstacle& operator=(const Cuda_Obstacle &rhs);
+
+	__host__ __device__ Cuda_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
 	__device__ bool* get_COLREGS_violation_indicator() const { return mu; };
 

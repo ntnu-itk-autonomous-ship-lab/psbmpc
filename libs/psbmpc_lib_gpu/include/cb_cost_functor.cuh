@@ -155,7 +155,7 @@ public:
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
 		const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
-	__host__ ~CB_Cost_Functor();
+	__host__ __device__ ~CB_Cost_Functor();
 	
 	__device__ double operator()(const int cb_index);
 	
