@@ -2,9 +2,9 @@
 *
 *  File name : prediction_obstacle.cu
 *
-*  Function  : Class functions for a predicted obstacle in the PSB-MPC. Only used in the
-*			   MPC-predictions for cases where the obstacle has its own SB-MPC/COLAV
-*			   and needs to keep track of its nearby obstacles.
+*  Function  : Class functions for the derived predicted obstacle class in the PSB-MPC.
+*			   Only used in theMPC-predictions for cases where the obstacle has its own 
+*			   SB-MPC/COLAV and needs to keep track of its nearby obstacles.
 *
 *  
 *	           ---------------------
@@ -33,14 +33,13 @@
 *  Modified :
 *****************************************************************************************/
 __device__ Prediction_Obstacle::Prediction_Obstacle(
-	const Eigen::VectorXd& xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::VectorXd& xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID] at the current time
+	const Eigen::VectorXd &P, 									// In: Obstacle covariance at the current time
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	ID(xs_aug(8)), colav_on(colav_on),
-	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
-	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6))
+	Obstacle(xs_aug, P, colav_on)
 {
 	int n_samples = std::round(T / dt);
 	
@@ -49,50 +48,29 @@ __device__ Prediction_Obstacle::Prediction_Obstacle(
 		 0, 0, 1, 0,
 		 0, 0, 0, 1;
 
-	double psi = atan2(xs_aug(3), xs_aug(2));
-	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
-	xs_0(2) = xs_aug(2);
-	xs_0(3) = xs_aug(3); 
-
 	xs_p.resize(4, n_samples);
 	xs_p.col(0) = xs_0;
-
-	sbmpc = new Obstacle_SBMPC();
 }
 
 /****************************************************************************************
 *  Name     : Prediction_Obstacle
-*  Function : Copy constructor, prevents shallow copies and bad pointer management
-*  Author   : Trym Tengesdal
+*  Function : Copy constructor
+*  Author   : 
 *  Modified :
 *****************************************************************************************/
 __device__ Prediction_Obstacle::Prediction_Obstacle(
-	const Prediction_Obstacle &po 												// In: Prediction obstacle to copy
-	)
+	const Prediction_Obstacle &po 								// In: Obstacle to copy
+	) : 
+	A(po.A), 
+	xs_p(po.xs_p)
 {
-	this->ID = po.ID;
-
-	this->colav_on = po.colav_on;
-
-	this->l = po.l; this->w = po.w;
-
-	this->x_offset = po.x_offset; this->y_offset = po.y_offset;
-
-	this->A = po.A;
-
-	this->xs_0 = po.xs_0;
-
-	//this->xs_p.resize(po.xs_p.rows(), po.xs_p.cols());
-	this->xs_p = po.xs_p;
-
-	this->sbmpc = new Obstacle_SBMPC(*(po.sbmpc));
+	sbmpc = new Obstacle_SBMPC(*(po.sbmpc));
 }
 
 /****************************************************************************************
 *  Name     : ~Prediction_Obstacle
-*  Function : Class destructor, clears the dynamic kalman filter object
-*  Author   : 
+*  Function : Destructor
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 __device__ Prediction_Obstacle::~Prediction_Obstacle()
@@ -102,21 +80,15 @@ __device__ Prediction_Obstacle::~Prediction_Obstacle()
 
 /****************************************************************************************
 *  Name     : operator=
-*  Function : Assignment operator to prevent shallow assignments and bad pointer management
+*  Function : 
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ Prediction_Obstacle& Prediction_Obstacle::operator=(
-	const Prediction_Obstacle &po 										// In: Rhs prediction obstacle to assign
-	)
+__device__ Prediction_Obstacle& Prediction_Obstacle::operator=(const Prediction_Obstacle &rhs)
 {
-	if (this == &po)
-	{
-		return *this;
-	}
+	if (this == &rhs) 	{ return *this; }
 	if (sbmpc != NULL) 	{ delete sbmpc; }
-
-	return *this = Prediction_Obstacle(po);
+	return *this = Prediction_Obstacle(rhs);
 }
 
 /****************************************************************************************

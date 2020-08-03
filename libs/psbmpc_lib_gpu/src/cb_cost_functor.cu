@@ -37,7 +37,7 @@
 *  Author   : 
 *  Modified :
 ****************************************************************************************/
-__host__ __device__ CB_Cost_Functor::CB_Cost_Functor(
+__host__ CB_Cost_Functor::CB_Cost_Functor(
 	const PSBMPC &master, 												// In: Parent class
 	const double u_d,  													// In: Surge reference
 	const double chi_d, 												// In: Course reference
@@ -388,10 +388,10 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
 		Eigen::MatrixXd xs_i_p = new_obstacles[i].get_ps_trajectory(ps);
-		vars->cpe.initialize(vars->trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
+		vars->cpe.initialize(vars->trajectory.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i, i);
 		for (int k = 0; k < n_samples; k++)
 		{
-			P_c_i(ps, k) = vars->cpe.estimate(vars->trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
+			P_c_i(ps, k) = vars->cpe.estimate(vars->trajectory.col(k), xs_i_p.col(k), P_i_p.col(k), i);
 		}
 	}
 }
@@ -410,16 +410,19 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 {
 	double cost = 0, cost_ps, coll_cost;
 	Eigen::VectorXd max_cost_ps(n_ps[i]);
-	Eigen::MatrixXd *xs_i_p[n_ps[i]];
+
+	Eigen::MatrixXd *xs_i_p = new Eigen::MatrixXd[n_ps[i]];
+	bool *mu_i = new bool[n_ps[i]];
+
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
 		xs_i_p[ps] = new_obstacles[i].get_ps_trajectory(ps);
+		mu_i[ps] = new_obstacles[i].get_ps_COLREGS_violation_indicator(ps);
 		max_cost_ps(ps) = 0;
 	}
 
 	int n_samples = vars->trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
-	std::vector<bool> mu_i = new_obstacles[i].get_COLREGS_violation_indicator();
 	double Pr_CC_i = new_obstacles[i].get_a_priori_CC_probability();
 
 	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
@@ -481,6 +484,8 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	// => Original PSB-MPC formulation
 	if (n_ps[i] == 1)
 	{
+		delete[] xs_i_p;
+		delete[] mu_i;
 		cost = max_cost_ps(0);
 		return cost;
 	}
@@ -523,6 +528,8 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	// Weight by the intention probabilities
 	cost = Pr_a.dot(cost_a);
 
+	delete[] xs_i_p;
+	delete[] mu_i;
 	return cost;
 }
 
