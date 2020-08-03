@@ -113,8 +113,8 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 
 	// Old obstacles are equal to new obstacles at this point in the PSB-MPC processing
 	// (as PSBMPC::update_obstacles(...) has been called)
-	old_obstacles = new Obstacle[n_obst];
-	new_obstacles = new Obstacle[n_obst];
+	old_obstacles = new Cuda_Obstacle[n_obst];
+	new_obstacles = new Cuda_Obstacle[n_obst];
 	for (int i = 0; i < n_obst; i++)
 	{
 		n_ps[i] = master.n_ps[i];
@@ -133,11 +133,15 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 		old_obstacles[i] = *(master.old_obstacles[i]);
 		new_obstacles[i] = *(master.new_obstacles[i]);
 	}
-
-	
 }
 
-__host__ CB_Cost_Functor::~CB_Cost_Functor()
+/****************************************************************************************
+*  Name     : ~CB_Cost_Functor
+*  Function : Destructor
+*  Author   : 
+*  Modified :
+****************************************************************************************/
+__host__ __device__ CB_Cost_Functor::~CB_Cost_Functor()
  {
 	 delete[] n_ps;
 	 delete vars;
@@ -385,13 +389,15 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 	Eigen::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
 	double d_safe_i = vars->d_safe;
 
+	Eigen::MatrixXd* xs_i_p = new Eigen::MatrixXd[n_ps[i]];
+	*xs_i_p = *new_obstacles[i].get_trajectories();
+
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		Eigen::MatrixXd xs_i_p = new_obstacles[i].get_ps_trajectory(ps);
-		vars->cpe.initialize(vars->trajectory.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i, i);
+		vars->cpe.initialize(vars->trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
 		for (int k = 0; k < n_samples; k++)
 		{
-			P_c_i(ps, k) = vars->cpe.estimate(vars->trajectory.col(k), xs_i_p.col(k), P_i_p.col(k), i);
+			P_c_i(ps, k) = vars->cpe.estimate(vars->trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
 		}
 	}
 }
@@ -411,13 +417,13 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	double cost = 0, cost_ps, coll_cost;
 	Eigen::VectorXd max_cost_ps(n_ps[i]);
 
-	Eigen::MatrixXd *xs_i_p = new Eigen::MatrixXd[n_ps[i]];
+	Eigen::MatrixXd* xs_i_p = new Eigen::MatrixXd[n_ps[i]];
 	bool *mu_i = new bool[n_ps[i]];
 
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		xs_i_p[ps] = new_obstacles[i].get_ps_trajectory(ps);
-		mu_i[ps] = new_obstacles[i].get_ps_COLREGS_violation_indicator(ps);
+		xs_i_p[ps] = new_obstacles[i].get_trajectories()[ps];
+		mu_i[ps] = new_obstacles[i].get_COLREGS_violation_indicator()[ps];
 		max_cost_ps(ps) = 0;
 	}
 

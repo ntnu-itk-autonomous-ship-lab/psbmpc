@@ -152,7 +152,7 @@ private:
 
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
-	void assign_obstacle_vector(std::vector<Obstacle*> &lhs, const std::vector<Obstacle*> &rhs);
+	void assign_obstacle_vector(std::vector<Tracked_Obstacle*> &lhs, const std::vector<Tracked_Obstacle*> &rhs);
 
     void update_obstacles(
 		const Eigen::Matrix<double, 9, -1>& obstacle_states, 

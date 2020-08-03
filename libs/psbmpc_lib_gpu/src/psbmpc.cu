@@ -434,7 +434,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// Cost evaluation
 	//===============================================================================================================
-	op = new CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles);
+	op.reset(new CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles));
 
 	// Allocate device vector for computing CB costs
 	thrust::device_vector<double> cb_costs(n_cbs);
@@ -1271,14 +1271,14 @@ void PSBMPC::assign_optimal_trajectory(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::assign_obstacle_vector(
-	std::vector<Obstacle*> &lhs,  														// In/out: Resultant vector
-	const std::vector<Obstacle*> &rhs 													// In: Vector to assign
+	std::vector<Tracked_Obstacle*> &lhs,  														// In/out: Resultant vector
+	const std::vector<Tracked_Obstacle*> &rhs 													// In: Vector to assign
 	)
 {
 	lhs.resize(rhs.size());
 	for (int i = 0; i < rhs.size(); i++)
 	{
-		lhs[i] = new Obstacle(*(rhs[i]));
+		lhs[i] = new Tracked_Obstacle(*(rhs[i]));
 	}
 }
 
@@ -1295,11 +1295,6 @@ void PSBMPC::update_obstacles(
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
 	) 			
 {
-	// Clear "old" new obstacles before the update
-	for (int i = 0; i < new_obstacles.size(); i++)
-	{
-		delete new_obstacles[i];
-	}
 	new_obstacles.clear();
 	
 	int n_obst_old = old_obstacles.size();
@@ -1325,7 +1320,7 @@ void PSBMPC::update_obstacles(
 
 				new_obstacles.resize(new_obstacles.size() + 1);
 
-				new_obstacles[new_obstacles.size() - 1] = new Obstacle(*(old_obstacles[j]));
+				new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(*(old_obstacles[j])));
 
 				obstacle_exist = true;
 
@@ -1336,7 +1331,7 @@ void PSBMPC::update_obstacles(
 		{
 			new_obstacles.resize(new_obstacles.size() + 1);
 
-			new_obstacles[new_obstacles.size() - 1] = new Obstacle(
+			new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
@@ -1344,7 +1339,7 @@ void PSBMPC::update_obstacles(
 				obstacle_filter_on, 
 				false, 
 				T, 
-				dt);
+				dt));
 		}
 	}
 	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
@@ -1364,20 +1359,19 @@ void PSBMPC::update_obstacles(
 
 				new_obstacles.resize(new_obstacles.size() + 1);
 
-				new_obstacles[new_obstacles.size() - 1] = new Obstacle(*(old_obstacles[j]));
+				new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(*(old_obstacles[j])));
 			}
 		}
 	}
 
 	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
-	for (int i = 0; i < n_obst_old; i++)
-	{
-		delete old_obstacles[i];
-	}
-	old_obstacles.clear();
-
 	// Then set equal to the new obstacle vector (with fresh pointer addresses ofc)
-	assign_obstacle_vector(old_obstacles, new_obstacles);
+	//assign_obstacle_vector(old_obstacles, new_obstacles);
+	old_obstacles.resize(new_obstacles.size());
+	for (int i = 0; i < new_obstacles.size(); i++)
+	{
+		old_obstacles[i].reset(new Tracked_Obstacle(*(new_obstacles[i])));
+	}
 }
 
 /****************************************************************************************

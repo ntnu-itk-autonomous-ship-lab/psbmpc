@@ -29,16 +29,13 @@
 #include "mrou.h"
 #include "kf.h"
 
-enum Intention 
-{
-	KCC, 					// Keep current course
-	SM, 					// Starboard maneuver
-	PM 						// Port maneuver
-};
+//class Cuda_Obstacle;
 
 class Tracked_Obstacle : public Obstacle
 {
 private:
+
+	friend class Cuda_Obstacle;
 
 	// Vector of intention probabilities at the current time or last time of update
 	Eigen::VectorXd Pr_a;

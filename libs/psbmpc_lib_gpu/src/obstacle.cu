@@ -23,6 +23,7 @@
 #include <thrust/device_vector.h>
 #include "obstacle.cuh"
 #include "obstacle_sbmpc.cuh"
+#include "utilities.cuh"
 
 /****************************************************************************************
 *  Name     : Obstacle
@@ -80,6 +81,5 @@ __host__ __device__ Obstacle& Obstacle::operator=(
 	{
 		return *this;
 	}
-
 	return *this = Obstacle(o);
 }
