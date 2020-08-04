@@ -1,0 +1,2 @@
+/usr/bin/ar qc libpsbmpc_lib.a  CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o CMakeFiles/psbmpc_lib.dir/src/ownship.cpp.o CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.o CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.o CMakeFiles/psbmpc_lib.dir/src/obstacle_ship.cpp.o CMakeFiles/psbmpc_lib.dir/src/obstacle_sbmpc.cpp.o CMakeFiles/psbmpc_lib.dir/src/prediction_obstacle.cpp.o CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o CMakeFiles/psbmpc_lib.dir/src/utilities.cpp.o
+/usr/bin/ranlib libpsbmpc_lib.a

@@ -26,10 +26,11 @@
 
 #include "psbmpc_index.h"
 #include "ownship.h"
-#include "obstacle.h"
+#include "tracked_obstacle.h"
 #include "cpe.h"
 #include "Eigen/Dense"
 #include <vector>
+#include <memory>
 
 enum ST 
 {
@@ -84,9 +85,9 @@ private:
 
 	double T_lost_limit, T_tracked_limit;
 
-	Ownship *ownship;
+	std::unique_ptr<Ownship> ownship;
 
-	CPE *cpe;
+	std::unique_ptr<CPE> cpe;
 
 	Eigen::Matrix<double, 6, -1> trajectory;
 
@@ -97,8 +98,8 @@ private:
 	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
 	std::vector<ST> ST_0, ST_i_0;
 
-	std::vector<Obstacle*> old_obstacles;
-	std::vector<Obstacle*> new_obstacles;
+	std::vector<std::unique_ptr<Tracked_Obstacle>> old_obstacles;
+	std::vector<std::unique_ptr<Tracked_Obstacle>> new_obstacles;
 
 	void initialize_par_limits();
 
@@ -191,8 +192,6 @@ private:
     double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
-
-	void assign_obstacle_vector(std::vector<Obstacle*> &lhs, const std::vector<Obstacle*> &rhs);
 
     void update_obstacles(
 		const Eigen::Matrix<double, 9, -1>& obstacle_states, 

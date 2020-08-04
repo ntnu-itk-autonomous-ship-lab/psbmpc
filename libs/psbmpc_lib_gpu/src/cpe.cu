@@ -22,6 +22,19 @@
 #include "cpe.cuh"
 #include "utilities.cuh"
 #include <iostream>
+#include <cuda.h>
+#include <curand.h>
+
+#define CUDA_CALL(x) do { if((x)!=cudaSuccess) 
+    { \
+    printf("Error at %s:%d\n",__FILE__,__LINE__);\
+    return EXIT_FAILURE;
+    }} while(0)
+#define CURAND_CALL(x) do { if((x)!=CURAND_STATUS_SUCCESS) 
+    { \
+    printf("Error at %s:%d\n",__FILE__,__LINE__);\
+    return EXIT_FAILURE;
+    }} while(0)
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -102,8 +115,16 @@ __host__ __device__ CPE::CPE(
 
     this->converged_last = cpe.converged_last;
 
-    this->mu_CE_last = cpe.mu_CE_last;
-    this->P_CE_last = cpe.P_CE_last;
+    mu_CE_last = new Eigen::Vector2d[n_obst];
+    P_CE_last = new Eigen::Matrix2d[n_obst];
+    d_safe = new double[n_obst];
+    for (int i = 0; i < n_obst; i++)
+    {
+        mu_CE_last[i] = cpe.mu_CE_last[i];
+        P_CE_last[i] = cpe.P_CE_last[i];
+
+        d_safe[i] = cpe.d_safe[i];
+    }
 
     this->N_e = cpe.N_e; this->e_count = cpe.e_count;
     this->elite_samples = cpe.elite_samples;
@@ -114,8 +135,6 @@ __host__ __device__ CPE::CPE(
     this->P_c_upd = cpe.P_c_upd; this->var_P_c_upd = cpe.var_P_c_upd;
 
     this->samples = cpe.samples; this->valid = cpe.valid;
-
-    this->d_safe = cpe.d_safe;
 
     this->L = cpe.L;
 }
@@ -128,7 +147,11 @@ __host__ __device__ CPE::CPE(
 *****************************************************************************************/
 __host__ __device__ CPE::~CPE()
 {
-
+    delete[] N_e; delete[] e_count;
+    delete[] elite_samples;
+    delete[] samples;
+    delete[] valid;
+    delete[] d_safe;
 }
 
 /****************************************************************************************

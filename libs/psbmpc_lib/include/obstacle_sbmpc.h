@@ -28,6 +28,7 @@
 #include "obstacle_ship.h"
 #include "Eigen/Dense"
 #include <vector>
+#include <memory>
 
 class Obstacle_SBMPC
 {
@@ -66,7 +67,7 @@ private:
 	
 	bool obstacle_colav_on;
 
-	Obstacle_Ship *ownship;
+	std::unique_ptr<Obstacle_Ship> ownship;
 
 	Eigen::Matrix<double, 4, -1> trajectory;
 
@@ -74,8 +75,8 @@ private:
 	// and <obstacle is passed> (IP_0) indicators
 	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
 
-	std::vector<Prediction_Obstacle*> old_obstacles;
-	std::vector<Prediction_Obstacle*> new_obstacles;
+	std::vector<std::unique_ptr<Prediction_Obstacle>> old_obstacles;
+	std::vector<std::unique_ptr<Prediction_Obstacle>> new_obstacles;
 
 	void initialize_par_limits();
 
@@ -129,9 +130,9 @@ private:
 
     double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
-	void assign_obstacle_vector(std::vector<Prediction_Obstacle*> &lhs, const std::vector<Prediction_Obstacle*> &rhs);
+	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
-    void update_obstacles(const Eigen::Matrix<double, 9, -1>& obstacle_states);
+    void update_obstacles(const Eigen::Matrix<double, 9, -1>& obstacle_states, const Eigen::Matrix<double, 16, -1> &obstacle_covariances);
 
 	void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
 
@@ -142,10 +143,6 @@ public:
 	Obstacle_SBMPC();
 
 	Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc);
-
-	~Obstacle_SBMPC();
-
-	void clean();
 
 	Obstacle_SBMPC& operator=(const Obstacle_SBMPC &o_sbmpc);
 
@@ -184,7 +181,8 @@ public:
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::Matrix<double, 4, 1> &ownship_state,
-		const Eigen::Matrix<double, 9, -1> &obstacle_states, 
+		const Eigen::Matrix<double, 9, -1> &obstacle_states,
+		const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 
 		const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
 };
