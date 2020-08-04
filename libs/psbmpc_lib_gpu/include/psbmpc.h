@@ -84,6 +84,7 @@ private:
 	double K_chi_port, K_dchi_port; 
 	double K_sgn, T_sgn;
 	double G;
+	double q, p;
 	
 	bool obstacle_filter_on;
 	std::vector<bool> obstacle_colav_on;
@@ -167,14 +168,6 @@ private:
 public:
 
 	PSBMPC();
-
-	//PSBMPC(const PSBMPC &psbmpc);
-
-/* 	PSBMPC& operator=(const PSBMPC &psbmpc)
-	{
-		if (this == &psbmpc) { return *this; }
-		return *this = PSBMPC(psbmpc);
-	}; */
 
 	CPE_Method get_cpe_method() const { return cpe_method; }; 
 

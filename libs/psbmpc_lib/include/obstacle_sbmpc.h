@@ -64,6 +64,7 @@ private:
 	double K_chi_port, K_dchi_port; 
 	double K_sgn, T_sgn;
 	double G;
+	double q, p;
 	
 	bool obstacle_colav_on;
 
@@ -102,6 +103,8 @@ private:
 	double calculate_dynamic_obstacle_cost(const int i);
 
 	double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
+
+	double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	double calculate_control_deviation_cost();	
@@ -154,22 +157,6 @@ public:
 		const Eigen::Vector2d &v_B,
 		const Eigen::Vector2d &L_AB,	
 		const double d_AB);
-
-	Prediction_Method get_prediction_method() const { return prediction_method; };
-
-	Guidance_Method get_guidance_method() const { return guidance_method; };
-
-	void set_prediction_method(Prediction_Method prediction_method) { if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
-
-	void set_guidance_method(Guidance_Method guidance_method) 		{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
-
-	int get_ipar(const int index) const;
-	
-	double get_dpar(const int index) const;
-
-	void set_par(const int index, const int value);
-
-	void set_par(const int index, const double value);
 
 	void calculate_optimal_offsets(
 		double &u_opt, 	

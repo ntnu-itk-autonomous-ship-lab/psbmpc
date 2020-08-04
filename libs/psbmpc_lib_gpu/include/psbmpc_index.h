@@ -23,7 +23,7 @@
 
 #define N_BPAR						1							// Number of boolean tyoe parameters in PSBMPC
 #define N_IPAR						2 							// Number of integer type parameters in PSBMPC
-#define N_DPAR						26 							// Number of double type parameters in PSBMPC
+#define N_DPAR						28 							// Number of double type parameters in PSBMPC
 #define N_MPAR						2							// Number of matrix/vector/eigen type parameters in PSBMPC
 
 // Indices for parameters of type bool
@@ -68,8 +68,11 @@
 
 #define i_dpar_G 					23
 
-#define i_dpar_T_lost_limit			24
-#define i_dpar_T_tracked_limit		25
+#define i_dpar_q                    24
+#define i_dpar_p                    25
+
+#define i_dpar_T_lost_limit			26
+#define i_dpar_T_tracked_limit		27
 
 // Indices for parameters of type std::vector/Eigen::MatrixXd/etc..
 #define i_mpar_u_offsets			0

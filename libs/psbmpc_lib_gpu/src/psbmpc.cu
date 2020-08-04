@@ -51,83 +51,6 @@ PSBMPC::PSBMPC()
 	initialize_par_limits();
 }
 
-/* /****************************************************************************************
-*  Name     : PSBMPC
-*  Function : Copy constructor, prevents shallow copies and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-****************************************************************************************
-PSBMPC::PSBMPC(const PSBMPC &psbmpc)
-{
-	this->n_cbs = psbmpc.n_cbs;
-	this->n_M = psbmpc.n_M;
-	this->n_a = psbmpc.n_a;
-	this->n_ps = psbmpc.n_ps;
-
-	this->u_offsets = psbmpc.u_offsets;
-	this->chi_offsets = psbmpc.chi_offsets;
-
-	this->maneuver_times = psbmpc.maneuver_times;
-	this->obstacle_course_changes = psbmpc.obstacle_course_changes;
-
-	this->u_m_last = psbmpc.u_m_last;
-	this->chi_m_last = psbmpc.chi_m_last;
-
-	this->min_cost = psbmpc.min_cost;
-	this->min_index = psbmpc.min_index;
-
-	this->dpar_low = psbmpc.dpar_low;
-	this->dpar_high = psbmpc.dpar_high;
-	this->ipar_low = psbmpc.ipar_low;
-	this->ipar_high = psbmpc.ipar_high;
-
-	this->prediction_method = psbmpc.prediction_method;
-	this->guidance_method = psbmpc.guidance_method;
-
-	this->T = psbmpc.T; this->T_static = psbmpc.T_static;
-	this->dt = psbmpc.dt; 
-	this->p_step = psbmpc.p_step;
-	this->t_ts = psbmpc.t_ts;
-	
-	this->d_safe = psbmpc.d_safe; this->d_close = psbmpc.d_close; this->d_init = psbmpc.d_init;
-	
-	this->K_coll = psbmpc.K_coll;
-
-	this->phi_AH = psbmpc.phi_AH; this->phi_OT = psbmpc.phi_OT; this->phi_HO = psbmpc.phi_HO; this->phi_CR = psbmpc.phi_CR;
-
-	this->kappa = psbmpc.kappa; this->kappa_TC = psbmpc.kappa_TC;
-
-	this->K_u = psbmpc.K_u; this->K_du = psbmpc.K_du;
-
-	this->K_chi_strb = psbmpc.K_chi_strb; this->K_dchi_strb = psbmpc.K_dchi_strb;
-	this->K_chi_port = psbmpc.K_chi_port; this->K_dchi_port = psbmpc.K_dchi_port;
-
-	this->K_sgn = psbmpc.K_sgn; this->T_sgn = psbmpc.T_sgn;
-
-	this->G = psbmpc.G;
-
-	this->obstacle_filter_on = psbmpc.obstacle_filter_on;
-	this->obstacle_colav_on = psbmpc.obstacle_colav_on;
-	
-	this->T_lost_limit = psbmpc.T_lost_limit; this->T_tracked_limit = psbmpc.T_tracked_limit;
-
-	this->ownship = psbmpc.ownship;
-	this->cpe = psbmpc.cpe;
-
-	this->trajectory = psbmpc.trajectory;
-
-	this->AH_0 = psbmpc.AH_0; this->S_TC_0 = psbmpc.S_TC_0; this->S_i_TC_0 = psbmpc.S_i_TC_0;
-	this->O_TC_0 = psbmpc.O_TC_0; this->Q_TC_0 = psbmpc.Q_TC_0; this->IP_0 = psbmpc.IP_0;
-	this->H_TC_0 = psbmpc.H_TC_0; this->X_TC_0 = psbmpc.X_TC_0;
-
-	this->ST_0 = psbmpc.ST_0; this->ST_i_0 = psbmpc.ST_i_0;
-
-	//assign_obstacle_vector(this->old_obstacles, psbmpc.old_obstacles);
-	//assign_obstacle_vector(this->new_obstacles, psbmpc.new_obstacles);
-	this->old_obstacles = psbmpc.old_obstacles;
-	this->new_obstacles = psbmpc.new_obstacles;
-} */
-
 /****************************************************************************************
 *  Name     : get_<type>par
 *  Function : Returns parameter with index <index>, "overloaded" for different data types
@@ -174,6 +97,8 @@ double PSBMPC::get_dpar(
 		case i_dpar_K_sgn 				: return K_sgn;
 		case i_dpar_T_sgn 				: return T_sgn;
 		case i_dpar_G					: return G;
+		case i_dpar_q					: return q;
+		case i_dpar_p					: return p;
 		case i_dpar_T_lost_limit		: return T_lost_limit;
 		case i_dpar_T_tracked_limit		: return T_tracked_limit;
 
@@ -264,6 +189,8 @@ void PSBMPC::set_par(
 			case i_dpar_K_sgn 				: K_sgn = value; break;
 			case i_dpar_T_sgn 				: T_sgn = value; break;
 			case i_dpar_G 					: G = value; break;
+			case i_dpar_q 					: q = value; break;
+			case i_dpar_p 					: p = value; break;
 			case i_dpar_T_lost_limit		: T_lost_limit = value; break;
 			case i_dpar_T_tracked_limit		: T_tracked_limit = value; break;
 
@@ -695,9 +622,9 @@ void PSBMPC::initialize_pars()
 	}
 	t_ts = 50;
 
-	d_init = 1500;							//1852.0;	  // should be >= D_CLOSE 300.0 600.0 500.0 700.0 800 1852
-	d_close = 500;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
-	d_safe = 50; 							//185.2; 	  // 40.0, 50.0, 70.0, 80.0, 100, 200, 185.2
+	d_init = 1500;							//1852.0;	 
+	d_close = 500;
+	d_safe = 50; 							//185.2;
 	K_coll = 1.0;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
@@ -710,11 +637,14 @@ void PSBMPC::initialize_pars()
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					
 	K_dchi_strb = 0.9;	 			
-	K_dchi_port = 1.2;	  					
-	G = 0;		         					 // 1.0e3
-
+	K_dchi_port = 1.2;
 	K_sgn = 5;
-	T_sgn = 4 * t_ts;
+	T_sgn = 4 * t_ts;	  					
+	G = 0;		         					 // 1.0e3
+	q = 4.0;
+	p = 1.0;
+
+	
 
 	obstacle_filter_on = false;
 	obstacle_colav_on.resize(1);

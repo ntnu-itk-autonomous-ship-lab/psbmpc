@@ -99,6 +99,8 @@ Obstacle_SBMPC::Obstacle_SBMPC(
 	
 	this->G = o_sbmpc.G;
 
+	this->q = o_sbmpc.q; this->p = o_sbmpc.p;
+
 	this->obstacle_colav_on = o_sbmpc.obstacle_colav_on;
 
 	this->ownship.reset(new Obstacle_Ship(*(o_sbmpc.ownship)));
@@ -251,130 +253,6 @@ bool Obstacle_SBMPC::determine_COLREGS_violation(
 		std::cout << mu << std::endl;
 	}
 	return mu;
-}
-
-/****************************************************************************************
-*  Name     : get_<type>par
-*  Function : Returns parameter with index <index>, "overloaded" for different data types
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-int Obstacle_SBMPC::get_ipar(
-	const int index															// In: Index of parameter to return (Must be of int type)
-	) const
-{
-	switch(index){
-		case i_ipar_n_M 				: return n_M; 
-
-		default : { std::cout << "Wrong index given" << std::endl; return 0;}
-	}
-}
-	
-double Obstacle_SBMPC::get_dpar(
-	const int index															// In: Index of parameter to return (Must be of double type)
-	) const
-{
-	switch(index){
-		case i_dpar_T 					: return T;
-		case i_dpar_T_static 			: return T_static;
-		case i_dpar_dt 					: return dt;
-		case i_dpar_t_ts 				: return t_ts;
-		case i_dpar_d_safe 				: return d_safe;
-		case i_dpar_d_close 			: return d_close;
-		case i_dpar_K_coll 				: return K_coll;
-		case i_dpar_phi_AH 				: return phi_AH;
-		case i_dpar_phi_OT 				: return phi_OT;
-		case i_dpar_phi_HO 				: return phi_HO;
-		case i_dpar_phi_CR 				: return phi_CR;
-		case i_dpar_kappa 				: return kappa;
-		case i_dpar_kappa_TC 			: return kappa_TC;
-		case i_dpar_K_u 				: return K_u;
-		case i_dpar_K_du 				: return K_du;
-		case i_dpar_K_chi_strb 			: return K_chi_strb;
-		case i_dpar_K_dchi_strb 		: return K_dchi_strb;
-		case i_dpar_K_chi_port 			: return K_chi_port;
-		case i_dpar_K_dchi_port 		: return K_dchi_port;
-		case i_dpar_K_sgn 				: return K_sgn;
-		case i_dpar_T_sgn 				: return T_sgn;
-		case i_dpar_G					: return G;
-		default : { std::cout << "Wrong index given" << std::endl; return 0; }
-	}
-}
-
-/****************************************************************************************
-*  Name     : set_par
-*  Function : Sets parameter with index <index> to value <value>, given that it is inside
-*			  valid limits. Overloaded for different data types
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void Obstacle_SBMPC::set_par(
-	const int index, 														// In: Index of parameter to set
-	const int value 														// In: Value to set for parameter
-	)
-{
-	if (value >= ipar_low[index] && value <= ipar_high[index])
-	{	
-		switch(index)
-		{
-			case i_ipar_n_M : n_M = value; break;
-
-			default : std::cout << "Wrong index given" << std::endl; break;
-		}
-	}
-	else
-	{
-		std::cout << "Non-valid parameter value!" << std::endl;
-	}
-	
-}
-
-void Obstacle_SBMPC::set_par(
-	const int index, 														// In: Index of parameter to set
-	const double value 														// In: Value to set for parameter
-	)
-{
-	if (value >= dpar_low[index] && value <= dpar_high[index])
-	{
-		switch(index){
-			case i_dpar_T 					: T = value; break;
-			case i_dpar_T_static 			: T_static = value; break;
-			case i_dpar_dt 					: dt = value; break;
-			case i_dpar_p_step 				: p_step = value; break;
-			case i_dpar_t_ts 				: t_ts = value; break;
-			case i_dpar_d_safe :
-				// Limits on d_close and d_init depend on d_safe
-				d_safe = value; 
-				dpar_low[i_dpar_d_close] = d_safe;
-				dpar_low[i_dpar_d_init] = d_safe;
-				break;
-			case i_dpar_d_close 			: d_close = value; break;
-			case i_dpar_d_init 				: d_init = value; break;
-			case i_dpar_K_coll 				: K_coll = value; break;
-			case i_dpar_phi_AH 				: phi_AH = value; break;
-			case i_dpar_phi_OT 				: phi_OT = value; break;
-			case i_dpar_phi_HO 				: phi_HO = value; break;
-			case i_dpar_phi_CR 				: phi_CR = value; break;
-			case i_dpar_kappa 				: kappa = value; break;
-			case i_dpar_kappa_TC 			: kappa_TC = value; break;
-			case i_dpar_K_u 				: K_u = value; break;
-			case i_dpar_K_du 				: K_du = value; break;
-			case i_dpar_K_chi_strb 			: K_chi_strb = value; break;
-			case i_dpar_K_dchi_strb 		: K_dchi_strb = value; break;
-			case i_dpar_K_chi_port 			: K_chi_port = value; break;
-			case i_dpar_K_dchi_port 		: K_dchi_port = value; break;
-			case i_dpar_K_sgn 				: K_sgn = value; break;
-			case i_dpar_T_sgn 				: T_sgn = value; break;
-			case i_dpar_G 					: G = value; break;
-
-			default : std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the Obstacle_SBMPC class.." << std::endl; break;
-		}
-	}
-	else
-	{
-		std::cout << "Non-valid parameter value!" << std::endl;
-	}
-	
 }
 
 /****************************************************************************************
@@ -896,6 +774,26 @@ double Obstacle_SBMPC::calculate_collision_cost(
 }
 
 /****************************************************************************************
+*  Name     : calculate_ad_hoc_collision_risk
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+double Obstacle_SBMPC::calculate_ad_hoc_collision_risk(
+	const double d_AB, 														// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
+	const double t 															// In: Prediction time t > t0 (= 0)
+	)
+{
+	double R = 0;
+	if (d_AB <= d_safe)
+	{
+		assert(t > 0);
+		R = pow(d_safe / d_AB, q) * (1 / pow(fabs(t), p)); 
+	}
+	return R;
+}
+
+/****************************************************************************************
 *  Name     : calculate_control_deviation_cost
 *  Function : Determines penalty due to using offsets to guidance references ++
 *  Author   : Trym Tengesdal
@@ -1160,7 +1058,6 @@ void Obstacle_SBMPC::update_obstacles(
 		{
 			if ((double)old_obstacles[j]->get_ID() == obstacle_states(8, i))
 			{
-
 				old_obstacles[j]->update(obstacle_states.block<4, 1>(0, i));
 
 				new_obstacles.resize(new_obstacles.size() + 1);
@@ -1181,8 +1078,7 @@ void Obstacle_SBMPC::update_obstacles(
 	}
 
 	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
-	// Then set equal to the new obstacle vector (with fresh pointer addresses ofc)
-	//assign_obstacle_vector(old_obstacles, new_obstacles);
+	// Then set equal to the new obstacle vector
 	old_obstacles.resize(new_obstacles.size());
 	for (int i = 0; i < new_obstacles.size(); i++)
 	{

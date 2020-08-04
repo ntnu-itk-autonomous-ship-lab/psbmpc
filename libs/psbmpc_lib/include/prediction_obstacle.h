@@ -52,8 +52,6 @@ public:
 
 	Prediction_Obstacle(const Prediction_Obstacle &po);
 
-	~Prediction_Obstacle();
-
 	Prediction_Obstacle& operator=(const Prediction_Obstacle &po);
 
 	Eigen::Vector4d get_state() const { return xs_0; };
