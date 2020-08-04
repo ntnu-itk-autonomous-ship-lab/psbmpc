@@ -35,7 +35,8 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-PSBMPC::PSBMPC()
+PSBMPC::PSBMPC() :
+	ownship(new Ownship())
 {
 	// Initialize parameters before parameter limits, as some limits depend on the
 	// parameter values set.
@@ -43,142 +44,7 @@ PSBMPC::PSBMPC()
 	
 	initialize_par_limits();
 
-	ownship = new Ownship();
-
-	cpe = new CPE(cpe_method, 1000, 100, 1, dt);
-}
-
-/****************************************************************************************
-*  Name     : PSBMPC
-*  Function : Copy constructor, prevents shallow copies and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-PSBMPC::PSBMPC(const PSBMPC &psbmpc)
-{
-	this->n_cbs = psbmpc.n_cbs;
-	this->n_M = psbmpc.n_M;
-	this->n_a = psbmpc.n_a;
-	this->n_ps = psbmpc.n_ps;
-
-	this->u_offsets = psbmpc.u_offsets;
-	this->chi_offsets = psbmpc.chi_offsets;
-
-	this->offset_sequence_counter = psbmpc.offset_sequence_counter;
-	this->offset_sequence = psbmpc.offset_sequence;
-	this->maneuver_times = psbmpc.maneuver_times;
-	this->course_changes = psbmpc.course_changes;
-
-	this->u_m_last = psbmpc.u_m_last;
-	this->chi_m_last = psbmpc.chi_m_last;
-
-	this->min_cost = psbmpc.min_cost;
-
-	this->dpar_low = psbmpc.dpar_low;
-	this->dpar_high = psbmpc.dpar_high;
-	this->ipar_low = psbmpc.ipar_low;
-	this->ipar_high = psbmpc.ipar_high;
-
-	this->prediction_method = psbmpc.prediction_method;
-	this->guidance_method = psbmpc.guidance_method;
-
-	this->T = psbmpc.T; this->T_static = psbmpc.T_static;
-	this->dt = psbmpc.dt; 
-	this->p_step = psbmpc.p_step;
-	this->t_ts = psbmpc.t_ts;
-	
-	this->d_safe = psbmpc.d_safe; this->d_close = psbmpc.d_close; this->d_init = psbmpc.d_init;
-	
-	this->K_coll = psbmpc.K_coll;
-
-	this->phi_AH = psbmpc.phi_AH; this->phi_OT = psbmpc.phi_OT; this->phi_HO = psbmpc.phi_HO; this->phi_CR = psbmpc.phi_CR;
-
-	this->kappa = psbmpc.kappa; this->kappa_TC = psbmpc.kappa_TC;
-
-	this->K_u = psbmpc.K_u; this->K_du = psbmpc.K_du;
-
-	this->K_chi_strb = psbmpc.K_chi_strb; this->K_dchi_strb = psbmpc.K_dchi_strb;
-	this->K_chi_port = psbmpc.K_chi_port; this->K_dchi_port = psbmpc.K_dchi_port;
-
-	this->K_sgn = psbmpc.K_sgn; this->T_sgn = psbmpc.T_sgn;
-
-	this->G = psbmpc.G;
-
-	this->obstacle_filter_on = psbmpc.obstacle_filter_on;
-	this->obstacle_colav_on = psbmpc.obstacle_colav_on;
-	
-	this->T_lost_limit = psbmpc.T_lost_limit; this->T_tracked_limit = psbmpc.T_tracked_limit;
-
-	this->ownship = new Ownship(*(psbmpc.ownship));
-	this->cpe = new CPE(*(psbmpc.cpe));
-
-	this->trajectory = psbmpc.trajectory;
-
-	this->AH_0 = psbmpc.AH_0; this->S_TC_0 = psbmpc.S_TC_0; this->S_i_TC_0 = psbmpc.S_i_TC_0;
-	this->O_TC_0 = psbmpc.O_TC_0; this->Q_TC_0 = psbmpc.Q_TC_0; this->IP_0 = psbmpc.IP_0;
-	this->H_TC_0 = psbmpc.H_TC_0; this->X_TC_0 = psbmpc.X_TC_0;
-
-	this->ST_0 = psbmpc.ST_0; this->ST_i_0 = psbmpc.ST_i_0;
-
-	assign_obstacle_vector(old_obstacles, psbmpc.old_obstacles);
-	assign_obstacle_vector(new_obstacles, psbmpc.new_obstacles);
-}
-
-/****************************************************************************************
-*  Name     : PSBMPC~
-*  Function : Class destructor
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-PSBMPC::~PSBMPC()
-{
-	clean();
-}
-
-/****************************************************************************************
-*  Name     : clean
-*  Function : Clears dynamically allocated memory in a sound manner.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::clean()
-{
-	if (ownship != NULL) 	{ delete ownship; }
-	if (cpe != NULL) 		{ delete cpe; }
-	if (!new_obstacles.empty())
-	{
-		for (int i = 0; i < new_obstacles.size(); i++)
-		{
-			delete new_obstacles[i];
-		}
-		new_obstacles.clear();
-	}
-	if (!old_obstacles.empty())
-	{
-		for (int i = 0; i < old_obstacles.size(); i++)
-		{
-			delete old_obstacles[i];
-		}
-		old_obstacles.clear();
-	}
-}
-
-/****************************************************************************************
-*  Name     : operator=
-*  Function : Assignment operator to prevent shallow assignments and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-PSBMPC& PSBMPC::operator=(const PSBMPC &psbmpc)
-{
-	if (this == &psbmpc)
-	{
-		return *this;
-	}
-
-	clean();
-
-	return *this = PSBMPC(psbmpc);
+	cpe.reset(new CPE(cpe_method, 1000, 100, 1, dt));
 }
 
 /****************************************************************************************
@@ -1858,24 +1724,6 @@ void PSBMPC::assign_optimal_trajectory(
 }
 
 /****************************************************************************************
-*  Name     : assign_obstacle_vector
-*  Function : Assumes that the left-hand side has not allocated dynamic memory yet.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::assign_obstacle_vector(
-	std::vector<Obstacle*> &lhs,  														// Resultant vector
-	const std::vector<Obstacle*> &rhs 													// Vector to assign
-	)
-{
-	lhs.resize(rhs.size());
-	for (int i = 0; i < rhs.size(); i++)
-	{
-		lhs[i] = new Obstacle(*(rhs[i]));
-	}
-}
-
-/****************************************************************************************
 *  Name     : update_obstacles
 *  Function : Takes in new obstacle information and updates the obstacle data structures
 *  Author   :
@@ -1889,10 +1737,6 @@ void PSBMPC::update_obstacles(
 	) 			
 {
 	// Clear "old" new obstacles before the update
-	for (int i = 0; i < new_obstacles.size(); i++)
-	{
-		delete new_obstacles[i];
-	}
 	new_obstacles.clear();
 	
 	int n_obst_old = old_obstacles.size();
@@ -1918,7 +1762,7 @@ void PSBMPC::update_obstacles(
 
 				new_obstacles.resize(new_obstacles.size() + 1);
 
-				new_obstacles[new_obstacles.size() - 1] = new Obstacle(*(old_obstacles[j]));
+				new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(*(old_obstacles[j])));
 
 				obstacle_exist = true;
 
@@ -1929,7 +1773,7 @@ void PSBMPC::update_obstacles(
 		{
 			new_obstacles.resize(new_obstacles.size() + 1);
 
-			new_obstacles[new_obstacles.size() - 1] = new Obstacle(
+			new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
@@ -1937,7 +1781,7 @@ void PSBMPC::update_obstacles(
 				obstacle_filter_on, 
 				false, 
 				T, 
-				dt);
+				dt));
 		}
 	}
 	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
@@ -1957,20 +1801,19 @@ void PSBMPC::update_obstacles(
 
 				new_obstacles.resize(new_obstacles.size() + 1);
 
-				new_obstacles[new_obstacles.size() - 1] = new Obstacle(*(old_obstacles[j]));
+				new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(*(old_obstacles[j])));
 			}
 		}
 	}
 
 	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
-	for (int i = 0; i < n_obst_old; i++)
-	{
-		delete old_obstacles[i];
-	}
-	old_obstacles.clear();
-
 	// Then set equal to the new obstacle vector (with fresh pointer addresses ofc)
-	assign_obstacle_vector(old_obstacles, new_obstacles);
+	//assign_obstacle_vector(old_obstacles, new_obstacles);
+	old_obstacles.resize(new_obstacles.size());
+	for (int i = 0; i < new_obstacles.size(); i++)
+	{
+		old_obstacles[i].reset(new Tracked_Obstacle(*(new_obstacles[i])));
+	}
 }
 
 /****************************************************************************************

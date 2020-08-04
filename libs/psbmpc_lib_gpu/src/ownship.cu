@@ -136,7 +136,7 @@ __host__ __device__ void Ownship::determine_active_waypoint_segment(
 		segment_passed = L_wp_segment.dot(d_0_wp.normalized()) < cos(90 * DEG2RAD);
 
 		//(s > R_a && fabs(e) <= R_a))) 	
-		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; std::cout << "Segment " << i << " passed" << std::endl; } 
+		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
 		else										{ break; }		
 		
 	}
@@ -224,7 +224,7 @@ __host__ __device__ void Ownship::update_guidance_references(
 			chi_d = xs(2);
 			break;
 		default : 
-			std::cout << "This guidance method does not exist or is not implemented" << std::endl;
+			// Throw
 			break;
 	}
 }
@@ -301,7 +301,7 @@ __host__ __device__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 			xs_new.block<3, 1>(3, 0) = nu;
 			break;
 		default :
-			std::cout << "The prediction method does not exist or is not implemented" << std::endl;
+			// Throw
 			xs_new.setZero(); 
 	}
 	xs_new(2) = wrap_angle_to_pmpi(xs_new(2));

@@ -34,15 +34,14 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Obstacle_SBMPC::Obstacle_SBMPC()
+Obstacle_SBMPC::Obstacle_SBMPC() :
+	ownship(new Obstacle_Ship())
 {
 	// Initialize parameters before parameter limits, as some limits depend on the
 	// parameter values set.
 	initialize_pars();
 	
 	initialize_par_limits();
-
-	ownship = new Obstacle_Ship();
 }
 
 /****************************************************************************************
@@ -51,7 +50,9 @@ Obstacle_SBMPC::Obstacle_SBMPC()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
+Obstacle_SBMPC::Obstacle_SBMPC(
+	const Obstacle_SBMPC &o_sbmpc 									// In: Obstacle SBMPC to copy
+	)
 {
 	this->n_cbs = o_sbmpc.n_cbs;
 	this->n_M = o_sbmpc.n_M;
@@ -100,7 +101,7 @@ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
 
 	this->obstacle_colav_on = o_sbmpc.obstacle_colav_on;
 
-	this->ownship = new Obstacle_Ship(*(o_sbmpc.ownship));
+	this->ownship.reset(new Obstacle_Ship(*(o_sbmpc.ownship)));
 
 	this->trajectory = o_sbmpc.trajectory;
 
@@ -108,45 +109,15 @@ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
 	this->O_TC_0 = o_sbmpc.O_TC_0; this->Q_TC_0 = o_sbmpc.Q_TC_0; this->IP_0 = o_sbmpc.IP_0;
 	this->H_TC_0 = o_sbmpc.H_TC_0; this->X_TC_0 = o_sbmpc.X_TC_0;
 
-	assign_obstacle_vector(old_obstacles, o_sbmpc.old_obstacles);
-	assign_obstacle_vector(new_obstacles, o_sbmpc.new_obstacles);
-}
-
-/****************************************************************************************
-*  Name     : Obstacle_SBMPC~
-*  Function : Class destructor
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-Obstacle_SBMPC::~Obstacle_SBMPC()
-{
-	clean();
-}
-
-/****************************************************************************************
-*  Name     : clean
-*  Function : Clears dynamically allocated memory in a sound manner.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void Obstacle_SBMPC::clean()
-{
-	if (ownship != NULL) 	{ delete ownship; }
-	if (!new_obstacles.empty())
+	old_obstacles.resize(old_obstacles.size());
+	for (int i = 0; i < old_obstacles.size(); i++)
 	{
-		for (int i = 0; i < new_obstacles.size(); i++)
-		{
-			delete new_obstacles[i];
-		}
-		new_obstacles.clear();
+		old_obstacles[i].reset(new Prediction_Obstacle(*(old_obstacles[i])));
 	}
-	if (!old_obstacles.empty())
+	new_obstacles.resize(new_obstacles.size());
+	for (int i = 0; i < new_obstacles.size(); i++)
 	{
-		for (int i = 0; i < old_obstacles.size(); i++)
-		{
-			delete old_obstacles[i];
-		}
-		old_obstacles.clear();
+		new_obstacles[i].reset(new Prediction_Obstacle(*(new_obstacles[i])));
 	}
 }
 
@@ -157,15 +128,13 @@ void Obstacle_SBMPC::clean()
 *  Modified :
 *****************************************************************************************/
 Obstacle_SBMPC& Obstacle_SBMPC::operator=(
-	const Obstacle_SBMPC &o_sbmpc
+	const Obstacle_SBMPC &o_sbmpc 									// In: Rhs Obstacle SBMPC to assign
 	)
 {
 	if (this == &o_sbmpc)
 	{
 		return *this;
 	}
-	
-	clean();
 
 	return *this = Obstacle_SBMPC(o_sbmpc);
 }
@@ -425,6 +394,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::Vector4d &ownship_state, 									// In: Current ship state
 	const Eigen::Matrix<double, 9, -1> &obstacle_states, 					// In: Dynamic obstacle states 
+	const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 				// In: Obstacle covariance information
 	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
 	)
 {
@@ -433,7 +403,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 	trajectory.resize(4, n_samples);
 	trajectory.col(0) = ownship_state;
 
-	update_obstacles(obstacle_states);
+	update_obstacles(obstacle_states, obstacle_covariances);
 	int n_obst = new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
@@ -1137,20 +1107,31 @@ double Obstacle_SBMPC::distance_to_static_obstacle(
 }
 
 /****************************************************************************************
-*  Name     : assign_obstacle_vector
-*  Function : Assumes that the left-hand side has not allocated dynamic memory yet.
+*  Name     : assign_optimal_trajectory
+*  Function : Set the optimal trajectory to the current predicted trajectory
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-void Obstacle_SBMPC::assign_obstacle_vector(
-	std::vector<Prediction_Obstacle*> &lhs,  								// Resultant vector
-	const std::vector<Prediction_Obstacle*> &rhs 							// Vector to assign
+void Obstacle_SBMPC::assign_optimal_trajectory(
+	Eigen::Matrix<double, 2, -1> &optimal_trajectory 									// In/out: Optimal PSB-MPC trajectory
 	)
 {
-	lhs.resize(rhs.size());
-	for (int i = 0; i < rhs.size(); i++)
+	int n_samples = round(T / dt);
+	// Set current optimal x-y position trajectory, downsample if linear prediction was not used
+	if (prediction_method > Linear)
 	{
-		lhs[i] = new Prediction_Obstacle(*(rhs[i]));
+		int count = 0;
+		optimal_trajectory.resize(2, n_samples / p_step);
+		for (int k = 0; k < n_samples; k+=p_step)
+		{
+			optimal_trajectory.col(count) = trajectory.block<2, 1>(0, k);
+			if (count < round(n_samples / p_step) - 1) count++;					
+		}
+	} 
+	else
+	{
+		optimal_trajectory.resize(2, n_samples);
+		optimal_trajectory = trajectory.block(0, 0, 2, n_samples);
 	}
 }
 
@@ -1161,14 +1142,11 @@ void Obstacle_SBMPC::assign_obstacle_vector(
 *  Modified :
 *****************************************************************************************/
 void Obstacle_SBMPC::update_obstacles(
-	const Eigen::Matrix<double, 9, -1> &obstacle_states 								// In: Dynamic predicted obstacle states
+	const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic predicted obstacle states
+	const Eigen::Matrix<double, 16, -1> &obstacle_covariances 							// In: Obstacle covariance information
 	) 			
 {
 	// Clear "old" new obstacle vector before the update
-	for (int i = 0; i < new_obstacles.size(); i++)
-	{
-		delete new_obstacles[i];
-	}
 	new_obstacles.clear();
 
 	int n_obst_old = old_obstacles.size();
@@ -1183,11 +1161,11 @@ void Obstacle_SBMPC::update_obstacles(
 			if ((double)old_obstacles[j]->get_ID() == obstacle_states(8, i))
 			{
 
-				old_obstacles[j]->update(obstacle_states.block<4, 1>(0, i), dt);
+				old_obstacles[j]->update(obstacle_states.block<4, 1>(0, i));
 
 				new_obstacles.resize(new_obstacles.size() + 1);
 
-				new_obstacles[new_obstacles.size() - 1] = new Prediction_Obstacle(*(old_obstacles[j]));
+				new_obstacles[new_obstacles.size() - 1].reset(new Prediction_Obstacle(*(old_obstacles[j])));
 
 				obstacle_exist = true;
 
@@ -1198,19 +1176,18 @@ void Obstacle_SBMPC::update_obstacles(
 		{
 			new_obstacles.resize(new_obstacles.size() + 1);
 
-			new_obstacles[new_obstacles.size() - 1] = new Prediction_Obstacle(obstacle_states.col(i), obstacle_colav_on, T, dt);
+			new_obstacles[new_obstacles.size() - 1].reset(new Prediction_Obstacle(obstacle_states.col(i), obstacle_covariances.col(i), obstacle_colav_on, T, dt));
 		}
 	}
 
 	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
-	for (int i = 0; i < n_obst_old; i++)
-	{
-		delete old_obstacles[i];
-	}
-	old_obstacles.clear();
-
 	// Then set equal to the new obstacle vector (with fresh pointer addresses ofc)
-	assign_obstacle_vector(old_obstacles, new_obstacles);
+	//assign_obstacle_vector(old_obstacles, new_obstacles);
+	old_obstacles.resize(new_obstacles.size());
+	for (int i = 0; i < new_obstacles.size(); i++)
+	{
+		old_obstacles[i].reset(new Prediction_Obstacle(*(new_obstacles[i])));
+	}
 }
 
 /****************************************************************************************

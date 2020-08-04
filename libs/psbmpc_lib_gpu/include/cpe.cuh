@@ -24,7 +24,7 @@
 #ifndef _CPE_H_
 #define _CPE_H_
 
-#include "xoshiro.hpp"
+#include "cuda_xoshiro.hpp"
 #include <thrust/device_vector.h>
 #include <Eigen/Dense>
 
@@ -52,13 +52,8 @@ private:
 	int n_CE, n_MCSKF;
 
 	// PRNG-related
-	// IMPORTANT NOTE: Some compilers (Older GCC versions < 9.2) implement this 
-	// random device using a PRNG or if a non-deterministic device is not available
-	// => the same sequence is produced every time, this should be checked before
-	// real-time testing to ensure proper functionality.
 	std::random_device seed;
 
-	//std::mt19937_64 generator;
 	xoshiro256plus64 generator;
 
 	std::normal_distribution<double> std_norm_pdf;
@@ -68,11 +63,11 @@ private:
 	
 	bool converged_last;
 
-	std::vector<Eigen::Vector2d> mu_CE_last;
-	std::vector<Eigen::Matrix2d> P_CE_last;
+	Eigen::Vector2d *mu_CE_last;
+	Eigen::Matrix2d *P_CE_last;
 
-	std::vector<int> N_e, e_count;
-	std::vector<Eigen::MatrixXd> elite_samples;
+	int N_e, e_count;
+	Eigen::MatrixXd elite_samples;
 
 	// MCSKF4D-method parameters and internal states
 	double q, r, dt_seg; 
@@ -80,11 +75,11 @@ private:
 	Eigen::VectorXd P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
 	// Common internal sample variables
-	std::vector<Eigen::MatrixXd> samples;
-	std::vector<Eigen::VectorXd> valid;
+	Eigen::MatrixXd samples;
+	Eigen::VectorXd valid;
 	
 	// Safety zone parameters
-	std::vector<double> d_safe;
+	double *d_safe;
 
 	// Cholesky decomposition matrix
 	Eigen::MatrixXd L;

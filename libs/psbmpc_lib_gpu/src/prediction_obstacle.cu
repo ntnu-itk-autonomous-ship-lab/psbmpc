@@ -32,7 +32,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ Prediction_Obstacle::Prediction_Obstacle(
+__host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 	const Eigen::VectorXd& xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID] at the current time
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance at the current time
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
@@ -58,7 +58,7 @@ __device__ Prediction_Obstacle::Prediction_Obstacle(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ Prediction_Obstacle::Prediction_Obstacle(
+__host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 	const Prediction_Obstacle &po 								// In: Obstacle to copy
 	) : 
 	A(po.A), 
@@ -73,7 +73,7 @@ __device__ Prediction_Obstacle::Prediction_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ Prediction_Obstacle::~Prediction_Obstacle()
+__host__ __device__ Prediction_Obstacle::~Prediction_Obstacle()
 {
 	delete sbmpc;
 }
@@ -84,7 +84,9 @@ __device__ Prediction_Obstacle::~Prediction_Obstacle()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ Prediction_Obstacle& Prediction_Obstacle::operator=(const Prediction_Obstacle &rhs)
+__host__ __device__ Prediction_Obstacle& Prediction_Obstacle::operator=(
+	const Prediction_Obstacle &rhs 								 		// In: Rhs obstacle to assign
+	)
 {
 	if (this == &rhs) 	{ return *this; }
 	if (sbmpc != NULL) 	{ delete sbmpc; }
@@ -98,7 +100,7 @@ __device__ Prediction_Obstacle& Prediction_Obstacle::operator=(const Prediction_
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void Prediction_Obstacle::predict_independent_trajectory(						
+__host__ __device__ void Prediction_Obstacle::predict_independent_trajectory(						
 	const double T, 											// In: Time horizon
 	const double dt 											// In: Time step
 	)
@@ -128,9 +130,8 @@ __device__ void Prediction_Obstacle::predict_independent_trajectory(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void Prediction_Obstacle::update(
-	const Eigen::Vector4d &xs, 								// In: Predicted obstacle state [x, y, V_x, V_y]
-	const bool colav_on										// In: Boolean determining if the prediction obstacle object has an active COLAV system
+__host__ __device__ void Prediction_Obstacle::update(
+	const Eigen::Vector4d &xs 								// In: Predicted obstacle state [x, y, V_x, V_y]
 	)
 {
 	double psi = atan2(xs(3), xs(2));
@@ -138,6 +139,4 @@ __device__ void Prediction_Obstacle::update(
 	xs_0(1) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
 	xs_0(2) = xs(2);
 	xs_0(3) = xs(3);
-
-	this->colav_on = colav_on;
 }

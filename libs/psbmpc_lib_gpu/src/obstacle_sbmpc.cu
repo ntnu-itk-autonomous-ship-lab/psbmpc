@@ -21,6 +21,7 @@
 #include "utilities.cuh"
 #include "obstacle_sbmpc.cuh"
 #include <iostream>
+#include <math.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -57,8 +58,13 @@ __host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc
 	this->n_cbs = o_sbmpc.n_cbs;
 	this->n_M = o_sbmpc.n_M;
 
-	this->u_offsets = o_sbmpc.u_offsets;
-	this->chi_offsets = o_sbmpc.chi_offsets;
+	u_offsets = new Eigen::VectorXd[n_M]; 
+	chi_offsets = new Eigen::VectorXd[n_M];
+	for (int M = 0; M < n_M; M++)
+	{
+		u_offsets[M] = o_sbmpc.u_offsets[M];
+		chi_offsets[M] = o_sbmpc.chi_offsets[M];
+	}
 
 	this->offset_sequence_counter = o_sbmpc.offset_sequence_counter;
 	this->offset_sequence = o_sbmpc.offset_sequence;
@@ -105,12 +111,28 @@ __host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc
 
 	this->trajectory = o_sbmpc.trajectory;
 
-	this->AH_0 = o_sbmpc.AH_0; this->S_TC_0 = o_sbmpc.S_TC_0; this->S_i_TC_0 = o_sbmpc.S_i_TC_0;
-	this->O_TC_0 = o_sbmpc.O_TC_0; this->Q_TC_0 = o_sbmpc.Q_TC_0; this->IP_0 = o_sbmpc.IP_0;
-	this->H_TC_0 = o_sbmpc.H_TC_0; this->X_TC_0 = o_sbmpc.X_TC_0;
+	this->n_obst = o_sbmpc.n_obst;
 
-	assign_obstacle_vector(old_obstacles, o_sbmpc.old_obstacles);
-	assign_obstacle_vector(new_obstacles, o_sbmpc.new_obstacles);
+	AH_0 = new bool[n_obst]; S_TC_0 = new bool[n_obst]; S_i_TC_0 = new bool[n_obst];
+	O_TC_0 = new bool[n_obst]; Q_TC_0 = new bool[n_obst]; IP_0 = new bool[n_obst];
+	H_TC_0 = new bool[n_obst]; X_TC_0 = new bool[n_obst];
+
+	for (int i = 0; i < n_obst; i++)
+	{
+		obstacle_colav_on = o_sbmpc.obstacle_colav_on;
+
+		AH_0[i] = o_sbmpc.AH_0[i]; 
+		S_TC_0[i] = o_sbmpc.S_TC_0[i];
+		S_i_TC_0[i] = o_sbmpc.S_i_TC_0[i]; 
+		O_TC_0[i] = o_sbmpc.O_TC_0[i];
+		Q_TC_0[i] = o_sbmpc.Q_TC_0[i]; 
+		IP_0[i] = o_sbmpc.IP_0[i];
+		H_TC_0[i] = o_sbmpc.H_TC_0[i]; 
+		X_TC_0[i] = o_sbmpc.X_TC_0[i];
+
+		old_obstacles[i] = Prediction_Obstacle(o_sbmpc.old_obstacles[i]);
+		new_obstacles[i] = Prediction_Obstacle(o_sbmpc.new_obstacles[i]);
+	}
 }
 
 /****************************************************************************************
@@ -132,22 +154,22 @@ __host__ __device__ Obstacle_SBMPC::~Obstacle_SBMPC()
 *****************************************************************************************/
 __host__ __device__ void Obstacle_SBMPC::clean()
 {
+	if (u_offsets != NULL) { delete[] u_offsets; }
+	if (chi_offsets != NULL) { delete[] chi_offsets; }
 	if (ownship != NULL) 	{ delete ownship; }
-	if (!new_obstacles.empty())
-	{
-		for (int i = 0; i < new_obstacles.size(); i++)
-		{
-			delete new_obstacles[i];
-		}
-		new_obstacles.clear();
+	if (AH_0 != NULL) 		
+	{ 
+		delete[] AH_0; delete[] S_TC_0; delete[] S_i_TC_0;
+		delete[] O_TC_0; delete[] Q_TC_0; delete[] IP_0;
+		delete[] H_TC_0; delete[] X_TC_0;
 	}
-	if (!old_obstacles.empty())
+	if (old_obstacles != NULL)
 	{
-		for (int i = 0; i < old_obstacles.size(); i++)
-		{
-			delete old_obstacles[i];
-		}
-		old_obstacles.clear();
+		delete[] old_obstacles;
+	}
+	if (new_obstacles != NULL)
+	{
+		delete[] new_obstacles;
 	}
 }
 
@@ -158,17 +180,17 @@ __host__ __device__ void Obstacle_SBMPC::clean()
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ Obstacle_SBMPC& Obstacle_SBMPC::operator=(
-	const Obstacle_SBMPC &o_sbmpc
+	const Obstacle_SBMPC &rhs 										// Rhs Obstacle_SBMPC to assign		
 	)
 {
-	if (this == &o_sbmpc)
+	if (this == &rhs)
 	{
 		return *this;
 	}
 	
 	clean();
 
-	return *this = Obstacle_SBMPC(o_sbmpc);
+	return *this = Obstacle_SBMPC(rhs);
 }
 
 /****************************************************************************************
@@ -278,10 +300,6 @@ __host__ __device__ bool Obstacle_SBMPC::determine_COLREGS_violation(
 				!is_passed;
 
 	bool mu = (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
-	if (mu)
-	{
-		std::cout << mu << std::endl;
-	}
 	return mu;
 }
 
@@ -298,7 +316,7 @@ __host__ __device__ int Obstacle_SBMPC::get_ipar(
 	switch(index){
 		case i_ipar_n_M 				: return n_M; 
 
-		default : { std::cout << "Wrong index given" << std::endl; return 0;}
+		default : { return 0; }// Throw
 	}
 }
 	
@@ -329,7 +347,7 @@ __host__ __device__ double Obstacle_SBMPC::get_dpar(
 		case i_dpar_K_sgn 				: return K_sgn;
 		case i_dpar_T_sgn 				: return T_sgn;
 		case i_dpar_G					: return G;
-		default : { std::cout << "Wrong index given" << std::endl; return 0; }
+		default : { return 0; } // Throw }
 	}
 }
 
@@ -350,13 +368,12 @@ __host__ __device__ void Obstacle_SBMPC::set_par(
 		switch(index)
 		{
 			case i_ipar_n_M : n_M = value; break;
-
-			default : std::cout << "Wrong index given" << std::endl; break;
+			default : break; // Throw
 		}
 	}
 	else
 	{
-		std::cout << "Non-valid parameter value!" << std::endl;
+		// Throw
 	}
 	
 }
@@ -398,15 +415,13 @@ __host__ __device__ void Obstacle_SBMPC::set_par(
 			case i_dpar_K_sgn 				: K_sgn = value; break;
 			case i_dpar_T_sgn 				: T_sgn = value; break;
 			case i_dpar_G 					: G = value; break;
-
-			default : std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the Obstacle_SBMPC class.." << std::endl; break;
+			default : break; // Throw
 		}
 	}
 	else
 	{
-		std::cout << "Non-valid parameter value!" << std::endl;
+		// Throw
 	}
-	
 }
 
 /****************************************************************************************
@@ -415,7 +430,7 @@ __host__ __device__ void Obstacle_SBMPC::set_par(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_SBMPC::calculate_optimal_offsets(									
+__host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(									
 	double &u_opt, 															// In/out: Optimal surge offset
 	double &chi_opt, 														// In/out: Optimal course offset
 	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
@@ -425,7 +440,8 @@ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::Vector4d &ownship_state, 									// In: Current ship state
-	const Eigen::Matrix<double, 9, -1> &obstacle_states, 					// In: Dynamic obstacle states 
+	const Eigen::Matrix<double, 9, -1> &obstacle_states, 					// In: Dynamic obstacle states
+	const Eigen::Matrix<double, 16, -1> &obstacle_covariances,				// In: Associated obstacle covariances
 	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
 	)
 {
@@ -434,8 +450,7 @@ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	trajectory.resize(4, n_samples);
 	trajectory.col(0) = ownship_state;
 
-	update_obstacles(obstacle_states);
-	int n_obst = new_obstacles.size();
+	update_obstacles(obstacle_states, obstacle_covariances);
 	int n_static_obst = static_obstacles.cols();
 
 	Eigen::VectorXd HL_0(n_obst); 
@@ -456,7 +471,7 @@ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	{
 		for (int i = 0; i < n_obst; i++)
 		{
-			new_obstacles[i]->predict_independent_trajectory(T, dt);
+			new_obstacles[i].predict_independent_trajectory(T, dt);
 		}
 	}
 
@@ -489,21 +504,7 @@ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 			min_cost = cost;
 			opt_offset_sequence = offset_sequence;
 
-			// Set current optimal x-y position trajectory, downsample if linear prediction was not used
-			if (prediction_method > Linear)
-			{
-				int count = 0;
-				predicted_trajectory.resize(2, n_samples / p_step);
-				for (int k = 0; k < n_samples; k+=p_step)
-				{
-					predicted_trajectory.col(count) = trajectory.block<2, 1>(0, k);
-					if (count < std::round(n_samples / p_step) - 1) count++;					
-				}
-			} 
-			else
-			{
-				predicted_trajectory = trajectory.block(2, n_samples, 0, 0);
-			}
+			assign_optimal_trajectory(predicted_trajectory);
 
 			// Assign current optimal hazard level for each obstacle
 			for (int i = 0; i < n_obst; i++)
@@ -520,13 +521,67 @@ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
 
 	double CF_0 = u_opt * (1 - fabs(chi_opt * RAD2DEG) / 15.0);
-	colav_status.resize(2,1);
+	colav_status.resize(2, 1);
 	colav_status << CF_0, min_cost;
 }
 
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : assign_obstacle_vector
+*  Function : 
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ void Obstacle_SBMPC::assign_obstacle_vector(
+	Prediction_Obstacle* lhs,  								// Resultant vector
+	Prediction_Obstacle* rhs, 								// Vector to assign
+	const int size 											// Size of rhs vector
+	)
+{
+	delete[] lhs;
+
+	if (rhs == NULL)
+	{
+		lhs = NULL; return;
+	} 
+	
+	lhs = new Prediction_Obstacle[size];
+	for (int i = 0; i < size; i++)
+	{
+		lhs[i] = Prediction_Obstacle(rhs[i]);
+	}
+}
+
+/****************************************************************************************
+*  Name     : assign_optimal_trajectory
+*  Function : Set the optimal trajectory to the current predicted trajectory
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ void Obstacle_SBMPC::assign_optimal_trajectory(
+	Eigen::Matrix<double, 2, -1> &optimal_trajectory 									// In/out: Optimal PSB-MPC trajectory
+	)
+{
+	int n_samples = round(T / dt);
+	// Set current optimal x-y position trajectory, downsample if linear prediction was not used
+	if (prediction_method > Linear)
+	{
+		int count = 0;
+		optimal_trajectory.resize(2, n_samples / p_step);
+		for (int k = 0; k < n_samples; k+=p_step)
+		{
+			optimal_trajectory.col(count) = trajectory.block<2, 1>(0, k);
+			if (count < round(n_samples / p_step) - 1) count++;					
+		}
+	} 
+	else
+	{
+		optimal_trajectory.resize(2, n_samples);
+		optimal_trajectory = trajectory.block(0, 0, 2, n_samples);
+	}
+}
 
 /****************************************************************************************
 *  Name     : initialize_par_limits
@@ -588,8 +643,8 @@ __host__ __device__ void Obstacle_SBMPC::initialize_pars()
 	offset_sequence_counter.resize(2 * n_M);
 	offset_sequence.resize(2 * n_M);
 
-	chi_offsets.resize(n_M);
-	u_offsets.resize(n_M);
+	chi_offsets = new Eigen::VectorXd[n_M];
+	u_offsets = new Eigen::VectorXd[n_M];
 	for (int M = 0; M < n_M; M++)
 	{
 		if (M == 0)
@@ -662,10 +717,8 @@ __host__ __device__ void Obstacle_SBMPC::initialize_pars()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_SBMPC::initialize_prediction()
+__host__ __device__ void Obstacle_SBMPC::initialize_prediction()
 {
-	int n_obst = new_obstacles.size();
-
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
@@ -674,7 +727,7 @@ __device__ void Obstacle_SBMPC::initialize_prediction()
 	Eigen::Vector2d p_cpa;
 	for (int i = 0; i < n_obst; i++)
 	{
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i]->get_state());
+		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), new_obstacles[i].get_state());
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -703,7 +756,7 @@ __device__ void Obstacle_SBMPC::initialize_prediction()
 		// obstacle (that is not passed) is taken at t_cpa_min
 		if (d_cpa_min > d_safe)
 		{
-			maneuver_times(M) = std::round(t_cpa_min / dt);
+			maneuver_times(M) = round(t_cpa_min / dt);
 		}
 		// If a predicted collision occurs with the closest obstacle, avoidance maneuver 
 		// M is taken right after the obstacle maneuvers (which will be at t_0 + M * t_ts)
@@ -711,10 +764,9 @@ __device__ void Obstacle_SBMPC::initialize_prediction()
 		// at t_0 + M * t_ts + 1 anyways (simplification)
 		else
 		{
-			maneuver_times(M) = maneuver_times(M - 1) + std::round((t_ts + 1) / dt);
+			maneuver_times(M) = maneuver_times(M - 1) + round((t_ts + 1) / dt);
 		}
 	}
-	std::cout << maneuver_times.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -724,7 +776,7 @@ __device__ void Obstacle_SBMPC::initialize_prediction()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_SBMPC::reset_control_behavior()
+__host__ __device__ void Obstacle_SBMPC::reset_control_behavior()
 {
 	offset_sequence_counter.setZero();
 	for (int M = 0; M < n_M; M++)
@@ -741,7 +793,7 @@ __device__ void Obstacle_SBMPC::reset_control_behavior()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_SBMPC::increment_control_behavior()
+__host__ __device__ void Obstacle_SBMPC::increment_control_behavior()
 {
 	for (int M = n_M - 1; M > -1; M--)
 	{
@@ -782,17 +834,17 @@ __device__ void Obstacle_SBMPC::increment_control_behavior()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ bool Obstacle_SBMPC::determine_colav_active(
+__host__ __device__ bool Obstacle_SBMPC::determine_colav_active(
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
 	Eigen::Vector4d xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
-	for (int i = 0; i < new_obstacles.size(); i++)
+	for (int i = 0; i < n_obst; i++)
 	{
-		d_0i(0) = new_obstacles[i]->get_state()(0) - xs(0);
-		d_0i(1) = new_obstacles[i]->get_state()(1) - xs(1);
+		d_0i(0) = new_obstacles[i].get_state()(0) - xs(0);
+		d_0i(1) = new_obstacles[i].get_state()(1) - xs(1);
 		if (d_0i.norm() < d_init) colav_active = true;
 	}
 	colav_active = colav_active || n_static_obst > 0;
@@ -807,7 +859,7 @@ __device__ bool Obstacle_SBMPC::determine_colav_active(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ bool Obstacle_SBMPC::determine_transitional_cost_indicator(
+__host__ __device__ bool Obstacle_SBMPC::determine_transitional_cost_indicator(
 	const double psi_A, 													// In: Heading of vessel A
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
@@ -847,7 +899,7 @@ __device__ bool Obstacle_SBMPC::determine_transitional_cost_indicator(
 	return O_TC || Q_TC || X_TC || H_TC;
 }
 
-__device__ bool Obstacle_SBMPC::determine_transitional_cost_indicator(
+__host__ __device__ bool Obstacle_SBMPC::determine_transitional_cost_indicator(
 	const Eigen::VectorXd& xs_A,											// In: State vector of vessel A (the ownship)
 	const Eigen::VectorXd& xs_B, 											// In: State vector of vessel B (the obstacle)
 	const int i, 															// In: Index of obstacle
@@ -904,7 +956,7 @@ __device__ bool Obstacle_SBMPC::determine_transitional_cost_indicator(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
+__host__ __device__ double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
 	const int i 													// In: Index of obstacle
 	)
 {
@@ -918,7 +970,7 @@ __device__ double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ double Obstacle_SBMPC::calculate_collision_cost(
+__host__ __device__ double Obstacle_SBMPC::calculate_collision_cost(
 	const Eigen::Vector2d &v_1, 												// In: Velocity v_1
 	const Eigen::Vector2d &v_2 												// In: Velocity v_2
 	)
@@ -932,7 +984,7 @@ __device__ double Obstacle_SBMPC::calculate_collision_cost(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double Obstacle_SBMPC::calculate_control_deviation_cost()
+__host__ __device__ double Obstacle_SBMPC::calculate_control_deviation_cost()
 {
 	double cost = 0;
 	for (int i = 0; i < n_M; i++)
@@ -958,7 +1010,7 @@ __device__ double Obstacle_SBMPC::calculate_control_deviation_cost()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double Obstacle_SBMPC::calculate_chattering_cost()
+__host__ __device__ double Obstacle_SBMPC::calculate_chattering_cost()
 {
 	double cost = 0;
 
@@ -987,7 +1039,7 @@ __device__ double Obstacle_SBMPC::calculate_chattering_cost()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ double Obstacle_SBMPC::calculate_grounding_cost(
+__host__ __device__ double Obstacle_SBMPC::calculate_grounding_cost(
 	const Eigen::Matrix<double, 4, -1>& static_obstacles						// In: Static obstacle information
 	)
 {
@@ -1002,7 +1054,7 @@ __device__ double Obstacle_SBMPC::calculate_grounding_cost(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-__device__ int Obstacle_SBMPC::find_triplet_orientation(
+__host__ __device__ int Obstacle_SBMPC::find_triplet_orientation(
 	const Eigen::Vector2d &p, 
 	const Eigen::Vector2d &q, 
 	const Eigen::Vector2d &r
@@ -1022,14 +1074,14 @@ __device__ int Obstacle_SBMPC::find_triplet_orientation(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-__device__ bool Obstacle_SBMPC::determine_if_on_segment(
+__host__ __device__ bool Obstacle_SBMPC::determine_if_on_segment(
 	const Eigen::Vector2d &p, 
 	const Eigen::Vector2d &q, 
 	const Eigen::Vector2d &r
 	)
 {
-    if (q[0] <= std::max(p[0], r[0]) && q[0] >= std::min(p[0], r[0]) &&
-        q[1] <= std::max(p[1], r[1]) && q[1] >= std::min(p[1], r[1]))
+    if (q[0] <= max(p[0], r[0]) && q[0] >= min(p[0], r[0]) &&
+        q[1] <= max(p[1], r[1]) && q[1] >= min(p[1], r[1]))
         return true;
     return false;
 }
@@ -1040,7 +1092,7 @@ __device__ bool Obstacle_SBMPC::determine_if_on_segment(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-__device__ bool Obstacle_SBMPC::determine_if_behind(
+__host__ __device__ bool Obstacle_SBMPC::determine_if_behind(
 	const Eigen::Vector2d &p_1, 
 	const Eigen::Vector2d &v_1, 
 	const Eigen::Vector2d &v_2, 
@@ -1063,7 +1115,7 @@ __device__ bool Obstacle_SBMPC::determine_if_behind(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-__device__ bool Obstacle_SBMPC::determine_if_lines_intersect(
+__host__ __device__ bool Obstacle_SBMPC::determine_if_lines_intersect(
 	const Eigen::Vector2d &p_1, 
 	const Eigen::Vector2d &q_1, 
 	const Eigen::Vector2d &p_2, 
@@ -1103,7 +1155,7 @@ __device__ bool Obstacle_SBMPC::determine_if_lines_intersect(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-__device__ double Obstacle_SBMPC::distance_from_point_to_line(
+__host__ __device__ double Obstacle_SBMPC::distance_from_point_to_line(
 	const Eigen::Vector2d &p, 
 	const Eigen::Vector2d &q_1, 
 	const Eigen::Vector2d &q_2
@@ -1125,7 +1177,7 @@ __device__ double Obstacle_SBMPC::distance_from_point_to_line(
 *  Author   : Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
-__device__ double Obstacle_SBMPC::distance_to_static_obstacle(
+__host__ __device__ double Obstacle_SBMPC::distance_to_static_obstacle(
 	const Eigen::Vector2d &p, 
 	const Eigen::Vector2d &v_1, 
 	const Eigen::Vector2d &v_2
@@ -1134,25 +1186,7 @@ __device__ double Obstacle_SBMPC::distance_to_static_obstacle(
     double d2line = distance_from_point_to_line(p, v_1, v_2);
 
     if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line)) return d2line;
-    else return std::min((v_1-p).norm(),(v_2-p).norm());
-}
-
-/****************************************************************************************
-*  Name     : assign_obstacle_vector
-*  Function : Assumes that the left-hand side has not allocated dynamic memory yet.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
-__device__ void Obstacle_SBMPC::assign_obstacle_vector(
-	std::vector<Prediction_Obstacle*> &lhs,  								// Resultant vector
-	const std::vector<Prediction_Obstacle*> &rhs 							// Vector to assign
-	)
-{
-	lhs.resize(rhs.size());
-	for (int i = 0; i < rhs.size(); i++)
-	{
-		lhs[i] = new Prediction_Obstacle(*(rhs[i]));
-	}
+    else return min((v_1-p).norm(),(v_2-p).norm());
 }
 
 /****************************************************************************************
@@ -1161,34 +1195,29 @@ __device__ void Obstacle_SBMPC::assign_obstacle_vector(
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_SBMPC::update_obstacles(
-	const Eigen::Matrix<double, 9, -1> &obstacle_states 								// In: Dynamic predicted obstacle states
+__host__ __device__ void Obstacle_SBMPC::update_obstacles(
+	const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic predicted obstacle states
+	const Eigen::Matrix<double, 16, -1> &obstacle_covariances 							// In: Associated obstacle covariances
 	) 			
 {
-	// Clear "old" new obstacle vector before the update
-	for (int i = 0; i < new_obstacles.size(); i++)
-	{
-		delete new_obstacles[i];
-	}
-	new_obstacles.clear();
+	int n_obst_old = n_obst;
+	n_obst = obstacle_states.cols();
 
-	int n_obst_old = old_obstacles.size();
-	int n_obst_new = obstacle_states.cols();
+	// Delete "old" new obstacle vector before the update
+	assign_obstacle_vector(new_obstacles, NULL, 0);
+	new_obstacles = new Prediction_Obstacle[n_obst];
 
 	bool obstacle_exist;
-	for (int i = 0; i < n_obst_new; i++)
+	for (int i = 0; i < n_obst; i++)
 	{
 		obstacle_exist = false;
 		for (int j = 0; j < n_obst_old; j++)
 		{
-			if ((double)old_obstacles[j]->get_ID() == obstacle_states(8, i))
+			if ((double)old_obstacles[j].get_ID() == obstacle_states(8, i))
 			{
+				old_obstacles[j].update(obstacle_states.block<4, 1>(0, i));
 
-				old_obstacles[j]->update(obstacle_states.block<4, 1>(0, i), dt);
-
-				new_obstacles.resize(new_obstacles.size() + 1);
-
-				new_obstacles[new_obstacles.size() - 1] = new Prediction_Obstacle(*(old_obstacles[j]));
+				new_obstacles[i] = Prediction_Obstacle(old_obstacles[j]);
 
 				obstacle_exist = true;
 
@@ -1197,21 +1226,12 @@ __device__ void Obstacle_SBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			new_obstacles.resize(new_obstacles.size() + 1);
-
-			new_obstacles[new_obstacles.size() - 1] = new Prediction_Obstacle(obstacle_states.col(i), obstacle_colav_on, T, dt);
+			new_obstacles[i] = Prediction_Obstacle(obstacle_states.col(i), obstacle_covariances.col(i), obstacle_colav_on, T, dt);
 		}
 	}
 
-	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
-	for (int i = 0; i < n_obst_old; i++)
-	{
-		delete old_obstacles[i];
-	}
-	old_obstacles.clear();
-
-	// Then set equal to the new obstacle vector (with fresh pointer addresses ofc)
-	assign_obstacle_vector(old_obstacles, new_obstacles);
+	// Set old obstacle vector equal to the new obstacle vector (with fresh pointer addresses ofc)
+	assign_obstacle_vector(old_obstacles, new_obstacles, n_obst);
 }
 
 /****************************************************************************************
@@ -1220,21 +1240,20 @@ __device__ void Obstacle_SBMPC::update_obstacles(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_SBMPC::update_obstacle_status(
+__host__ __device__ void Obstacle_SBMPC::update_obstacle_status(
 	Eigen::Matrix<double,-1,-1> &obstacle_status,							// In/out: Various information on obstacles
 	const Eigen::VectorXd &HL_0 											// In: relative (to total hazard) hazard level of each obstacle
 	)
 {
-	int n_obst = new_obstacles.size();
 	obstacle_status.resize(13, n_obst);
 	double ID_0, RB_0, COG_0, SOG_0; 
 	Eigen::Vector2d d_0i;
 	Eigen::Vector4d xs_i;
 	for(int i = 0; i < n_obst; i++)
 	{
-		xs_i = new_obstacles[i]->get_state();
+		xs_i = new_obstacles[i].get_state();
 
-		ID_0 = new_obstacles[i]->get_ID();
+		ID_0 = new_obstacles[i].get_ID();
 		
 		d_0i = (xs_i.block<2, 1>(0, 0) - trajectory.block<2, 1>(0, 0));
 
@@ -1267,7 +1286,7 @@ __device__ void Obstacle_SBMPC::update_obstacle_status(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void Obstacle_SBMPC::update_transitional_variables()
+__host__ __device__ void Obstacle_SBMPC::update_transitional_variables()
 {
 	Eigen::Vector4d xs = trajectory.col(0);
 	bool is_close;
@@ -1279,20 +1298,20 @@ __device__ void Obstacle_SBMPC::update_transitional_variables()
 	v_A(0) = xs(3) * cos(psi_A);
 	v_A(1) = xs(3) * sin(psi_A);
 	
-	int n_obst = new_obstacles.size();
-	
-	AH_0.resize(n_obst);   S_TC_0.resize(n_obst); S_i_TC_0.resize(n_obst); 
-	O_TC_0.resize(n_obst); Q_TC_0.resize(n_obst); IP_0.resize(n_obst); 
-	H_TC_0.resize(n_obst); X_TC_0.resize(n_obst);
+	delete[] AH_0; delete[] S_TC_0; delete[] S_i_TC_0; delete[] O_TC_0;
+	delete[] Q_TC_0; delete[] IP_0; delete[] H_TC_0; delete[] X_TC_0;
+	AH_0 = new bool[n_obst]; S_TC_0 = new bool[n_obst]; S_i_TC_0 = new bool[n_obst];
+	O_TC_0 = new bool[n_obst]; Q_TC_0 = new bool[n_obst]; IP_0 = new bool[n_obst];
+	H_TC_0 = new bool[n_obst]; X_TC_0 = new bool[n_obst];
 
 	for (int i = 0; i < n_obst; i++)
 	{
-		v_B(0) = new_obstacles[i]->get_state()(2);
-		v_B(1) = new_obstacles[i]->get_state()(3);
+		v_B(0) = new_obstacles[i].get_state()(2);
+		v_B(1) = new_obstacles[i].get_state()(3);
 		psi_B = atan2(v_B(1), v_B(0));
 
-		L_AB(0) = new_obstacles[i]->get_state()(0) - xs(0);
-		L_AB(1) = new_obstacles[i]->get_state()(1) - xs(1);
+		L_AB(0) = new_obstacles[i].get_state()(0) - xs(0);
+		L_AB(1) = new_obstacles[i].get_state()(1) - xs(1);
 		d_AB = L_AB.norm();
 		L_AB = L_AB / L_AB.norm();
 

@@ -6,11 +6,11 @@
 
 #IncludeRegexTransform: 
 
-../libs/psbmpc_lib_gpu/include/obstacle_ship.cuh
-Eigen/Dense
-../libs/psbmpc_lib_gpu/include/Eigen/Dense
+../libs/psbmpc_lib_gpu/include/ownship.cuh
 thrust/device_vector.h
 -
+Eigen/Dense
+../libs/psbmpc_lib_gpu/include/Eigen/Dense
 
 ../libs/psbmpc_lib_gpu/include/utilities.cuh
 Eigen/Dense
@@ -1066,13 +1066,13 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle_ship.cu
-thrust/device_vector.h
--
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/ownship.cu
 utilities.cuh
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cuh
-obstacle_ship.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle_ship.cuh
+ownship.cuh
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/ownship.cuh
+thrust/device_vector.h
+-
 vector
 -
 iostream
