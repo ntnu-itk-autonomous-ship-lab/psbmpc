@@ -66,6 +66,10 @@ public:
 	__host__ __device__ int get_ID() const { return ID; };
 
 	__host__ __device__ void set_colav_on(const bool colav_on) { this->colav_on = colav_on; };
+
+	__host__ __device__ double get_length() const { return l; };
+
+	__host__ __device__ double get_width() const { return w; };
 };
 
 #endif

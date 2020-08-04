@@ -93,6 +93,8 @@ double PSBMPC::get_dpar(
 		case i_dpar_K_sgn 				: return K_sgn;
 		case i_dpar_T_sgn 				: return T_sgn;
 		case i_dpar_G					: return G;
+		case i_dpar_q					: return q;
+		case i_dpar_p					: return p;
 		case i_dpar_T_lost_limit		: return T_lost_limit;
 		case i_dpar_T_tracked_limit		: return T_tracked_limit;
 
@@ -183,6 +185,8 @@ void PSBMPC::set_par(
 			case i_dpar_K_sgn 				: K_sgn = value; break;
 			case i_dpar_T_sgn 				: T_sgn = value; break;
 			case i_dpar_G 					: G = value; break;
+			case i_dpar_q					: q = value; break;
+			case i_dpar_p					: p = value; break;
 			case i_dpar_T_lost_limit		: T_lost_limit = value; break;
 			case i_dpar_T_tracked_limit		: T_tracked_limit = value; break;
 
@@ -561,11 +565,12 @@ void PSBMPC::initialize_pars()
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					
 	K_dchi_strb = 0.9;	 			
-	K_dchi_port = 1.2;	  					
-	G = 0;		         					 // 1.0e3
-
+	K_dchi_port = 1.2;	  
 	K_sgn = 5;
-	T_sgn = 4 * t_ts;
+	T_sgn = 4 * t_ts;					
+	G = 0;		         					 // 1.0e3
+	q = 4.0;
+	p = 1.0;
 
 	obstacle_filter_on = false;
 	obstacle_colav_on.resize(1);
@@ -1476,11 +1481,31 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_collision_cost(
-	const Eigen::Vector2d &v_1, 											// In: Velocity v_1
-	const Eigen::Vector2d &v_2 												// In: Velocity v_2
+	const Eigen::Vector2d &v_1, 									// In: Velocity v_1
+	const Eigen::Vector2d &v_2 										// In: Velocity v_2
 	)
 {
 	return K_coll * (v_1 - v_2).norm();
+}
+
+/****************************************************************************************
+*  Name     : calculate_ad_hoc_collision_risk
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+double PSBMPC::calculate_ad_hoc_collision_risk(
+	const double d_AB, 												// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
+	const double t 													// In: Prediction time t > t0 (= 0)
+	)
+{
+	double R = 0;
+	if (d_AB <= d_safe)
+	{
+		assert(t > 0);
+		R = pow(d_safe / d_AB, q) * (1 / pow(fabs(t), p)); 
+	}
+	return R;
 }
 
 /****************************************************************************************
@@ -1771,9 +1796,7 @@ void PSBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			new_obstacles.resize(new_obstacles.size() + 1);
-
-			new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(
+			new_obstacles.push_back(std::make_unique<Tracked_Obstacle>(new Tracked_Obstacle(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
@@ -1781,7 +1804,7 @@ void PSBMPC::update_obstacles(
 				obstacle_filter_on, 
 				false, 
 				T, 
-				dt));
+				dt)));
 		}
 	}
 	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
@@ -1799,16 +1822,13 @@ void PSBMPC::update_obstacles(
 			{
 				old_obstacles[j]->update(obstacle_filter_on, dt);
 
-				new_obstacles.resize(new_obstacles.size() + 1);
-
 				new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(*(old_obstacles[j])));
 			}
 		}
 	}
-
+	std::cout << new_obstacles[0]->get_ID() << std::endl;
 	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
-	// Then set equal to the new obstacle vector (with fresh pointer addresses ofc)
-	//assign_obstacle_vector(old_obstacles, new_obstacles);
+	// Then set equal to the new obstacle vector
 	old_obstacles.resize(new_obstacles.size());
 	for (int i = 0; i < new_obstacles.size(); i++)
 	{

@@ -63,6 +63,7 @@ private:
 	double K_chi_port, K_dchi_port; 
 	double K_sgn, T_sgn;
 	double G;
+	double q, p;
 	
 	bool obstacle_colav_on;
 
@@ -106,6 +107,8 @@ private:
 	__host__ __device__ double calculate_dynamic_obstacle_cost(const int i);
 
 	__host__ __device__ double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
+
+	__host__ __device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	__host__ __device__ double calculate_control_deviation_cost();	
@@ -160,22 +163,6 @@ public:
 		const Eigen::Vector2d &v_B,
 		const Eigen::Vector2d &L_AB,	
 		const double d_AB);
-
-	__host__ __device__ Prediction_Method get_prediction_method() const { return prediction_method; };
-
-	__host__ __device__ Guidance_Method get_guidance_method() const { return guidance_method; };
-
-	__host__ __device__ void set_prediction_method(Prediction_Method prediction_method) { if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
-
-	__host__ __device__ void set_guidance_method(Guidance_Method guidance_method) 		{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
-
-	__host__ __device__ int get_ipar(const int index) const;
-	
-	__host__ __device__ double get_dpar(const int index) const;
-
-	__host__ __device__ void set_par(const int index, const int value);
-
-	__host__ __device__ void set_par(const int index, const double value);
 
 	__host__ __device__ void calculate_optimal_offsets(
 		double &u_opt, 	

@@ -79,6 +79,7 @@ private:
 	double K_chi_port, K_dchi_port; 
 	double K_sgn, T_sgn;
 	double G;
+	double q, p;
 	
 	bool obstacle_filter_on;
 	std::vector<bool> obstacle_colav_on;
@@ -162,7 +163,7 @@ private:
 
 	double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
-	void calculate_collision_cost(Eigen::VectorXd &cost, const Eigen::Matrix<double, 2, -1> &v_1, const Eigen::Matrix<double, 2, -1> &v_2);
+	double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	double calculate_control_deviation_cost();
@@ -206,14 +207,6 @@ private:
 public:
 
 	PSBMPC();
-
-	PSBMPC(const PSBMPC &psbmpc);
-
-	~PSBMPC();
-
-	void clean();
-
-	PSBMPC& operator=(const PSBMPC &psbmpc);
 
 	CPE_Method get_cpe_method() const { return cpe_method; }; 
 

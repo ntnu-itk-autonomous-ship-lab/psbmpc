@@ -86,6 +86,8 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	vars->T_sgn = master.T_sgn;
 	
 	vars->G = master.G;
+	
+	vars->q = master.q; vars->p = master.p;
 
 	vars->obstacle_filter_on = master.obstacle_filter_on;
 
@@ -551,6 +553,26 @@ __device__ double CB_Cost_Functor::calculate_collision_cost(
 	)
 {
 	return vars->K_coll * (v_1 - v_2).norm();
+}
+
+/****************************************************************************************
+*  Name     : calculate_ad_hoc_collision_risk
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+__device__ double CB_Cost_Functor::calculate_ad_hoc_collision_risk(
+	const double d_AB, 														// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
+	const double t 															// In: Prediction time t > t0 (= 0)
+	)
+{
+	double R = 0;
+	if (d_AB <= d_safe)
+	{
+		assert(t > 0);
+		R = pow(d_safe / d_AB, q) * (1 / pow(fabs(t), p)); 
+	}
+	return R;
 }
 
 /****************************************************************************************

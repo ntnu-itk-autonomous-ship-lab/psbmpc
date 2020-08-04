@@ -34,13 +34,13 @@
 *****************************************************************************************/
 Prediction_Obstacle::Prediction_Obstacle(
 	const Eigen::VectorXd& xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::VectorXd &P, 									// In: Obstacle covariance information
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	ID(xs_aug(8)), colav_on(colav_on),
-	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
-	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6))
+	Obstacle(xs_aug, P, colav_on),
+	sbmpc(new Obstacle_SBMPC())
 {
 	int n_samples = std::round(T / dt);
 	
@@ -49,16 +49,8 @@ Prediction_Obstacle::Prediction_Obstacle(
 		 0, 0, 1, 0,
 		 0, 0, 0, 1;
 
-	double psi = atan2(xs_aug(3), xs_aug(2));
-	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
-	xs_0(2) = xs_aug(2);
-	xs_0(3) = xs_aug(3); 
-
 	xs_p.resize(4, n_samples);
 	xs_p.col(0) = xs_0;
-
-	sbmpc = new Obstacle_SBMPC();
 }
 
 /****************************************************************************************
@@ -69,35 +61,11 @@ Prediction_Obstacle::Prediction_Obstacle(
 *****************************************************************************************/
 Prediction_Obstacle::Prediction_Obstacle(
 	const Prediction_Obstacle &po 												// In: Prediction obstacle to copy
-	)
+	) :
+	A(po.A), 
+	xs_p(po.xs_p)
 {
-	this->ID = po.ID;
-
-	this->colav_on = po.colav_on;
-
-	this->l = po.l; this->w = po.w;
-
-	this->x_offset = po.x_offset; this->y_offset = po.y_offset;
-
-	this->A = po.A;
-
-	this->xs_0 = po.xs_0;
-
-	//this->xs_p.resize(po.xs_p.rows(), po.xs_p.cols());
-	this->xs_p = po.xs_p;
-
-	this->sbmpc = new Obstacle_SBMPC(*(po.sbmpc));
-}
-
-/****************************************************************************************
-*  Name     : ~Prediction_Obstacle
-*  Function : Class destructor, clears the dynamic kalman filter object
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-Prediction_Obstacle::~Prediction_Obstacle()
-{
-	delete sbmpc;
+	this->sbmpc.reset(new Obstacle_SBMPC(*(po.sbmpc)));
 }
 
 /****************************************************************************************
@@ -114,7 +82,6 @@ Prediction_Obstacle& Prediction_Obstacle::operator=(
 	{
 		return *this;
 	}
-	if (sbmpc != NULL) 	{ delete sbmpc; }
 
 	return *this = Prediction_Obstacle(po);
 }
@@ -157,8 +124,7 @@ void Prediction_Obstacle::predict_independent_trajectory(
 *  Modified :
 *****************************************************************************************/
 void Prediction_Obstacle::update(
-	const Eigen::Vector4d &xs, 								// In: Predicted obstacle state [x, y, V_x, V_y]
-	const bool colav_on										// In: Boolean determining if the prediction obstacle object has an active COLAV system
+	const Eigen::Vector4d &xs 								// In: Predicted obstacle state [x, y, V_x, V_y]
 	)
 {
 	double psi = atan2(xs(3), xs(2));
@@ -166,6 +132,4 @@ void Prediction_Obstacle::update(
 	xs_0(1) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
 	xs_0(2) = xs(2);
 	xs_0(3) = xs(3);
-
-	this->colav_on = colav_on;
 }

@@ -57,6 +57,7 @@ struct CB_Functor_Vars
 	double K_chi_port, K_dchi_port; 
 	double K_sgn, T_sgn;
 	double G;
+	double q, p;
 	
 	bool obstacle_filter_on;
 
@@ -117,6 +118,8 @@ private:
 	__device__ double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const int i, const Eigen::VectorXd &offset_sequence);
 
 	__device__ double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
+
+	__device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	__device__ double calculate_control_deviation_cost(const Eigen::VectorXd &offset_sequence);
