@@ -23,19 +23,19 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "obstacle.h"
+#include "tracked_obstacle.h"
 #include "ownship.h"
 #include "utilities.h"
 #include <iostream>
 #include <vector>
-#include <string>
-#include "Eigen/StdVector"
-#include "Eigen/Core"
+#include <memory>
+#include "Eigen/Dense"
 #include "engine.h"
 
 #define BUFSIZE 1000000
 
 int main(){
+	// Matlab engine setup
 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
@@ -72,12 +72,6 @@ int main(){
 	waypoints << 0, 1000,
 				 0, 0;
 
-	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
-	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
-
-	double *ptraj_os = mxGetPr(traj_os);
-	double *pwps = mxGetPr(wps);
-
 	Ownship *ownship = new Ownship();
 	
 	//*****************************************************************************************************************
@@ -101,13 +95,7 @@ int main(){
 
 	bool filter_on = true, colav_on = false;
 
-	Obstacle *obstacle = new Obstacle(xs_aug, flatten(P), Pr_a, Pr_CC, filter_on, colav_on, T, dt);
-
-	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
-
-	double *ptraj_i = mxGetPr(traj_i);
-	double *p_P_traj_i = mxGetPr(P_traj_i);
+	std::unique_ptr<Tracked_Obstacle> obstacle(new Tracked_Obstacle(xs_aug, flatten(P), Pr_a, Pr_CC, filter_on, colav_on, T, dt));
 
 	//*****************************************************************************************************************
 	// Test obstacle functionality
@@ -137,11 +125,11 @@ int main(){
 
 	ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
 
-	obstacle->initialize_independent_prediction(ps_ordering, ps_course_changes, ps_weights, ps_maneuver_times);
+	obstacle->initialize_prediction(ps_ordering, ps_course_changes, ps_weights, ps_maneuver_times);
 
 	obstacle->predict_independent_trajectories(T, dt, trajectory.col(0), phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
 
-	std::vector<Eigen::MatrixXd> xs_p = obstacle->get_independent_trajectories();
+	std::vector<Eigen::MatrixXd> xs_p = obstacle->get_trajectories();
 
 	Eigen::MatrixXd P_p = obstacle->get_trajectory_covariance();
 
@@ -169,7 +157,7 @@ int main(){
 	std::cout << "xs_upd = " << obstacle->kf->get_state().transpose() << std::endl;
 
 	std::cout << "P_upd = " << std::endl;
-	print_matrix(obstacle->kf->get_covariance());
+	std::cout << obstacle->kf->get_covariance() << std::endl;
 
 	std::cout << "Pr_CC_new = " << obstacle->get_a_priori_CC_probability() << std::endl;
 
@@ -182,6 +170,18 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
+	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
+
+	double *ptraj_os = mxGetPr(traj_os);
+	double *pwps = mxGetPr(wps);
+
+	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
+
+	double *ptraj_i = mxGetPr(traj_i);
+	double *p_P_traj_i = mxGetPr(P_traj_i);
+
 	Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, n_samples);
 	map_traj_os = trajectory;
 	
@@ -225,6 +225,7 @@ int main(){
 
 	mxDestroyArray(traj_i);
 	mxDestroyArray(P_traj_i);
+	mxDestroyArray(ps_count);
 	engClose(ep); 
 
 	return 0;

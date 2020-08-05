@@ -383,7 +383,7 @@ void PSBMPC::calculate_optimal_offsets(
 			if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
 
 			P_c_i.resize(n_ps[i], n_samples);
-			//calculate_collision_probabilities(P_c_i, i); 
+			calculate_collision_probabilities(P_c_i, i); 
 
 			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
 		}
@@ -519,11 +519,11 @@ void PSBMPC::initialize_pars()
 			u_offsets[M].resize(2);
 			u_offsets[M] << 1.0, 0.5;
 
-			chi_offsets[M].resize(13);
+			chi_offsets[M].resize(5);
 			//chi_offsets[M] << 0.0;
-			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+			chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
@@ -533,8 +533,8 @@ void PSBMPC::initialize_pars()
 	u_m_last = 1;
 	chi_m_last = 0;
 
-	course_changes.resize(1);
-	course_changes << 30 * DEG2RAD; //60 * DEG2RAD, 90 * DEG2RAD;
+	obstacle_course_changes.resize(1);
+	obstacle_course_changes << 30 * DEG2RAD; //60 * DEG2RAD, 90 * DEG2RAD;
 
 	cpe_method = CE;
 	prediction_method = ERK1;
@@ -646,7 +646,7 @@ void PSBMPC::initialize_prediction()
 					else					{ n_turns = 1; }	
 				}
 
-				n_ps[i] = 1 + 2 * course_changes.size() * n_turns;
+				n_ps[i] = 1 + 2 * obstacle_course_changes.size() * n_turns;
 				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, i, n_turns);
 			}
 			else // Set up dependent obstacle prediction scenarios
@@ -733,8 +733,8 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 
 			ps_maneuver_times_i[ps] = turn_count * std::floor(t_ts / dt);
 
-			ps_course_changes_i(ps) = course_changes(course_change_count);
-			if (++course_change_count == course_changes.size())
+			ps_course_changes_i(ps) = obstacle_course_changes(course_change_count);
+			if (++course_change_count == obstacle_course_changes.size())
 			{
 				if(++turn_count == n_turns) turn_count = 0;
 				course_change_count = 0;
@@ -747,8 +747,8 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 
 			ps_maneuver_times_i[ps] = turn_count * std::floor(t_ts / dt);
 
-			ps_course_changes_i(ps) = - course_changes(course_change_count);
-			if (++course_change_count == course_changes.size())
+			ps_course_changes_i(ps) = - obstacle_course_changes(course_change_count);
+			if (++course_change_count == obstacle_course_changes.size())
 			{
 				if(++turn_count == n_turns) turn_count = 0;
 				course_change_count = 0;
@@ -1330,15 +1330,43 @@ void PSBMPC::calculate_collision_probabilities(
 	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_trajectories();
 	double d_safe_i = d_safe;
 
+	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / dt) + 1, k_j_(0), k_j(0);
+	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
 	for (int ps = 0; ps < n_ps[i]; ps++)
-	{
+	{	
 		cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
-		for (int k = 0; k < n_samples; k++)
+		switch(cpe_method)
 		{
-			P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
+			case CE :	
+				for (int k = 0; k < n_samples; k++)
+				{
+					P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
+				}
+				save_matrix_to_file(P_c_i);
+				break;
+			case MCSKF4D :
+				k_j_ = 0; k_j = 0;
+				for (int k = 0; k < n_samples; k++)
+				{
+					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
+					{
+						k_j_ = k_j; k_j = k;
+						xs_os_seg = trajectory.block(0, k_j_, 6, n_seg_samples);
+						xs_i_seg = xs_i_p[ps].block(0, k_j_, 4, n_seg_samples);
+
+						P_i_seg = P_i_p.block(0, k_j_, 16, n_seg_samples);
+
+						P_c_i(ps, k_j_) = cpe->estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
+						// Collision probability on this active segment are all equal
+						P_c_i.block(ps, k_j_, 1, n_seg_samples) = P_c_i(ps, k_j_) * Eigen::MatrixXd::Ones(1, k_j - k_j_ + 1);
+					}	
+				}
+				break;
+			default :
+				// Throw
+				break;
 		}
-		save_matrix_to_file(P_c_i);
-	}
+	}		
 }
 
 /****************************************************************************************
