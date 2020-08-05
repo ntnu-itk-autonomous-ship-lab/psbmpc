@@ -743,10 +743,10 @@ double CPE::CE_estimation(
     ******************************************************************************/
     for (int it = 0; it < max_it; it++)
     {
-        if (it == max_it - 1)
+        /* if (it == max_it - 1)
         {
             std::cout << "CE: Maximum number of iterations used!" << std::endl;
-        }
+        } */
 
         generate_norm_dist_samples(samples[i], mu_CE, P_CE);
 

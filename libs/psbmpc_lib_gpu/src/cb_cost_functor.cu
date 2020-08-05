@@ -394,14 +394,43 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 	Eigen::MatrixXd* xs_i_p = new Eigen::MatrixXd[n_ps[i]];
 	*xs_i_p = *new_obstacles[i].get_trajectories();
 
+	int n_seg_samples = round(cpe->get_segment_discretization_time() / dt) + 1, k_j_(0), k_j(0);
+	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
 	for (int ps = 0; ps < n_ps[i]; ps++)
-	{
-		vars->cpe.initialize(vars->trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
-		for (int k = 0; k < n_samples; k++)
+	{	
+		cpe->initialize(vars->trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
+		switch(vars->cpe_method)
 		{
-			P_c_i(ps, k) = vars->cpe.estimate(vars->trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
+			case CE :	
+				for (int k = 0; k < n_samples; k++)
+				{
+					P_c_i(ps, k) = cpe->estimate(vars->trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
+				}
+				//save_matrix_to_file(P_c_i);
+				break;
+			case MCSKF4D :
+				k_j_ = 0; k_j = 0;
+				for (int k = 0; k < n_samples; k++)
+				{
+					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
+					{
+						k_j_ = k_j; k_j = k;
+						xs_os_seg = vars->trajectory.block(0, k_j_, 6, n_seg_samples);
+						xs_i_seg = xs_i_p[ps].block(0, k_j_, 4, n_seg_samples);
+
+						P_i_seg = P_i_p.block(0, k_j_, 16, n_seg_samples);
+
+						P_c_i(ps, k_j_) = cpe->estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
+						// Collision probability on this active segment are all equal
+						P_c_i.block(ps, k_j_, 1, n_seg_samples) = P_c_i(ps, k_j_) * Eigen::MatrixXd::Ones(1, k_j - k_j_ + 1);
+					}	
+				}
+				break;
+			default :
+				// Throw
+				break;
 		}
-	}
+	}		
 }
 
 /****************************************************************************************

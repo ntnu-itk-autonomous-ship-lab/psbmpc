@@ -27,11 +27,11 @@
 #include "utilities.h"
 #include <iostream>
 #include <vector>
-#include <string>
-#include "Eigen/StdVector"
-#include "Eigen/Core"
-#include "engine.h"
 #include <chrono>
+#include <memory>
+#include "Eigen/Dense"
+#include "engine.h"
+
 
 #define BUFSIZE 1000000
 
@@ -56,7 +56,7 @@ int main(){
 	xs_os_0 << 0, 0, 0, 9, 0, 0;
 	double u_d = 9, chi_d, u_c, chi_c;
 	
-	Ownship* asv_sim = new Ownship();
+	std::unique_ptr<Ownship> asv_sim(new Ownship());
 
 	Eigen::Matrix<double, 6, -1> trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
@@ -200,7 +200,9 @@ int main(){
 	//*****************************************************************************************************************
 	// Simulation
 	//*****************************************************************************************************************	
-
+	auto start = std::chrono::system_clock::now(), end = start;
+	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+	
 	mxArray *T_sim_mx = mxCreateDoubleScalar(T_sim);
 
 	engPutVariable(ep, "T_sim", T_sim_mx);
@@ -226,9 +228,11 @@ int main(){
 	
 	Eigen::Vector4d xs_i_k;
 	Eigen::VectorXd xs_aug(9);
-	double mean_t = 0;
+	double mean_t = 0, t(0.0);
 	for (int k = 0; k < N; k++)
 	{
+		t = k * dt;
+
 		// Aquire obstacle information
 		for (int i = 0; i < n_obst; i++)
 		{
@@ -244,35 +248,38 @@ int main(){
 
 		asv_sim->update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
-		auto start = std::chrono::system_clock::now();		
+		if (fmod(t, 5) == 0)
+		{
+			start = std::chrono::system_clock::now();		
 
-		psbmpc->calculate_optimal_offsets(
-			u_opt,
-			chi_opt, 
-			predicted_trajectory,
-			obstacle_status,
-			colav_status,
-			u_d,
-			chi_d,
-			waypoints,
-			trajectory.col(k),
-			obstacle_states,
-			obstacle_covariances,
-			obstacle_intention_probabilities,
-			obstacle_a_priori_CC_probabilities,
-			static_obstacles);
+			psbmpc->calculate_optimal_offsets(
+				u_opt,
+				chi_opt, 
+				predicted_trajectory,
+				obstacle_status,
+				colav_status,
+				u_d,
+				chi_d,
+				waypoints,
+				trajectory.col(k),
+				obstacle_states,
+				obstacle_covariances,
+				obstacle_intention_probabilities,
+				obstacle_a_priori_CC_probabilities,
+				static_obstacles);
 
-		auto end = std::chrono::system_clock::now();
-		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			end = std::chrono::system_clock::now();
+			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-		mean_t = elapsed.count();
+			mean_t = elapsed.count();
 
-		std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
+			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
 
-		std::cout << "Status: ID    SOG    COG    R-BRG	  RNG	  HL	 IP	  AH    SB    	HO    	CRG    	OTG   	OT" << std::endl;
-		std::cout << "   " << obstacle_status.transpose() << std::endl;
-	
-		std::cout << "Colav_status (CF, cost): " << colav_status.transpose() << std::endl;
+			std::cout << "Status: ID    SOG    COG    R-BRG	  RNG	  HL	 IP	  AH    SB    	HO    	CRG    	OTG   	OT" << std::endl;
+			std::cout << "   " << obstacle_status.transpose() << std::endl;
+		
+			std::cout << "Colav_status (CF, cost): " << colav_status.transpose() << std::endl;
+		}
 
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 		asv_sim->update_ctrl_input(u_c, chi_c, trajectory.col(k));
@@ -323,8 +330,16 @@ int main(){
 		}
 		
 	}
-	mean_t /= N;
 
+	mxDestroyArray(traj_os);
+	mxDestroyArray(wps_os);
+	mxDestroyArray(pred_traj);
+	for (int i = 0; i < n_obst; i++)
+	{
+		mxDestroyArray(traj_i[i]);
+		mxDestroyArray(P_traj_i[i]);
+		mxDestroyArray(wps_i[i]);
+	}
 	engClose(ep);  
 
 	return 0;

@@ -157,6 +157,8 @@ public:
 
 	void set_number_of_obstacles(const int n_obst);
 
+	double get_segment_discretization_time() const { return dt_seg; };
+
 	void initialize(
 		const Eigen::Matrix<double, 6, 1> &xs_os, 
 		const Eigen::Vector4d &xs_i, 

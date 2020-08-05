@@ -52,7 +52,7 @@ private:
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
 
-	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times, course_changes;
+	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times, obstacle_course_changes;
 
 	double u_m_last;
 	double chi_m_last;

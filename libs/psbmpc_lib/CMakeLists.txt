@@ -19,4 +19,6 @@ target_include_directories(psbmpc_lib PUBLIC
 	${Matlab_INCLUDE_DIRS}
 	)
 
+target_compile_features(psbmpc_lib PRIVATE cxx_std_11)
+
 target_link_libraries(psbmpc_lib ${Matlab_LIBRARIES})

@@ -62,7 +62,7 @@ int main(){
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
 
-	Ownship* asv = new Ownship(); 
+	std::unique_ptr<Ownship> asv(new Ownship()); 
 
 	Eigen::Matrix<double, 6, -1> trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
@@ -78,12 +78,6 @@ int main(){
 	//			 0, -50,  -200, -200,  0, 300, 0;
 	waypoints << 0, 1000,
 				 0, 0;
-
-	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
-	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
-
-	double *ptraj_os = mxGetPr(traj_os);
-	double *pwps = mxGetPr(wps);
 
 	//*****************************************************************************************************************
 	// Obstacle prediction setup
@@ -109,7 +103,7 @@ int main(){
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step
 	Eigen::MatrixXd P_p; 
 
-	MROU *mrou = new MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y);
+	std::unique_ptr<MROU> mrou(new MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
 
 	// n_ps = 1
 	xs_p.resize(1); xs_p[0].resize(4, n_samples);
@@ -144,23 +138,9 @@ int main(){
 		if (k < n_samples - 1)	v_p[0].col(k + 1) = v;
 	}
 
-	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-	mxArray *vtraj_i = mxCreateDoubleMatrix(2, n_samples, mxREAL);
-	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
-
-	double *ptraj_i = mxGetPr(traj_i);
-	double *pvtraj_i = mxGetPr(vtraj_i);
-	double *p_P_traj_i = mxGetPr(P_traj_i);
-
 	//*****************************************************************************************************************
 	// Collision Probability Estimator setup
 	//*****************************************************************************************************************
-	mxArray *Pcoll_CE = mxCreateDoubleMatrix(1, n_samples, mxREAL);
-	mxArray *Pcoll_MCSKF = mxCreateDoubleMatrix(1, n_samples, mxREAL);
-
-	double *p_CE = mxGetPr(Pcoll_CE);
-	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
-
 	double d_safe = 50, dt_seg = 0.5;
 	int n_CE = 1000, n_MCSKF = 1000;
 	std::cout << "n_CE = " << n_CE << std::endl;
@@ -176,7 +156,6 @@ int main(){
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
-
 	cpe->set_number_of_obstacles(1);
 
 	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
@@ -254,6 +233,25 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
+	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
+
+	double *ptraj_os = mxGetPr(traj_os);
+	double *pwps = mxGetPr(wps);
+
+	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+	mxArray *vtraj_i = mxCreateDoubleMatrix(2, n_samples, mxREAL);
+	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
+
+	double *ptraj_i = mxGetPr(traj_i);
+	double *pvtraj_i = mxGetPr(vtraj_i);
+	double *p_P_traj_i = mxGetPr(P_traj_i);
+
+	mxArray *Pcoll_CE = mxCreateDoubleMatrix(1, n_samples, mxREAL);
+	mxArray *Pcoll_MCSKF = mxCreateDoubleMatrix(1, n_samples, mxREAL);
+
+	double *p_CE = mxGetPr(Pcoll_CE);
+	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
 	Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, n_samples);
 	map_traj_os = trajectory;

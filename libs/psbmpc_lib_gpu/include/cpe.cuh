@@ -157,6 +157,8 @@ public:
 
 	__host__ __device__ void set_number_of_obstacles(const int n_obst);
 
+	__host__ __device__ double get_segment_discretization_time() const { return dt_seg; };
+
 	__device__ void initialize(
 		const Eigen::Matrix<double, 6, 1> &xs_os, 
 		const Eigen::Vector4d &xs_i, 
