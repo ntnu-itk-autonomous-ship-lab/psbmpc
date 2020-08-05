@@ -64,12 +64,12 @@ int main(){
 	trajectory.resize(6, N);
 	trajectory.col(0) = xs_os_0;
 
-	int n_wps_os = 2;
+	int n_wps_os = 7;
 	waypoints.resize(2, n_wps_os); 
-	/* waypoints << 0, 200, 200, 400, 600,  300, 500,
-				 0, 0,   200, 200,  0,  0, -200; */
-	waypoints << 0, 1000,
-				 0, 0;
+	waypoints << 0, 200, 200, 400, 600,  300, 500,
+				 0, 0,   200, 200,  0,  0, -200;
+	/* waypoints << 0, 1000,
+				 0, 0; */
 	
 
 	mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);

@@ -1060,9 +1060,7 @@ void Obstacle_SBMPC::update_obstacles(
 			{
 				old_obstacles[j]->update(obstacle_states.block<4, 1>(0, i));
 
-				new_obstacles.resize(new_obstacles.size() + 1);
-
-				new_obstacles[new_obstacles.size() - 1].reset(new Prediction_Obstacle(*(old_obstacles[j])));
+				new_obstacles.push_back(std::move(old_obstacles[j]));
 
 				obstacle_exist = true;
 
@@ -1071,9 +1069,11 @@ void Obstacle_SBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			new_obstacles.resize(new_obstacles.size() + 1);
-
-			new_obstacles[new_obstacles.size() - 1].reset(new Prediction_Obstacle(obstacle_states.col(i), obstacle_covariances.col(i), obstacle_colav_on, T, dt));
+			new_obstacles.push_back(std::move(std::unique_ptr<Prediction_Obstacle>(new Prediction_Obstacle(
+				obstacle_states.col(i), obstacle_covariances.col(i), 
+				obstacle_colav_on, 
+				T, 
+				dt))));
 		}
 	}
 

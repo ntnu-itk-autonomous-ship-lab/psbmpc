@@ -120,17 +120,6 @@ CPE::CPE(
 }
 
 /****************************************************************************************
-*  Name     : CPE~
-*  Function : Class destructor
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-CPE::~CPE()
-{
-
-}
-
-/****************************************************************************************
 *  Name     : operator=
 *  Function : Assignment operator to prevent shallow assignments and bad pointer management
 *  Author   : Trym Tengesdal
@@ -205,7 +194,7 @@ void CPE::initialize(
         var_P_c_p(i) = 0.3; var_P_c_upd(i) = 0; 
         break;
     default:
-        std::cout << "Invalid method" << std::endl;
+        // Throw
         break;
     }
 }
@@ -239,7 +228,7 @@ double CPE::estimate(
             break;
         default :
             P_c = -1;
-            std::cout << "Invalid estimation method" << std::endl;
+            // Throw
             break;
     }
     return P_c;
@@ -266,7 +255,7 @@ void CPE::resize_matrices()
                 L.resize(4, 4);
                 break;
             default :
-                std::cout << "Invalid method" << std::endl;
+                // Throw
                 break; 
         }  
     }
@@ -314,7 +303,6 @@ inline void CPE::update_L(
             {
                 L(i, j) = 0;
             }
-            
         } 
     } 
 }
@@ -341,7 +329,6 @@ inline double CPE::calculate_2x2_quadratic_form(
 /****************************************************************************************
 *  Name     : norm_pdf_log
 *  Function : Calculates the logarithmic value of the multivariate normal distribution
-*             for the internally stored sample matrix
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -390,23 +377,21 @@ inline void CPE::generate_norm_dist_samples(
 
     // Check if bigger loop within small loop faster than the other way around
     // if time usage becomes an issue
-    for (int c = 0; c < n; c++)
+/*     for (int c = 0; c < n; c++)
     {
         for(int i = 0; i < n_samples; i++)
         {
             samples(c, i) = std_norm_pdf(generator);
         }
-    }
+    } */
 
-    /*
     for (int i = 0; i < n_samples; i++)
     {
         for(int c = 0; c < n; c++)
         {
-            std_norm_samples(c, i) = std_norm_pdf(generator);
+            samples(c, i) = std_norm_pdf(generator);
         }
     }
-    */
     // Box-muller transform
     samples = (L * samples).colwise() + mu;
 }
@@ -688,6 +673,8 @@ void CPE::determine_best_performing_samples(
 
         inside_alpha_p_confidence_ellipse = 
             (samples.col(j) - p_i).transpose() * P_i.inverse() * (samples.col(j) - p_i) <= gate;
+ 
+        //inside_alpha_p_confidence_ellipse = calculate_2x2_quadratic_form(samples.col(j) - p_i, P_i) <= gate;
 
         if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
         {
@@ -710,18 +697,18 @@ double CPE::CE_estimation(
     const int i                                                                 // In: Index of obstacle i
     )
 {
-    double P_c;
+    double P_c(0.0);
     /******************************************************************************
     * Check if it is necessary to perform estimation
     ******************************************************************************/
     double d_0i = (p_i - p_os).norm();
-    double var_P_i_largest = 0;
+    double var_P_i_largest(0.0);
     
     if (P_i(0, 0) > P_i(1, 1)) { var_P_i_largest = P_i(0, 0); }
     else                       { var_P_i_largest = P_i(1, 1); }
 
     // This large a distance usually means no effective conflict zone
-    if (d_0i > d_safe[i] + 5 * var_P_i_largest) { P_c = 0; return P_c; }
+    if (d_0i > d_safe[i] + 5 * var_P_i_largest) { return P_c; }
 
     /******************************************************************************
     * Convergence depedent initialization prior to the run at time t_k
@@ -738,8 +725,7 @@ double CPE::CE_estimation(
     }
     else
     {
-        mu_CE_prev = 0.5 * (p_i + p_os);
-        mu_CE = mu_CE_prev;
+        mu_CE_prev = 0.5 * (p_i + p_os); mu_CE = mu_CE_prev;
         P_CE_prev = pow(d_safe[i], 2) * Eigen::Matrix2d::Identity() / 3;
         P_CE = P_CE_prev;
     }
@@ -749,6 +735,11 @@ double CPE::CE_estimation(
     ******************************************************************************/
     for (int it = 0; it < max_it; it++)
     {
+        if (it == max_it - 1)
+        {
+            std::cout << "CE: Maximum number of iterations used!" << std::endl;
+        }
+
         generate_norm_dist_samples(samples[i], mu_CE, P_CE);
 
         determine_best_performing_samples(valid[i], N_e[i], samples[i], p_os, p_i, P_i, i);
@@ -809,7 +800,6 @@ double CPE::CE_estimation(
     weights = weights.cwiseProduct(valid[i]);
 
     P_c = weights.mean();
-    //engClose(ep);
     if (P_c > 1) return 1;
     else return P_c;
 }

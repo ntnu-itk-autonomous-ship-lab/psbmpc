@@ -62,6 +62,7 @@ Prediction_Obstacle::Prediction_Obstacle(
 Prediction_Obstacle::Prediction_Obstacle(
 	const Prediction_Obstacle &po 												// In: Prediction obstacle to copy
 	) :
+	Obstacle(po),
 	A(po.A), 
 	xs_p(po.xs_p)
 {
