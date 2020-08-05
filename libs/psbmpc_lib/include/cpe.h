@@ -147,8 +147,6 @@ public:
 
 	CPE(const CPE &cpe);
 
-	~CPE();
-
 	CPE& operator=(const CPE &cpe);
 
 	void set_method(const CPE_Method cpe_method) { method = cpe_method;  resize_matrices(); };

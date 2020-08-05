@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test_psbmpc.o: test_psbmpc.cpp.o
+test_cpe.o: test_cpe.cpp.o
 
-.PHONY : test_psbmpc.o
+.PHONY : test_cpe.o
 
 # target to build an object file
-test_psbmpc.cpp.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.o
-.PHONY : test_psbmpc.cpp.o
+test_cpe.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.o
+.PHONY : test_cpe.cpp.o
 
-test_psbmpc.i: test_psbmpc.cpp.i
+test_cpe.i: test_cpe.cpp.i
 
-.PHONY : test_psbmpc.i
+.PHONY : test_cpe.i
 
 # target to preprocess a source file
-test_psbmpc.cpp.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.i
-.PHONY : test_psbmpc.cpp.i
+test_cpe.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.i
+.PHONY : test_cpe.cpp.i
 
-test_psbmpc.s: test_psbmpc.cpp.s
+test_cpe.s: test_cpe.cpp.s
 
-.PHONY : test_psbmpc.s
+.PHONY : test_cpe.s
 
 # target to generate assembly for a file
-test_psbmpc.cpp.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.s
-.PHONY : test_psbmpc.cpp.s
+test_cpe.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.s
+.PHONY : test_cpe.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... test_psbmpc.o"
-	@echo "... test_psbmpc.i"
-	@echo "... test_psbmpc.s"
+	@echo "... test_cpe.o"
+	@echo "... test_cpe.i"
+	@echo "... test_cpe.s"
 .PHONY : help
 
 

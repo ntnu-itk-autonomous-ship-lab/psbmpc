@@ -48,40 +48,6 @@ void save_matrix_to_file(const Eigen::MatrixXd &in);
 ****************************************************************************************/
 
 /****************************************************************************************
-*  Name     : print_matrix
-*  Function : 
-*  Author   :
-*  Modified :
-*****************************************************************************************/
-inline void print_matrix(const Eigen::MatrixXd &in)
-{
-	int n_rows = in.rows();
-	int n_cols = in.cols();
-
-	std::cout << "[";
-	for (int i = 0; i < n_rows; i++)
-	{
-		for (int j = 0; j < n_cols; j++)
-		{
-			if (j < n_cols - 1)
-			{
-				std::cout << in(i, j) << ", ";
-			}
-			else
-			{
-				std::cout << in(i, j);
-			}
-		}
-
-		if (i < n_cols - 1)
-		{
-			std::cout << std::endl;
-		}			
-	}
-	std::cout << "]" << std::endl;
-}
-
-/****************************************************************************************
 *  Name     : wrap_angle_to_pmpi
 *  Function : Shifts angle into [-pi, pi] interval
 *  Author   :

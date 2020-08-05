@@ -26,9 +26,8 @@
 #include "utilities.h"
 #include "mrou.h"
 #include <iostream>
-#include <variant>
 #include <vector>
-#include "Eigen/StdVector"
+#include <memory>
 #include "Eigen/Core"
 #include "engine.h"
 
@@ -67,7 +66,7 @@ int main()
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step
 	Eigen::MatrixXd P_p; 
 
-	MROU *mrou = new MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y);
+	std::unique_ptr<MROU> mrou(new MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
 
 	// n_ps = 1
 	xs_p.resize(1); xs_p[0].resize(4, n_samples);
@@ -147,6 +146,7 @@ int main()
 
 	printf("%s", buffer);
 	mxDestroyArray(traj);
+	mxDestroyArray(vtraj);
 	mxDestroyArray(P_traj);
 	engClose(ep);
 	

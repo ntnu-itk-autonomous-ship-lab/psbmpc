@@ -504,14 +504,14 @@ void PSBMPC::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(1);
-			u_offsets[M] << 1.0;
-			//u_offsets[M] << 1.0, 0.5, 0.0;
+			u_offsets[M].resize(3);
+			//u_offsets[M] << 1.0;
+			u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(7);
+			chi_offsets[M].resize(13);
 			//chi_offsets[M] << 0.0;
-			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -519,9 +519,11 @@ void PSBMPC::initialize_pars()
 			u_offsets[M].resize(2);
 			u_offsets[M] << 1.0, 0.5;
 
-			chi_offsets[M].resize(5);
+			chi_offsets[M].resize(13);
 			//chi_offsets[M] << 0.0;
-			chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
@@ -548,7 +550,7 @@ void PSBMPC::initialize_pars()
 		dt = 0.5; 
 		p_step = 1;
 	}
-	t_ts = 50;
+	t_ts = 35;
 
 	d_init = 1500;							//1852.0;	  // should be >= D_CLOSE 300.0 600.0 500.0 700.0 800 1852
 	d_close = 500;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
@@ -1785,9 +1787,7 @@ void PSBMPC::update_obstacles(
 					obstacle_filter_on,
 					dt);
 
-				new_obstacles.resize(new_obstacles.size() + 1);
-
-				new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(*(old_obstacles[j])));
+				new_obstacles.push_back(std::move(old_obstacles[j]));
 
 				obstacle_exist = true;
 
@@ -1796,7 +1796,7 @@ void PSBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			new_obstacles.push_back(std::make_unique<Tracked_Obstacle>(new Tracked_Obstacle(
+			new_obstacles.push_back(std::move(std::unique_ptr<Tracked_Obstacle>(new Tracked_Obstacle(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
@@ -1804,7 +1804,7 @@ void PSBMPC::update_obstacles(
 				obstacle_filter_on, 
 				false, 
 				T, 
-				dt)));
+				dt))));
 		}
 	}
 	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
@@ -1822,12 +1822,11 @@ void PSBMPC::update_obstacles(
 			{
 				old_obstacles[j]->update(obstacle_filter_on, dt);
 
-				new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(*(old_obstacles[j])));
+				new_obstacles.push_back(std::move(old_obstacles[j]));
 			}
 		}
 	}
-	std::cout << new_obstacles[0]->get_ID() << std::endl;
-	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
+	// Clear old obstacle vector, which consist of transferred (nullptr) and terminated obstacles
 	// Then set equal to the new obstacle vector
 	old_obstacles.resize(new_obstacles.size());
 	for (int i = 0; i < new_obstacles.size(); i++)

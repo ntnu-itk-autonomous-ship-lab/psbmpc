@@ -77,6 +77,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 Tracked_Obstacle::Tracked_Obstacle(
 	const Tracked_Obstacle &o 													// In: Obstacle to copy
 	) : 
+	Obstacle(o),
 	Pr_a(o.Pr_a), 
 	Pr_CC(o.Pr_CC),
 	duration_tracked(o.duration_tracked), duration_lost(o.duration_lost),
@@ -89,7 +90,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	kf(new KF(*(o.kf))), 
 	mrou(new MROU(*(o.mrou)))
 {
-	std::cout << "tracked obstacle copy" << std::endl;
+
 }
 
 /****************************************************************************************
