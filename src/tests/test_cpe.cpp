@@ -38,12 +38,12 @@
 
 int main(){
 	// Matlab engine setup
-/* 	Engine *ep = engOpen(NULL);
+	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1]; */
+	char buffer[BUFSIZE+1];
 	
 	//*****************************************************************************************************************
 	// Own-ship prediction setup
@@ -79,12 +79,12 @@ int main(){
 	waypoints << 0, 1000,
 				 0, 0;
 
-/* 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
 	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
 
 	double *ptraj_os = mxGetPr(traj_os);
 	double *pwps = mxGetPr(wps);
- */
+
 	//*****************************************************************************************************************
 	// Obstacle prediction setup
 	//*****************************************************************************************************************
@@ -144,22 +144,22 @@ int main(){
 		if (k < n_samples - 1)	v_p[0].col(k + 1) = v;
 	}
 
-/* 	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 	mxArray *vtraj_i = mxCreateDoubleMatrix(2, n_samples, mxREAL);
 	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
 
 	double *ptraj_i = mxGetPr(traj_i);
 	double *pvtraj_i = mxGetPr(vtraj_i);
-	double *p_P_traj_i = mxGetPr(P_traj_i); */
+	double *p_P_traj_i = mxGetPr(P_traj_i);
 
 	//*****************************************************************************************************************
 	// Collision Probability Estimator setup
 	//*****************************************************************************************************************
-/* 	mxArray *Pcoll_CE = mxCreateDoubleMatrix(1, n_samples, mxREAL);
+	mxArray *Pcoll_CE = mxCreateDoubleMatrix(1, n_samples, mxREAL);
 	mxArray *Pcoll_MCSKF = mxCreateDoubleMatrix(1, n_samples, mxREAL);
 
 	double *p_CE = mxGetPr(Pcoll_CE);
-	double *p_MCSKF = mxGetPr(Pcoll_MCSKF); */
+	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
 	double d_safe = 50, dt_seg = 0.5;
 	int n_CE = 1000, n_MCSKF = 1000;
@@ -254,7 +254,7 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
-/* 
+
 	Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, n_samples);
 	map_traj_os = trajectory;
 
@@ -289,8 +289,8 @@ int main(){
 	engPutVariable(ep, "P_c_CE", Pcoll_CE);
 	engPutVariable(ep, "P_c_MCSKF", Pcoll_MCSKF);
 	engEvalString(ep, "test_cpe_plot");
-	//save_matrix_to_file(P_c_i_CE[0]);
 	
+	//save_matrix_to_file(P_c_i_CE[0]);
 	//save_matrix_to_file(P_c_i_MCSKF[0]);
 
 	printf("%s", buffer);
@@ -303,7 +303,7 @@ int main(){
 
 	mxDestroyArray(Pcoll_CE);
 	mxDestroyArray(Pcoll_MCSKF);
-	engClose(ep); */
+	engClose(ep);
 
 	return 0;
 }

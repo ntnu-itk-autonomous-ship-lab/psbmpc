@@ -671,6 +671,9 @@ void CPE::determine_best_performing_samples(
         valid(j) = 0;
         inside_safety_zone = (samples.col(j) - p_os).dot(samples.col(j) - p_os) <= pow(d_safe[i], 2);
 
+        // Apparently the below expression is faster than the calculate_2x2.... expression, even
+        // though the opposite is the case in the norm_pdf_log function. Test this further if
+        // interested to see if this is actually the case.
         inside_alpha_p_confidence_ellipse = 
             (samples.col(j) - p_i).transpose() * P_i.inverse() * (samples.col(j) - p_i) <= gate;
  
@@ -707,8 +710,13 @@ double CPE::CE_estimation(
     if (P_i(0, 0) > P_i(1, 1)) { var_P_i_largest = P_i(0, 0); }
     else                       { var_P_i_largest = P_i(1, 1); }
 
-    // This large a distance usually means no effective conflict zone
-    if (d_0i > d_safe[i] + 5 * var_P_i_largest) { return P_c; }
+    // This large a distance usually means no effective conflict zone, as
+    // approx 99.7% of probability mass inside 3.5 * standard deviations
+    // (assuming equal std dev in x, y (assumption))
+    if (d_0i > d_safe[i] + 3.5 * sqrt(var_P_i_largest)) 
+    { 
+        return P_c; 
+    }
 
     /******************************************************************************
     * Convergence depedent initialization prior to the run at time t_k
