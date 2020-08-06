@@ -268,8 +268,6 @@ void PSBMPC::calculate_optimal_offsets(
 	int n_obst = new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
-	Eigen::VectorXd HL_0(n_obst); 
-
 	bool colav_active = determine_colav_active(n_static_obst);
 	if (!colav_active)
 	{
@@ -295,7 +293,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Engine *ep = engOpen(NULL);
+	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -326,12 +324,17 @@ void PSBMPC::calculate_optimal_offsets(
 
 	double *ptraj_i = mxGetPr(traj_i);
 	double *p_P_traj_i = mxGetPr(P_traj_i);
+	double *p_P_c_i;
 
 	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 
+	std::vector<mxArray*> P_c_i_mx(n_obst);
+
  	for(int i = 0; i < n_obst; i++)
 	{
+		P_c_i_mx[i] = mxCreateDoubleMatrix(n_ps[i], n_samples, mxREAL);
+
 		Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
 		std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_trajectories();
 
@@ -348,14 +351,17 @@ void PSBMPC::calculate_optimal_offsets(
 			map_traj_i = xs_i_p[ps];
 			
 			engPutVariable(ep, "X_i", traj_i);
-			//engEvalString(ep, "inside_psbmpc_obstacle_plot");
+			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	} */
+	}
+
+	
 	
 	//===============================================================================================================
 	double cost;
 	Eigen::VectorXd opt_offset_sequence(2 * n_M), cost_i(n_obst);
 	Eigen::MatrixXd P_c_i;
+	Eigen::VectorXd HL_0(n_obst); HL_0.setZero();
 	min_cost = 1e12;
 	reset_control_behaviour();
 	for (int cb = 0; cb < n_cbs; cb++)
@@ -365,19 +371,6 @@ void PSBMPC::calculate_optimal_offsets(
 		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 		ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, T, dt);
 
-		//===============================================================================================================
-		// MATLAB PLOTTING FOR DEBUGGING
-		//===============================================================================================================
-		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
-		map_traj = trajectory;
-
-		k_s = mxCreateDoubleScalar(n_samples);
-		engPutVariable(ep, "k", k_s);
-
-		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
-		//===============================================================================================================
-
 		for (int i = 0; i < n_obst; i++)
 		{
 			if (obstacle_colav_on[i]) { predict_trajectories_jointly(); }
@@ -386,9 +379,28 @@ void PSBMPC::calculate_optimal_offsets(
 			calculate_collision_probabilities(P_c_i, i); 
 
 			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
+
+			//===============================================================================================================
+			// MATLAB PLOTTING FOR DEBUGGING
+			//===============================================================================================================
+			p_P_c_i = mxGetPr(P_c_i_mx[i]);
+			Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
+			map_P_c = P_c_i;
+
+			i_mx = mxCreateDoubleScalar(i + 1);
+			engPutVariable(ep, "i", i_mx);
+
+			engPutVariable(ep, "P_c_i", P_c_i_mx[i]);
+			for(int ps = 0; ps < n_ps[i]; ps++)
+			{
+				ps_mx = mxCreateDoubleScalar(ps + 1);
+				engPutVariable(ep, "ps", ps_mx);
+				engEvalString(ep, "inside_psbmpc_upd_coll_probs");
+			}
+			//===============================================================================================================
 		}
 
-		//cost += cost_i.maxCoeff();
+		cost += cost_i.maxCoeff();
 
 		cost += calculate_grounding_cost(static_obstacles);
 
@@ -406,10 +418,24 @@ void PSBMPC::calculate_optimal_offsets(
 			// Assign current optimal hazard level for each obstacle
 			for (int i = 0; i < n_obst; i++)
 			{
-				HL_0(i) = cost_i(i) / cost_i.sum();
+				if (cost_i.sum() > 0)
+					HL_0(i) = cost_i(i) / cost_i.sum();
 			}	
 		}
 		increment_control_behaviour();
+
+		//===============================================================================================================
+		// MATLAB PLOTTING FOR DEBUGGING
+		//===============================================================================================================
+		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		map_traj = trajectory;
+
+		k_s = mxCreateDoubleScalar(n_samples);
+		engPutVariable(ep, "k", k_s);
+
+		engPutVariable(ep, "X", traj_os);
+		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
+		//===============================================================================================================
 	}
 
 	update_obstacle_status(obstacle_status, HL_0);
@@ -425,11 +451,15 @@ void PSBMPC::calculate_optimal_offsets(
 	}
 	std::cout << std::endl;
 
-	double CF_0 = u_opt * (1 - fabs(chi_opt * RAD2DEG) / 15.0);
+	// Ad hoc measure of the vessel control freedom, maximum at u_opt = 0.5, chi_m = 0;
+	//double u_m_middle = u_offsets[0]((u_offsets[0].size() - 1) / 2);
+	//double CF_0 = (u_opt - fabs(u_opt - u_m_middle)) / u_m_middle;
+	//CF_0 *= 1 - fabs(chi_opt) / chi_offsets[0].maxCoeff();
+	double CF_0 = u_opt * (1 - (fabs(RAD2DEG * chi_opt)/chi_offsets[0].size()));
 	colav_status.resize(2,1);
 	colav_status << CF_0, min_cost;
 
-	/* engClose(ep);  */
+	engClose(ep); 
 }
 
 /****************************************************************************************
@@ -519,10 +549,10 @@ void PSBMPC::initialize_pars()
 			u_offsets[M].resize(2);
 			u_offsets[M] << 1.0, 0.5;
 
-			chi_offsets[M].resize(5);
+			chi_offsets[M].resize(7);
 			//chi_offsets[M] << 0.0;
-			chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
-			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
@@ -1342,7 +1372,7 @@ void PSBMPC::calculate_collision_probabilities(
 				{
 					P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
 				}
-				save_matrix_to_file(P_c_i);
+				//save_matrix_to_file(P_c_i);
 				break;
 			case MCSKF4D :
 				k_j_ = 0; k_j = 0;
@@ -1380,7 +1410,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	const int i 													// In: Index of obstacle
 	)
 {
-	double cost = 0, cost_ps, coll_cost;
+	double cost(0), cost_ps(0), coll_cost(0);
 	Eigen::VectorXd max_cost_ps(n_ps[i]);
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
@@ -1394,7 +1424,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	double Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
 
 	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
-	double psi_0_p, psi_i_p, d_0i_p, chi_m;
+	double psi_0_p(0), psi_i_p(0), d_0i_p(0), chi_m(0);
 	bool mu, trans;
 	for(int k = 0; k < n_samples; k++)
 	{

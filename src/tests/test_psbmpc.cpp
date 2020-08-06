@@ -36,6 +36,7 @@
 #define BUFSIZE 1000000
 
 int main(){
+	// Matlab engine setup
  	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
@@ -64,22 +65,12 @@ int main(){
 	trajectory.resize(6, N);
 	trajectory.col(0) = xs_os_0;
 
-	int n_wps_os = 7;
+	int n_wps_os = 2;
 	waypoints.resize(2, n_wps_os); 
-	waypoints << 0, 200, 200, 400, 600,  300, 500,
-				 0, 0,   200, 200,  0,  0, -200;
-	/* waypoints << 0, 1000,
-				 0, 0; */
-	
-
-	mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);
-	mxArray *wps_os = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
-
-	double *ptraj_os = mxGetPr(traj_os); 
-	double *p_wps_os = mxGetPr(wps_os); 
-
-	Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_os, 2, n_wps_os);
-	map_wps_i = waypoints;
+	/* waypoints << 0, 200, 200, 400, 600,  300, 500,
+				 0, 0,   200, 200,  0,  0, -200; */
+	waypoints << 0, 1000,
+				 0, 0;
 	
 	//*****************************************************************************************************************
 	// Obstacle sim setup
@@ -106,7 +97,7 @@ int main(){
 	std::vector<double> Pr_CC(n_obst);
 
 	// Simulate obstacles using an ownship model
-	Ownship* obstacle_sim = new Ownship();
+	std::unique_ptr<Ownship> obstacle_sim(new Ownship());
 
 	std::vector<double> u_d_i(n_obst);
 	std::vector<double> chi_d_i(n_obst);
@@ -118,6 +109,18 @@ int main(){
 	std::vector<Eigen::Matrix<double, 6, -1>> trajectory_i(n_obst); 
 	std::vector<Eigen::Matrix<double, 16, -1>> trajectory_covariances_i(n_obst);
 	std::vector<Eigen::Matrix<double, 2, -1>> waypoints_i(n_obst);
+
+	//=====================================================================
+	// Matlab array setup for the ownship and obstacle, ++
+	//=====================================================================
+	mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);
+	mxArray *wps_os = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
+
+	double *ptraj_os = mxGetPr(traj_os); 
+	double *p_wps_os = mxGetPr(wps_os); 
+
+	Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_os, 2, n_wps_os);
+	map_wps_i = waypoints;
 
 	std::vector<mxArray*> traj_i(n_obst); 
 	std::vector<mxArray*> P_traj_i(n_obst); 
@@ -175,8 +178,6 @@ int main(){
 	double u_opt, chi_opt;
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
-	mxArray *pred_traj;
-	double *p_pred_traj;
 
 	Eigen::Matrix<double,-1,-1> obstacle_status; 				
 	Eigen::Matrix<double,-1, 1> colav_status; 
@@ -202,9 +203,14 @@ int main(){
 	//*****************************************************************************************************************	
 	auto start = std::chrono::system_clock::now(), end = start;
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-	
-	mxArray *T_sim_mx = mxCreateDoubleScalar(T_sim);
 
+	
+	// Matlab plot setup
+	//=========================================================
+	mxArray *T_sim_mx = mxCreateDoubleScalar(T_sim);
+	mxArray *pred_traj;
+	double *p_pred_traj;
+	
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engPutVariable(ep, "WPs", wps_os);
 
@@ -225,6 +231,7 @@ int main(){
 
 		engEvalString(ep, "init_obstacle_plot");
 	}
+	//=========================================================
 	
 	Eigen::Vector4d xs_i_k;
 	Eigen::VectorXd xs_aug(9);
