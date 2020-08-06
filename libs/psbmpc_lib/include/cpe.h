@@ -52,7 +52,7 @@ private:
 
 	// PRNG-related
 	// IMPORTANT NOTE: Some compilers (Older GCC versions < 9.2) implement this 
-	// random device using a PRNG or if a non-deterministic device is not available
+	// random device using a PRNG, and if a non-deterministic device is not available
 	// => the same sequence is produced every time, this should be checked before
 	// real-time testing to ensure proper functionality.
 	std::random_device seed;
@@ -149,7 +149,7 @@ public:
 
 	CPE& operator=(const CPE &cpe);
 
-	void set_method(const CPE_Method cpe_method) { method = cpe_method;  resize_matrices(); };
+	void set_method(const CPE_Method cpe_method) { if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
 
 	void set_safety_zone_radius(const double d_safe, const int i) { this->d_safe[i] = d_safe; };
 

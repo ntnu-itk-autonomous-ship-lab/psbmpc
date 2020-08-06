@@ -412,8 +412,6 @@ __device__ inline void CPE::generate_norm_dist_samples(
 
     update_L(Sigma);
 
-    // Check if bigger loop within small loop faster than the other way around
-    // if time usage becomes an issue
     for (int c = 0; c < n; c++)
     {
         for(int i = 0; i < n_samples; i++)
@@ -422,15 +420,6 @@ __device__ inline void CPE::generate_norm_dist_samples(
         }
     }
 
-    /*
-    for (int i = 0; i < n_samples; i++)
-    {
-        for(int c = 0; c < n; c++)
-        {
-            std_norm_samples(c, i) = std_norm_pdf(generator);
-        }
-    }
-    */
     // Box-muller transform
     samples = (L * samples).colwise() + mu;
 }

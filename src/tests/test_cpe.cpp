@@ -38,12 +38,12 @@
 
 int main(){
 	// Matlab engine setup
-	Engine *ep = engOpen(NULL);
+/* 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1];
+	char buffer[BUFSIZE+1]; */
 	
 	//*****************************************************************************************************************
 	// Own-ship prediction setup
@@ -52,7 +52,7 @@ int main(){
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 6, 0, 0;
 
-	double T = 80; double dt = 0.5;
+	double T = 100; double dt = 0.5;
 
 	double u_d = 6.0; double chi_d = 0.0;
 
@@ -233,7 +233,7 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
-	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+/* 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
 	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
 
 	double *ptraj_os = mxGetPr(traj_os);
@@ -301,7 +301,7 @@ int main(){
 
 	mxDestroyArray(Pcoll_CE);
 	mxDestroyArray(Pcoll_MCSKF);
-	engClose(ep);
+	engClose(ep); */
 
 	return 0;
 }

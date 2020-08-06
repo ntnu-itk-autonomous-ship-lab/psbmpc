@@ -374,20 +374,10 @@ inline void CPE::generate_norm_dist_samples(
     int n = samples.rows(), n_samples = samples.cols();
 
     update_L(Sigma);
-
-    // Check if bigger loop within small loop faster than the other way around
-    // if time usage becomes an issue
-/*     for (int c = 0; c < n; c++)
+    
+    for (int c = 0; c < n; c++)
     {
         for(int i = 0; i < n_samples; i++)
-        {
-            samples(c, i) = std_norm_pdf(generator);
-        }
-    } */
-
-    for (int i = 0; i < n_samples; i++)
-    {
-        for(int c = 0; c < n; c++)
         {
             samples(c, i) = std_norm_pdf(generator);
         }
