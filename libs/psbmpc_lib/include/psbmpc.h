@@ -3,8 +3,7 @@
 *  File name : psbmpc.h
 *
 *  Function  : Header file for Probabilistic Scneario-based Model Predictive Control.
-*			   Extends and modifies the SB-MPC implemented by Inger Berge Hagen and 
-*			   Giorgio D. Kwame Minde Kufoalor through the Autosea project.
+*			   
 *
 *  
 *	           ---------------------
