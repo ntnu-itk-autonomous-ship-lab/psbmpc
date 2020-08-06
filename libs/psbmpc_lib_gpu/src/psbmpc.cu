@@ -41,14 +41,15 @@
 *****************************************************************************************/
 PSBMPC::PSBMPC() 
 	: 
-	ownship(new Ownship()),
-	cpe(new CPE(cpe_method, 1000, 100, 1, dt))
+	ownship(new Ownship())
 {
 	// Initialize parameters before parameter limits, as some limits depend on the
 	// parameter values set.
 	initialize_pars();
 	
 	initialize_par_limits();
+
+	cpe.reset(new CPE(cpe_method, 1000, 100, 0, dt));
 }
 
 /****************************************************************************************
@@ -272,7 +273,7 @@ void PSBMPC::calculate_optimal_offsets(
 	int n_obst = new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
-	Eigen::VectorXd HL_0(n_obst); 
+	update_situation_type_and_transitional_variables();
 
 	bool colav_active = determine_colav_active(n_static_obst);
 	if (!colav_active)
@@ -282,8 +283,6 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 	
-	update_situation_type_and_transitional_variables();
-
 	initialize_prediction();
 
 	for (int i = 0; i < n_obst; i++)
@@ -361,6 +360,8 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// Cost evaluation
 	//===============================================================================================================
+	Eigen::VectorXd HL_0(n_obst); HL_0.setZero();
+
 	op.reset(new CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles));
 
 	// Allocate device vector for computing CB costs
@@ -382,8 +383,6 @@ void PSBMPC::calculate_optimal_offsets(
 	offset_sequence = control_behaviours.col(min_index);
 	ownship->predict_trajectory(trajectory, control_behaviours.col(min_index), maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, T, dt);
 	assign_optimal_trajectory(predicted_trajectory);
-
-	HL_0.setZero();
 	//===============================================================================================================
 
 	//===============================================================================================================
@@ -575,14 +574,14 @@ void PSBMPC::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(1);
-			u_offsets[M] << 1.0;
-			//u_offsets[M] << 1.0, 0.5, 0.0;
+			u_offsets[M].resize(3);
+			//u_offsets[M] << 1.0;
+			u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(7);
+			chi_offsets[M].resize(13);
 			//chi_offsets[M] << 0.0;
-			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -590,9 +589,11 @@ void PSBMPC::initialize_pars()
 			u_offsets[M].resize(2);
 			u_offsets[M] << 1.0, 0.5;
 
-			chi_offsets[M].resize(5);
+			chi_offsets[M].resize(7);
 			//chi_offsets[M] << 0.0;
-			chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
@@ -643,8 +644,6 @@ void PSBMPC::initialize_pars()
 	G = 0;		         					 // 1.0e3
 	q = 4.0;
 	p = 1.0;
-
-	
 
 	obstacle_filter_on = false;
 	obstacle_colav_on.resize(1);
@@ -1067,6 +1066,11 @@ bool PSBMPC::determine_colav_active(
 		d_0i(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
 		d_0i(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
 		if (d_0i.norm() < d_init) colav_active = true;
+
+		// If all obstacles are passed, even though inside colav range,
+		// then no need for colav
+		if (IP_0[i]) 	{ colav_active = false; }
+		else 			{ colav_active = true; }
 	}
 	colav_active = colav_active || n_static_obst > 0;
 
@@ -1195,24 +1199,6 @@ void PSBMPC::assign_optimal_trajectory(
 }
 
 /****************************************************************************************
-*  Name     : assign_obstacle_vector
-*  Function : Assumes that the left-hand side has not allocated dynamic memory yet.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::assign_obstacle_vector(
-	std::vector<Tracked_Obstacle*> &lhs,  														// In/out: Resultant vector
-	const std::vector<Tracked_Obstacle*> &rhs 													// In: Vector to assign
-	)
-{
-	lhs.resize(rhs.size());
-	for (int i = 0; i < rhs.size(); i++)
-	{
-		lhs[i] = new Tracked_Obstacle(*(rhs[i]));
-	}
-}
-
-/****************************************************************************************
 *  Name     : update_obstacles
 *  Function : Takes in new obstacle information and updates the obstacle data structures
 *  Author   :
@@ -1225,6 +1211,7 @@ void PSBMPC::update_obstacles(
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
 	) 			
 {
+	// Clear "old" new obstacles before the update
 	new_obstacles.clear();
 	
 	int n_obst_old = old_obstacles.size();
@@ -1248,9 +1235,7 @@ void PSBMPC::update_obstacles(
 					obstacle_filter_on,
 					dt);
 
-				new_obstacles.resize(new_obstacles.size() + 1);
-
-				new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(*(old_obstacles[j])));
+				new_obstacles.push_back(std::move(old_obstacles[j]));
 
 				obstacle_exist = true;
 
@@ -1259,9 +1244,7 @@ void PSBMPC::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			new_obstacles.resize(new_obstacles.size() + 1);
-
-			new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(
+			new_obstacles.push_back(std::move(std::unique_ptr<Tracked_Obstacle>(new Tracked_Obstacle(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
@@ -1269,7 +1252,7 @@ void PSBMPC::update_obstacles(
 				obstacle_filter_on, 
 				false, 
 				T, 
-				dt));
+				dt))));
 		}
 	}
 	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
@@ -1287,16 +1270,12 @@ void PSBMPC::update_obstacles(
 			{
 				old_obstacles[j]->update(obstacle_filter_on, dt);
 
-				new_obstacles.resize(new_obstacles.size() + 1);
-
-				new_obstacles[new_obstacles.size() - 1].reset(new Tracked_Obstacle(*(old_obstacles[j])));
+				new_obstacles.push_back(std::move(old_obstacles[j]));
 			}
 		}
 	}
-
-	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
-	// Then set equal to the new obstacle vector (with fresh pointer addresses ofc)
-	//assign_obstacle_vector(old_obstacles, new_obstacles);
+	// Clear old obstacle vector, which consist of transferred (nullptr) and terminated obstacles
+	// Then set equal to the new obstacle vector
 	old_obstacles.resize(new_obstacles.size());
 	for (int i = 0; i < new_obstacles.size(); i++)
 	{
