@@ -581,7 +581,7 @@ void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 4;
-	n_a = 1; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
+	n_a = 3; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
 	n_ps.resize(1); // Determined by initialize_prediction();
 
 	offset_sequence_counter.resize(2 * n_M);
@@ -625,7 +625,7 @@ void PSBMPC::initialize_pars()
 	obstacle_course_changes.resize(1);
 	obstacle_course_changes << 30 * DEG2RAD; //60 * DEG2RAD, 90 * DEG2RAD;
 
-	cpe_method = MCSKF4D;
+	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
@@ -1412,7 +1412,7 @@ void PSBMPC::calculate_collision_probabilities(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_dynamic_obstacle_cost(
-	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
+	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const int i 													// In: Index of obstacle
 	)
 {
@@ -1512,6 +1512,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 
 	Eigen::Vector3d cost_a = {0, 0, 0};
 	Eigen::VectorXd Pr_a = new_obstacles[i]->get_intention_probabilities();
+	assert(Pr_a.size() == 3);
 	cost_a(0) = max_cost_ps(0); 
 	for(int ps = 1; ps < n_ps[i]; ps++)
 	{
@@ -1640,7 +1641,7 @@ double PSBMPC::calculate_grounding_cost(
 	)
 {
 	double cost = 0;
-	
+
 
 	return cost;
 }
