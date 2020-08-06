@@ -32,13 +32,22 @@ d_safe = 50;
 h_wps = plot(ax1, WPs(2, :), WPs(1, :), 'rx', 'Linewidth', 2);
 
 h_X = []; h_X_p = [];
-h_X_text = []; h_X_k = [];
 h_X_ptch = [];
-h_safe = []; h_safe_k = [];
+h_safe = []; 
 
-h_X_i = cell(n_obst, n_ps);
+% 100 is a safe max number of plot points.
+h_X_text_s = cell(100, 1); h_X_s = cell(100, 1);
+h_safe_s = cell(100,1);
+for s = 1 : 1000
+    h_X_text_s{s, 1} = [];
+    h_safe_s{s, 1} = [];
+    h_X_s{s, 1} = [];
+end
+
 h_X_i_s = cell(n_obst, n_ps);
+h_X_i = cell(n_obst, n_ps);
 h_X_i_ptch = cell(n_obst, n_ps);
+
 h_P_i = cell(n_obst, n_ps);
 h_P_c_i = cell(n_obst, n_ps);
 h_text_i = cell(n_obst, n_ps);

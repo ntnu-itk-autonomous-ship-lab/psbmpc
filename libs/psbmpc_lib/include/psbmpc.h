@@ -101,6 +101,10 @@ private:
 	std::vector<std::unique_ptr<Tracked_Obstacle>> old_obstacles;
 	std::vector<std::unique_ptr<Tracked_Obstacle>> new_obstacles;
 
+	void reset_control_behaviour();
+
+	void increment_control_behaviour();
+	
 	void initialize_par_limits();
 
 	void initialize_pars();
@@ -123,10 +127,6 @@ private:
 		const int i);
 
 	double find_time_of_passing(const int i);
-
-	void reset_control_behaviour();
-
-	void increment_control_behaviour();
 
 	void predict_trajectories_jointly();
 

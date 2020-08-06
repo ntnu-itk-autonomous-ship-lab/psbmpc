@@ -44,7 +44,7 @@ PSBMPC::PSBMPC() :
 	
 	initialize_par_limits();
 
-	cpe.reset(new CPE(cpe_method, 1000, 100, 1, dt));
+	cpe.reset(new CPE(cpe_method, 1000, 100, 0, dt));
 }
 
 /****************************************************************************************
@@ -225,18 +225,22 @@ void PSBMPC::set_par(
 					}
 				}
 				break;
-			default : std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the PSBMPC class.." << std::endl; break; 
+			default : 
+				//Throw 
+				std::cout << "Index invalid but makes it past limit checks? Update the index file or the parameters in the PSBMPC class.." << std::endl; 
+				break; 
 		}
 	}
 	else
 	{
+		//Throw
 		std::cout << "Update n_M first.." << std::endl;
 	}
 }
 
 /****************************************************************************************
 *  Name     : calculate_optimal_offsets
-*  Function : Calculate optimal surge and course offsets for PSB-MPC
+*  Function : 
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -268,6 +272,8 @@ void PSBMPC::calculate_optimal_offsets(
 	int n_obst = new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
+	update_situation_type_and_transitional_variables();
+
 	bool colav_active = determine_colav_active(n_static_obst);
 	if (!colav_active)
 	{
@@ -275,8 +281,6 @@ void PSBMPC::calculate_optimal_offsets(
 		chi_opt = 0; 	chi_m_last = chi_opt;
 		return;
 	}
-	
-	update_situation_type_and_transitional_variables();
 
 	initialize_prediction();
 
@@ -354,8 +358,6 @@ void PSBMPC::calculate_optimal_offsets(
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
 	}
-
-	
 	
 	//===============================================================================================================
 	double cost;
@@ -465,6 +467,63 @@ void PSBMPC::calculate_optimal_offsets(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : reset_control_behavior
+*  Function : Sets the offset sequence back to the initial starting point, i.e. the 
+*			  leftmost branches of the control behavior tree
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::reset_control_behaviour()
+{
+	offset_sequence_counter.setZero();
+	for (int M = 0; M < n_M; M++)
+	{
+		offset_sequence(2 * M) = u_offsets[M](0);
+		offset_sequence(2 * M + 1) = chi_offsets[M](0);
+	}
+}
+
+/****************************************************************************************
+*  Name     : increment_control_behavior
+*  Function : Increments the control behavior counter and changes the offset sequence 
+*			  accordingly. Backpropagation is used for the incrementation
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::increment_control_behaviour()
+{
+	for (int M = n_M - 1; M > -1; M--)
+	{
+		// Only increment counter for "leaf node offsets" on each iteration, which are the
+		// course offsets in the last maneuver
+		if (M == n_M - 1)
+		{
+			offset_sequence_counter(2 * M + 1) += 1;
+		}
+
+		// If one reaches the end of maneuver M's course offsets, reset corresponding
+		// counter and increment surge offset counter above
+		if (offset_sequence_counter(2 * M + 1) == chi_offsets[M].size())
+		{
+			offset_sequence_counter(2 * M + 1) = 0;
+			offset_sequence_counter(2 * M) += 1;
+		}
+		offset_sequence(2 * M + 1) = chi_offsets[M](offset_sequence_counter(2 * M + 1));
+
+		// If one reaches the end of maneuver M's surge offsets, reset corresponding
+		// counter and increment course offset counter above (if any)
+		if (offset_sequence_counter(2 * M) == u_offsets[M].size())
+		{
+			offset_sequence_counter(2 * M) = 0;
+			if (M > 0)
+			{
+				offset_sequence_counter(2 * M - 1) += 1;
+			}
+		}
+		offset_sequence(2 * M) = u_offsets[M](offset_sequence_counter(2 * M));
+	}
+}
 
 /****************************************************************************************
 *  Name     : initialize_par_limits
@@ -521,7 +580,7 @@ void PSBMPC::initialize_par_limits()
 void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
+	n_M = 4;
 	n_a = 1; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
 	n_ps.resize(1); // Determined by initialize_prediction();
 
@@ -566,12 +625,12 @@ void PSBMPC::initialize_pars()
 	obstacle_course_changes.resize(1);
 	obstacle_course_changes << 30 * DEG2RAD; //60 * DEG2RAD, 90 * DEG2RAD;
 
-	cpe_method = CE;
+	cpe_method = MCSKF4D;
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 100.0; 	      // 400.0, 300.0, 240 (sim/Euler)
-	dt = 5.0;		      // 5.0, 0.5 (sim/Euler)
+	T = 200.0; 
+	dt = 5.0;		      
   	T_static = 60.0;		  // (50.0)
 
 	p_step = 1;
@@ -1006,64 +1065,6 @@ double PSBMPC::find_time_of_passing(
 }
 
 /****************************************************************************************
-*  Name     : reset_control_behavior
-*  Function : Sets the offset sequence back to the initial starting point, i.e. the 
-*			  leftmost branches of the control behavior tree
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::reset_control_behaviour()
-{
-	offset_sequence_counter.setZero();
-	for (int M = 0; M < n_M; M++)
-	{
-		offset_sequence(2 * M) = u_offsets[M](0);
-		offset_sequence(2 * M + 1) = chi_offsets[M](0);
-	}
-}
-
-/****************************************************************************************
-*  Name     : increment_control_behavior
-*  Function : Increments the control behavior counter and changes the offset sequence 
-*			  accordingly. Backpropagation is used for the incrementation
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::increment_control_behaviour()
-{
-	for (int M = n_M - 1; M > -1; M--)
-	{
-		// Only increment counter for "leaf node offsets" on each iteration, which are the
-		// course offsets in the last maneuver
-		if (M == n_M - 1)
-		{
-			offset_sequence_counter(2 * M + 1) += 1;
-		}
-
-		// If one reaches the end of maneuver M's course offsets, reset corresponding
-		// counter and increment surge offset counter above
-		if (offset_sequence_counter(2 * M + 1) == chi_offsets[M].size())
-		{
-			offset_sequence_counter(2 * M + 1) = 0;
-			offset_sequence_counter(2 * M) += 1;
-		}
-		offset_sequence(2 * M + 1) = chi_offsets[M](offset_sequence_counter(2 * M + 1));
-
-		// If one reaches the end of maneuver M's surge offsets, reset corresponding
-		// counter and increment course offset counter above (if any)
-		if (offset_sequence_counter(2 * M) == u_offsets[M].size())
-		{
-			offset_sequence_counter(2 * M) = 0;
-			if (M > 0)
-			{
-				offset_sequence_counter(2 * M - 1) += 1;
-			}
-		}
-		offset_sequence(2 * M) = u_offsets[M](offset_sequence_counter(2 * M));
-	}
-}
-
-/****************************************************************************************
 *  Name     : predict_trajectories_jointly
 *  Function : Predicts the trajectory of the ownship and obstacles with an active COLAV
 *			  system
@@ -1094,6 +1095,11 @@ bool PSBMPC::determine_colav_active(
 		d_0i(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
 		d_0i(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
 		if (d_0i.norm() < d_init) colav_active = true;
+
+		// If all obstacles are passed, even though inside colav range,
+		// then no need for colav
+		if (IP_0[i]) 	{ colav_active = false; }
+		else 			{ colav_active = true; }
 	}
 	colav_active = colav_active || n_static_obst > 0;
 
@@ -1634,6 +1640,7 @@ double PSBMPC::calculate_grounding_cost(
 	)
 {
 	double cost = 0;
+	
 
 	return cost;
 }
