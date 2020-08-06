@@ -571,20 +571,6 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 }
 
 /****************************************************************************************
-*  Name     : calculate_collision_cost
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-__device__ double CB_Cost_Functor::calculate_collision_cost(
-	const Eigen::Vector2d &v_1, 											// In: Velocity v_1
-	const Eigen::Vector2d &v_2 												// In: Velocity v_2
-	)
-{
-	return vars->K_coll * (v_1 - v_2).norm();
-}
-
-/****************************************************************************************
 *  Name     : calculate_ad_hoc_collision_risk
 *  Function : 
 *  Author   : 

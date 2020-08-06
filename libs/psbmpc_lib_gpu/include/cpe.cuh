@@ -149,11 +149,9 @@ public:
 
 	__host__ __device__ CPE& operator=(const CPE &cpe);
 
-	__host__ __device__ void set_method(const CPE_Method cpe_method) { method = cpe_method;  resize_matrices(); };
+	__host__ __device__ void set_method(const CPE_Method cpe_method) {if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
 
 	__device__ void set_safety_zone_radius(const double d_safe, const int i) { this->d_safe[i] = d_safe; };
-
-	__device__ void set_safety_zone_radius(const std::vector<double> d_safe) { this->d_safe = d_safe; };
 
 	__host__ __device__ void set_number_of_obstacles(const int n_obst);
 

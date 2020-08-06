@@ -104,7 +104,7 @@ private:
 	void reset_control_behaviour();
 
 	void increment_control_behaviour();
-	
+
 	void initialize_par_limits();
 
 	void initialize_pars();
@@ -160,18 +160,18 @@ private:
 
 	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const int i);
 
-	double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
+	double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) { return K_coll * (v_1 - v_2).norm(); };
 
 	double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	double calculate_control_deviation_cost();
 
-	double Delta_u(const double u_1, const double u_2) const 		{ return K_du * fabs(u_1 - u_2); }
+	double Delta_u(const double u_1, const double u_2) 		{ return K_du * fabs(u_1 - u_2); }
 
-	double K_chi(const double chi) const 							{ if (chi > 0) return K_chi_strb * pow(chi, 2); else return K_chi_port * pow(chi, 2); };
+	double K_chi(const double chi)							{ if (chi > 0) return K_chi_strb * pow(chi, 2); else return K_chi_port * pow(chi, 2); };
 
-	double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
+	double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
 	double calculate_chattering_cost();
