@@ -62,7 +62,7 @@ private:
 
 	std::normal_distribution<double> std_norm_pdf;
 
-	// CE-method parameters and states
+	// CE-method parameters and internal states
 	double sigma_inject, alpha_n, gate, rho, max_it;
 	
 	bool converged_last;
@@ -70,8 +70,8 @@ private:
 	std::vector<Eigen::Vector2d> mu_CE_last;
 	std::vector<Eigen::Matrix2d> P_CE_last;
 
-	std::vector<int> N_e, e_count;
-	std::vector<Eigen::MatrixXd> elite_samples;
+	int N_e, e_count;
+	Eigen::MatrixXd elite_samples;
 
 	// MCSKF4D-method parameters and internal states
 	double q, r, dt_seg; 
@@ -79,11 +79,11 @@ private:
 	Eigen::VectorXd P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
 	// Common internal sample variables
-	std::vector<Eigen::MatrixXd> samples;
-	std::vector<Eigen::VectorXd> valid;
+	Eigen::MatrixXd samples;
+	Eigen::VectorXd valid;
 	
 	// Safety zone parameters
-	std::vector<double> d_safe;
+	double d_safe;
 
 	// Cholesky decomposition matrix
 	Eigen::MatrixXd L;
@@ -94,9 +94,9 @@ private:
 
 	inline double calculate_2x2_quadratic_form(const Eigen::Vector2d &x, const Eigen::Matrix2d &A);
 
-	inline void norm_pdf_log(Eigen::VectorXd &result, const Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	inline void norm_pdf_log(Eigen::VectorXd &result, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
-	inline void generate_norm_dist_samples(Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	inline void generate_norm_dist_samples(const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
 	void calculate_roots_2nd_order(Eigen::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
 
@@ -104,15 +104,11 @@ private:
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::Matrix4d &P_i, 
 		const Eigen::Vector2d &p_os_cpa,
-		const double t_cpa,
-		const int i);
+		const double t_cpa);
 
 	void determine_sample_validity_4D(
-		Eigen::VectorXd &valid, 
-		const Eigen::MatrixXd &samples, 
 		const Eigen::Vector2d &p_os_cpa, 
-		const double t_cpa,
-		const int i );
+		const double t_cpa);
 
 	double MCSKF4D_estimation(
 		const Eigen::MatrixXd &xs_os,  
@@ -121,19 +117,12 @@ private:
 		const int i);	
 
 	void determine_sample_validity_2D(
-		Eigen::VectorXd &valid, 
-		const Eigen::MatrixXd &samples,
-		const Eigen::Vector2d &p_os,
-		const int i);
+		const Eigen::Vector2d &p_os);
 
 	void determine_best_performing_samples(
-		Eigen::VectorXd &valid, 
-		int &N_e, 
-		const Eigen::MatrixXd &samples,
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
-		const Eigen::Matrix2d &P_i,
-		const int i);
+		const Eigen::Matrix2d &P_i);
 
 	double CE_estimation(
 		const Eigen::Vector2d &p_os, 
@@ -150,10 +139,6 @@ public:
 	CPE& operator=(const CPE &cpe);
 
 	void set_method(const CPE_Method cpe_method) { if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
-
-	void set_safety_zone_radius(const double d_safe, const int i) { this->d_safe[i] = d_safe; };
-
-	void set_safety_zone_radius(const std::vector<double> d_safe) { this->d_safe = d_safe; };
 
 	void set_number_of_obstacles(const int n_obst);
 

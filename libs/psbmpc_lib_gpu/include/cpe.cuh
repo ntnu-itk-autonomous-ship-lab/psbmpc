@@ -24,7 +24,7 @@
 #ifndef _CPE_H_
 #define _CPE_H_
 
-#include "cuda_xoshiro.hpp"
+#include "curand_kernel.h"
 #include <thrust/device_vector.h>
 #include <Eigen/Dense>
 
@@ -52,13 +52,10 @@ private:
 	int n_CE, n_MCSKF;
 
 	// PRNG-related
-	std::random_device seed;
+	curandState prng_state;
 
-	xoshiro256plus64 generator;
 
-	std::normal_distribution<double> std_norm_pdf;
-
-	// CE-method parameters and states
+	// CE-method parameters and internal states
 	double sigma_inject, alpha_n, gate, rho, max_it;
 	
 	bool converged_last;
@@ -79,66 +76,55 @@ private:
 	Eigen::VectorXd valid;
 	
 	// Safety zone parameters
-	double *d_safe;
+	double d_safe;
 
 	// Cholesky decomposition matrix
 	Eigen::MatrixXd L;
 
 	__host__ __device__ void resize_matrices();
 
-	__device__ inline void update_L(const Eigen::MatrixXd &in);
+	__host__ __device__ inline void update_L(const Eigen::MatrixXd &in);
 
-	__device__ inline double calculate_2x2_quadratic_form(const Eigen::Vector2d &x, const Eigen::Matrix2d &A);
+	__host__ __device__ inline double calculate_2x2_quadratic_form(const Eigen::Vector2d &x, const Eigen::Matrix2d &A);
 
-	__device__ inline void norm_pdf_log(Eigen::VectorXd &result, const Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	__host__ __device__ inline void norm_pdf_log(Eigen::VectorXd &result, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
-	__device__ inline void generate_norm_dist_samples(Eigen::MatrixXd &samples, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	__host__ __device__ inline void generate_norm_dist_samples(const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
-	__device__ void calculate_roots_2nd_order(Eigen::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
+	__host__ __device__ void calculate_roots_2nd_order(Eigen::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
 
-	__device__ double produce_MCS_estimate(
+	__host__ __device__ double produce_MCS_estimate(
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::Matrix4d &P_i, 
 		const Eigen::Vector2d &p_os_cpa,
-		const double t_cpa,
-		const int i);
+		const double t_cpa);
 
-	__device__ void determine_sample_validity_4D(
-		Eigen::VectorXd &valid, 
-		const Eigen::MatrixXd &samples, 
+	__host__ __device__ void determine_sample_validity_4D(
 		const Eigen::Vector2d &p_os_cpa, 
-		const double t_cpa,
-		const int i );
+		const double t_cpa);
 
-	__device__ double MCSKF4D_estimation(
+	__host__ __device__ double MCSKF4D_estimation(
 		const Eigen::MatrixXd &xs_os,  
 		const Eigen::MatrixXd &xs_i, 
 		const Eigen::MatrixXd &P_i,
 		const int i);	
 
-	__device__ void determine_sample_validity_2D(
-		Eigen::VectorXd &valid, 
-		const Eigen::MatrixXd &samples,
-		const Eigen::Vector2d &p_os,
-		const int i);
+	__host__ __device__ void determine_sample_validity_2D(
+		const Eigen::Vector2d &p_os);
 
-	__device__ void determine_best_performing_samples(
-		Eigen::VectorXd &valid, 
-		int &N_e, 
-		const Eigen::MatrixXd &samples,
+	__host__ __device__ void determine_best_performing_samples(
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
-		const Eigen::Matrix2d &P_i,
-		const int i);
+		const Eigen::Matrix2d &P_i);
 
-	__device__ double CE_estimation(
+	__host__ __device__ double CE_estimation(
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
 		const Eigen::Matrix2d &P_i,
 		const int i);
 
 public:
-
+	
 	__host__ __device__ CPE() {};
 
 	__host__ __device__ CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const int n_obst, const double dt);
@@ -149,22 +135,22 @@ public:
 
 	__host__ __device__ CPE& operator=(const CPE &cpe);
 
-	__host__ __device__ void set_method(const CPE_Method cpe_method) {if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
+	__host__ __device__ void clean();
 
-	__device__ void set_safety_zone_radius(const double d_safe, const int i) { this->d_safe[i] = d_safe; };
+	__host__ __device__ void set_method(const CPE_Method cpe_method) { if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
 
 	__host__ __device__ void set_number_of_obstacles(const int n_obst);
 
 	__host__ __device__ double get_segment_discretization_time() const { return dt_seg; };
 
-	__device__ void initialize(
+	__host__ __device__ void initialize(
 		const Eigen::Matrix<double, 6, 1> &xs_os, 
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::VectorXd &P_i,
 		const double d_safe_i, 
 		const int i);
 	
-	__device__ double estimate(
+	__host__ __device__ double estimate(
 		const Eigen::MatrixXd &xs_os,
 		const Eigen::MatrixXd &xs_i,
 		const Eigen::MatrixXd &P_i,
