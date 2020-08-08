@@ -19,6 +19,7 @@
 *****************************************************************************************/
 
 #include <thrust/device_vector.h>
+#include <stdio.h>
 #include "cpe.cuh"
 #include "utilities.cuh"
 #include <iostream>
@@ -115,14 +116,13 @@ __host__ __device__ CPE::CPE(
 
     mu_CE_last = new Eigen::Vector2d[n_obst];
     P_CE_last = new Eigen::Matrix2d[n_obst];
-    d_safe = new double[n_obst];
     for (int i = 0; i < n_obst; i++)
     {
         mu_CE_last[i] = cpe.mu_CE_last[i];
         P_CE_last[i] = cpe.P_CE_last[i];
-
-        d_safe[i] = cpe.d_safe[i];
     }
+
+    this->d_safe = cpe.d_safe;
 
     this->N_e = cpe.N_e; this->e_count = cpe.e_count;
     this->elite_samples = cpe.elite_samples;
@@ -181,7 +181,8 @@ __host__ __device__ void CPE::clean()
 
 /****************************************************************************************
 *  Name     : set_number_of_obstacles
-*  Function : Set number of obstacles to estimate, update data structures accordingly
+*  Function : Set number of obstacles to estimate, update data structures accordingly.
+*             This function is always called prior to estimation, so delete is in order.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -191,8 +192,9 @@ __host__ __device__ void CPE::set_number_of_obstacles(
 { 
     this->n_obst = n_obst; 
     
-    mu_CE_last.resize(n_obst);
-    P_CE_last.resize(n_obst);
+    clean();
+    mu_CE_last = new Eigen::Vector2d[n_obst];
+    P_CE_last = new Eigen::Matrix2d[n_obst];
     
     P_c_p.resize(n_obst); P_c_upd.resize(n_obst);
     var_P_c_p.resize(n_obst); var_P_c_upd.resize(n_obst);
@@ -215,6 +217,8 @@ __host__ __device__ void CPE::initialize(
     const int i                                                                 // In: Index of obstacle i
     )
 {
+    // The estimation is done considering one obstacle at the time, so the d_safe parameter
+    // is initialized accordingly
     d_safe = d_safe_i;
     switch (method)
     {
@@ -415,7 +419,10 @@ __host__ __device__ inline void CPE::generate_norm_dist_samples(
     {
         for(int i = 0; i < n_samples; i++)
         {
-            samples(c, i) = std_norm_pdf(generator);
+            samples(c, i) = CURAND_CALL(curand_normal_double(&prng_state));
+            # if __CUDA_ARCH__>=200
+                printf("%d \n", samples(c, i));
+            #endif  
         }
     }
     // Box-muller transform

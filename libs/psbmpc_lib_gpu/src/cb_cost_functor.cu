@@ -166,7 +166,7 @@ __host__ __device__ CB_Cost_Functor::~CB_Cost_Functor()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double CB_Cost_Functor::operator()(const int cb_index)
+__device__ double CB_Cost_Functor::operator()(const unsigned int cb_index)
 {
 	int n_samples = vars->trajectory.cols();
 	double cost = 0;
@@ -185,7 +185,7 @@ __device__ double CB_Cost_Functor::operator()(const int cb_index)
 		vars->T, 
 		vars->dt);
 	
-	//vars->cpe->seed_prng(thread_id);
+	vars->cpe->seed_prng(cb_index);
 	
 	for (int i = 0; i < vars->n_obst; i++)
 	{

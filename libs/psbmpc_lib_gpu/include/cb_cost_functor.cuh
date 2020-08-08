@@ -160,7 +160,7 @@ public:
 
 	__host__ __device__ ~CB_Cost_Functor();
 	
-	__device__ double operator()(const int cb_index);
+	__device__ double operator()(const unsigned int cb_index);
 	
 };
 	
