@@ -143,6 +143,8 @@ public:
 
 	__host__ __device__ double get_segment_discretization_time() const { return dt_seg; };
 
+	__host__ __device__ void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
+
 	__host__ __device__ void initialize(
 		const Eigen::Matrix<double, 6, 1> &xs_os, 
 		const Eigen::Vector4d &xs_i, 

@@ -184,7 +184,8 @@ __device__ double CB_Cost_Functor::operator()(const int cb_index)
 		vars->guidance_method, 
 		vars->T, 
 		vars->dt);
-
+	
+	//vars->cpe->seed_prng(thread_id);
 	
 	for (int i = 0; i < vars->n_obst; i++)
 	{

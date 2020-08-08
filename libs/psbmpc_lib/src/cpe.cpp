@@ -308,8 +308,8 @@ inline void CPE::update_L(
 *  Modified :
 *****************************************************************************************/
 inline double CPE::calculate_2x2_quadratic_form(
-    const Eigen::Vector2d &x, 
-    const Eigen::Matrix2d &A
+    const Eigen::Vector2d &x,                                                   // In: Vector in the quadratic form
+    const Eigen::Matrix2d &A                                                    // In: Matrix to invert in the quadratic form
     )
 {
     Eigen::Matrix2d inv_A;

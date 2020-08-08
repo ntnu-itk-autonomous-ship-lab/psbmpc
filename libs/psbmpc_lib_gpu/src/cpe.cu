@@ -145,8 +145,7 @@ __host__ __device__ CPE::CPE(
 *****************************************************************************************/
 __host__ __device__ CPE::~CPE()
 {
-    delete[] mu_CE_last;
-    delete[] P_CE_last;
+    clean();
 }
 
 /****************************************************************************************
@@ -168,6 +167,12 @@ __host__ __device__ CPE& CPE::operator=(
     return *this = CPE(cpe);
 }
 
+/****************************************************************************************
+*  Name     : clean
+*  Function : 
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
 __host__ __device__ void CPE::clean()
 {
     delete[] mu_CE_last;
@@ -347,8 +352,8 @@ __host__ __device__ inline void CPE::update_L(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ inline double CPE::calculate_2x2_quadratic_form(
-    const Eigen::Vector2d &x, 
-    const Eigen::Matrix2d &A
+    const Eigen::Vector2d &x,                                       // In: Vector in the quadratic form
+    const Eigen::Matrix2d &A                                        // In: Matrix to invert in the quadratic form
     )
 {
     Eigen::Matrix2d inv_A;
@@ -491,7 +496,7 @@ __host__ __device__ double CPE::produce_MCS_estimate(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void CPE::determine_sample_validity_4D(
-    const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
+    const Eigen::Vector2d &p_os_cpa,                                           // In: Position of own-ship at cpa
     const double t_cpa                                                         // In: Time to cpa
     )
 {
@@ -534,7 +539,7 @@ __host__ __device__ void CPE::determine_sample_validity_4D(
 /****************************************************************************************
 *  Name     : MCSKF4D_estimation
 *  Function : Collision probability estimation using Monte Carlo Simulation and 
-*             Kalman-filtering considering the 4D obstacle uncertainty along piece-wise
+*             Kalman-filtering, considering the 4D obstacle uncertainty along piece-wise
 *             linear segments of the vessel trajectories. See "Risk-based Autonomous 
 *             Maritime Collision Avoidance Considering Obstacle Intentions" for more info.
 *  Author   : Trym Tengesdal
