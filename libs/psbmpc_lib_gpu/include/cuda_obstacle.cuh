@@ -26,8 +26,10 @@
 #include "Eigen/Dense"
 #include "obstacle.cuh"
 #include "tracked_obstacle.h"
-#include "mrou.h"
-#include "kf.h"
+
+class KF;
+class MROU;
+class Obstacle_SBMPC;
 
 class Cuda_Obstacle : public Obstacle
 {
@@ -83,6 +85,8 @@ public:
 	__host__ __device__ Cuda_Obstacle& operator=(const Cuda_Obstacle &rhs);
 
 	__host__ __device__ Cuda_Obstacle& operator=(const Tracked_Obstacle &rhs);
+
+	__host__ __device__ void clean();
 
 	__device__ bool* get_COLREGS_violation_indicator() const { return mu; };
 

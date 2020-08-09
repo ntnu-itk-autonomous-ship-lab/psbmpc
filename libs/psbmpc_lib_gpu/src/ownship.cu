@@ -159,7 +159,7 @@ __host__ __device__ void Ownship::update_guidance_references(
 	)
 {
 	int n_wps = waypoints.cols();
-	double alpha, e, s;
+	double alpha, e;
 	Eigen::Vector2d d_next_wp, L_wp_segment;
 	bool segment_passed = false;
 	

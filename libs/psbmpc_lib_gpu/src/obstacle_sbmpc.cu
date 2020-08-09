@@ -121,8 +121,6 @@ __host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc
 
 	for (int i = 0; i < n_obst; i++)
 	{
-		obstacle_colav_on = o_sbmpc.obstacle_colav_on;
-
 		AH_0[i] = o_sbmpc.AH_0[i]; 
 		S_TC_0[i] = o_sbmpc.S_TC_0[i];
 		S_i_TC_0[i] = o_sbmpc.S_i_TC_0[i]; 
@@ -156,20 +154,20 @@ __host__ __device__ Obstacle_SBMPC::~Obstacle_SBMPC()
 *****************************************************************************************/
 __host__ __device__ void Obstacle_SBMPC::clean()
 {
-	if (u_offsets != NULL) { delete[] u_offsets; }
-	if (chi_offsets != NULL) { delete[] chi_offsets; }
-	if (ownship != NULL) 	{ delete ownship; }
-	if (AH_0 != NULL) 		
+	if (u_offsets != nullptr) { delete[] u_offsets; }
+	if (chi_offsets != nullptr) { delete[] chi_offsets; }
+	if (ownship != nullptr) 	{ delete ownship; }
+	if (AH_0 != nullptr) 		
 	{ 
 		delete[] AH_0; delete[] S_TC_0; delete[] S_i_TC_0;
 		delete[] O_TC_0; delete[] Q_TC_0; delete[] IP_0;
 		delete[] H_TC_0; delete[] X_TC_0;
 	}
-	if (old_obstacles != NULL)
+	if (old_obstacles != nullptr)
 	{
 		delete[] old_obstacles;
 	}
-	if (new_obstacles != NULL)
+	if (new_obstacles != nullptr)
 	{
 		delete[] new_obstacles;
 	}
@@ -423,9 +421,9 @@ __host__ __device__ void Obstacle_SBMPC::assign_obstacle_vector(
 {
 	delete[] lhs;
 
-	if (rhs == NULL)
+	if (rhs == nullptr)
 	{
-		lhs = NULL; return;
+		lhs = nullptr; return;
 	} 
 	
 	lhs = new Prediction_Obstacle[size];
@@ -1105,7 +1103,7 @@ __host__ __device__ void Obstacle_SBMPC::update_obstacles(
 	n_obst = obstacle_states.cols();
 
 	// Delete "old" new obstacle vector before the update
-	assign_obstacle_vector(new_obstacles, NULL, 0);
+	assign_obstacle_vector(new_obstacles, nullptr, 0);
 	new_obstacles = new Prediction_Obstacle[n_obst];
 
 	bool obstacle_exist;

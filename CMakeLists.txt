@@ -4,11 +4,13 @@ project(psbmpc_test LANGUAGES CXX CUDA)
 if (MSVC)
 	add_compile_options(/W4)
 else()
-	add_compile_options(-Wall -Wextra -Wpedantic -fno-omit-frame-pointer -g)
+	add_compile_options(-Wall -Wextra -fno-omit-frame-pointer -g)
 endif()
 
 
-add_subdirectory(libs/psbmpc_lib)
+#add_subdirectory(libs/psbmpc_lib)
+add_subdirectory(libs/psbmpc_lib_gpu)
+
 add_subdirectory(src/tests)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)

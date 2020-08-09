@@ -75,20 +75,20 @@ Tracked_Obstacle::Tracked_Obstacle(
 *  Modified :
 *****************************************************************************************/
 Tracked_Obstacle::Tracked_Obstacle(
-	const Tracked_Obstacle &o 													// In: Obstacle to copy
+	const Tracked_Obstacle &to 													// In: Tracked obstacle to copy
 	) : 
-	Obstacle(o),
-	Pr_a(o.Pr_a), 
-	Pr_CC(o.Pr_CC),
-	duration_tracked(o.duration_tracked), duration_lost(o.duration_lost),
-	mu(o.mu),
-	P_p(o.P_p), 
-	xs_p(o.xs_p),
-	v_p(o.v_p),
-	ps_ordering(o.ps_ordering),
-	ps_course_changes(o.ps_course_changes), ps_weights(o.ps_weights), ps_maneuver_times(o.ps_maneuver_times),
-	kf(new KF(*(o.kf))), 
-	mrou(new MROU(*(o.mrou)))
+	Obstacle(to),
+	Pr_a(to.Pr_a), 
+	Pr_CC(to.Pr_CC),
+	duration_tracked(to.duration_tracked), duration_lost(to.duration_lost),
+	mu(to.mu),
+	P_p(to.P_p), 
+	xs_p(to.xs_p),
+	v_p(to.v_p),
+	ps_ordering(to.ps_ordering),
+	ps_course_changes(to.ps_course_changes), ps_weights(to.ps_weights), ps_maneuver_times(to.ps_maneuver_times),
+	kf(new KF(*(to.kf))), 
+	mrou(new MROU(*(to.mrou)))
 {
 
 }

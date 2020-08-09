@@ -185,7 +185,7 @@ __device__ double CB_Cost_Functor::operator()(const unsigned int cb_index)
 		vars->T, 
 		vars->dt);
 	
-	vars->cpe->seed_prng(cb_index);
+	vars->cpe.seed_prng(cb_index);
 	
 	for (int i = 0; i < vars->n_obst; i++)
 	{
@@ -395,17 +395,17 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 	Eigen::MatrixXd* xs_i_p = new Eigen::MatrixXd[n_ps[i]];
 	*xs_i_p = *new_obstacles[i].get_trajectories();
 
-	int n_seg_samples = round(vars->cpe->get_segment_discretization_time() / dt) + 1, k_j_(0), k_j(0);
+	int n_seg_samples = round(vars->cpe.get_segment_discretization_time() / vars->dt) + 1, k_j_(0), k_j(0);
 	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{	
-		cpe->initialize(vars->trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
+		vars->cpe.initialize(vars->trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
 		switch(vars->cpe_method)
 		{
 			case CE :	
 				for (int k = 0; k < n_samples; k++)
 				{
-					P_c_i(ps, k) = vars->cpe->estimate(vars->trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
+					P_c_i(ps, k) = vars->cpe.estimate(vars->trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
 				}
 				//save_matrix_to_file(P_c_i);
 				break;
@@ -421,7 +421,7 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 
 						P_i_seg = P_i_p.block(0, k_j_, 16, n_seg_samples);
 
-						P_c_i(ps, k_j_) = vars->cpe->estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
+						P_c_i(ps, k_j_) = vars->cpe.estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
 						// Collision probability on this active segment are all equal
 						P_c_i.block(ps, k_j_, 1, n_seg_samples) = P_c_i(ps, k_j_) * Eigen::MatrixXd::Ones(1, k_j - k_j_ + 1);
 					}	
@@ -583,10 +583,10 @@ __device__ double CB_Cost_Functor::calculate_ad_hoc_collision_risk(
 	)
 {
 	double R = 0;
-	if (d_AB <= d_safe)
+	if (d_AB <= vars->d_safe)
 	{
 		assert(t > 0);
-		R = pow(d_safe / d_AB, q) * (1 / pow(fabs(t), p)); 
+		R = pow(vars->d_safe / d_AB, vars->q) * (1 / pow(fabs(t), vars->p)); 
 	}
 	return R;
 }

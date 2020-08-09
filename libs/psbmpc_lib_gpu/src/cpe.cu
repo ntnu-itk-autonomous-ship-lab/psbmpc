@@ -26,16 +26,8 @@
 #include <cuda.h>
 #include <curand.h>
 
-#define CUDA_CALL(x) do { if((x)!=cudaSuccess) 
-    { \
-    printf("Error at %s:%d\n",__FILE__,__LINE__);\
-    return EXIT_FAILURE;
-    }} while(0)
-#define CURAND_CALL(x) do { if((x)!=CURAND_STATUS_SUCCESS) 
-    { \
-    printf("Error at %s:%d\n",__FILE__,__LINE__);\
-    return EXIT_FAILURE;
-    }} while(0)
+//#define CUDA_CALL(x) do { if((x)!=cudaSuccess) { \printf("Error at %s:%d\n",__FILE__,__LINE__);\return EXIT_FAILURE;}} while(0)
+//#define CURAND_CALL(x) do { if((x)!=CURAND_STATUS_SUCCESS) { \printf("Error at %s:%d\n",__FILE__,__LINE__);\return EXIT_FAILURE;}} while(0)
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -209,7 +201,7 @@ __host__ __device__ void CPE::set_number_of_obstacles(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void CPE::initialize(
+__device__ void CPE::initialize(
     const Eigen::Matrix<double, 6, 1> &xs_os,                                   // In: Own-ship state vector
     const Eigen::Vector4d &xs_i,                                                // In: Obstacle i state vector
     const Eigen::VectorXd &P_i,                                                 // In: Obstacle i covariance flattened into n^2 x 1
@@ -247,7 +239,7 @@ __host__ __device__ void CPE::initialize(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ double CPE::estimate(
+__device__ double CPE::estimate(
 	const Eigen::MatrixXd &xs_os,                       // In: Own-ship state vector(s)
     const Eigen::MatrixXd &xs_i,                        // In: Obstacle i state vector(s)
     const Eigen::MatrixXd &P_i,                         // In: Obstacle i covariance(s), flattened into n² x n_cols
@@ -279,28 +271,31 @@ __host__ __device__ double CPE::estimate(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : resize_matrices
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
 __host__ __device__ void CPE::resize_matrices()
 {
-    for(int i = 0; i < n_obst; i++)
+    switch (method)
     {
-        switch (method)
-        {
-            case CE :
-                samples.resize(2, n_CE);
-                elite_samples.resize(2, n_CE);
-                valid.resize(n_CE);
-                L.resize(2, 2);
-                break;
-            case MCSKF4D :
-                samples.resize(4, n_MCSKF);
-                valid.resize(n_MCSKF);
-                L.resize(4, 4);
-                break;
-            default :
-                // Throw
-                break; 
-        }  
-    }
+        case CE :
+            samples.resize(2, n_CE);
+            elite_samples.resize(2, n_CE);
+            valid.resize(n_CE);
+            L.resize(2, 2);
+            break;
+        case MCSKF4D :
+            samples.resize(4, n_MCSKF);
+            valid.resize(n_MCSKF);
+            L.resize(4, 4);
+            break;
+        default :
+            // Throw
+            break; 
+    }  
 }
 
 /****************************************************************************************
@@ -314,7 +309,7 @@ __host__ __device__ void CPE::resize_matrices()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline void CPE::update_L(
+__device__ inline void CPE::update_L(
     const Eigen::MatrixXd &in                                                     // In: Matrix in consideration
     )
 {
@@ -355,7 +350,7 @@ __host__ __device__ inline void CPE::update_L(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline double CPE::calculate_2x2_quadratic_form(
+__device__ inline double CPE::calculate_2x2_quadratic_form(
     const Eigen::Vector2d &x,                                       // In: Vector in the quadratic form
     const Eigen::Matrix2d &A                                        // In: Matrix to invert in the quadratic form
     )
@@ -374,7 +369,7 @@ __host__ __device__ inline double CPE::calculate_2x2_quadratic_form(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline void CPE::norm_pdf_log(
+__device__ inline void CPE::norm_pdf_log(
     Eigen::VectorXd &result,                                                    // In/out: Resulting vector of pdf values
     const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
     const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
@@ -406,7 +401,7 @@ __host__ __device__ inline void CPE::norm_pdf_log(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline void CPE::generate_norm_dist_samples(
+__device__ inline void CPE::generate_norm_dist_samples(
     const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
     const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
     )
@@ -419,10 +414,7 @@ __host__ __device__ inline void CPE::generate_norm_dist_samples(
     {
         for(int i = 0; i < n_samples; i++)
         {
-            samples(c, i) = CURAND_CALL(curand_normal_double(&prng_state));
-            # if __CUDA_ARCH__>=200
-                printf("%d \n", samples(c, i));
-            #endif  
+            samples(c, i) = curand_normal_double(&prng_state);
         }
     }
     // Box-muller transform
@@ -435,7 +427,7 @@ __host__ __device__ inline void CPE::generate_norm_dist_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void CPE::calculate_roots_2nd_order(
+__device__ void CPE::calculate_roots_2nd_order(
     Eigen::Vector2d &r,                                                 // In: vector of roots to find
     bool &is_complex,                                                   // In: Indicator of real/complex roots
     const double A,                                                     // In: Coefficient in polynomial 
@@ -474,7 +466,7 @@ __host__ __device__ void CPE::calculate_roots_2nd_order(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ double CPE::produce_MCS_estimate(
+__device__ double CPE::produce_MCS_estimate(
 	const Eigen::Vector4d &xs_i,                                                // In: Obstacle state vector
 	const Eigen::Matrix4d &P_i,                                                 // In: Obstacle covariance
 	const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
@@ -502,7 +494,7 @@ __host__ __device__ double CPE::produce_MCS_estimate(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void CPE::determine_sample_validity_4D(
+__device__ void CPE::determine_sample_validity_4D(
     const Eigen::Vector2d &p_os_cpa,                                           // In: Position of own-ship at cpa
     const double t_cpa                                                         // In: Time to cpa
     )
@@ -552,7 +544,7 @@ __host__ __device__ void CPE::determine_sample_validity_4D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ double CPE::MCSKF4D_estimation(
+__device__ double CPE::MCSKF4D_estimation(
 	const Eigen::MatrixXd &xs_os,                                               // In: Own-ship states for the active segment
     const Eigen::MatrixXd &xs_i,                                                // In: Obstacle i states for the active segment
     const Eigen::MatrixXd &P_i,                                                 // In: Obstacle i covariance for the active segment
@@ -657,7 +649,7 @@ __host__ __device__ double CPE::MCSKF4D_estimation(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void CPE::determine_sample_validity_2D(
+__device__ void CPE::determine_sample_validity_2D(
 	const Eigen::Vector2d &p_os                                                // In: Own-ship position vector
     )
 {
@@ -680,7 +672,7 @@ __host__ __device__ void CPE::determine_sample_validity_2D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void CPE::determine_best_performing_samples(
+__device__ void CPE::determine_best_performing_samples(
     const Eigen::Vector2d &p_os,                                                    // In: Own-ship position vector
     const Eigen::Vector2d &p_i,                                                     // In: Obstacle i position vector
     const Eigen::Matrix2d &P_i                                                      // In: Obstacle i positional covariance
@@ -696,10 +688,10 @@ __host__ __device__ void CPE::determine_best_performing_samples(
         // Apparently the below expression is faster than the calculate_2x2.... expression, even
         // though the opposite is the case in the norm_pdf_log function. Test this further if
         // interested to see if this is actually the case.
-        inside_alpha_p_confidence_ellipse = 
-            (samples.col(j) - p_i).transpose() * P_i.inverse() * (samples.col(j) - p_i) <= gate;
+        /* inside_alpha_p_confidence_ellipse = 
+            (samples.col(j) - p_i).transpose() * P_i.inverse() * (samples.col(j) - p_i) <= gate; */
  
-        //inside_alpha_p_confidence_ellipse = calculate_2x2_quadratic_form(samples.col(j) - p_i, P_i) <= gate;
+        inside_alpha_p_confidence_ellipse = calculate_2x2_quadratic_form(samples.col(j) - p_i, P_i) <= gate;
 
         if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
         {
@@ -715,7 +707,7 @@ __host__ __device__ void CPE::determine_best_performing_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ double CPE::CE_estimation(
+__device__ double CPE::CE_estimation(
 	const Eigen::Vector2d &p_os,                                                // In: Own-ship position vector
     const Eigen::Vector2d &p_i,                                                 // In: Obstacle i position vector
     const Eigen::Matrix2d &P_i,                                                 // In: Obstacle i positional covariance

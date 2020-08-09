@@ -76,10 +76,10 @@ private:
 	bool *AH_0, *S_TC_0, *S_i_TC_0, *O_TC_0, *Q_TC_0, *IP_0, *H_TC_0, *X_TC_0;
 
 	int n_obst;
-	Prediction_Obstacle* old_obstacles;
-	Prediction_Obstacle* new_obstacles;
+	Prediction_Obstacle *old_obstacles;
+	Prediction_Obstacle *new_obstacles;
 
-	__host__ __device__ void assign_obstacle_vector(Prediction_Obstacle* lhs, Prediction_Obstacle* rhs, const int size);
+	__host__ __device__ void assign_obstacle_vector(Prediction_Obstacle *lhs, Prediction_Obstacle *rhs, const int size);
 
 	__host__ __device__ void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
