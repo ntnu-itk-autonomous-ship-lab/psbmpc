@@ -231,28 +231,31 @@ double CPE::estimate(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : resize_matrices
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
 void CPE::resize_matrices()
 {
-    for(int i = 0; i < n_obst; i++)
+    switch (method)
     {
-        switch (method)
-        {
-            case CE :
-                samples.resize(2, n_CE);
-                elite_samples.resize(2, n_CE);
-                valid.resize(n_CE);
-                L.resize(2, 2);
-                break;
-            case MCSKF4D :
-                samples.resize(4, n_MCSKF);
-                valid.resize(n_MCSKF);
-                L.resize(4, 4);
-                break;
-            default :
-                // Throw
-                break; 
-        }  
-    }
+        case CE :
+            samples.resize(2, n_CE);
+            elite_samples.resize(2, n_CE);
+            valid.resize(n_CE);
+            L.resize(2, 2);
+            break;
+        case MCSKF4D :
+            samples.resize(4, n_MCSKF);
+            valid.resize(n_MCSKF);
+            L.resize(4, 4);
+            break;
+        default :
+            // Throw
+            break; 
+    }  
 }
 
 /****************************************************************************************

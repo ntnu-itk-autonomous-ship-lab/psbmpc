@@ -80,12 +80,12 @@ public:
 			 const double T, 
 			 const double dt);
 
-	Tracked_Obstacle(const Tracked_Obstacle &o);
+	Tracked_Obstacle(const Tracked_Obstacle &to);
 
-	Tracked_Obstacle& operator=(const Tracked_Obstacle &o)
+	Tracked_Obstacle& operator=(const Tracked_Obstacle &to)
 	{
-		if (this == &o) { return *this;}
-		return *this = Tracked_Obstacle(o);
+		if (this == &to) { return *this;}
+		return *this = Tracked_Obstacle(to);
 	};
 
 	std::vector<bool> get_COLREGS_violation_indicator() const { return mu; };

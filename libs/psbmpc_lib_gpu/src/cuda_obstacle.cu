@@ -19,8 +19,10 @@
 *
 *****************************************************************************************/
 
-#include "cuda_obstacle.h"
+#include "cuda_obstacle.cuh"
 #include "obstacle_sbmpc.cuh"
+#include "kf.h"
+#include "mrou.h"
 #include "utilities.cuh"
 #include <iostream> 
 
@@ -30,9 +32,11 @@
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Cuda_Obstacle::Cuda_Obstacle(
+__host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
 	const Cuda_Obstacle &co 													// In: Obstacle to copy
 	) : 
+	Obstacle(co),
+	n_ps(co.ps_weights.size()),
 	Pr_a(co.Pr_a), 
 	Pr_CC(co.Pr_CC),
 	duration_tracked(co.duration_tracked), duration_lost(co.duration_lost),
@@ -41,10 +45,8 @@ Cuda_Obstacle::Cuda_Obstacle(
 	ps_course_changes(co.ps_course_changes), ps_weights(co.ps_weights), ps_maneuver_times(co.ps_maneuver_times),
 	kf(new KF(*(co.kf))), 
 	mrou(new MROU(*(co.mrou))),
-	sbmpc(new Obstacle_sbmpc(*(co.sbmpc)))
+	sbmpc(new Obstacle_SBMPC(*(co.sbmpc)))
 {
-	n_ps = co.ps_ordering.size();
-
 	mu = new bool[n_ps];
 	xs_p = new Eigen::MatrixXd[n_ps];
 	ps_ordering = new Intention[n_ps];
@@ -57,9 +59,11 @@ Cuda_Obstacle::Cuda_Obstacle(
 	}
 }
 
-Cuda_Obstacle::Cuda_Obstacle(
+__host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
 	const Tracked_Obstacle &to 													// In: Obstacle to copy
 	) : 
+	Obstacle(to),
+	n_ps(to.ps_weights.size()),
 	Pr_a(to.Pr_a), 
 	Pr_CC(to.Pr_CC),
 	duration_tracked(to.duration_tracked), duration_lost(to.duration_lost),
@@ -68,10 +72,8 @@ Cuda_Obstacle::Cuda_Obstacle(
 	ps_course_changes(to.ps_course_changes), ps_weights(to.ps_weights), ps_maneuver_times(to.ps_maneuver_times),
 	kf(new KF(*(to.kf))), 
 	mrou(new MROU(*(to.mrou))),
-	sbmpc(new Obstacle_sbmpc(*(to.sbmpc)))
+	sbmpc(new Obstacle_SBMPC())
 {
-	n_ps = co.ps_ordering.size();
-
 	mu = new bool[n_ps];
 	xs_p = new Eigen::MatrixXd[n_ps];
 	ps_ordering = new Intention[n_ps];
@@ -92,12 +94,7 @@ Cuda_Obstacle::Cuda_Obstacle(
 *****************************************************************************************/
 __host__ __device__ Cuda_Obstacle::~Cuda_Obstacle()
 {
-	delete[] mu;
-	delete[] xs_p;
-	delete[] ps_ordering;
-	delete kf;
-	delete mrou;
-	delete sbmpc;
+	clean();
 }
 
 /****************************************************************************************
@@ -110,13 +107,9 @@ __host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 	const Cuda_Obstacle &rhs 										// In: Rhs to assign
 	)
 {
-	if (this == &rhs) 			{ return *this; }
-	if (mu != NULL) 			{ delete[] mu; }
-	if (xs_p != NULL) 			{ delete[] xs_p; }
-	if (ps_ordering != NULL) 	{ delete[] ps_ordering; }
-	if (kf != NULL)				{ delete kf; }
-	if (mrou != NULL)			{ delete mrou; }
-	if (sbmpc != NULL) 			{ delete sbmpc; }
+	if (this == &rhs) { return *this; }
+	
+	clean();
 
 	return *this = Cuda_Obstacle(rhs);
 }
@@ -124,14 +117,24 @@ __host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 __host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 	const Tracked_Obstacle &rhs 									// In: Rhs to assign
 	)
-{
-	if (this == &rhs) 			{ return *this; }
-	if (mu != NULL) 			{ delete[] mu; }
-	if (xs_p != NULL) 			{ delete[] xs_p; }
-	if (ps_ordering != NULL) 	{ delete[] ps_ordering; }
-	if (kf != NULL)				{ delete kf; }
-	if (mrou != NULL)			{ delete mrou; }
-	if (sbmpc != NULL) 			{ delete sbmpc; }
+{	
+	clean();
 
 	return *this = Cuda_Obstacle(rhs);
+}
+
+/****************************************************************************************
+*  Name     : clean
+*  Function : 
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ void Cuda_Obstacle::clean()
+{
+	delete[] mu;
+	delete[] xs_p;
+	delete[] ps_ordering;
+	delete kf;
+	delete mrou;
+	delete sbmpc;
 }

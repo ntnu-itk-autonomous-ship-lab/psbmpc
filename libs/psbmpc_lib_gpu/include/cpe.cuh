@@ -83,41 +83,41 @@ private:
 
 	__host__ __device__ void resize_matrices();
 
-	__host__ __device__ inline void update_L(const Eigen::MatrixXd &in);
+	__device__ inline void update_L(const Eigen::MatrixXd &in);
 
-	__host__ __device__ inline double calculate_2x2_quadratic_form(const Eigen::Vector2d &x, const Eigen::Matrix2d &A);
+	__device__ inline double calculate_2x2_quadratic_form(const Eigen::Vector2d &x, const Eigen::Matrix2d &A);
 
-	__host__ __device__ inline void norm_pdf_log(Eigen::VectorXd &result, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	__device__ inline void norm_pdf_log(Eigen::VectorXd &result, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
-	__host__ __device__ inline void generate_norm_dist_samples(const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	__device__ inline void generate_norm_dist_samples(const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
-	__host__ __device__ void calculate_roots_2nd_order(Eigen::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
+	__device__ void calculate_roots_2nd_order(Eigen::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
 
-	__host__ __device__ double produce_MCS_estimate(
+	__device__ double produce_MCS_estimate(
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::Matrix4d &P_i, 
 		const Eigen::Vector2d &p_os_cpa,
 		const double t_cpa);
 
-	__host__ __device__ void determine_sample_validity_4D(
+	__device__ void determine_sample_validity_4D(
 		const Eigen::Vector2d &p_os_cpa, 
 		const double t_cpa);
 
-	__host__ __device__ double MCSKF4D_estimation(
+	__device__ double MCSKF4D_estimation(
 		const Eigen::MatrixXd &xs_os,  
 		const Eigen::MatrixXd &xs_i, 
 		const Eigen::MatrixXd &P_i,
 		const int i);	
 
-	__host__ __device__ void determine_sample_validity_2D(
+	__device__ void determine_sample_validity_2D(
 		const Eigen::Vector2d &p_os);
 
-	__host__ __device__ void determine_best_performing_samples(
+	__device__ void determine_best_performing_samples(
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
 		const Eigen::Matrix2d &P_i);
 
-	__host__ __device__ double CE_estimation(
+	__device__ double CE_estimation(
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
 		const Eigen::Matrix2d &P_i,
@@ -143,16 +143,16 @@ public:
 
 	__host__ __device__ double get_segment_discretization_time() const { return dt_seg; };
 
-	__host__ __device__ void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
+	__device__ void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
 
-	__host__ __device__ void initialize(
+	__device__ void initialize(
 		const Eigen::Matrix<double, 6, 1> &xs_os, 
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::VectorXd &P_i,
 		const double d_safe_i, 
 		const int i);
 	
-	__host__ __device__ double estimate(
+	__device__ double estimate(
 		const Eigen::MatrixXd &xs_os,
 		const Eigen::MatrixXd &xs_i,
 		const Eigen::MatrixXd &P_i,

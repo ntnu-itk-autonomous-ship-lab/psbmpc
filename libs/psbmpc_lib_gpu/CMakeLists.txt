@@ -9,6 +9,7 @@ add_library(psbmpc_lib_gpu STATIC
 	src/obstacle_ship.cu 
 	src/obstacle_sbmpc.cu 
 	src/tracked_obstacle.cpp
+	src/cuda_obstacle.cu
 	src/prediction_obstacle.cu
 	src/ownship.cu 
 	src/cpe.cu 
@@ -30,7 +31,9 @@ message("CUDA_LIBARIES: ${CUDA_LIBRARIES}")
 
 target_compile_options(psbmpc_lib_gpu
 	PUBLIC
-	$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -fPIC -Wno-pedantic -gencode arch=compute_61,code=sm_61 -dc --expt-relaxed-constexpr>
+	$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -Wno-pedantic -gencode arch=compute_61,code=sm_61 -dc --expt-relaxed-constexpr -Xlinker -dlink>
 )
 
-target_link_libraries(psbmpc_lib_gpu ${Matlab_LIBRARIES} ${CUDA_LIBRARIES})
+target_link_libraries(psbmpc_lib_gpu 
+	PRIVATE ${Matlab_LIBRARIES} 
+	PRIVATE ${CUDA_LIBRARIES})
