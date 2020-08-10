@@ -1,5 +1,5 @@
 # PSB-MPC
-<p>This repository implements the Probabilistic Scenario-based MPC in C/C++. The algorithm is an extended and improved version of the original one posed in [[1]](#1). A version is implemented using the CPU and another using the GPU (not finished yet!).  There are also some experimental setup for allowing obstacles to have their own collision avoidance setup, but this is not complete yet.<br>
+<p>This repository implements the Probabilistic Scenario-based MPC in C/C++. The algorithm is an extended and improved version of the original one posed in [[1]](#1). A version is implemented using the CPU and another using the GPU (not finished yet!). There are also some experimental setup for allowing obstacles to have their own collision avoidance setup, but this is not complete yet.<br>
 
 Several test functions exist under src/tests to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test.<br>
 
@@ -14,7 +14,7 @@ To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_
 ## Overall Structure
 The library for the CPU-implementation has the following structure
 
-|<img src="tree_psbmpc.png" width="400"> | 
+<img src="tree_psbmpc.png" width="400"> 
 
 with an explanation of the modules (classes) below: 
 
@@ -27,8 +27,8 @@ The main function to use is the **calculate_optimal_offsets(..)** function, whic
 - Planned guidance references for surge and course
 - The waypoints that the own-ship are planned to follow
 - The current own-ship state (3DOF)
-- Nearby obstacle states, an aggregated matrix with columns of [x, y, Vx, Vy, A, B, C, D, ID]^T where the first 4 variables are the north and east position and velocity, respectively. The A, B, C, D parameters are the square approximation of the obstacle's dimensions, and ID is its indentification number.
-- The corresponding covariance information or uncertainty associated with the estimates/measurement on [x, y, Vx, Vy]^T, flattened into a 16-element vector. 
+- Nearby obstacle states, an aggregated matrix with columns of <img src="https://render.githubusercontent.com/render/math?math=[x, y, Vx, Vy, A, B, C, D, ID]">^T where the first 4 variables are the north and east position and velocity, respectively. The A, B, C, D parameters are the square approximation of the obstacle's dimensions, and ID is its indentification number.
+- The corresponding covariance information or uncertainty associated with the estimates/measurement on <img src="https://render.githubusercontent.com/render/math?math=[[x, y, Vx, Vy]^T">, flattened into a 16-element vector. 
 - The corresponding intention probabilities for the obstacle, obtained by some intention inference module. If the PSB-MPC is configured to not consider intentions, these inputs are not used.
 - The corresponding a priori probability of the obstacle being COLREGS compliant, obtained by some intention inference module. If the PSB-MPC is configured to not consider intentions, these inputs are not used.
 - Nearby static obstacles, parameterized as for instance polygons, lines or similar. Not fully specified yet.
@@ -48,40 +48,40 @@ The obstacle class maintains information about the obstacle, in addition to its 
 - Obstacle : Base class holding general information
 	- Tracked_Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the PSB-MPC to keep track of the nearby obstacles. 
 	- Prediction_Obstacle: **Not to be used yet.** More minimalistic derived class than the Tracked_Obstacle, intended for use by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system
-	- (Cuda_Obstacle: For the GPU version we also have a tailor made derived class for use in the CUDA kernels, which needs special care.)
+	- (Cuda_Obstacle: For the GPU version we also have a tailor made derived class for use in the CUDA kernels, which needs special care. **Not complete yet**)
 
 ### Obstacle_Ship 
 
 <p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with some first order time constant delay.
 The model is on the form <br>
 
-$x_{k+1} = x_{k} + U \cos(\chi_{k})$ <br>
-$y_{k+1} = y_{k} + U \sin(\chi_{k})$ <br>
-$\chi_{k+1} = \chi_{k} + \frac{1}{T_{\chi}}(\chi_d - \chi_{k})$ <br>
-$U_{k+1} = U_{k} + \frac{1}{T_{U}}(U_d - U_{k})$ <br>
+<img src="https://render.githubusercontent.com/render/math?math=x_{k+1} = x_{k} + U \cos(\chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=y_{k+1} = y_{k} + U \sin(\chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=\chi_{k+1} = \chi_{k} + \frac{1}{T_{\chi}}(\chi_d - \chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=U_{k+1} = U_{k} + \frac{1}{T_{U}}(U_d - U_{k})"> <br>
 
-Not tested yet. </p>
+**Not fully tested** yet. </p>
 
 ### Obstacle_SBMPC
 
-<p>A simple SB-MPC meant for use by obstacles in the PSB-MPC prediction when considering intelligent obstacles. Not tested nor finished yet, so should not be used. </p>
+A simple SB-MPC meant for use by obstacles in the PSB-MPC prediction when considering intelligent obstacles. **Not tested nor finished yet**, so should not be used. 
 
 ### Ownship
 
-<p>This module implements a 3DOF surface vessel model with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. Should naturally match the underlying vessel. </p>
+This module implements a 3DOF surface vessel model with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. Should naturally match the underlying vessel.
 
 
 ### KF
 
-<p>This is a linear Kalman-filter module used when AIS-messages are received on obstacle positions, speed and course, to enable more robustness for the PSB-MPC against track loss.  </p>
+This is a linear Kalman-filter module used when AIS-messages are received on obstacle positions, speed and course, to enable more robustness for the PSB-MPC against track loss. 
 
 ### MROU
 
-<p>This is the Mean-reverting Ornstein-Uhlenbeck process used for the prediction of the independent obstacle trajectories and corresponding covariance. </p>
+This is the Mean-reverting Ornstein-Uhlenbeck process used for the prediction of the independent obstacle trajectories and corresponding covariance. 
 
 ### CPE
 
-<p>This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation, and another based on [[2]](#2). The estimator is sampling-based, and is basically among others the main reason for trying to implement the PSB-MPC on the GPU. Estimates the probability with pairs of trajectories (of the own-ship and a nearby obstacle) as inputs.  </p>
+This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation, and another based on [[2]](#2). The estimator is sampling-based, and is basically among others the main reason for trying to implement the PSB-MPC on the GPU. Estimates the probability with pairs of trajectories (of the own-ship and a nearby obstacle) as inputs. 
 
 ### Utilities
 
