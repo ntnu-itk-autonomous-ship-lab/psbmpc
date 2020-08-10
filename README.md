@@ -3,12 +3,12 @@
 
 Several test functions exist under src/tests to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test.<br>
 
-To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib)" command, and link the corresponding target to your executable test file. The libraries is located under /libs/. </p>
+To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib)" command, and link the corresponding target to your executable test file. The libraries are located under /libs/. </p>
 
 ## Dependencies
 
 - Matlab is used for the debugging and plotting functionality.
-- Eigen is used for the CPU and GPU version, with the 3.3.92 release used.
+- Eigen is used for the CPU and GPU version, with the 3.3.92 release being used.
 - CUDA and Thrust is necessary for the GPU version.
 
 ## Overall Structure
@@ -73,7 +73,7 @@ This module implements a 3DOF surface vessel model with guidance and control as 
 
 ### KF
 
-This is a linear Kalman-filter module used when AIS-messages are received on obstacle positions, speed and course, to enable more robustness for the PSB-MPC against track loss. 
+This is a linear Kalman-filter module used when AIS-messages are received on obstacle positions, speed and course, to enable more robustness for the PSB-MPC against track loss and missing AIS-messages. 
 
 ### MROU
 
