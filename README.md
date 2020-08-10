@@ -7,8 +7,8 @@ To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_
 
 ## Dependencies
 
-- Matlab is used for the debugging and plotting functionality.
-- Eigen is used for the CPU and GPU version, with the 3.3.92 release being used.
+- Matlab C API is used for the debugging and plotting functionality.
+- Eigen 3.3.92 release is used for the CPU and GPU version.
 - CUDA and Thrust is necessary for the GPU version.
 
 ## Overall Structure
@@ -25,10 +25,10 @@ with an explanation of the modules (classes) below:
 The main function to use is the **calculate_optimal_offsets(..)** function, which requires the following **inputs**: </p>
 
 - Planned guidance references for surge and course
-- The waypoints that the own-ship are planned to follow
-- The current own-ship state (3DOF)
+- The waypoints that the own-ship is supposed to follow (curved/continuous path following is not implemented)
+- The current own-ship state (3DOF) <img src="https://render.githubusercontent.com/render/math?math={[x, y, \psi, u, v, r]}^T">
 - Nearby obstacle states, an aggregated matrix with columns of <img src="https://render.githubusercontent.com/render/math?math={[x, y, V_x, V_y, A, B, C, D, ID]}^T"> where the first 4 variables are the north and east position and velocity, respectively. The A, B, C, D parameters are the square approximation of the obstacle's dimensions, and ID is its indentification number.
-- The corresponding covariance information or uncertainty associated with the estimates/measurement on <img src="https://render.githubusercontent.com/render/math?math={[x, y, Vx, Vy]}^T">, flattened into a 16-element vector. 
+- The corresponding covariance information or uncertainty associated with the estimates/measurement on <img src="https://render.githubusercontent.com/render/math?math={[x, y, V_x, V_y]}^T">, flattened into a 16-element vector. 
 - The corresponding intention probabilities for the obstacle, obtained by some intention inference module. If the PSB-MPC is configured to not consider intentions, these inputs are not used.
 - The corresponding a priori probability of the obstacle being COLREGS compliant, obtained by some intention inference module. If the PSB-MPC is configured to not consider intentions, these inputs are not used.
 - Nearby static obstacles, parameterized as for instance polygons, lines or similar. Not fully specified yet.
@@ -36,7 +36,7 @@ The main function to use is the **calculate_optimal_offsets(..)** function, whic
 and has the following **outputs**:
 
 - Optimal surge and course modification to the planned guidance references
-- A predicted trajectory for the own-ship whene implementing the optimal avoidance maneuver(s).
+- A predicted trajectory for the own-ship when implementing the optimal avoidance maneuver(s).
 - A status matrix on the obstacles, displaying different information.
 - A status vector on the collision avoidance system, displaying the minimal cost output associated with the optimal avoidance maneuver, and an ad hoc measure of its control freedom. 
 
@@ -47,7 +47,7 @@ The obstacle class maintains information about the obstacle, in addition to its 
 
 - Obstacle : Base class holding general information
 	- Tracked_Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the PSB-MPC to keep track of the nearby obstacles. 
-	- Prediction_Obstacle: **Not to be used yet.** More minimalistic derived class than the Tracked_Obstacle, intended for use by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system
+	- Prediction_Obstacle: **Not to be used yet**. More minimalistic derived class than the Tracked_Obstacle, intended for use by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system
 	- (Cuda_Obstacle: For the GPU version we also have a tailor made derived class for use in the CUDA kernels, which needs special care. **Not complete yet**)
 
 ### Obstacle_Ship 
@@ -55,8 +55,8 @@ The obstacle class maintains information about the obstacle, in addition to its 
 <p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with some first order time constant delay.
 The model is on the form <br>
 
-<img src="https://render.githubusercontent.com/render/math?math=x_{k%2B1} = x_{k} %2B U \cos(\chi_{k})"> <br>
-<img src="https://render.githubusercontent.com/render/math?math=y_{k%2B1} = y_{k} %2B U \sin(\chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=x_{k%2B1} = x_{k} %2B U_k \cos(\chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=y_{k%2B1} = y_{k} %2B U_k \sin(\chi_{k})"> <br>
 <img src="https://render.githubusercontent.com/render/math?math=\chi_{k%2B1} = \chi_{k} %2B \frac{1}{T_{\chi}}(\chi_d - \chi_{k})"> <br>
 <img src="https://render.githubusercontent.com/render/math?math=U_{k%2B1} = U_{k} %2B \frac{1}{T_{U}}(U_d - U_{k})"> <br>
 
@@ -97,4 +97,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 
 
-<p> *Written by Trym Tengesdal on 10. august 2020.*  </p>
+<p> _Written by Trym Tengesdal on 10. august 2020._  </p>
