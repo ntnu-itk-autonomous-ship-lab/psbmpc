@@ -2,7 +2,7 @@
 *
 *  File name : utilities.h
 *
-*  Function  : Header file for all-purpose math functions which are used by multiple 
+*  Function  : Header file for all-purpose functions which are used by multiple 
 *			   library files. Thus, do NOT add a function here if it belongs to one 
 *			   distinct class.
 *  
@@ -30,8 +30,6 @@
 
 #include "Eigen/Dense"
 #include "iostream"
-
-
 
 enum Axis 
 	{
@@ -191,7 +189,7 @@ inline Eigen::MatrixXd reshape(const Eigen::VectorXd &in, const int n_rows, cons
 *  Name     : calculate_cpa
 *  Function : Calculates time, distance (vector) and position (vector) at the Closest 
 *			  Point of Approach between vessel A and B
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 inline void calculate_cpa(

@@ -7,7 +7,7 @@
 *			   obstacles. The module assumes that the own-ship uncertainty is negligible
 *  			   compared to that of the obstacles. If this is not the case, then a
 *			   linear transformationcan be used to "gather" both vessel's 
-*			   uncertainty in one RV
+*			   uncertainty in one RV.
 *            ---------------------
 *
 *  Version 1.0

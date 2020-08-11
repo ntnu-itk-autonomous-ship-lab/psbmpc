@@ -2,7 +2,7 @@
 *
 *  File name : kf.h
 *
-*  Function  : Header file for a hardcoded Kalman Filter (KF) to add extra robustness
+*  Function  : Header file for a hardcoded (n=4) Kalman Filter (KF) to add extra robustness
 *              against track loss. See "Autonomous COLREGS compliant decision
 *              making using maritime radar tracking and model predictive control". 
 *              This is an alternative version of the one created by Giorgio D. Kwame 
@@ -26,7 +26,8 @@
 
 #include "Eigen/Dense"
 
-class KF{
+class KF
+{
 private:
 
   int ID;

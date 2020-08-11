@@ -5,7 +5,7 @@
 *  Function  : Header file for the ownship class. Modified and extended version of the
 *			   "Ship_Model" class created for SBMPC by Inger Berge Hagen and Giorgio D. 
 *			   Kwame Minde Kufoalor through the Autosea project. Facilitates Guidance,
-*			   Navigation and Control (GNC) of a surface vessel 
+*			   Navigation and Control (GNC) of a surface vessel in 3DOF 
 *  
 *	           ---------------------
 *
@@ -29,19 +29,19 @@
 enum Prediction_Method {
 	Linear,													// Linear prediction
 	ERK1, 													// Explicit Runge Kutta 1 = Eulers method
-	ERK4 													// Explicit Runge Kutta of fourth order, not implemented.
+	ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
 };
 
 
 enum Guidance_Method {
 	LOS, 													// Line-of-sight		
-	WPP,													// WP-Pursuit
+	WPP,													// Waypoint-Pursuit
 	CH 														// Course Hold
 };
 
 class Ownship
 {
-	private:
+private:
 
 	Eigen::Vector3d tau;
 	Eigen::Matrix3d M_inv;
@@ -104,7 +104,7 @@ class Ownship
 
 	void update_Dvv(const Eigen::Vector3d &nu);
 
-	public:
+public:
 
 	Ownship();
 
