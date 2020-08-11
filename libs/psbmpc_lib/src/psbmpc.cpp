@@ -297,7 +297,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -312,12 +312,20 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
 	map_wps = waypoints;
 
-	mxArray *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx;
+	mxArray *static_obst_mx = mxCreateDoubleMatrix(4, n_static_obst, mxREAL);
+	double *p_static_obst_mx = mxGetPr(static_obst_mx); 
+	Eigen::Map<Eigen::MatrixXd> map_static_obst(p_static_obst_mx, 4, n_static_obst);
+	map_static_obst = static_obstacles;
+
+	mxArray *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx, *n_static_obst_mx;
 	T_sim = mxCreateDoubleScalar(T);
 	n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
+	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
 
+	engPutVariable(ep, "X_static", static_obst_mx);
 	engPutVariable(ep, "n_ps", n_ps_mx);
+	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
 	engPutVariable(ep, "T_sim", T_sim);
 	engPutVariable(ep, "WPs", wps_os);
@@ -357,7 +365,7 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	}
+	} */
 	
 	//===============================================================================================================
 	double cost;
@@ -385,7 +393,7 @@ void PSBMPC::calculate_optimal_offsets(
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
-			p_P_c_i = mxGetPr(P_c_i_mx[i]);
+/* 			p_P_c_i = mxGetPr(P_c_i_mx[i]);
 			Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 			map_P_c = P_c_i;
 
@@ -397,8 +405,8 @@ void PSBMPC::calculate_optimal_offsets(
 			{
 				ps_mx = mxCreateDoubleScalar(ps + 1);
 				engPutVariable(ep, "ps", ps_mx);
-				engEvalString(ep, "inside_psbmpc_upd_coll_probs");
-			}
+				engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
+			} */
 			//===============================================================================================================
 		}
 
@@ -429,14 +437,14 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
 		engPutVariable(ep, "k", k_s);
 
 		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
+		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
 		//===============================================================================================================
 	}
 
@@ -461,7 +469,7 @@ void PSBMPC::calculate_optimal_offsets(
 	colav_status.resize(2,1);
 	colav_status << CF_0, min_cost;
 
-	engClose(ep); 
+	/* engClose(ep);  */
 }
 
 /****************************************************************************************
@@ -580,8 +588,8 @@ void PSBMPC::initialize_par_limits()
 void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 4;
-	n_a = 3; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
+	n_M = 2;
+	n_a = 1; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
 	n_ps.resize(1); // Determined by initialize_prediction();
 
 	offset_sequence_counter.resize(2 * n_M);
@@ -659,7 +667,7 @@ void PSBMPC::initialize_pars()
 	K_dchi_port = 1.2;	  
 	K_sgn = 5;
 	T_sgn = 4 * t_ts;					
-	G = 0;		         					 // 1.0e3
+	G = 1e3;		         					
 	q = 4.0;
 	p = 1.0;
 
@@ -1564,9 +1572,9 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_ad_hoc_collision_risk(
-	const double d_AB, 												// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
-																	// 	   reduced by half the length of the two vessels
-	const double t 													// In: Prediction time t > t0 (= 0)
+	const double d_AB, 											// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
+																// 	   reduced by half the length of the two vessels (or only own-ship if static obstacles are considered)
+	const double t 												// In: Prediction time t > t0 (= 0)
 	)
 {
 	double R = 0;
@@ -1650,13 +1658,12 @@ double PSBMPC::calculate_grounding_cost(
 	Eigen::Vector2d p_0, p_1, so_1, so_2; 
 
 	Eigen::VectorXd cost_j(n_static_obst);
-	
+	cost_j.setZero();
+
 	// Check if it is necessary to calculate this cost
 	bool is_geo_constraint = false;
 	for (int j = 0; j < n_static_obst; j++)
 	{
-		cost_j(j) = 1e10;
-
 		p_0 << trajectory.block<2, 1>(0, 0);
 		p_1 << trajectory.block<2, 1>(0, n_static_samples - 1);
 
@@ -1664,6 +1671,9 @@ double PSBMPC::calculate_grounding_cost(
 		so_2 << static_obstacles.block<2, 1>(2, j);
 
 		d_geo = distance_from_point_to_line(p_1, so_1, so_2);
+
+		// Decrease distance by the half the own-ship length
+		d_geo = d_geo - 0.5 * ownship->get_length();
 
 		if (!is_geo_constraint)
 		{
@@ -1689,7 +1699,10 @@ double PSBMPC::calculate_grounding_cost(
 			so_2 << static_obstacles.block<2, 1>(2, j);
 
 			d_geo = distance_to_static_obstacle(p_0, so_1, so_2);
-			
+
+			// Decrease distance by the half the own-ship length
+			d_geo = d_geo - 0.5 * ownship->get_length();
+
 			g_cost = G * calculate_ad_hoc_collision_risk(d_geo, t);
 
 			// Maximize wrt time

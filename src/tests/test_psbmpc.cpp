@@ -44,15 +44,15 @@ int main(){
 	}
 	char buffer[BUFSIZE+1]; 
 
-	//*****************************************************************************************************************
-	// Simulation setup
-	//*****************************************************************************************************************
+//*****************************************************************************************************************
+// Simulation setup
+//*****************************************************************************************************************
 	double T_sim = 200; double dt = 0.5;
 	int N = std::round(T_sim / dt);
 
-	//*****************************************************************************************************************
-	// Own-ship sim setup
-	//*****************************************************************************************************************
+//*****************************************************************************************************************
+// Own-ship sim setup
+//*****************************************************************************************************************
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 9, 0, 0;
 	double u_d = 9, chi_d, u_c, chi_c;
@@ -72,9 +72,9 @@ int main(){
 	waypoints << 0, 1000,
 				 0, 0;
 	
-	//*****************************************************************************************************************
-	// Obstacle sim setup
-	//*****************************************************************************************************************
+//*****************************************************************************************************************
+// Obstacle sim setup
+//*****************************************************************************************************************
 	int n_obst = 1;
 	std::vector<int> ID(n_obst);
 
@@ -143,11 +143,11 @@ int main(){
 		trajectory_covariances_i[i].resize(16, 1);
 		trajectory_covariances_i[i].col(0) = flatten(P_0);
 
-		Pr_a[i].resize(3);
+		/* Pr_a[i].resize(3);
 		Pr_a[i] << 1, 1, 1;
-		Pr_a[i] = Pr_a[0] / Pr_a[0].sum();
-		/* Pr_a[i].resize(1);
-		Pr_a[i] << 1; */
+		Pr_a[i] = Pr_a[0] / Pr_a[0].sum(); */
+		Pr_a[i].resize(1);
+		Pr_a[i] << 1;
 
 		Pr_CC[i] = 1;
 
@@ -171,9 +171,9 @@ int main(){
 
 
 	
-	//*****************************************************************************************************************
-	// PSB-MPC setup
-	//*****************************************************************************************************************	
+//*****************************************************************************************************************
+// PSB-MPC setup
+//*****************************************************************************************************************	
 	PSBMPC *psbmpc = new PSBMPC();
 	double u_opt, chi_opt;
 
@@ -189,28 +189,45 @@ int main(){
 	obstacle_covariances.resize(16, n_obst);
 
 	Eigen::MatrixXd obstacle_intention_probabilities;
-	obstacle_intention_probabilities.resize(3, n_obst);
+	obstacle_intention_probabilities.resize(1, n_obst);
 
 	Eigen::VectorXd obstacle_a_priori_CC_probabilities(n_obst);
 
 	// Not implemented geographical cost yet, so these will not be considered
+	int n_static_obst = 1;
 	Eigen::Matrix<double, 4, -1> static_obstacles;
-	static_obstacles.resize(4, n_obst);
-    static_obstacles << 50.0, 0.0, 50.0, 2050.0;
 
-	//*****************************************************************************************************************
-	// Simulation
-	//*****************************************************************************************************************	
+	// Format of each column: v_0, v_1, where v_0 and v_1 are the (x,y) coordinates of the start and end
+	// of the static obstacle no-go zone
+	static_obstacles.resize(4, n_static_obst);
+    static_obstacles.col(0) << 500.0, 300.0, 1000.0, 50.0;
+
+//*****************************************************************************************************************
+// Simulation
+//*****************************************************************************************************************	
 	auto start = std::chrono::system_clock::now(), end = start;
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-	
+	//=========================================================
 	// Matlab plot setup
 	//=========================================================
-	mxArray *T_sim_mx = mxCreateDoubleScalar(T_sim);
+	mxArray *T_sim_mx, *n_obst_mx, *n_static_obst_mx;
+	T_sim_mx = mxCreateDoubleScalar(T_sim);
+	n_obst_mx = mxCreateDoubleScalar(n_obst);
+	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
+
 	mxArray *pred_traj;
 	double *p_pred_traj;
 
+	mxArray *static_obst_mx = mxCreateDoubleMatrix(4, n_static_obst, mxREAL);
+	double *p_static_obst_mx = mxGetPr(static_obst_mx); 
+
+	Eigen::Map<Eigen::MatrixXd> map_static_obst(p_static_obst_mx, 4, n_static_obst);
+	map_static_obst = static_obstacles;
+
+	engPutVariable(ep, "X_static", static_obst_mx);
+	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
+	engPutVariable(ep, "n_obst", n_obst_mx);
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engPutVariable(ep, "WPs", wps_os);
 

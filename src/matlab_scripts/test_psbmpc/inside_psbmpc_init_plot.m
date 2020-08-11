@@ -35,6 +35,8 @@ h_X = []; h_X_p = [];
 h_X_ptch = [];
 h_safe = []; 
 
+
+
 % 100 is a safe max number of plot points.
 h_X_text_s = cell(100, 1); h_X_s = cell(100, 1);
 h_safe_s = cell(100,1);
@@ -61,4 +63,15 @@ for i = 1 : n_obst
         h_text_i{i, ps} = [];
     end
 end
+
+h_X_static = cell(n_static_obst, 1);
+so_x = zeros(2, 1); so_y = so_x;
+for j = 1 : n_static_obst
+    so_x(1) = X_static(1, j); so_x(2) = X_static(3, j); 
+    so_y(1) = X_static(2, j); so_y(2) = X_static(4, j); 
+    h_X_static{i} = plot(ax1, so_y, so_x, 'm', 'Linewidth', 3); 
+end
+
+drawnow;
+
 
