@@ -223,7 +223,7 @@ void Ownship::update_guidance_references(
 			chi_d = xs(2);
 			break;
 		default : 
-			std::cout << "This guidance method does not exist or is not implemented" << std::endl;
+			// Throw
 			break;
 	}
 }
@@ -300,7 +300,7 @@ Eigen::Matrix<double, 6, 1> Ownship::predict(
 			xs_new.block<3, 1>(3, 0) = nu;
 			break;
 		default :
-			std::cout << "The prediction method does not exist or is not implemented" << std::endl;
+			// Throw
 			xs_new.setZero(); 
 	}
 	xs_new(2) = wrap_angle_to_pmpi(xs_new(2));
@@ -320,7 +320,7 @@ void Ownship::predict_trajectory(
 	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference
 	const double chi_d, 											// In: Course reference
-	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Ownship waypoints
+	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Waypoints to follow
 	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
 	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
 	const double T,													// In: Prediction horizon

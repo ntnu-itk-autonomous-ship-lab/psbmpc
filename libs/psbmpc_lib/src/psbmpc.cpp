@@ -478,7 +478,7 @@ void PSBMPC::calculate_optimal_offsets(
 /****************************************************************************************
 *  Name     : reset_control_behavior
 *  Function : Sets the offset sequence back to the initial starting point, i.e. the 
-*			  leftmost branches of the control behavior tree
+*			  leftmost branche of the control behavior tree
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -1264,7 +1264,7 @@ bool PSBMPC::determine_COLREGS_violation(
 *  Name     : determine_transitional_cost_indicator
 *  Function : Determine if a transitional cost should be applied for the current
 *			  control behavior, using the method in Hagen, 2018. Two overloads
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_transitional_cost_indicator(
@@ -1613,7 +1613,7 @@ double PSBMPC::calculate_control_deviation_cost()
 
 /****************************************************************************************
 *  Name     : calculate_chattering_cost
-*  Function : Determines penalty due to using wobly (changing between positive and negative)
+*  Function : Determines penalty due to using wobbly (changing between positive and negative)
 * 			  course modifications
 *  Author   : Trym Tengesdal
 *  Modified :
@@ -1644,7 +1644,7 @@ double PSBMPC::calculate_chattering_cost()
 /****************************************************************************************
 *  Name     : calculate_grounding_cost
 *  Function : Determines penalty due grounding ownship on static obstacles (no-go zones)
-*  Author   : 
+*  Author   : Trym Tengesdal & Giorgio D. Kwame Minde Kufoalor
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_grounding_cost(
@@ -1890,7 +1890,7 @@ void PSBMPC::assign_optimal_trajectory(
 /****************************************************************************************
 *  Name     : update_obstacles
 *  Function : Takes in new obstacle information and updates the obstacle data structures
-*  Author   :
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::update_obstacles(
@@ -1975,7 +1975,7 @@ void PSBMPC::update_obstacles(
 /****************************************************************************************
 *  Name     : update_obstacle_status
 *  Function : Updates various information on each obstacle at the current time
-*  Author   : 
+*  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::update_obstacle_status(
