@@ -9,7 +9,7 @@ endif()
 
 
 #add_subdirectory(libs/psbmpc_lib)
-add_subdirectory(libs/psbmpc_lib_gpu)
+add_subdirectory(libs/psbmpc_lib)
 
 add_subdirectory(src/tests)
 

@@ -865,6 +865,7 @@ __host__ __device__ double Obstacle_SBMPC::calculate_collision_cost(
 *****************************************************************************************/
 __host__ __device__ double Obstacle_SBMPC::calculate_ad_hoc_collision_risk(
 	const double d_AB, 												// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
+																	// 	   reduced by half the length of the two vessels
 	const double t 													// In: Prediction time t > t0 (= 0)
 	)
 {

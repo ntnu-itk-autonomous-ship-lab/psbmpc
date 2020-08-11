@@ -94,7 +94,7 @@ public:
 
 	Eigen::VectorXd get_intention_probabilities() const { return Pr_a; };
 
-	// AIS-based KF related methods
+	// KF related methods
 	double get_duration_tracked() const { return duration_tracked; };
 
 	void reset_duration_tracked() { duration_tracked = 0.0; };

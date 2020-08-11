@@ -1154,34 +1154,6 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/cb_cost_functor.cu
-thrust/device_vector.h
--
-utilities.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cuh
-psbmpc.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/psbmpc.h
-cb_cost_functor.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/cb_cost_functor.cuh
-math.h
--
-
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/cpe.cu
-thrust/device_vector.h
--
-stdio.h
--
-cpe.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/cpe.cuh
-utilities.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cuh
-iostream
--
-cuda.h
--
-curand.h
--
-
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/psbmpc.cu
 thrust/device_vector.h
 -
