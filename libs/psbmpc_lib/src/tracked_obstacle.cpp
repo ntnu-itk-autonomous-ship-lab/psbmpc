@@ -167,7 +167,7 @@ void Tracked_Obstacle::predict_independent_trajectories(
 	Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
 	P_p.col(0) = flatten(kf->get_covariance());
 
-	Eigen::Vector2d v_p_new;
+	Eigen::Vector2d v_p_new, d_0i_p;
 	double chi_ps, t = 0;
 	bool have_turned;
 	for(int ps = 0; ps < n_ps; ps++)
@@ -181,6 +181,9 @@ void Tracked_Obstacle::predict_independent_trajectories(
 		for(int k = 0; k < n_samples; k++)
 		{
 			t = (k + 1) * dt;
+
+			/* d_0i_p = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl;
+			d_0i_p = */ 
 
 			if (!mu[ps])
 			{
