@@ -16,5 +16,5 @@ target_include_directories(tester PUBLIC
 
 target_compile_features(tester PRIVATE cxx_std_11)
 
-#target_link_libraries(tester psbmpc_lib)
-target_link_libraries(tester psbmpc_lib_gpu)
+#target_link_libraries(tester psbmpc_lib_gpu)
+target_link_libraries(tester psbmpc_lib)

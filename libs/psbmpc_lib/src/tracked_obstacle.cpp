@@ -34,8 +34,8 @@ Tracked_Obstacle::Tracked_Obstacle(
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
 	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
 	const double Pr_CC, 										// In: A priori COLREGS compliance probability
-	const bool filter_on, 										// In: Boolean determining whether KF should be used or not
-	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
+	const bool filter_on, 										// In: Indicator of whether the KF is active
+	const bool colav_on,										// In: Indicator of whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
@@ -241,11 +241,11 @@ void Tracked_Obstacle::predict_independent_trajectories(
 *  Modified :
 *****************************************************************************************/
 void Tracked_Obstacle::update(
-	const bool filter_on, 										// In: Indicator of whether the AIS-KF is active
+	const bool filter_on, 										// In: Indicator of whether the KF is active
 	const double dt 											// In: Prediction time step
 	)
 {
-	// Depending on if the AIS-based KF is on/off, the state and
+	// Depending on if the KF is on/off, the state and
 	// covariance are updated, or just reset directly to the input
 	// data (xs_0 and P_0)
 	if (filter_on)
@@ -270,7 +270,7 @@ void Tracked_Obstacle::update(
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
 	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
 	const double Pr_CC, 										// In: A priori COLREGS compliance probability
-	const bool filter_on, 										// In: Indicator of whether the AIS-KF is active
+	const bool filter_on, 										// In: Indicator of whether the KF is active
 	const double dt 											// In: Prediction time step
 	)
 {
@@ -282,7 +282,7 @@ void Tracked_Obstacle::update(
 
 	P_0 = reshape(P, 4, 4);
 
-	// Depending on if the AIS-based KF is on/off, the state and
+	// Depending on if the KF is on/off, the state and
 	// covariance are updated, or just reset directly to the input
 	// data (xs_0 and P_0)
 	if (filter_on)

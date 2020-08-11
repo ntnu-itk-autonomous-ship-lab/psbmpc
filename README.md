@@ -9,10 +9,10 @@ To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_
 
 - Matlab C API is used for the debugging and plotting functionality.
 - Eigen 3.3.92 release is used for the CPU and GPU version.
-- CUDA and Thrust is necessary for the GPU version.
+- CUDA and Thrust are necessary for the GPU version.
 
 ## Overall Structure
-The library for the CPU-implementation has the following structure
+The library for the CPU-implementation has the following structure (and similar for the GPU-version)
 
 <img src="tree_psbmpc.png" width="400"> 
 
@@ -73,11 +73,11 @@ This module implements a 3DOF surface vessel model with guidance and control as 
 
 ### KF
 
-This is a linear Kalman-filter module used when AIS-messages are received on obstacle positions, speed and course, to enable more robustness for the PSB-MPC against track loss and missing AIS-messages. 
+This is a linear Kalman-filter module used when obstacle states are received from a tracker node, to enable more robustness for the PSB-MPC against track loss. 
 
 ### MROU
 
-This is the Mean-reverting Ornstein-Uhlenbeck process used for the prediction of the independent obstacle trajectories and corresponding covariance. 
+This is the Mean-reverting Ornstein-Uhlenbeck process used for the prediction of the independent obstacle trajectories and covariance. 
 
 ### CPE
 
@@ -97,4 +97,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 
 
-<p> -Trym Tengesdal, 10. august 2020.  </p>
+<p> Trym Tengesdal, 10. august 2020.  </p>

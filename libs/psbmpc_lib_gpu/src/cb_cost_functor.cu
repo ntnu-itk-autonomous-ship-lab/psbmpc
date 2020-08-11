@@ -390,7 +390,7 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 {
 	int n_samples = vars->trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
-	double d_safe_i = vars->d_safe;
+	double d_safe_i = vars->d_safe + 0.5 * (vars->ownship.get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width()));
 
 	Eigen::MatrixXd* xs_i_p = new Eigen::MatrixXd[n_ps[i]];
 	*xs_i_p = *new_obstacles[i].get_trajectories();
@@ -446,7 +446,8 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	const Eigen::VectorXd &offset_sequence 							// In: Control behaviour currently followed
 	)
 {
-	double cost = 0, cost_ps, coll_cost;
+	// l_i is the collision cost modifier depending on the obstacle track loss.
+	double cost(0.0), cost_ps(0.0), C(0.0), l_i(0.0);
 	Eigen::VectorXd max_cost_ps(n_ps[i]);
 
 	Eigen::MatrixXd* xs_i_p = new Eigen::MatrixXd[n_ps[i]];
@@ -496,19 +497,32 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 		{
 			L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - vars->trajectory.block<2, 1>(0, k);
 			d_0i_p = L_0i_p.norm();
+
+			// Decrease the distance between the vessels by their respective max dimension
+			d_0i_p = d_0i_p - 0.5 * (ownship->get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width())); 
+			
 			L_0i_p = L_0i_p.normalized();
 
 			v_i_p(0) = xs_i_p[ps](2, k);
 			v_i_p(1) = xs_i_p[ps](3, k);
 			psi_i_p = atan2(v_i_p(1), v_i_p(0));
 
-			coll_cost = calculate_collision_cost(v_0_p, v_i_p);
+			C = calculate_collision_cost(v_0_p, v_i_p);
 
 			mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
 
 			trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, i, chi_m);
 
-			cost_ps = coll_cost * P_c_i(ps, k) + vars->kappa * mu  + 0 * vars->kappa_TC * trans;
+			// Track loss modifier to collision cost
+			if (new_obstacles[i]->get_duration_lost() > p_step)
+			{
+				l_i = 2 * dt * p_step / new_obstacles[i]->get_duration_lost(); // Why the 2 Giorgio?
+			} else
+			{
+				l_i = 1;
+			}
+
+			cost_ps = l_i * C * P_c_i(ps, k) + vars->kappa * mu  + 0 * vars->kappa_TC * trans;
 
 			// Maximize wrt time
 			if (cost_ps > max_cost_ps(ps))
@@ -578,8 +592,9 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::calculate_ad_hoc_collision_risk(
-	const double d_AB, 														// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
-	const double t 															// In: Prediction time t > t0 (= 0)
+	const double d_AB, 												// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
+																	// 	   reduced by half the length of the two vessels
+	const double t 													// In: Prediction time t > t0 (= 0)
 	)
 {
 	double R = 0;

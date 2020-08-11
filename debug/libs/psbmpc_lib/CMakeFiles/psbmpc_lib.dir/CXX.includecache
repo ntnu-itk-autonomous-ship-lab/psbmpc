@@ -28,9 +28,35 @@ vector
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
 
+../libs/psbmpc_lib/include/obstacle_sbmpc.h
+psbmpc_index.h
+../libs/psbmpc_lib/include/psbmpc_index.h
+prediction_obstacle.h
+../libs/psbmpc_lib/include/prediction_obstacle.h
+obstacle_ship.h
+../libs/psbmpc_lib/include/obstacle_ship.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+vector
+-
+memory
+-
+
+../libs/psbmpc_lib/include/obstacle_ship.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+
 ../libs/psbmpc_lib/include/ownship.h
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
+
+../libs/psbmpc_lib/include/prediction_obstacle.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+obstacle.h
+../libs/psbmpc_lib/include/obstacle.h
+memory
+-
 
 ../libs/psbmpc_lib/include/psbmpc.h
 psbmpc_index.h
@@ -1128,6 +1154,14 @@ utilities.h
 iostream
 -
 
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_sbmpc.cpp
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
+obstacle_sbmpc.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_sbmpc.h
+iostream
+-
+
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp
 utilities.h
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
@@ -1137,6 +1171,14 @@ iostream
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/iostream
 engine.h
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/engine.h
+
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/tracked_obstacle.cpp
+tracked_obstacle.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/tracked_obstacle.h
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
+iostream
+-
 
 /usr/local/MATLAB/R2019a/extern/include/engine.h
 matrix.h

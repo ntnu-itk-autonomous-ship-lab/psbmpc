@@ -6,21 +6,3 @@
 
 #IncludeRegexTransform: 
 
-/home/trymte/Desktop/cybercolav_cxx/src/tests/test_psbmpc.cpp
-psbmpc.h
-/home/trymte/Desktop/cybercolav_cxx/src/tests/psbmpc.h
-utilities.h
-/home/trymte/Desktop/cybercolav_cxx/src/tests/utilities.h
-iostream
--
-vector
--
-chrono
--
-memory
--
-Eigen/Dense
-/home/trymte/Desktop/cybercolav_cxx/src/tests/Eigen/Dense
-engine.h
-/home/trymte/Desktop/cybercolav_cxx/src/tests/engine.h
-

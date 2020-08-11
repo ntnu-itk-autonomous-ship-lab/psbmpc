@@ -562,10 +562,10 @@ void PSBMPC::initialize_par_limits()
 	dpar_high[i_dpar_K_dchi_strb] = 3.0;
 	dpar_high[i_dpar_K_dchi_port] = 3.0;
 
-	dpar_low[i_dpar_phi_AH] = -180.0; 		dpar_high[i_dpar_phi_AH] = 180.0;
-	dpar_low[i_dpar_phi_OT] = -180.0;		dpar_high[i_dpar_phi_OT] = 180.0;
-	dpar_low[i_dpar_phi_HO] = -180.0; 		dpar_high[i_dpar_phi_HO] = 180.0;
-	dpar_low[i_dpar_phi_CR] = -180.0; 		dpar_high[i_dpar_phi_CR] = 180.0;
+	dpar_low[i_dpar_phi_AH] = -180.0 * DEG2RAD; 		dpar_high[i_dpar_phi_AH] = 180.0 * DEG2RAD;
+	dpar_low[i_dpar_phi_OT] = -180.0 * DEG2RAD;			dpar_high[i_dpar_phi_OT] = 180.0 * DEG2RAD;
+	dpar_low[i_dpar_phi_HO] = -180.0 * DEG2RAD; 		dpar_high[i_dpar_phi_HO] = 180.0 * DEG2RAD;
+	dpar_low[i_dpar_phi_CR] = -180.0 * DEG2RAD; 		dpar_high[i_dpar_phi_CR] = 180.0 * DEG2RAD;
 
 	//std::cout << "d_par_low = " << dpar_low.transpose() << std::endl;
 	//std::cout << "d_par_high = " << dpar_high.transpose() << std::endl;
@@ -630,14 +630,14 @@ void PSBMPC::initialize_pars()
 	guidance_method = LOS;
 
 	T = 200.0; 
+	T_static = 60.0;		  // (50.0)
 	dt = 5.0;		      
-  	T_static = 60.0;		  // (50.0)
-
+  	
 	p_step = 1;
 	if (prediction_method == ERK1)
 	{ 
 		dt = 0.5; 
-		p_step = 1;
+		p_step = 10;
 	}
 	t_ts = 35;
 
@@ -1364,7 +1364,9 @@ void PSBMPC::calculate_collision_probabilities(
 	int n_samples = trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
 	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_trajectories();
-	double d_safe_i = d_safe;
+
+	// Increase safety zone by half the max obstacle dimension and ownship length
+	double d_safe_i = d_safe + 0.5 * (ownship->get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width()));
 
 	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / dt) + 1, k_j_(0), k_j(0);
 	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
@@ -1416,11 +1418,12 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	const int i 													// In: Index of obstacle
 	)
 {
-	double cost(0), cost_ps(0), coll_cost(0);
+	// l_i is the collision cost modifier depending on the obstacle track loss.
+	double cost(0.0), cost_ps(0.0), C(0.0), l_i(0.0);
 	Eigen::VectorXd max_cost_ps(n_ps[i]);
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		max_cost_ps(ps) = 0;
+		max_cost_ps(ps) = 0.0;
 	}
 
 	int n_samples = trajectory.cols();
@@ -1430,7 +1433,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	double Pr_CC_i = new_obstacles[i]->get_a_priori_CC_probability();
 
 	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
-	double psi_0_p(0), psi_i_p(0), d_0i_p(0), chi_m(0);
+	double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0);
 	bool mu, trans;
 	for(int k = 0; k < n_samples; k++)
 	{
@@ -1465,19 +1468,32 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 		{
 			L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
 			d_0i_p = L_0i_p.norm();
+
+			// Decrease the distance between the vessels by their respective max dimension
+			d_0i_p = d_0i_p - 0.5 * (ownship->get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width())); 
+
 			L_0i_p = L_0i_p.normalized();
 
 			v_i_p(0) = xs_i_p[ps](2, k);
 			v_i_p(1) = xs_i_p[ps](3, k);
 			psi_i_p = atan2(v_i_p(1), v_i_p(0));
 
-			coll_cost = calculate_collision_cost(v_0_p, v_i_p);
+			C = calculate_collision_cost(v_0_p, v_i_p);
 
 			mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
 
 			trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, i, chi_m);
 
-			cost_ps = coll_cost * P_c_i(ps, k) + kappa * mu  + 0 * kappa_TC * trans;
+			// Track loss modifier to collision cost
+			if (new_obstacles[i]->get_duration_lost() > p_step)
+			{
+				l_i = 2 * dt * p_step / new_obstacles[i]->get_duration_lost(); // Why the 2 Giorgio?
+			} else
+			{
+				l_i = 1;
+			}
+			
+			cost_ps = l_i * C * P_c_i(ps, k) + kappa * mu  + 0 * kappa_TC * trans;
 
 			// Maximize wrt time
 			if (cost_ps > max_cost_ps(ps))
@@ -1549,6 +1565,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 *****************************************************************************************/
 double PSBMPC::calculate_ad_hoc_collision_risk(
 	const double d_AB, 												// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
+																	// 	   reduced by half the length of the two vessels
 	const double t 													// In: Prediction time t > t0 (= 0)
 	)
 {
@@ -1626,17 +1643,72 @@ double PSBMPC::calculate_grounding_cost(
 	const Eigen::Matrix<double, 4, -1>& static_obstacles						// In: Static obstacle information
 	)
 {
-	double cost = 0;
+	double d_geo(0.0), t(0.0), g_cost(0.0); 
+	int n_static_obst = static_obstacles.cols();
+	int n_static_samples = std::round(T_static / dt);
+	// so 1 and 2 : endpoints of line describing static obstacle
+	Eigen::Vector2d p_0, p_1, so_1, so_2; 
 
+	Eigen::VectorXd cost_j(n_static_obst);
+	
+	// Check if it is necessary to calculate this cost
+	bool is_geo_constraint = false;
+	for (int j = 0; j < n_static_obst; j++)
+	{
+		cost_j(j) = 1e10;
 
-	return cost;
+		p_0 << trajectory.block<2, 1>(0, 0);
+		p_1 << trajectory.block<2, 1>(0, n_static_samples - 1);
+
+		so_1 << static_obstacles.block<2, 1>(0, j);
+		so_2 << static_obstacles.block<2, 1>(2, j);
+
+		d_geo = distance_from_point_to_line(p_1, so_1, so_2);
+
+		if (!is_geo_constraint)
+		{
+			is_geo_constraint = determine_if_lines_intersect(p_0, p_1, so_1, so_2) || determine_if_behind(p_1, so_1, so_2, d_geo);
+			break;
+		}
+	}
+
+	if (n_static_obst == 0 || !is_geo_constraint)
+	{
+		return 0.0;
+	}
+	
+	for (int k = 0; k < n_static_samples - 1; k++)
+	{
+		t = (k + 1) * dt;
+
+		for (int j = 0; j < n_static_obst; j++)
+		{
+			p_0 << trajectory.block<2, 1>(0, k);
+
+			so_1 << static_obstacles.block<2, 1>(0, j);
+			so_2 << static_obstacles.block<2, 1>(2, j);
+
+			d_geo = distance_to_static_obstacle(p_0, so_1, so_2);
+			
+			g_cost = G * calculate_ad_hoc_collision_risk(d_geo, t);
+
+			// Maximize wrt time
+			if (g_cost > cost_j(j))
+			{
+				cost_j(j) = g_cost;
+			}
+		}
+	}
+
+	// Return maximum wrt the present static obstacles
+	return cost_j.maxCoeff();
 }
 
 /****************************************************************************************
 *  Name     : find_triplet_orientation
 *  Function : Find orientation of ordered triplet (p, q, r)
 *  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
+*  Modified : By Trym Tengesdal for more readability
 *****************************************************************************************/
 int PSBMPC::find_triplet_orientation(
 	const Eigen::Vector2d &p, 
@@ -1656,7 +1728,7 @@ int PSBMPC::find_triplet_orientation(
 *  Function : Determine if the point q is on the segment pr
 *			  (really if q is inside the rectangle with diagonal pr...)
 *  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
+*  Modified : By Trym Tengesdal for more readability
 *****************************************************************************************/
 bool PSBMPC::determine_if_on_segment(
 	const Eigen::Vector2d &p, 
@@ -1674,7 +1746,7 @@ bool PSBMPC::determine_if_on_segment(
 *  Name     : determine_if_behind
 *  Function : Check if the point p_1 is behind the line defined by v_1 and v_2
 *  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
+*  Modified : By Trym Tengesdal for more readability
 *****************************************************************************************/
 bool PSBMPC::determine_if_behind(
 	const Eigen::Vector2d &p_1, 
@@ -1697,7 +1769,7 @@ bool PSBMPC::determine_if_behind(
 *  Name     : determine_if_lines_intersect
 *  Function : Determine if the line segments defined by p_1, q_1 and p_2, q_2 intersects 
 *  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
+*  Modified : By Trym Tengesdal for more readability
 *****************************************************************************************/
 bool PSBMPC::determine_if_lines_intersect(
 	const Eigen::Vector2d &p_1, 
@@ -1737,7 +1809,7 @@ bool PSBMPC::determine_if_lines_intersect(
 *  Name     : distance_from_point_to_line
 *  Function : Calculate distance from p to the line segment defined by q_1 and q_2
 *  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
+*  Modified : By Trym Tengesdal for more readability
 *****************************************************************************************/
 double PSBMPC::distance_from_point_to_line(
 	const Eigen::Vector2d &p, 
@@ -1759,7 +1831,7 @@ double PSBMPC::distance_from_point_to_line(
 *  Name     : distance_to_static_obstacle
 *  Function : Calculate distance from p to obstacle defined by line segment {v_1, v_2}
 *  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
+*  Modified : By Trym Tengesdal for more readability
 *****************************************************************************************/
 double PSBMPC::distance_to_static_obstacle(
 	const Eigen::Vector2d &p, 
