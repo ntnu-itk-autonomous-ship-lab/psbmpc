@@ -184,5 +184,7 @@ void KF::update(
     	P_upd = P_p;
     }
 
+	predict(dt); 
+
 	t += dt; // Time used for fault detection (measurement loss)
 }
