@@ -6,6 +6,7 @@ add_library(psbmpc_lib_gpu STATIC
 	src/psbmpc.cpp
 	src/psbmpc.cu 
 	src/cb_cost_functor.cu
+	src/cuda_matrix.cu
 	src/obstacle.cu
 	src/obstacle_ship.cu 
 	src/obstacle_sbmpc.cu 
@@ -31,8 +32,7 @@ message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
 message("CUDA_LIBARIES: ${CUDA_LIBRARIES}")
 
 target_compile_options(psbmpc_lib_gpu
-	PUBLIC
-	$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink>
+	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink>
 )
 
 target_link_libraries(psbmpc_lib_gpu 

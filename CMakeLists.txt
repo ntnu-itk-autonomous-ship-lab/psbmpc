@@ -9,17 +9,14 @@ endif()
 
 
 #add_subdirectory(libs/psbmpc_lib)
-add_subdirectory(libs/psbmpc_lib)
+add_subdirectory(libs/psbmpc_lib_gpu)
 
 add_subdirectory(src/tests)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
-#message("Your C++ compiler supports these C++ features:")
-#foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
-#  message("${i}")
-#endforeach()
-
-
-
+message("Your C++ compiler supports these C++ features:")
+foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
+  message("${i}")
+endforeach()
