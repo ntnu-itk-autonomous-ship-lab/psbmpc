@@ -879,7 +879,7 @@ bool PSBMPC::determine_colav_active(
 	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
-	for (int i = 0; i < new_obstacles.size(); i++)
+	for (size_t i = 0; i < new_obstacles.size(); i++)
 	{
 		d_0i(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
 		d_0i(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
@@ -1079,7 +1079,7 @@ void PSBMPC::update_obstacles(
 	// whereas an obstacle that is out of COLAV-target range may re-enter range with the same id.
 	if (obstacle_filter_on)
 	{
-		for (int j = 0; j < old_obstacles.size(); j++)
+		for (size_t j = 0; j < old_obstacles.size(); j++)
 		{
 			old_obstacles[j]->increment_duration_lost(dt * p_step);
 
@@ -1095,7 +1095,7 @@ void PSBMPC::update_obstacles(
 	// Clear old obstacle vector, which consist of transferred (nullptr) and terminated obstacles
 	// Then set equal to the new obstacle vector
 	old_obstacles.resize(new_obstacles.size());
-	for (int i = 0; i < new_obstacles.size(); i++)
+	for (size_t i = 0; i < new_obstacles.size(); i++)
 	{
 		old_obstacles[i].reset(new Tracked_Obstacle(*(new_obstacles[i])));
 	}
