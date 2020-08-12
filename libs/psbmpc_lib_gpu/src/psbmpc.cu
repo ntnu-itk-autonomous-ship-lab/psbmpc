@@ -167,8 +167,6 @@ void PSBMPC::calculate_optimal_offsets(
 	min_cost = cb_costs[min_index];
 
 	// Set the trajectory to the optimal one and assign to the output trajectory
-	Eigen::VectorXd offset_sequence(2 * n_M);
-	offset_sequence = control_behaviours.col(min_index);
 	ownship->predict_trajectory(trajectory, control_behaviours.col(min_index), maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, T, dt);
 	assign_optimal_trajectory(predicted_trajectory);
 	//===============================================================================================================

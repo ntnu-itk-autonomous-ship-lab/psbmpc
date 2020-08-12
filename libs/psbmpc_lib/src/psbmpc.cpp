@@ -651,7 +651,7 @@ void PSBMPC::initialize_pars()
 
 	d_init = 1500;							//1852.0;	  // should be >= D_CLOSE 300.0 600.0 500.0 700.0 800 1852
 	d_close = 500;							//1000.0;	// 200.0 300.0 400.0 500.0 600 1000
-	d_safe = 50; 							//185.2; 	  // 40.0, 50.0, 70.0, 80.0, 100, 200, 185.2
+	d_safe = 50; 							
 	K_coll = 1.0;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
@@ -1495,7 +1495,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			// Track loss modifier to collision cost
 			if (new_obstacles[i]->get_duration_lost() > p_step)
 			{
-				l_i = 2 * dt * p_step / new_obstacles[i]->get_duration_lost(); // Why the 2 Giorgio?
+				l_i = dt * p_step / new_obstacles[i]->get_duration_lost();
 			} else
 			{
 				l_i = 1;
@@ -2057,6 +2057,10 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 		L_AB(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
 		L_AB(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
 		d_AB = L_AB.norm();
+
+		// Decrease the distance between the vessels by their respective max dimension
+		d_AB = d_AB - 0.5 * (ownship->get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width())); 
+		
 		L_AB = L_AB.normalized();
 
 		determine_situation_type(ST_0[i], ST_i_0[i], v_A, psi_A, v_B, L_AB, d_AB);

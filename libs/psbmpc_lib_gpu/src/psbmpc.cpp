@@ -265,7 +265,7 @@ void PSBMPC::map_offset_sequences()
 /****************************************************************************************
 *  Name     : reset_control_behavior
 *  Function : Sets the offset sequence back to the initial starting point, i.e. the 
-*			  leftmost branches of the control behavior tree
+*			  leftmost branch of the control behavior tree
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -364,10 +364,10 @@ void PSBMPC::initialize_par_limits()
 	dpar_high[i_dpar_K_dchi_strb] = 3.0;
 	dpar_high[i_dpar_K_dchi_port] = 3.0;
 
-	dpar_low[i_dpar_phi_AH] = -180.0; 		dpar_high[i_dpar_phi_AH] = 180.0;
-	dpar_low[i_dpar_phi_OT] = -180.0;		dpar_high[i_dpar_phi_OT] = 180.0;
-	dpar_low[i_dpar_phi_HO] = -180.0; 		dpar_high[i_dpar_phi_HO] = 180.0;
-	dpar_low[i_dpar_phi_CR] = -180.0; 		dpar_high[i_dpar_phi_CR] = 180.0;
+	dpar_low[i_dpar_phi_AH] = -180.0 * DEG2RAD; 		dpar_high[i_dpar_phi_AH] = 180.0 * DEG2RAD;
+	dpar_low[i_dpar_phi_OT] = -180.0 * DEG2RAD;			dpar_high[i_dpar_phi_OT] = 180.0 * DEG2RAD;
+	dpar_low[i_dpar_phi_HO] = -180.0 * DEG2RAD; 		dpar_high[i_dpar_phi_HO] = 180.0 * DEG2RAD;
+	dpar_low[i_dpar_phi_CR] = -180.0 * DEG2RAD; 		dpar_high[i_dpar_phi_CR] = 180.0 * DEG2RAD;
 
 	//std::cout << "d_par_low = " << dpar_low.transpose() << std::endl;
 	//std::cout << "d_par_high = " << dpar_high.transpose() << std::endl;
@@ -437,13 +437,13 @@ void PSBMPC::initialize_pars()
 	if (prediction_method == ERK1)
 	{ 
 		dt = 0.5; 
-		p_step = 1;
+		p_step = 10;
 	}
 	t_ts = 50;
 
-	d_init = 1500;							//1852.0;	 
+	d_init = 1500;								 
 	d_close = 500;
-	d_safe = 50; 							//185.2;
+	d_safe = 50; 							
 	K_coll = 1.0;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
@@ -459,7 +459,7 @@ void PSBMPC::initialize_pars()
 	K_dchi_port = 1.2;
 	K_sgn = 5;
 	T_sgn = 4 * t_ts;	  					
-	G = 0;		         					 // 1.0e3
+	G = 1e3;		         					 
 	q = 4.0;
 	p = 1.0;
 
@@ -712,7 +712,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 			}
 			break;
 		default :
-			std::cout << "This situation type does not exist" << std::endl;
+			// Throw
 			break;
 	}
 	ps_weights_i = ps_weights_i / ps_weights_i.sum();
@@ -801,7 +801,7 @@ void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 			}
 			break;
 		default :
-			std::cout << "This situation type does not exist" << std::endl;
+			// Throw
 			break;
 	}
 	ps_weights_i = ps_weights_i / ps_weights_i.sum();
@@ -1186,6 +1186,10 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 		L_AB(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
 		L_AB(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
 		d_AB = L_AB.norm();
+
+		// Decrease the distance between the vessels by their respective max dimension
+		d_AB = d_AB - 0.5 * (ownship->get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width())); 
+
 		L_AB = L_AB.normalized();
 
 		determine_situation_type(ST_0[i], ST_i_0[i], v_A, psi_A, v_B, L_AB, d_AB);
