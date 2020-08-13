@@ -21,8 +21,8 @@
 *****************************************************************************************/
 
 
-#ifndef _Ownship_H_
-#define _Ownship_H_
+#ifndef _Ownship_CUH_
+#define _Ownship_CUH_
 
 #include <thrust/device_vector.h>
 #include "Eigen/Dense"

@@ -21,8 +21,8 @@
 *
 *****************************************************************************************/
 
-#ifndef _CPE_H_
-#define _CPE_H_
+#ifndef _CPE_CUH_
+#define _CPE_CUH_
 
 #include "curand_kernel.h"
 #include <thrust/device_vector.h>

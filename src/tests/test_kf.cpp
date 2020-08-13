@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : test_ownship.cpp
+*  File name : test_kf.cpp
 *
 *  Function  : Test file for the Kalman Filter (KF) class for PSB-MPC
 *			   

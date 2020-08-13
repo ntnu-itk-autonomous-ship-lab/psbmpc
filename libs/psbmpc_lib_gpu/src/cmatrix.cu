@@ -2,8 +2,9 @@
 *
 *  File name : cmatrix.cu
 *
-*  Function  : Implements class functions Cuda matrix container.
-*  
+*  Function  : Implements class functions Cuda matrix container. This file is added to 
+*			   the beginning of the class header file to allow for proper compilation/
+*  			   linking.
 *	           ---------------------
 *
 *  Version 1.0
@@ -17,7 +18,7 @@
 *
 *****************************************************************************************/
 
-#include "cmatrix.h"
+#include "cmatrix.cuh"
 #include <assert.h>
 
 /****************************************************************************************
@@ -27,25 +28,28 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CMatrix<T>::CMatrix(const int n_rows) :
+template <class T>
+__host__ __device__ CMatrix<T>::CMatrix(const size_t n_rows) :
 	n_rows(n_rows), n_cols(n_rows)
 {
 	allocate_data();
 }
 
-__host__ __device__ CMatrix<T>::CMatrix(const int n_rows, const int n_cols) :
+template <class T>
+__host__ __device__ CMatrix<T>::CMatrix(const size_t n_rows, const size_t n_cols) :
 	n_rows(n_rows), n_cols(n_cols)
 {
 	allocate_data();
 }
 
+template <class T>
 __host__ __device__ CMatrix<T>::CMatrix(const CMatrix<T> &cm) :
 	n_rows(cm.n_rows), n_cols(cm.n_cols)
 {
 	allocate_data();
-	for (int i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < n_rows; i++)
 	{
-		for (int j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < n_cols; j++)
 		{
 			data[i][j] = cm.data[i][j];
 		}
@@ -59,6 +63,7 @@ __host__ __device__ CMatrix<T>::CMatrix(const CMatrix<T> &cm) :
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
+template <class T>
 __host__ __device__ CMatrix<T>::~CMatrix()
 {
 	deallocate_data();
@@ -70,6 +75,7 @@ __host__ __device__ CMatrix<T>::~CMatrix()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
+template <class T>
 __host__ __device__ CMatrix<T>& CMatrix<T>::operator=(const CMatrix<T> &rhs)
 {
 	if (this == &rhs)
@@ -87,15 +93,16 @@ __host__ __device__ CMatrix<T>& CMatrix<T>::operator=(const CMatrix<T> &rhs)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CMatrix<T> CMatrix<T>::operator+(const CMatrix<T> &other)
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::operator+(const CMatrix<T> &other) const
 {
 	assert(n_rows == other.n_rows);
 	assert(n_cols == other.n_cols);
 
 	CMatrix<T> result(n_rows, n_cols);
-	for (int i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < n_rows; i++)
 	{
-		for (int j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < n_cols ; j++)
 		{
 			result.data[i][j] = this->data[i][j] + other.data[i][j];
 		}
@@ -109,15 +116,16 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator+(const CMatrix<T> &other)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
+template <class T>
 __host__ __device__ CMatrix<T>& CMatrix<T>::operator+=(const CMatrix<T> &rhs)
 {
 	assert(n_rows == rhs.n_rows);
 	assert(n_cols == rhs.n_cols);
 
 	CMatrix<T> result(n_rows, n_cols);
-	for (int i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < n_rows; i++)
 	{
-		for (int j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < n_cols ; j++)
 		{
 			this->data[i][j] = this->data[i][j] + rhs.data[i][j];
 		}
@@ -131,15 +139,16 @@ __host__ __device__ CMatrix<T>& CMatrix<T>::operator+=(const CMatrix<T> &rhs)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CMatrix<T> CMatrix<T>::operator-(const CMatrix<T> &other)
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::operator-(const CMatrix<T> &other) const
 {
-	assert(n_rows == rhs.n_rows);
-	assert(n_cols == rhs.n_cols);
+	assert(n_rows == other.n_rows);
+	assert(n_cols == other.n_cols);
 
 	CMatrix<T> result(n_rows, n_cols);
-	for (int i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < n_rows; i++)
 	{
-		for (int j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < n_cols ; j++)
 		{
 			result.data[i][j] = this->data[i][j] - other.data[i][j];
 		}
@@ -153,15 +162,16 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator-(const CMatrix<T> &other)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
+template <class T>
 __host__ __device__ CMatrix<T>& CMatrix<T>::operator-=(const CMatrix<T> &rhs)
 {
 	assert(n_rows == rhs.n_rows);
 	assert(n_cols == rhs.n_cols);
 
 	CMatrix<T> result(n_rows, n_cols);
-	for (int i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < n_rows; i++)
 	{
-		for (int j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < n_cols ; j++)
 		{
 			this->data[i][j] -= rhs.data[i][j];
 		}
@@ -175,17 +185,18 @@ __host__ __device__ CMatrix<T>& CMatrix<T>::operator-=(const CMatrix<T> &rhs)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CMatrix<T> CMatrix<T>::operator*(const CMatrix<T> &other)
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::operator*(const CMatrix<T> &other) const
 {	
 	// Verify that the matrix product is valid
 	assert(n_cols == other.n_rows);
 
 	CMatrix<T> result(n_rows, other.n_cols);
-	for (int i = 0 ; i < n_rows; i++)
+	for (size_t i = 0 ; i < n_rows; i++)
 	{
-		for (int j = 0; j < other.n_cols; j++)
+		for (size_t j = 0; j < other.n_cols; j++)
 		{
-			for (int k = 0; k < n_cols)
+			for (size_t k = 0; k < n_cols; k++)
 			{
 				result.data[i][j] += this->data[i][k] * other.data[i][k];
 			}
@@ -194,12 +205,13 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator*(const CMatrix<T> &other)
 	return result;
 }
 
-__host__ __device__ CMatrix<T> CMatrix<T>::operator*(const T &factor)
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::operator*(const T &factor) const
 {
 	CMatrix<T> result(n_rows, n_cols);
-	for (int i = 0 ; i < n_rows; i++)
+	for (size_t i = 0 ; i < n_rows; i++)
 	{
-		for (int j = 0; j < rhs.n_cols; j++)
+		for (size_t j = 0; j < n_cols; j++)
 		{
 			result.data[i][j] = factor * this->data[i][j];
 		}
@@ -213,14 +225,15 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator*(const T &factor)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CMatrix<T> CMatrix<T>::operator/(const T &factor)
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::operator/(const T &factor) const
 {	
 	CMatrix<T> result(n_rows, n_cols);
-	for (int i = 0 ; i < n_rows; i++)
+	for (size_t i = 0 ; i < n_rows; i++)
 	{
-		for (int j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < n_cols; j++)
 		{
-			result.data[i][j] = this->data[i][k] / factor;
+			result.data[i][j] = this->data[i][j] / factor;
 		}
 	}
 	return result;
@@ -232,11 +245,12 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator/(const T &factor)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
+template <class T>
 __host__ __device__ CMatrix<T>& CMatrix<T>::operator/=(const T &factor)
 {
-	for (int i = 0 ; i < n_rows; i++)
+	for (size_t i = 0 ; i < n_rows; i++)
 	{
-		for (int j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < n_cols; j++)
 		{
 			this->data[i][j] /= factor;
 		}
@@ -250,17 +264,18 @@ __host__ __device__ CMatrix<T>& CMatrix<T>::operator/=(const T &factor)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ bool CMatrix<T>::operator==(const CMatrix<T> &rhs)
+template <class T>
+__host__ __device__ bool CMatrix<T>::operator==(const CMatrix<T> &rhs) const
 {
 	assert(n_rows == rhs.n_rows);
 	assert(n_cols == rhs.n_cols);
 
 	bool result = true;
-	for (int i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < n_rows; i++)
 	{
-		for (int j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < n_cols ; j++)
 		{
-			if (*this(i, j) != rhs(i, j))
+			if ((*this)(i, j) != rhs(i, j))
 			{
 				result = false;
 			}
@@ -275,13 +290,14 @@ __host__ __device__ bool CMatrix<T>::operator==(const CMatrix<T> &rhs)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CMatrix CMatrix<T>::transpose()
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::transpose() const
 {
 	CMatrix<T> result(n_cols, n_rows);
 
-	for (int i = 0; i < n_cols; i++)
+	for (size_t i = 0; i < n_cols; i++)
 	{
-		for (int j = 0; j < n_rows ; j++)
+		for (size_t j = 0; j < n_rows ; j++)
 		{
 			result.data[i][j] = this->data[j][i];
 		}
@@ -295,33 +311,35 @@ __host__ __device__ CMatrix CMatrix<T>::transpose()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ T CMatrix<T>::determinant()
+template <class T>
+__host__ __device__ T CMatrix<T>::determinant() const
 {
 	assert(n_rows == n_cols);
 
-	int dim = n_rows;
-    if (dim == 1 )
+	if (n_rows == 1)
+	{
         return data[0][0];
-	
-	if (dim == 2)
+	}
+	if (n_rows == 2)
+	{
 		return data[0][0] * data[1][1] - data[0][1] * data[1][0];
+	}
 
     T det = 0;
  
 	// allocate the cofactor matrix
 	CMatrix temp_minor(n_rows - 1);
 
-    for(int i = 0; i < dim; i++)
+    for(size_t i = 0; i < n_rows; i++)
     {
         // get minor of element (0,i)
-        minor(temp_minor, 0, i , dim);
+        calculate_minor_matrix(temp_minor, 0, i);
  
-        det += (i % 2 == 1 ? -1.0 : 1.0) * data[0][i] * determinant_recursive(minor);
-        //det += pow( -1.0, i ) * mat[0][i] * CalcDeterminant( minor,order-1 );
+        det += (i % 2 == 1 ? -1.0 : 1.0) * data[0][i] * determinant_recursive(temp_minor);
+        //det += pow( -1.0, i ) * data[0][i] * determinant_recursive(temp_minor);
     }
  
     return det;
-}
 }
 
 /****************************************************************************************
@@ -330,41 +348,44 @@ __host__ __device__ T CMatrix<T>::determinant()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CMatrix<T> CMatrix<T>::inverse()
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::inverse() const
 {
 	assert(n_rows == n_cols);
 
-	if (n_rows == 1)
-	{
-		return 1.0 / data[0][0];
-	}
+	T det_inv = (T)1 / determinant();
 
 	CMatrix result(n_rows);
 
-	T det = (T)1 / determinant();
-
+	if (n_rows == 1)
+	{
+		result.data[0][0] = det_inv;
+		return result;
+	}
 	if (n_rows == 2)
 	{
 		result.data[0][0] = this->data[1][1];
 		result.data[0][1] = - this->data[0][1];
 		result.data[1][0] = - this->data[1][0];
 		result.data[1][1] = this->data[0][0];
-		result /= det;
+		result *= det_inv;
 		return result;
-		//result = result / det;
+		//result = result * det_inv;
 	}    
  
-    float *temp = new float[(order-1)*(order-1)];
-    CMatrix minor(n_rows - 1);
+    CMatrix temp_minor(n_rows - 1);
  
     for(size_t i = 0; i < n_rows; i++)
     {
         for(size_t j = 0; j < n_rows; j++)
         {
-            // get the co-factor C_ij of this matrix
-			minor(minor, i, j);
+			// Fill values for minor M_ij
+			calculate_minor_matrix(temp_minor, i, j);
+
+			// Element ij of the inverse is the co-factor C_ij of this matrix
+			// where C_ij = (-1)^(i + j) * |M_ij|
 			
-			result.data[i][j] = det * determinant(minor, n_rows - 1);
+			result.data[i][j] = det_inv * calculate_determinant_recursive(temp_minor);
 			
 			if ((i + j) % 2 == 1)
 			{
@@ -381,7 +402,8 @@ __host__ __device__ CMatrix<T> CMatrix<T>::inverse()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ T CMatrix<T>::dot(const CMatrix<T> &other)
+template <class T>
+__host__ __device__ T CMatrix<T>::dot(const CMatrix<T> &other) const
 {
 	T result = 0;
 
@@ -411,15 +433,16 @@ __host__ __device__ T CMatrix<T>::dot(const CMatrix<T> &other)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CMatrix<T> CMatrix<T>::block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols)
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const
 {
 	assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && n_rows > 0 && n_cols > 0 && 
-			start_row < n_rows && start_col < n_cols && start_row >= 0 && start_col >= 0);
+			start_row < n_rows && start_col < n_cols);
 
 	CMatrix<T> result(n_rows, n_cols);
 	for (size_t i = start_row; i < start_row + n_rows; i++)
 	{
-		for (size_t j = start_col; j < start_col + n_cols)
+		for (size_t j = start_col; j < start_col + n_cols; j++)
 		{
 			result.data[i][j] = this->data[i][j];
 		}
@@ -433,7 +456,8 @@ __host__ __device__ CMatrix<T> CMatrix<T>::block(const size_t start_row, const s
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ T CMatrix<T>::max_coeff()
+template <class T>
+__host__ __device__ T CMatrix<T>::max_coeff() const
 {
 	T max = data[0][0];
 	for (size_t i = 0; i < n_rows; i++)
@@ -455,7 +479,8 @@ __host__ __device__ T CMatrix<T>::max_coeff()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ T CMatrix<T>::min_coeff()
+template <class T>
+__host__ __device__ T CMatrix<T>::min_coeff() const
 {
 	T min = data[0][0];
 	for (size_t i = 0; i < n_rows; i++)
@@ -477,7 +502,8 @@ __host__ __device__ T CMatrix<T>::min_coeff()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void CMatrix<T>::resize(const int n_rows, const int n_cols)
+template <class T>
+__host__ __device__ void CMatrix<T>::resize(const size_t n_rows, const size_t n_cols)
 {
 	assert(n_rows > 0 && n_cols > 0);
 	
@@ -490,6 +516,7 @@ __host__ __device__ void CMatrix<T>::resize(const int n_rows, const int n_cols)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
+template <class T>
 __host__ __device__ void CMatrix<T>::conservative_resize(const size_t n_rows, const size_t n_cols)
 {
 	assert(n_rows > 0 && n_cols > 0);
@@ -514,6 +541,7 @@ __host__ __device__ void CMatrix<T>::conservative_resize(const size_t n_rows, co
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
+template <class T>
 __host__ __device__ void CMatrix<T>::allocate_data()
 {
 	assert(n_rows > 0 && n_cols > 0);
@@ -530,6 +558,7 @@ __host__ __device__ void CMatrix<T>::allocate_data()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
+template <class T>
 __host__ __device__ void CMatrix<T>::deallocate_data()
 {
 	if (data == nullptr)
@@ -548,48 +577,56 @@ __host__ __device__ void CMatrix<T>::deallocate_data()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ T calculate_determinant_recursive(const CMatrix &sub_matrix)
+template <class T>
+__host__ __device__ T CMatrix<T>::calculate_determinant_recursive(const CMatrix<T> &submatrix)
 {
-	if (sub_matrix.n_rows == 1)
+	if (submatrix.n_rows == 1)
 	{
-		return sub_matrix.data[0][0];
+		return submatrix.data[0][0];
+	}
+	if (submatrix.n_rows == 2)
+	{
+		return submatrix.data[0][0] * submatrix.data[1][1] - submatrix.data[0][1] * submatrix.data[1][0];
 	}
 
 	T det = 0;
 
-	CMatrix temp_minor;
-	for (size_t i = 0; i < sub_matrix.n_rows; i++)
-	{
-		minor(temp_minor, 0, i);
+	CMatrix temp_minor(submatrix.n_rows - 1);
 
-		det += (i % 2 == 1 ? -1.0 : 1.0) * sub_matrix[0][i] * determinant_recursive(temp_minor);
-        //det += pow( -1.0, i ) * mat[0][i] * CalcDeterminant( minor,order-1 );
+	for (size_t i = 0; i < submatrix.n_rows; i++)
+	{
+		calculate_minor_matrix(temp_minor, 0, i);
+
+		det += (i % 2 == 1 ? -1.0 : 1.0) * submatrix[0][i] * determinant_recursive(temp_minor);
+        //det += pow( -1.0, i ) * submatrix[0][i] * determinant_recursive(temp_minor);
 	}
 }
 
 /****************************************************************************************
-*  Name     : calculate_minor
-*  Function : Private function to use for calculating the minor M_{row, col}
+*  Name     : calculate_minor_matrix
+*  Function : Private function to use for calculating the minor M_{row, col} for the input
+*			  based on the member data.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void calculate_minor(CMatrix &minor, const size_t row, const size_t col)
+template <class T>
+__host__ __device__ void CMatrix<T>::calculate_minor_matrix(CMatrix<T> &matrix, const size_t row, const size_t col)
 {
-	assert(minor.rows() == minor.cols());
+	assert(matrix.rows() == matrix.cols());
 
 	// Indicate which col and row is being copied to the minor
     size_t col_count = 0, row_count = 0;
  
-    for(size_t i = 0; i < minor.n_rows; i++)
+    for(size_t i = 0; i < matrix.n_rows; i++)
     {
         if (i != row)
         {
             col_count = 0;
-            for(size_t j = 0; j < minor.n_rows; j++ )
+            for(size_t j = 0; j < matrix.n_rows; j++ )
             {
                 if (j != col)
                 {
-					minor.data[row_count][col_count) = data[i][j];
+					matrix.data[row_count][col_count] = data[i][j];
 					
                     col_count++;
                 }
@@ -598,4 +635,3 @@ __host__ __device__ void calculate_minor(CMatrix &minor, const size_t row, const
         }
     }
 }
-	
