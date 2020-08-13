@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.17.3)
 project(psbmpc_test LANGUAGES CXX CUDA)
 
 if (MSVC)
@@ -16,7 +16,7 @@ add_subdirectory(src/tests)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
-message("Your C++ compiler supports these C++ features:")
-foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
-  message("${i}")
-endforeach()
+#message("Your C++ compiler supports these C++ features:")
+#foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
+#  message("${i}")
+#endforeach()

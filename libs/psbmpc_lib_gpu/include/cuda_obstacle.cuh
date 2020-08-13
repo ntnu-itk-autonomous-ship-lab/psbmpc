@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : cuda_obstacle.h
+*  File name : cuda_obstacle.cuh
 *
 *  Function  : Header file for the obstacle class used by the PSB-MPC especially in the
 *			   CUDA kernels, where raw pointers or custom containers must be used.
@@ -19,8 +19,8 @@
 *****************************************************************************************/
 
 
-#ifndef _CUDA_OBSTACLE_H_
-#define _CUDA_OBSTACLE_H_
+#ifndef _CUDA_OBSTACLE_CUH_
+#define _CUDA_OBSTACLE_CUH_
 
 #include <thrust/device_vector.h>
 #include "Eigen/Dense"

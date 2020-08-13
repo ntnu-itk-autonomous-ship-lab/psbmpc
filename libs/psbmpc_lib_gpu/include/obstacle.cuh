@@ -20,8 +20,8 @@
 *****************************************************************************************/
 
 
-#ifndef _OBSTACLE_H_
-#define _OBSTACLE_H_
+#ifndef _OBSTACLE_CUH_
+#define _OBSTACLE_CUH_
 
 #include <thrust/device_vector.h>
 #include <vector>

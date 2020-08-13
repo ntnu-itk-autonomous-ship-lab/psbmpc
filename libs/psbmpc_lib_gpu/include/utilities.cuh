@@ -19,8 +19,8 @@
 *
 *****************************************************************************************/
 
-#ifndef _UTILITIES_H_
-#define _UTILITIES_H_
+#ifndef _UTILITIES_CUH_
+#define _UTILITIES_CUH_
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

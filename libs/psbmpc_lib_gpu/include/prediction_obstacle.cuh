@@ -20,8 +20,8 @@
 *****************************************************************************************/
 
 
-#ifndef _PREDICTION_OBSTACLE_H_
-#define _PREDICTION_OBSTACLE_H_
+#ifndef _PREDICTION_OBSTACLE_CUH_
+#define _PREDICTION_OBSTACLE_CUH_
 
 #include "Eigen/Dense"
 #include "obstacle.cuh"

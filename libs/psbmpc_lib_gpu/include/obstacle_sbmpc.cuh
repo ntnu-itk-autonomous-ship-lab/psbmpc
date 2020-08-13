@@ -19,8 +19,8 @@
 *
 *****************************************************************************************/
 
-#ifndef _OBSTACLE_SBMPC_H_
-#define _OBSTACLE_SBMPC_H_
+#ifndef _OBSTACLE_SBMPC_CUH_
+#define _OBSTACLE_SBMPC_CUH_
 
 #include <thrust/device_vector.h>
 #include "psbmpc_index.h"

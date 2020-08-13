@@ -19,8 +19,8 @@
 *****************************************************************************************/
 
 
-#ifndef _OBSTACLE_SHIP_H_
-#define _OBSTACLE_SHIP_H_
+#ifndef _OBSTACLE_SHIP_CUH_
+#define _OBSTACLE_SHIP_CUH_
 
 #include "Eigen/Dense"
 #include <thrust/device_vector.h>
