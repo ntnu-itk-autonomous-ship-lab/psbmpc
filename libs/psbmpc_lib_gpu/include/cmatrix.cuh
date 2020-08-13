@@ -142,16 +142,16 @@ __host__ __device__ CMatrix<T>::CMatrix(
 
 template <class T>
 __host__ __device__ CMatrix<T>::CMatrix(
-	const CMatrix<T> &cm 										// In: Matrix/vector to copy
+	const CMatrix<T> &other 									// In: Matrix/vector to copy
 	) :
-	n_rows(cm.n_rows), n_cols(cm.n_cols)
+	n_rows(other.n_rows), n_cols(other.n_cols)
 {
 	allocate_data();
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			data[i][j] = cm.data[i][j];
+			data[i][j] = other.data[i][j];
 		}
 	}
 }
@@ -186,7 +186,19 @@ __host__ __device__ CMatrix<T>& CMatrix<T>::operator=(
 	}
 	deallocate_data();
 
-	return *this = CMatrix<T>(rhs);
+	n_rows = rhs.n_rows; n_cols = rhs.n_cols;
+	allocate_data();
+
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			data[i][j] = rhs.data[i][j];
+		}
+	}
+	
+	return *this;
+	//return *this = CMatrix<T>(rhs);
 }
 
 /****************************************************************************************
@@ -493,6 +505,7 @@ template <class T>
 __host__ __device__ CMatrix<T> CMatrix<T>::inverse() const
 {
 	assert(n_rows == n_cols);
+	assert(determinant() > T(0));
 
 	T det_inv = (T)1 / determinant();
 
@@ -657,8 +670,6 @@ __host__ __device__ void CMatrix<T>::resize(
 	)
 {
 	assert(n_rows > 0 && n_cols > 0);
-	
-	deallocate_data();
 
 	*this = CMatrix<T>(n_rows, n_cols);
 }
@@ -721,7 +732,7 @@ __host__ __device__ void CMatrix<T>::deallocate_data()
 	{
 		return;
 	}
-	
+
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		delete[] data[i];
@@ -758,7 +769,7 @@ __host__ __device__ T CMatrix<T>::calculate_determinant_recursive(
 	{
 		calculate_minor_matrix(temp_minor, 0, i);
 
-		det += (i % 2 == 1 ? -1.0 : 1.0) * submatrix.data[0][i] * calculate_determinant_recursive(temp_minor);
+		det += (i % 2 == 1 ? (T)-1 : (T)1) * submatrix.data[0][i] * calculate_determinant_recursive(temp_minor);
         //det += pow( -1.0, i ) * submatrix[0][i] * calculate_determinant_recursive(temp_minor);
 	}
 

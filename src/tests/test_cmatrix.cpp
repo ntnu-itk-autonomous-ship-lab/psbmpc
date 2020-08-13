@@ -37,19 +37,29 @@ int main()
 
 	std::normal_distribution<double> std_norm_pdf(0.0, 1.0);
 
+
+	//================================================================================
+	// Assignment operator + copy constructor test
+	//================================================================================
+	CMatrix<double> t1(3);
+	CMatrix<double> t2(2);
+	t1 = t2;
+
+	CMatrix<double> t3 = t1;
+
 	//================================================================================
 	// 2x2 inverse test
 	//================================================================================
 	size_t n_rows = 2, n_cols = 2;
 	CMatrix<double> M1(n_rows, n_cols);
-	Eigen::Matrix2d M2(n_rows, n_cols); 
+	Eigen::MatrixXd M2(n_rows, n_cols); 
 	Eigen::MatrixXd M_diff(n_rows, n_cols);
 
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			M2(i, j) = std_norm_pdf(gen);
+			M2(i, j) = std_norm_pdf(gen) + 5;
 			M1(i, j) = M2(i, j);
 		}
 	}
@@ -77,7 +87,7 @@ int main()
 	{
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			M2(i, j) = std_norm_pdf(gen);
+			M2(i, j) = std_norm_pdf(gen) + 5;
 			M1(i, j) = M2(i, j);
 		}
 	}
@@ -105,7 +115,7 @@ int main()
 	{
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			M2(i, j) = std_norm_pdf(gen);
+			M2(i, j) = std_norm_pdf(gen) + 5;
 			M1(i, j) = M2(i, j);
 		}
 	}
