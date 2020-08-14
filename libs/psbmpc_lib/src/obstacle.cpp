@@ -58,6 +58,42 @@ Obstacle::Obstacle(
 	const Obstacle &o 													// In: Obstacle to copy
 	)
 {
+	assign_data(o);
+}
+
+/****************************************************************************************
+*  Name     : operator=
+*  Function : Assignment operator to prevent shallow assignments and bad pointer management
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+Obstacle& Obstacle::operator=(
+	const Obstacle &rhs 													// In: Rhs Obstacle to assign to lhs
+	)
+{
+	if (this == &rhs)
+	{
+		return *this;
+	}
+	
+	assign_data(rhs);
+
+	return *this;
+}
+
+/****************************************************************************************
+*  Private functions
+*****************************************************************************************/
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void Obstacle::assign_data(
+	const Obstacle &o 													// In: Obstacle whose data to assign to *this
+	)
+{
 	// Boring non-pointer class member copy
 	this->ID = o.ID;
 
@@ -70,22 +106,4 @@ Obstacle::Obstacle(
 
 	this->xs_0 = o.xs_0;
 	this->P_0 = o.P_0;
-}
-
-/****************************************************************************************
-*  Name     : operator=
-*  Function : Assignment operator to prevent shallow assignments and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-Obstacle& Obstacle::operator=(
-	const Obstacle &o 													// In: Rhs Obstacle to assign to lhs
-	)
-{
-	if (this == &o)
-	{
-		return *this;
-	}
-
-	return *this = Obstacle(o);
 }

@@ -79,6 +79,8 @@ private:
 	std::vector<std::unique_ptr<Prediction_Obstacle>> old_obstacles;
 	std::vector<std::unique_ptr<Prediction_Obstacle>> new_obstacles;
 
+	void assign_data(const Obstacle_SBMPC &o_sbmpc);
+
 	void initialize_par_limits();
 
 	void initialize_pars();

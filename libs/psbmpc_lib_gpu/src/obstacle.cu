@@ -58,14 +58,10 @@ __host__ __device__ Obstacle::Obstacle(
 *****************************************************************************************/
 __host__ __device__ Obstacle::Obstacle(
 	const Obstacle &o 											// In: Obstacle to copy
-	) : 
-	ID(o.ID), 
-	colav_on(o.colav_on), 
-	A(o.A), B(o.B), C(o.C), D(o.D), 
-	l(o.l), w(o.w),
-	x_offset(o.x_offset), y_offset(o.y_offset), 
-	xs_0(o.xs_0), P_0(o.P_0)
-{}
+	)
+{
+	assign_data(o);
+}
 
 /****************************************************************************************
 *  Name     : operator=
@@ -74,12 +70,41 @@ __host__ __device__ Obstacle::Obstacle(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ Obstacle& Obstacle::operator=(
-	const Obstacle &o 											// In: Rhs Obstacle to assign to lhs
+	const Obstacle &rhs 											// In: Rhs Obstacle to assign to lhs
 	)
 {
-	if (this == &o)
+	if (this == &rhs)
 	{
 		return *this;
 	}
-	return *this = Obstacle(o);
+	
+	assign_data(rhs);
+
+	return *this;
+}
+
+/****************************************************************************************
+*  Private functions
+*****************************************************************************************/
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ void Obstacle::assign_data(
+	const Obstacle &o 												// In: Obstacle whose data to assign to *this
+	)
+{
+	this->ID = o.ID;
+
+	this->colav_on = o.colav_on;
+
+	this->A = o.A; this->B = o.B; this->C = o.C; this->D = o.D;
+	this->l = o.l; this->w = o.w;
+
+	this->x_offset = o.x_offset; this->y_offset = o.y_offset;
+
+	this->xs_0 = o.xs_0;
+	this->P_0 = o.P_0;
 }

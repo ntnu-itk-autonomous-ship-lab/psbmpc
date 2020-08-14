@@ -53,86 +53,17 @@ __host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc)
+__host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC(
+	const Obstacle_SBMPC &o_sbmpc 								// In: Obstacle_SBMPC to copy
+	) :
+	u_offsets(nullptr), chi_offsets(nullptr),
+	ownship(nullptr),
+	AH_0(nullptr), S_TC_0(nullptr), S_i_TC_0(nullptr), 
+	O_TC_0(nullptr), Q_TC_0(nullptr), IP_0(nullptr),
+	H_TC_0(nullptr), X_TC_0(nullptr),
+	old_obstacles(nullptr), new_obstacles(nullptr)
 {
-	this->n_cbs = o_sbmpc.n_cbs;
-	this->n_M = o_sbmpc.n_M;
-
-	u_offsets = new Eigen::VectorXd[n_M]; 
-	chi_offsets = new Eigen::VectorXd[n_M];
-	for (int M = 0; M < n_M; M++)
-	{
-		u_offsets[M] = o_sbmpc.u_offsets[M];
-		chi_offsets[M] = o_sbmpc.chi_offsets[M];
-	}
-
-	this->offset_sequence_counter = o_sbmpc.offset_sequence_counter;
-	this->offset_sequence = o_sbmpc.offset_sequence;
-	this->maneuver_times = o_sbmpc.maneuver_times;
-
-	this->u_m_last = o_sbmpc.u_m_last;
-	this->chi_m_last = o_sbmpc.chi_m_last;
-
-	this->min_cost = o_sbmpc.min_cost;
-
-	this->dpar_low = o_sbmpc.dpar_low;
-	this->dpar_high = o_sbmpc.dpar_high;
-	this->ipar_low = o_sbmpc.ipar_low;
-	this->ipar_high = o_sbmpc.ipar_high;
-
-	this->prediction_method = o_sbmpc.prediction_method;
-	this->guidance_method = o_sbmpc.guidance_method;
-
-	this->T = o_sbmpc.T; this->T_static = o_sbmpc.T_static;
-	this->dt = o_sbmpc.dt; 
-	this->p_step = o_sbmpc.p_step;
-	this->t_ts = o_sbmpc.t_ts;
-	
-	this->d_safe = o_sbmpc.d_safe; this->d_close = o_sbmpc.d_close; this->d_init = o_sbmpc.d_init;
-	
-	this->K_coll = o_sbmpc.K_coll;
-
-	this->phi_AH = o_sbmpc.phi_AH; this->phi_OT = o_sbmpc.phi_OT; this->phi_HO = o_sbmpc.phi_HO; this->phi_CR = o_sbmpc.phi_CR;
-
-	this->kappa = o_sbmpc.kappa; this->kappa_TC = o_sbmpc.kappa_TC;
-
-	this->K_u = o_sbmpc.K_u; this->K_du = o_sbmpc.K_du;
-
-	this->K_chi_strb = o_sbmpc.K_chi_strb; this->K_dchi_strb = o_sbmpc.K_dchi_strb;
-	this->K_chi_port = o_sbmpc.K_chi_port; this->K_dchi_port = o_sbmpc.K_dchi_port;
-
-	this->K_sgn = o_sbmpc.K_sgn; this->T_sgn = o_sbmpc.T_sgn;
-	
-	this->G = o_sbmpc.G;
-
-	this->q = o_sbmpc.q; this->p = o_sbmpc.p;
-
-	this->obstacle_colav_on = o_sbmpc.obstacle_colav_on;
-
-	this->ownship = new Obstacle_Ship(*(o_sbmpc.ownship));
-
-	this->trajectory = o_sbmpc.trajectory;
-
-	this->n_obst = o_sbmpc.n_obst;
-
-	AH_0 = new bool[n_obst]; S_TC_0 = new bool[n_obst]; S_i_TC_0 = new bool[n_obst];
-	O_TC_0 = new bool[n_obst]; Q_TC_0 = new bool[n_obst]; IP_0 = new bool[n_obst];
-	H_TC_0 = new bool[n_obst]; X_TC_0 = new bool[n_obst];
-
-	for (int i = 0; i < n_obst; i++)
-	{
-		AH_0[i] = o_sbmpc.AH_0[i]; 
-		S_TC_0[i] = o_sbmpc.S_TC_0[i];
-		S_i_TC_0[i] = o_sbmpc.S_i_TC_0[i]; 
-		O_TC_0[i] = o_sbmpc.O_TC_0[i];
-		Q_TC_0[i] = o_sbmpc.Q_TC_0[i]; 
-		IP_0[i] = o_sbmpc.IP_0[i];
-		H_TC_0[i] = o_sbmpc.H_TC_0[i]; 
-		X_TC_0[i] = o_sbmpc.X_TC_0[i];
-
-		old_obstacles[i] = Prediction_Obstacle(o_sbmpc.old_obstacles[i]);
-		new_obstacles[i] = Prediction_Obstacle(o_sbmpc.new_obstacles[i]);
-	}
+	assign_data(o_sbmpc);
 }
 
 /****************************************************************************************
@@ -154,22 +85,28 @@ __host__ __device__ Obstacle_SBMPC::~Obstacle_SBMPC()
 *****************************************************************************************/
 __host__ __device__ void Obstacle_SBMPC::clean()
 {
-	if (u_offsets != nullptr) { delete[] u_offsets; }
-	if (chi_offsets != nullptr) { delete[] chi_offsets; }
-	if (ownship != nullptr) 	{ delete ownship; }
+	if (u_offsets != nullptr) { delete[] u_offsets; u_offsets = nullptr; }
+	if (chi_offsets != nullptr) { delete[] chi_offsets; chi_offsets = nullptr; }
+	if (ownship != nullptr) 	{ delete ownship; ownship = nullptr; }
 	if (AH_0 != nullptr) 		
 	{ 
 		delete[] AH_0; delete[] S_TC_0; delete[] S_i_TC_0;
 		delete[] O_TC_0; delete[] Q_TC_0; delete[] IP_0;
 		delete[] H_TC_0; delete[] X_TC_0;
+
+		AH_0 = nullptr; S_TC_0 = nullptr; S_i_TC_0 = nullptr;
+		O_TC_0 = nullptr; Q_TC_0 = nullptr; IP_0 = nullptr;
+		H_TC_0 = nullptr; X_TC_0 = nullptr;
 	}
 	if (old_obstacles != nullptr)
 	{
 		delete[] old_obstacles;
+		old_obstacles = nullptr;
 	}
 	if (new_obstacles != nullptr)
 	{
 		delete[] new_obstacles;
+		new_obstacles = nullptr;
 	}
 }
 
@@ -189,6 +126,8 @@ __host__ __device__ Obstacle_SBMPC& Obstacle_SBMPC::operator=(
 	}
 	
 	clean();
+
+	assign_data(rhs);
 
 	return *this = Obstacle_SBMPC(rhs);
 }
@@ -407,6 +346,96 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ void Obstacle_SBMPC::assign_data(
+	const Obstacle_SBMPC &o_sbmpc 							// In: Obstacle_SBMPC whose data to assign to this
+	)
+{
+	this->n_cbs = o_sbmpc.n_cbs;
+	this->n_M = o_sbmpc.n_M;
+
+	u_offsets = new Eigen::VectorXd[n_M]; 
+	chi_offsets = new Eigen::VectorXd[n_M];
+	for (int M = 0; M < n_M; M++)
+	{
+		u_offsets[M] = o_sbmpc.u_offsets[M];
+		chi_offsets[M] = o_sbmpc.chi_offsets[M];
+	}
+
+	this->offset_sequence_counter = o_sbmpc.offset_sequence_counter;
+	this->offset_sequence = o_sbmpc.offset_sequence;
+	this->maneuver_times = o_sbmpc.maneuver_times;
+
+	this->u_m_last = o_sbmpc.u_m_last;
+	this->chi_m_last = o_sbmpc.chi_m_last;
+
+	this->min_cost = o_sbmpc.min_cost;
+
+	this->dpar_low = o_sbmpc.dpar_low;
+	this->dpar_high = o_sbmpc.dpar_high;
+	this->ipar_low = o_sbmpc.ipar_low;
+	this->ipar_high = o_sbmpc.ipar_high;
+
+	this->prediction_method = o_sbmpc.prediction_method;
+	this->guidance_method = o_sbmpc.guidance_method;
+
+	this->T = o_sbmpc.T; this->T_static = o_sbmpc.T_static;
+	this->dt = o_sbmpc.dt; 
+	this->p_step = o_sbmpc.p_step;
+	this->t_ts = o_sbmpc.t_ts;
+	
+	this->d_safe = o_sbmpc.d_safe; this->d_close = o_sbmpc.d_close; this->d_init = o_sbmpc.d_init;
+	
+	this->K_coll = o_sbmpc.K_coll;
+
+	this->phi_AH = o_sbmpc.phi_AH; this->phi_OT = o_sbmpc.phi_OT; this->phi_HO = o_sbmpc.phi_HO; this->phi_CR = o_sbmpc.phi_CR;
+
+	this->kappa = o_sbmpc.kappa; this->kappa_TC = o_sbmpc.kappa_TC;
+
+	this->K_u = o_sbmpc.K_u; this->K_du = o_sbmpc.K_du;
+
+	this->K_chi_strb = o_sbmpc.K_chi_strb; this->K_dchi_strb = o_sbmpc.K_dchi_strb;
+	this->K_chi_port = o_sbmpc.K_chi_port; this->K_dchi_port = o_sbmpc.K_dchi_port;
+
+	this->K_sgn = o_sbmpc.K_sgn; this->T_sgn = o_sbmpc.T_sgn;
+	
+	this->G = o_sbmpc.G;
+
+	this->q = o_sbmpc.q; this->p = o_sbmpc.p;
+
+	this->obstacle_colav_on = o_sbmpc.obstacle_colav_on;
+
+	this->ownship = new Obstacle_Ship(*(o_sbmpc.ownship));
+
+	this->trajectory = o_sbmpc.trajectory;
+
+	this->n_obst = o_sbmpc.n_obst;
+
+	AH_0 = new bool[n_obst]; S_TC_0 = new bool[n_obst]; S_i_TC_0 = new bool[n_obst];
+	O_TC_0 = new bool[n_obst]; Q_TC_0 = new bool[n_obst]; IP_0 = new bool[n_obst];
+	H_TC_0 = new bool[n_obst]; X_TC_0 = new bool[n_obst];
+
+	for (int i = 0; i < n_obst; i++)
+	{
+		AH_0[i] = o_sbmpc.AH_0[i]; 
+		S_TC_0[i] = o_sbmpc.S_TC_0[i];
+		S_i_TC_0[i] = o_sbmpc.S_i_TC_0[i]; 
+		O_TC_0[i] = o_sbmpc.O_TC_0[i];
+		Q_TC_0[i] = o_sbmpc.Q_TC_0[i]; 
+		IP_0[i] = o_sbmpc.IP_0[i];
+		H_TC_0[i] = o_sbmpc.H_TC_0[i]; 
+		X_TC_0[i] = o_sbmpc.X_TC_0[i];
+
+		old_obstacles[i] = Prediction_Obstacle(o_sbmpc.old_obstacles[i]);
+		new_obstacles[i] = Prediction_Obstacle(o_sbmpc.new_obstacles[i]);
+	}
+}
+
 /****************************************************************************************
 *  Name     : assign_obstacle_vector
 *  Function : 

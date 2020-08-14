@@ -53,6 +53,8 @@ protected:
 	Eigen::Vector4d xs_0;
 	Eigen::Matrix4d P_0;
 
+	__host__ __device__ void assign_data(const Obstacle &o);
+
 public:
 
 	__host__ __device__ Obstacle() {};
@@ -61,7 +63,7 @@ public:
 
 	__host__ __device__ Obstacle(const Obstacle &o); 
 
-	__host__ __device__ Obstacle& operator=(const Obstacle &o);
+	__host__ __device__ Obstacle& operator=(const Obstacle &rhs);
 
 	__host__ __device__ int get_ID() const { return ID; };
 

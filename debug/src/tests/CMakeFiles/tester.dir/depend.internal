@@ -3,6 +3,7 @@
 
 src/tests/CMakeFiles/tester.dir/test_cmatrix.cpp.o
  ../libs/psbmpc_lib_gpu/include/cmatrix.cuh
+ ../libs/psbmpc_lib_gpu/include/kf.h
  ../libs/third_party_libs/Eigen/Cholesky
  ../libs/third_party_libs/Eigen/Core
  ../libs/third_party_libs/Eigen/Dense

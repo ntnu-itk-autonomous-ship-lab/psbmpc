@@ -35,55 +35,17 @@
 __host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
 	const Cuda_Obstacle &co 													// In: Obstacle to copy
 	) : 
-	Obstacle(co),
-	n_ps(co.ps_weights.size()),
-	Pr_a(co.Pr_a), 
-	Pr_CC(co.Pr_CC),
-	duration_tracked(co.duration_tracked), duration_lost(co.duration_lost),
-	P_p(co.P_p), 
-	v_p(co.v_p),
-	ps_course_changes(co.ps_course_changes), ps_weights(co.ps_weights), ps_maneuver_times(co.ps_maneuver_times),
-	kf(new KF(*(co.kf))), 
-	mrou(new MROU(*(co.mrou))),
-	sbmpc(new Obstacle_SBMPC(*(co.sbmpc)))
+	Obstacle(co)
 {
-	mu = new bool[n_ps];
-	xs_p = new Eigen::MatrixXd[n_ps];
-	ps_ordering = new Intention[n_ps];
-
-	for (int ps = 0; ps < n_ps; ps++)
-	{
-		mu[ps] = co.mu[ps];
-		xs_p[ps] = co.xs_p[ps];
-		ps_ordering[ps] = co.ps_ordering[ps];
-	}
+	assign_data(co);
 }
 
 __host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
 	const Tracked_Obstacle &to 													// In: Obstacle to copy
 	) : 
-	Obstacle(to),
-	n_ps(to.ps_weights.size()),
-	Pr_a(to.Pr_a), 
-	Pr_CC(to.Pr_CC),
-	duration_tracked(to.duration_tracked), duration_lost(to.duration_lost),
-	P_p(to.P_p), 
-	v_p(to.v_p),
-	ps_course_changes(to.ps_course_changes), ps_weights(to.ps_weights), ps_maneuver_times(to.ps_maneuver_times),
-	kf(new KF(*(to.kf))), 
-	mrou(new MROU(*(to.mrou))),
-	sbmpc(new Obstacle_SBMPC())
+	Obstacle(to)
 {
-	mu = new bool[n_ps];
-	xs_p = new Eigen::MatrixXd[n_ps];
-	ps_ordering = new Intention[n_ps];
-
-	for (int ps = 0; ps < n_ps; ps++)
-	{
-		mu[ps] = to.mu[ps];
-		xs_p[ps] = to.xs_p[ps];
-		ps_ordering[ps] = to.ps_ordering[ps];
-	}
+	assign_data(to);
 }
 
 /****************************************************************************************
@@ -111,7 +73,9 @@ __host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 	
 	clean();
 
-	return *this = Cuda_Obstacle(rhs);
+	assign_data(rhs);
+
+	return *this;
 }
 
 __host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
@@ -120,7 +84,9 @@ __host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 {	
 	clean();
 
-	return *this = Cuda_Obstacle(rhs);
+	assign_data(rhs);
+
+	return *this;
 }
 
 /****************************************************************************************
@@ -131,10 +97,89 @@ __host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 *****************************************************************************************/
 __host__ __device__ void Cuda_Obstacle::clean()
 {
-	delete[] mu;
-	delete[] xs_p;
-	delete[] ps_ordering;
-	delete kf;
-	delete mrou;
-	delete sbmpc;
+	if (mu != nullptr)	 		{ delete[] mu; mu = nullptr; }
+	if (xs_p != nullptr) 		{ delete[] xs_p; xs_p = nullptr; }
+	if (ps_ordering != nullptr) { delete[] ps_ordering; ps_ordering = nullptr; }
+	if (kf != nullptr) 			{ delete kf; kf = nullptr; }
+	if (mrou != nullptr) 		{ delete mrou; mrou = nullptr; }
+	if (sbmpc != nullptr) 		{ delete sbmpc; sbmpc = nullptr; }
+}
+
+/****************************************************************************************
+*  Private functions
+*****************************************************************************************/
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void Cuda_Obstacle::assign_data(
+	const Cuda_Obstacle &co 												// In: Cuda_Obstacle whose data to assign to *this
+	)
+{
+	this->n_ps = co.ps_weights.size();
+
+	this->Pr_a = co.Pr_a;
+
+	this->Pr_CC = co.Pr_CC;
+
+	this->duration_tracked = co.duration_tracked; this->duration_lost = co.duration_lost;
+	
+	this->P_p = co.P_p;
+	this->v_p = co.v_p;
+
+	this->ps_course_changes = co.ps_course_changes; this->ps_weights = co.ps_weights; this->ps_maneuver_times = co.ps_maneuver_times;
+	
+	this->kf = new KF(*(co.kf));
+
+	this->mrou = new MROU(*(co.mrou));
+
+	this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
+	
+	this->mu = new bool[n_ps];
+	this->xs_p = new Eigen::MatrixXd[n_ps];
+	this->ps_ordering = new Intention[n_ps];
+
+	for (int ps = 0; ps < n_ps; ps++)
+	{
+		this->mu[ps] = co.mu[ps];
+		this->xs_p[ps] = co.xs_p[ps];
+		this->ps_ordering[ps] = co.ps_ordering[ps];
+	}
+}
+
+void Cuda_Obstacle::assign_data(
+	const Tracked_Obstacle &to 												// In: Tracked_Obstacle whose data to assign to *this
+	)
+{
+	this->n_ps = to.ps_weights.size();
+
+	this->Pr_a = to.Pr_a;
+
+	this->Pr_CC = to.Pr_CC;
+
+	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
+	
+	this->P_p = to.P_p;
+	this->v_p = to.v_p;
+
+	this->ps_course_changes = to.ps_course_changes; this->ps_weights = to.ps_weights; this->ps_maneuver_times = to.ps_maneuver_times;
+	
+	this->kf = new KF(*(to.kf));
+
+	this->mrou = new MROU(*(to.mrou));
+
+	this->sbmpc = new Obstacle_SBMPC();
+	
+	this->mu = new bool[n_ps];
+	this->xs_p = new Eigen::MatrixXd[n_ps];
+	this->ps_ordering = new Intention[n_ps];
+
+	for (int ps = 0; ps < n_ps; ps++)
+	{
+		this->mu[ps] = to.mu[ps];
+		this->xs_p[ps] = to.xs_p[ps];
+		this->ps_ordering[ps] = to.ps_ordering[ps];
+	}
 }

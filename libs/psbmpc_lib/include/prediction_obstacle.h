@@ -33,10 +33,12 @@ class Prediction_Obstacle : public Obstacle
 {
 private:
 
-	Eigen::Matrix4d A;
+	Eigen::Matrix4d A_CV;
 
 	// Predicted state trajectory
 	Eigen::MatrixXd xs_p;
+
+	void assign_data(const Prediction_Obstacle &po);
 	
 public:
 
@@ -52,7 +54,7 @@ public:
 
 	Prediction_Obstacle(const Prediction_Obstacle &po);
 
-	Prediction_Obstacle& operator=(const Prediction_Obstacle &po);
+	Prediction_Obstacle& operator=(const Prediction_Obstacle &rhs);
 
 	Eigen::Vector4d get_state() const { return xs_0; };
 

@@ -12,6 +12,10 @@ thrust/device_vector.h
 assert.h
 -
 
+../libs/psbmpc_lib_gpu/include/kf.h
+Eigen/Dense
+../libs/psbmpc_lib_gpu/include/Eigen/Dense
+
 ../libs/third_party_libs/Eigen/Cholesky
 Core
 ../libs/third_party_libs/Eigen/Core
@@ -1061,6 +1065,8 @@ lapacke_mangling.h
 /home/trymte/Desktop/cybercolav_cxx/src/tests/test_cmatrix.cpp
 cmatrix.cuh
 /home/trymte/Desktop/cybercolav_cxx/src/tests/cmatrix.cuh
+kf.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/kf.h
 iostream
 -
 vector

@@ -1,2 +1,2 @@
-/usr/bin/ar qc libpsbmpc_lib_gpu.a  CMakeFiles/psbmpc_lib_gpu.dir/src/utilities.cpp.o
+/usr/bin/ar qc libpsbmpc_lib_gpu.a  CMakeFiles/psbmpc_lib_gpu.dir/src/kf.cpp.o CMakeFiles/psbmpc_lib_gpu.dir/src/mrou.cpp.o CMakeFiles/psbmpc_lib_gpu.dir/src/utilities.cpp.o
 /usr/bin/ranlib libpsbmpc_lib_gpu.a
