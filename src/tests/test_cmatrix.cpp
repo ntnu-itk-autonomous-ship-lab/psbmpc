@@ -191,7 +191,8 @@ int main()
 	//================================================================================
 	// Operator tests
 	//================================================================================
-	CMatrix<double> A(3, 3), B(3, 3), C;
+	n_rows = 4; n_cols = 4;
+	CMatrix<double> A(n_rows, n_cols), B(n_rows, n_cols), C;
 
 	C = A + B; 
 	std::cout << C << std::endl;
@@ -206,7 +207,9 @@ int main()
 	// Quadratic form calculation test
 	//================================================================================
 	n_rows = 10; n_cols = 10;
-	CMatrix<double> x(n_rows, 1), A(n_rows, n_cols);
+	CMatrix<double> x(n_rows, 1);
+	A.resize(n_rows, n_cols);
+	CMatrix<double> res;
 	double qf;
 	for (size_t i = 0; i < n_rows; i++)
 	{
@@ -221,7 +224,7 @@ int main()
 		}
 	}
 
-	qf = (x.transpose() * A.inverse() * x); 
+	res = x.transpose() * A.inverse() * x; 
 	
 	return 0;
 }
