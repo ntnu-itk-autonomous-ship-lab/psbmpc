@@ -14,9 +14,9 @@ add_library(psbmpc_lib_gpu STATIC
 #	src/cuda_obstacle.cu
 #	src/prediction_obstacle.cu
 #	src/ownship.cu 
-#	src/cpe.cpp 
-#	src/kf.cpp  
-#	src/mrou.cpp 
+#	src/cpe.cu
+	src/kf.cpp  
+	src/mrou.cpp 
 	src/utilities.cpp
 )
 

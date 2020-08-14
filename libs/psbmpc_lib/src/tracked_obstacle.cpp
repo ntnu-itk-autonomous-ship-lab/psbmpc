@@ -77,20 +77,29 @@ Tracked_Obstacle::Tracked_Obstacle(
 Tracked_Obstacle::Tracked_Obstacle(
 	const Tracked_Obstacle &to 													// In: Tracked obstacle to copy
 	) : 
-	Obstacle(to),
-	Pr_a(to.Pr_a), 
-	Pr_CC(to.Pr_CC),
-	duration_tracked(to.duration_tracked), duration_lost(to.duration_lost),
-	mu(to.mu),
-	P_p(to.P_p), 
-	xs_p(to.xs_p),
-	v_p(to.v_p),
-	ps_ordering(to.ps_ordering),
-	ps_course_changes(to.ps_course_changes), ps_weights(to.ps_weights), ps_maneuver_times(to.ps_maneuver_times),
-	kf(new KF(*(to.kf))), 
-	mrou(new MROU(*(to.mrou)))
+	Obstacle(to)
 {
+	assign_data(to);
+}
 
+/****************************************************************************************
+*  Name     : operator=
+*  Function : Assignment operator to prevent shallow assignments and bad pointer management
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+Tracked_Obstacle& Tracked_Obstacle::operator=(
+	const Tracked_Obstacle &rhs 										// In: Rhs tracked obstacle to assign
+	)
+{
+	if (this == &rhs)
+	{
+		return *this;
+	}
+
+	assign_data(rhs);
+
+	return *this;
 }
 
 /****************************************************************************************
@@ -308,4 +317,36 @@ void Tracked_Obstacle::update(
 	
 	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}
 	else 			{ this->Pr_CC = Pr_CC; }
+}
+
+/****************************************************************************************
+*  Private functions
+*****************************************************************************************/
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void Tracked_Obstacle::assign_data(
+	const Tracked_Obstacle &to 												// In: Tracked_Obstacle whose data to assign to *this
+	)
+{
+	this->Pr_a = to.Pr_a; 
+
+	this->Pr_CC = to.Pr_CC;
+
+	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
+	
+	this->mu = to.mu;
+
+	this->P_p = to.P_p;
+	this->xs_p = to.xs_p;
+	this->v_p = to.v_p;
+
+	this->ps_ordering = to.ps_ordering;
+	this->ps_course_changes = to.ps_course_changes; this->ps_weights = to.ps_weights; this->ps_maneuver_times = to.ps_maneuver_times;
+
+	this->kf.reset(new KF(*(to.kf)));
+	this->mrou.reset(new MROU(*(to.mrou)));
 }

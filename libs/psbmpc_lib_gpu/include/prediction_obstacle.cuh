@@ -33,10 +33,12 @@ class Prediction_Obstacle : public Obstacle
 {
 private:
 
-	Eigen::Matrix4d A;
+	Eigen::Matrix4d A_CV;
 
 	// Predicted state trajectory
 	Eigen::MatrixXd xs_p;
+
+	__host__ __device__ void assign_data(const Prediction_Obstacle &po);
 	
 public:
 
@@ -55,6 +57,8 @@ public:
 	__host__ __device__ ~Prediction_Obstacle();
 
 	__host__ __device__ Prediction_Obstacle& operator=(const Prediction_Obstacle &po);
+
+	__host__ __device__ void clean() { if (sbmpc != nullptr) { delete sbmpc; sbmpc = nullptr;}}
 
 	__host__ __device__ Eigen::Vector4d get_state() const { return xs_0; };
 

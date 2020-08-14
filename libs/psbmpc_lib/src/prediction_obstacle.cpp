@@ -20,7 +20,6 @@
 *
 *****************************************************************************************/
 
-
 #include "prediction_obstacle.h"
 #include "obstacle_sbmpc.h"
 #include "utilities.h"
@@ -44,7 +43,7 @@ Prediction_Obstacle::Prediction_Obstacle(
 {
 	int n_samples = std::round(T / dt);
 	
-	A << 1, 0, dt, 0,
+	A_CV << 1, 0, dt, 0,
 		 0, 1, 0, dt,
 		 0, 0, 1, 0,
 		 0, 0, 0, 1;
@@ -62,11 +61,9 @@ Prediction_Obstacle::Prediction_Obstacle(
 Prediction_Obstacle::Prediction_Obstacle(
 	const Prediction_Obstacle &po 												// In: Prediction obstacle to copy
 	) :
-	Obstacle(po),
-	A(po.A), 
-	xs_p(po.xs_p)
+	Obstacle(po)
 {
-	this->sbmpc.reset(new Obstacle_SBMPC(*(po.sbmpc)));
+	assign_data(po);
 }
 
 /****************************************************************************************
@@ -76,15 +73,17 @@ Prediction_Obstacle::Prediction_Obstacle(
 *  Modified :
 *****************************************************************************************/
 Prediction_Obstacle& Prediction_Obstacle::operator=(
-	const Prediction_Obstacle &po 										// In: Rhs prediction obstacle to assign
+	const Prediction_Obstacle &rhs 										// In: Rhs prediction obstacle to assign
 	)
 {
-	if (this == &po)
+	if (this == &rhs)
 	{
 		return *this;
 	}
 
-	return *this = Prediction_Obstacle(po);
+	assign_data(rhs);
+
+	return *this;
 }
 
 /****************************************************************************************
@@ -103,7 +102,7 @@ void Prediction_Obstacle::predict_independent_trajectory(
 	xs_p.resize(4, n_samples);
 	xs_p.col(0) = xs_0;
 
-	A << 1, 0, dt, 0,
+	A_CV << 1, 0, dt, 0,
 		 0, 1, 0, dt,
 		 0, 0, 1, 0,
 		 0, 0, 0, 1;
@@ -112,7 +111,7 @@ void Prediction_Obstacle::predict_independent_trajectory(
 	{
 		if (k < n_samples - 1) 
 		{
-			xs_p.col(k + 1) = A * xs_p.col(k);
+			xs_p.col(k + 1) = A_CV * xs_p.col(k);
 		}
 	}
 }
@@ -133,4 +132,24 @@ void Prediction_Obstacle::update(
 	xs_0(1) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
 	xs_0(2) = xs(2);
 	xs_0(3) = xs(3);
+}
+
+/****************************************************************************************
+*  Private functions
+*****************************************************************************************/
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void Prediction_Obstacle::assign_data(
+	const Prediction_Obstacle &po 													// In: Prediction_Obstacle whose data to assign to *this
+	)
+{
+	this->A_CV = po.A_CV;
+
+	this->xs_p = po.xs_p;
+
+	this->sbmpc.reset(new Obstacle_SBMPC(*(po.sbmpc)));
 }

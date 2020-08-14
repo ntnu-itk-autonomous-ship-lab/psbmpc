@@ -43,7 +43,7 @@ __host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 {
 	int n_samples = std::round(T / dt);
 	
-	A << 1, 0, dt, 0,
+	A_CV << 1, 0, dt, 0,
 		 0, 1, 0, dt,
 		 0, 0, 1, 0,
 		 0, 0, 0, 1;
@@ -54,17 +54,16 @@ __host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 
 /****************************************************************************************
 *  Name     : Prediction_Obstacle
-*  Function : Copy constructor
+*  Function : Copy constructor, prevents shallow copies and bad pointer management
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 	const Prediction_Obstacle &po 								// In: Obstacle to copy
 	) : 
-	A(po.A), 
-	xs_p(po.xs_p)
+	Obstacle(po)
 {
-	sbmpc = new Obstacle_SBMPC(*(po.sbmpc));
+	assign_data(po);
 }
 
 /****************************************************************************************
@@ -75,7 +74,7 @@ __host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 *****************************************************************************************/
 __host__ __device__ Prediction_Obstacle::~Prediction_Obstacle()
 {
-	delete sbmpc;
+	clean();
 }
 
 /****************************************************************************************
@@ -85,12 +84,17 @@ __host__ __device__ Prediction_Obstacle::~Prediction_Obstacle()
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ Prediction_Obstacle& Prediction_Obstacle::operator=(
-	const Prediction_Obstacle &rhs 								 		// In: Rhs obstacle to assign
+	const Prediction_Obstacle &rhs 								 // In: Rhs obstacle to assign
 	)
 {
-	if (this == &rhs) 	{ return *this; }
-	if (sbmpc != NULL) 	{ delete sbmpc; }
-	return *this = Prediction_Obstacle(rhs);
+	if (this == &rhs) 
+	{ 
+		return *this; 
+	}
+
+	assign_data(rhs);
+
+	return *this;
 }
 
 /****************************************************************************************
@@ -109,7 +113,7 @@ __host__ __device__ void Prediction_Obstacle::predict_independent_trajectory(
 	xs_p.resize(4, n_samples);
 	xs_p.col(0) = xs_0;
 
-	A << 1, 0, dt, 0,
+	A_CV << 1, 0, dt, 0,
 		 0, 1, 0, dt,
 		 0, 0, 1, 0,
 		 0, 0, 0, 1;
@@ -118,7 +122,7 @@ __host__ __device__ void Prediction_Obstacle::predict_independent_trajectory(
 	{
 		if (k < n_samples - 1) 
 		{
-			xs_p.col(k + 1) = A * xs_p.col(k);
+			xs_p.col(k + 1) = A_CV * xs_p.col(k);
 		}
 	}
 }
@@ -139,4 +143,25 @@ __host__ __device__ void Prediction_Obstacle::update(
 	xs_0(1) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
 	xs_0(2) = xs(2);
 	xs_0(3) = xs(3);
+}
+
+/****************************************************************************************
+*  Private functions
+*****************************************************************************************/
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void Prediction_Obstacle::assign_data(
+	const Prediction_Obstacle &po 							// In: Prediction_Obstacle whose data to assign to *this
+	)
+{
+	this->A_CV = po.A_CV;
+
+	this->xs_p = po.xs_p;
+
+	clean();
+	this->sbmpc = new Obstacle_SBMPC(*(po.sbmpc));
 }

@@ -145,6 +145,60 @@ psbmpc_lib_gpu/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build
 .PHONY : psbmpc_lib_gpu/fast
 
+src/kf.o: src/kf.cpp.o
+
+.PHONY : src/kf.o
+
+# target to build an object file
+src/kf.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/kf.cpp.o
+.PHONY : src/kf.cpp.o
+
+src/kf.i: src/kf.cpp.i
+
+.PHONY : src/kf.i
+
+# target to preprocess a source file
+src/kf.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/kf.cpp.i
+.PHONY : src/kf.cpp.i
+
+src/kf.s: src/kf.cpp.s
+
+.PHONY : src/kf.s
+
+# target to generate assembly for a file
+src/kf.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/kf.cpp.s
+.PHONY : src/kf.cpp.s
+
+src/mrou.o: src/mrou.cpp.o
+
+.PHONY : src/mrou.o
+
+# target to build an object file
+src/mrou.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/mrou.cpp.o
+.PHONY : src/mrou.cpp.o
+
+src/mrou.i: src/mrou.cpp.i
+
+.PHONY : src/mrou.i
+
+# target to preprocess a source file
+src/mrou.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/mrou.cpp.i
+.PHONY : src/mrou.cpp.i
+
+src/mrou.s: src/mrou.cpp.s
+
+.PHONY : src/mrou.s
+
+# target to generate assembly for a file
+src/mrou.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/mrou.cpp.s
+.PHONY : src/mrou.cpp.s
+
 src/utilities.o: src/utilities.cpp.o
 
 .PHONY : src/utilities.o
@@ -181,6 +235,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... psbmpc_lib_gpu"
+	@echo "... src/kf.o"
+	@echo "... src/kf.i"
+	@echo "... src/kf.s"
+	@echo "... src/mrou.o"
+	@echo "... src/mrou.i"
+	@echo "... src/mrou.s"
 	@echo "... src/utilities.o"
 	@echo "... src/utilities.i"
 	@echo "... src/utilities.s"

@@ -52,6 +52,8 @@ protected:
 	Eigen::Vector4d xs_0;
 	Eigen::Matrix4d P_0;
 
+	void assign_data(const Obstacle &o);
+
 public:
 
 	Obstacle() {};
@@ -60,7 +62,7 @@ public:
 
 	Obstacle(const Obstacle &o); 
 
-	Obstacle& operator=(const Obstacle &o);
+	Obstacle& operator=(const Obstacle &rhs);
 
 	int get_ID() const { return ID; };
 

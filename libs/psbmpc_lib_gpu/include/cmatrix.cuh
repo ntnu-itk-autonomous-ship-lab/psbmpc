@@ -37,9 +37,11 @@ private:
 
 	__host__ __device__ void deallocate_data();
 
+	__host__ __device__ void assign_data(const CMatrix &other);
+
 	__host__ __device__ T calculate_determinant_recursive(const CMatrix &submatrix) const;
 
-	__host__ __device__ void calculate_minor_matrix(CMatrix &matrix, const size_t row, const size_t col) const;
+	__host__ __device__ void fill_minor_matrix(const CMatrix &original_matrix, CMatrix &minor_matrix, const size_t row, const size_t col) const;
 	
 public:
 
@@ -125,7 +127,7 @@ template <class T>
 __host__ __device__ CMatrix<T>::CMatrix(
 	const size_t n_rows 										// In: Amount of matrix rows
 	) :
-	n_rows(n_rows), n_cols(n_rows)
+	n_rows(n_rows), n_cols(n_rows), data(nullptr)
 {
 	allocate_data();
 }
@@ -135,7 +137,7 @@ __host__ __device__ CMatrix<T>::CMatrix(
 	const size_t n_rows,  										// In: Amount of matrix rows
 	const size_t n_cols 										// In: New amount of matrix columns
 	) :
-	n_rows(n_rows), n_cols(n_cols)
+	n_rows(n_rows), n_cols(n_cols), data(nullptr)
 {
 	allocate_data();
 }
@@ -144,16 +146,9 @@ template <class T>
 __host__ __device__ CMatrix<T>::CMatrix(
 	const CMatrix<T> &other 									// In: Matrix/vector to copy
 	) :
-	n_rows(other.n_rows), n_cols(other.n_cols)
+	data(nullptr)
 {
-	allocate_data();
-	for (size_t i = 0; i < n_rows; i++)
-	{
-		for (size_t j = 0; j < n_cols; j++)
-		{
-			data[i][j] = other.data[i][j];
-		}
-	}
+	assign_data(other);
 }
 
 /****************************************************************************************
@@ -184,21 +179,12 @@ __host__ __device__ CMatrix<T>& CMatrix<T>::operator=(
 	{
 		return *this;
 	}
-	deallocate_data();
+	
+	deallocate_data(); 
 
-	n_rows = rhs.n_rows; n_cols = rhs.n_cols;
-	allocate_data();
-
-	for (size_t i = 0; i < n_rows; i++)
-	{
-		for (size_t j = 0; j < n_cols; j++)
-		{
-			data[i][j] = rhs.data[i][j];
-		}
-	}
+	assign_data(rhs);
 	
 	return *this;
-	//return *this = CMatrix<T>(rhs);
 }
 
 /****************************************************************************************
@@ -486,7 +472,7 @@ __host__ __device__ T CMatrix<T>::determinant() const
     for(size_t i = 0; i < n_rows; i++)
     {
         // get minor of element (0,i)
-        calculate_minor_matrix(temp_minor, 0, i);
+        fill_minor_matrix(*this, temp_minor, 0, i);
  
         det += (i % 2 == 1 ? -1.0 : 1.0) * data[0][i] * calculate_determinant_recursive(temp_minor);
         //det += pow( -1.0, i ) * data[0][i] * calculate_determinant_recursive(temp_minor);
@@ -497,7 +483,8 @@ __host__ __device__ T CMatrix<T>::determinant() const
 
 /****************************************************************************************
 *  Name     : inverse
-*  Function : Works for square matrices only
+*  Function : Calculates the matrix inverse using the cofactor/minor method
+*			  A_inv = C^T / det(A)
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -533,18 +520,18 @@ __host__ __device__ CMatrix<T> CMatrix<T>::inverse() const
     {
         for(size_t j = 0; j < n_rows; j++)
         {
-			// Fill values for minor M_ij
-			calculate_minor_matrix(temp_minor, i, j);
+			// Fill values for minor M_ji
+			fill_minor_matrix(*this, temp_minor, j, i);
 
-			// Element ij of the inverse is the co-factor C_ij of this matrix
+			// Element ij of the inverse is the co-factor C_ji divided by the matrix determinant
 			// where C_ij = (-1)^(i + j) * |M_ij|
 			
-			result.data[i][j] = det_inv * calculate_determinant_recursive(temp_minor);
+			result.data[i][j] = ((j + i) % 2 == 1 ? (T)-1 : (T)1) * det_inv * calculate_determinant_recursive(temp_minor);
 			
-			if ((i + j) % 2 == 1)
+			/* if ((i + j) % 2 == 1)
 			{
 				result.data[i][j] = - result.data[i][j];
-			}
+			} */
         }
 	}
 	return result;
@@ -742,6 +729,31 @@ __host__ __device__ void CMatrix<T>::deallocate_data()
 }
 
 /****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ void CMatrix<T>::assign_data(
+	const CMatrix<T> &other 										// In: Matrix whose data to assign to *this;
+	)
+{
+	n_rows = other.n_rows;
+	n_cols = other.n_cols;
+
+	allocate_data();
+
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			data[i][j] = other.data[i][j];
+		}
+	}
+}
+
+/****************************************************************************************
 *  Name     : calculate_determinant_recursive
 *  Function : Private function to use when calculating the matrix determinant
 *  Author   : 
@@ -752,22 +764,23 @@ __host__ __device__ T CMatrix<T>::calculate_determinant_recursive(
 	const CMatrix<T> &submatrix 									// In: Matrix to calculate determinant of
 	) const
 {
+	T det = (T)0;
 	if (submatrix.n_rows == 1)
 	{
-		return submatrix.data[0][0];
+		det = submatrix.data[0][0];
+		return det;
 	}
 	if (submatrix.n_rows == 2)
 	{
-		return submatrix.data[0][0] * submatrix.data[1][1] - submatrix.data[0][1] * submatrix.data[1][0];
+		det = submatrix.data[0][0] * submatrix.data[1][1] - submatrix.data[0][1] * submatrix.data[1][0];
+		return det;
 	}
-
-	T det = 0;
 
 	CMatrix<T> temp_minor(submatrix.n_rows - 1);
 
 	for (size_t i = 0; i < submatrix.n_rows; i++)
 	{
-		calculate_minor_matrix(temp_minor, 0, i);
+		fill_minor_matrix(submatrix, temp_minor, 0, i);
 
 		det += (i % 2 == 1 ? (T)-1 : (T)1) * submatrix.data[0][i] * calculate_determinant_recursive(temp_minor);
         //det += pow( -1.0, i ) * submatrix[0][i] * calculate_determinant_recursive(temp_minor);
@@ -777,34 +790,35 @@ __host__ __device__ T CMatrix<T>::calculate_determinant_recursive(
 }
 
 /****************************************************************************************
-*  Name     : calculate_minor_matrix
+*  Name     : fill_minor_matrix
 *  Function : Private function to use for calculating the minor M_{row, col} for the input
 *			  based on the member data.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 template <class T>
-__host__ __device__ void CMatrix<T>::calculate_minor_matrix(
-	CMatrix<T> &matrix, 										// In/out: Matrix to fill  as the minor M_{row, col}
+__host__ __device__ void CMatrix<T>::fill_minor_matrix(
+	const CMatrix<T> &original_matrix, 							// In: Original matrix to extract the minor from, of one order higher than the minor matrix
+	CMatrix<T> &minor_matrix, 									// In/out: Matrix to fill  as the minor M_{row, col}
 	const size_t row,  											// In: Row index of minor
 	const size_t col 											// In: Column index of minor
 	) const
 {
-	assert(matrix.n_rows == matrix.n_cols);
+	assert(original_matrix.n_rows == original_matrix.n_cols);
 
 	// Indicate which col and row is being copied to the minor
     size_t col_count = 0, row_count = 0;
  
-    for(size_t i = 0; i < matrix.n_rows; i++)
+    for(size_t i = 0; i < original_matrix.n_rows; i++)
     {
         if (i != row)
         {
             col_count = 0;
-            for(size_t j = 0; j < matrix.n_rows; j++ )
+            for(size_t j = 0; j < original_matrix.n_rows; j++ )
             {
                 if (j != col)
                 {
-					matrix.data[row_count][col_count] = data[i][j];
+					minor_matrix.data[row_count][col_count] = original_matrix.data[i][j];
 					
                     col_count++;
                 }
@@ -812,6 +826,11 @@ __host__ __device__ void CMatrix<T>::calculate_minor_matrix(
             row_count++;
         }
     }
+/* 	if (minor_matrix.n_rows > 2)
+	{
+		std::cout << "Minor matrix = " << std::endl;
+		std::cout << minor_matrix << std::endl;
+	} */
 }
 
 #endif

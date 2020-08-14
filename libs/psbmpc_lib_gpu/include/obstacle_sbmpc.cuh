@@ -79,6 +79,8 @@ private:
 	Prediction_Obstacle *old_obstacles;
 	Prediction_Obstacle *new_obstacles;
 
+	__host__ __device__ void assign_data(const Obstacle_SBMPC &o_sbmpc);
+
 	__host__ __device__ void assign_obstacle_vector(Prediction_Obstacle *lhs, Prediction_Obstacle *rhs, const int size);
 
 	__host__ __device__ void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
