@@ -683,7 +683,7 @@ void PSBMPC::initialize_pars()
 }
 
 /****************************************************************************************
-*  Name     : initialize_predictions
+*  Name     : initialize_prediction
 *  Function : Sets up the own-ship maneuvering times and number of prediction scenarios 
 *			  for each obstacle based on the current situation
 *  Author   : Trym Tengesdal
