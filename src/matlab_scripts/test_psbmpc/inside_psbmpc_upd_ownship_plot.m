@@ -1,7 +1,5 @@
 delete(h_X); delete(h_safe); delete(h_X_ptch); 
 
-[~, n_samples] = size(X);
-
 boat_dim_l = rotMatrx2D(X(3, k))*boat_dim;
 h_X = plot(ax1, X(2, 1:k), X(1, 1:k),'k', 'Linewidth', 1.6);
 
@@ -12,7 +10,7 @@ h_X_ptch = patch(ax1, X(2, k)+boat_dim_l(2,:),X(1, k)+boat_dim_l(1,:),'k', 'Line
 
 for s = 1 : 100 : n_samples
     delete(h_X_text_s{s}); delete(h_safe_s{s}); delete(h_X_s{s});
-    h_X_text_s{s} = text(ax1, X(2, s) - 70, X(1, s) + 20, ['OS, t=', num2str((s-1) * 0.5)]);
+    h_X_text_s{s} = text(ax1, X(2, s) - 70, X(1, s) + 20, ['OS, t=', num2str((s-1) * dt_sim)]);
     
     boat_dim_s = rotMatrx2D(X(3, s))*boat_dim;
     h_X_s{s} = patch(ax1, X(2, s)+boat_dim_s(2,:),X(1, s)+boat_dim_s(1,:),'k', 'Linewidth', 1.6);

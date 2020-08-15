@@ -378,12 +378,12 @@ void Obstacle_SBMPC::assign_data(
 	this->H_TC_0 = o_sbmpc.H_TC_0; this->X_TC_0 = o_sbmpc.X_TC_0;
 
 	old_obstacles.resize(old_obstacles.size());
-	for (int i = 0; i < old_obstacles.size(); i++)
+	for (size_t i = 0; i < old_obstacles.size(); i++)
 	{
 		old_obstacles[i].reset(new Prediction_Obstacle(*(old_obstacles[i])));
 	}
 	new_obstacles.resize(new_obstacles.size());
-	for (int i = 0; i < new_obstacles.size(); i++)
+	for (size_t i = 0; i < new_obstacles.size(); i++)
 	{
 		new_obstacles[i].reset(new Prediction_Obstacle(*(new_obstacles[i])));
 	}
@@ -650,7 +650,7 @@ bool Obstacle_SBMPC::determine_colav_active(
 	Eigen::Vector4d xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
-	for (int i = 0; i < new_obstacles.size(); i++)
+	for (size_t i = 0; i < new_obstacles.size(); i++)
 	{
 		d_0i(0) = new_obstacles[i]->get_state()(0) - xs(0);
 		d_0i(1) = new_obstacles[i]->get_state()(1) - xs(1);
@@ -1095,7 +1095,7 @@ void Obstacle_SBMPC::update_obstacles(
 	// Clear old obstacle vector, which includes transferred obstacles and terminated obstacles
 	// Then set equal to the new obstacle vector
 	old_obstacles.resize(new_obstacles.size());
-	for (int i = 0; i < new_obstacles.size(); i++)
+	for (size_t i = 0; i < new_obstacles.size(); i++)
 	{
 		old_obstacles[i].reset(new Prediction_Obstacle(*(new_obstacles[i])));
 	}

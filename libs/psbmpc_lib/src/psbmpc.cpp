@@ -205,7 +205,7 @@ void PSBMPC::set_par(
 	const std::vector<Eigen::VectorXd> &value 								// In: Value to set for parameter
 	)
 {
-	if (value.size() == n_M)
+	if (value.size() == (size_t)n_M)
 	{
 		switch (index){
 			case i_mpar_u_offsets : 
@@ -297,12 +297,11 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Engine *ep = engOpen(NULL);
+	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[1000000 + 1]; 
  	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
@@ -317,7 +316,8 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_static_obst(p_static_obst_mx, 4, n_static_obst);
 	map_static_obst = static_obstacles;
 
-	mxArray *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx, *n_static_obst_mx;
+	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx, *n_static_obst_mx;
+	dt_sim = mxCreateDoubleScalar(dt);
 	T_sim = mxCreateDoubleScalar(T);
 	n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
@@ -327,6 +327,7 @@ void PSBMPC::calculate_optimal_offsets(
 	engPutVariable(ep, "n_ps", n_ps_mx);
 	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
+	engPutVariable(ep, "dt_sim", dt_sim);
 	engPutVariable(ep, "T_sim", T_sim);
 	engPutVariable(ep, "WPs", wps_os);
 	engEvalString(ep, "inside_psbmpc_init_plot");
@@ -365,7 +366,7 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	} */
+	}
 	
 	//===============================================================================================================
 	double cost;
@@ -393,7 +394,7 @@ void PSBMPC::calculate_optimal_offsets(
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
-/* 			p_P_c_i = mxGetPr(P_c_i_mx[i]);
+			p_P_c_i = mxGetPr(P_c_i_mx[i]);
 			Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 			map_P_c = P_c_i;
 
@@ -406,7 +407,7 @@ void PSBMPC::calculate_optimal_offsets(
 				ps_mx = mxCreateDoubleScalar(ps + 1);
 				engPutVariable(ep, "ps", ps_mx);
 				engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-			} */
+			}
 			//===============================================================================================================
 		}
 
@@ -437,14 +438,14 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
 		engPutVariable(ep, "k", k_s);
 
 		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
+		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
 		//===============================================================================================================
 	}
 
@@ -469,7 +470,7 @@ void PSBMPC::calculate_optimal_offsets(
 	colav_status.resize(2,1);
 	colav_status << CF_0, min_cost;
 
-	/* engClose(ep);  */
+	engClose(ep); 
 }
 
 /****************************************************************************************
@@ -1098,7 +1099,7 @@ bool PSBMPC::determine_colav_active(
 	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
-	for (int i = 0; i < new_obstacles.size(); i++)
+	for (size_t i = 0; i < new_obstacles.size(); i++)
 	{
 		d_0i(0) = new_obstacles[i]->kf->get_state()(0) - xs(0);
 		d_0i(1) = new_obstacles[i]->kf->get_state()(1) - xs(1);
@@ -1369,49 +1370,19 @@ void PSBMPC::calculate_collision_probabilities(
 	const int i 											// In: Index of obstacle
 	)
 {
-	int n_samples = trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i]->get_trajectory_covariance();
 	std::vector<Eigen::MatrixXd> xs_i_p = new_obstacles[i]->get_trajectories();
 
 	// Increase safety zone by half the max obstacle dimension and ownship length
-	double d_safe_i = d_safe + 0.5 * (ownship->get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width()));
+	double d_safe_i = d_safe + 0.5 * (ownship->get_length() + new_obstacles[i]->get_length());
 
-	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / dt) + 1, k_j_(0), k_j(0);
-	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
+	// Non-optimal temporary row-vector storage solution
+	Eigen::Matrix<double, 1, -1> P_c_i_row(P_i_p.cols());
 	for (int ps = 0; ps < n_ps[i]; ps++)
-	{	
-		cpe->initialize(trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
-		switch(cpe_method)
-		{
-			case CE :	
-				for (int k = 0; k < n_samples; k++)
-				{
-					P_c_i(ps, k) = cpe->estimate(trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
-				}
-				//save_matrix_to_file(P_c_i);
-				break;
-			case MCSKF4D :
-				k_j_ = 0; k_j = 0;
-				for (int k = 0; k < n_samples; k++)
-				{
-					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
-					{
-						k_j_ = k_j; k_j = k;
-						xs_os_seg = trajectory.block(0, k_j_, 6, n_seg_samples);
-						xs_i_seg = xs_i_p[ps].block(0, k_j_, 4, n_seg_samples);
+	{
+		cpe->estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, i, dt);
 
-						P_i_seg = P_i_p.block(0, k_j_, 16, n_seg_samples);
-
-						P_c_i(ps, k_j_) = cpe->estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
-						// Collision probability on this active segment are all equal
-						P_c_i.block(ps, k_j_, 1, n_seg_samples) = P_c_i(ps, k_j_) * Eigen::MatrixXd::Ones(1, k_j - k_j_ + 1);
-					}	
-				}
-				break;
-			default :
-				// Throw
-				break;
-		}
+		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
 	}		
 }
 
@@ -1478,7 +1449,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			d_0i_p = L_0i_p.norm();
 
 			// Decrease the distance between the vessels by their respective max dimension
-			d_0i_p = d_0i_p - 0.5 * (ownship->get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width())); 
+			d_0i_p = d_0i_p - 0.5 * (ownship->get_length() + new_obstacles[i]->get_length()); 
 
 			L_0i_p = L_0i_p.normalized();
 
@@ -1950,7 +1921,7 @@ void PSBMPC::update_obstacles(
 	// whereas an obstacle that is out of COLAV-target range may re-enter range with the same id.
 	if (obstacle_filter_on)
 	{
-		for (int j = 0; j < old_obstacles.size(); j++)
+		for (size_t j = 0; j < old_obstacles.size(); j++)
 		{
 			old_obstacles[j]->increment_duration_lost(dt * p_step);
 
@@ -1966,7 +1937,7 @@ void PSBMPC::update_obstacles(
 	// Clear old obstacle vector, which consist of transferred (nullptr) and terminated obstacles
 	// Then set equal to the new obstacle vector
 	old_obstacles.resize(new_obstacles.size());
-	for (int i = 0; i < new_obstacles.size(); i++)
+	for (size_t i = 0; i < new_obstacles.size(); i++)
 	{
 		old_obstacles[i].reset(new Tracked_Obstacle(*(new_obstacles[i])));
 	}
@@ -2059,7 +2030,7 @@ void PSBMPC::update_situation_type_and_transitional_variables()
 		d_AB = L_AB.norm();
 
 		// Decrease the distance between the vessels by their respective max dimension
-		d_AB = d_AB - 0.5 * (ownship->get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width())); 
+		d_AB = d_AB - 0.5 * (ownship->get_length() + new_obstacles[i]->get_length()); 
 		
 		L_AB = L_AB.normalized();
 
