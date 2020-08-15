@@ -10,7 +10,9 @@ ax2 = axes(fig, 'Position',[0.72 0.55 0.26 0.35]);
 
 
 %ylimits_d = [0 500];
+n_samples = round(T_sim / dt_sim);
 tlim = [0 T_sim];
+t_vec = 0 : dt_sim : (n_samples - 1) * dt_sim;
 ylim(ax2, [-0.05 1.05]); %xlim(ax2, tlim);
 
 Lx = 0.02*ylimits_ne(2);
@@ -22,7 +24,7 @@ hold(ax1, 'on'); hold(ax2, 'on');
 grid(ax1, 'on'); grid(ax2, 'on'); 
 
 ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]'); 
-ylabel(ax2,'Probability');  xlabel(ax1,'Sample'); 
+ylabel(ax2,'Probability');  xlabel(ax2,'Sample'); 
 
 th = 0 : 0.01 : 2.01 * pi;
 x_cs = cos(th); y_cs = sin(th);
@@ -35,12 +37,9 @@ h_X = []; h_X_p = [];
 h_X_ptch = [];
 h_safe = []; 
 
-
-
-% 100 is a safe max number of plot points.
-h_X_text_s = cell(100, 1); h_X_s = cell(100, 1);
-h_safe_s = cell(100,1);
-for s = 1 : 1000
+h_X_text_s = cell(n_samples, 1); h_X_s = cell(n_samples, 1);
+h_safe_s = cell(n_samples,1);
+for s = 1 : n_samples
     h_X_text_s{s, 1} = [];
     h_safe_s{s, 1} = [];
     h_X_s{s, 1} = [];
