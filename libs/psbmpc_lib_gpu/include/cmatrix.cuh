@@ -78,7 +78,11 @@ public:
 
 	__host__ __device__ T& operator()(const size_t row, const size_t col) const { return data[row][col]; }
 
-	__host__ __device__ CMatrix transpose() const;
+	__host__ __device__ T& operator()(const size_t index) const;
+
+	__host__ __device__ void transpose();
+
+	__host__ __device__ CMatrix transposed() const;
 
 	__host__ __device__ T determinant() const;
 
@@ -86,7 +90,19 @@ public:
 
 	__host__ __device__ T dot(const CMatrix &other) const;
 
-	__host__ __device__ CMatrix block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
+	__host__ __device__ void normalize();
+
+	__host__ __device__ CMatrix normalized() const;
+
+	__host__ __device__ T vec_norm() const;
+
+	__host__ __device__ CMatrix& block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
+
+	__host__ __device__ void set_zero();
+
+	__host__ __device__ void set_ones();
+
+	__host__ __device__ void set_all_coeffs(const T coeff);
 
 	__host__ __device__ size_t get_rows() const { return n_rows; }
 
@@ -424,16 +440,59 @@ __host__ __device__ bool CMatrix<T>::operator==(
 }
 
 /****************************************************************************************
+*  Name     : operator()
+*  Function : Fetches vector element reference
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ T& CMatrix<T>::operator()(
+	const size_t index 										// In: Index of element to fetch
+	) const
+{
+	assert(n_rows == 1 || n_cols == 1);
+
+	if (n_rows == 1)
+	{
+		return data[0][index];
+	} 
+	else
+	{
+		return data[index][0];
+	}
+	
+}
+
+/****************************************************************************************
 *  Name     : transpose
 *  Function : 
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 template <class T>
-__host__ __device__ CMatrix<T> CMatrix<T>::transpose() const
+__host__ __device__ void CMatrix<T>::transpose()
 {
 	CMatrix<T> result(n_cols, n_rows);
+	for (size_t i = 0; i < n_cols; i++)
+	{
+		for (size_t j = 0; j < n_rows ; j++)
+		{
+			result.data[i][j] = this->data[j][i];
+		}
+	}
+	*this = result;
+}
 
+/****************************************************************************************
+*  Name     : transpose
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::transposed() const
+{
+	CMatrix<T> result(n_cols, n_rows);
 	for (size_t i = 0; i < n_cols; i++)
 	{
 		for (size_t j = 0; j < n_rows ; j++)
@@ -570,6 +629,60 @@ __host__ __device__ T CMatrix<T>::dot(
 }
 
 /****************************************************************************************
+*  Name     : normalize
+*  Function : Returns the normalized matrix/vector
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ void CMatrix<T>::normalize()
+{
+
+}
+
+/****************************************************************************************
+*  Name     : normalized
+*  Function : Returns the normalized matrix/vector
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::normalized() const
+{
+	
+}
+
+/****************************************************************************************
+*  Name     : vec_norm
+*  Function : Returns the euclidian norm of this special case vector object
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ T CMatrix<T>::vec_norm() const
+{
+	assert(n_rows == 1 || n_cols == 1);
+
+	T norm = (T)0;
+	if (n_rows == 1)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			norm += data[0][j] * data[0][j];
+		}
+	} 
+	else
+	{
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			norm += data[i][0] * data[i][0];
+		}
+	}
+	norm = (T)sqrt(norm);
+	return norm;
+}
+
+/****************************************************************************************
 *  Name     : block
 *  Function : returns the n_rows x n_cols block of this object, with upper left reference
 *			  index (start_row, start_col).
@@ -577,7 +690,7 @@ __host__ __device__ T CMatrix<T>::dot(
 *  Modified :
 *****************************************************************************************/
 template <class T>
-__host__ __device__ CMatrix<T> CMatrix<T>::block(
+__host__ __device__ CMatrix<T>& CMatrix<T>::block(
 	const size_t start_row, 									// In: Start row of matrix block
 	const size_t start_col, 									// In: Start column of matrix block
 	const size_t n_rows,  										// In: New amount of rows
@@ -596,6 +709,60 @@ __host__ __device__ CMatrix<T> CMatrix<T>::block(
 		}
 	}
 	return result;
+}
+
+/****************************************************************************************
+*  Name     : set_zero
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ void CMatrix<T>::set_zero()
+{
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			data[i][j] = (T)0;
+		}
+	}
+}
+
+/****************************************************************************************
+*  Name     : set_ones
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ void CMatrix<T>::set_ones()
+{
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			data[i][j] = (T)1;
+		}
+	}
+}
+
+/****************************************************************************************
+*  Name     : set_all_coeffs
+*  Function : Sets all values of the matrix/vector to the coefficient coeff
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ void CMatrix<T>::set_all_coeffs(const T coeff)
+{
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			data[i][j] = coeff;
+		}
+	}
 }
 
 /****************************************************************************************
@@ -826,11 +993,6 @@ __host__ __device__ void CMatrix<T>::fill_minor_matrix(
             row_count++;
         }
     }
-/* 	if (minor_matrix.n_rows > 2)
-	{
-		std::cout << "Minor matrix = " << std::endl;
-		std::cout << minor_matrix << std::endl;
-	} */
 }
 
 #endif

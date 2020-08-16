@@ -269,6 +269,61 @@ __device__ double CPE::estimate(
 }
 
 /****************************************************************************************
+*  Name     : estimate_over_trajectories
+*  Function : Takes in own-ship and obstacle trajectories, plus the associated obstacle
+*             covariances, and estimates the collision probabilities using a chosen 
+*             method.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+__device__ void CPE::estimate_over_trajectories(
+		Eigen::Matrix<double, 1, -1> &P_c_i,                // In/out: Collision probability row vector: 1 x n_samples
+		const Eigen::Matrix<double, 6, -1> &xs_p,           // In: Ownship predicted trajectory
+		const Eigen::Matrix<double, 4, -1> &xs_i_p,         // In: Obstacle i predicted trajectory
+		const Eigen::Matrix<double, 16, -1> &P_i_p,         // In: Obstacle i associated predicted covariances
+        const double d_safe_i,                              // In: Safety zone around own-ship when facing obstacle i,
+		const int i,                                        // In: Index of obstacle
+        const double dt                                     // In: Prediction time step
+    )
+{
+    int n_samples = xs_p.cols();
+
+    int n_seg_samples = std::round(dt_seg / dt) + 1, k_j_(0), k_j(0);
+	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
+
+    initialize(xs_p.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i, i);
+
+    for (int k = 0; k < n_samples; k++)
+    {
+        switch(method)
+        {
+            case CE :	
+                P_c_i(0, k) = estimate(xs_p.col(k), xs_i_p.col(k), P_i_p.col(k), i);
+                break;
+            case MCSKF4D :
+                k_j_ = 0; k_j = 0;
+                
+                if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
+                {
+                    k_j_ = k_j; k_j = k;
+                    xs_os_seg = xs_p.block(0, k_j_, 6, n_seg_samples);
+                    xs_i_seg = xs_i_p.block(0, k_j_, 4, n_seg_samples);
+
+                    P_i_seg = P_i_p.block(0, k_j_, 16, n_seg_samples);
+
+                    P_c_i(0, k_j_) = estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
+                    // Collision probability on this active segment are all equal
+                    P_c_i.block(0, k_j_, 1, n_seg_samples) = P_c_i(0, k_j_) * Eigen::MatrixXd::Ones(1, k_j - k_j_ + 1);
+                }	
+                break;
+            default :
+                // Throw
+                break;
+        }
+    }
+}
+
+/****************************************************************************************
 	Private functions
 ****************************************************************************************/
 /****************************************************************************************

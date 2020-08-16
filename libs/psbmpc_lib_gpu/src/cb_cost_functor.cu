@@ -390,47 +390,18 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 {
 	int n_samples = vars->trajectory.cols();
 	Eigen::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
-	double d_safe_i = vars->d_safe + 0.5 * (vars->ownship.get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width()));
+	double d_safe_i = vars->d_safe + 0.5 * (vars->ownship.get_length() + new_obstacles[i].get_length());
 
 	Eigen::MatrixXd* xs_i_p = new Eigen::MatrixXd[n_ps[i]];
 	*xs_i_p = *new_obstacles[i].get_trajectories();
 
-	int n_seg_samples = round(vars->cpe.get_segment_discretization_time() / vars->dt) + 1, k_j_(0), k_j(0);
-	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
+	// Non-optimal temporary row-vector storage solution
+	Eigen::Matrix<double, 1, -1> P_c_i_row(P_i_p.cols());
 	for (int ps = 0; ps < n_ps[i]; ps++)
-	{	
-		vars->cpe.initialize(vars->trajectory.col(0), xs_i_p[ps].col(0), P_i_p.col(0), d_safe_i, i);
-		switch(vars->cpe_method)
-		{
-			case CE :	
-				for (int k = 0; k < n_samples; k++)
-				{
-					P_c_i(ps, k) = vars->cpe.estimate(vars->trajectory.col(k), xs_i_p[ps].col(k), P_i_p.col(k), i);
-				}
-				//save_matrix_to_file(P_c_i);
-				break;
-			case MCSKF4D :
-				k_j_ = 0; k_j = 0;
-				for (int k = 0; k < n_samples; k++)
-				{
-					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
-					{
-						k_j_ = k_j; k_j = k;
-						xs_os_seg = vars->trajectory.block(0, k_j_, 6, n_seg_samples);
-						xs_i_seg = xs_i_p[ps].block(0, k_j_, 4, n_seg_samples);
+	{
+		vars->cpe.estimate_over_trajectories(P_c_i_row, vars->trajectory, xs_i_p[ps], P_i_p, d_safe_i, i, vars->dt);
 
-						P_i_seg = P_i_p.block(0, k_j_, 16, n_seg_samples);
-
-						P_c_i(ps, k_j_) = vars->cpe.estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
-						// Collision probability on this active segment are all equal
-						P_c_i.block(ps, k_j_, 1, n_seg_samples) = P_c_i(ps, k_j_) * Eigen::MatrixXd::Ones(1, k_j - k_j_ + 1);
-					}	
-				}
-				break;
-			default :
-				// Throw
-				break;
-		}
+		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
 	}		
 }
 
@@ -499,7 +470,7 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 			d_0i_p = L_0i_p.norm();
 
 			// Decrease the distance between the vessels by their respective max dimension
-			d_0i_p = d_0i_p - 0.5 * (ownship->get_length() + std::max(new_obstacles[i]->get_length(), new_obstacles[i]->get_width())); 
+			d_0i_p = d_0i_p - 0.5 * (vars->ownship.get_length() + new_obstacles[i].get_length()); 
 			
 			L_0i_p = L_0i_p.normalized();
 
@@ -514,9 +485,9 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 			trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, i, chi_m);
 
 			// Track loss modifier to collision cost
-			if (new_obstacles[i]->get_duration_lost() > p_step)
+			if (new_obstacles[i].get_duration_lost() > vars->p_step)
 			{
-				l_i = 2 * dt * p_step / new_obstacles[i]->get_duration_lost(); // Why the 2 Giorgio?
+				l_i = vars->dt * vars->p_step / new_obstacles[i].get_duration_lost(); // Why the 2 Giorgio?
 			} else
 			{
 				l_i = 1;

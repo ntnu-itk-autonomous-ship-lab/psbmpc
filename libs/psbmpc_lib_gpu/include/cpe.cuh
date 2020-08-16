@@ -157,6 +157,15 @@ public:
 		const Eigen::MatrixXd &xs_i,
 		const Eigen::MatrixXd &P_i,
 		const int i);
+
+	__device__ void estimate_over_trajectories(
+		Eigen::Matrix<double, 1, -1> &P_c_i,
+		const Eigen::Matrix<double, 6, -1> &xs_p,
+		const Eigen::Matrix<double, 4, -1> &xs_i_p,
+		const Eigen::Matrix<double, 16, -1> &P_i_p,
+		const double d_safe_i,
+		const int i,
+		const double dt);
 };
 
 #endif

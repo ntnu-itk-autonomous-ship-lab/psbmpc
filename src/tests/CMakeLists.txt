@@ -3,10 +3,10 @@
 #add_executable(tester test_cpe.cpp)
 #add_executable(tester test_mrou.cpp)
 #add_executable(tester test_kf.cpp)
-add_executable(tester test_psbmpc.cpp)
+#add_executable(tester test_psbmpc.cpp)
 #add_executable(tester test_prng.cpp)
 #add_executable(tester test_thrust.cu)
-#add_executable(tester test_cmatrix.cpp)
+add_executable(tester test_cmatrix.cpp)
 
 target_include_directories(tester PUBLIC
 	${CMAKE_SOURCE_DIR}/include
@@ -14,6 +14,3 @@ target_include_directories(tester PUBLIC
 	)
 
 target_compile_features(tester PRIVATE cxx_std_11)
-
-#target_link_libraries(tester psbmpc_lib_gpu)
-target_link_libraries(tester psbmpc_lib)
