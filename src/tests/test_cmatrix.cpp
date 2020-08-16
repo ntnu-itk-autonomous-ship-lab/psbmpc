@@ -163,6 +163,16 @@ int main()
 	std::cout << "Difference in 4x4 inverse: " << std::endl;
 	std::cout << M_diff << std::endl;
 	//================================================================================
+	// Transpose test
+	//================================================================================
+	n_rows = 4; n_cols = 2;
+	CMatrix<double> O(n_rows, n_cols);
+	std::cout << "Original = " << std::endl;
+	std::cout << O << std::endl;
+
+	std::cout << "Transposed = " << std::endl;
+	std::cout << O.transposed() << std::endl;
+	//================================================================================
 	// Dot product test
 	//================================================================================
 	CMatrix<double> v1(6, 1), v2(6, 1);
@@ -173,9 +183,11 @@ int main()
 		v2(i, 0) = v1(i, 0);
 	}
 
+	std::cout << "v1' * v2 = " << std::endl; 
 	v3 = v1.dot(v2);
 	std::cout << v3 << std::endl;
 
+	std::cout << "v2' * v1 = " << std::endl; 
 	v3 = v2.dot(v1);
 	std::cout << v3 << std::endl;
 
@@ -185,6 +197,7 @@ int main()
 		v1(0, i) = i; 
 		v2(0, i) = v1(0, i);
 	}
+	std::cout << "New v1' * v2 = " << std::endl; 
 	v3 = v2.dot(v1);
 	std::cout << v3 << std::endl;
 
@@ -193,15 +206,52 @@ int main()
 	//================================================================================
 	n_rows = 4; n_cols = 4;
 	CMatrix<double> A(n_rows, n_cols), B(n_rows, n_cols), C;
+	Eigen::MatrixXd A_e(n_rows, n_cols), B_e(n_rows, n_cols), C_e(n_rows, n_cols);
+	M_diff.resize(n_rows, n_cols);
 
-	C = A + B; 
-	std::cout << C << std::endl;
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			A(i, j) = 2 * std_norm_pdf(gen) + 5;
+			A_e(i, j) = A(i, j);
 
-	C = A - B; 
-	std::cout << C << std::endl;
+			B(i, j) = 2 * std_norm_pdf(gen) + 5;
+			B_e(i, j) = B(i, j);
+		}
+	}
+	std::cout << "A + B diff " << std::endl; 
+	C = A + B; C_e = A_e + B_e;
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			M_diff(i, j) = C(i, j) - C_e(i, j);
+		}
+	}
+	std::cout << M_diff << std::endl;
 
-	C = A * B; 
-	std::cout << C << std::endl;
+	std::cout << "A - B diff " << std::endl; 
+	C = A - B; C_e = A_e - B_e;
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			M_diff(i, j) = C(i, j) - C_e(i, j);
+		}
+	}
+	std::cout << M_diff << std::endl;
+
+	std::cout << "A * B diff " << std::endl; 
+	C = A * B; C_e = A_e * B_e;
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			M_diff(i, j) = C(i, j) - C_e(i, j);
+		}
+	}
+	std::cout << M_diff << std::endl;
 
 	//================================================================================
 	// Quadratic form calculation test
@@ -224,7 +274,7 @@ int main()
 		}
 	}
 
-	res = x.transpose() * A.inverse() * x; 
+	res = x.transposed() * A.inverse() * x; 
 	
 	return 0;
 }
