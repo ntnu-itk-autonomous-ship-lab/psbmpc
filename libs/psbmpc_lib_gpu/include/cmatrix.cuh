@@ -24,6 +24,7 @@
 
 #include <thrust/device_vector.h>
 #include <assert.h>
+#include <math.h>
 template<class T>
 class CMatrix
 {
@@ -94,7 +95,7 @@ public:
 
 	__host__ __device__ CMatrix normalized() const;
 
-	__host__ __device__ T vec_norm() const;
+	__host__ __device__ T norm() const;
 
 	__host__ __device__ CMatrix& block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
 
@@ -322,9 +323,10 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator*(
 	{
 		for (size_t j = 0; j < other.n_cols; j++)
 		{
+			result.data[i][j] = 0;
 			for (size_t k = 0; k < n_cols; k++)
 			{
-				result.data[i][j] += this->data[i][k] * other.data[i][k];
+				result.data[i][j] += this->data[i][k] * other.data[k][j];
 			}
 		}
 	}
@@ -454,10 +456,12 @@ __host__ __device__ T& CMatrix<T>::operator()(
 
 	if (n_rows == 1)
 	{
+		assert(index < n_cols);
 		return data[0][index];
 	} 
 	else
 	{
+		assert(index < n_rows);
 		return data[index][0];
 	}
 	
@@ -629,39 +633,42 @@ __host__ __device__ T CMatrix<T>::dot(
 
 /****************************************************************************************
 *  Name     : normalize
-*  Function : Returns the normalized matrix/vector
+*  Function : Vectors only. Normalizes this object
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 template <class T>
 __host__ __device__ void CMatrix<T>::normalize()
 {
-
+	assert(n_rows == 1 || n_cols == 1);
+	*this /= norm();
 }
 
 /****************************************************************************************
 *  Name     : normalized
-*  Function : Returns the normalized matrix/vector
+*  Function : Vectors only. Returns the normalized vector without modifying this.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 template <class T>
 __host__ __device__ CMatrix<T> CMatrix<T>::normalized() const
 {
+	assert(n_rows == 1 || n_cols == 1);
 	
+	CMatrix<T> result(n_rows, n_cols);
+	return result /= norm();
 }
 
 /****************************************************************************************
-*  Name     : vec_norm
-*  Function : Returns the euclidian norm of this special case vector object
+*  Name     : norm
+*  Function : Returns the Euclidian (2-norm) in case of vectors, and Frobenius norm in
+*			  case of matrices.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 template <class T>
-__host__ __device__ T CMatrix<T>::vec_norm() const
+__host__ __device__ T CMatrix<T>::norm() const
 {
-	assert(n_rows == 1 || n_cols == 1);
-
 	T norm = (T)0;
 	if (n_rows == 1)
 	{
@@ -670,13 +677,24 @@ __host__ __device__ T CMatrix<T>::vec_norm() const
 			norm += data[0][j] * data[0][j];
 		}
 	} 
-	else
+	else if (n_cols == 1)
 	{
 		for (size_t i = 0; i < n_rows; i++)
 		{
 			norm += data[i][0] * data[i][0];
 		}
+	} 
+	else
+	{
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				norm += data[i][j] * data[i][j];
+			}
+		}
 	}
+	assert(norm >= 0);
 	norm = (T)sqrt(norm);
 	return norm;
 }
