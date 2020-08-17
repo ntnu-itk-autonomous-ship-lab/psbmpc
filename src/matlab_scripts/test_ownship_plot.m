@@ -6,7 +6,6 @@ x_a = 20 * cos(th); y_a = 20 * sin(th);
 x_cs = 50 * cos(th); y_cs = 50 * sin(th);
 
 plot(X(2, :), X(1, :), 'k', 'Linewidth', 1.2);
-disp(size(X));
 for nwp = 1 : length(WPs(1, :))
     plot(y_a + WPs(2, nwp), x_a + WPs(1, nwp), 'c');
 end

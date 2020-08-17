@@ -8,15 +8,15 @@ else()
 endif()
 
 
-add_subdirectory(libs/psbmpc_lib_gpu)
-#add_subdirectory(libs/psbmpc_lib)
+#add_subdirectory(libs/psbmpc_lib_gpu)
+add_subdirectory(libs/psbmpc_lib)
 
 add_subdirectory(src/tests)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-target_link_libraries(tester psbmpc_lib_gpu)
-#target_link_libraries(tester psbmpc_lib)
+#target_link_libraries(tester psbmpc_lib_gpu)
+target_link_libraries(tester psbmpc_lib)
 
 
 #message("Your C++ compiler supports these C++ features:")

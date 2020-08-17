@@ -1,4 +1,5 @@
 #add_executable(tester test_ownship.cpp)
+add_executable(tester test_obstacle_ship.cpp)
 #add_executable(tester test_obstacle.cpp)
 #add_executable(tester test_cpe.cpp)
 #add_executable(tester test_mrou.cpp)
@@ -6,7 +7,7 @@
 #add_executable(tester test_psbmpc.cpp)
 #add_executable(tester test_prng.cpp)
 #add_executable(tester test_thrust.cu)
-add_executable(tester test_cmatrix.cpp)
+#add_executable(tester test_cmatrix.cpp)
 
 target_include_directories(tester PUBLIC
 	${CMAKE_SOURCE_DIR}/include
