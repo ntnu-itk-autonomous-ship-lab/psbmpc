@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test_cmatrix.o: test_cmatrix.cpp.o
+test_obstacle_ship.o: test_obstacle_ship.cpp.o
 
-.PHONY : test_cmatrix.o
+.PHONY : test_obstacle_ship.o
 
 # target to build an object file
-test_cmatrix.cpp.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cmatrix.cpp.o
-.PHONY : test_cmatrix.cpp.o
+test_obstacle_ship.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle_ship.cpp.o
+.PHONY : test_obstacle_ship.cpp.o
 
-test_cmatrix.i: test_cmatrix.cpp.i
+test_obstacle_ship.i: test_obstacle_ship.cpp.i
 
-.PHONY : test_cmatrix.i
+.PHONY : test_obstacle_ship.i
 
 # target to preprocess a source file
-test_cmatrix.cpp.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cmatrix.cpp.i
-.PHONY : test_cmatrix.cpp.i
+test_obstacle_ship.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle_ship.cpp.i
+.PHONY : test_obstacle_ship.cpp.i
 
-test_cmatrix.s: test_cmatrix.cpp.s
+test_obstacle_ship.s: test_obstacle_ship.cpp.s
 
-.PHONY : test_cmatrix.s
+.PHONY : test_obstacle_ship.s
 
 # target to generate assembly for a file
-test_cmatrix.cpp.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cmatrix.cpp.s
-.PHONY : test_cmatrix.cpp.s
+test_obstacle_ship.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle_ship.cpp.s
+.PHONY : test_obstacle_ship.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... test_cmatrix.o"
-	@echo "... test_cmatrix.i"
-	@echo "... test_cmatrix.s"
+	@echo "... test_obstacle_ship.o"
+	@echo "... test_obstacle_ship.i"
+	@echo "... test_obstacle_ship.s"
 .PHONY : help
 
 
