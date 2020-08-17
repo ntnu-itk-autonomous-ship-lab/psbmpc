@@ -607,10 +607,9 @@ __host__ __device__ T CMatrix<T>::dot(
 	const CMatrix<T> &other 									// In: Vector to dot with
 	) const
 {
-	T result = 0;
-
 	assert((n_rows == other.n_rows && n_cols == other.n_cols) && (n_rows == 1 || n_cols == 1));
 
+	T result = (T)0;
 	if (n_rows == 1) 	
 	{ 
 		for (size_t i = 0; i < n_cols; i++)
