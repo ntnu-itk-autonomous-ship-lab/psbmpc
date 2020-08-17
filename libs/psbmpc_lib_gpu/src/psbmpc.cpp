@@ -552,39 +552,49 @@ void PSBMPC::initialize_prediction()
 	//***********************************************************************************
 	maneuver_times.resize(n_M);
 	// First avoidance maneuver is always at t0
-	maneuver_times(0) = 0;
-	double d_cpa_min = 1e10, t_cpa_min = t_cpa(0);
+	maneuver_times.setZero();
+
+	double t_cpa_min, d_safe_i;
+	std::vector<bool> maneuvered_by(n_obst);
+	int index_closest;
 	for (int M = 1; M < n_M; M++)
 	{
+		// This is the solution so far if n_obst = 0. And also:
+		// If a predicted collision occurs with the closest obstacle, avoidance maneuver 
+		// M is taken right after the obstacle possibly maneuvers (which will be at t_0 + M * t_ts
+		// if the independent obstacle prediction scheme is used), given that t_cpa > t_ts. 
+		// If t_cpa < t_ts, the subsequent maneuver is taken at t_0 + M * t_ts + 1 anyways (simplification)
+		maneuver_times(M) = maneuver_times(M - 1) + std::round((t_ts + 1) / dt);
+		
+		// Otherwise, find the closest obstacle (wrt t_cpa) that is a possible hazard
+		t_cpa_min = 1e10; index_closest = -1;
 		for (int i = 0; i < n_obst; i++)
 		{
+			d_safe_i = d_safe + 0.5 * (ownship->get_length() + new_obstacles[i]->get_length());
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
 			// that the previous avoidance maneuver happened before CPA with this obstacle)
-			if (maneuver_times(M - 1) * dt < t_cpa(i))
+			if (!maneuvered_by[i] && maneuver_times(M - 1) * dt < t_cpa(i) && t_cpa(i) <= t_cpa_min)
 			{	
-				if (d_cpa(i) < d_cpa_min)
-				{
-					d_cpa_min = d_cpa(i);
-					t_cpa_min = t_cpa(i);
-				}
+				t_cpa_min = t_cpa(i);
+				index_closest = i;
+			}	
+		}
+
+		if (index_closest != -1)
+		{
+			d_safe_i = d_safe + 0.5 * (ownship->get_length() + new_obstacles[index_closest]->get_width());
+			// If no predicted collision,  avoidance maneuver M with the closest
+			// obstacle (that is not passed) is taken at t_cpa_min
+			if (d_cpa(index_closest) > d_safe_i)
+			{
+				std::cout << "OS maneuver M = " << M << " at t = " << t_cpa(index_closest) << " wrt obstacle " << index_closest << std::endl;
+				maneuvered_by[index_closest] = true;
+				maneuver_times(M) = std::round(t_cpa(index_closest) / dt);
 			}
 		}
-		// If no predicted collision,  avoidance maneuver M with the closest
-		// obstacle (that is not passed) is taken at t_cpa_min
-		if (d_cpa_min > d_safe)
-		{
-			maneuver_times(M) = std::round(t_cpa_min / dt);
-		}
-		// If a predicted collision occurs with the closest obstacle, avoidance maneuver 
-		// M is taken right after the obstacle maneuvers (which will be at t_0 + M * t_ts)
-		// Given that t_cpa > t_ts. If t_cpa < t_ts, the subsequent maneuver is taken
-		// at t_0 + M * t_ts + 1 anyways (simplification)
-		else
-		{
-			maneuver_times(M) = maneuver_times(M - 1) + std::round((t_ts + 1) / dt);
-		}
 	}
+	
 	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 

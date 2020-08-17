@@ -260,10 +260,44 @@ int main()
 	CMatrix<double> x(n_rows, 1);
 	A.resize(n_rows, n_cols);
 	CMatrix<double> res;
+	A_e.resize(n_rows, n_cols);
+	Eigen::VectorXd x_e(n_rows);
 	double qf;
 	for (size_t i = 0; i < n_rows; i++)
 	{
-		x(i, 0) = 1;
+		x(i) = 1; x_e(i) = 1;
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			A(i, j) = 0;
+			if (i == j)
+			{
+				A(i, j) = 1;
+			}
+			A_e(i, j) = A(i, j);
+		}
+	}
+	std::cout << "Quadratic form diff = " << std::endl;
+	res = x.transposed() * A.inverse() * x; 
+	
+	qf = x_e.transpose() * A_e.inverse() * x_e;
+
+	std::cout << res(0, 0) - qf << std::endl;
+
+	//================================================================================
+	// Norm and normalization test
+	//================================================================================
+	n_rows = 3; n_cols = 3;
+	x.resize(n_rows, 1);
+	x_e.resize(n_rows);
+	Eigen::VectorXd r_e1(n_rows);
+
+	A.resize(n_rows, n_cols);
+	CMatrix<double> r2(n_rows, n_cols);
+	Eigen::MatrixXd r2_e(n_rows, n_cols);
+
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		x(i) = 1; x_e(i) = x(i);
 		for (size_t j = 0; j < n_cols; j++)
 		{
 			A(i, j) = 0;
@@ -273,8 +307,18 @@ int main()
 			}
 		}
 	}
+	std::cout << "x unnormalized = " << x.transposed() << std::endl;
+	std::cout << "x normalized diff = ";
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		r_e1(i) = x.normalized()(i) - x_e.normalized()(i);
+	}
+	std::cout << r_e1.transpose() << std::endl;
+	std::cout << "||x||_2 diff = " << x.norm() - x_e.norm() << std::endl;
 
-	res = x.transposed() * A.inverse() * x; 
-	
+	std::cout << "A" << std::endl;
+	std::cout << A << std::endl;
+	std::cout << "||A||_2 = " << std::endl;
+	std::cout << A.norm() << std::endl;
 	return 0;
 }
