@@ -1,25 +1,25 @@
 Performing C++ SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
 Change Dir: /home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make cmTC_cac04/fast && /usr/bin/make  -f CMakeFiles/cmTC_cac04.dir/build.make CMakeFiles/cmTC_cac04.dir/build
+Run Build Command(s):/usr/bin/make cmTC_a5dbe/fast && /usr/bin/make  -f CMakeFiles/cmTC_a5dbe.dir/build.make CMakeFiles/cmTC_a5dbe.dir/build
 make[1]: Entering directory '/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_cac04.dir/src.cxx.o
-/usr/bin/c++    -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_cac04.dir/src.cxx.o -c /home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles/CMakeTmp/src.cxx
-Linking CXX executable cmTC_cac04
-/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_cac04.dir/link.txt --verbose=1
-/usr/bin/c++   -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_cac04.dir/src.cxx.o  -o cmTC_cac04 
-CMakeFiles/cmTC_cac04.dir/src.cxx.o: In function `main':
+Building CXX object CMakeFiles/cmTC_a5dbe.dir/src.cxx.o
+/usr/bin/c++    -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_a5dbe.dir/src.cxx.o -c /home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_a5dbe
+/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a5dbe.dir/link.txt --verbose=1
+/usr/bin/c++   -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_a5dbe.dir/src.cxx.o  -o cmTC_a5dbe 
+CMakeFiles/cmTC_a5dbe.dir/src.cxx.o: In function `main':
 src.cxx:(.text+0x3e): undefined reference to `pthread_create'
 src.cxx:(.text+0x4a): undefined reference to `pthread_detach'
 src.cxx:(.text+0x56): undefined reference to `pthread_cancel'
 src.cxx:(.text+0x67): undefined reference to `pthread_join'
 src.cxx:(.text+0x7b): undefined reference to `pthread_atfork'
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_cac04.dir/build.make:106: recipe for target 'cmTC_cac04' failed
-make[1]: *** [cmTC_cac04] Error 1
+CMakeFiles/cmTC_a5dbe.dir/build.make:106: recipe for target 'cmTC_a5dbe' failed
+make[1]: *** [cmTC_a5dbe] Error 1
 make[1]: Leaving directory '/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles/CMakeTmp'
-Makefile:141: recipe for target 'cmTC_cac04/fast' failed
-make: *** [cmTC_cac04/fast] Error 2
+Makefile:141: recipe for target 'cmTC_a5dbe/fast' failed
+make: *** [cmTC_a5dbe/fast] Error 2
 
 
 Source file was:
@@ -46,20 +46,20 @@ int main(void)
 Determining if the function pthread_create exists in the pthreads failed with the following output:
 Change Dir: /home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make cmTC_900f1/fast && /usr/bin/make  -f CMakeFiles/cmTC_900f1.dir/build.make CMakeFiles/cmTC_900f1.dir/build
+Run Build Command(s):/usr/bin/make cmTC_91fc5/fast && /usr/bin/make  -f CMakeFiles/cmTC_91fc5.dir/build.make CMakeFiles/cmTC_91fc5.dir/build
 make[1]: Entering directory '/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_900f1.dir/CheckFunctionExists.cxx.o
-/usr/bin/c++    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_900f1.dir/CheckFunctionExists.cxx.o -c /home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
-Linking CXX executable cmTC_900f1
-/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_900f1.dir/link.txt --verbose=1
-/usr/bin/c++   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_900f1.dir/CheckFunctionExists.cxx.o  -o cmTC_900f1  -lpthreads 
+Building CXX object CMakeFiles/cmTC_91fc5.dir/CheckFunctionExists.cxx.o
+/usr/bin/c++    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_91fc5.dir/CheckFunctionExists.cxx.o -c /home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
+Linking CXX executable cmTC_91fc5
+/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_91fc5.dir/link.txt --verbose=1
+/usr/bin/c++   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_91fc5.dir/CheckFunctionExists.cxx.o  -o cmTC_91fc5  -lpthreads 
 /usr/bin/ld: cannot find -lpthreads
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_900f1.dir/build.make:106: recipe for target 'cmTC_900f1' failed
-make[1]: *** [cmTC_900f1] Error 1
+CMakeFiles/cmTC_91fc5.dir/build.make:106: recipe for target 'cmTC_91fc5' failed
+make[1]: *** [cmTC_91fc5] Error 1
 make[1]: Leaving directory '/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles/CMakeTmp'
-Makefile:141: recipe for target 'cmTC_900f1/fast' failed
-make: *** [cmTC_900f1/fast] Error 2
+Makefile:141: recipe for target 'cmTC_91fc5/fast' failed
+make: *** [cmTC_91fc5/fast] Error 2
 
 
 
