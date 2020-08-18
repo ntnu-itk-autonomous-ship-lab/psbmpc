@@ -88,6 +88,8 @@ private:
 	// Cholesky decomposition matrix
 	Eigen::MatrixXd L;
 
+	void assign_data(const CPE &cpe);
+
 	void resize_matrices();
 
 	inline void update_L(const Eigen::MatrixXd &in);
