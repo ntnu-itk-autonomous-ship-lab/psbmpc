@@ -59,21 +59,23 @@ public:
 	__host__ __device__ CMatrix& operator=(const CMatrix &rhs);
 
 	__host__ __device__ CMatrix operator+(const CMatrix &other) const;
+	__host__ __device__ CMatrix operator+(const T &scalar) const;
 
 	__host__ __device__ CMatrix& operator+=(const CMatrix &rhs);
 
 	__host__ __device__ CMatrix operator-(const CMatrix &other) const;
+	__host__ __device__ CMatrix operator-(const T &scalar) const;
 
 	__host__ __device__ CMatrix& operator-=(const CMatrix &rhs);
 
 	__host__ __device__ CMatrix operator*(const CMatrix &other) const;
-	__host__ __device__ CMatrix operator*(const T &factor) const;
+	__host__ __device__ CMatrix operator*(const T &scalar) const;
 
-	__host__ __device__ CMatrix& operator*=(const T &factor);
+	__host__ __device__ CMatrix& operator*=(const T &scalar);
 
-	__host__ __device__ CMatrix operator/(const T &factor) const;
+	__host__ __device__ CMatrix operator/(const T &scalar) const;
 
-	__host__ __device__ CMatrix& operator/=(const T &factor);
+	__host__ __device__ CMatrix& operator/=(const T &scalar);
 
 	__host__ __device__ bool operator==(const CMatrix &rhs) const;
 
@@ -133,6 +135,21 @@ public:
 	}
 };
 
+/****************************************************************************************
+*  Global operator functions, to allow for commutativeness
+*****************************************************************************************/
+template <class T>
+__host__ __device__ CMatrix<T> operator+(const T &scalar, const CMatrix<T> &other){ return other + scalar;}
+
+template <class T>
+__host__ __device__ CMatrix<T> operator-(const T &scalar, const CMatrix<T> &other)	{ return -other + scalar; }
+
+template <class T>
+__host__ __device__ CMatrix<T> operator*(const T &scalar, const CMatrix<T> &other)	{ return other * scalar; }
+
+/****************************************************************************************
+*  Class member functions
+*****************************************************************************************/
 /****************************************************************************************
 *  Name     : CMatrix
 *  Function : Class constructor, initializes parameters and variables
@@ -229,6 +246,22 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator+(
 	return result;
 }
 
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::operator+(
+	const T &scalar 										// In: Scalar to add by
+	) const
+{
+	CMatrix<T> result(n_rows, n_cols);
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols ; j++)
+		{
+			result.data[i][j] = this->data[i][j] + scalar;
+		}
+	}
+	return result;
+}
+
 /****************************************************************************************
 *  Name     : operator+=
 *  Function : 
@@ -248,7 +281,7 @@ __host__ __device__ CMatrix<T>& CMatrix<T>::operator+=(
 	{
 		for (size_t j = 0; j < n_cols ; j++)
 		{
-			this->data[i][j] = this->data[i][j] + rhs.data[i][j];
+			this->data[i][j] += rhs.data[i][j];
 		}
 	}
 	return *this;
@@ -274,6 +307,22 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator-(
 		for (size_t j = 0; j < n_cols ; j++)
 		{
 			result.data[i][j] = this->data[i][j] - other.data[i][j];
+		}
+	}
+	return result;
+}
+
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::operator-(
+	const T &scalar 										// In: Scalar to subtract by
+	) const
+{
+	CMatrix<T> result(n_rows, n_cols);
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols ; j++)
+		{
+			result.data[i][j] = this->data[i][j] - scalar;
 		}
 	}
 	return result;
@@ -335,7 +384,7 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator*(
 
 template <class T>
 __host__ __device__ CMatrix<T> CMatrix<T>::operator*(
-	const T &factor 											// In: Factor to multiply with
+	const T &scalar 											// In: scalar to multiply with
 	) const
 {
 	CMatrix<T> result(n_rows, n_cols);
@@ -343,7 +392,7 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator*(
 	{
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			result.data[i][j] = factor * this->data[i][j];
+			result.data[i][j] = scalar * this->data[i][j];
 		}
 	}
 	return result;
@@ -357,14 +406,14 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator*(
 *****************************************************************************************/
 template <class T>
 __host__ __device__ CMatrix<T>& CMatrix<T>::operator*=(
-	const T &factor 											// In: Factor to multiply with
+	const T &scalar 											// In: scalar to multiply with
 	)
 {	
 	for (size_t i = 0 ; i < n_rows; i++)
 	{
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			this->data[i][j] *= factor;
+			this->data[i][j] *= scalar;
 		}
 	}
 	return *this;
@@ -378,7 +427,7 @@ __host__ __device__ CMatrix<T>& CMatrix<T>::operator*=(
 *****************************************************************************************/
 template <class T>
 __host__ __device__ CMatrix<T> CMatrix<T>::operator/(
-	const T &factor 											// In: Factor to divide by
+	const T &scalar 											// In: scalar to divide by
 	) const
 {	
 	CMatrix<T> result(n_rows, n_cols);
@@ -386,7 +435,7 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator/(
 	{
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			result.data[i][j] = this->data[i][j] / factor;
+			result.data[i][j] = this->data[i][j] / scalar;
 		}
 	}
 	return result;
@@ -400,14 +449,14 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator/(
 *****************************************************************************************/
 template <class T>
 __host__ __device__ CMatrix<T>& CMatrix<T>::operator/=(
-	const T &factor 											// In: Right hand side factor to divide by
+	const T &scalar 											// In: Right hand side scalar to divide by
 	)
 {
 	for (size_t i = 0 ; i < n_rows; i++)
 	{
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			this->data[i][j] /= factor;
+			this->data[i][j] /= scalar;
 		}
 	}
 	return *this;
@@ -655,7 +704,7 @@ __host__ __device__ CMatrix<T> CMatrix<T>::normalized() const
 {
 	assert(n_rows == 1 || n_cols == 1);
 	
-	CMatrix<T> result(n_rows, n_cols);
+	CMatrix<T> result = *this;
 	return result /= norm();
 }
 
