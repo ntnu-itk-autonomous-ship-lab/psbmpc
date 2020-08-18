@@ -8,7 +8,7 @@ To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_
 ## Dependencies
 
 - Matlab C API is used for the debugging and plotting functionality.
-- Eigen 3.3.92 release is used for the CPU and GPU version.
+- Eigen 3.3.7 release is used for the CPU and GPU version.
 - CUDA and Thrust are necessary for the GPU version.
 
 ## Overall Structure
@@ -37,7 +37,7 @@ and has the following **outputs**:
 
 - Optimal surge and course modification to the planned guidance references
 - A predicted trajectory for the own-ship when implementing the optimal avoidance maneuver(s).
-- A status matrix on the obstacles, displaying different information.
+- A status matrix on the obstacles, displaying information such as the relative bearing, range and ID of the obstacles.
 - A status vector on the collision avoidance system, displaying the minimal cost output associated with the optimal avoidance maneuver, and an ad hoc measure of its control freedom. 
 
 

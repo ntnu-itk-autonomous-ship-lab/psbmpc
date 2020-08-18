@@ -79,9 +79,13 @@ public:
 
 	__host__ __device__ bool operator==(const CMatrix &rhs) const;
 
-	__host__ __device__ T& operator()(const size_t row, const size_t col) const { return data[row][col]; }
+	__host__ __device__ T& operator()(const size_t row, const size_t col) const { assert(row < n_rows && col < n_cols) ;return data[row][col]; }
 
 	__host__ __device__ T& operator()(const size_t index) const;
+
+	//__host__ __device__ CMatrix& row(const size_t row) { assert(row < n_rows); return data[row]; }
+
+	__host__ __device__ CMatrix& col(const size_t row);
 
 	__host__ __device__ void transpose();
 
@@ -99,7 +103,15 @@ public:
 
 	__host__ __device__ T norm() const;
 
+	__host__ __device__ CMatrix cwise_product(const CMatrix &other);
+
+	__host__ __device__ CMatrix exp() const;
+
+	__host__ __device__ CMatrix log() const;
+
 	__host__ __device__ CMatrix& block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
+
+	__host__ __device__ CMatrix identity(const size_t n_rows, const size_t, n_cols) const;
 
 	__host__ __device__ void set_zero();
 
@@ -775,6 +787,33 @@ __host__ __device__ CMatrix<T>& CMatrix<T>::block(
 		}
 	}
 	return result;
+}
+
+/****************************************************************************************
+*  Name     : identity
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ void CMatrix<T>::identity(
+	const size_t n_rows,  										// In: Amount of matrix rows
+	const size_t n_cols 										// In: New amount of matrix columns
+	) const
+{
+	CMatrix<T> result(n_rows, n_cols);
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			result.data[i][j] = (T)0;
+			if (i == j)
+			{
+				result.data[i][j] = (T)1;
+			}
+			
+		}
+	}
 }
 
 /****************************************************************************************

@@ -151,9 +151,9 @@ int main(){
 
 		Pr_CC[i] = 1;
 
-		waypoints_i[i].resize(2, 2); 
-		waypoints_i[i] << 500, 500,
-					300, 	-300;
+		waypoints_i[i].resize(2, 3); 
+		waypoints_i[i] << 500, 100, 500,
+					300, 0, 	-300;
 		wps_i[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
 
 		offset_sequence_i[i].resize(6);
@@ -193,7 +193,6 @@ int main(){
 
 	Eigen::VectorXd obstacle_a_priori_CC_probabilities(n_obst);
 
-	// Not implemented geographical cost yet, so these will not be considered
 	int n_static_obst = 1;
 	Eigen::Matrix<double, 4, -1> static_obstacles;
 
