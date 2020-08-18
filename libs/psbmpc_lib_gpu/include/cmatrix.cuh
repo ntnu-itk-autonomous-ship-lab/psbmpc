@@ -105,13 +105,23 @@ public:
 
 	__host__ __device__ CMatrix cwise_product(const CMatrix &other) const;
 
+	__host__ __device__ CMatrix cwise_mean() const;
+
+	__host__ __device__ CMatrix rwise_mean() const;
+
 	__host__ __device__ CMatrix exp() const;
 
 	__host__ __device__ CMatrix log() const;
 
-	__host__ __device__ CMatrix& block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
-
 	__host__ __device__ CMatrix identity(const size_t n_rows, const size_t n_cols) const;
+
+	__host__ __device__ CMatrix get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
+
+	__host__ __device__ void set_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols, const CMatrix &block);
+
+	__host__ __device__ void set_row(const size_t row, const CMatrix &vector);
+
+	__host__ __device__ void set_col(const size_t col, const CMatrix &vector);
 
 	__host__ __device__ void set_zero();
 
@@ -762,7 +772,8 @@ __host__ __device__ T CMatrix<T>::norm() const
 
 /****************************************************************************************
 *  Name     : cwise_product
-*  Function : 
+*  Function : Basically the dot product between matching column vectors/scalars in each
+*			  matrix/vector object.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -771,13 +782,56 @@ __host__ __device__ CMatrix<T> CMatrix<T>::cwise_product(
 	const CMatrix<T> &other 								// In: Matrix/Vector object to apply columnwise product to
 ) const
 {
-	CMatrix<T> result(n_rows, n_cols);
+	CMatrix<T> result(1, n_cols);
+	for (size_t j = 0; j < n_cols; j++)
+	{
+		result.data[0][j] = (T)0;
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			result.data[0][j] += this->data[i][j] * other.data[i][j];	
+		}
+	}
+}
+
+/****************************************************************************************
+*  Name     : cwise_mean
+*  Function : Calculates the mean columnwise.
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::cwise_mean() const
+{
+	CMatrix<T> result(1, n_cols);
+	for (size_t j = 0; j < n_cols; j++)
+	{
+		result(j) = (T)0;
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			result(j) += this->data[i][j];
+		}
+		result(j) /= (T)n_rows;
+	}
+}
+
+/****************************************************************************************
+*  Name     : rwise_mean
+*  Function : Calculates the mean rowwise.
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::rwise_mean() const
+{
+	CMatrix<T> result(n_rows, 1);
 	for (size_t i = 0; i < n_rows; i++)
 	{
+		result(i) = (T)0;
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			result.data[i][j] = exp(result.data[i][j]);		
+			result(i) += this->data[i][j];
 		}
+		result(i) /= (T)n_rows;
 	}
 }
 
@@ -820,35 +874,6 @@ __host__ __device__ CMatrix<T> CMatrix<T>::log() const
 }
 
 /****************************************************************************************
-*  Name     : block
-*  Function : returns the n_rows x n_cols block of this object, with upper left reference
-*			  index (start_row, start_col).
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-template <class T>
-__host__ __device__ CMatrix<T>& CMatrix<T>::block(
-	const size_t start_row, 									// In: Start row of matrix block
-	const size_t start_col, 									// In: Start column of matrix block
-	const size_t n_rows,  										// In: New amount of rows
-	const size_t n_cols 										// In: New amount of columns
-	) const
-{
-	assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && n_rows > 0 && n_cols > 0 && 
-			start_row < n_rows && start_col < n_cols);
-
-	CMatrix<T> result(n_rows, n_cols);
-	for (size_t i = start_row; i < start_row + n_rows; i++)
-	{
-		for (size_t j = start_col; j < start_col + n_cols; j++)
-		{
-			result.data[i][j] = this->data[i][j];
-		}
-	}
-	return result;
-}
-
-/****************************************************************************************
 *  Name     : identity
 *  Function : 
 *  Author   : 
@@ -872,6 +897,103 @@ __host__ __device__ CMatrix<T> CMatrix<T>::identity(
 			}
 			
 		}
+	}
+}
+
+/****************************************************************************************
+*  Name     : get_block
+*  Function : returns the n_rows x n_cols block of this object, with upper left reference
+*			  index (start_row, start_col).
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::get_block(
+	const size_t start_row, 									// In: Start row of matrix block
+	const size_t start_col, 									// In: Start column of matrix block
+	const size_t n_rows,  										// In: Amount of rows
+	const size_t n_cols 										// In: Amount of columns
+	) const
+{
+	assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && n_rows > 0 && n_cols > 0 && 
+			start_row < n_rows && start_col < n_cols);
+
+	CMatrix<T> result(n_rows, n_cols);
+	for (size_t i = start_row; i < start_row + n_rows; i++)
+	{
+		for (size_t j = start_col; j < start_col + n_cols; j++)
+		{
+			result.data[i][j] = this->data[i][j];
+		}
+	}
+	return result;
+}
+
+/****************************************************************************************
+*  Name     : set_block
+*  Function : Sets the n_rows x n_cols block of this object, starting at 
+*			  (start_row, start_col).
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ void CMatrix<T>::set_block(
+	const size_t start_row, 									// In: Start row of matrix block
+	const size_t start_col, 									// In: Start column of matrix block
+	const size_t n_rows,  										// In: Amount of rows
+	const size_t n_cols, 										// In: Amount of columns
+	const CMatrix<T> &block 									// In: Block matrix to set
+	)
+{
+	assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && 
+			start_row < n_rows && start_col < n_cols);
+
+	assert(block.get_rows() == n_rows && block.get_cols() == n_cols);
+
+	for (size_t i = start_row; i < start_row + n_rows; i++)
+	{
+		for (size_t j = start_col; j < start_col + n_cols; j++)
+		{
+			this->data[i][j] = block.data[i][j];
+		}
+	}
+}
+
+/****************************************************************************************
+*  Name     : set_row
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ void CMatrix<T>::set_row(
+	const size_t row,		 									// In: Index of row to assign
+	const CMatrix<T> &vector 									// In: Row vector to assign to the row
+	)
+{
+	assert(vector.get_rows() == n_rows && row < n_rows);
+	for (size_t j = 0; j < n_cols; j++)
+	{
+		data[row][j] = vector(j);
+	}
+}
+
+/****************************************************************************************
+*  Name     : set_col
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ void CMatrix<T>::set_col(
+	const size_t col,		 									// In: Index of column to assign
+	const CMatrix<T> &vector 									// In: Column vector to assign to the column
+	)
+{
+	assert(vector.get_cols() == n_cols && col < n_cols);
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		data[i][col] = vector(i);
 	}
 }
 
