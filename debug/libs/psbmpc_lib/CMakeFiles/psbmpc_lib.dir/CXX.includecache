@@ -6,9 +6,33 @@
 
 #IncludeRegexTransform: 
 
-../libs/psbmpc_lib/include/obstacle_ship.h
+../libs/psbmpc_lib/include/kf.h
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
+
+../libs/psbmpc_lib/include/mrou.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+
+../libs/psbmpc_lib/include/obstacle.h
+vector
+-
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+
+../libs/psbmpc_lib/include/tracked_obstacle.h
+vector
+-
+memory
+-
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+obstacle.h
+../libs/psbmpc_lib/include/obstacle.h
+mrou.h
+../libs/psbmpc_lib/include/mrou.h
+kf.h
+../libs/psbmpc_lib/include/kf.h
 
 ../libs/psbmpc_lib/include/utilities.h
 Eigen/Dense
@@ -1062,13 +1086,11 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_ship.cpp
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/tracked_obstacle.cpp
+tracked_obstacle.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/tracked_obstacle.h
 utilities.h
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
-obstacle_ship.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_ship.h
-vector
--
 iostream
 -
 

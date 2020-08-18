@@ -589,7 +589,7 @@ void PSBMPC::initialize_par_limits()
 void PSBMPC::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 3;
+	n_M = 2;
 	n_a = 1; // (original PSB-MPC/SB-MPC) or = 3 if intentions KCC, SM, PM are considered (PSB-MPC fusion article)
 	n_ps.resize(1); // Determined by initialize_prediction();
 

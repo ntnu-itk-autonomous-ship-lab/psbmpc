@@ -175,32 +175,19 @@ int main()
 	//================================================================================
 	// Dot product test
 	//================================================================================
-	CMatrix<double> v1(6, 1), v2(6, 1);
-	double v3;
+	n_rows = 6; n_cols = 1;
+	CMatrix<double> v1(n_rows, n_cols), v2(n_rows, n_cols);
+	Eigen::VectorXd v1_e(n_rows), v2_e(n_rows);
 	for (size_t i = 0; i < 6; i++)
 	{
-		v1(i, 0) = i; 
-		v2(i, 0) = v1(i, 0);
+		v1(i) = 2 * std_norm_pdf(gen) + 5;  
+		v1_e(i) = v1(i);
+		v2(i) = v1(i); 
+		v2_e(i) = v1(i);
 	}
 
-	std::cout << "v1' * v2 = " << std::endl; 
-	v3 = v1.dot(v2);
-	std::cout << v3 << std::endl;
-
-	std::cout << "v2' * v1 = " << std::endl; 
-	v3 = v2.dot(v1);
-	std::cout << v3 << std::endl;
-
-	v1.resize(1, 10); v2.resize(1, 10);
-	for (size_t i = 0; i < 10; i++)
-	{
-		v1(0, i) = i; 
-		v2(0, i) = v1(0, i);
-	}
-	std::cout << "New v1' * v2 = " << std::endl; 
-	v3 = v2.dot(v1);
-	std::cout << v3 << std::endl;
-
+	std::cout << "v1' * v2 diff = " << v1.dot(v2) - v1_e.dot(v2_e) << std::endl;
+	std::cout << "v2' * v1 diff = " << v2.dot(v1) - v2_e.dot(v1_e) << std::endl;
 	//================================================================================
 	// Operator tests
 	//================================================================================
@@ -220,7 +207,7 @@ int main()
 			B_e(i, j) = B(i, j);
 		}
 	}
-	std::cout << "A + B diff " << std::endl; 
+	std::cout << "A + B diff = " << std::endl; 
 	C = A + B; C_e = A_e + B_e;
 	for (size_t i = 0; i < n_rows; i++)
 	{
@@ -231,7 +218,19 @@ int main()
 	}
 	std::cout << M_diff << std::endl;
 
-	std::cout << "A - B diff " << std::endl; 
+	std::cout << "C += A diff = " << std::endl; 
+	C.set_zero(); C_e.setZero();
+	C += A; C_e += A_e;
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			M_diff(i, j) = C(i, j) - C_e(i, j);
+		}
+	}
+	std::cout << M_diff << std::endl;
+
+	std::cout << "A - B diff = " << std::endl; 
 	C = A - B; C_e = A_e - B_e;
 	for (size_t i = 0; i < n_rows; i++)
 	{
@@ -242,7 +241,19 @@ int main()
 	}
 	std::cout << M_diff << std::endl;
 
-	std::cout << "A * B diff " << std::endl; 
+	std::cout << "C -= A diff = " << std::endl; 
+	C.set_zero(); C_e.setZero();
+	C -= A; C_e -= A_e;
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			M_diff(i, j) = C(i, j) - C_e(i, j);
+		}
+	}
+	std::cout << M_diff << std::endl;
+
+	std::cout << "A * B diff = " << std::endl; 
 	C = A * B; C_e = A_e * B_e;
 	for (size_t i = 0; i < n_rows; i++)
 	{
@@ -252,6 +263,32 @@ int main()
 		}
 	}
 	std::cout << M_diff << std::endl;
+
+	std::cout << "scalar * A diff = " << std::endl; 
+	double scalar = 5 * std_norm_pdf(gen);
+	C = scalar * A; C_e = scalar * A_e;
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			M_diff(i, j) = C(i, j) - C_e(i, j);
+		}
+	}
+	std::cout << M_diff << std::endl;
+
+	std::cout << "A * scalar diff = " << std::endl; 
+	scalar = 5 * std_norm_pdf(gen);
+	C = A * scalar; C_e = A_e * scalar;
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			M_diff(i, j) = C(i, j) - C_e(i, j);
+		}
+	}
+	std::cout << M_diff << std::endl;
+
+
 
 	//================================================================================
 	// Quadratic form calculation test
@@ -265,23 +302,26 @@ int main()
 	double qf;
 	for (size_t i = 0; i < n_rows; i++)
 	{
-		x(i) = 1; x_e(i) = 1;
-		for (size_t j = 0; j < n_cols; j++)
+		x(i) = 2 * std_norm_pdf(gen) + 5; x_e(i) = x(i);
+	}
+	while (A.determinant() <= 0)
+	{
+		for (size_t i = 0; i < n_rows; i++)
 		{
-			A(i, j) = 0;
-			if (i == j)
+			for (size_t j = 0; j < n_cols; j++)
 			{
-				A(i, j) = 1;
+				A(i, j) = 2 * std_norm_pdf(gen) + 5;
+				if (i == j || (i + j) % 2 == 0)
+				{
+					A(i, j) = 2 * std_norm_pdf(gen) + 20;
+				}
+				A_e(i, j) = A(i, j);
 			}
-			A_e(i, j) = A(i, j);
 		}
 	}
-	std::cout << "Quadratic form diff = " << std::endl;
 	res = x.transposed() * A.inverse() * x; 
-	
 	qf = x_e.transpose() * A_e.inverse() * x_e;
-
-	std::cout << res(0, 0) - qf << std::endl;
+	std::cout << "Quadratic form diff = " << res(0, 0) - qf << std::endl;
 
 	//================================================================================
 	// Norm and normalization test
@@ -291,20 +331,17 @@ int main()
 	x_e.resize(n_rows);
 	Eigen::VectorXd r_e1(n_rows);
 
-	A.resize(n_rows, n_cols);
+	A.resize(n_rows, n_cols); A_e.resize(n_rows, n_cols);
 	CMatrix<double> r2(n_rows, n_cols);
 	Eigen::MatrixXd r2_e(n_rows, n_cols);
 
 	for (size_t i = 0; i < n_rows; i++)
 	{
-		x(i) = 1; x_e(i) = x(i);
+		x(i) = 2 * std_norm_pdf(gen) + 5; x_e(i) = x(i);
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			A(i, j) = 0;
-			if (i == j)
-			{
-				A(i, j) = 1;
-			}
+			A(i, j) = 2 * std_norm_pdf(gen) + 5;
+			A_e(i, j) = A(i, j);
 		}
 	}
 	std::cout << "x unnormalized = " << x.transposed() << std::endl;
@@ -318,7 +355,18 @@ int main()
 
 	std::cout << "A" << std::endl;
 	std::cout << A << std::endl;
-	std::cout << "||A||_2 = " << std::endl;
-	std::cout << A.norm() << std::endl;
+	std::cout << "||A||_2 diff = " << A.norm() - A_e.norm() << std::endl;
+
+	//================================================================================
+	// Set function tests
+	//================================================================================
+	CMatrix<double> T(6, 10);
+	T.set_ones();
+	std::cout << "T after set 1 = " << std::endl;
+	std::cout << T << std::endl;
+	T.set_zero();
+	std::cout << "T after set 2 = " << std::endl;
+	std::cout << T << std::endl;
+
 	return 0;
 }
