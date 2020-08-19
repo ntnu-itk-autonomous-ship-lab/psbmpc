@@ -83,8 +83,6 @@ public:
 
 	__host__ __device__ T& operator()(const size_t index) const;
 
-	//__host__ __device__ CMatrix& row(const size_t row) { assert(row < n_rows); return data[row]; }
-
 	__host__ __device__ CMatrix& col(const size_t row);
 
 	__host__ __device__ void transpose();
@@ -115,7 +113,7 @@ public:
 
 	__host__ __device__ CMatrix identity(const size_t n_rows, const size_t n_cols) const;
 
-	__host__ __device__ CMatrix get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
+	__host__ __device__ CMatrix ones(const size_t n_rows, const size_t n_cols) const;
 
 	__host__ __device__ void set_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols, const CMatrix &block);
 
@@ -128,6 +126,12 @@ public:
 	__host__ __device__ void set_ones();
 
 	__host__ __device__ void set_all_coeffs(const T coeff);
+
+	__host__ __device__ CMatrix get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
+
+	__host__ __device__ CMatrix get_row(const size_t row) const;
+
+	__host__ __device__ CMatrix get_col(const size_t col) const;
 
 	__host__ __device__ size_t get_rows() const { return n_rows; }
 
@@ -245,7 +249,8 @@ __host__ __device__ CMatrix<T>& CMatrix<T>::operator=(
 
 /****************************************************************************************
 *  Name     : operator+
-*  Function : 
+*  Function : Can add matrices of equal dimension, or row/column vectorts to the lhs, 
+*			  given that the dimension matches
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -254,15 +259,28 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator+(
 	const CMatrix<T> &other 									// In: Matrix/vector to add by
 	) const
 {
-	assert(n_rows == other.n_rows);
-	assert(n_cols == other.n_cols);
+	assert((n_rows == other.n_rows && n_cols == other.n_cols) || 
+			(n_rows == other.n_rows && other.n_cols == 1) || 
+			(n_cols == other.n_cols && other.n_rows == 1));
 
 	CMatrix<T> result(n_rows, n_cols);
+
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		for (size_t j = 0; j < n_cols ; j++)
 		{
-			result.data[i][j] = this->data[i][j] + other.data[i][j];
+			if (other.n_rows == 1)
+			{
+				result.data[i][j] = this->data[i][j] + other.data[0][j];
+			} 
+			else if(other.n_cols == 1)
+			{
+				result.data[i][j] = this->data[i][j] + other.data[i][0];
+			} 
+			else
+			{
+				result.data[i][j] = this->data[i][j] + other.data[i][j];
+			}
 		}
 	}
 	return result;
@@ -320,15 +338,28 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator-(
 	const CMatrix<T> &other 									// In: Matrix/vector to subtract by
 	) const
 {
-	assert(n_rows == other.n_rows);
-	assert(n_cols == other.n_cols);
+	assert((n_rows == other.n_rows && n_cols == other.n_cols) || 
+			(n_rows == other.n_rows && other.n_cols == 1) ||
+			(n_cols == other.n_cols && other.n_rows == 1));
 
 	CMatrix<T> result(n_rows, n_cols);
+
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		for (size_t j = 0; j < n_cols ; j++)
 		{
-			result.data[i][j] = this->data[i][j] - other.data[i][j];
+			if (other.n_rows == 1)
+			{
+				result.data[i][j] = this->data[i][j] - other.data[0][j];
+			} 
+			else if(other.n_cols == 1)
+			{
+				result.data[i][j] = this->data[i][j] - other.data[i][0];
+			} 
+			else
+			{
+				result.data[i][j] = this->data[i][j] - other.data[i][j];
+			}
 		}
 	}
 	return result;
@@ -901,32 +932,25 @@ __host__ __device__ CMatrix<T> CMatrix<T>::identity(
 }
 
 /****************************************************************************************
-*  Name     : get_block
-*  Function : returns the n_rows x n_cols block of this object, with upper left reference
-*			  index (start_row, start_col).
+*  Name     : ones
+*  Function : 
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 template <class T>
-__host__ __device__ CMatrix<T> CMatrix<T>::get_block(
-	const size_t start_row, 									// In: Start row of matrix block
-	const size_t start_col, 									// In: Start column of matrix block
-	const size_t n_rows,  										// In: Amount of rows
-	const size_t n_cols 										// In: Amount of columns
+__host__ __device__ CMatrix<T> CMatrix<T>::ones(
+	const size_t n_rows,  										// In: Amount of matrix rows
+	const size_t n_cols 										// In: Amount of matrix columns
 	) const
 {
-	assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && n_rows > 0 && n_cols > 0 && 
-			start_row < n_rows && start_col < n_cols);
-
 	CMatrix<T> result(n_rows, n_cols);
-	for (size_t i = start_row; i < start_row + n_rows; i++)
+	for (size_t i = 0; i < n_rows; i++)
 	{
-		for (size_t j = start_col; j < start_col + n_cols; j++)
+		for (size_t j = 0; j < n_cols; j++)
 		{
-			result.data[i][j] = this->data[i][j];
+			result.data[i][j] = (T)1;			
 		}
 	}
-	return result;
 }
 
 /****************************************************************************************
@@ -946,15 +970,15 @@ __host__ __device__ void CMatrix<T>::set_block(
 	)
 {
 	assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && 
-			start_row < n_rows && start_col < n_cols);
+			start_row < this->n_rows && start_col < this->n_cols);
 
 	assert(block.get_rows() == n_rows && block.get_cols() == n_cols);
 
-	for (size_t i = start_row; i < start_row + n_rows; i++)
+	for (size_t i = 0; i < n_rows; i++)
 	{
-		for (size_t j = start_col; j < start_col + n_cols; j++)
+		for (size_t j = 0; j < n_cols; j++)
 		{
-			this->data[i][j] = block.data[i][j];
+			this->data[start_row + i][start_col + j] = block.data[i][j];
 		}
 	}
 }
@@ -971,7 +995,7 @@ __host__ __device__ void CMatrix<T>::set_row(
 	const CMatrix<T> &vector 									// In: Row vector to assign to the row
 	)
 {
-	assert(vector.get_rows() == n_rows && row < n_rows);
+	assert(vector.get_cols() == n_cols && row < n_rows);
 	for (size_t j = 0; j < n_cols; j++)
 	{
 		data[row][j] = vector(j);
@@ -990,7 +1014,7 @@ __host__ __device__ void CMatrix<T>::set_col(
 	const CMatrix<T> &vector 									// In: Column vector to assign to the column
 	)
 {
-	assert(vector.get_cols() == n_cols && col < n_cols);
+	assert(vector.get_rows() == n_rows && col < n_cols);
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		data[i][col] = vector(i);
@@ -1049,6 +1073,77 @@ __host__ __device__ void CMatrix<T>::set_all_coeffs(const T coeff)
 			data[i][j] = coeff;
 		}
 	}
+}
+
+/****************************************************************************************
+*  Name     : get_block
+*  Function : returns the n_rows x n_cols block of this object, with upper left reference
+*			  index (start_row, start_col).
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::get_block(
+	const size_t start_row, 									// In: Start row of matrix block
+	const size_t start_col, 									// In: Start column of matrix block
+	const size_t n_rows,  										// In: Amount of rows
+	const size_t n_cols 										// In: Amount of columns
+	) const
+{
+	assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && n_rows > 0 && n_cols > 0 && 
+			start_row < n_rows && start_col < n_cols);
+
+	CMatrix<T> result(n_rows, n_cols);
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			result.data[i][j] = this->data[start_row + i][start_col + j];
+		}
+	}
+	return result;
+}
+
+/****************************************************************************************
+*  Name     : get_row
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::get_row(
+	const size_t row											// In: Index of row to fetch
+	) const
+{
+	assert(row < this->n_rows);
+
+	CMatrix<T> result(1, n_cols);
+	for (size_t j = 0; j < n_cols; j++)
+	{
+			result.data[0][j] = this->data[row][j];
+	}
+	return result;
+}
+
+/****************************************************************************************
+*  Name     : get_col
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ CMatrix<T> CMatrix<T>::get_col(
+	const size_t col											// In: Index of column to fetch
+	) const
+{
+	assert(col < this->n_cols);
+
+	CMatrix<T> result(n_rows, 1);
+	for (size_t i = 0; i < n_rows; i++)
+	{
+			result.data[i][0] = this->data[i][col];
+	}
+	return result;
 }
 
 /****************************************************************************************
