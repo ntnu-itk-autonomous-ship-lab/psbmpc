@@ -32,7 +32,7 @@
 *****************************************************************************************/
 __host__ __device__ Obstacle_Ship::Obstacle_Ship()
 {
-	T_chi = 3;
+	T_chi = 3; 		// Ad hoc parameters, are very dependent on the ship type
 	T_U = 10;
 
 	// Guidance parameters
@@ -43,6 +43,7 @@ __host__ __device__ Obstacle_Ship::Obstacle_Ship()
 	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
+		
 }
 
 /****************************************************************************************
@@ -74,7 +75,7 @@ __host__ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
 		segment_passed = L_wp_segment.dot(d_0_wp.normalized()) < cos(90 * DEG2RAD);
 
 		//(s > R_a && fabs(e) <= R_a))) 	
-		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
+		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; std::cout << "Segment " << i << " passed" << std::endl; } 
 		else										{ break; }		
 		
 	}
@@ -97,7 +98,7 @@ __host__ __device__ void Obstacle_Ship::update_guidance_references(
 	)
 {
 	int n_wps = waypoints.cols();
-	double alpha, e, s;
+	double alpha, e;
 	Eigen::Vector2d d_next_wp, L_wp_segment;
 	bool segment_passed = false;
 	
@@ -162,6 +163,7 @@ __host__ __device__ void Obstacle_Ship::update_guidance_references(
 			chi_d = xs(2);
 			break;
 		default : 
+			// Throw
 			break;
 	}
 }
@@ -182,6 +184,7 @@ __host__ __device__ Eigen::Vector4d Obstacle_Ship::predict(
 	)
 {
 	Eigen::Vector4d xs_new;
+	double chi_diff = angle_difference_pmpi(chi_d, xs_old(2));
 
 	switch (prediction_method)
 	{
@@ -195,13 +198,14 @@ __host__ __device__ Eigen::Vector4d Obstacle_Ship::predict(
 			// First set xs_new to the continuous time derivative of the model
 			xs_new(0) = xs_old(3) * cos(xs_old(2));
 			xs_new(1) = xs_old(3) * sin(xs_old(2));
-			xs_new(2) = (1 / T_chi) * (chi_d - xs_old(2));
+			xs_new(2) = (1 / T_chi) * chi_diff;
 			xs_new(3) = (1 / T_U) * (U_d - xs_old(3));
 
 			// Then use forward euler to obtain new states
 			xs_new = xs_old + dt * xs_new;
 			break;
 		default :
+			// Throw
 			xs_new.setZero(); 
 	}
 	xs_new(2) = wrap_angle_to_pmpi(xs_new(2));
@@ -259,4 +263,3 @@ __host__ __device__ void Obstacle_Ship::predict_trajectory(
 /****************************************************************************************
 		Private functions
 *****************************************************************************************/
-
