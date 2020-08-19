@@ -421,5 +421,11 @@ int main()
 	std::cout << "Block of T of size 3x3 starting at (0, 0) = " << std::endl;
 	std::cout << T.get_block(0, 0, 3, 3) << std::endl;
 
+	//================================================================================
+	// Other tests
+	//================================================================================
+	std::cout << CMatrix<double>::identity(3, 3) << std::endl;
+	std::cout << CMatrix<double>::ones(3, 3) << std::endl;
+
 	return 0;
 }

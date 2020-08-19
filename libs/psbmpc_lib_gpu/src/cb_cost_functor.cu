@@ -52,9 +52,6 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	vars->n_a = master.n_a;
 	vars->n_obst = n_obst;
 
-	vars->maneuver_times = master.maneuver_times;
-	vars->control_behaviours = master.control_behaviours;
-
 	vars->u_d = u_d;
 	vars->chi_d = chi_d;
 
@@ -100,18 +97,21 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 
 	vars->cpe = *(master.cpe);
 
+	// Assign Eigen double objects to CMatrix<double> objects
+	vars->maneuver_times = master.maneuver_times;
+	vars->control_behaviours = master.control_behaviours;
+
 	vars->trajectory = master.trajectory;
 
 	vars->static_obstacles = static_obstacles;
 
-	// Allocate standard C++/C arrays for the std::vector types
-	n_ps = new int[n_obst];
+	n_ps.resize(n_obst, 1);
 
-	obstacle_colav_on = new bool[n_obst];
+	obstacle_colav_on.resize(n_obst, 1);
 
-	AH_0 = new bool[n_obst]; S_TC_0 = new bool[n_obst]; S_i_TC_0 = new bool[n_obst];
-	O_TC_0 = new bool[n_obst]; Q_TC_0 = new bool[n_obst]; IP_0 = new bool[n_obst];
-	H_TC_0 = new bool[n_obst]; X_TC_0 = new bool[n_obst];
+	AH_0.resize(n_obst, 1); S_TC_0.resize(n_obst, 1); S_i_TC_0.resize(n_obst, 1);
+	O_TC_0.resize(n_obst, 1); Q_TC_0.resize(n_obst, 1); IP_0.resize(n_obst, 1);
+	H_TC_0.resize(n_obst, 1); X_TC_0.resize(n_obst, 1);
 
 	// Old obstacles are equal to new obstacles at this point in the PSB-MPC processing
 	// (as PSBMPC::update_obstacles(...) has been called)
@@ -145,17 +145,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 ****************************************************************************************/
 __host__ __device__ CB_Cost_Functor::~CB_Cost_Functor()
  {
-	 delete[] n_ps;
 	 delete vars;
-	 delete[] obstacle_colav_on;
-	 delete[] AH_0;
-	 delete[] S_TC_0;
-	 delete[] S_i_TC_0;
-	 delete[] O_TC_0;
-	 delete[] Q_TC_0;
-	 delete[] IP_0;
-	 delete[] H_TC_0;
-	 delete[] X_TC_0;
 	 delete[] old_obstacles;
 	 delete[] new_obstacles;
  }
@@ -166,12 +156,14 @@ __host__ __device__ CB_Cost_Functor::~CB_Cost_Functor()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double CB_Cost_Functor::operator()(const unsigned int cb_index)
+__device__ double CB_Cost_Functor::operator()(
+	const unsigned int cb_index 									// In: Index of control behaviour evaluated in this kernel
+	)
 {
-	int n_samples = vars->trajectory.cols();
+	int n_samples = vars->trajectory.get_cols();
 	double cost = 0;
-	Eigen::MatrixXd P_c_i;
-	Eigen::VectorXd cost_i(vars->n_obst), offset_sequence = vars->control_behaviours.col(cb_index);
+	CMatrix<double> P_c_i;
+	CMatrix<double> cost_i(vars->n_obst, 1), offset_sequence = vars->control_behaviours.get_col(cb_index);
 
 	vars->ownship.predict_trajectory(
 		vars->trajectory, 
@@ -233,10 +225,10 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 *  Modified :
 *****************************************************************************************/
 __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
-	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A
+	const CMatrix<double> &v_A,												// In: (NE) Velocity vector of vessel A, row vector
 	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B
-	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
+	const CMatrix<double> &v_B, 											// In: (NE) Velocity vector of vessel B, row vector
+	const CMatrix<double> &L_AB, 											// In: LOS vector pointing from vessel A to vessel B, row vector
 	const double d_AB 														// In: Distance from vessel A to vessel B
 	)
 {
@@ -289,7 +281,7 @@ __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
 __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 	const double psi_A, 													// In: Heading of vessel A
 	const double psi_B, 													// In: Heading of vessel B
-	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
+	const CMatrix<double> &L_AB, 											// In: LOS vector pointing from vessel A to vessel B, row vector
 	const int i, 															// In: Index of obstacle
 	const double chi_m 														// In: Candidate course offset currently followed
 	)
@@ -327,19 +319,19 @@ __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 }
 
 __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
-	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A (the ownship)
-	const Eigen::VectorXd &xs_B, 											// In: State vector of vessel B (the obstacle)
+	const CMatrix<double> &xs_A,											// In: State vector of vessel A (the ownship), row vector
+	const CMatrix<double> &xs_B, 											// In: State vector of vessel B (the obstacle), row vector
 	const int i, 															// In: Index of obstacle
 	const double chi_m 														// In: Candidate course offset currently followed
 	)
 {
 	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 	double psi_A, psi_B;
-	Eigen::Vector2d L_AB;
-	if (xs_A.size() == 6) { psi_A = xs_A[2]; }
+	CMatrix<double> L_AB(2, 1);
+	if (xs_A.get_rows() == 6) { psi_A = xs_A[2]; }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); }
 	
-	if (xs_B.size() == 6) { psi_B = xs_B[2]; }
+	if (xs_B.get_rows() == 6) { psi_B = xs_B[2]; }
 	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); }
 
 	L_AB(0) = xs_B(0) - xs_A(0);
@@ -384,24 +376,24 @@ __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 *  Modified :
 *****************************************************************************************/
 __device__ void CB_Cost_Functor::calculate_collision_probabilities(
-	Eigen::MatrixXd &P_c_i,									// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
+	CMatrix<double> &P_c_i,									// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const int i 											// In: Index of obstacle
 	)
 {
-	int n_samples = vars->trajectory.cols();
-	Eigen::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
+	int n_samples = vars->trajectory.get_cols();
+	CMatrix<double> P_i_p = new_obstacles[i].get_trajectory_covariance();
 	double d_safe_i = vars->d_safe + 0.5 * (vars->ownship.get_length() + new_obstacles[i].get_length());
 
-	Eigen::MatrixXd* xs_i_p = new Eigen::MatrixXd[n_ps[i]];
+	CMatrix<double>* xs_i_p = new CMatrix<double>[n_ps[i]];
 	*xs_i_p = *new_obstacles[i].get_trajectories();
 
 	// Non-optimal temporary row-vector storage solution
-	Eigen::Matrix<double, 1, -1> P_c_i_row(P_i_p.cols());
+	CMatrix<double> P_c_i_row(1, P_i_p.get_cols());
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
 		vars->cpe.estimate_over_trajectories(P_c_i_row, vars->trajectory, xs_i_p[ps], P_i_p, d_safe_i, i, vars->dt);
 
-		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
+		P_c_i.set_block(ps, 0, 1, P_c_i_row.get_cols(), P_c_i_row);
 	}		
 }
 
@@ -412,17 +404,17 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
-	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
+	const CMatrix<double> &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
 	const int i, 													// In: Index of obstacle
-	const Eigen::VectorXd &offset_sequence 							// In: Control behaviour currently followed
+	const CMatrix<double> &offset_sequence 							// In: Control behaviour currently followed
 	)
 {
 	// l_i is the collision cost modifier depending on the obstacle track loss.
 	double cost(0.0), cost_ps(0.0), C(0.0), l_i(0.0);
-	Eigen::VectorXd max_cost_ps(n_ps[i]);
+	CMatrix<double> max_cost_ps(n_ps[i]);
 
-	Eigen::MatrixXd* xs_i_p = new Eigen::MatrixXd[n_ps[i]];
-	bool *mu_i = new bool[n_ps[i]];
+	CMatrix<double>* xs_i_p = new CMatrix<double>[n_ps[i]];
+	CMatrix<bool> mu_i(n_ps[i], 1);
 
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
@@ -431,11 +423,11 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 		max_cost_ps(ps) = 0;
 	}
 
-	int n_samples = vars->trajectory.cols();
-	Eigen::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
+	int n_samples = vars->trajectory.get_cols();
+	CMatrix<double> P_i_p = new_obstacles[i].get_trajectory_covariance();
 	double Pr_CC_i = new_obstacles[i].get_a_priori_CC_probability();
 
-	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
+	CMatrix<double> v_0_p(2, 1), v_i_p(2, 1), L_0i_p(2, 1);
 	double psi_0_p, psi_i_p, d_0i_p, chi_m;
 	bool mu, trans;
 	for(int k = 0; k < n_samples; k++)
@@ -466,7 +458,7 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 		
 		for(int ps = 0; ps < n_ps[i]; ps++)
 		{
-			L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - vars->trajectory.block<2, 1>(0, k);
+			L_0i_p = xs_i_p[ps].get_block(0, k, 2, 1) - vars->trajectory.get_block(0, k, 2, 1);
 			d_0i_p = L_0i_p.norm();
 
 			// Decrease the distance between the vessels by their respective max dimension
@@ -508,7 +500,6 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	if (n_ps[i] == 1)
 	{
 		delete[] xs_i_p;
-		delete[] mu_i;
 		cost = max_cost_ps(0);
 		return cost;
 	}
@@ -552,7 +543,6 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	cost = Pr_a.dot(cost_a);
 
 	delete[] xs_i_p;
-	delete[] mu_i;
 	return cost;
 }
 
@@ -584,7 +574,7 @@ __device__ double CB_Cost_Functor::calculate_ad_hoc_collision_risk(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::calculate_control_deviation_cost(
-	const Eigen::VectorXd &offset_sequence 								// In: Control behaviour currently followed
+	const CMatrix<double> &offset_sequence 								// In: Control behaviour currently followed
 	)
 {
 	double cost = 0;
@@ -612,7 +602,7 @@ __device__ double CB_Cost_Functor::calculate_control_deviation_cost(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::calculate_chattering_cost(
-	const Eigen::VectorXd &offset_sequence 								// In: Control behaviour currently followed
+	const CMatrix<double> &offset_sequence 								// In: Control behaviour currently followed
 )
 {
 	double cost = 0;
@@ -653,9 +643,9 @@ __device__ double CB_Cost_Functor::calculate_grounding_cost()
 *  Modified :
 *****************************************************************************************/
 __device__ int CB_Cost_Functor::find_triplet_orientation(
-	const Eigen::Vector2d &p, 
-	const Eigen::Vector2d &q, 
-	const Eigen::Vector2d &r
+	const CMatrix<double> &p, 
+	const CMatrix<double> &q, 
+	const CMatrix<double> &r
 	)
 {
 	// Calculate z-component of cross product (q - p) x (r - q)
@@ -673,9 +663,9 @@ __device__ int CB_Cost_Functor::find_triplet_orientation(
 *  Modified :
 *****************************************************************************************/
 __device__ bool CB_Cost_Functor::determine_if_on_segment(
-	const Eigen::Vector2d &p, 
-	const Eigen::Vector2d &q, 
-	const Eigen::Vector2d &r
+	const CMatrix<double> &p, 
+	const CMatrix<double> &q, 
+	const CMatrix<double> &r
 	)
 {
     if (q[0] <= max(p[0], r[0]) && q[0] >= min(p[0], r[0]) &&
@@ -691,17 +681,17 @@ __device__ bool CB_Cost_Functor::determine_if_on_segment(
 *  Modified :
 *****************************************************************************************/
 __device__ bool CB_Cost_Functor::determine_if_behind(
-	const Eigen::Vector2d &p_1, 
-	const Eigen::Vector2d &v_1, 
-	const Eigen::Vector2d &v_2, 
+	const CMatrix<double> &p_1, 
+	const CMatrix<double> &v_1, 
+	const CMatrix<double> &v_2, 
 	const double distance_to_line
 	)
 {
-    Eigen::Vector2d v_diff, n;
+    CMatrix<double> v_diff(2, 1), n(2, 1);
     
     v_diff = v_2 - v_1;
 
-    n << -v_diff[1], v_diff[0];
+    n(0) = -v_diff(1); n(1) = v_diff(0);
     n = n / n.norm() * distance_to_line;
 
     return (determine_if_on_segment(v_1 + n, p_1, v_2 + n));
@@ -714,10 +704,10 @@ __device__ bool CB_Cost_Functor::determine_if_behind(
 *  Modified :
 *****************************************************************************************/
 __device__ bool CB_Cost_Functor::determine_if_lines_intersect(
-	const Eigen::Vector2d &p_1, 
-	const Eigen::Vector2d &q_1, 
-	const Eigen::Vector2d &p_2, 
-	const Eigen::Vector2d &q_2
+	const CMatrix<double> &p_1, 
+	const CMatrix<double> &q_1, 
+	const CMatrix<double> &p_2, 
+	const CMatrix<double> &q_2
 	)
 {
     // Find the four orientations needed for general and
@@ -754,17 +744,17 @@ __device__ bool CB_Cost_Functor::determine_if_lines_intersect(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::distance_from_point_to_line(
-	const Eigen::Vector2d &p, 
-	const Eigen::Vector2d &q_1, 
-	const Eigen::Vector2d &q_2
+	const CMatrix<double> &p, 
+	const CMatrix<double> &q_1, 
+	const CMatrix<double> &q_2
 	)
 {   
-	Eigen::Vector3d a;
-    Eigen::Vector3d b;
+	CMatrix<double> a(3, 1);
+    CMatrix<double> b(3, 1);
     a << (q_1 - q_2), 0;
     b << (p - q_2), 0;
 
-    Eigen::Vector3d c = a.cross(b);
+    CMatrix<double> c = a.cross(b);
     if (a.norm() > 0) return c.norm() / a.norm();
     else return -1;
 }
@@ -776,9 +766,9 @@ __device__ double CB_Cost_Functor::distance_from_point_to_line(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::distance_to_static_obstacle(
-	const Eigen::Vector2d &p, 
-	const Eigen::Vector2d &v_1, 
-	const Eigen::Vector2d &v_2
+	const CMatrix<double> &p, 
+	const CMatrix<double> &v_1, 
+	const CMatrix<double> &v_2
 	)
 {
     double d2line = distance_from_point_to_line(p, v_1, v_2);

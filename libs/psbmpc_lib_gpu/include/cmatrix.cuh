@@ -3,7 +3,8 @@
 *  File name : cmatrix.cuh
 *
 *  Function  : Header file for the matrix (and vector container) used inside the Cuda 
-*			   kernels for the PSB-MPC GPU calculations.
+*			   kernels for the PSB-MPC GPU calculations. Can contain any normal data type
+*			   such as double, float, int, bool etc..
 *
 *  
 *	           ---------------------
@@ -83,7 +84,9 @@ public:
 
 	__host__ __device__ T& operator()(const size_t index) const;
 
-	__host__ __device__ CMatrix& col(const size_t row);
+	__host__ __device__ T& operator[](const size_t row, const size_t col) const { return *this(row, col); }
+
+	__host__ __device__ T& operator[](const size_t index) const { return *this(index); }
 
 	__host__ __device__ void transpose();
 
@@ -111,9 +114,9 @@ public:
 
 	__host__ __device__ CMatrix log() const;
 
-	__host__ __device__ CMatrix identity(const size_t n_rows, const size_t n_cols) const;
+	__host__ __device__ static CMatrix identity(const size_t n_rows, const size_t n_cols);
 
-	__host__ __device__ CMatrix ones(const size_t n_rows, const size_t n_cols) const;
+	__host__ __device__ static CMatrix ones(const size_t n_rows, const size_t n_cols);
 
 	__host__ __device__ void set_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols, const CMatrix &block);
 
@@ -259,12 +262,17 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator+(
 	const CMatrix<T> &other 									// In: Matrix/vector to add by
 	) const
 {
-	assert((n_rows == other.n_rows && n_cols == other.n_cols) || 
-			(n_rows == other.n_rows && other.n_cols == 1) || 
+	if (n_rows < other.n_rows || n_cols < other.n_cols)
+	{
+		return other + *this;
+	}
+
+	assert((n_rows == other.n_rows && n_cols == other.n_cols) 	|| 
+			(n_rows == other.n_rows && other.n_cols == 1) 		||
 			(n_cols == other.n_cols && other.n_rows == 1));
 
 	CMatrix<T> result(n_rows, n_cols);
-
+	
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		for (size_t j = 0; j < n_cols ; j++)
@@ -338,8 +346,13 @@ __host__ __device__ CMatrix<T> CMatrix<T>::operator-(
 	const CMatrix<T> &other 									// In: Matrix/vector to subtract by
 	) const
 {
-	assert((n_rows == other.n_rows && n_cols == other.n_cols) || 
-			(n_rows == other.n_rows && other.n_cols == 1) ||
+	if (n_rows < other.n_rows || n_cols < other.n_cols)
+	{
+		return other - *this;
+	}
+
+	assert((n_rows == other.n_rows && n_cols == other.n_cols) 	|| 
+			(n_rows == other.n_rows && other.n_cols == 1) 		||
 			(n_cols == other.n_cols && other.n_rows == 1));
 
 	CMatrix<T> result(n_rows, n_cols);
@@ -914,7 +927,7 @@ template <class T>
 __host__ __device__ CMatrix<T> CMatrix<T>::identity(
 	const size_t n_rows,  										// In: Amount of matrix rows
 	const size_t n_cols 										// In: Amount of matrix columns
-	) const
+	)
 {
 	CMatrix<T> result(n_rows, n_cols);
 	for (size_t i = 0; i < n_rows; i++)
@@ -941,7 +954,7 @@ template <class T>
 __host__ __device__ CMatrix<T> CMatrix<T>::ones(
 	const size_t n_rows,  										// In: Amount of matrix rows
 	const size_t n_cols 										// In: Amount of matrix columns
-	) const
+	)
 {
 	CMatrix<T> result(n_rows, n_cols);
 	for (size_t i = 0; i < n_rows; i++)
@@ -961,7 +974,7 @@ __host__ __device__ CMatrix<T> CMatrix<T>::ones(
 *  Modified :
 *****************************************************************************************/
 template <class T>
-__host__ __device__ void CMatrix<T>::set_block(
+__host__ __device__  void CMatrix<T>::set_block(
 	const size_t start_row, 									// In: Start row of matrix block
 	const size_t start_col, 									// In: Start column of matrix block
 	const size_t n_rows,  										// In: Amount of rows
