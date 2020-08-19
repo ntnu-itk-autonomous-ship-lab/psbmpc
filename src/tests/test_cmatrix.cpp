@@ -288,6 +288,29 @@ int main()
 	}
 	std::cout << M_diff << std::endl;
 
+	A.set_zero();
+	CMatrix<double> a_vec(A.get_rows(), 1);
+	for (size_t i = 0; i < A.get_rows(); i++)
+	{
+		a_vec(i) = i + 1;
+	}
+	std::cout << "Cwise add of vector : " << std::endl;
+	std::cout << A + a_vec << std::endl;
+	A.set_zero();
+	std::cout << "Cwise subtract of vector : " << std::endl;
+	std::cout << A - a_vec << std::endl;
+
+	a_vec.resize(1, A.get_cols());
+	for (size_t j = 0; j < A.get_cols(); j++)
+	{
+		a_vec(j) = j + 1;
+	}
+	std::cout << "Rwise add of vector : " << std::endl;
+	std::cout << a_vec + A << std::endl;
+	A.set_zero();
+	std::cout << "Rwise subtract of vector : " << std::endl;
+	std::cout << (double)-1 * a_vec + A << std::endl;
+
 
 
 	//================================================================================
@@ -360,13 +383,43 @@ int main()
 	//================================================================================
 	// Set function tests
 	//================================================================================
-	CMatrix<double> T(6, 10);
-	T.set_ones();
-	std::cout << "T after set 1 = " << std::endl;
+	n_rows = 6; n_cols = 6;
+	CMatrix<double> T(n_rows, n_cols), T_sub(n_rows - 3, n_cols - 3);
+	T.set_zero(); T_sub.set_all_coeffs(3);
+	std::cout << "T before set = " << std::endl;
 	std::cout << T << std::endl;
-	T.set_zero();
-	std::cout << "T after set 2 = " << std::endl;
+	CMatrix<double> row_vec(1, n_cols), col_vec(n_rows, 1);
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		col_vec(i) = 1;
+	}
+	for (size_t j = 0; j < n_cols; j++)
+	{
+		row_vec(j) = 2;
+	}
+	std::cout << "T after set col = " << std::endl;
+	T.set_col(0, col_vec);
 	std::cout << T << std::endl;
+
+	std::cout << "T after set row = " << std::endl;
+	T.set_row(0, row_vec);
+	std::cout << T << std::endl;
+
+	std::cout << "T after set block = " << std::endl;
+	T.set_block(3, 3, n_rows - 3, n_cols - 3, T_sub);
+	std::cout << T << std::endl;
+
+	std::cout << "Row 3 of T = " << std::endl;
+	std::cout << T.get_row(3) << std::endl;
+
+	std::cout << "Column 3 of T = " << std::endl;
+	std::cout << T.get_col(3) << std::endl;
+
+	std::cout << "Block of T of size 4x4 starting at (2, 2) = " << std::endl;
+	std::cout << T.get_block(2, 2, 4, 4) << std::endl;
+
+	std::cout << "Block of T of size 3x3 starting at (0, 0) = " << std::endl;
+	std::cout << T.get_block(0, 0, 3, 3) << std::endl;
 
 	return 0;
 }

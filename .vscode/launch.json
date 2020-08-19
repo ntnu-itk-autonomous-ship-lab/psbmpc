@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch psbmpc lib debugging shit",
+            "name": "Launch psbmpc lib debugging",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/debug/src/tests/tester",
