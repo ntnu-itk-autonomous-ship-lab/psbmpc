@@ -54,7 +54,6 @@ public:
 
 	__host__ __device__ Derived& operator-=(const Derived &rhs);
 
-	__host__ __device__ Derived operator*(const Derived &other) const;
 	__host__ __device__ Derived operator*(const T &scalar) const;
 
 	__host__ __device__ Derived& operator*=(const T &scalar);
@@ -69,13 +68,7 @@ public:
 
 	__host__ __device__ T& operator()(const size_t index) const;
 
-	__host__ __device__ T& operator[](const size_t row, const size_t col) const { return *this(row, col); }
-
 	__host__ __device__ T& operator[](const size_t index) const { return *this(index); }
-
-	__host__ __device__ void transpose();
-
-	__host__ __device__ Derived transposed() const;
 
 	__host__ __device__ T determinant() const;
 
@@ -173,20 +166,20 @@ __host__ __device__ Derived Matrix_Base<T, Derived>::operator+(
 	) const
 {
 	Derived& self = get_this();
-	if (n_rows < other.n_rows || n_cols < other.n_cols)
+	if (self.n_rows < other.n_rows || self.n_cols < other.n_cols)
 	{
 		return other + self;
 	}
 
-	assert((n_rows == other.n_rows && n_cols == other.n_cols) 	|| 
-			(n_rows == other.n_rows && other.n_cols == 1) 		||
-			(n_cols == other.n_cols && other.n_rows == 1));
+	assert((self.n_rows == other.n_rows && self.n_cols == other.n_cols) 	|| 
+			(self.n_rows == other.n_rows && other.n_cols == 1) 				||
+			(self.n_cols == other.n_cols && other.n_rows == 1));
 
 	Derived result = self;
 	
-	for (size_t i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < self.n_cols ; j++)
 		{
 			if (other.n_rows == 1)
 			{
@@ -212,9 +205,9 @@ __host__ __device__ Derived Matrix_Base<T, Derived>::operator+(
 {
 	Derived& self = get_this();
 	Derived result = self;
-	for (size_t i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < self.n_cols ; j++)
 		{
 			result(i, j) += scalar;
 		}
@@ -233,12 +226,12 @@ __host__ __device__ Derived& Matrix_Base<T, Derived>::operator+=(
 	const Derived &rhs 										// In: Right hand side matrix/vector to add by
 	)
 {
-	assert(n_rows == rhs.n_rows && n_cols == rhs.n_cols);
+	assert(self.n_rows == rhs.n_rows && self.n_cols == rhs.n_cols);
 
 	Derived& self = get_this();
-	for (size_t i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < self.n_cols ; j++)
 		{
 			self(i, j) += rhs(i, j);
 		}
@@ -258,20 +251,20 @@ __host__ __device__ Derived Matrix_Base<T, Derived>::operator-(
 	) const
 {
 	Derived& self = get_this();
-	if (n_rows < other.n_rows || n_cols < other.n_cols)
+	if (self.n_rows < other.n_rows || self.n_cols < other.n_cols)
 	{
 		return other - self;
 	}
 
-	assert((n_rows == other.n_rows && n_cols == other.n_cols) 	|| 
-			(n_rows == other.n_rows && other.n_cols == 1) 		||
-			(n_cols == other.n_cols && other.n_rows == 1));
+	assert((self.n_rows == other.n_rows && self.n_cols == other.n_cols) 	|| 
+			(self.n_rows == other.n_rows && other.n_cols == 1) 				||
+			(self.n_cols == other.n_cols && other.n_rows == 1));
 
 	Derived result = self;
 
-	for (size_t i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < self.n_cols ; j++)
 		{
 			if (other.n_rows == 1)
 			{
@@ -297,9 +290,9 @@ __host__ __device__ Derived Matrix_Base<T, Derived>::operator-(
 {
 	Derived& self = get_this();
 	Derived result = self;
-	for (size_t i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < self.n_cols ; j++)
 		{
 			result(i, j) -= scalar;
 		}
@@ -318,13 +311,13 @@ __host__ __device__ Derived& Matrix_Base<T, Derived>::operator-=(
 	const Derived &rhs 										// In: Right hand side matrix/vector to subtract by
 	)
 {
-	assert(n_rows == rhs.n_rows);
-	assert(n_cols == rhs.n_cols);
+	assert(self.n_rows == rhs.n_rows);
+	assert(self.n_cols == rhs.n_cols);
 
 	Derived& self = get_this();
-	for (size_t i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < self.n_cols ; j++)
 		{
 			self(i, j) -= rhs(i, j);
 		}
@@ -340,40 +333,16 @@ __host__ __device__ Derived& Matrix_Base<T, Derived>::operator-=(
 *****************************************************************************************/
 template <class T, class Derived>
 __host__ __device__ Derived Matrix_Base<T, Derived>::operator*(
-	const Derived &other 									// In: Matrix/vector to multiply with
-	) const
-{	
-	// Verify that the matrix product is valid
-	assert(n_cols == other.n_rows);
-
-	Derived& self = get_this();
-	Derived result(n_rows, other.n_cols);
-	for (size_t i = 0 ; i < n_rows; i++)
-	{
-		for (size_t j = 0; j < other.n_cols; j++)
-		{
-			result(i, j) = (T)0;
-			for (size_t k = 0; k < n_cols; k++)
-			{
-				result(i, j) += self(i, k) * other(k, j);
-			}
-		}
-	}
-	return result;
-}
-
-template <class T, class Derived>
-__host__ __device__ Derived Matrix_Base<T, Derived>::operator*(
 	const T &scalar 											// In: scalar to multiply with
 	) const
 {
 	Derived& self = get_this();
 	Derived result = self;
-	for (size_t i = 0 ; i < n_rows; i++)
+	for (size_t i = 0 ; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < self.n_cols; j++)
 		{
-			result(i, j) = scalar * self(i, j);
+			result(i, j) *= scalar;
 		}
 	}
 	return result;
@@ -391,9 +360,9 @@ __host__ __device__ Derived& Matrix_Base<T, Derived>::operator*=(
 	)
 {	
 	Derived& self = get_this();
-	for (size_t i = 0 ; i < n_rows; i++)
+	for (size_t i = 0 ; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < self.n_cols; j++)
 		{
 			self(i, j) *= scalar;
 		}
@@ -414,9 +383,9 @@ __host__ __device__ Derived Matrix_Base<T, Derived>::operator/(
 {	
 	Derived& self = get_this();
 	Derived result = self;
-	for (size_t i = 0 ; i < n_rows; i++)
+	for (size_t i = 0 ; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < self.n_cols; j++)
 		{
 			result(i, j) /= scalar;
 		}
@@ -436,9 +405,9 @@ __host__ __device__ Derived& Matrix_Base<T, Derived>::operator/=(
 	)
 {
 	Derived& self = get_this();
-	for (size_t i = 0 ; i < n_rows; i++)
+	for (size_t i = 0 ; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < self.n_cols; j++)
 		{
 			self(i, j) /= scalar;
 		}
@@ -457,14 +426,13 @@ __host__ __device__ bool Matrix_Base<T, Derived>::operator==(
 	const Derived &rhs 										// In: Right hand side matrix/vector to compare with
 	) const
 {
-	assert(n_rows == rhs.n_rows);
-	assert(n_cols == rhs.n_cols);
+	assert(self.n_rows == rhs.n_rows && self.n_cols == rhs.n_cols);
 
 	Derived& self = get_this();
 	bool result = true;
-	for (size_t i = 0; i < n_rows; i++)
+	for (size_t i = 0; i < self.n_rows; i++)
 	{
-		for (size_t j = 0; j < n_cols ; j++)
+		for (size_t j = 0; j < self.n_cols ; j++)
 		{
 			if (self(i, j) != rhs(i, j))
 			{
@@ -486,62 +454,17 @@ __host__ __device__ T& Matrix_Base<T, Derived>::operator()(
 	const size_t index 										// In: Index of element to fetch
 	) const
 {
-	assert(n_rows == 1 || n_cols == 1);
-
 	Derived& self = get_this();
+	assert(self.n_rows == 1 || self.n_cols == 1 && (index < self.n_cols || index < self.n_rows));
+
 	if (n_rows == 1)
 	{
-		assert(index < n_cols);
 		return self(0, index);
 	} 
 	else
 	{
-		assert(index < n_rows);
 		return self(index, 0);
 	}
-	
-}
-
-/****************************************************************************************
-*  Name     : transpose
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-template <class T, class Derived>
-__host__ __device__ void Matrix_Base<T, Derived>::transpose()
-{
-	Derived& self = get_this();
-	Derived result(n_cols, n_rows);
-	for (size_t i = 0; i < n_cols; i++)
-	{
-		for (size_t j = 0; j < n_rows ; j++)
-		{
-			result(i, j) = self(j, i);
-		}
-	}
-	*this = result;
-}
-
-/****************************************************************************************
-*  Name     : transpose
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-template <class T, class Derived>
-__host__ __device__ Derived Matrix_Base<T, Derived>::transposed() const
-{
-	Derived& self = get_this();
-	Derived result(n_cols, n_rows);
-	for (size_t i = 0; i < n_cols; i++)
-	{
-		for (size_t j = 0; j < n_rows ; j++)
-		{
-			result(i, j) = self(j, i);
-		}
-	}
-	return result;
 }
 
 /****************************************************************************************
@@ -553,14 +476,14 @@ __host__ __device__ Derived Matrix_Base<T, Derived>::transposed() const
 template <class T, class Derived>
 __host__ __device__ T Matrix_Base<T, Derived>::determinant() const
 {
-	assert(n_rows == n_cols);
-
 	Derived& self = get_this();
-	if (n_rows == 1)
+	assert(self.n_rows == self.n_cols);
+
+	if (self.n_rows == 1)
 	{
         return self(0, 0);
 	}
-	if (n_rows == 2)
+	if (self.n_rows == 2)
 	{
 		return self(0, 0) * self(1, 1) - self(0, 1) * self(1, 0);
 	}
@@ -568,9 +491,9 @@ __host__ __device__ T Matrix_Base<T, Derived>::determinant() const
     T det = 0;
  
 	// allocate the cofactor matrix
-	Derived temp_minor(n_rows - 1);
+	Dynamic_Matrix<T> temp_minor(self.n_rows - 1);
 
-    for(size_t i = 0; i < n_rows; i++)
+    for(size_t i = 0; i < self.n_rows; i++)
     {
         // get minor of element (0,i)
         fill_minor_matrix(self, temp_minor, 0, i);
@@ -593,19 +516,18 @@ template <class T, class Derived>
 __host__ __device__ Derived Matrix_Base<T, Derived>::inverse() const
 {
 	Derived& self = get_this();
-	assert(self.n_rows == self.n_cols);
-	assert(determinant() > T(0));
+	assert(self.n_rows == self.n_cols && determinant() > T(0));
 	
 	T det_inv = (T)1 / determinant();
 
 	Derived result = self;
 
-	if (n_rows == 1)
+	if (self.n_rows == 1)
 	{
 		result(0, 0) = det_inv;
 		return result;
 	}
-	if (n_rows == 2)
+	if (self.n_rows == 2)
 	{
 		result(0, 0) = self(1, 1);
 		result(0, 1) = - self(0, 1);
@@ -615,11 +537,11 @@ __host__ __device__ Derived Matrix_Base<T, Derived>::inverse() const
 		return result;
 	}    
  
-    Derived temp_minor(n_rows - 1);
+    Dynamic_Matrix<T> temp_minor(self.n_rows - 1);
  
-    for(size_t i = 0; i < n_rows; i++)
+    for(size_t i = 0; i < self.n_rows; i++)
     {
-        for(size_t j = 0; j < n_rows; j++)
+        for(size_t j = 0; j < self.n_rows; j++)
         {
 			// Fill values for minor M_ji
 			fill_minor_matrix(self, temp_minor, j, i);
@@ -644,19 +566,21 @@ __host__ __device__ T Matrix_Base<T, Derived>::dot(
 	const Derived &other 									// In: Vector to dot with
 	) const
 {
-	assert((n_rows == other.n_rows && n_cols == other.n_cols) && (n_rows == 1 || n_cols == 1));
+	Derived& self = get_this();
+	assert((self.n_rows == other.n_rows && self.n_cols == other.n_cols) && 
+			(self.n_rows == 1 || self.n_cols == 1));
 
 	T result = (T)0;
-	if (n_rows == 1) 	
+	if (self.n_rows == 1) 	
 	{ 
-		for (size_t j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < self.n_cols; j++)
 		{
 			result += (*this(0, j)) * other(0, j);
 		}
 	} 
 	else
 	{
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < self.n_rows; i++)
 		{
 			result += (*this(i, 0)) * other(i, 0);
 		}
@@ -673,8 +597,9 @@ __host__ __device__ T Matrix_Base<T, Derived>::dot(
 template <class T, class Derived>
 __host__ __device__ void Matrix_Base<T, Derived>::normalize()
 {
-	assert(n_rows == 1 || n_cols == 1);
-	*this /= norm();
+	Derived& self = get_this();
+	assert(self.n_rows == 1 || self.n_cols == 1);
+	self /= norm();
 }
 
 /****************************************************************************************
@@ -686,9 +611,10 @@ __host__ __device__ void Matrix_Base<T, Derived>::normalize()
 template <class T, class Derived>
 __host__ __device__ Derived Matrix_Base<T, Derived>::normalized() const
 {
-	assert(n_rows == 1 || n_cols == 1);
+	Derived& self = get_this();
+	assert(self.n_rows == 1 || self.n_cols == 1);
 	
-	Derived result = *this;
+	Derived result = self;
 	return result /= norm();
 }
 
@@ -702,28 +628,29 @@ __host__ __device__ Derived Matrix_Base<T, Derived>::normalized() const
 template <class T, class Derived>
 __host__ __device__ T Matrix_Base<T, Derived>::norm() const
 {
+	Derived& self = get_this();
 	T norm = (T)0;
-	if (n_rows == 1)
+	if (self.n_rows == 1)
 	{
-		for (size_t j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < self.n_cols; j++)
 		{
-			norm += (*this(0, j)) * (*this(0, j));
+			norm += self(0, j) * self(0, j);
 		}
 	} 
-	else if (n_cols == 1)
+	else if (self.n_cols == 1)
 	{
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < self.n_rows; i++)
 		{
-			norm += (*this(i, 0)) * (*this(i, 0));
+			norm += self(i, 0) * self(i, 0);
 		}
 	} 
 	else
 	{
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < self.n_rows; i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < self.n_cols; j++)
 			{
-				norm += (*this(i, j)) * (*this(i, j));
+				norm += self(i, j) * self(i, j);
 			}
 		}
 	}
@@ -1237,6 +1164,12 @@ public:
 
 	__host__ __device__ Dynamic_Matrix& operator=(const Dynamic_Matrix &rhs);
 
+	__host__ __device__ Dynamic_Matrix operator*(const Dynamic_Matrix &other) const;
+
+	__host__ __device__ void transpose();
+
+	__host__ __device__ Dynamic_Matrix transposed() const;
+
 	__host__ __device__ void resize(const size_t n_rows, const size_t n_cols);
 
 	__host__ __device__ void conservative_resize(const size_t n_rows, const size_t n_cols);
@@ -1295,6 +1228,98 @@ __host__ __device__ Dynamic_Matrix<T>::~Dynamic_Matrix()
 }
 
 /****************************************************************************************
+*  Name     : operator=
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ Dynamic_Matrix<T>& Dynamic_Matrix<T>::operator=(
+	const Dynamic_Matrix<T> &rhs 									// In: Right hand side matrix/vector to assign
+	)
+{
+	if (this == &rhs)
+	{
+		return *this;
+	}
+	
+	deallocate_data(); 
+
+	assign_data(rhs);
+	
+	return *this;
+}
+
+/****************************************************************************************
+*  Name     : operator*
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ Dynamic_Matrix<T> Dynamic_Matrix<T>::operator*(
+	const Dynamic_Matrix<T> &other 									// In: Matrix/vector to multiply with
+	) const
+{	
+	// Verify that the matrix product is valid
+	assert(n_cols == other.n_rows);
+
+	Dynamic_Matrix<T> result(n_rows, other.n_cols);
+	for (size_t i = 0 ; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < other.n_cols; j++)
+		{
+			result(i, j) = (T)0;
+			for (size_t k = 0; k < n_cols; k++)
+			{
+				result(i, j) += self(i, k) * other(k, j);
+			}
+		}
+	}
+	return result;
+}
+
+/****************************************************************************************
+*  Name     : transpose
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ void Dynamic_Matrix<T>::transpose()
+{
+	Dynamic_Matrix<T> result(n_cols, n_rows);
+	for (size_t i = 0; i < n_cols; i++)
+	{
+		for (size_t j = 0; j < n_rows ; j++)
+		{
+			result(i, j) = self(j, i);
+		}
+	}
+	*this = result;
+}
+
+/****************************************************************************************
+*  Name     : transposed
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T>
+__host__ __device__ Dynamic_Matrix<T> Dynamic_Matrix<T>::transposed() const
+{
+	Dynamic_Matrix result(n_cols, n_rows);
+	for (size_t i = 0; i < n_cols; i++)
+	{
+		for (size_t j = 0; j < n_rows ; j++)
+		{
+			result(i, j) = self(j, i);
+		}
+	}
+	return result;
+}
+
+/****************************************************************************************
 *  Name     : resize
 *  Function : Resizes the Matrix_Base without keeping old data
 *  Author   : 
@@ -1334,29 +1359,6 @@ __host__ __device__ void Dynamic_Matrix<T>::conservative_resize(
 		}
 	}
 	*this = resized;
-}
-
-/****************************************************************************************
-*  Name     : operator=
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-template <class T>
-__host__ __device__ Dynamic_Matrix<T>& Dynamic_Matrix<T>::operator=(
-	const Dynamic_Matrix<T> &rhs 									// In: Right hand side matrix/vector to assign
-	)
-{
-	if (this == &rhs)
-	{
-		return *this;
-	}
-	
-	deallocate_data(); 
-
-	assign_data(rhs);
-	
-	return *this;
 }
 
 /****************************************************************************************
@@ -1434,6 +1436,8 @@ private:
 
 	T data[Rows * Cols];
 
+	__host__ __device__ void assign_data(const Static_Matrix &other);
+
 public:
 
     __host__ __device__ Static_Matrix() : n_rows(Rows), n_cols(Cols) {}
@@ -1441,6 +1445,10 @@ public:
 	__host__ __device__ Static_Matrix(const Static_Matrix &other);
 
 	__host__ __device__ Static_Matrix& operator=(const Static_Matrix &rhs);
+
+	__host__ __device__ Static_Matrix operator*(const Static_Matrix &other) const;
+
+	__host__ __device__ Static_Matrix transposed() const;
 };
 
 /****************************************************************************************
@@ -1483,6 +1491,80 @@ __host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::
 	return *this;
 }
 
+/****************************************************************************************
+*  Name     : operator*
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T, int Rows, int Cols>
+__host__ __device__  Static_Matrix<T, Rows, Cols>  Static_Matrix<T, Rows, Cols>::operator*(
+	const  Static_Matrix<T, Rows, Cols> &other 							// In: Matrix/vector to multiply with
+	) const
+{	
+	// Verify that the matrix product is valid
+	assert(n_cols == other.n_rows);
+
+	Static_Matrix<T, n_rows, other.n_cols> result;
+	for (size_t i = 0 ; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < other.n_cols; j++)
+		{
+			result(i, j) = (T)0;
+			for (size_t k = 0; k < n_cols; k++)
+			{
+				result(i, j) += self(i, k) * other(k, j);
+			}
+		}
+	}
+	return result;
+}
+
+/****************************************************************************************
+*  Name     : transposed
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T, int Rows, int Cols>
+__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::transposed() const
+{
+	Static_Matrix<T, Rows, Cols> result;
+	for (size_t i = 0; i < n_cols; i++)
+	{
+		for (size_t j = 0; j < n_rows ; j++)
+		{
+			result(i, j) = self(j, i);
+		}
+	}
+	return result;
+}
+
+/****************************************************************************************
+	Private functions
+****************************************************************************************/
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+template <class T, int Rows, int Cols>
+__host__ __device__ void Static_Matrix<T, Rows, Cols>::assign_data(
+	const Static_Matrix<T, Rows, Cols> &other 									// In: Matrix whose data to assign to *this;
+	)
+{
+	assert(n_rows == other.n_rows && n_cols == other.n_cols);
+
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			*this(i, j) = other(i, j);
+		}
+	}
+}
+
 
 
 //=========================================================================================================
@@ -1493,6 +1575,7 @@ using CMatrix2d = Static_Matrix<double, 2, 2>;
 using CMatrix3d = Static_Matrix<double, 3, 3>;
 using CMatrix4d = Static_Matrix<double, 4, 4>;
 
+// Column vectors are standard here
 using CVector2d = Static_Matrix<double, 2, 1>;
 using CVector3d = Static_Matrix<double, 3, 1>;
 using CVector4d = Static_Matrix<double, 4, 1>;
