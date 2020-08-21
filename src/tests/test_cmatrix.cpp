@@ -427,5 +427,7 @@ int main()
 	std::cout << CMatrix<double>::identity(3, 3) << std::endl;
 	std::cout << CMatrix<double>::ones(3, 3) << std::endl;
 
+	Eigen::Matrix<double, 4, 2> m42; m42.transpose();
+
 	return 0;
 }
