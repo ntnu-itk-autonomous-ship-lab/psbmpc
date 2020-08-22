@@ -121,7 +121,7 @@ namespace CML
 
 		__host__ __device__ T min_coeff() const;
 
-		__host__ friend std::ostream& operator<<(std::ostream& os, const Derived<T, Derived> &cm)
+		__host__ friend std::ostream& operator<<(std::ostream& os, const Derived &cm)
 		{
 			for (size_t i = 0; i< cm.n_rows; i++)
 			{
