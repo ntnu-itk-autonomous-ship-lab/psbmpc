@@ -41,17 +41,17 @@ int main()
 	//================================================================================
 	// Assignment operator + copy constructor test
 	//================================================================================
-	CMatrix<double> t1(3);
-	CMatrix<double> t2(2);
+	CML::MatrixXd t1(3);
+	CML::MatrixXd t2(2);
 	t1 = t2;
 
-	CMatrix<double> t3 = t1;
+	CML::MatrixXd t3 = t1;
 
 	//================================================================================
 	// 2x2 inverse test
 	//================================================================================
 	size_t n_rows = 2, n_cols = 2;
-	CMatrix<double> M1(n_rows, n_cols), M1_inv = M1;
+	CML::MatrixXd M1(n_rows, n_cols), M1_inv = M1;
 	Eigen::MatrixXd M2(n_rows, n_cols); 
 	Eigen::MatrixXd M_diff(n_rows, n_cols);
 
@@ -166,7 +166,7 @@ int main()
 	// Transpose test
 	//================================================================================
 	n_rows = 4; n_cols = 2;
-	CMatrix<double> O(n_rows, n_cols);
+	CML::MatrixXd O(n_rows, n_cols);
 	std::cout << "Original = " << std::endl;
 	std::cout << O << std::endl;
 
@@ -176,7 +176,7 @@ int main()
 	// Dot product test
 	//================================================================================
 	n_rows = 6; n_cols = 1;
-	CMatrix<double> v1(n_rows, n_cols), v2(n_rows, n_cols);
+	CML::MatrixXd v1(n_rows, n_cols), v2(n_rows, n_cols);
 	Eigen::VectorXd v1_e(n_rows), v2_e(n_rows);
 	for (size_t i = 0; i < 6; i++)
 	{
@@ -192,7 +192,7 @@ int main()
 	// Operator tests
 	//================================================================================
 	n_rows = 4; n_cols = 4;
-	CMatrix<double> A(n_rows, n_cols), B(n_rows, n_cols), C;
+	CML::MatrixXd A(n_rows, n_cols), B(n_rows, n_cols), C;
 	Eigen::MatrixXd A_e(n_rows, n_cols), B_e(n_rows, n_cols), C_e(n_rows, n_cols);
 	M_diff.resize(n_rows, n_cols);
 
@@ -289,7 +289,7 @@ int main()
 	std::cout << M_diff << std::endl;
 
 	A.set_zero();
-	CMatrix<double> a_vec(A.get_rows(), 1);
+	CML::MatrixXd a_vec(A.get_rows(), 1);
 	for (size_t i = 0; i < A.get_rows(); i++)
 	{
 		a_vec(i) = i + 1;
@@ -317,9 +317,9 @@ int main()
 	// Quadratic form calculation test
 	//================================================================================
 	n_rows = 10; n_cols = 10;
-	CMatrix<double> x(n_rows, 1);
+	CML::MatrixXd x(n_rows, 1);
 	A.resize(n_rows, n_cols);
-	CMatrix<double> res;
+	CML::MatrixXd res;
 	A_e.resize(n_rows, n_cols);
 	Eigen::VectorXd x_e(n_rows);
 	double qf;
@@ -355,7 +355,7 @@ int main()
 	Eigen::VectorXd r_e1(n_rows);
 
 	A.resize(n_rows, n_cols); A_e.resize(n_rows, n_cols);
-	CMatrix<double> r2(n_rows, n_cols);
+	CML::MatrixXd r2(n_rows, n_cols);
 	Eigen::MatrixXd r2_e(n_rows, n_cols);
 
 	for (size_t i = 0; i < n_rows; i++)
@@ -384,11 +384,11 @@ int main()
 	// Set function tests
 	//================================================================================
 	n_rows = 6; n_cols = 6;
-	CMatrix<double> T(n_rows, n_cols), T_sub(n_rows - 3, n_cols - 3);
+	CML::MatrixXd T(n_rows, n_cols), T_sub(n_rows - 3, n_cols - 3);
 	T.set_zero(); T_sub.set_all_coeffs(3);
 	std::cout << "T before set = " << std::endl;
 	std::cout << T << std::endl;
-	CMatrix<double> row_vec(1, n_cols), col_vec(n_rows, 1);
+	CML::MatrixXd row_vec(1, n_cols), col_vec(n_rows, 1);
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		col_vec(i) = 1;
@@ -424,8 +424,8 @@ int main()
 	//================================================================================
 	// Other tests
 	//================================================================================
-	std::cout << CMatrix<double>::identity(3, 3) << std::endl;
-	std::cout << CMatrix<double>::ones(3, 3) << std::endl;
+	std::cout << CML::Dynamic_Matrix<double>::identity(3, 3) << std::endl;
+	std::cout << CML::Dynamic_Matrix<double>::ones(3, 3) << std::endl;
 
 	Eigen::Matrix<double, 4, 2> m42; m42.transpose();
 
