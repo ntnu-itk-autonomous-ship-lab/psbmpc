@@ -106,8 +106,8 @@ __host__ __device__ CPE::CPE(
 
     this->converged_last = cpe.converged_last;
 
-    mu_CE_last = new Eigen::Vector2d[n_obst];
-    P_CE_last = new Eigen::Matrix2d[n_obst];
+    mu_CE_last = new CML::Vector2d[n_obst];
+    P_CE_last = new CML::Matrix2d[n_obst];
     for (int i = 0; i < n_obst; i++)
     {
         mu_CE_last[i] = cpe.mu_CE_last[i];
@@ -185,11 +185,12 @@ __host__ __device__ void CPE::set_number_of_obstacles(
     this->n_obst = n_obst; 
     
     clean();
-    mu_CE_last = new Eigen::Vector2d[n_obst];
-    P_CE_last = new Eigen::Matrix2d[n_obst];
+
+    mu_CE_last = new CML::Vector2d[n_obst];
+    P_CE_last = new CML::Matrix2d[n_obst];
     
-    P_c_p.resize(n_obst); P_c_upd.resize(n_obst);
-    var_P_c_p.resize(n_obst); var_P_c_upd.resize(n_obst);
+    P_c_p.resize(n_obst, 1); P_c_upd.resize(n_obst, 1);
+    var_P_c_p.resize(n_obst, 1); var_P_c_upd.resize(n_obst, 1);
 
     resize_matrices();
 }
@@ -202,11 +203,11 @@ __host__ __device__ void CPE::set_number_of_obstacles(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::initialize(
-    const Eigen::Matrix<double, 6, 1> &xs_os,                                   // In: Own-ship state vector
-    const Eigen::Vector4d &xs_i,                                                // In: Obstacle i state vector
-    const Eigen::VectorXd &P_i,                                                 // In: Obstacle i covariance flattened into n^2 x 1
-    const double d_safe_i,                                                      // In: Safety zone around own-ship when facing obstacle i
-    const int i                                                                 // In: Index of obstacle i
+    const CML::MatrixXd &xs_os,                                                     // In: Own-ship state vector
+    const CML::Vector4d &xs_i,                                                      // In: Obstacle i state vector
+    const CML::MatrixXd &P_i,                                                       // In: Obstacle i covariance flattened into n^2 x 1
+    const double d_safe_i,                                                          // In: Safety zone around own-ship when facing obstacle i
+    const int i                                                                     // In: Index of obstacle i
     )
 {
     // The estimation is done considering one obstacle at the time, so the d_safe parameter
@@ -217,9 +218,9 @@ __device__ void CPE::initialize(
     case CE:
         converged_last = false;
         // Heuristic initialization
-        mu_CE_last[i] = 0.5 * (xs_os.block<2, 1>(0, 0) + xs_i.block<2, 1>(0, 0)); 
+        mu_CE_last[i] = 0.5 * (xs_os.get_block(0, 0, 2, 1) + xs_i.get_block(0, 0, 2, 1)); 
         
-        P_CE_last[i] = pow(d_safe, 2) * Eigen::Matrix2d::Identity() / 3.0;
+        P_CE_last[i] = pow(d_safe, 2) * CML::Matrix2d::Identity() / 3.0;
         
         break;
     case MCSKF4D :
@@ -240,14 +241,14 @@ __device__ void CPE::initialize(
 *  Modified :
 *****************************************************************************************/
 __device__ double CPE::estimate(
-	const Eigen::MatrixXd &xs_os,                       // In: Own-ship state vector(s)
-    const Eigen::MatrixXd &xs_i,                        // In: Obstacle i state vector(s)
-    const Eigen::MatrixXd &P_i,                         // In: Obstacle i covariance(s), flattened into n² x n_cols
+	const CML::MatrixXd &xs_os,                       // In: Own-ship state vector(s)
+    const CML::MatrixXd &xs_i,                        // In: Obstacle i state vector(s)
+    const CML::MatrixXd &P_i,                         // In: Obstacle i covariance(s), flattened into n² x n_cols
     const int i                                         // In: Index of obstacle i
     )
 {
-    Eigen::Matrix2d P_i_2D;
-    int n_cols = xs_os.cols();
+    CML::Matrix2d P_i_2D;
+    int n_cols = xs_os.get_cols();
     double P_c;
     switch (method)
     {
@@ -277,28 +278,28 @@ __device__ double CPE::estimate(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::estimate_over_trajectories(
-		Eigen::Matrix<double, 1, -1> &P_c_i,                // In/out: Collision probability row vector: 1 x n_samples
-		const Eigen::Matrix<double, 6, -1> &xs_p,           // In: Ownship predicted trajectory
-		const Eigen::Matrix<double, 4, -1> &xs_i_p,         // In: Obstacle i predicted trajectory
-		const Eigen::Matrix<double, 16, -1> &P_i_p,         // In: Obstacle i associated predicted covariances
+		CML::MatrixXd &P_c_i,                               // In/out: Collision probability row vector: 1 x n_samples
+		const CML::MatrixXd &xs_p,                          // In: Ownship predicted trajectory
+		const CML::MatrixXd &xs_i_p,                        // In: Obstacle i predicted trajectory
+		const CML::MatrixXd &P_i_p,                         // In: Obstacle i associated predicted covariances
         const double d_safe_i,                              // In: Safety zone around own-ship when facing obstacle i,
 		const int i,                                        // In: Index of obstacle
         const double dt                                     // In: Prediction time step
     )
 {
-    int n_samples = xs_p.cols();
+    int n_samples = xs_p.get_cols();
 
     int n_seg_samples = std::round(dt_seg / dt) + 1, k_j_(0), k_j(0);
-	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
+	CML::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
 
-    initialize(xs_p.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i, i);
+    initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i, i);
 
     for (int k = 0; k < n_samples; k++)
     {
         switch(method)
         {
             case CE :	
-                P_c_i(0, k) = estimate(xs_p.col(k), xs_i_p.col(k), P_i_p.col(k), i);
+                P_c_i(0, k) = estimate(xs_p.get_col(k), xs_i_p.get_col(k), P_i_p.get_col(k), i);
                 break;
             case MCSKF4D :
                 k_j_ = 0; k_j = 0;
@@ -306,14 +307,14 @@ __device__ void CPE::estimate_over_trajectories(
                 if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
                 {
                     k_j_ = k_j; k_j = k;
-                    xs_os_seg = xs_p.block(0, k_j_, 6, n_seg_samples);
-                    xs_i_seg = xs_i_p.block(0, k_j_, 4, n_seg_samples);
+                    xs_os_seg = xs_p.get_block(0, k_j_, 6, n_seg_samples);
+                    xs_i_seg = xs_i_p.get_block(0, k_j_, 4, n_seg_samples);
 
-                    P_i_seg = P_i_p.block(0, k_j_, 16, n_seg_samples);
+                    P_i_seg = P_i_p.get_block(0, k_j_, 16, n_seg_samples);
 
                     P_c_i(0, k_j_) = estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
                     // Collision probability on this active segment are all equal
-                    P_c_i.block(0, k_j_, 1, n_seg_samples) = P_c_i(0, k_j_) * Eigen::MatrixXd::Ones(1, k_j - k_j_ + 1);
+                    P_c_i.block(0, k_j_, 1, n_seg_samples) = P_c_i(0, k_j_) * CML::MatrixXd::Ones(1, k_j - k_j_ + 1);
                 }	
                 break;
             default :
@@ -381,12 +382,12 @@ __host__ __device__ void CPE::resize_matrices()
         case CE :
             samples.resize(2, n_CE);
             elite_samples.resize(2, n_CE);
-            valid.resize(n_CE);
+            valid.resize(n_CE, 1);
             L.resize(2, 2);
             break;
         case MCSKF4D :
             samples.resize(4, n_MCSKF);
-            valid.resize(n_MCSKF);
+            valid.resize(n_MCSKF, 1);
             L.resize(4, 4);
             break;
         default :
@@ -407,11 +408,11 @@ __host__ __device__ void CPE::resize_matrices()
 *  Modified :
 *****************************************************************************************/
 __device__ inline void CPE::update_L(
-    const Eigen::MatrixXd &in                                                     // In: Matrix in consideration
+    const CML::MatrixXd &in                                                     // In: Matrix in consideration
     )
 {
-    int n = in.rows();
-    L = Eigen::MatrixXd::Zero(n, n);
+    int n = in.get_rows();
+    L.set_zero();
     double sum;
     for (int i = 0; i < n; i++) { 
         for (int j = 0; j <= i; j++) 
@@ -448,16 +449,19 @@ __device__ inline void CPE::update_L(
 *  Modified :
 *****************************************************************************************/
 __device__ inline double CPE::calculate_2x2_quadratic_form(
-    const Eigen::Vector2d &x,                                       // In: Vector in the quadratic form
-    const Eigen::Matrix2d &A                                        // In: Matrix to invert in the quadratic form
+    const CML::Vector2d &x,                                       // In: Vector in the quadratic form
+    const CML::Matrix2d &A                                        // In: Matrix to invert in the quadratic form
     )
 {
-    Eigen::Matrix2d inv_A;
-    inv_A << A(1, 1), -A(0, 1),
-             -A(1, 0), A(0, 0);
+    CML::Matrix2d inv_A;
+    inv_A(0, 0) = A(1, 1);
+    inv_A(0, 1) = -A(0, 1);
+    inv_A(1, 0) = -A(1, 0);
+    inv_A(1, 1) = A(1, 1);
     inv_A = inv_A / (A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0));
 
-    return x.transpose() * inv_A * x;
+    CML::MatrixXd result = x.transposed() * inv_A * x;
+    return (double)result(0, 0);
 }
 
 /****************************************************************************************
@@ -467,12 +471,12 @@ __device__ inline double CPE::calculate_2x2_quadratic_form(
 *  Modified :
 *****************************************************************************************/
 __device__ inline void CPE::norm_pdf_log(
-    Eigen::VectorXd &result,                                                    // In/out: Resulting vector of pdf values
-    const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
-    const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
+    CML::MatrixXd &result,                                                    // In/out: Resulting vector of pdf values
+    const CML::MatrixXd &mu,                                                  // In: Expectation of the MVN
+    const CML::MatrixXd &Sigma                                                // In: Covariance of the MVN
     )
 {
-    int n = samples.rows(), n_samples = samples.cols();
+    int n = samples.get_rows(), n_samples = samples.get_cols();
 
     double exp_val = 0;
     double log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
@@ -480,11 +484,11 @@ __device__ inline void CPE::norm_pdf_log(
     {
         if (n == 2)
         {
-            exp_val = calculate_2x2_quadratic_form(samples.col(i) - mu, Sigma);
+            exp_val = calculate_2x2_quadratic_form(samples.get_col(i) - mu, Sigma);
         }
         else
         {
-            exp_val = (samples.col(i) - mu).transpose() * Sigma.inverse() * (samples.col(i) - mu);
+            exp_val = (samples.get_col(i) - mu).transpose() * Sigma.inverse() * (samples.get_col(i) - mu);
         }
         exp_val = - exp_val / 2.0;
 
@@ -499,11 +503,11 @@ __device__ inline void CPE::norm_pdf_log(
 *  Modified :
 *****************************************************************************************/
 __device__ inline void CPE::generate_norm_dist_samples(
-    const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
-    const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
+    const CML::MatrixXd &mu,                                                  // In: Expectation of the MVN
+    const CML::MatrixXd &Sigma                                                // In: Covariance of the MVN
     )
 {
-    int n = samples.rows(), n_samples = samples.cols();
+    int n = samples.get_rows(), n_samples = samples.get_cols();
 
     update_L(Sigma);
     
@@ -515,7 +519,7 @@ __device__ inline void CPE::generate_norm_dist_samples(
         }
     }
     // Box-muller transform
-    samples = (L * samples).colwise() + mu;
+    samples = L * samples + mu;
 }
 
 /****************************************************************************************
@@ -525,7 +529,7 @@ __device__ inline void CPE::generate_norm_dist_samples(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::calculate_roots_2nd_order(
-    Eigen::Vector2d &r,                                                 // In: vector of roots to find
+    CML::Vector2d &r,                                                 // In: vector of roots to find
     bool &is_complex,                                                   // In: Indicator of real/complex roots
     const double A,                                                     // In: Coefficient in polynomial 
     const double B,                                                     // In: Coefficient in polynomial 
@@ -564,9 +568,9 @@ __device__ void CPE::calculate_roots_2nd_order(
 *  Modified :
 *****************************************************************************************/
 __device__ double CPE::produce_MCS_estimate(
-	const Eigen::Vector4d &xs_i,                                                // In: Obstacle state vector
-	const Eigen::Matrix4d &P_i,                                                 // In: Obstacle covariance
-	const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
+	const CML::Vector4d &xs_i,                                                // In: Obstacle state vector
+	const CML::Matrix4d &P_i,                                                 // In: Obstacle covariance
+	const CML::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
 	const double t_cpa                                                         // In: Time to cpa
     )
 {
@@ -578,7 +582,7 @@ __device__ double CPE::produce_MCS_estimate(
 
     // The estimate is taken as the ratio of samples inside the integration domain, 
     // to the total number of samples, i.e. the mean of the validity vector
-    P_c = valid.mean();
+    P_c = valid.rwise_mean()(0);
     if (P_c > 1) { return 1; }
     else         { return P_c; }      
 }
@@ -592,11 +596,11 @@ __device__ double CPE::produce_MCS_estimate(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_sample_validity_4D(
-    const Eigen::Vector2d &p_os_cpa,                                           // In: Position of own-ship at cpa
+    const CML::Vector2d &p_os_cpa,                                           // In: Position of own-ship at cpa
     const double t_cpa                                                         // In: Time to cpa
     )
 {
-    int n_samples = samples.cols();
+    int n_samples = samples.get_cols();
 
     bool complex_roots;
     Eigen::Vector2d p_i_sample, v_i_sample;
@@ -606,8 +610,8 @@ __device__ void CPE::determine_sample_validity_4D(
     {
         valid(j) = 0;
 
-        p_i_sample = samples.block<2, 1>(0, j);
-        v_i_sample = samples.block<2, 1>(2, j);
+        p_i_sample = samples.get_block<2, 1>(0, j);
+        v_i_sample = samples.get_block<2, 1>(2, j);
 
         A = v_i_sample.dot(v_i_sample);
         B = 2 * (p_i_sample - p_os_cpa).transpose() * v_i_sample;
@@ -642,9 +646,9 @@ __device__ void CPE::determine_sample_validity_4D(
 *  Modified :
 *****************************************************************************************/
 __device__ double CPE::MCSKF4D_estimation(
-	const Eigen::MatrixXd &xs_os,                                               // In: Own-ship states for the active segment
-    const Eigen::MatrixXd &xs_i,                                                // In: Obstacle i states for the active segment
-    const Eigen::MatrixXd &P_i,                                                 // In: Obstacle i covariance for the active segment
+	const CML::MatrixXd &xs_os,                                               // In: Own-ship states for the active segment
+    const CML::MatrixXd &xs_i,                                                // In: Obstacle i states for the active segment
+    const CML::MatrixXd &P_i,                                                 // In: Obstacle i covariance for the active segment
     const int i                                                                 // In: Index of obstacle i
     )
 {
@@ -654,11 +658,11 @@ __device__ double CPE::MCSKF4D_estimation(
     /*****************************************************
     * Find linear segment representative state vectors
     *****************************************************/
-   int n_seg_samples = xs_os.cols();
+   int n_seg_samples = xs_os.get_cols();
     // Vectors representing the linear segments
-    Eigen::VectorXd xs_os_sl, xs_i_sl;
-    xs_os_sl = xs_os.col(0);
-    xs_i_sl = xs_i.col(0);
+    CML::MatrixXd xs_os_sl, xs_i_sl;
+    xs_os_sl = xs_os.get_col(0);
+    xs_i_sl = xs_i.get_col(0);
 
     if (n_seg_samples > 1)
     {
@@ -666,9 +670,9 @@ __device__ double CPE::MCSKF4D_estimation(
         double U_os_sl, U_i_sl, psi_os_sl, psi_i_sl;
     
         // Own-ship segment
-        xs_os_sl.resize(4);
+        xs_os_sl.resize(4, 1);
         // Find average velocity along segment
-        U_os_sl = xs_os.block(3, 0, 2, n_seg_samples).rowwise().mean().norm();
+        U_os_sl = xs_os.get_block(3, 0, 2, n_seg_samples).rwise_mean().norm();
         // Find angle of the segment
         psi_os_sl = atan2(xs_os(1, n_seg_samples - 1) - xs_os(1, 0), xs_os(0, n_seg_samples - 1) - xs_os(0, 0));
         // Set initial position to be that of the own-ship at the start of the segment
@@ -680,7 +684,7 @@ __device__ double CPE::MCSKF4D_estimation(
 
         // Obstacle segment
         // Same procedure as every year James
-        U_i_sl = xs_i.block(2, 0, 2, n_seg_samples).rowwise().mean().norm();
+        U_i_sl = xs_i.get_block(2, 0, 2, n_seg_samples).rwise_mean().norm();
         psi_i_sl = atan2(xs_i(1, n_seg_samples - 1) - xs_i(1, 0), xs_i(0, n_seg_samples - 1) - xs_i(0, 0));
 
         xs_i_sl(0) = xs_i(0, 0); 
@@ -689,7 +693,7 @@ __device__ double CPE::MCSKF4D_estimation(
         xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
     }
     Eigen::Matrix4d P_i_sl;
-    P_i_sl = reshape(P_i.col(0), 4, 4);
+    P_i_sl = reshape(P_i.get_col(0), 4, 4);
 
     Eigen::Vector2d p_os_cpa;
     double t_cpa, d_cpa;
@@ -747,15 +751,15 @@ __device__ double CPE::MCSKF4D_estimation(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_sample_validity_2D(
-	const Eigen::Vector2d &p_os                                                // In: Own-ship position vector
+	const CML::Vector2d &p_os                                                // In: Own-ship position vector
     )
 {
-    int n_samples = samples.cols();
+    int n_samples = samples.get_cols();
     bool inside_safety_zone;
     for (int j = 0; j < n_samples; j++)
     {
         valid(j) = 0;
-        inside_safety_zone = (samples.col(j) - p_os).dot(samples.col(j) - p_os) <= pow(d_safe, 2);
+        inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= pow(d_safe, 2);
         if (inside_safety_zone)
         {
             valid(j) = 1;
@@ -770,9 +774,9 @@ __device__ void CPE::determine_sample_validity_2D(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_best_performing_samples(
-    const Eigen::Vector2d &p_os,                                                    // In: Own-ship position vector
-    const Eigen::Vector2d &p_i,                                                     // In: Obstacle i position vector
-    const Eigen::Matrix2d &P_i                                                      // In: Obstacle i positional covariance
+    const CML::Vector2d &p_os,                                                    // In: Own-ship position vector
+    const CML::Vector2d &p_i,                                                     // In: Obstacle i position vector
+    const CML::Matrix2d &P_i                                                      // In: Obstacle i positional covariance
     )
 {
     N_e = 0;
@@ -780,7 +784,7 @@ __device__ void CPE::determine_best_performing_samples(
     for (int j = 0; j < n_CE; j++)
     {
         valid(j) = 0;
-        inside_safety_zone = (samples.col(j) - p_os).dot(samples.col(j) - p_os) <= pow(d_safe, 2);
+        inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= pow(d_safe, 2);
 
         // Apparently the below expression is faster than the calculate_2x2.... expression, even
         // though the opposite is the case in the norm_pdf_log function. Test this further if
@@ -788,7 +792,7 @@ __device__ void CPE::determine_best_performing_samples(
         /* inside_alpha_p_confidence_ellipse = 
             (samples.col(j) - p_i).transpose() * P_i.inverse() * (samples.col(j) - p_i) <= gate; */
  
-        inside_alpha_p_confidence_ellipse = calculate_2x2_quadratic_form(samples.col(j) - p_i, P_i) <= gate;
+        inside_alpha_p_confidence_ellipse = calculate_2x2_quadratic_form(samples.get_col(j) - p_i, P_i) <= gate;
 
         if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
         {
@@ -805,9 +809,9 @@ __device__ void CPE::determine_best_performing_samples(
 *  Modified :
 *****************************************************************************************/
 __device__ double CPE::CE_estimation(
-	const Eigen::Vector2d &p_os,                                                // In: Own-ship position vector
-    const Eigen::Vector2d &p_i,                                                 // In: Obstacle i position vector
-    const Eigen::Matrix2d &P_i,                                                 // In: Obstacle i positional covariance
+	const CML::Vector2d &p_os,                                                // In: Own-ship position vector
+    const CML::Vector2d &p_i,                                                 // In: Obstacle i position vector
+    const CML::Matrix2d &P_i,                                                 // In: Obstacle i positional covariance
     const int i                                                                 // In: Index of obstacle i
     )
 {
@@ -869,7 +873,7 @@ __device__ double CPE::CE_estimation(
         {
             if (valid(j) == 1)
             {
-                elite_samples.col(e_count) = samples.col(j);
+                elite_samples.set_col(e_count, samples.get_col(j));
                 e_count++;
             }
         }
@@ -884,12 +888,12 @@ __device__ double CPE::CE_estimation(
             mu_CE_prev = mu_CE;
             P_CE_prev = P_CE;
 
-            mu_CE = elite_samples.rowwise().mean();
+            mu_CE = elite_samples.rwise_mean();
 
             P_CE = Eigen::Matrix2d::Zero();
             for (int j = 0; j < N_e; j++)
             {
-                P_CE += (elite_samples.col(j) - mu_CE) * (elite_samples.col(j) - mu_CE).transpose();
+                P_CE += (elite_samples.get_col(j) - mu_CE) * (elite_samples.get_col(j) - mu_CE).transpose();
             }
             P_CE = P_CE / (double)N_e;
 
@@ -908,7 +912,7 @@ __device__ double CPE::CE_estimation(
 
     determine_sample_validity_2D(p_os);
 
-    Eigen::VectorXd weights(n_CE), integrand(n_CE), importance(n_CE);
+    CML::MatrixXd weights(1, n_CE), integrand(1, n_CE), importance(1, n_CE);
     norm_pdf_log(integrand, p_i, P_i);
     norm_pdf_log(importance, mu_CE, P_CE);
     
@@ -916,10 +920,10 @@ __device__ double CPE::CE_estimation(
     // where p^i = Norm_distr(p_i, P_i; t_k) is the obstacle positional uncertainty (or combined uncertainty
     // if the own-ship uncertainty is also considered). 
     // Divide using log-values as this is more robust against underflow
-    weights = (integrand - importance).array().exp();
-    weights = weights.cwiseProduct(valid);
+    weights = (integrand - importance).exp();
+    weights = weights.cwise_product(valid);
 
-    P_c = weights.mean();
+    P_c = weights.rwise_mean()(0, 0);
     if (P_c > 1) return 1;
     else return P_c;
 }

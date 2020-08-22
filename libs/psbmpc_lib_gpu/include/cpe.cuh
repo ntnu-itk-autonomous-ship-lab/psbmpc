@@ -26,7 +26,7 @@
 
 #include "curand_kernel.h"
 #include <thrust/device_vector.h>
-#include <Eigen/Dense>
+#include "cmatrix.cuh"
 
 #include <random>
 
@@ -60,69 +60,69 @@ private:
 	
 	bool converged_last;
 
-	Eigen::Vector2d *mu_CE_last;
-	Eigen::Matrix2d *P_CE_last;
+	CML::Vector2d *mu_CE_last;
+	CML::Matrix2d *P_CE_last;
 
 	int N_e, e_count;
-	Eigen::MatrixXd elite_samples;
+	CML::MatrixXd elite_samples;
 
 	// MCSKF4D-method parameters and internal states
 	double q, r, dt_seg; 
 	
-	Eigen::VectorXd P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
+	CML::MatrixXd P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
 	// Common internal sample variables
-	Eigen::MatrixXd samples;
-	Eigen::VectorXd valid;
+	CML::MatrixXd samples;
+	CML::MatrixXd valid;
 	
 	// Safety zone parameters
 	double d_safe;
 
 	// Cholesky decomposition matrix
-	Eigen::MatrixXd L;
+	CML::MatrixXd L;
 
 	__host__ __device__ void assign_data(const CPE &cpe);
 
 	__host__ __device__ void resize_matrices();
 
-	__device__ inline void update_L(const Eigen::MatrixXd &in);
+	__device__ inline void update_L(const CML::MatrixXd &in);
 
-	__device__ inline double calculate_2x2_quadratic_form(const Eigen::Vector2d &x, const Eigen::Matrix2d &A);
+	__device__ inline double calculate_2x2_quadratic_form(const CML::Vector2d &x, const CML::Matrix2d &A);
 
-	__device__ inline void norm_pdf_log(Eigen::VectorXd &result, const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	__device__ inline void norm_pdf_log(CML::MatrixXd &result, const CML::MatrixXd &mu, const CML::MatrixXd &Sigma);
 
-	__device__ inline void generate_norm_dist_samples(const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
+	__device__ inline void generate_norm_dist_samples(const CML::MatrixXd &mu, const CML::MatrixXd &Sigma);
 
-	__device__ void calculate_roots_2nd_order(Eigen::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
+	__device__ void calculate_roots_2nd_order(CML::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
 
 	__device__ double produce_MCS_estimate(
-		const Eigen::Vector4d &xs_i, 
-		const Eigen::Matrix4d &P_i, 
-		const Eigen::Vector2d &p_os_cpa,
+		const CML::Vector4d &xs_i, 
+		const CML::Matrix4d &P_i, 
+		const CML::Vector2d &p_os_cpa,
 		const double t_cpa);
 
 	__device__ void determine_sample_validity_4D(
-		const Eigen::Vector2d &p_os_cpa, 
+		const CML::Vector2d &p_os_cpa, 
 		const double t_cpa);
 
 	__device__ double MCSKF4D_estimation(
-		const Eigen::MatrixXd &xs_os,  
-		const Eigen::MatrixXd &xs_i, 
-		const Eigen::MatrixXd &P_i,
+		const CML::MatrixXd &xs_os,  
+		const CML::MatrixXd &xs_i, 
+		const CML::MatrixXd &P_i,
 		const int i);	
 
 	__device__ void determine_sample_validity_2D(
-		const Eigen::Vector2d &p_os);
+		const CML::Vector2d &p_os);
 
 	__device__ void determine_best_performing_samples(
-		const Eigen::Vector2d &p_os, 
-		const Eigen::Vector2d &p_i, 
-		const Eigen::Matrix2d &P_i);
+		const CML::Vector2d &p_os, 
+		const CML::Vector2d &p_i, 
+		const CML::Matrix2d &P_i);
 
 	__device__ double CE_estimation(
-		const Eigen::Vector2d &p_os, 
-		const Eigen::Vector2d &p_i, 
-		const Eigen::Matrix2d &P_i,
+		const CML::Vector2d &p_os, 
+		const CML::Vector2d &p_i, 
+		const CML::Matrix2d &P_i,
 		const int i);
 
 public:
@@ -148,23 +148,23 @@ public:
 	__device__ void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
 
 	__device__ void initialize(
-		const Eigen::Matrix<double, 6, 1> &xs_os, 
-		const Eigen::Vector4d &xs_i, 
-		const Eigen::VectorXd &P_i,
+		const CML::MatrixXd &xs_os, 
+		const CML::Vector4d &xs_i, 
+		const CML::MatrixXd &P_i,
 		const double d_safe_i, 
 		const int i);
 	
 	__device__ double estimate(
-		const Eigen::MatrixXd &xs_os,
-		const Eigen::MatrixXd &xs_i,
-		const Eigen::MatrixXd &P_i,
+		const CML::MatrixXd &xs_os,
+		const CML::MatrixXd &xs_i,
+		const CML::MatrixXd &P_i,
 		const int i);
 
 	__device__ void estimate_over_trajectories(
-		Eigen::Matrix<double, 1, -1> &P_c_i,
-		const Eigen::Matrix<double, 6, -1> &xs_p,
-		const Eigen::Matrix<double, 4, -1> &xs_i_p,
-		const Eigen::Matrix<double, 16, -1> &P_i_p,
+		CML::MatrixXd &P_c_i,
+		const CML::MatrixXd &xs_p,
+		const CML::MatrixXd &xs_i_p,
+		const CML::MatrixXd &P_i_p,
 		const double d_safe_i,
 		const int i,
 		const double dt);
