@@ -166,7 +166,7 @@ int main()
 	// Transpose test
 	//================================================================================
 	n_rows = 4; n_cols = 2;
-	CML::MatrixXd O(n_rows, n_cols);
+	CML::MatrixXd O = CML::MatrixXd::ones(n_rows, n_cols);
 	std::cout << "Original = " << std::endl;
 	std::cout << O << std::endl;
 
@@ -178,14 +178,18 @@ int main()
 	n_rows = 6; n_cols = 1;
 	CML::MatrixXd v1(n_rows, n_cols), v2(n_rows, n_cols);
 	Eigen::VectorXd v1_e(n_rows), v2_e(n_rows);
-	for (size_t i = 0; i < 6; i++)
+	for (size_t i = 0; i < n_rows; i++)
 	{
-		v1(i) = 2 * std_norm_pdf(gen) + 5;  
-		v1_e(i) = v1(i);
-		v2(i) = v1(i); 
-		v2_e(i) = v1(i);
+		std::cout << "v1_e = " << v1_e.transpose() << std::endl;
+		v1(i, 0) = 2 * std_norm_pdf(gen) + 5;  
+		std::cout << "v1_e = " << v1_e.transpose() << std::endl;
+		v1_e(i) = v1(i, 0); 
+		v2(i) = 2 * std_norm_pdf(gen) + 5;
+		v2_e(i) = v2(i);
+		
 	}
-
+	std::cout << "v1 = " << v1.transposed() << std::endl;
+	std::cout << "v1_e = " << v1_e.transpose() << std::endl;
 	std::cout << "v1' * v2 diff = " << v1.dot(v2) - v1_e.dot(v2_e) << std::endl;
 	std::cout << "v2' * v1 diff = " << v2.dot(v1) - v2_e.dot(v1_e) << std::endl;
 	//================================================================================
@@ -322,7 +326,7 @@ int main()
 	CML::MatrixXd res;
 	A_e.resize(n_rows, n_cols);
 	Eigen::VectorXd x_e(n_rows);
-	double qf;
+	double qf, qf_e;
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		x(i) = 2 * std_norm_pdf(gen) + 5; x_e(i) = x(i);
@@ -342,9 +346,9 @@ int main()
 			}
 		}
 	}
-	res = x.transposed() * A.inverse() * x; 
-	qf = x_e.transpose() * A_e.inverse() * x_e;
-	std::cout << "Quadratic form diff = " << res(0, 0) - qf << std::endl;
+	qf = x.transposed() * A.inverse() * x; 
+	qf_e = x_e.transpose() * A_e.inverse() * x_e;
+	std::cout << "Quadratic form diff = " << qf - qf_e << std::endl;
 
 	//================================================================================
 	// Norm and normalization test
@@ -426,6 +430,8 @@ int main()
 	//================================================================================
 	std::cout << CML::Dynamic_Matrix<double>::identity(3, 3) << std::endl;
 	std::cout << CML::Dynamic_Matrix<double>::ones(3, 3) << std::endl;
+	std::cout << CML::Matrix2d::identity() << std::endl;
+	std::cout << CML::Matrix3d::identity() << std::endl;
 
 	Eigen::Matrix<double, 4, 2> m42; m42.transpose();
 

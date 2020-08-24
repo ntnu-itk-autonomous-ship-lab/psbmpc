@@ -46,28 +46,54 @@ namespace CML
 	public:
 
 		__host__ __device__ Derived operator+(const Derived &other) const;
-		__host__ __device__ Derived operator+(const T &scalar) const;
+		__host__ __device__ Derived operator+(const T scalar) const;
 
 		__host__ __device__ Derived& operator+=(const Derived &rhs);
 
 		__host__ __device__ Derived operator-(const Derived &other) const;
-		__host__ __device__ Derived operator-(const T &scalar) const;
+		__host__ __device__ Derived operator-(const T scalar) const;
 
 		__host__ __device__ Derived& operator-=(const Derived &rhs);
 
-		__host__ __device__ Derived operator*(const T &scalar) const;
+		__host__ __device__ Derived operator*(const T scalar);
 
-		__host__ __device__ Derived& operator*=(const T &scalar);
+		__host__ __device__ Derived& operator*=(const T scalar);
 
-		__host__ __device__ Derived operator/(const T &scalar) const;
+		__host__ __device__ Derived operator/(const T scalar) const;
 
-		__host__ __device__ Derived& operator/=(const T &scalar);
+		__host__ __device__ Derived& operator/=(const T scalar);
 
 		__host__ __device__ bool operator==(const Derived &rhs) const;
 
 		__host__ __device__ T& operator()(const size_t index) const;
 
+		__host__ __device__ T& operator()(const size_t row, const size_t col) 
+		{
+			Derived& self = get_this();
+			assert(row < self.get_rows() && col < self.get_cols()); 
+			return (T&) self.get_data()[self.get_rows() * row + col]; 
+		}
+
+		__host__ __device__ const T& operator()(const size_t row, const size_t col) const
+		{
+			Derived& self = get_this();
+			assert(row < self.get_rows() && col < self.get_cols()); 
+			return (T&) self.get_data()[self.get_rows() * row + col]; 
+		}
+
 		__host__ __device__ T& operator[](const size_t index) const { Derived& self = get_this(); return self(index); }
+
+		__host__ __device__ operator T() const { Derived& self = get_this(); return self(0, 0); }
+
+		// Friend operators to allow for commutativeness
+		template <class U, class Other>
+		__host__ __device__ inline friend Other operator+(const U scalar, const Other &other);
+
+		template <class U, class Other>
+		__host__ __device__ inline friend Other operator-(const U scalar, const Other &other);
+
+		template <class U, class Other>
+		__host__ __device__ inline friend Other operator*(const U scalar, const Other &other);
 
 		__host__ __device__ T determinant() const;
 
@@ -91,7 +117,7 @@ namespace CML
 
 		__host__ __device__ void set_all_coeffs(const T coeff);
 
-		__host__ __device__ Derived& get_this() { return (Derived&)*this; }
+		__host__ __device__ Derived& get_this() const { return (Derived&)*this; }
 
 		__host__ __device__ T max_coeff() const;
 
@@ -114,14 +140,14 @@ namespace CML
 	/****************************************************************************************
 	*  Global operator functions, to allow for commutativeness
 	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__ Derived operator+(const T &scalar, const Derived &other)	{ return other + scalar;}
+	template <class U, class Other>
+	__host__ __device__ inline Other operator+(const U scalar, const Other &other)	{ return other + scalar;}
 
-	template <class T, class Derived>
-	__host__ __device__ Derived operator-(const T &scalar, const Derived &other)	{ return -other + scalar; }
+	template <class U, class Other>
+	__host__ __device__ inline Other operator-(const U scalar, const Other &other)	{ return -1 * other + scalar; }
 
-	template <class T, class Derived>
-	__host__ __device__ Derived operator*(const T &scalar, const Derived &other)	{ return other * scalar; }
+	template <class U, class Other>
+	__host__ __device__ inline Other operator*(const U scalar, const Other &other)	{ return other * scalar; }
 
 
 	/****************************************************************************************
@@ -171,7 +197,7 @@ namespace CML
 
 	template <class T, class Derived>
 	__host__ __device__ Derived Matrix_Base<T, Derived>::operator+(
-		const T &scalar 										// In: Scalar to add by
+		const T scalar 										// In: Scalar to add by
 		) const
 	{
 		Derived& self = get_this();
@@ -256,7 +282,7 @@ namespace CML
 
 	template <class T, class Derived>
 	__host__ __device__ Derived Matrix_Base<T, Derived>::operator-(
-		const T &scalar 										// In: Scalar to subtract by
+		const T scalar 										// In: Scalar to subtract by
 		) const
 	{
 		Derived& self = get_this();
@@ -304,8 +330,8 @@ namespace CML
 	*****************************************************************************************/
 	template <class T, class Derived>
 	__host__ __device__ Derived Matrix_Base<T, Derived>::operator*(
-		const T &scalar 											// In: scalar to multiply with
-		) const
+		const T scalar 											// In: scalar to multiply with
+		)
 	{
 		Derived& self = get_this();
 		Derived result = self;
@@ -327,7 +353,7 @@ namespace CML
 	*****************************************************************************************/
 	template <class T, class Derived>
 	__host__ __device__ Derived& Matrix_Base<T, Derived>::operator*=(
-		const T &scalar 											// In: scalar to multiply with
+		const T scalar 											// In: scalar to multiply with
 		)
 	{	
 		Derived& self = get_this();
@@ -349,7 +375,7 @@ namespace CML
 	*****************************************************************************************/
 	template <class T, class Derived>
 	__host__ __device__ Derived Matrix_Base<T, Derived>::operator/(
-		const T &scalar 											// In: scalar to divide by
+		const T scalar 											// In: scalar to divide by
 		) const
 	{	
 		Derived& self = get_this();
@@ -372,7 +398,7 @@ namespace CML
 	*****************************************************************************************/
 	template <class T, class Derived>
 	__host__ __device__ Derived& Matrix_Base<T, Derived>::operator/=(
-		const T &scalar 											// In: Right hand side scalar to divide by
+		const T scalar 											// In: Right hand side scalar to divide by
 		)
 	{
 		Derived& self = get_this();
@@ -415,7 +441,7 @@ namespace CML
 	}
 
 	/****************************************************************************************
-	*  Name     : operator()
+	*  Name     : operator() with one parameter
 	*  Function : Fetches vector element reference
 	*  Author   : 
 	*  Modified :
@@ -426,7 +452,7 @@ namespace CML
 		) const
 	{
 		Derived& self = get_this();
-		assert(self.get_rows() == 1 || self.get_cols() == 1 && (index < self.get_cols() || index < self.get_rows()));
+		assert((self.get_rows() == 1 || self.get_cols() == 1) && (index < self.get_cols() || index < self.get_rows()));
 
 		if (self.get_rows() == 1)
 		{
@@ -467,7 +493,7 @@ namespace CML
 		for(size_t i = 0; i < self.get_rows(); i++)
 		{
 			// get minor of element (0,i)
-			fill_minor_matrix(self, temp_minor, 0, i);
+			fill_minor_matrix(temp_minor, self, 0, i);
 	
 			det += (i % 2 == 1 ? -1.0 : 1.0) * self(0, i) * calculate_determinant_recursive(temp_minor);
 			//det += pow( -1.0, i ) * self(0, i) * calculate_determinant_recursive(temp_minor);
@@ -862,7 +888,7 @@ namespace CML
 	template <class T>
 	class Dynamic_Matrix : public Matrix_Base<T, Dynamic_Matrix<T>> 
 	{
-	private:
+	protected:
 		size_t n_rows, n_cols;
 
 		T* data;
@@ -887,12 +913,6 @@ namespace CML
 		__host__ __device__ Dynamic_Matrix& operator=(const Dynamic_Matrix &rhs);
 
 		__host__ __device__ Dynamic_Matrix operator*(const Dynamic_Matrix &other) const;
-
-		__host__ __device__ T& operator()(const size_t row, const size_t col) const 
-		{
-			assert(row < this->n_rows && col < this->n_cols); 
-			return this->data[this->n_rows * row + col]; 
-		}
 
 		__host__ __device__ void transpose();
 
@@ -929,7 +949,7 @@ namespace CML
 
 		__host__ __device__ size_t get_cols() const { return n_cols; }
 
-		__host__ __device__ T** get_data() const { return data; }
+		__host__ __device__ T* get_data() const { return data; }
 
 		__host__ __device__ void resize(const size_t n_rows, const size_t n_cols);
 
@@ -1033,7 +1053,7 @@ namespace CML
 				result(i, j) = (T)0;
 				for (size_t k = 0; k < n_cols; k++)
 				{
-					result(i, j) += *this(i, k) * other(k, j);
+					result(i, j) += this->operator()(i, k) * other(k, j);
 				}
 			}
 		}
@@ -1054,7 +1074,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_rows ; j++)
 			{
-				result(i, j) = *this(j, i);
+				result(i, j) = this->operator()(j, i);
 			}
 		}
 		*this = result;
@@ -1074,7 +1094,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_rows ; j++)
 			{
-				result(i, j) = *this(j, i);
+				result(i, j) = this->operator()(j, i);
 			}
 		}
 		return result;
@@ -1119,7 +1139,7 @@ namespace CML
 			result(j) = (T)0;
 			for (size_t i = 0; i < n_rows; i++)
 			{
-				result(j) += *this(i, j);
+				result(j) += this->operator()(i, j);
 			}
 			result(j) /= (T)n_rows;
 		}
@@ -1141,7 +1161,7 @@ namespace CML
 			result(i) = (T)0;
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				result(i) += *this(i, j);
+				result(i) += this->operator()(i, j);
 			}
 			result(i) /= (T)n_rows;
 		}
@@ -1222,7 +1242,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				*this(start_row + i, start_col + j) = block(i, j);
+				this->operator()(start_row + i, start_col + j) = block(i, j);
 			}
 		}
 	}
@@ -1332,7 +1352,7 @@ namespace CML
 		Dynamic_Matrix<T> result(n_rows, 1);
 		for (size_t i = 0; i < n_rows; i++)
 		{
-				result(i, 0) = *this(i, col);
+				result(i, 0) = this->operator()(i, col);
 		}
 		return result;
 	}
@@ -1373,7 +1393,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				resized(i, j) = *this(i, j);
+				resized(i, j) = this->operator()(i, j);
 			}
 		}
 		*this = resized;
@@ -1438,7 +1458,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				*this(i, j) = other(i, j);
+				this->operator()(i, j) = other(i, j);
 			}
 		}
 	}
@@ -1449,7 +1469,7 @@ namespace CML
 	template <class T, int Rows, int Cols>
 	class Static_Matrix : public Matrix_Base<T, Static_Matrix<T, Rows, Cols>> 
 	{
-	private:
+	protected:
 		size_t n_rows = Rows, n_cols = Cols;
 
 		T data[Rows * Cols];
@@ -1466,12 +1486,6 @@ namespace CML
 
 		template<class U, int Other_Rows, int Other_Cols>
 		__host__ __device__ Static_Matrix operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
-
-		__host__ __device__ T& operator()(const size_t row, const size_t col) const 
-		{
-			assert(row < this->n_rows && col < this->n_cols); 
-			return this->data[this->n_rows * row + col]; 
-		}
 
 		__host__ __device__ Static_Matrix<T, Cols, Rows> transposed() const;
 
@@ -1506,7 +1520,7 @@ namespace CML
 
 		__host__ __device__ size_t get_cols() const { return n_cols; }
 
-		__host__ __device__ T get_data() const { return data; }
+		__host__ __device__ T* get_data() { return data; }
 	};
 
 	/****************************************************************************************
@@ -1572,7 +1586,7 @@ namespace CML
 				result(i, j) = (T)0;
 				for (size_t k = 0; k < n_cols; k++)
 				{
-					result(i, j) += *this(i, k) * other(k, j);
+					result(i, j) += this->operator()(i, k) * other(k, j);
 				}
 			}
 		}
@@ -1593,7 +1607,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_rows ; j++)
 			{
-				result(i, j) = *this(j, i);
+				result(i, j) = this->operator()(j, i);
 			}
 		}
 		return result;
@@ -1638,7 +1652,7 @@ namespace CML
 			result(j) = (T)0;
 			for (size_t i = 0; i < n_rows; i++)
 			{
-				result(j) += *this(i, j);
+				result(j) += this->operator()(i, j);
 			}
 			result(j) /= (T)n_rows;
 		}
@@ -1660,7 +1674,7 @@ namespace CML
 			result(i) = (T)0;
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				result(i) += *this(i, j);
+				result(i) += this->operator()(i, j);
 			}
 			result(i) /= (T)n_rows;
 		}
@@ -1732,7 +1746,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				*this(start_row + i, start_col + j) = block(i, j);
+				this->operator()(start_row + i, start_col + j) = block(i, j);
 			}
 		}
 	}
@@ -1752,7 +1766,7 @@ namespace CML
 		assert(vector.get_cols() == this->n_cols && row < this->n_rows);
 		for (size_t j = 0; j < this->n_cols; j++)
 		{
-			*this(row, j) = vector(j);
+			this->operator()(row, j) = vector(j);
 		}
 	}
 
@@ -1771,7 +1785,7 @@ namespace CML
 		assert(vector.get_rows() == this->n_rows && col < this->n_cols);
 		for (size_t i = 0; i < this->n_rows; i++)
 		{
-			*this(i, col) = vector(i);
+			this->operator()(i, col) = vector(i);
 		}
 	}
 
@@ -1798,7 +1812,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				result(i, j) = *this(start_row + i, start_col + j);
+				result(i, j) = this->operator()(start_row + i, start_col + j);
 			}
 		}
 		return result;
@@ -1820,7 +1834,7 @@ namespace CML
 		Static_Matrix<T, 1, Cols> result;
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			result(0, j) = *this(row, j);
+			result(0, j) = this->operator()(row, j);
 		}
 		return result;
 	}
@@ -1841,7 +1855,7 @@ namespace CML
 		Static_Matrix<T, Rows, 1> result;
 		for (size_t i = 0; i < n_rows; i++)
 		{
-			result(i, 0) = *this(i, col);
+			result(i, 0) = this->operator()(i, col);
 		}
 		return result;
 	}
@@ -1866,7 +1880,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				*this(i, j) = other(i, j);
+				this->operator()(i, j) = other(i, j);
 			}
 		}
 	}
