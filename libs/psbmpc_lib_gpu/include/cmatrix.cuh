@@ -30,7 +30,7 @@
 
 namespace CML
 {
-	
+	template <class T> class Dynamic_Matrix;
 	//=========================================================================================================================
 	// Matrix base that defines common matrix/vector functionality
 	//=========================================================================================================================
@@ -39,9 +39,9 @@ namespace CML
 	{
 	private:
 
-		__host__ __device__ T calculate_determinant_recursive(const Derived &submatrix) const;
+		__host__ __device__ T calculate_determinant_recursive(const Dynamic_Matrix<T> &submatrix) const;
 
-		__host__ __device__ void fill_minor_matrix(Derived &minor_matrix, const Derived &original_matrix, const size_t row, const size_t col) const;
+		__host__ __device__ void fill_minor_matrix(Dynamic_Matrix<T> &minor_matrix, const Derived &original_matrix, const size_t row, const size_t col) const;
 		
 	public:
 
@@ -65,11 +65,9 @@ namespace CML
 
 		__host__ __device__ bool operator==(const Derived &rhs) const;
 
-		__host__ __device__ T& operator()(const size_t row, const size_t col) const { assert(row < n_rows && col < n_cols); return data[n_rows * row + col]; }
-
 		__host__ __device__ T& operator()(const size_t index) const;
 
-		__host__ __device__ T& operator[](const size_t index) const { return *this(index); }
+		__host__ __device__ T& operator[](const size_t index) const { Derived& self = get_this(); return self(index); }
 
 		__host__ __device__ T determinant() const;
 
@@ -87,16 +85,6 @@ namespace CML
 
 		__host__ __device__ Derived log() const;
 
-		__host__ __device__ static Derived identity(const size_t n_rows, const size_t n_cols);
-
-		__host__ __device__ static Derived ones(const size_t n_rows, const size_t n_cols);
-
-		__host__ __device__ void set_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols, const Derived &block);
-
-		__host__ __device__ void set_row(const size_t row, const Derived &vector);
-
-		__host__ __device__ void set_col(const size_t col, const Derived &vector);
-
 		__host__ __device__ void set_zero();
 
 		__host__ __device__ void set_ones();
@@ -105,29 +93,17 @@ namespace CML
 
 		__host__ __device__ Derived& get_this() { return (Derived&)*this; }
 
-		__host__ __device__ Derived get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
-
-		__host__ __device__ Derived get_row(const size_t row) const;
-
-		__host__ __device__ Derived get_col(const size_t col) const;
-
-		__host__ __device__ size_t get_rows() const { return n_rows; }
-
-		__host__ __device__ size_t get_cols() const { return n_cols; }
-
-		__host__ __device__ T** get_data() const { return data; }
-
 		__host__ __device__ T max_coeff() const;
 
 		__host__ __device__ T min_coeff() const;
 
-		__host__ friend std::ostream& operator<<(std::ostream& os, const Derived &cm)
+		__host__ friend std::ostream& operator<<(std::ostream& os, const Derived &other)
 		{
-			for (size_t i = 0; i< cm.n_rows; i++)
+			for (size_t i = 0; i < other.get_rows(); i++)
 			{
-				for (size_t j = 0; j< cm.n_cols; j++)
+				for (size_t j = 0; j< other.get_cols(); j++)
 				{
-					os << cm(i, j) << ' '; 
+					os << other(i, j) << ' '; 
 				}
 				os << '\n';
 			}
@@ -161,26 +137,26 @@ namespace CML
 		) const
 	{
 		Derived& self = get_this();
-		if (self.n_rows < other.n_rows || self.n_cols < other.n_cols)
+		if (self.get_rows() < other.get_rows() || self.get_cols() < other.get_cols())
 		{
 			return other + self;
 		}
 
-		assert((self.n_rows == other.n_rows && self.n_cols == other.n_cols) 	|| 
-				(self.n_rows == other.n_rows && other.n_cols == 1) 				||
-				(self.n_cols == other.n_cols && other.n_rows == 1));
+		assert((self.get_rows() == other.get_rows() && self.get_cols() == other.get_cols()) 	|| 
+				(self.get_rows() == other.get_rows() && other.get_cols() == 1) 					||
+				(self.get_cols() == other.get_cols() && other.get_rows() == 1));
 
 		Derived result = self;
 		
-		for (size_t i = 0; i < self.n_rows; i++)
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols ; j++)
+			for (size_t j = 0; j < self.get_cols() ; j++)
 			{
-				if (other.n_rows == 1)
+				if (other.get_rows() == 1)
 				{
 					result(i, j) += other(0, j);
 				} 
-				else if(other.n_cols == 1)
+				else if(other.get_cols() == 1)
 				{
 					result(i, j) += other(i, 0);
 				} 
@@ -200,9 +176,9 @@ namespace CML
 	{
 		Derived& self = get_this();
 		Derived result = self;
-		for (size_t i = 0; i < self.n_rows; i++)
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols ; j++)
+			for (size_t j = 0; j < self.get_cols() ; j++)
 			{
 				result(i, j) += scalar;
 			}
@@ -221,12 +197,12 @@ namespace CML
 		const Derived &rhs 										// In: Right hand side matrix/vector to add by
 		)
 	{
-		assert(self.n_rows == rhs.n_rows && self.n_cols == rhs.n_cols);
-
 		Derived& self = get_this();
-		for (size_t i = 0; i < self.n_rows; i++)
+		assert(self.get_rows() == rhs.get_rows() && self.get_cols() == rhs.get_cols());
+		
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols ; j++)
+			for (size_t j = 0; j < self.get_cols() ; j++)
 			{
 				self(i, j) += rhs(i, j);
 			}
@@ -246,26 +222,26 @@ namespace CML
 		) const
 	{
 		Derived& self = get_this();
-		if (self.n_rows < other.n_rows || self.n_cols < other.n_cols)
+		if (self.get_rows() < other.get_rows() || self.get_cols() < other.get_cols())
 		{
 			return other - self;
 		}
 
-		assert((self.n_rows == other.n_rows && self.n_cols == other.n_cols) 	|| 
-				(self.n_rows == other.n_rows && other.n_cols == 1) 				||
-				(self.n_cols == other.n_cols && other.n_rows == 1));
+		assert((self.get_rows() == other.get_rows() && self.get_cols() == other.get_cols()) 	|| 
+				(self.get_rows() == other.get_rows() && other.get_cols() == 1) 					||
+				(self.get_cols() == other.get_cols() && other.get_rows() == 1));
 
 		Derived result = self;
 
-		for (size_t i = 0; i < self.n_rows; i++)
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols ; j++)
+			for (size_t j = 0; j < self.get_cols() ; j++)
 			{
-				if (other.n_rows == 1)
+				if (other.get_rows() == 1)
 				{
 					result(i, j) -= other(0, j);
 				} 
-				else if(other.n_cols == 1)
+				else if(other.get_cols() == 1)
 				{
 					result(i, j) -= other(i, 0);
 				} 
@@ -285,9 +261,9 @@ namespace CML
 	{
 		Derived& self = get_this();
 		Derived result = self;
-		for (size_t i = 0; i < self.n_rows; i++)
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols ; j++)
+			for (size_t j = 0; j < self.get_cols() ; j++)
 			{
 				result(i, j) -= scalar;
 			}
@@ -306,13 +282,13 @@ namespace CML
 		const Derived &rhs 										// In: Right hand side matrix/vector to subtract by
 		)
 	{
-		assert(self.n_rows == rhs.n_rows);
-		assert(self.n_cols == rhs.n_cols);
-
 		Derived& self = get_this();
-		for (size_t i = 0; i < self.n_rows; i++)
+		assert(self.get_rows() == rhs.get_rows());
+		assert(self.get_cols() == rhs.get_cols());
+
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols ; j++)
+			for (size_t j = 0; j < self.get_cols() ; j++)
 			{
 				self(i, j) -= rhs(i, j);
 			}
@@ -333,9 +309,9 @@ namespace CML
 	{
 		Derived& self = get_this();
 		Derived result = self;
-		for (size_t i = 0 ; i < self.n_rows; i++)
+		for (size_t i = 0 ; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
 				result(i, j) *= scalar;
 			}
@@ -355,9 +331,9 @@ namespace CML
 		)
 	{	
 		Derived& self = get_this();
-		for (size_t i = 0 ; i < self.n_rows; i++)
+		for (size_t i = 0 ; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
 				self(i, j) *= scalar;
 			}
@@ -378,9 +354,9 @@ namespace CML
 	{	
 		Derived& self = get_this();
 		Derived result = self;
-		for (size_t i = 0 ; i < self.n_rows; i++)
+		for (size_t i = 0 ; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
 				result(i, j) /= scalar;
 			}
@@ -400,9 +376,9 @@ namespace CML
 		)
 	{
 		Derived& self = get_this();
-		for (size_t i = 0 ; i < self.n_rows; i++)
+		for (size_t i = 0 ; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
 				self(i, j) /= scalar;
 			}
@@ -421,13 +397,13 @@ namespace CML
 		const Derived &rhs 										// In: Right hand side matrix/vector to compare with
 		) const
 	{
-		assert(self.n_rows == rhs.n_rows && self.n_cols == rhs.n_cols);
-
 		Derived& self = get_this();
+		assert(self.get_rows() == rhs.get_rows() && self.get_cols() == rhs.get_cols());
+
 		bool result = true;
-		for (size_t i = 0; i < self.n_rows; i++)
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols ; j++)
+			for (size_t j = 0; j < self.get_cols() ; j++)
 			{
 				if (self(i, j) != rhs(i, j))
 				{
@@ -450,9 +426,9 @@ namespace CML
 		) const
 	{
 		Derived& self = get_this();
-		assert(self.n_rows == 1 || self.n_cols == 1 && (index < self.n_cols || index < self.n_rows));
+		assert(self.get_rows() == 1 || self.get_cols() == 1 && (index < self.get_cols() || index < self.get_rows()));
 
-		if (n_rows == 1)
+		if (self.get_rows() == 1)
 		{
 			return self(0, index);
 		} 
@@ -472,13 +448,13 @@ namespace CML
 	__host__ __device__ T Matrix_Base<T, Derived>::determinant() const
 	{
 		Derived& self = get_this();
-		assert(self.n_rows == self.n_cols);
+		assert(self.get_rows() == self.get_cols());
 
-		if (self.n_rows == 1)
+		if (self.get_rows() == 1)
 		{
 			return self(0, 0);
 		}
-		if (self.n_rows == 2)
+		if (self.get_rows() == 2)
 		{
 			return self(0, 0) * self(1, 1) - self(0, 1) * self(1, 0);
 		}
@@ -486,9 +462,9 @@ namespace CML
 		T det = 0;
 	
 		// allocate the cofactor matrix
-		Dynamic_Matrix<T> temp_minor(self.n_rows - 1);
+		Dynamic_Matrix<T> temp_minor(self.get_rows() - 1);
 
-		for(size_t i = 0; i < self.n_rows; i++)
+		for(size_t i = 0; i < self.get_rows(); i++)
 		{
 			// get minor of element (0,i)
 			fill_minor_matrix(self, temp_minor, 0, i);
@@ -510,19 +486,19 @@ namespace CML
 	template <class T, class Derived>
 	__host__ __device__ Derived Matrix_Base<T, Derived>::inverse() const
 	{
-		Derived& self = get_this();
-		assert(self.n_rows == self.n_cols && determinant() > T(0));
+		const Derived& self = get_this();
+		assert(self.get_rows() == self.get_cols() && determinant() > T(0));
 		
 		T det_inv = (T)1 / determinant();
 
 		Derived result = self;
 
-		if (self.n_rows == 1)
+		if (self.get_rows() == 1)
 		{
 			result(0, 0) = det_inv;
 			return result;
 		}
-		if (self.n_rows == 2)
+		if (self.get_rows() == 2)
 		{
 			result(0, 0) = self(1, 1);
 			result(0, 1) = - self(0, 1);
@@ -532,14 +508,14 @@ namespace CML
 			return result;
 		}    
 	
-		Dynamic_Matrix<T> temp_minor(self.n_rows - 1);
+		Dynamic_Matrix<T> temp_minor(self.get_rows() - 1);
 	
-		for(size_t i = 0; i < self.n_rows; i++)
+		for(size_t i = 0; i < self.get_rows(); i++)
 		{
-			for(size_t j = 0; j < self.n_rows; j++)
+			for(size_t j = 0; j < self.get_rows(); j++)
 			{
 				// Fill values for minor M_ji
-				fill_minor_matrix(self, temp_minor, j, i);
+				fill_minor_matrix(temp_minor, self, j, i);
 
 				// Element ij of the inverse is the co-factor C_ji divided by the matrix determinant
 				// where C_ij = (-1)^(i + j) * |M_ij|
@@ -562,22 +538,22 @@ namespace CML
 		) const
 	{
 		Derived& self = get_this();
-		assert((self.n_rows == other.n_rows && self.n_cols == other.n_cols) && 
-				(self.n_rows == 1 || self.n_cols == 1));
+		assert((self.get_rows() == other.get_rows() && self.get_cols() == other.get_cols()) && 
+				(self.get_rows() == 1 || self.get_cols() == 1));
 
 		T result = (T)0;
-		if (self.n_rows == 1) 	
+		if (self.get_rows() == 1) 	
 		{ 
-			for (size_t j = 0; j < self.n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
-				result += (*this(0, j)) * other(0, j);
+				result += self(0, j) * other(0, j);
 			}
 		} 
 		else
 		{
-			for (size_t i = 0; i < self.n_rows; i++)
+			for (size_t i = 0; i < self.get_rows(); i++)
 			{
-				result += (*this(i, 0)) * other(i, 0);
+				result += self(i, 0) * other(i, 0);
 			}
 		}
 		return result;
@@ -593,7 +569,7 @@ namespace CML
 	__host__ __device__ void Matrix_Base<T, Derived>::normalize()
 	{
 		Derived& self = get_this();
-		assert(self.n_rows == 1 || self.n_cols == 1);
+		assert(self.get_rows() == 1 || self.get_cols() == 1);
 		self /= norm();
 	}
 
@@ -607,7 +583,7 @@ namespace CML
 	__host__ __device__ Derived Matrix_Base<T, Derived>::normalized() const
 	{
 		Derived& self = get_this();
-		assert(self.n_rows == 1 || self.n_cols == 1);
+		assert(self.get_rows() == 1 || self.get_cols() == 1);
 		
 		Derived result = self;
 		return result /= norm();
@@ -625,25 +601,25 @@ namespace CML
 	{
 		Derived& self = get_this();
 		T norm = (T)0;
-		if (self.n_rows == 1)
+		if (self.get_rows() == 1)
 		{
-			for (size_t j = 0; j < self.n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
 				norm += self(0, j) * self(0, j);
 			}
 		} 
-		else if (self.n_cols == 1)
+		else if (self.get_cols() == 1)
 		{
-			for (size_t i = 0; i < self.n_rows; i++)
+			for (size_t i = 0; i < self.get_rows(); i++)
 			{
 				norm += self(i, 0) * self(i, 0);
 			}
 		} 
 		else
 		{
-			for (size_t i = 0; i < self.n_rows; i++)
+			for (size_t i = 0; i < self.get_rows(); i++)
 			{
-				for (size_t j = 0; j < self.n_cols; j++)
+				for (size_t j = 0; j < self.get_cols(); j++)
 				{
 					norm += self(i, j) * self(i, j);
 				}
@@ -665,9 +641,9 @@ namespace CML
 	{
 		Derived& self = get_this();
 		Derived result = self;
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
 				result(i, j) = exp(result(i, j));		
 			}
@@ -686,135 +662,14 @@ namespace CML
 	{
 		Derived& self = get_this();
 		Derived result = self;
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
 				result(i, j) = log(result(i, j));		
 			}
 		}
 		return result;
-	}
-
-	/****************************************************************************************
-	*  Name     : identity
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__ Derived Matrix_Base<T, Derived>::identity(
-		const size_t n_rows,  										// In: Amount of matrix rows
-		const size_t n_cols 										// In: Amount of matrix columns
-		)
-	{
-		Derived result(n_rows, n_cols);
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols; j++)
-			{
-				result(i, j) = (T)0;
-				if (i == j)
-				{
-					result(i, j) = (T)1;
-				}
-			}
-		}
-		return result;
-	}
-
-	/****************************************************************************************
-	*  Name     : ones
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__ Derived Matrix_Base<T, Derived>::ones(
-		const size_t n_rows,  										// In: Amount of matrix rows
-		const size_t n_cols 										// In: Amount of matrix columns
-		)
-	{
-		Derived result(n_rows, n_cols);
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols; j++)
-			{
-				result(i, j) = (T)1;			
-			}
-		}
-		return result;
-	}
-
-	/****************************************************************************************
-	*  Name     : set_block
-	*  Function : Sets the n_rows x n_cols block of this object, starting at 
-	*			  (start_row, start_col).
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__  void Matrix_Base<T, Derived>::set_block(
-		const size_t start_row, 									// In: Start row of matrix block
-		const size_t start_col, 									// In: Start column of matrix block
-		const size_t n_rows,  										// In: Amount of rows
-		const size_t n_cols, 										// In: Amount of columns
-		const Derived &block 										// In: Block matrix to set
-		)
-	{
-		Derived& self = get_this();
-		assert(	n_rows <= self.n_rows && n_cols <= self.n_cols && 
-				start_row < self.n_rows && start_col < self.n_cols);
-
-		assert(block.get_rows() == n_rows && block.get_cols() == n_cols);
-
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols; j++)
-			{
-				self(start_row + i, start_col + j) = block(i, j);
-			}
-		}
-	}
-
-	/****************************************************************************************
-	*  Name     : set_row
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__ void Matrix_Base<T, Derived>::set_row(
-		const size_t row,		 											// In: Index of row to assign
-		const Derived &vector 									// In: Row vector to assign to the row
-		)
-	{
-		Derived& self = get_this();
-		assert(vector.get_cols() == self.n_cols && row < self.n_rows);
-		for (size_t j = 0; j < self.n_cols; j++)
-		{
-			self(row, j) = vector(j);
-		}
-	}
-
-	/****************************************************************************************
-	*  Name     : set_col
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__ void Matrix_Base<T, Derived>::set_col(
-		const size_t col,		 											// In: Index of column to assign
-		const Derived &vector 									// In: Column vector to assign to the column
-		)
-	{
-		Derived& self = get_this();
-		assert(vector.get_rows() == self.n_rows && col < self.n_cols);
-		for (size_t i = 0; i < self.n_rows; i++)
-		{
-			self(i, col) = vector(i);
-		}
 	}
 
 	/****************************************************************************************
@@ -827,11 +682,11 @@ namespace CML
 	__host__ __device__ void Matrix_Base<T, Derived>::set_zero()
 	{
 		Derived& self = get_this();
-		for (size_t i = 0; i < self.n_rows; i++)
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
-				*this(i, j) = (T)0;
+				self(i, j) = (T)0;
 			}
 		}
 	}
@@ -846,9 +701,9 @@ namespace CML
 	__host__ __device__ void Matrix_Base<T, Derived>::set_ones()
 	{
 		Derived& self = get_this();
-		for (size_t i = 0; i < self.n_rows; i++)
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
 				self(i, j) = (T)1;
 			}
@@ -865,85 +720,13 @@ namespace CML
 	__host__ __device__ void Matrix_Base<T, Derived>::set_all_coeffs(const T coeff)
 	{
 		Derived& self = get_this();
-		for (size_t i = 0; i < self.n_rows; i++)
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < self.n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
 				self(i, j) = coeff;
 			}
 		}
-	}
-
-	/****************************************************************************************
-	*  Name     : get_block
-	*  Function : returns the n_rows x n_cols block of this object, with upper left reference
-	*			  index (start_row, start_col).
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__ Derived Matrix_Base<T, Derived>::get_block(
-		const size_t start_row, 									// In: Start row of matrix block
-		const size_t start_col, 									// In: Start column of matrix block
-		const size_t n_rows,  										// In: Amount of rows
-		const size_t n_cols 										// In: Amount of columns
-		) const
-	{
-
-		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && n_rows > 0 && n_cols > 0 && 
-				start_row < n_rows && start_col < n_cols);
-
-		Derived result(n_rows, n_cols);
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols; j++)
-			{
-				result(i, j) = *this(start_row + i, start_col + j);
-			}
-		}
-		return result;
-	}
-
-	/****************************************************************************************
-	*  Name     : get_row
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__ Derived Matrix_Base<T, Derived>::get_row(
-		const size_t row											// In: Index of row to fetch
-		) const
-	{
-		assert(row < this->n_rows);
-
-		Derived result(1, n_cols);
-		for (size_t j = 0; j < n_cols; j++)
-		{
-				result(0, j) = *this(row, j);
-		}
-		return result;
-	}
-
-	/****************************************************************************************
-	*  Name     : get_col
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__ Derived Matrix_Base<T, Derived>::get_col(
-		const size_t col											// In: Index of column to fetch
-		) const
-	{
-		assert(col < this->n_cols);
-
-		Derived result(n_rows, 1);
-		for (size_t i = 0; i < n_rows; i++)
-		{
-				result(i, 0) = *this(i, col);
-		}
-		return result;
 	}
 
 	/****************************************************************************************
@@ -955,14 +738,15 @@ namespace CML
 	template <class T, class Derived>
 	__host__ __device__ T Matrix_Base<T, Derived>::max_coeff() const
 	{
-		T max = data[0][0];
-		for (size_t i = 0; i < n_rows; i++)
+		Derived& self = get_this();
+		T max = self(0, 0);
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
-				if (max < *this(i, j))
+				if (max < self(i, j))
 				{
-					max = *this(i, j);
+					max = self(i, j);
 				}
 			}
 		}
@@ -978,14 +762,15 @@ namespace CML
 	template <class T, class Derived>
 	__host__ __device__ T Matrix_Base<T, Derived>::min_coeff() const
 	{
-		T min = data[0][0];
-		for (size_t i = 0; i < n_rows; i++)
+		Derived& self = get_this();
+		T min = self(0, 0);
+		for (size_t i = 0; i < self.get_rows(); i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < self.get_cols(); j++)
 			{
-				if (min > *this(i, j))
+				if (min > self(i, j))
 				{
-					min = *this(i, j);
+					min = self(i, j);
 				}
 			}
 		}
@@ -1003,29 +788,29 @@ namespace CML
 	*****************************************************************************************/
 	template <class T, class Derived>
 	__host__ __device__ T Matrix_Base<T, Derived>::calculate_determinant_recursive(
-		const Derived &submatrix 									// In: Matrix to calculate determinant of
+		const Dynamic_Matrix<T> &submatrix 									// In: Matrix to calculate determinant of
 		) const
 	{
 		T det = (T)0;
-		if (submatrix.n_rows == 1)
+		if (submatrix.get_rows() == 1)
 		{
 			det = submatrix(0, 0);
 			return det;
 		}
-		if (submatrix.n_rows == 2)
+		if (submatrix.get_rows() == 2)
 		{
-			det = submatrix(0, 0) * submatrix(1, 1) - submatrix(0, 1) * submatrix.data(1, 0);
+			det = submatrix(0, 0) * submatrix(1, 1) - submatrix(0, 1) * submatrix(1, 0);
 			return det;
 		}
 
-		Derived temp_minor(submatrix.n_rows - 1);
+		Dynamic_Matrix<T> temp_minor(submatrix.get_rows() - 1);
 
-		for (size_t i = 0; i < submatrix.n_rows; i++)
+		for (size_t i = 0; i < submatrix.get_rows(); i++)
 		{
-			fill_minor_matrix(submatrix, temp_minor, 0, i);
+			fill_minor_matrix(temp_minor, submatrix, 0, i);
 
-			det += (i % 2 == 1 ? (T)-1 : (T)1) * submatrix.data[0][i] * calculate_determinant_recursive(temp_minor);
-			//det += pow( -1.0, i ) * submatrix[0][i] * calculate_determinant_recursive(temp_minor);
+			det += (i % 2 == 1 ? (T)-1 : (T)1) * submatrix(0, i) * calculate_determinant_recursive(temp_minor);
+			//det += pow( -1.0, i ) * submatrix(0, i) * calculate_determinant_recursive(temp_minor);
 		}
 
 		return det;
@@ -1040,23 +825,23 @@ namespace CML
 	*****************************************************************************************/
 	template <class T, class Derived>
 	__host__ __device__ void Matrix_Base<T, Derived>::fill_minor_matrix(
-		Derived &minor_matrix, 										// In/out: Matrix to fill  as the minor M_{row, col}
+		Dynamic_Matrix<T> &minor_matrix, 							// In/out: Matrix to fill  as the minor M_{row, col}
 		const Derived &original_matrix, 							// In: Original matrix to extract the minor from, of one order higher than the minor matrix
 		const size_t row,  											// In: Row index of minor
 		const size_t col 											// In: Column index of minor
 		) const
 	{
-		assert(original_matrix.n_rows == original_matrix.n_cols);
+		assert(original_matrix.get_rows() == original_matrix.get_cols());
 
 		// Indicate which col and row is being copied to the minor
 		size_t col_count = 0, row_count = 0;
 	
-		for(size_t i = 0; i < original_matrix.n_rows; i++)
+		for(size_t i = 0; i < original_matrix.get_rows(); i++)
 		{
 			if (i != row)
 			{
 				col_count = 0;
-				for(size_t j = 0; j < original_matrix.n_rows; j++ )
+				for(size_t j = 0; j < original_matrix.get_cols(); j++)
 				{
 					if (j != col)
 					{
@@ -1103,6 +888,12 @@ namespace CML
 
 		__host__ __device__ Dynamic_Matrix operator*(const Dynamic_Matrix &other) const;
 
+		__host__ __device__ T& operator()(const size_t row, const size_t col) const 
+		{
+			assert(row < this->n_rows && col < this->n_cols); 
+			return this->data[this->n_rows * row + col]; 
+		}
+
 		__host__ __device__ void transpose();
 
 		__host__ __device__ Dynamic_Matrix transposed() const;
@@ -1112,6 +903,33 @@ namespace CML
 		__host__ __device__ Dynamic_Matrix cwise_mean() const;
 
 		__host__ __device__ Dynamic_Matrix rwise_mean() const;
+
+		__host__ __device__ static Dynamic_Matrix identity(const size_t n_rows, const size_t n_cols);
+
+		__host__ __device__ static Dynamic_Matrix ones(const size_t n_rows, const size_t n_cols);
+
+		__host__ __device__ void set_block(
+			const size_t start_row, 
+			const size_t start_col, 
+			const size_t n_rows, 
+			const size_t n_cols, 
+			const Dynamic_Matrix &block);
+
+		__host__ __device__ void set_row(const size_t row, const Dynamic_Matrix &vector);
+
+		__host__ __device__ void set_col(const size_t col, const Dynamic_Matrix &vector);
+
+		__host__ __device__ Dynamic_Matrix get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
+
+		__host__ __device__ Dynamic_Matrix get_row(const size_t row) const;
+
+		__host__ __device__ Dynamic_Matrix get_col(const size_t col) const;
+
+		__host__ __device__ size_t get_rows() const { return n_rows; }
+
+		__host__ __device__ size_t get_cols() const { return n_cols; }
+
+		__host__ __device__ T** get_data() const { return data; }
 
 		__host__ __device__ void resize(const size_t n_rows, const size_t n_cols);
 
@@ -1215,7 +1033,7 @@ namespace CML
 				result(i, j) = (T)0;
 				for (size_t k = 0; k < n_cols; k++)
 				{
-					result(i, j) += self(i, k) * other(k, j);
+					result(i, j) += *this(i, k) * other(k, j);
 				}
 			}
 		}
@@ -1236,7 +1054,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_rows ; j++)
 			{
-				result(i, j) = self(j, i);
+				result(i, j) = *this(j, i);
 			}
 		}
 		*this = result;
@@ -1256,7 +1074,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_rows ; j++)
 			{
-				result(i, j) = self(j, i);
+				result(i, j) = *this(j, i);
 			}
 		}
 		return result;
@@ -1327,6 +1145,196 @@ namespace CML
 			}
 			result(i) /= (T)n_rows;
 		}
+	}
+
+	/****************************************************************************************
+	*  Name     : identity
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__ Dynamic_Matrix<T> Dynamic_Matrix<T>::identity(
+		const size_t n_rows,  										// In: Amount of matrix rows
+		const size_t n_cols 										// In: Amount of matrix columns
+		)
+	{
+		Dynamic_Matrix<T> result(n_rows, n_cols);
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				result(i, j) = (T)0;
+				if (i == j)
+				{
+					result(i, j) = (T)1;
+				}
+			}
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : ones
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__ Dynamic_Matrix<T> Dynamic_Matrix<T>::ones(
+		const size_t n_rows,  										// In: Amount of matrix rows
+		const size_t n_cols 										// In: Amount of matrix columns
+		)
+	{
+		Dynamic_Matrix<T> result(n_rows, n_cols);
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				result(i, j) = (T)1;			
+			}
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : set_block
+	*  Function : Sets the n_rows x n_cols block of this object, starting at 
+	*			  (start_row, start_col).
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__  void Dynamic_Matrix<T>::set_block(
+		const size_t start_row, 									// In: Start row of matrix block
+		const size_t start_col, 									// In: Start column of matrix block
+		const size_t n_rows,  										// In: Amount of rows
+		const size_t n_cols, 										// In: Amount of columns
+		const Dynamic_Matrix<T> &block 								// In: Block matrix to set
+		)
+	{
+		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && 
+				start_row < this->n_rows && start_col < this->n_cols);
+
+		assert(block.get_rows() == n_rows && block.get_cols() == n_cols);
+
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				*this(start_row + i, start_col + j) = block(i, j);
+			}
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : set_row
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__ void Dynamic_Matrix<T>::set_row(
+		const size_t row,		 											// In: Index of row to assign
+		const Dynamic_Matrix<T> &vector 									// In: Row vector to assign to the row
+		)
+	{
+		assert(vector.get_cols() == this->n_cols && row < this->n_rows);
+		for (size_t j = 0; j < this->n_cols; j++)
+		{
+			this->operator()(row, j) = vector(j);
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : set_col
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__ void Dynamic_Matrix<T>::set_col(
+		const size_t col,		 											// In: Index of column to assign
+		const Dynamic_Matrix<T> &vector 									// In: Column vector to assign to the column
+		)
+	{
+		assert(vector.get_rows() == this->n_rows && col < this->n_cols);
+		for (size_t i = 0; i < this->n_rows; i++)
+		{
+			this->operator()(i, col) = vector(i);
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : get_block
+	*  Function : returns the n_rows x n_cols block of this object, with upper left reference
+	*			  index (start_row, start_col).
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__ Dynamic_Matrix<T> Dynamic_Matrix<T>::get_block(
+		const size_t start_row, 									// In: Start row of matrix block
+		const size_t start_col, 									// In: Start column of matrix block
+		const size_t n_rows,  										// In: Amount of rows
+		const size_t n_cols 										// In: Amount of columns
+		) const
+	{
+
+		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && n_rows > 0 && n_cols > 0 && 
+				start_row < n_rows && start_col < n_cols);
+
+		Dynamic_Matrix<T> result(n_rows, n_cols);
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				result(i, j) = this->operator()(start_row + i, start_col + j);
+			}
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : get_row
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__ Dynamic_Matrix<T> Dynamic_Matrix<T>::get_row(
+		const size_t row											// In: Index of row to fetch
+		) const
+	{
+		assert(row < this->n_rows);
+
+		Dynamic_Matrix<T> result(1, n_cols);
+		for (size_t j = 0; j < n_cols; j++)
+		{
+				result(0, j) = this->operator()(row, j);
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : get_col
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__ Dynamic_Matrix<T> Dynamic_Matrix<T>::get_col(
+		const size_t col											// In: Index of column to fetch
+		) const
+	{
+		assert(col < this->n_cols);
+
+		Dynamic_Matrix<T> result(n_rows, 1);
+		for (size_t i = 0; i < n_rows; i++)
+		{
+				result(i, 0) = *this(i, col);
+		}
+		return result;
 	}
 
 	/****************************************************************************************
@@ -1456,15 +1464,49 @@ namespace CML
 
 		__host__ __device__ Static_Matrix& operator=(const Static_Matrix &rhs);
 
-		__host__ __device__ Static_Matrix operator*(const Static_Matrix &other) const;
+		template<class U, int Other_Rows, int Other_Cols>
+		__host__ __device__ Static_Matrix operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
 
-		__host__ __device__ Static_Matrix transposed() const;
+		__host__ __device__ T& operator()(const size_t row, const size_t col) const 
+		{
+			assert(row < this->n_rows && col < this->n_cols); 
+			return this->data[this->n_rows * row + col]; 
+		}
 
-		__host__ __device__ Static_Matrix cwise_product(const Static_Matrix &other) const;
+		__host__ __device__ Static_Matrix<T, Cols, Rows> transposed() const;
 
-		__host__ __device__ Static_Matrix cwise_mean() const;
+		__host__ __device__ Static_Matrix<T, 1, Cols> cwise_product(const Static_Matrix &other) const;
 
-		__host__ __device__ Static_Matrix rwise_mean() const;
+		__host__ __device__ Static_Matrix<T, 1, Cols> cwise_mean() const;
+
+		__host__ __device__ Static_Matrix<T, Rows, 1> rwise_mean() const;
+
+		__host__ __device__ static Static_Matrix identity();
+
+		__host__ __device__ static Static_Matrix ones();
+
+		template<class U, int Block_Rows, int Block_Cols>
+		__host__ __device__ void set_block(
+			const size_t start_row, 
+			const size_t start_col, 
+			const Static_Matrix<U, Block_Rows, Block_Cols> &block);
+
+		__host__ __device__ void set_row(const size_t row, const Static_Matrix<T, 1, Cols> &vector);
+
+		__host__ __device__ void set_col(const size_t col, const Static_Matrix<T, Rows, 1> &vector);
+
+		template<class U, int Block_Rows, int Block_Cols>
+		__host__ __device__ Static_Matrix<U, Block_Rows, Block_Cols> get_block(const size_t start_row, const size_t start_col) const;
+
+		__host__ __device__ Static_Matrix<T, 1, Cols> get_row(const size_t row) const;
+
+		__host__ __device__ Static_Matrix<T, Rows, 1> get_col(const size_t col) const;
+
+		__host__ __device__ size_t get_rows() const { return n_rows; }
+
+		__host__ __device__ size_t get_cols() const { return n_cols; }
+
+		__host__ __device__ T get_data() const { return data; }
 	};
 
 	/****************************************************************************************
@@ -1514,14 +1556,15 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, int Rows, int Cols>
+	template<class U, int Other_Rows, int Other_Cols>
 	__host__ __device__  Static_Matrix<T, Rows, Cols>  Static_Matrix<T, Rows, Cols>::operator*(
-		const  Static_Matrix<T, Rows, Cols> &other 							// In: Matrix/vector to multiply with
+		const  Static_Matrix<U, Other_Rows, Other_Cols> &other 							// In: Matrix/vector to multiply with
 		) const
 	{	
 		// Verify that the matrix product is valid
 		assert(n_cols == other.n_rows);
 
-		Static_Matrix<T, n_rows, other.n_cols> result;
+		Static_Matrix<T, Rows, Other_Cols> result;
 		for (size_t i = 0 ; i < n_rows; i++)
 		{
 			for (size_t j = 0; j < other.n_cols; j++)
@@ -1529,7 +1572,7 @@ namespace CML
 				result(i, j) = (T)0;
 				for (size_t k = 0; k < n_cols; k++)
 				{
-					result(i, j) += self(i, k) * other(k, j);
+					result(i, j) += *this(i, k) * other(k, j);
 				}
 			}
 		}
@@ -1543,14 +1586,14 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, int Rows, int Cols>
-	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::transposed() const
+	__host__ __device__ Static_Matrix<T, Cols, Rows> Static_Matrix<T, Rows, Cols>::transposed() const
 	{
-		Static_Matrix<T, Rows, Cols> result;
+		Static_Matrix<T, Cols, Rows> result;
 		for (size_t i = 0; i < n_cols; i++)
 		{
 			for (size_t j = 0; j < n_rows ; j++)
 			{
-				result(i, j) = self(j, i);
+				result(i, j) = *this(j, i);
 			}
 		}
 		return result;
@@ -1564,7 +1607,7 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, int Rows, int Cols>
-	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::cwise_product(
+	__host__ __device__ Static_Matrix<T, 1, Cols> Static_Matrix<T, Rows, Cols>::cwise_product(
 		const Static_Matrix<T, Rows, Cols> &other 								// In: Matrix/Vector object to apply columnwise product to
 	) const
 	{
@@ -1572,7 +1615,7 @@ namespace CML
 				((n_rows == 1 && other.n_rows > 1) 	||
 				(n_rows > 1 && other.n_rows == 1)));
 		
-		Static_Matrix<T, 1, n_cols> result;
+		Static_Matrix<T, 1, Cols> result;
 		for (size_t j = 0; j < n_cols; j++)
 		{
 			result(0, j) = this->get_block(0, j, n_rows, 1).transpose() * other.get_block(0, j, other.n_rows, 1);	
@@ -1587,9 +1630,9 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, int Rows, int Cols>
-	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::cwise_mean() const
+	__host__ __device__ Static_Matrix<T, 1, Cols> Static_Matrix<T, Rows, Cols>::cwise_mean() const
 	{
-		Static_Matrix<T, 1, n_cols> result;
+		Static_Matrix<T, 1, Cols> result;
 		for (size_t j = 0; j < n_cols; j++)
 		{
 			result(j) = (T)0;
@@ -1609,9 +1652,9 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, int Rows, int Cols>
-	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::rwise_mean() const
+	__host__ __device__ Static_Matrix<T, Rows, 1> Static_Matrix<T, Rows, Cols>::rwise_mean() const
 	{
-		Static_Matrix<T, n_rows, 1> result;
+		Static_Matrix<T, Rows, 1> result;
 		for (size_t i = 0; i < n_rows; i++)
 		{
 			result(i) = (T)0;
@@ -1621,6 +1664,186 @@ namespace CML
 			}
 			result(i) /= (T)n_rows;
 		}
+	}
+
+	/****************************************************************************************
+	*  Name     : identity
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, int Rows, int Cols>
+	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::identity()
+	{
+		Static_Matrix<T, Rows, Cols> result;
+		for (int i = 0; i < Rows; i++)
+		{
+			for (int j = 0; j < Cols; j++)
+			{
+				result(i, j) = (T)0;
+				if (i == j)
+				{
+					result(i, j) = (T)1;
+				}
+			}
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : ones
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, int Rows, int Cols>
+	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::ones()
+	{
+		Static_Matrix<T, Rows, Cols> result;
+		for (int i = 0; i < Rows; i++)
+		{
+			for (int j = 0; j < Cols; j++)
+			{
+				result(i, j) = (T)1;			
+			}
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : set_block
+	*  Function : Sets the n_rows x n_cols block of this object, starting at 
+	*			  (start_row, start_col).
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, int Rows, int Cols>
+	template <class U, int Block_Rows, int Block_Cols>
+	__host__ __device__  void Static_Matrix<T, Rows, Cols>::set_block(
+		const size_t start_row, 									// In: Start row of matrix block
+		const size_t start_col, 									// In: Start column of matrix block
+		const Static_Matrix<U, Block_Rows, Block_Cols> &block 		// In: Block matrix to set
+		)
+	{
+		assert(	Block_Rows <= this->n_rows && Block_Cols <= this->n_cols && 
+				start_row < this->n_rows && start_col < this->n_cols);
+
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				*this(start_row + i, start_col + j) = block(i, j);
+			}
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : set_row
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, int Rows, int Cols>
+	__host__ __device__ void Static_Matrix<T, Rows, Cols>::set_row(
+		const size_t row,		 											// In: Index of row to assign
+		const Static_Matrix<T, 1, Cols> &vector 							// In: Row vector to assign to the row
+		)
+	{
+		assert(vector.get_cols() == this->n_cols && row < this->n_rows);
+		for (size_t j = 0; j < this->n_cols; j++)
+		{
+			*this(row, j) = vector(j);
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : set_col
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, int Rows, int Cols>
+	__host__ __device__ void Static_Matrix<T, Rows, Cols>::set_col(
+		const size_t col,		 											// In: Index of column to assign
+		const Static_Matrix<T, Rows, 1> &vector 							// In: Column vector to assign to the column
+		)
+	{
+		assert(vector.get_rows() == this->n_rows && col < this->n_cols);
+		for (size_t i = 0; i < this->n_rows; i++)
+		{
+			*this(i, col) = vector(i);
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : get_block
+	*  Function : returns the n_rows x n_cols block of this object, with upper left reference
+	*			  index (start_row, start_col). This version for the Static Matrix has not
+	*			  yet been fully fixed. 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, int Rows, int Cols>
+	template <class U, int Block_Rows, int Block_Cols>
+	__host__ __device__ Static_Matrix<U, Block_Rows, Block_Cols> Static_Matrix<T, Rows, Cols>::get_block(
+		const size_t start_row, 									// In: Start row of matrix block
+		const size_t start_col	 									// In: Start column of matrix block
+		) const
+	{
+		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && n_rows > 0 && n_cols > 0 && 
+				start_row < n_rows && start_col < n_cols);
+
+		Static_Matrix<U, Block_Rows, Block_Cols> result;
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				result(i, j) = *this(start_row + i, start_col + j);
+			}
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : get_row
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, int Rows, int Cols>
+	__host__ __device__ Static_Matrix<T, 1, Cols> Static_Matrix<T, Rows, Cols>::get_row(
+		const size_t row											// In: Index of row to fetch
+		) const
+	{
+		assert(row < this->n_rows);
+
+		Static_Matrix<T, 1, Cols> result;
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			result(0, j) = *this(row, j);
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : get_col
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, int Rows, int Cols>
+	__host__ __device__ Static_Matrix<T, Rows, 1> Static_Matrix<T, Rows, Cols>::get_col(
+		const size_t col											// In: Index of column to fetch
+		) const
+	{
+		assert(col < this->n_cols);
+
+		Static_Matrix<T, Rows, 1> result;
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			result(i, 0) = *this(i, col);
+		}
+		return result;
 	}
 
 	/****************************************************************************************
