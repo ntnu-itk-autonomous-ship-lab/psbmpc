@@ -19,6 +19,7 @@
 *****************************************************************************************/
 
 #include <thrust/device_vector.h>
+#include "cml.cuh"
 #include "utilities.cuh"
 #include "psbmpc.h"
 #include "cb_cost_functor.cuh"

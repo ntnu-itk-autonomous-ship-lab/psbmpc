@@ -2,7 +2,8 @@
 *
 *  File name : test_cmatrix.cpp
 *
-*  Function  : Test file for the CMatrix class meant for use in CUDA kernels.
+*  Function  : Test file for the Cuda Matrix Library (CML) meant for use in CUDA kernels.
+*			   NOTE! It is until now mainly the dynamic matrix that is tested for use. 
 *			   
 *	           ---------------------
 *
@@ -22,12 +23,9 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "cmatrix.cuh"
-#include "kf.h"
+#include "cml.cuh"
 #include <iostream>
-#include <vector>
 #include <random>
-#include <memory>
 #include "Eigen/Dense"
 
 int main()
@@ -67,8 +65,11 @@ int main()
 			M1(i, j) = M2(i, j);
 		}
 	}
-	std::cout << "Custom 2x2 = " << std::endl;
+	std::cout << "CML 2x2 = " << std::endl;
 	std::cout << M1 << std::endl;
+
+	std::cout << "Eigen 2x2 determinant= " << M2.determinant() << std::endl;
+	std::cout << "CML 2x2 determinant= " << M1.determinant() << std::endl;
 
 	M1_inv = M1.inverse();
 
@@ -105,11 +106,11 @@ int main()
 		}
 	}
 	
-	std::cout << "Custom 3x3 = " << std::endl;
+	std::cout << "CML 3x3 = " << std::endl;
 	std::cout << M1 << std::endl;
 
 	std::cout << "Eigen 3x3 determinant= " << M2.determinant() << std::endl;
-	std::cout << "Custom 3x3 determinant= " << M1.determinant() << std::endl;
+	std::cout << "CML 3x3 determinant= " << M1.determinant() << std::endl;
 
 	M1_inv = M1.inverse();
 	for (size_t i = 0; i < n_rows; i++)
@@ -145,11 +146,11 @@ int main()
 			}
 		}
 	}
-	std::cout << "Custom 4x4 = " << std::endl;
+	std::cout << "CML 4x4 = " << std::endl;
 	std::cout << M1 << std::endl;
 
 	std::cout << "Eigen 4x4 determinant= " << M2.determinant() << std::endl;
-	std::cout << "Custom 4x4 determinant= " << M1.determinant() << std::endl;
+	std::cout << "CML 4x4 determinant= " << M1.determinant() << std::endl;
 
 	M1_inv = M1.inverse();
 
@@ -207,6 +208,7 @@ int main()
 			B_e(i, j) = B(i, j);
 		}
 	}
+	double scalar = 5 * std_norm_pdf(gen);
 	std::cout << "A + B diff = " << std::endl; 
 	C = A + B; C_e = A_e + B_e;
 	for (size_t i = 0; i < n_rows; i++)
@@ -265,7 +267,6 @@ int main()
 	std::cout << M_diff << std::endl;
 
 	std::cout << "scalar * A diff = " << std::endl; 
-	double scalar = 5 * std_norm_pdf(gen);
 	C = scalar * A; C_e = scalar * A_e;
 	for (size_t i = 0; i < n_rows; i++)
 	{
@@ -426,8 +427,6 @@ int main()
 	//================================================================================
 	std::cout << CML::Dynamic_Matrix<double>::identity(3, 3) << std::endl;
 	std::cout << CML::Dynamic_Matrix<double>::ones(3, 3) << std::endl;
-	std::cout << CML::Matrix2d::identity() << std::endl;
-	std::cout << CML::Matrix3d::identity() << std::endl;
 
 	Eigen::Matrix<double, 4, 2> m42; m42.transpose();
 
