@@ -175,21 +175,17 @@ int main()
 	//================================================================================
 	// Dot product test
 	//================================================================================
-	n_rows = 6; n_cols = 1;
+	n_rows = 4; n_cols = 1;
 	CML::MatrixXd v1(n_rows, n_cols), v2(n_rows, n_cols);
 	Eigen::VectorXd v1_e(n_rows), v2_e(n_rows);
 	for (size_t i = 0; i < n_rows; i++)
 	{
-		std::cout << "v1_e = " << v1_e.transpose() << std::endl;
 		v1(i, 0) = 2 * std_norm_pdf(gen) + 5;  
-		std::cout << "v1_e = " << v1_e.transpose() << std::endl;
 		v1_e(i) = v1(i, 0); 
 		v2(i) = 2 * std_norm_pdf(gen) + 5;
 		v2_e(i) = v2(i);
 		
 	}
-	std::cout << "v1 = " << v1.transposed() << std::endl;
-	std::cout << "v1_e = " << v1_e.transpose() << std::endl;
 	std::cout << "v1' * v2 diff = " << v1.dot(v2) - v1_e.dot(v2_e) << std::endl;
 	std::cout << "v2' * v1 diff = " << v2.dot(v1) - v2_e.dot(v1_e) << std::endl;
 	//================================================================================
