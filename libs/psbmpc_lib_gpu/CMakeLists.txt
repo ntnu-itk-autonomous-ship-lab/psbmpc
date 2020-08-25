@@ -23,6 +23,7 @@ add_library(psbmpc_lib_gpu STATIC
 
 target_include_directories(psbmpc_lib_gpu PUBLIC 
 	include
+	tryms_matrix
 	${CMAKE_SOURCE_DIR}/libs/third_party_libs
 	${Matlab_INCLUDE_DIRS}
 	${CUDA_INCLUDE_DIRS}
