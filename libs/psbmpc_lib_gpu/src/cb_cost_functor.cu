@@ -98,7 +98,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 
 	vars->cpe = *(master.cpe);
 
-	// Assign Eigen double objects to CMatrix<double> objects
+	// Assign Eigen objects to CML objects
 	vars->maneuver_times = master.maneuver_times;
 	vars->control_behaviours = master.control_behaviours;
 
@@ -163,8 +163,8 @@ __device__ double CB_Cost_Functor::operator()(
 {
 	int n_samples = vars->trajectory.get_cols();
 	double cost = 0;
-	CMatrix<double> P_c_i;
-	CMatrix<double> cost_i(vars->n_obst, 1), offset_sequence = vars->control_behaviours.get_col(cb_index);
+	CML::MatrixXd P_c_i;
+	CML::MatrixXd cost_i(vars->n_obst, 1), offset_sequence = vars->control_behaviours.get_col(cb_index);
 
 	vars->ownship.predict_trajectory(
 		vars->trajectory, 
@@ -190,7 +190,7 @@ __device__ double CB_Cost_Functor::operator()(
 		cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i, offset_sequence);
 	}
 
-	cost += cost_i.maxCoeff();
+	cost += cost_i.max_coeff();
 
 	cost += calculate_grounding_cost();
 
@@ -226,10 +226,10 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 *  Modified :
 *****************************************************************************************/
 __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
-	const CMatrix<double> &v_A,												// In: (NE) Velocity vector of vessel A, row vector
+	const CML::MatrixXd &v_A,												// In: (NE) Velocity vector of vessel A, row vector
 	const double psi_A, 													// In: Heading of vessel A
-	const CMatrix<double> &v_B, 											// In: (NE) Velocity vector of vessel B, row vector
-	const CMatrix<double> &L_AB, 											// In: LOS vector pointing from vessel A to vessel B, row vector
+	const CML::MatrixXd &v_B, 											// In: (NE) Velocity vector of vessel B, row vector
+	const CML::MatrixXd &L_AB, 											// In: LOS vector pointing from vessel A to vessel B, row vector
 	const double d_AB 														// In: Distance from vessel A to vessel B
 	)
 {
@@ -282,7 +282,7 @@ __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
 __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 	const double psi_A, 													// In: Heading of vessel A
 	const double psi_B, 													// In: Heading of vessel B
-	const CMatrix<double> &L_AB, 											// In: LOS vector pointing from vessel A to vessel B, row vector
+	const CML::MatrixXd &L_AB, 											// In: LOS vector pointing from vessel A to vessel B, row vector
 	const int i, 															// In: Index of obstacle
 	const double chi_m 														// In: Candidate course offset currently followed
 	)
@@ -320,15 +320,15 @@ __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 }
 
 __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
-	const CMatrix<double> &xs_A,											// In: State vector of vessel A (the ownship), row vector
-	const CMatrix<double> &xs_B, 											// In: State vector of vessel B (the obstacle), row vector
+	const CML::MatrixXd &xs_A,											// In: State vector of vessel A (the ownship), row vector
+	const CML::MatrixXd &xs_B, 											// In: State vector of vessel B (the obstacle), row vector
 	const int i, 															// In: Index of obstacle
 	const double chi_m 														// In: Candidate course offset currently followed
 	)
 {
 	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 	double psi_A, psi_B;
-	CMatrix<double> L_AB(2, 1);
+	CML::MatrixXd L_AB(2, 1);
 	if (xs_A.get_rows() == 6) { psi_A = xs_A[2]; }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); }
 	
@@ -377,19 +377,19 @@ __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 *  Modified :
 *****************************************************************************************/
 __device__ void CB_Cost_Functor::calculate_collision_probabilities(
-	CMatrix<double> &P_c_i,									// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
+	CML::MatrixXd &P_c_i,									// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const int i 											// In: Index of obstacle
 	)
 {
 	int n_samples = vars->trajectory.get_cols();
-	CMatrix<double> P_i_p = new_obstacles[i].get_trajectory_covariance();
+	CML::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
 	double d_safe_i = vars->d_safe + 0.5 * (vars->ownship.get_length() + new_obstacles[i].get_length());
 
-	CMatrix<double>* xs_i_p = new CMatrix<double>[n_ps[i]];
+	CML::MatrixXd* xs_i_p = new CML::MatrixXd[n_ps[i]];
 	*xs_i_p = *new_obstacles[i].get_trajectories();
 
 	// Non-optimal temporary row-vector storage solution
-	CMatrix<double> P_c_i_row(1, P_i_p.get_cols());
+	CML::MatrixXd P_c_i_row(1, P_i_p.get_cols());
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
 		vars->cpe.estimate_over_trajectories(P_c_i_row, vars->trajectory, xs_i_p[ps], P_i_p, d_safe_i, i, vars->dt);
@@ -405,30 +405,30 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
-	const CMatrix<double> &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
+	const CML::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
 	const int i, 													// In: Index of obstacle
-	const CMatrix<double> &offset_sequence 							// In: Control behaviour currently followed
+	const CML::MatrixXd &offset_sequence 							// In: Control behaviour currently followed
 	)
 {
 	// l_i is the collision cost modifier depending on the obstacle track loss.
 	double cost(0.0), cost_ps(0.0), C(0.0), l_i(0.0);
-	CMatrix<double> max_cost_ps(n_ps[i]);
+	CML::MatrixXd max_cost_ps(n_ps[i]);
 
-	CMatrix<double>* xs_i_p = new CMatrix<double>[n_ps[i]];
-	CMatrix<bool> mu_i(n_ps[i], 1);
+	CML::MatrixXd* xs_i_p = new CML::MatrixXd[n_ps[i]];
+	CML::MatrixXb mu_i(n_ps[i], 1);
 
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
 		xs_i_p[ps] = new_obstacles[i].get_trajectories()[ps];
-		mu_i[ps] = new_obstacles[i].get_COLREGS_violation_indicator()[ps];
+		mu_i(ps) = new_obstacles[i].get_COLREGS_violation_indicator()[ps];
 		max_cost_ps(ps) = 0;
 	}
 
 	int n_samples = vars->trajectory.get_cols();
-	CMatrix<double> P_i_p = new_obstacles[i].get_trajectory_covariance();
+	CML::MatrixXd P_i_p = new_obstacles[i].get_trajectory_covariance();
 	double Pr_CC_i = new_obstacles[i].get_a_priori_CC_probability();
 
-	CMatrix<double> v_0_p(2, 1), v_i_p(2, 1), L_0i_p(2, 1);
+	CML::MatrixXd v_0_p(2, 1), v_i_p(2, 1), L_0i_p(2, 1);
 	double psi_0_p, psi_i_p, d_0i_p, chi_m;
 	bool mu, trans;
 	for(int k = 0; k < n_samples; k++)
@@ -520,8 +520,8 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 		}
 	}
 
-	Eigen::Vector3d cost_a = {0, 0, 0};
-	Eigen::VectorXd Pr_a = new_obstacles[i].get_intention_probabilities();
+	CML::MatrixXd cost_a; cost_a.set_zero();
+	CML::MatrixXd Pr_a = new_obstacles[i].get_intention_probabilities();
 	cost_a(0) = max_cost_ps(0); 
 	for(int ps = 1; ps < n_ps[i]; ps++)
 	{
@@ -575,7 +575,7 @@ __device__ double CB_Cost_Functor::calculate_ad_hoc_collision_risk(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::calculate_control_deviation_cost(
-	const CMatrix<double> &offset_sequence 								// In: Control behaviour currently followed
+	const CML::MatrixXd &offset_sequence 								// In: Control behaviour currently followed
 	)
 {
 	double cost = 0;
@@ -597,13 +597,13 @@ __device__ double CB_Cost_Functor::calculate_control_deviation_cost(
 
 /****************************************************************************************
 *  Name     : calculate_chattering_cost
-*  Function : Determines penalty due to using wobly (changing between positive and negative)
+*  Function : Determines penalty due to using wobbly (changing between positive and negative)
 * 			  course modifications
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::calculate_chattering_cost(
-	const CMatrix<double> &offset_sequence 								// In: Control behaviour currently followed
+	const CML::MatrixXd &offset_sequence 								// In: Control behaviour currently followed
 )
 {
 	double cost = 0;
@@ -644,9 +644,9 @@ __device__ double CB_Cost_Functor::calculate_grounding_cost()
 *  Modified :
 *****************************************************************************************/
 __device__ int CB_Cost_Functor::find_triplet_orientation(
-	const CMatrix<double> &p, 
-	const CMatrix<double> &q, 
-	const CMatrix<double> &r
+	const CML::MatrixXd &p, 
+	const CML::MatrixXd &q, 
+	const CML::MatrixXd &r
 	)
 {
 	// Calculate z-component of cross product (q - p) x (r - q)
@@ -664,13 +664,13 @@ __device__ int CB_Cost_Functor::find_triplet_orientation(
 *  Modified :
 *****************************************************************************************/
 __device__ bool CB_Cost_Functor::determine_if_on_segment(
-	const CMatrix<double> &p, 
-	const CMatrix<double> &q, 
-	const CMatrix<double> &r
+	const CML::MatrixXd &p, 
+	const CML::MatrixXd &q, 
+	const CML::MatrixXd &r
 	)
 {
-    if (q[0] <= max(p[0], r[0]) && q[0] >= min(p[0], r[0]) &&
-        q[1] <= max(p[1], r[1]) && q[1] >= min(p[1], r[1]))
+    if (q[0] <= (double)fmax(p[0], r[0]) && q[0] >= (double)fmin(p[0], r[0]) &&
+        q[1] <= (double)fmax(p[1], r[1]) && q[1] >= (double)fmin(p[1], r[1]))
         return true;
     return false;
 }
@@ -682,13 +682,13 @@ __device__ bool CB_Cost_Functor::determine_if_on_segment(
 *  Modified :
 *****************************************************************************************/
 __device__ bool CB_Cost_Functor::determine_if_behind(
-	const CMatrix<double> &p_1, 
-	const CMatrix<double> &v_1, 
-	const CMatrix<double> &v_2, 
+	const CML::MatrixXd &p_1, 
+	const CML::MatrixXd &v_1, 
+	const CML::MatrixXd &v_2, 
 	const double distance_to_line
 	)
 {
-    CMatrix<double> v_diff(2, 1), n(2, 1);
+    CML::MatrixXd v_diff(2, 1), n(2, 1);
     
     v_diff = v_2 - v_1;
 
@@ -705,10 +705,10 @@ __device__ bool CB_Cost_Functor::determine_if_behind(
 *  Modified :
 *****************************************************************************************/
 __device__ bool CB_Cost_Functor::determine_if_lines_intersect(
-	const CMatrix<double> &p_1, 
-	const CMatrix<double> &q_1, 
-	const CMatrix<double> &p_2, 
-	const CMatrix<double> &q_2
+	const CML::MatrixXd &p_1, 
+	const CML::MatrixXd &q_1, 
+	const CML::MatrixXd &p_2, 
+	const CML::MatrixXd &q_2
 	)
 {
     // Find the four orientations needed for general and
@@ -745,17 +745,17 @@ __device__ bool CB_Cost_Functor::determine_if_lines_intersect(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::distance_from_point_to_line(
-	const CMatrix<double> &p, 
-	const CMatrix<double> &q_1, 
-	const CMatrix<double> &q_2
+	const CML::MatrixXd &p, 
+	const CML::MatrixXd &q_1, 
+	const CML::MatrixXd &q_2
 	)
 {   
-	CMatrix<double> a(3, 1);
-    CMatrix<double> b(3, 1);
-    a << (q_1 - q_2), 0;
-    b << (p - q_2), 0;
+	CML::MatrixXd a(3, 1);
+    CML::MatrixXd b(3, 1);
+    a(0) = (q_1 - q_2); a(1) = 0;
+    b(0) = (p - q_2); 	b(1) = 0;
 
-    CMatrix<double> c = a.cross(b);
+    CML::MatrixXd c = a.cross(b);
     if (a.norm() > 0) return c.norm() / a.norm();
     else return -1;
 }
@@ -767,13 +767,13 @@ __device__ double CB_Cost_Functor::distance_from_point_to_line(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::distance_to_static_obstacle(
-	const CMatrix<double> &p, 
-	const CMatrix<double> &v_1, 
-	const CMatrix<double> &v_2
+	const CML::MatrixXd &p, 
+	const CML::MatrixXd &v_1, 
+	const CML::MatrixXd &v_2
 	)
 {
     double d2line = distance_from_point_to_line(p, v_1, v_2);
 
     if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line)) return d2line;
-    else return min((v_1-p).norm(),(v_2-p).norm());
+    else return (double)fmin((v_1-p).norm(),(v_2-p).norm());
 }

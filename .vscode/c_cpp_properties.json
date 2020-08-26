@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "/usr/include/python3.6/",
                 "/usr/local/MATLAB/R2019a/extern/**",
-                "/usr/local/cuda/include/**"
+                "/usr/local/cuda/include/**",
+                "${workspaceFolder}/libs/psbmpc_lib_gpu/tryms_matrix"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

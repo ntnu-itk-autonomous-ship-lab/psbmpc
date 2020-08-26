@@ -26,7 +26,7 @@
 
 #include "curand_kernel.h"
 #include <thrust/device_vector.h>
-#include "cmatrix.cuh"
+#include "cml.cuh"
 
 #include <random>
 
@@ -60,8 +60,8 @@ private:
 	
 	bool converged_last;
 
-	CML::Vector2d *mu_CE_last;
-	CML::Matrix2d *P_CE_last;
+	CML::MatrixXd *mu_CE_last;
+	CML::MatrixXd *P_CE_last;
 
 	int N_e, e_count;
 	CML::MatrixXd elite_samples;
@@ -87,22 +87,22 @@ private:
 
 	__device__ inline void update_L(const CML::MatrixXd &in);
 
-	__device__ inline double calculate_2x2_quadratic_form(const CML::Vector2d &x, const CML::Matrix2d &A);
+	__device__ inline double calculate_2x2_quadratic_form(const CML::MatrixXd &x, const CML::MatrixXd &A);
 
 	__device__ inline void norm_pdf_log(CML::MatrixXd &result, const CML::MatrixXd &mu, const CML::MatrixXd &Sigma);
 
 	__device__ inline void generate_norm_dist_samples(const CML::MatrixXd &mu, const CML::MatrixXd &Sigma);
 
-	__device__ void calculate_roots_2nd_order(CML::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
+	__device__ void calculate_roots_2nd_order(CML::MatrixXd &r, bool &is_complex, const double A, const double B, const double C);
 
 	__device__ double produce_MCS_estimate(
-		const CML::Vector4d &xs_i, 
-		const CML::Matrix4d &P_i, 
-		const CML::Vector2d &p_os_cpa,
+		const CML::MatrixXd &xs_i, 
+		const CML::MatrixXd &P_i, 
+		const CML::MatrixXd &p_os_cpa,
 		const double t_cpa);
 
 	__device__ void determine_sample_validity_4D(
-		const CML::Vector2d &p_os_cpa, 
+		const CML::MatrixXd &p_os_cpa, 
 		const double t_cpa);
 
 	__device__ double MCSKF4D_estimation(
@@ -112,17 +112,17 @@ private:
 		const int i);	
 
 	__device__ void determine_sample_validity_2D(
-		const CML::Vector2d &p_os);
+		const CML::MatrixXd &p_os);
 
 	__device__ void determine_best_performing_samples(
-		const CML::Vector2d &p_os, 
-		const CML::Vector2d &p_i, 
-		const CML::Matrix2d &P_i);
+		const CML::MatrixXd &p_os, 
+		const CML::MatrixXd &p_i, 
+		const CML::MatrixXd &P_i);
 
 	__device__ double CE_estimation(
-		const CML::Vector2d &p_os, 
-		const CML::Vector2d &p_i, 
-		const CML::Matrix2d &P_i,
+		const CML::MatrixXd &p_os, 
+		const CML::MatrixXd &p_i, 
+		const CML::MatrixXd &P_i,
 		const int i);
 
 public:
@@ -139,17 +139,18 @@ public:
 
 	__host__ __device__ void clean();
 
-	__host__ __device__ void set_method(const CPE_Method cpe_method) { if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
+	__host__ __device__ inline void set_method(const CPE_Method cpe_method) 
+	{ if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
 
 	__host__ __device__ void set_number_of_obstacles(const int n_obst);
 
-	__host__ __device__ double get_segment_discretization_time() const { return dt_seg; };
+	__host__ __device__ inline double get_segment_discretization_time() const { return dt_seg; };
 
-	__device__ void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
+	__device__ inline void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
 
 	__device__ void initialize(
 		const CML::MatrixXd &xs_os, 
-		const CML::Vector4d &xs_i, 
+		const CML::MatrixXd &xs_i, 
 		const CML::MatrixXd &P_i,
 		const double d_safe_i, 
 		const int i);

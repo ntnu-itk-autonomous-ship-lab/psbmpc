@@ -30,7 +30,7 @@ namespace CML
 	template <class T>
 	class Dynamic_Matrix : public Matrix_Base<T, Dynamic_Matrix<T>> 
 	{
-	protected:
+	private:
 		size_t n_rows, n_cols;
 
 		T* data;
@@ -88,11 +88,19 @@ namespace CML
 
 		__host__ __device__ Dynamic_Matrix get_col(const size_t col) const;
 
-		__host__ __device__ size_t get_rows() const { return n_rows; }
+		__host__ __device__ inline size_t get_rows() const { return n_rows; }
 
-		__host__ __device__ size_t get_cols() const { return n_cols; }
+		__host__ __device__ inline size_t get_cols() const { return n_cols; }
 
-		__host__ __device__ T* get_data() const { return data; }
+		__host__ __device__ inline T* get_data() const { return data; }
+
+		__host__ __device__ inline size_t size() const 
+		{ 
+			assert(n_rows == 1 || n_cols == 1); 
+			if (n_rows > n_cols) 	{ return n_rows; } 
+			else 					{ return n_cols; } 
+		
+		}
 
 		__host__ __device__ void resize(const size_t n_rows, const size_t n_cols);
 
@@ -145,7 +153,7 @@ namespace CML
 		return result;
 	}
 	template <class T>
-	__host__ __device__ inline Dynamic_Matrix<T> operator-(const T scalar, const Dynamic_Matrix<T> &other)	{ return -1 * other + scalar; }
+	__host__ __device__ inline Dynamic_Matrix<T> operator-(const T scalar, const Dynamic_Matrix<T> &other)	{ return (T)-1 * other + scalar; }
 
 	/****************************************************************************************
 	*  Name     : operator* (by scalar)
@@ -678,6 +686,9 @@ namespace CML
 	//=========================================================================================================
 	// TYPEDEFS
 	//=========================================================================================================
+	using MatrixXb = Dynamic_Matrix<bool>;
+	using MatrixXi = Dynamic_Matrix<int>;
+	using MatrixXf = Dynamic_Matrix<float>;
 	using MatrixXd = Dynamic_Matrix<double>;
 }
 

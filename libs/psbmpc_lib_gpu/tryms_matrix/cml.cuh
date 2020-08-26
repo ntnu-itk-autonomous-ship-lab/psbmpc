@@ -7,9 +7,8 @@
 *			   any normal data type such as double, float, int, bool etc. 
 *			   The implementation is based on CRTP. Storage is row-major.
 *
-*  			   A Matrix_Base is defined in the top part of the file, then the 
-*			   Dynamic_Matrix part, and lastly a Static_Matrix. Some typedefs are stated
-*			   at the end of the file. 
+*  			   A Matrix_Base is here defined which is commonly used by the dynamic and 
+*			   static matrix classes. 
 *	           ---------------------
 *
 *  Version 1.0
@@ -29,7 +28,10 @@
 #include <thrust/device_vector.h>
 #include <assert.h>
 #include <math.h>
+
 #include "dynamic_matrix.cuh"
+#include "static_matrix.cuh"
+#include "eigen_interface.cuh"
 
 namespace CML
 {
@@ -65,7 +67,7 @@ namespace CML
 
 		__host__ __device__ T& operator()(const size_t index) const;
 
-		__host__ __device__ inline T& operator()(const size_t row, const size_t col) 
+		__host__ __device__ inline T& operator()(const size_t row, const size_t col) const
 		{
 			Derived& self = get_this();
 			assert(row < self.get_rows() && col < self.get_cols()); 
@@ -105,7 +107,7 @@ namespace CML
 
 		__host__ __device__ T min_coeff() const;
 
-		__host__ friend std::ostream& operator<<(std::ostream& os, const Derived &other)
+		__host__ friend inline std::ostream& operator<<(std::ostream& os, const Derived &other)
 		{
 			for (size_t i = 0; i < other.get_rows(); i++)
 			{
