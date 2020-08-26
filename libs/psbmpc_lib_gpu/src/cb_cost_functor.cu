@@ -752,8 +752,8 @@ __device__ double CB_Cost_Functor::distance_from_point_to_line(
 {   
 	CML::MatrixXd a(3, 1);
     CML::MatrixXd b(3, 1);
-    a(0) = (q_1 - q_2); a(1) = 0;
-    b(0) = (p - q_2); 	b(1) = 0;
+    a.set_block(0, 0, 2, 1, (q_1 - q_2)); 	a(2) = 0;
+    b.set_block(0, 0, 2, 1, (p - q_2)); 	b(2) = 0;
 
     CML::MatrixXd c = a.cross(b);
     if (a.norm() > 0) return c.norm() / a.norm();

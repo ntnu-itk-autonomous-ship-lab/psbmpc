@@ -190,6 +190,28 @@ int main()
 	std::cout << "v1' * v2 diff = " << v1.dot(v2) - v1_e.dot(v2_e) << std::endl;
 	std::cout << "v2' * v1 diff = " << v2.dot(v1) - v2_e.dot(v1_e) << std::endl;
 	//================================================================================
+	// Cross product test
+	//================================================================================
+	n_rows = 3; n_cols = 1;
+	v1.resize(n_rows, n_cols), v2.resize(n_rows, n_cols);
+	Eigen::Vector3d v1_e3, v2_e3;
+	Eigen::VectorXd v_diff1(n_rows), v_diff2(n_rows); 
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		v1(i) = 2 * std_norm_pdf(gen) + 5;  
+		v1_e3(i) = v1(i); 
+		v2(i) = 2 * std_norm_pdf(gen) + 5;
+		v2_e3(i) = v2(i);		
+	}
+
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		v_diff1(i) = v1.cross(v2)(i) - v1_e3.cross(v2_e3)(i);
+		v_diff2(i) = v2.cross(v1)(i) - v2_e3.cross(v1_e3)(i);
+	}
+	std::cout << "v1 x v2 diff = " << v_diff1.transpose() << std::endl;
+	std::cout << "v2 x v1 diff = " << v_diff2.transpose() << std::endl;
+	//================================================================================
 	// Operator tests
 	//================================================================================
 	n_rows = 4; n_cols = 4;

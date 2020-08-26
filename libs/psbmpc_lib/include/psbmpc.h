@@ -160,18 +160,18 @@ private:
 
 	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const int i);
 
-	double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) { return K_coll * (v_1 - v_2).norm(); };
+	inline double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) { return K_coll * (v_1 - v_2).norm(); };
 
 	double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	double calculate_control_deviation_cost();
 
-	double Delta_u(const double u_1, const double u_2) 		{ return K_du * fabs(u_1 - u_2); }
+	inline double Delta_u(const double u_1, const double u_2) 		{ return K_du * fabs(u_1 - u_2); }
 
-	double K_chi(const double chi)							{ if (chi > 0) return K_chi_strb * pow(chi, 2); else return K_chi_port * pow(chi, 2); };
+	inline double K_chi(const double chi)							{ if (chi > 0) return K_chi_strb * pow(chi, 2); else return K_chi_port * pow(chi, 2); };
 
-	double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
+	inline double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
 	double calculate_chattering_cost();
@@ -208,17 +208,17 @@ public:
 
 	PSBMPC();
 
-	CPE_Method get_cpe_method() const { return cpe_method; }; 
+	inline CPE_Method get_cpe_method() const { return cpe_method; }; 
 
-	Prediction_Method get_prediction_method() const { return prediction_method; };
+	inline Prediction_Method get_prediction_method() const { return prediction_method; };
 
-	Guidance_Method get_guidance_method() const { return guidance_method; };
+	inline Guidance_Method get_guidance_method() const { return guidance_method; };
 
-	void set_cpe_method(CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
+	inline void set_cpe_method(CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
 
-	void set_prediction_method(Prediction_Method prediction_method) { if(prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
+	inline void set_prediction_method(Prediction_Method prediction_method) { if(prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
 
-	void set_guidance_method(Guidance_Method guidance_method) 		{ if(guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
+	inline void set_guidance_method(Guidance_Method guidance_method) 		{ if(guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
 
 	int get_ipar(const int index) const;
 	
@@ -232,11 +232,11 @@ public:
 
 	void set_par(const int index, const std::vector<Eigen::VectorXd> &value);
 
-	bool get_obstacle_filter_status() const { return obstacle_filter_on; };
+	inline bool get_obstacle_filter_status() const { return obstacle_filter_on; };
 
 	void toggle_obstacle_filter(const bool value) { obstacle_filter_on = value; };
 
-	bool get_obstacle_colav_status(const int i) const { return obstacle_colav_on[i]; };
+	inline bool get_obstacle_colav_status(const int i) const { return obstacle_colav_on[i]; };
 
 	void toggle_obstacle_colav(const bool value, const int i) { obstacle_colav_on[i] = value; };
 
