@@ -51,6 +51,8 @@ namespace CML
 
 		__host__ __device__ Static_Matrix<T, Cols, Rows> transposed() const;
 
+		__host__ __device__ Static_Matrix<T, Rows, 1> cross(const Static_Matrix &other) const;
+
 		__host__ __device__ Static_Matrix<T, 1, Cols> cwise_product(const Static_Matrix &other) const;
 
 		__host__ __device__ Static_Matrix<T, 1, Cols> cwise_mean() const;
@@ -255,6 +257,33 @@ namespace CML
 				result(i, j) = this->operator()(j, i);
 			}
 		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : cross
+	*  Function : 3D row vectors only. Calculates the cross product this x other
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, int Rows, int Cols>
+	__host__ __device__ Static_Matrix<T, Rows, 1> Static_Matrix<T, Rows, Cols>::cross(
+		const Static_Matrix<T, Rows, Cols> &other 								// In: Matrix/Vector object to perform cross product with
+	) const
+	{
+		// Check that the objects are in fact correct vectors of matching dimension
+		assert((n_rows == 3 && n_cols == 1) && (n_rows == other.n_rows && n_cols == other.n_cols));
+		
+		Static_Matrix<T, Rows, 1> result;
+		result(0) = this->operator()(1) * other(2) - this->operator()(2) * other(1);
+		result(1) = this->operator()(2) * other(0) - this->operator()(0) * other(2);
+		result(2) = this->operator()(0) * other(1) - this->operator()(1) * other(0);
+
+		if (n_rows == 1)
+		{
+			result.transpose();
+		}
+		
 		return result;
 	}
 

@@ -124,18 +124,18 @@ private:
 
 	__device__ double calculate_dynamic_obstacle_cost(const CML::MatrixXd &P_c_i, const int i, const CML::MatrixXd &offset_sequence);
 
-	__device__ double calculate_collision_cost(const CML::MatrixXd &v_1, const CML::MatrixXd &v_2) { return vars->K_coll * (v_1 - v_2).norm(); };
+	__device__ inline double calculate_collision_cost(const CML::MatrixXd &v_1, const CML::MatrixXd &v_2) { return vars->K_coll * (v_1 - v_2).norm(); };
 
 	__device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	__device__ double calculate_control_deviation_cost(const CML::MatrixXd &offset_sequence);
 
-	__device__ double Delta_u(const double u_1, const double u_2) 		{ return vars->K_du * fabs(u_1 - u_2); }
+	__device__ inline double Delta_u(const double u_1, const double u_2) 		{ return vars->K_du * fabs(u_1 - u_2); }
 
-	__device__ double K_chi(const double chi) 							{ if (chi > 0) return vars->K_chi_strb * pow(chi, 2); else return vars->K_chi_port * pow(chi, 2); };
+	__device__ inline double K_chi(const double chi) 							{ if (chi > 0) return vars->K_chi_strb * pow(chi, 2); else return vars->K_chi_port * pow(chi, 2); };
 
-	__device__ double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return vars->K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return vars->K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
+	__device__ inline double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return vars->K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return vars->K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
 	__device__ double calculate_chattering_cost(const CML::MatrixXd &offset_sequence);
