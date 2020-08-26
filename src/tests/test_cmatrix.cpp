@@ -289,7 +289,20 @@ int main()
 	}
 	std::cout << M_diff << std::endl;
 
-	A.set_zero();
+	A.set_all_coeffs(2);
+	scalar = 1;
+	std::cout << "A + scalar = " << std::endl; 
+	std::cout << A + scalar << std::endl;
+
+	std::cout << "scalar + A= " << std::endl; 
+	std::cout << scalar + A << std::endl;
+
+	std::cout << "A - scalar = " << std::endl; 
+	std::cout << A - scalar << std::endl;
+
+	std::cout << "scalar - A= " << std::endl; 
+	std::cout << scalar - A << std::endl;
+
 	CML::MatrixXd a_vec(A.get_rows(), 1);
 	for (size_t i = 0; i < A.get_rows(); i++)
 	{
@@ -317,7 +330,7 @@ int main()
 	//================================================================================
 	// Quadratic form calculation test
 	//================================================================================
-	n_rows = 10; n_cols = 10;
+	n_rows = 4; n_cols = 4;
 	CML::MatrixXd x(n_rows, 1);
 	A.resize(n_rows, n_cols);
 	CML::MatrixXd res;
@@ -422,6 +435,34 @@ int main()
 	std::cout << "Block of T of size 3x3 starting at (0, 0) = " << std::endl;
 	std::cout << T.get_block(0, 0, 3, 3) << std::endl;
 
+	//================================================================================
+	// Eigen interface tests
+	//================================================================================
+	Eigen::MatrixXd test1(4, 10); test1.setZero();
+	CML::MatrixXd assign_to_1; 
+	CML::assign_eigen_object(assign_to_1, test1);
+	std::cout << assign_to_1 << std::endl;
+
+	Eigen::Matrix<double, 1, -1> test2(1, 20); test2.setZero();
+	CML::assign_eigen_object(assign_to_1, test2);
+	std::cout << assign_to_1 << std::endl;
+
+	Eigen::Matrix<int, -1, 10> test3(10, 10); test3.setZero();
+	CML::MatrixXi assign_to_2;
+	CML::assign_eigen_object(assign_to_2, test3);
+	std::cout << assign_to_2 << std::endl;
+
+	Eigen::VectorXd test4(10); test4.setZero();
+	CML::assign_eigen_object(assign_to_1, test4);
+	std::cout << assign_to_1.transposed() << std::endl;
+
+	Eigen::Vector2d test5; test5.setZero(); 
+	CML::assign_eigen_object(assign_to_1, test5);
+	std::cout << assign_to_1 << std::endl;
+
+	Eigen::Matrix2d test6; test6.setZero();
+	CML::assign_eigen_object(assign_to_1, test6);
+	std::cout << assign_to_1 << std::endl;
 	//================================================================================
 	// Other tests
 	//================================================================================

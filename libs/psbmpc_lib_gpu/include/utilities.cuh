@@ -28,8 +28,8 @@
 #define DEG2RAD M_PI / 180.0f
 #define RAD2DEG 180.0f / M_PI
 
-#include "Eigen/Dense"
 #include <thrust/device_vector.h>
+#include "cml.cuh"
 #include "iostream"
 
 
@@ -41,7 +41,7 @@ enum Axis
 		Yaw
 	};
 
-void save_matrix_to_file(const Eigen::MatrixXd &in);
+void save_matrix_to_file(const CML::MatrixXd &in);
 
 
 /****************************************************************************************
@@ -54,10 +54,10 @@ void save_matrix_to_file(const Eigen::MatrixXd &in);
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline void print_matrix(const Eigen::MatrixXd &in)
+inline void print_matrix(const CML::MatrixXd &in)
 {
-	int n_rows = in.rows();
-	int n_cols = in.cols();
+	int n_rows = in.get_rows();
+	int n_cols = in.get_cols();
 
 	std::cout << "[";
 	for (int i = 0; i < n_rows; i++)
@@ -129,9 +129,9 @@ __host__ __device__ inline double angle_difference_pmpi(const double a_1, const 
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2d &v, const double angle)
+__host__ __device__ inline CML::MatrixXd rotate_vector_2D(const CML::MatrixXd &v, const double angle)
 {
-	Eigen::Vector2d v_temp;
+	CML::MatrixXd v_temp;
 	v_temp(0) = v(0) * cos(angle) - v(1) * sin(angle);
 	v_temp(1) = v(0) * sin(angle) - v(1) * cos(angle);
 	return v_temp;
@@ -143,9 +143,9 @@ __host__ __device__ inline Eigen::Vector2d rotate_vector_2D(const Eigen::Vector2
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3d &v, const double angle, const Axis axis)
+__host__ __device__ inline CML::MatrixXd rotate_vector_3D(const CML::MatrixXd &v, const double angle, const Axis axis)
 {
-	Eigen::Vector3d v_temp;
+	CML::MatrixXd v_temp;
 	switch (axis) 
 	{
 		case Roll : 
@@ -169,7 +169,7 @@ __host__ __device__ inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3
 			v_temp(2) = v(2);
 			break;
 		}
-		default : return v_temp.setZero();
+		default : v_temp.set_zero(); return v_temp;
 	}
 	return v_temp;
 }
@@ -180,12 +180,12 @@ __host__ __device__ inline Eigen::Vector3d rotate_vector_3D(const Eigen::Vector3
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline Eigen::MatrixXd flatten(const Eigen::MatrixXd &in)
+__host__ __device__ inline CML::MatrixXd flatten(const CML::MatrixXd &in)
 {
-	int n_rows = in.rows();
-	int n_cols = in.cols();
+	int n_rows = in.get_rows();
+	int n_cols = in.get_cols();
 
-	Eigen::MatrixXd out;
+	CML::MatrixXd out;
 	out.resize(n_rows * n_cols, 1);
 	int count = 0;
 	for(int i = 0; i < n_rows; i++)
@@ -206,9 +206,9 @@ __host__ __device__ inline Eigen::MatrixXd flatten(const Eigen::MatrixXd &in)
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline Eigen::MatrixXd reshape(const Eigen::VectorXd &in, const int n_rows, const int n_cols)
+__host__ __device__ inline CML::MatrixXd reshape(const CML::MatrixXd &in, const int n_rows, const int n_cols)
 {
-	Eigen::MatrixXd out;
+	CML::MatrixXd out;
 	out.resize(n_rows, n_cols);
 	int count = 0;
 	for(int i = 0; i < n_rows; i++)
@@ -230,16 +230,16 @@ __host__ __device__ inline Eigen::MatrixXd reshape(const Eigen::VectorXd &in, co
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ inline void calculate_cpa(
-	Eigen::Vector2d &p_cpa, 												// In/out: Position of vessel A at CPA
+	CML::MatrixXd &p_cpa, 													// In/out: Position of vessel A at CPA
 	double &t_cpa, 															// In/out: Time to CPA
 	double &d_cpa, 															// In/out: Distance at CPA
-	const Eigen::VectorXd &xs_A, 											// In: State of vessel A 
-	const Eigen::VectorXd &xs_B 											// In: State of vessel B
+	const CML::MatrixXd &xs_A, 												// In: State of vessel A 
+	const CML::MatrixXd &xs_B 												// In: State of vessel B
 	)
 {
 	double epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
 	double psi_A, psi_B;
-	Eigen::Vector2d v_A, v_B, p_A, p_B, L_AB;
+	CML::MatrixXd v_A, v_B, p_A, p_B, L_AB;
 	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); p_A(0) = xs_A(0); p_A(1) = xs_A(1); }
 	
@@ -270,8 +270,8 @@ __host__ __device__ inline void calculate_cpa(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ inline bool determine_COLREGS_violation(
-	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A (most often the ownship)
-	const Eigen::VectorXd &xs_B, 											// In: State vector of vessel B (most often an obstacle)
+	const CML::MatrixXd &xs_A,											// In: State vector of vessel A (most often the ownship)
+	const CML::MatrixXd &xs_B, 											// In: State vector of vessel B (most often an obstacle)
 	const double phi_AH,
 	const double phi_OT, 
 	const double phi_HO,
@@ -283,7 +283,7 @@ __host__ __device__ inline bool determine_COLREGS_violation(
 	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
 	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
 
-	Eigen::Vector2d v_A, v_B, L_AB;
+	CML::MatrixXd v_A, v_B, L_AB;
 	double psi_A, psi_B;
 	if (xs_A.size() == 6) { psi_A = xs_A(2); v_A(0) = xs_A(3); v_A(1) = xs_A(4); v_A = rotate_vector_2D(v_A, psi_A); }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }

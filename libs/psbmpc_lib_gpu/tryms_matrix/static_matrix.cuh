@@ -78,11 +78,19 @@ namespace CML
 
 		__host__ __device__ Static_Matrix<T, Rows, 1> get_col(const size_t col) const;
 
-		__host__ __device__ size_t get_rows() const { return n_rows; }
+		__host__ __device__ inline size_t get_rows() const { return n_rows; }
 
-		__host__ __device__ size_t get_cols() const { return n_cols; }
+		__host__ __device__ inline size_t get_cols() const { return n_cols; }
 
-		__host__ __device__ T* get_data() { return data; }
+		__host__ __device__ inline T* get_data() { return data; }
+
+		__host__ __device__ inline size_t size() const 
+		{ 
+			assert(n_rows == 1 || n_cols == 1); 
+			if (n_rows > n_cols) 	{ return n_rows; } 
+			else 					{ return n_cols; } 
+		
+		}
 	};
 
 	/****************************************************************************************
@@ -134,7 +142,7 @@ namespace CML
 		return result;
 	}
 	template <class T, int Rows, int Cols>
-	__host__ __device__ inline Static_Matrix<T, Rows, Cols> operator-(const T scalar, const Static_Matrix<T, Rows, Cols> &other) { return -1 * other + scalar; }
+	__host__ __device__ inline Static_Matrix<T, Rows, Cols> operator-(const T scalar, const Static_Matrix<T, Rows, Cols> &other) { return (T)-1 * other + scalar; }
 
 	/****************************************************************************************
 	*  Name     : operator* (by scalar)

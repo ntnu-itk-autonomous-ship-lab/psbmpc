@@ -4,6 +4,8 @@
 src/tests/CMakeFiles/tester.dir/test_cmatrix.cpp.o
  ../libs/psbmpc_lib_gpu/tryms_matrix/cml.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
+ ../libs/psbmpc_lib_gpu/tryms_matrix/eigen_interface.cuh
+ ../libs/psbmpc_lib_gpu/tryms_matrix/static_matrix.cuh
  ../libs/third_party_libs/Eigen/Cholesky
  ../libs/third_party_libs/Eigen/Core
  ../libs/third_party_libs/Eigen/Dense

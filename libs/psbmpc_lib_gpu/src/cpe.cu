@@ -106,8 +106,8 @@ __host__ __device__ CPE::CPE(
 
     this->converged_last = cpe.converged_last;
 
-    mu_CE_last = new CML::Vector2d[n_obst];
-    P_CE_last = new CML::Matrix2d[n_obst];
+    mu_CE_last = new CML::MatrixXd[n_obst];
+    P_CE_last = new CML::MatrixXd[n_obst];
     for (int i = 0; i < n_obst; i++)
     {
         mu_CE_last[i] = cpe.mu_CE_last[i];
@@ -186,8 +186,8 @@ __host__ __device__ void CPE::set_number_of_obstacles(
     
     clean();
 
-    mu_CE_last = new CML::Vector2d[n_obst];
-    P_CE_last = new CML::Matrix2d[n_obst];
+    mu_CE_last = new CML::MatrixXd[n_obst];
+    P_CE_last = new CML::MatrixXd[n_obst];
     
     P_c_p.resize(n_obst, 1); P_c_upd.resize(n_obst, 1);
     var_P_c_p.resize(n_obst, 1); var_P_c_upd.resize(n_obst, 1);
@@ -204,7 +204,7 @@ __host__ __device__ void CPE::set_number_of_obstacles(
 *****************************************************************************************/
 __device__ void CPE::initialize(
     const CML::MatrixXd &xs_os,                                                     // In: Own-ship state vector
-    const CML::Vector4d &xs_i,                                                      // In: Obstacle i state vector
+    const CML::MatrixXd &xs_i,                                                      // In: Obstacle i state vector
     const CML::MatrixXd &P_i,                                                       // In: Obstacle i covariance flattened into n^2 x 1
     const double d_safe_i,                                                          // In: Safety zone around own-ship when facing obstacle i
     const int i                                                                     // In: Index of obstacle i
@@ -220,7 +220,7 @@ __device__ void CPE::initialize(
         // Heuristic initialization
         mu_CE_last[i] = 0.5 * (xs_os.get_block(0, 0, 2, 1) + xs_i.get_block(0, 0, 2, 1)); 
         
-        P_CE_last[i] = pow(d_safe, 2) * CML::Matrix2d::Identity() / 3.0;
+        P_CE_last[i] = pow(d_safe, 2) * CML::MatrixXd::identity(2, 2) / 3.0;
         
         break;
     case MCSKF4D :
@@ -247,7 +247,7 @@ __device__ double CPE::estimate(
     const int i                                         // In: Index of obstacle i
     )
 {
-    CML::Matrix2d P_i_2D;
+    CML::MatrixXd P_i_2D;
     int n_cols = xs_os.get_cols();
     double P_c;
     switch (method)
@@ -255,8 +255,8 @@ __device__ double CPE::estimate(
         case CE :
             // If CE is used, (typically when n_cols = 1)
             // The last column gives the current prediction time information
-            P_i_2D = reshape(P_i, 4, 4).block<2, 2>(0, n_cols - 1);
-            P_c = CE_estimation(xs_os.block<2, 1>(0, n_cols - 1), xs_i.block<2, 1>(0, n_cols - 1), P_i_2D, i);
+            P_i_2D = reshape(P_i, 4, 4).get_block(0, n_cols - 1, 2, 2);
+            P_c = CE_estimation(xs_os.get_block(0, n_cols - 1, 2, 1), xs_i.get_block(0, n_cols - 1, 2, 1), P_i_2D, i);
             break;
         case MCSKF4D :
             P_c = MCSKF4D_estimation(xs_os, xs_i, P_i, i);
@@ -314,7 +314,7 @@ __device__ void CPE::estimate_over_trajectories(
 
                     P_c_i(0, k_j_) = estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
                     // Collision probability on this active segment are all equal
-                    P_c_i.block(0, k_j_, 1, n_seg_samples) = P_c_i(0, k_j_) * CML::MatrixXd::Ones(1, k_j - k_j_ + 1);
+                    P_c_i.set_block(0, k_j_, 1, n_seg_samples, P_c_i(0, k_j_) * CML::MatrixXd::ones(1, k_j - k_j_ + 1));
                 }	
                 break;
             default :
@@ -449,8 +449,8 @@ __device__ inline void CPE::update_L(
 *  Modified :
 *****************************************************************************************/
 __device__ inline double CPE::calculate_2x2_quadratic_form(
-    const CML::Vector2d &x,                                       // In: Vector in the quadratic form
-    const CML::Matrix2d &A                                        // In: Matrix to invert in the quadratic form
+    const CML::MatrixXd &x,                                       // In: Vector in the quadratic form
+    const CML::MatrixXd &A                                        // In: Matrix to invert in the quadratic form
     )
 {
     CML::Matrix2d inv_A;
@@ -488,7 +488,7 @@ __device__ inline void CPE::norm_pdf_log(
         }
         else
         {
-            exp_val = (samples.get_col(i) - mu).transpose() * Sigma.inverse() * (samples.get_col(i) - mu);
+            exp_val = (samples.get_col(i) - mu).transposed() * Sigma.inverse() * (samples.get_col(i) - mu);
         }
         exp_val = - exp_val / 2.0;
 
@@ -529,7 +529,7 @@ __device__ inline void CPE::generate_norm_dist_samples(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::calculate_roots_2nd_order(
-    CML::Vector2d &r,                                                 // In: vector of roots to find
+    CML::MatrixXd &r,                                                   // In: vector of roots to find
     bool &is_complex,                                                   // In: Indicator of real/complex roots
     const double A,                                                     // In: Coefficient in polynomial 
     const double B,                                                     // In: Coefficient in polynomial 
@@ -568,9 +568,9 @@ __device__ void CPE::calculate_roots_2nd_order(
 *  Modified :
 *****************************************************************************************/
 __device__ double CPE::produce_MCS_estimate(
-	const CML::Vector4d &xs_i,                                                // In: Obstacle state vector
-	const CML::Matrix4d &P_i,                                                 // In: Obstacle covariance
-	const CML::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
+	const CML::MatrixXd &xs_i,                                                // In: Obstacle state vector
+	const CML::MatrixXd &P_i,                                                 // In: Obstacle covariance
+	const CML::MatrixXd &p_os_cpa,                                            // In: Position of own-ship at cpa
 	const double t_cpa                                                         // In: Time to cpa
     )
 {
@@ -596,25 +596,25 @@ __device__ double CPE::produce_MCS_estimate(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_sample_validity_4D(
-    const CML::Vector2d &p_os_cpa,                                           // In: Position of own-ship at cpa
+    const CML::MatrixXd &p_os_cpa,                                           // In: Position of own-ship at cpa
     const double t_cpa                                                         // In: Time to cpa
     )
 {
     int n_samples = samples.get_cols();
 
     bool complex_roots;
-    Eigen::Vector2d p_i_sample, v_i_sample;
+    CML::MatrixXd p_i_sample, v_i_sample;
     double A, B, C;
-    Eigen::Vector2d r;
+    CML::MatrixXd r;
     for (int j = 0; j < n_samples; j++)
     {
         valid(j) = 0;
 
-        p_i_sample = samples.get_block<2, 1>(0, j);
-        v_i_sample = samples.get_block<2, 1>(2, j);
+        p_i_sample = samples.get_block(0, j, 2, 1);
+        v_i_sample = samples.get_block(2, j, 2, 1);
 
         A = v_i_sample.dot(v_i_sample);
-        B = 2 * (p_i_sample - p_os_cpa).transpose() * v_i_sample;
+        B = 2 * (p_i_sample - p_os_cpa).transposed() * v_i_sample;
         C = p_i_sample.dot(p_i_sample) - 2 * p_os_cpa.dot(p_i_sample) + p_os_cpa.dot(p_os_cpa) - pow(d_safe, 2);
 
         calculate_roots_2nd_order(r, complex_roots, A, B, C);
@@ -692,10 +692,10 @@ __device__ double CPE::MCSKF4D_estimation(
         xs_i_sl(2) = U_i_sl * cos(psi_i_sl);
         xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
     }
-    Eigen::Matrix4d P_i_sl;
+    CML::MatrixXd P_i_sl;
     P_i_sl = reshape(P_i.get_col(0), 4, 4);
 
-    Eigen::Vector2d p_os_cpa;
+    CML::MatrixXd p_os_cpa;
     double t_cpa, d_cpa;
     calculate_cpa(p_os_cpa, t_cpa, d_cpa, xs_os_sl, xs_i_sl);
 
@@ -708,7 +708,7 @@ __device__ double CPE::MCSKF4D_estimation(
     // their discretized trajectories, and not beyond that. 
     if (t_cpa > dt_seg)
     {
-        y_P_c_i = produce_MCS_estimate(xs_i_sl, P_i_sl, xs_os.block<2, 1>(0, n_seg_samples - 1), dt_seg);
+        y_P_c_i = produce_MCS_estimate(xs_i_sl, P_i_sl, xs_os.get_block(0, n_seg_samples - 1, 2, 1), dt_seg);
     }
     else
     {
@@ -751,7 +751,7 @@ __device__ double CPE::MCSKF4D_estimation(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_sample_validity_2D(
-	const CML::Vector2d &p_os                                                // In: Own-ship position vector
+	const CML::MatrixXd &p_os                                                // In: Own-ship position vector
     )
 {
     int n_samples = samples.get_cols();
@@ -774,9 +774,9 @@ __device__ void CPE::determine_sample_validity_2D(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_best_performing_samples(
-    const CML::Vector2d &p_os,                                                    // In: Own-ship position vector
-    const CML::Vector2d &p_i,                                                     // In: Obstacle i position vector
-    const CML::Matrix2d &P_i                                                      // In: Obstacle i positional covariance
+    const CML::MatrixXd &p_os,                                                    // In: Own-ship position vector
+    const CML::MatrixXd &p_i,                                                     // In: Obstacle i position vector
+    const CML::MatrixXd &P_i                                                      // In: Obstacle i positional covariance
     )
 {
     N_e = 0;
@@ -809,10 +809,10 @@ __device__ void CPE::determine_best_performing_samples(
 *  Modified :
 *****************************************************************************************/
 __device__ double CPE::CE_estimation(
-	const CML::Vector2d &p_os,                                                // In: Own-ship position vector
-    const CML::Vector2d &p_i,                                                 // In: Obstacle i position vector
-    const CML::Matrix2d &P_i,                                                 // In: Obstacle i positional covariance
-    const int i                                                                 // In: Index of obstacle i
+	const CML::MatrixXd &p_os,                                                // In: Own-ship position vector
+    const CML::MatrixXd &p_i,                                                 // In: Obstacle i position vector
+    const CML::MatrixXd &P_i,                                                 // In: Obstacle i positional covariance
+    const int i                                                               // In: Index of obstacle i
     )
 {
     double P_c(0.0);
@@ -836,20 +836,20 @@ __device__ double CPE::CE_estimation(
     /******************************************************************************
     * Convergence depedent initialization prior to the run at time t_k
     ******************************************************************************/
-    Eigen::Vector2d mu_CE_prev, mu_CE;
-    Eigen::Matrix2d P_CE_prev, P_CE;
+    CML::MatrixXd mu_CE_prev, mu_CE;
+    CML::MatrixXd P_CE_prev, P_CE;
     sigma_inject = d_safe / 3;
     if (converged_last)
     {
         mu_CE_prev = mu_CE_last[i]; mu_CE = mu_CE_last[i];
 
         P_CE_prev = P_CE_last[i]; 
-        P_CE = P_CE_last[i] + pow(sigma_inject, 2) * Eigen::Matrix2d::Identity();
+        P_CE = P_CE_last[i] + pow(sigma_inject, 2) * CML::MatrixXd::identity(2, 2);
     }
     else
     {
         mu_CE_prev = 0.5 * (p_i + p_os); mu_CE = mu_CE_prev;
-        P_CE_prev = pow(d_safe, 2) * Eigen::Matrix2d::Identity() / 3;
+        P_CE_prev = pow(d_safe, 2) * CML::MatrixXd::identity(2, 2) / 3;
         P_CE = P_CE_prev;
     }
 
@@ -890,10 +890,10 @@ __device__ double CPE::CE_estimation(
 
             mu_CE = elite_samples.rwise_mean();
 
-            P_CE = Eigen::Matrix2d::Zero();
+            P_CE.set_zero();
             for (int j = 0; j < N_e; j++)
             {
-                P_CE += (elite_samples.get_col(j) - mu_CE) * (elite_samples.get_col(j) - mu_CE).transpose();
+                P_CE += (elite_samples.get_col(j) - mu_CE) * (elite_samples.get_col(j) - mu_CE).transposed();
             }
             P_CE = P_CE / (double)N_e;
 
