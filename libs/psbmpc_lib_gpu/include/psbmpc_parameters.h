@@ -27,21 +27,25 @@
 #include "Eigen/Dense"
 #include <vector>
 
+class PSBMPC;
+
 enum Par_Type 
 {
-	BPAR,
-	IPAR,
-	DPAR,
-	OPAR,
-	EVPAR,
-	CPEM,
-	PREDM,
-	GUIDM
+	BPAR,					// Boolean type parameter
+	IPAR,					// Integer type parameter
+	DPAR,					// Double type parameter
+	OPAR,					// Offset/control behaviour related parameter
+	EVPAR,					// Eigen::Vector parameter
+	CPEM,					// CPE_Method parameter
+	PREDM,					// Prediction_Method parameter
+	GUIDM					// Guidance_Method parameter
 };
 
 struct PSBMPC_Parameters
 {
 private:
+
+	friend class PSBMPC;
 
 	int n_cbs, n_M;
 
