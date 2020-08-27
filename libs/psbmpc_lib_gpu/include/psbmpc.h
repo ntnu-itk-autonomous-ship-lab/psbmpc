@@ -2,9 +2,10 @@
 *
 *  File name : psbmpc.h
 *
-*  Function  : Header file for Probabilistic Scneario-based Model Predictive Control.
-*			   Brand new extended version of the SB-MPC implemented by Inger Berge Hagen 
-*			   and Giorgio D. Kwame Minde Kufoalor through the Autosea project.
+*  Function  : Header file for Probabilistic Scenario-based Model Predictive Control.
+*			   Brand new extended and improved version of the SB-MPC implemented by  
+*			   Inger Berge Hagen and Giorgio D. Kwame Minde Kufoalor through the Autosea 
+*			   project.
 *
 *  
 *	           ---------------------
@@ -25,6 +26,7 @@
 
 
 #include "psbmpc_index.h"
+#include "psbmpc_parameters.h"
 #include "ownship.cuh"
 #include "tracked_obstacle.h"
 #include "cpe.cuh"
@@ -44,52 +46,22 @@ enum ST
 	F 														// Give-way in Crossing 	(ST = CR, GW)
 };	
 
+
+
 class PSBMPC
 {
 private:
 
-	int n_cbs, n_M, n_a;
 	std::vector<int> n_ps;
 
-	std::vector<Eigen::VectorXd> u_offsets;
-	std::vector<Eigen::VectorXd> chi_offsets;
 
-	Eigen::MatrixXd control_behaviours;
-
-	Eigen::VectorXd maneuver_times, obstacle_course_changes;
+	Eigen::VectorXd maneuver_times;
 	
 	double u_m_last;
 	double chi_m_last;
 
 	double min_cost;
 	int min_index;
-
-	Eigen::VectorXd dpar_low, dpar_high;
-	Eigen::VectorXd ipar_low, ipar_high;
-
-	CPE_Method cpe_method;
-
-	Prediction_Method prediction_method;
-
-	Guidance_Method guidance_method;
-
-	double T, T_static, dt, p_step;
-	double t_ts;
-	double d_safe, d_close, d_init;
-	double K_coll;
-	double phi_AH, phi_OT, phi_HO, phi_CR;
-	double kappa, kappa_TC;
-	double K_u, K_du;
-	double K_chi_strb, K_dchi_strb;
-	double K_chi_port, K_dchi_port; 
-	double K_sgn, T_sgn;
-	double G;
-	double q, p;
-	
-	bool obstacle_filter_on;
-	std::vector<bool> obstacle_colav_on;
-
-	double T_lost_limit, T_tracked_limit;
 
 	std::unique_ptr<Ownship> ownship;
 
@@ -165,39 +137,10 @@ private:
 
 public:
 
+	// This object is public to allow online access (have to figure this out yet!)
+	PSBMPC_Parameters pars;
+
 	PSBMPC();
-
-	CPE_Method get_cpe_method() const { return cpe_method; }; 
-
-	Prediction_Method get_prediction_method() const { return prediction_method; };
-
-	Guidance_Method get_guidance_method() const { return guidance_method; };
-
-	void set_cpe_method(CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
-
-	void set_prediction_method(Prediction_Method prediction_method) { if(prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
-
-	void set_guidance_method(Guidance_Method guidance_method) 		{ if(guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
-
-	int get_ipar(const int index) const;
-	
-	double get_dpar(const int index) const;
-
-	std::vector<Eigen::VectorXd> get_mpar(const int index) const;
-
-	void set_par(const int index, const int value);
-
-	void set_par(const int index, const double value);
-
-	void set_par(const int index, const std::vector<Eigen::VectorXd> &value);
-
-	bool get_obstacle_filter_status() const { return obstacle_filter_on; };
-
-	void toggle_obstacle_filter(const bool value) { obstacle_filter_on = value; };
-
-	bool get_obstacle_colav_status(const int i) const { return obstacle_colav_on[i]; };
-
-	void toggle_obstacle_colav(const bool value, const int i) { obstacle_colav_on[i] = value; };
 
 	void calculate_optimal_offsets(
 		double &u_opt, 
