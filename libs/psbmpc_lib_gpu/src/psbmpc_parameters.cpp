@@ -122,6 +122,21 @@ std::vector<Eigen::VectorXd> PSBMPC_Parameters::get_opar(
 	}
 }
 
+Eigen::VectorXd PSBMPC_Parameters::get_evpar(
+	const int index															// In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
+	) const
+{
+	switch (index){
+		case i_evpar_obstacle_course_changes			: return obstacle_course_changes;
+		default : 
+		{ 
+			// Throw invalid index
+			Eigen::VectorXd bs;
+			return bs; 
+		}
+	}
+}
+
 /****************************************************************************************
 *  Name     : set_par
 *  Function : Sets parameter with index <index> to value <value>, given that it is inside
@@ -163,7 +178,6 @@ void PSBMPC_Parameters::set_par(
 	{
 		// Throw invalid par value
 	}
-	
 }
 
 void PSBMPC_Parameters::set_par(
@@ -251,6 +265,27 @@ void PSBMPC_Parameters::set_par(
 	else
 	{
 		// Throw invalid value
+	}
+}
+
+void PSBMPC_Parameters::set_par(
+	const int index, 														// In: Index of parameter to set
+	const Eigen::VectorXd &value 											// In: Value to set for parameter
+	)
+{
+	if (value.size() > 0)
+	{	
+		switch(index)
+		{
+			case i_evpar_obstacle_course_changes 		: obstacle_course_changes = value; break;
+			default : 
+				// Throw invalid index
+				break;
+		}
+	}
+	else
+	{
+		// Throw invalid par value
 	}
 }
 
