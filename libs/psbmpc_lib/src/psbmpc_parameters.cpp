@@ -47,7 +47,6 @@ bool PSBMPC_Parameters::get_bpar(
 	) const
 {
 	switch(index){
-		case i_bpar_obstacle_filter_on 				: return obstacle_filter_on; 
 		case i_bpar_obstacle_colav_on 				: return obstacle_colav_on; 
 		default : 
 			// Throw
@@ -97,8 +96,6 @@ double PSBMPC_Parameters::get_dpar(
 		case i_dpar_G					: return G;
 		case i_dpar_q					: return q;
 		case i_dpar_p					: return p;
-		case i_dpar_T_lost_limit		: return T_lost_limit;
-		case i_dpar_T_tracked_limit		: return T_tracked_limit;
 		default : 
 			// Throw
 			return 0.0;
@@ -150,8 +147,7 @@ void PSBMPC_Parameters::set_par(
 {	
 	switch(index)
 	{
-		case i_bpar_obstacle_filter_on 			: obstacle_filter_on = value; break;
-		case i_bpar_obstacle_colav_on 			: obstacle_filter_on = value; break;
+		case i_bpar_obstacle_colav_on 			: obstacle_colav_on = value; break;
 		default : 
 			// Throw invalid index
 			break;
@@ -218,8 +214,6 @@ void PSBMPC_Parameters::set_par(
 			case i_dpar_G 					: G = value; break;
 			case i_dpar_q 					: q = value; break;
 			case i_dpar_p 					: p = value; break;
-			case i_dpar_T_lost_limit		: T_lost_limit = value; break;
-			case i_dpar_T_tracked_limit		: T_tracked_limit = value; break;
 			default : // Throw invalid index
 				break;
 		}
@@ -420,9 +414,5 @@ void PSBMPC_Parameters::initialize_pars()
 	q = 4.0;
 	p = 1.0;
 
-	obstacle_filter_on = false;
 	obstacle_colav_on = false;
-	
-	T_lost_limit = 15.0; 	// 15.0 s obstacle no longer relevant after this time
-	T_tracked_limit = 15.0; // 15.0 s obstacle still relevant if tracked for so long, choice depends on survival rate
 }

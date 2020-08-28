@@ -170,12 +170,14 @@ int main(){
 		P_traj_i[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
 
-
-	
+//*****************************************************************************************************************
+// Obstacle Manager setup
+//*****************************************************************************************************************	
+	std::unique_ptr<Obstacle_Manager> obstacle_manager(new Obstacle_Manager());
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************	
-	PSBMPC *psbmpc = new PSBMPC();
+	std::unique_ptr<PSBMPC> psbmpc(new PSBMPC());
 	double u_opt, chi_opt;
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
@@ -269,6 +271,14 @@ int main(){
 			obstacle_intention_probabilities.col(i) = Pr_a[i];
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
+		obstacle_manager->operator()(
+			psbmpc->pars, 
+			trajectory.col(k), 
+			asv_sim->get_length(),
+			obstacle_states, 
+			obstacle_covariances, 
+			obstacle_intention_probabilities, 
+			obstacle_a_priori_CC_probabilities);
 
 		asv_sim->update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
@@ -280,16 +290,11 @@ int main(){
 				u_opt,
 				chi_opt, 
 				predicted_trajectory,
-				obstacle_status,
-				colav_status,
 				u_d,
 				chi_d,
 				waypoints,
 				trajectory.col(k),
-				obstacle_states,
-				obstacle_covariances,
-				obstacle_intention_probabilities,
-				obstacle_a_priori_CC_probabilities,
+				obstacle_manager,
 				static_obstacles);
 
 			end = std::chrono::system_clock::now();
@@ -298,11 +303,7 @@ int main(){
 			mean_t = elapsed.count();
 
 			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
-
-			std::cout << "Status: ID    SOG    COG    R-BRG	  RNG	  HL	 IP	  AH    SB    	HO    	CRG    	OTG   	OT" << std::endl;
-			std::cout << "   " << obstacle_status.transpose() << std::endl;
 		
-			std::cout << "Colav_status (CF, cost): " << colav_status.transpose() << std::endl;
 		}
 
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
