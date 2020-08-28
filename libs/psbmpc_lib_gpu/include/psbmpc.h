@@ -137,7 +137,6 @@ private:
 
 public:
 
-	// This object is public to allow online access (have to figure this out yet!)
 	PSBMPC_Parameters pars;
 
 	PSBMPC();

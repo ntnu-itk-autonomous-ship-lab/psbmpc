@@ -388,6 +388,33 @@ src/psbmpc.cpp.s:
 	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.s
 .PHONY : src/psbmpc.cpp.s
 
+src/psbmpc_parameters.o: src/psbmpc_parameters.cpp.o
+
+.PHONY : src/psbmpc_parameters.o
+
+# target to build an object file
+src/psbmpc_parameters.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc_parameters.cpp.o
+.PHONY : src/psbmpc_parameters.cpp.o
+
+src/psbmpc_parameters.i: src/psbmpc_parameters.cpp.i
+
+.PHONY : src/psbmpc_parameters.i
+
+# target to preprocess a source file
+src/psbmpc_parameters.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc_parameters.cpp.i
+.PHONY : src/psbmpc_parameters.cpp.i
+
+src/psbmpc_parameters.s: src/psbmpc_parameters.cpp.s
+
+.PHONY : src/psbmpc_parameters.s
+
+# target to generate assembly for a file
+src/psbmpc_parameters.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc_parameters.cpp.s
+.PHONY : src/psbmpc_parameters.cpp.s
+
 src/tracked_obstacle.o: src/tracked_obstacle.cpp.o
 
 .PHONY : src/tracked_obstacle.o
@@ -478,6 +505,9 @@ help:
 	@echo "... src/psbmpc.o"
 	@echo "... src/psbmpc.i"
 	@echo "... src/psbmpc.s"
+	@echo "... src/psbmpc_parameters.o"
+	@echo "... src/psbmpc_parameters.i"
+	@echo "... src/psbmpc_parameters.s"
 	@echo "... src/tracked_obstacle.o"
 	@echo "... src/tracked_obstacle.i"
 	@echo "... src/tracked_obstacle.s"
