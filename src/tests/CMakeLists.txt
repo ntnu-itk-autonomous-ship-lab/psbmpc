@@ -7,7 +7,7 @@
 #add_executable(tester test_psbmpc.cpp)
 #add_executable(tester test_prng.cpp)
 #add_executable(tester test_thrust.cu)
-add_executable(tester test_cmatrix.cpp)
+add_executable(tester test_psbmpc.cpp)
 
 target_include_directories(tester PUBLIC
 	${CMAKE_SOURCE_DIR}/include

@@ -21,23 +21,27 @@
 *****************************************************************************************/
 
 
-#ifndef _Ownship_H_
-#define _Ownship_H_
+#ifndef _OWNSHIP_H_
+#define _OWNSHIP_H_
 
 #include "Eigen/Dense"
 
-enum Prediction_Method {
+// NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below
+/* enum Prediction_Method
+{
 	Linear,													// Linear prediction
 	ERK1, 													// Explicit Runge Kutta 1 = Eulers method
 	ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
 };
 
-
-enum Guidance_Method {
+enum Guidance_Method 
+{
 	LOS, 													// Line-of-sight		
 	WPP,													// Waypoint-Pursuit
 	CH 														// Course Hold
-};
+}; */
+// Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
+#include "psbmpc_parameters.h"
 
 class Ownship
 {
@@ -98,7 +102,7 @@ private:
 	double x_offset, y_offset;
 
 	// Calculates the offsets according to the position of the GPS receiver
-	void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
+	inline void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
 
 	void update_Cvv(const Eigen::Vector3d &nu);
 
@@ -135,9 +139,9 @@ public:
 		const double dt
 	);
 
-	double get_length() const { return l; };
+	inline double get_length() const { return l; };
 
-	double get_width() const { return w; };
+	inline double get_width() const { return w; };
 
 };
 

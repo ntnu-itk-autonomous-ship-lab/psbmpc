@@ -129,7 +129,7 @@ int main(){
 	double* ptraj_i; 
 	double* p_P_traj_i; 
 	double* p_wps_i;
-	int n_wps_i = 2;
+	int n_wps_i;
 
 	for (int i = 0; i < n_obst; i++)
 	{
@@ -151,9 +151,10 @@ int main(){
 
 		Pr_CC[i] = 1;
 
-		waypoints_i[i].resize(2, 3); 
-		waypoints_i[i] << 500, 100, 500,
-					300, 0, 	-300;
+		n_wps_i = 2;
+		waypoints_i[i].resize(2, n_wps_i); 
+		waypoints_i[i] << 500, 500,
+					300, -300;
 		wps_i[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
 
 		offset_sequence_i[i].resize(6);

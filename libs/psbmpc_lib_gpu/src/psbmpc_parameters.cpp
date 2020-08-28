@@ -432,7 +432,7 @@ void PSBMPC_Parameters::initialize_pars()
 /****************************************************************************************
 *  Name     : map_offset_sequences
 *  Function : Maps the currently set surge and course modifications into a matrix of 
-*			  offset sequences or control behaviours
+*			  offset sequences/control behaviours
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/

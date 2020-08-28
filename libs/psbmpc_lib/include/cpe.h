@@ -29,13 +29,16 @@
 
 #include <random>
 
-// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
+// NOTE: If you want standalone use of this module, define the enum CPE_Method below
+/* // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
 enum CPE_Method 
 {
 	CE,														// Consider positional uncertainty only
 	MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments 
-};
+}; */
+// Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
+#include "psbmpc_parameters.h"
 
 class CPE
 {
@@ -57,7 +60,6 @@ private:
 	// real-time testing to ensure proper functionality.
 	std::random_device seed;
 
-	//std::mt19937_64 generator;
 	xoshiro256plus64 generator;
 
 	std::normal_distribution<double> std_norm_pdf;

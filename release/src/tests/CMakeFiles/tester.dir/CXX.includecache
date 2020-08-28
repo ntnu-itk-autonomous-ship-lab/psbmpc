@@ -13,6 +13,8 @@ Eigen/Dense
 -
 random
 -
+psbmpc_parameters.h
+../libs/psbmpc_lib/include/psbmpc_parameters.h
 
 ../libs/psbmpc_lib/include/kf.h
 Eigen/Dense
@@ -31,10 +33,14 @@ Eigen/Dense
 ../libs/psbmpc_lib/include/ownship.h
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
+psbmpc_parameters.h
+../libs/psbmpc_lib/include/psbmpc_parameters.h
 
 ../libs/psbmpc_lib/include/psbmpc.h
 psbmpc_index.h
 ../libs/psbmpc_lib/include/psbmpc_index.h
+psbmpc_parameters.h
+../libs/psbmpc_lib/include/psbmpc_parameters.h
 ownship.h
 ../libs/psbmpc_lib/include/ownship.h
 tracked_obstacle.h
@@ -49,6 +55,14 @@ memory
 -
 
 ../libs/psbmpc_lib/include/psbmpc_index.h
+
+../libs/psbmpc_lib/include/psbmpc_parameters.h
+psbmpc_index.h
+../libs/psbmpc_lib/include/psbmpc_index.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+vector
+-
 
 ../libs/psbmpc_lib/include/tracked_obstacle.h
 vector
