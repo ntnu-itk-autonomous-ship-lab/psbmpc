@@ -25,22 +25,13 @@
 
 #include "psbmpc_index.h"
 #include "psbmpc_parameters.h"
+#include "obstacle_manager.h"
 #include "ownship.h"
 #include "tracked_obstacle.h"
 #include "cpe.h"
 #include "Eigen/Dense"
 #include <vector>
-#include <memory>
-
-enum ST 
-{
-	A, 														// Non-COLREGS situation	(ST = Ø)
-	B, 														// Stand-on in Overtaking 	(ST = OT, SO)
-	C, 														// Stand-on in Crossing 	(ST = CR, SO)
-	D, 														// Give-way in Overtaking 	(ST = OT, GW)
-	E, 														// Give-way in Head-on 		(ST = HO, GW)
-	F 														// Give-way in Crossing 	(ST = CR, GW)
-};	
+#include <memory>	
 
 class PSBMPC
 {
@@ -60,16 +51,6 @@ private:
 	std::unique_ptr<CPE> cpe;
 
 	Eigen::Matrix<double, 6, -1> trajectory;
-
-	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
-	// and <obstacle is passed> (IP_0) indicators
-	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
-
-	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
-	std::vector<ST> ST_0, ST_i_0;
-
-	std::vector<std::unique_ptr<Tracked_Obstacle>> old_obstacles;
-	std::vector<std::unique_ptr<Tracked_Obstacle>> new_obstacles;
 
 	void reset_control_behaviour();
 
@@ -97,15 +78,6 @@ private:
 	void predict_trajectories_jointly();
 
 	bool determine_colav_active(const int n_static_obst);
-
-	void determine_situation_type(
-		ST &st_A,
-		ST &st_B,
-		const Eigen::Vector2d &v_A, 
-		const double psi_A, 
-		const Eigen::Vector2d &v_B,
-		const Eigen::Vector2d &L_AB, 
-		const double d_AB);
 
 	bool determine_COLREGS_violation(
 		const Eigen::Vector2d &v_A, 
@@ -160,16 +132,6 @@ private:
 	//
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
-    void update_obstacles(
-		const Eigen::Matrix<double, 9, -1>& obstacle_states, 
-		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
-		const Eigen::MatrixXd &obstacle_intention_probabilities,
-		const Eigen::VectorXd &obstacle_a_priori_CC_probabilities);
-
-	void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
-
-	void update_situation_type_and_transitional_variables();
-
 public:
 
 	PSBMPC_Parameters pars;
@@ -180,16 +142,11 @@ public:
 		double &u_opt, 
 		double &chi_opt, 
 		Eigen::Matrix<double, 2, -1> &predicted_trajectory,
-		Eigen::Matrix<double, -1, -1> &obstacle_status,
-		Eigen::Matrix<double, -1, 1> &colav_status,
 		const double u_d, 
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::Matrix<double, 6, 1> &ownship_state,
-		const Eigen::Matrix<double, 9, -1> &obstacle_states, 
-		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
-		const Eigen::MatrixXd &obstacle_intention_probabilities,
-		const Eigen::VectorXd &obstacle_a_priori_CC_probabilities,
+		std::unique_ptr<Obstacle_Manager> &obstacle_manager,
 		const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
 };

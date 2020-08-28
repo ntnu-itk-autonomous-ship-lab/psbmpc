@@ -2,8 +2,8 @@
 *
 *  File name : obstacle_manager.h
 *
-*  Function  : Header file for the obstacle management interface.
-*			   
+*  Function  : Header file for the obstacle management interface. As of now only
+*			   used for dynamic obstacle management.
 *
 *  
 *	           ---------------------
@@ -28,6 +28,8 @@
 #include <vector>
 #include <memory>
 
+class PSBMPC;
+
 enum ST 
 {
 	A, 														// Non-COLREGS situation	(ST = Ø)
@@ -42,7 +44,11 @@ class Obstacle_Manager
 {
 private:
 
+	friend class PSBMPC;
+
 	double T_lost_limit, T_tracked_limit;
+
+	bool obstacle_filter_on;
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
@@ -57,16 +63,14 @@ private:
 	Eigen::MatrixXd obstacle_status;
 
 	void determine_situation_type(
-		const PSBMPC_Parameters &psbmpc_pars,
 		ST &st_A,
 		ST &st_B,
+		const PSBMPC_Parameters &psbmpc_pars,
 		const Eigen::Vector2d &v_A, 
 		const double psi_A, 
 		const Eigen::Vector2d &v_B,
 		const Eigen::Vector2d &L_AB, 
 		const double d_AB);
-
-public:
 
     void update_obstacles(
 		const PSBMPC_Parameters &psbmpc_pars,
@@ -75,13 +79,22 @@ public:
 		const Eigen::MatrixXd &obstacle_intention_probabilities,
 		const Eigen::VectorXd &obstacle_a_priori_CC_probabilities);
 
-	void update_obstacle_status(const Eigen::VectorXd &HL_0);
+	void update_situation_type_and_transitional_variables(
+		const PSBMPC_Parameters &psbmpc_pars, 
+		const Eigen::Matrix<double, 6, 1> &ownship_state,
+		const double ownship_length);
 
-	void update_situation_type_and_transitional_variables(const PSBMPC_Parameters &psbmpc_pars);
+public:
+
+	void update_obstacle_status(const Eigen::Matrix<double, 6, 1> &ownship_state, const Eigen::VectorXd &HL_0);
+
+	void display_obstacle_information();
 
 	void operator()(
 		const PSBMPC_Parameters &psbmpc_pars,
-		const Eigen::Matrix<double, 9, -1>& obstacle_states, 
+		const Eigen::Matrix<double, 6, 1> &ownship_state,
+		const double ownship_length,
+		const Eigen::Matrix<double, 9, -1> &obstacle_states, 
 		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
 		const Eigen::MatrixXd &obstacle_intention_probabilities,
 		const Eigen::VectorXd &obstacle_a_priori_CC_probabilities);

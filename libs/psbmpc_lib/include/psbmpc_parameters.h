@@ -26,6 +26,7 @@
 #include <vector>
 
 class PSBMPC;
+class Obstacle_Manager;
 
 enum Par_Type 
 {
@@ -65,9 +66,8 @@ struct PSBMPC_Parameters
 {
 private:
 
-	bool run_on_gpu;
-
 	friend class PSBMPC;
+	friend class Obstacle_Manager;
 
 	int n_cbs, n_M;
 
@@ -100,10 +100,7 @@ private:
 	double G;
 	double q, p;
 	
-	bool obstacle_filter_on;
 	bool obstacle_colav_on;
-
-	double T_lost_limit, T_tracked_limit;
 
 	void initialize_par_limits();
 
