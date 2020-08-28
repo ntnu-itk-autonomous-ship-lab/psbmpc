@@ -1563,6 +1563,7 @@ void PSBMPC::update_obstacles(
 				obstacle_exist = true;
 
 				break;
+
 			}
 		}
 		if (!obstacle_exist)
@@ -1572,8 +1573,7 @@ void PSBMPC::update_obstacles(
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
 				obstacle_a_priori_CC_probabilities(i),
-				pars.obstacle_filter_on, 
-				false, 
+				pars.obstacle_filter_on,  
 				pars.T, 
 				pars.dt))));
 		}

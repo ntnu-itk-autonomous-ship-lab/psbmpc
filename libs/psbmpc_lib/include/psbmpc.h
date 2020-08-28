@@ -75,10 +75,6 @@ private:
 
 	void increment_control_behaviour();
 
-	void initialize_par_limits();
-
-	void initialize_pars();
-
 	void initialize_prediction();
 
 	void set_up_independent_obstacle_prediction_variables(

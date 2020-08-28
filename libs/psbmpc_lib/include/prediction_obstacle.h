@@ -3,7 +3,7 @@
 *  File name : prediction_obstacle.h
 *
 *  Function  : Header file for the predicion obstacle class. Derived simpler variant of  
-*			   the obstacle class used in the PSB-MPC, specifically made for the PSB-MPC
+*			   the obstacle class, specifically made for the PSB-MPC
 *			   predictions with active obstacle COLAV systems.
 *  
 *	           ---------------------
