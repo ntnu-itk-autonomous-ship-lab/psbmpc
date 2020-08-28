@@ -28,8 +28,6 @@
 #include "mrou.h"
 #include "kf.h"
 
-//class Cuda_Obstacle;
-
 class Tracked_Obstacle : public Obstacle
 {
 private:
@@ -77,8 +75,7 @@ public:
 			 const Eigen::VectorXd &P, 
 			 const Eigen::VectorXd &Pr_a, 
 			 const double Pr_CC,
-			 const bool filter_on, 
-			 const bool colav_on, 
+			 const bool filter_on,  
 			 const double T, 
 			 const double dt);
 
