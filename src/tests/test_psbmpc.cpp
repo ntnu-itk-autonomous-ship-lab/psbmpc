@@ -177,7 +177,7 @@ int main(){
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************	
-	std::unique_ptr<PSBMPC> psbmpc(new PSBMPC());
+	std::unique_ptr<PSBMPC> psbmpc(new PSBMPC(obstacle_manager->get_data()));
 	double u_opt, chi_opt;
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
@@ -294,7 +294,6 @@ int main(){
 				chi_d,
 				waypoints,
 				trajectory.col(k),
-				obstacle_manager,
 				static_obstacles);
 
 			end = std::chrono::system_clock::now();
@@ -305,9 +304,11 @@ int main(){
 			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
 		
 		}
-
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 		asv_sim->update_ctrl_input(u_c, chi_c, trajectory.col(k));
+
+		obstacle_manager->update_obstacle_status(trajectory.col(k));
+		obstacle_manager->display_obstacle_information();
 
 		if (k < N - 1) { trajectory.col(k + 1) = asv_sim->predict(trajectory.col(k), dt, ERK1); }
 

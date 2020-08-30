@@ -46,6 +46,8 @@ private:
 
 	double min_cost;
 
+	std::shared_ptr<Obstacle_Data> data;
+
 	std::unique_ptr<Ownship> ownship;
 
 	std::unique_ptr<CPE> cpe;
@@ -136,7 +138,7 @@ public:
 
 	PSBMPC_Parameters pars;
 
-	PSBMPC();
+	PSBMPC(const std::shared_ptr<Obstacle_Data> &data);
 
 	void calculate_optimal_offsets(
 		double &u_opt, 
@@ -146,7 +148,6 @@ public:
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::Matrix<double, 6, 1> &ownship_state,
-		std::unique_ptr<Obstacle_Manager> &obstacle_manager,
 		const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
 };

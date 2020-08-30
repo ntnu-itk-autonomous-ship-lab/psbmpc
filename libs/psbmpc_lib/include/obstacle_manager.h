@@ -2,7 +2,8 @@
 *
 *  File name : obstacle_manager.h
 *
-*  Function  : Header file for the obstacle management interface. As of now only
+*  Function  : Header file for the obstacle management interface and data structure for
+*			   keeping information on dynamic obstacles. As of now only
 *			   used for dynamic obstacle management.
 *
 *  
@@ -40,6 +41,27 @@ enum ST
 	F 														// Give-way in Crossing 	(ST = CR, GW)
 };	
 
+struct Obstacle_Data
+{
+	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
+	// and <obstacle is passed> (IP_0) indicators
+	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
+
+	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
+	std::vector<ST> ST_0, ST_i_0;
+
+	// Obstacle hazard levels, on a scale from 0 to 1 (output from PSBMPC)
+	Eigen::VectorXd HL_0;
+
+	std::vector<std::unique_ptr<Tracked_Obstacle>> old_obstacles;
+	std::vector<std::unique_ptr<Tracked_Obstacle>> new_obstacles;
+
+	Eigen::MatrixXd obstacle_status;
+
+	Obstacle_Data() {}
+
+};
+
 class Obstacle_Manager
 {
 private:
@@ -50,17 +72,7 @@ private:
 
 	bool obstacle_filter_on;
 
-	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
-	// and <obstacle is passed> (IP_0) indicators
-	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
-
-	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
-	std::vector<ST> ST_0, ST_i_0;
-
-	std::vector<std::unique_ptr<Tracked_Obstacle>> old_obstacles;
-	std::vector<std::unique_ptr<Tracked_Obstacle>> new_obstacles;
-
-	Eigen::MatrixXd obstacle_status;
+	std::shared_ptr<Obstacle_Data> data;
 
 	void determine_situation_type(
 		ST &st_A,
@@ -86,7 +98,11 @@ private:
 
 public:
 
-	void update_obstacle_status(const Eigen::Matrix<double, 6, 1> &ownship_state, const Eigen::VectorXd &HL_0);
+	Obstacle_Manager();
+
+	std::shared_ptr<Obstacle_Data> get_data() const { return data; }
+
+	void update_obstacle_status(const Eigen::Matrix<double, 6, 1> &ownship_state);
 
 	void display_obstacle_information();
 

@@ -6,6 +6,7 @@ add_library(psbmpc_lib STATIC
 	src/ownship.cpp 
 	src/cpe.cpp 
 	src/kf.cpp 
+	src/obstacle_manager.cpp
 	src/obstacle.cpp 
 	src/obstacle_ship.cpp 
 	src/obstacle_sbmpc.cpp 
