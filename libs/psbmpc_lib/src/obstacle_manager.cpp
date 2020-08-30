@@ -37,7 +37,8 @@
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-Obstacle_Manager::Obstacle_Manager()
+Obstacle_Manager::Obstacle_Manager() :
+	data(new Obstacle_Data())
 {	
 	T_lost_limit = 15.0; 	// 15.0 s obstacle no longer relevant after this time
 	T_tracked_limit = 15.0; // 15.0 s obstacle still relevant if tracked for so long, choice depends on survival rate
@@ -52,20 +53,19 @@ Obstacle_Manager::Obstacle_Manager()
 *  Modified :
 *****************************************************************************************/
 void Obstacle_Manager::update_obstacle_status(
-	const Eigen::Matrix<double, 6, 1> &ownship_state,						// In: Current time own-ship state
-	const Eigen::VectorXd &HL_0 											// In: relative (to total hazard) hazard level of each obstacle
+	const Eigen::Matrix<double, 6, 1> &ownship_state						// In: Current time own-ship state
 	)
 {
-	int n_obst = new_obstacles.size();
-	obstacle_status.resize(13, n_obst);
+	int n_obst = data->new_obstacles.size();
+	data->obstacle_status.resize(13, n_obst);
 	double ID_0, RB_0, COG_0, SOG_0; 
 	Eigen::Vector2d d_0i;
 	Eigen::Vector4d xs_i;
 	for(int i = 0; i < n_obst; i++)
 	{
-		xs_i = new_obstacles[i]->kf->get_state();
+		xs_i = data->new_obstacles[i]->kf->get_state();
 
-		ID_0 = new_obstacles[i]->get_ID();
+		ID_0 = data->new_obstacles[i]->get_ID();
 		
 		d_0i = (xs_i.block<2, 1>(0, 0) - ownship_state.block<2, 1>(0, 0));
 
@@ -75,19 +75,19 @@ void Obstacle_Manager::update_obstacle_status(
 
 		RB_0 = angle_difference_pmpi(atan2(d_0i(1), d_0i(0)), ownship_state(2));
 
-		obstacle_status.col(i) << ID_0, 											// Obstacle ID
-								  SOG_0, 											// Speed over ground of obstacle
-								  wrap_angle_to_02pi(COG_0) * RAD2DEG, 				// Course over ground of obstacle
-								  RB_0 * RAD2DEG, 									// Relative bearing
-								  d_0i.norm(),										// Range
-								  HL_0[i], 											// Hazard level of obstacle at optimum
-								  IP_0[i], 											// If obstacle is passed by or not 
-								  AH_0[i], 											// If obstacle is ahead or not
-								  S_TC_0[i], 										// If obstacle is starboard or not
-								  H_TC_0[i],										// If obstacle is head on or not
-								  X_TC_0[i],										// If crossing situation or not
-								  O_TC_0[i],										// If ownship overtakes obstacle or not
-								  Q_TC_0[i];										// If obstacle overtakes ownship or not
+		data->obstacle_status.col(i) << ID_0, 											// Obstacle ID
+								  SOG_0, 												// Speed over ground of obstacle
+								  wrap_angle_to_02pi(COG_0) * RAD2DEG, 					// Course over ground of obstacle
+								  RB_0 * RAD2DEG, 										// Relative bearing
+								  d_0i.norm(),											// Range
+								  data->HL_0[i], 										// Hazard level of obstacle at optimum
+								  data->IP_0[i], 										// If obstacle is passed by or not 
+								  data->AH_0[i], 										// If obstacle is ahead or not
+								  data->S_TC_0[i], 										// If obstacle is starboard or not
+								  data->H_TC_0[i],										// If obstacle is head on or not
+								  data->X_TC_0[i],										// If crossing situation or not
+								  data->O_TC_0[i],										// If ownship overtakes obstacle or not
+								  data->Q_TC_0[i];										// If obstacle overtakes ownship or not
 	}
 }
 
@@ -101,9 +101,9 @@ void Obstacle_Manager::display_obstacle_information()
 {
 	std::cout << "Obstacle information:";
 	std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;
-	for (size_t i = 0; i < new_obstacles.size(); i++)
+	for (size_t i = 0; i < data->new_obstacles.size(); i++)
 	{
-		std::cout << std::setw(4) << obstacle_status.col(i).transpose() << std::endl;
+		std::cout << std::setw(4) << data->obstacle_status.col(i).transpose() << std::endl;
 	}
 }
 
@@ -241,9 +241,9 @@ void Obstacle_Manager::update_obstacles(
 	) 			
 {
 	// Clear "old" new obstacles before the update
-	new_obstacles.clear();
+	data->new_obstacles.clear();
 	
-	int n_obst_old = old_obstacles.size();
+	int n_obst_old = data->old_obstacles.size();
 	int n_obst_new = obstacle_states.cols();
 
 	bool obstacle_exist;
@@ -252,11 +252,11 @@ void Obstacle_Manager::update_obstacles(
 		obstacle_exist = false;
 		for (int j = 0; j < n_obst_old; j++)
 		{
-			if ((double)old_obstacles[j]->get_ID() == obstacle_states(8, i))
+			if ((double)data->old_obstacles[j]->get_ID() == obstacle_states(8, i))
 			{
-				old_obstacles[j]->reset_duration_lost();
+				data->old_obstacles[j]->reset_duration_lost();
 
-				old_obstacles[j]->update(
+				data->old_obstacles[j]->update(
 					obstacle_states.col(i), 
 					obstacle_covariances.col(i), 
 					obstacle_intention_probabilities.col(i),
@@ -264,7 +264,7 @@ void Obstacle_Manager::update_obstacles(
 					obstacle_filter_on,
 					psbmpc_pars.dt);
 
-				new_obstacles.push_back(std::move(old_obstacles[j]));
+				data->new_obstacles.push_back(std::move(data->old_obstacles[j]));
 
 				obstacle_exist = true;
 
@@ -274,7 +274,7 @@ void Obstacle_Manager::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			new_obstacles.push_back(std::move(std::unique_ptr<Tracked_Obstacle>(new Tracked_Obstacle(
+			data->new_obstacles.push_back(std::move(std::unique_ptr<Tracked_Obstacle>(new Tracked_Obstacle(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
@@ -290,25 +290,25 @@ void Obstacle_Manager::update_obstacles(
 	// whereas an obstacle that is out of COLAV-target range may re-enter range with the same id.
 	if (obstacle_filter_on)
 	{
-		for (size_t j = 0; j < old_obstacles.size(); j++)
+		for (size_t j = 0; j < data->old_obstacles.size(); j++)
 		{
-			old_obstacles[j]->increment_duration_lost(psbmpc_pars.dt * psbmpc_pars.p_step);
+			data->old_obstacles[j]->increment_duration_lost(psbmpc_pars.dt * psbmpc_pars.p_step);
 
-			if (	old_obstacles[j]->get_duration_tracked() >= T_tracked_limit 	&&
-					(old_obstacles[j]->get_duration_lost() < T_lost_limit || old_obstacles[j]->kf->get_covariance()(0,0) <= 5.0))
+			if (	data->old_obstacles[j]->get_duration_tracked() >= T_tracked_limit 	&&
+					(data->old_obstacles[j]->get_duration_lost() < T_lost_limit || data->old_obstacles[j]->kf->get_covariance()(0,0) <= 5.0))
 			{
-				old_obstacles[j]->update(obstacle_filter_on, psbmpc_pars.dt);
+				data->old_obstacles[j]->update(obstacle_filter_on, psbmpc_pars.dt);
 
-				new_obstacles.push_back(std::move(old_obstacles[j]));
+				data->new_obstacles.push_back(std::move(data->old_obstacles[j]));
 			}
 		}
 	}
 	// Clear old obstacle vector, which consist of transferred (nullptr) and terminated obstacles
 	// Then set equal to the new obstacle vector
-	old_obstacles.resize(new_obstacles.size());
-	for (size_t i = 0; i < new_obstacles.size(); i++)
+	data->old_obstacles.resize(data->new_obstacles.size());
+	for (size_t i = 0; i < data->new_obstacles.size(); i++)
 	{
-		old_obstacles[i].reset(new Tracked_Obstacle(*(new_obstacles[i])));
+		data->old_obstacles[i].reset(new Tracked_Obstacle(*(data->new_obstacles[i])));
 	}
 }
 
@@ -336,31 +336,31 @@ void Obstacle_Manager::update_situation_type_and_transitional_variables(
 	psi_A = wrap_angle_to_pmpi(ownship_state(2));
 	v_A = rotate_vector_2D(v_A, psi_A);
 
-	int n_obst = new_obstacles.size();
-	ST_0.resize(n_obst);   ST_i_0.resize(n_obst);
+	int n_obst = data->new_obstacles.size();
+	data->ST_0.resize(n_obst);   data->ST_i_0.resize(n_obst);
 	
-	AH_0.resize(n_obst);   S_TC_0.resize(n_obst); S_i_TC_0.resize(n_obst); 
-	O_TC_0.resize(n_obst); Q_TC_0.resize(n_obst); IP_0.resize(n_obst); 
-	H_TC_0.resize(n_obst); X_TC_0.resize(n_obst);
+	data->AH_0.resize(n_obst);   data->S_TC_0.resize(n_obst); data->S_i_TC_0.resize(n_obst); 
+	data->O_TC_0.resize(n_obst); data->Q_TC_0.resize(n_obst); data->IP_0.resize(n_obst); 
+	data->H_TC_0.resize(n_obst); data->X_TC_0.resize(n_obst);
 
 	//std::cout << "Situation types:: 0 : (ST = Ø), 1 : (ST = OT, SO), 2 : (ST = CR, SO), 3 : (ST = OT, GW), 4 : (ST = HO, GW), 5 : (ST = CR, GW)" << std::endl;
 	//std::cout << A << std::endl;
 	for (int i = 0; i < n_obst; i++)
 	{
-		v_B(0) = new_obstacles[i]->kf->get_state()(2);
-		v_B(1) = new_obstacles[i]->kf->get_state()(3);
+		v_B(0) = data->new_obstacles[i]->kf->get_state()(2);
+		v_B(1) = data->new_obstacles[i]->kf->get_state()(3);
 		psi_B = atan2(v_B(1), v_B(0));
 
-		L_AB(0) = new_obstacles[i]->kf->get_state()(0) - ownship_state(0);
-		L_AB(1) = new_obstacles[i]->kf->get_state()(1) - ownship_state(1);
+		L_AB(0) = data->new_obstacles[i]->kf->get_state()(0) - ownship_state(0);
+		L_AB(1) = data->new_obstacles[i]->kf->get_state()(1) - ownship_state(1);
 		d_AB = L_AB.norm();
 
 		// Decrease the distance between the vessels by their respective max dimension
-		d_AB = d_AB - 0.5 * (ownship_length + new_obstacles[i]->get_length()); 
+		d_AB = d_AB - 0.5 * (ownship_length + data->new_obstacles[i]->get_length()); 
 		
 		L_AB = L_AB.normalized();
 
-		determine_situation_type(ST_0[i], ST_i_0[i], psbmpc_pars, v_A, psi_A, v_B, L_AB, d_AB);
+		determine_situation_type(data->ST_0[i], data->ST_i_0[i], psbmpc_pars, v_A, psi_A, v_B, L_AB, d_AB);
 		
 		//std::cout << "Own-ship situation type wrt obst i = " << i << " ? " << ST_0[i] << std::endl;
 		//std::cout << "Obst i = " << i << " situation type wrt ownship ? " << ST_i_0[i] << std::endl;
@@ -370,63 +370,63 @@ void Obstacle_Manager::update_situation_type_and_transitional_variables(
 		*********************************************************************/
 		is_close = d_AB <= psbmpc_pars.d_close;
 
-		AH_0[i] = v_A.dot(L_AB) > cos(psbmpc_pars.phi_AH) * v_A.norm();
+		data->AH_0[i] = v_A.dot(L_AB) > cos(psbmpc_pars.phi_AH) * v_A.norm();
 
 		//std::cout << "Obst i = " << i << " ahead at t0 ? " << AH_0[i] << std::endl;
 		
 		// Obstacle on starboard side
-		S_TC_0[i] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+		data->S_TC_0[i] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
 
 		//std::cout << "Obst i = " << i << " on starboard side at t0 ? " << S_TC_0[i] << std::endl;
 
 		// Ownship on starboard side of obstacle
-		S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
+		data->S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
 
 		//std::cout << "Own-ship on starboard side of obst i = " << i << " at t0 ? " << S_i_TC_0[i] << std::endl;
 
 		// Ownship overtaking the obstacle
-		O_TC_0[i] = v_B.dot(v_A) > cos(psbmpc_pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-			  	v_B.norm() < v_B.norm()							    		&&
-				v_B.norm() > 0.25											&&
-				is_close 													&&
-				AH_0[i];
+		data->O_TC_0[i] = v_B.dot(v_A) > cos(psbmpc_pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
+			  	v_B.norm() < v_B.norm()							    						&&
+				v_B.norm() > 0.25															&&
+				is_close 																	&&
+				data->AH_0[i];
 
 		//std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << O_TC_0[i] << std::endl;
 
 		// Obstacle overtaking the ownship
-		Q_TC_0[i] = v_A.dot(v_B) > cos(psbmpc_pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
+		data->Q_TC_0[i] = v_A.dot(v_B) > cos(psbmpc_pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
 				v_A.norm() < v_B.norm()							  			&&
 				v_A.norm() > 0.25 											&&
 				is_close 													&&
-				!AH_0[i];
+				!data->AH_0[i];
 
 		//std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << Q_TC_0[i] << std::endl;
 
 		// Determine if the obstacle is passed by
-		IP_0[i] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
-				!Q_TC_0[i])		 											||
-				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Obstacle's perspective	
-				!O_TC_0[i]))		 										&&
+		data->IP_0[i] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
+				!data->Q_TC_0[i])		 										||
+				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 			&& // Obstacle's perspective	
+				!data->O_TC_0[i]))		 										&&
 				d_AB > psbmpc_pars.d_safe;
 		
-		std::cout << "Obst i = " << i << " passed by at t0 ? " << IP_0[i] << std::endl;
+		std::cout << "Obst i = " << i << " passed by at t0 ? " << data->IP_0[i] << std::endl;
 
 		// This is not mentioned in article, but also implemented here..				
-		H_TC_0[i] = v_A.dot(v_B) < - cos(psbmpc_pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-				v_A.norm() > 0.25											&&
-				v_B.norm() > 0.25											&&
-				AH_0[i];
+		data->H_TC_0[i] = v_A.dot(v_B) < - cos(psbmpc_pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
+				v_A.norm() > 0.25																&&
+				v_B.norm() > 0.25																&&
+				data->AH_0[i];
 		
 		//std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << H_TC_0[i] << std::endl;
 
 		// Crossing situation, a bit redundant with the !is_passed condition also, 
 		// but better safe than sorry (could be replaced with B_is_ahead also)
-		X_TC_0[i] = v_A.dot(v_B) < cos(psbmpc_pars.phi_CR) * v_A.norm() * v_B.norm()	&&
-				!H_TC_0[i]													&&
-				!O_TC_0[i] 													&&
-				!Q_TC_0[i] 	 												&&
-				!IP_0[i]													&&
-				v_A.norm() > 0.25											&&
+		data->X_TC_0[i] = v_A.dot(v_B) < cos(psbmpc_pars.phi_CR) * v_A.norm() * v_B.norm()	&&
+				!data->H_TC_0[i]																&&
+				!data->O_TC_0[i] 															&&
+				!data->Q_TC_0[i] 	 														&&
+				!data->IP_0[i]																&&
+				v_A.norm() > 0.25															&&
 				v_B.norm() > 0.25;
 
 		//std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << X_TC_0[i] << std::endl;

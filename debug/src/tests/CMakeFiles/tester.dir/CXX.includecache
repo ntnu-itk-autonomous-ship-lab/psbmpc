@@ -30,6 +30,18 @@ vector
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
 
+../libs/psbmpc_lib/include/obstacle_manager.h
+psbmpc_parameters.h
+../libs/psbmpc_lib/include/psbmpc_parameters.h
+tracked_obstacle.h
+../libs/psbmpc_lib/include/tracked_obstacle.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+vector
+-
+memory
+-
+
 ../libs/psbmpc_lib/include/ownship.h
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
@@ -41,6 +53,8 @@ psbmpc_index.h
 ../libs/psbmpc_lib/include/psbmpc_index.h
 psbmpc_parameters.h
 ../libs/psbmpc_lib/include/psbmpc_parameters.h
+obstacle_manager.h
+../libs/psbmpc_lib/include/obstacle_manager.h
 ownship.h
 ../libs/psbmpc_lib/include/ownship.h
 tracked_obstacle.h
