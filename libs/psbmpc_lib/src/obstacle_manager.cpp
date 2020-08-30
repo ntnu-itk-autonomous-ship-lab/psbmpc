@@ -63,9 +63,9 @@ void Obstacle_Manager::update_obstacle_status(
 	Eigen::Vector4d xs_i;
 	for(int i = 0; i < n_obst; i++)
 	{
-		xs_i = data->new_obstacles[i]->kf->get_state();
+		xs_i = data->new_obstacles[i].kf->get_state();
 
-		ID_0 = data->new_obstacles[i]->get_ID();
+		ID_0 = data->new_obstacles[i].get_ID();
 		
 		d_0i = (xs_i.block<2, 1>(0, 0) - ownship_state.block<2, 1>(0, 0));
 
@@ -228,7 +228,8 @@ void Obstacle_Manager::determine_situation_type(
 
 /****************************************************************************************
 *  Name     : update_obstacles
-*  Function : Takes in new obstacle information and updates the obstacle data structures
+*  Function : Takes in new obstacle information and updates the single obstacle data 
+*			  structures.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -252,11 +253,11 @@ void Obstacle_Manager::update_obstacles(
 		obstacle_exist = false;
 		for (int j = 0; j < n_obst_old; j++)
 		{
-			if ((double)data->old_obstacles[j]->get_ID() == obstacle_states(8, i))
+			if ((double)data->old_obstacles[j].get_ID() == obstacle_states(8, i))
 			{
-				data->old_obstacles[j]->reset_duration_lost();
+				data->old_obstacles[j].reset_duration_lost();
 
-				data->old_obstacles[j]->update(
+				data->old_obstacles[j].update(
 					obstacle_states.col(i), 
 					obstacle_covariances.col(i), 
 					obstacle_intention_probabilities.col(i),
@@ -269,19 +270,18 @@ void Obstacle_Manager::update_obstacles(
 				obstacle_exist = true;
 
 				break;
-
 			}
 		}
 		if (!obstacle_exist)
 		{
-			data->new_obstacles.push_back(std::move(std::unique_ptr<Tracked_Obstacle>(new Tracked_Obstacle(
+			data->new_obstacles.push_back(std::move(Tracked_Obstacle(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
 				obstacle_a_priori_CC_probabilities(i),
 				obstacle_filter_on,  
 				psbmpc_pars.T, 
-				psbmpc_pars.dt))));
+				psbmpc_pars.dt)));
 		}
 	}
 	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
@@ -292,12 +292,12 @@ void Obstacle_Manager::update_obstacles(
 	{
 		for (size_t j = 0; j < data->old_obstacles.size(); j++)
 		{
-			data->old_obstacles[j]->increment_duration_lost(psbmpc_pars.dt * psbmpc_pars.p_step);
+			data->old_obstacles[j].increment_duration_lost(psbmpc_pars.dt * psbmpc_pars.p_step);
 
-			if (	data->old_obstacles[j]->get_duration_tracked() >= T_tracked_limit 	&&
-					(data->old_obstacles[j]->get_duration_lost() < T_lost_limit || data->old_obstacles[j]->kf->get_covariance()(0,0) <= 5.0))
+			if (data->old_obstacles[j].get_duration_tracked() >= T_tracked_limit 	&&
+				(data->old_obstacles[j].get_duration_lost() < T_lost_limit || data->old_obstacles[j].kf->get_covariance()(0,0) <= 5.0))
 			{
-				data->old_obstacles[j]->update(obstacle_filter_on, psbmpc_pars.dt);
+				data->old_obstacles[j].update(obstacle_filter_on, psbmpc_pars.dt);
 
 				data->new_obstacles.push_back(std::move(data->old_obstacles[j]));
 			}
@@ -308,7 +308,7 @@ void Obstacle_Manager::update_obstacles(
 	data->old_obstacles.resize(data->new_obstacles.size());
 	for (size_t i = 0; i < data->new_obstacles.size(); i++)
 	{
-		data->old_obstacles[i].reset(new Tracked_Obstacle(*(data->new_obstacles[i])));
+		data->old_obstacles[i] = Tracked_Obstacle(data->new_obstacles[i]);
 	}
 }
 
@@ -347,16 +347,16 @@ void Obstacle_Manager::update_situation_type_and_transitional_variables(
 	//std::cout << A << std::endl;
 	for (int i = 0; i < n_obst; i++)
 	{
-		v_B(0) = data->new_obstacles[i]->kf->get_state()(2);
-		v_B(1) = data->new_obstacles[i]->kf->get_state()(3);
+		v_B(0) = data->new_obstacles[i].kf->get_state()(2);
+		v_B(1) = data->new_obstacles[i].kf->get_state()(3);
 		psi_B = atan2(v_B(1), v_B(0));
 
-		L_AB(0) = data->new_obstacles[i]->kf->get_state()(0) - ownship_state(0);
-		L_AB(1) = data->new_obstacles[i]->kf->get_state()(1) - ownship_state(1);
+		L_AB(0) = data->new_obstacles[i].kf->get_state()(0) - ownship_state(0);
+		L_AB(1) = data->new_obstacles[i].kf->get_state()(1) - ownship_state(1);
 		d_AB = L_AB.norm();
 
 		// Decrease the distance between the vessels by their respective max dimension
-		d_AB = d_AB - 0.5 * (ownship_length + data->new_obstacles[i]->get_length()); 
+		d_AB = d_AB - 0.5 * (ownship_length + data->new_obstacles[i].get_length()); 
 		
 		L_AB = L_AB.normalized();
 

@@ -22,13 +22,13 @@
 #ifndef _PSBMPC_H_
 #define _PSBMPC_H_
 
-
 #include "psbmpc_index.h"
 #include "psbmpc_parameters.h"
 #include "obstacle_manager.h"
 #include "ownship.h"
-#include "tracked_obstacle.h"
+#include "obstacle.h"
 #include "cpe.h"
+
 #include "Eigen/Dense"
 #include <vector>
 #include <memory>	
@@ -37,22 +37,27 @@ class PSBMPC
 {
 private:
 
+	// Amount of prediction scenarios for each obstacle
 	std::vector<int> n_ps;
 
+	// Control behavior related vectors and the own-ship maneuver times in the prediction horizon
 	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
 
+	// Previous optimal offsets/modifications
 	double u_m_last;
 	double chi_m_last;
 
+	// Cost at the optimal solution
 	double min_cost;
+
+	// Own-ship predicted trajectory
+	Eigen::Matrix<double, 6, -1> trajectory;
 
 	std::shared_ptr<Obstacle_Data> data;
 
 	std::unique_ptr<Ownship> ownship;
 
 	std::unique_ptr<CPE> cpe;
-
-	Eigen::Matrix<double, 6, -1> trajectory;
 
 	void reset_control_behaviour();
 

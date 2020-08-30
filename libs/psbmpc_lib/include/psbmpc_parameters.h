@@ -28,7 +28,7 @@
 class PSBMPC;
 class Obstacle_Manager;
 
-enum Par_Type 
+/* enum Par_Type 
 {
 	BPAR,					// Boolean type parameter
 	IPAR,					// Integer type parameter
@@ -38,7 +38,7 @@ enum Par_Type
 	CPEM,					// CPE_Method parameter
 	PREDM,					// Prediction_Method parameter
 	GUIDM					// Guidance_Method parameter
-};
+}; */
 
 // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
