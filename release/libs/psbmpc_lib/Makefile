@@ -253,6 +253,33 @@ src/obstacle.cpp.s:
 	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle.cpp.s
 .PHONY : src/obstacle.cpp.s
 
+src/obstacle_manager.o: src/obstacle_manager.cpp.o
+
+.PHONY : src/obstacle_manager.o
+
+# target to build an object file
+src/obstacle_manager.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_manager.cpp.o
+.PHONY : src/obstacle_manager.cpp.o
+
+src/obstacle_manager.i: src/obstacle_manager.cpp.i
+
+.PHONY : src/obstacle_manager.i
+
+# target to preprocess a source file
+src/obstacle_manager.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_manager.cpp.i
+.PHONY : src/obstacle_manager.cpp.i
+
+src/obstacle_manager.s: src/obstacle_manager.cpp.s
+
+.PHONY : src/obstacle_manager.s
+
+# target to generate assembly for a file
+src/obstacle_manager.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_manager.cpp.s
+.PHONY : src/obstacle_manager.cpp.s
+
 src/obstacle_sbmpc.o: src/obstacle_sbmpc.cpp.o
 
 .PHONY : src/obstacle_sbmpc.o
@@ -490,6 +517,9 @@ help:
 	@echo "... src/obstacle.o"
 	@echo "... src/obstacle.i"
 	@echo "... src/obstacle.s"
+	@echo "... src/obstacle_manager.o"
+	@echo "... src/obstacle_manager.i"
+	@echo "... src/obstacle_manager.s"
 	@echo "... src/obstacle_sbmpc.o"
 	@echo "... src/obstacle_sbmpc.i"
 	@echo "... src/obstacle_sbmpc.s"

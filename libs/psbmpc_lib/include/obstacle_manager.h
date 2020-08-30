@@ -53,8 +53,8 @@ struct Obstacle_Data
 	// Obstacle hazard levels, on a scale from 0 to 1 (output from PSBMPC)
 	Eigen::VectorXd HL_0;
 
-	std::vector<std::unique_ptr<Tracked_Obstacle>> old_obstacles;
-	std::vector<std::unique_ptr<Tracked_Obstacle>> new_obstacles;
+	std::vector<Tracked_Obstacle> old_obstacles;
+	std::vector<Tracked_Obstacle> new_obstacles;
 
 	Eigen::MatrixXd obstacle_status;
 

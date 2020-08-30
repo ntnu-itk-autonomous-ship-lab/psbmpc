@@ -6,6 +6,7 @@ src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.o
  ../libs/psbmpc_lib/include/kf.h
  ../libs/psbmpc_lib/include/mrou.h
  ../libs/psbmpc_lib/include/obstacle.h
+ ../libs/psbmpc_lib/include/obstacle_manager.h
  ../libs/psbmpc_lib/include/ownship.h
  ../libs/psbmpc_lib/include/psbmpc.h
  ../libs/psbmpc_lib/include/psbmpc_index.h

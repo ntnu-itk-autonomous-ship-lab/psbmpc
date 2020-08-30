@@ -57,8 +57,8 @@ obstacle_manager.h
 ../libs/psbmpc_lib/include/obstacle_manager.h
 ownship.h
 ../libs/psbmpc_lib/include/ownship.h
-tracked_obstacle.h
-../libs/psbmpc_lib/include/tracked_obstacle.h
+obstacle.h
+../libs/psbmpc_lib/include/obstacle.h
 cpe.h
 ../libs/psbmpc_lib/include/cpe.h
 Eigen/Dense
