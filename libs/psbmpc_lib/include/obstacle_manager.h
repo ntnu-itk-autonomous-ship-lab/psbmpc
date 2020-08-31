@@ -28,6 +28,7 @@
 #include "Eigen/Dense"
 #include <vector>
 #include <memory>
+#include <string>
 
 class PSBMPC;
 
@@ -44,6 +45,7 @@ enum ST
 class Obstacle_Data
 {
 public:
+
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
 	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
@@ -67,11 +69,17 @@ class Obstacle_Manager
 {
 private:
 
+	// Array of strings and precisions for the obstacle status states
+	std::vector<std::string> status_str = {"ID", "SOG", "COG", "RB", "RNG", "HL", "IP", "AH", "SB", "HO", "CRG", "OTG", "OT"};
+	std::vector<int> status_precision = {0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0};
+
+	// Array to determine width of print in status display
+	int width_arr[13];
+
 	double T_lost_limit, T_tracked_limit;
 
 	bool obstacle_filter_on;
 
-	// This data is shared with PSBMPC (std::shared_ptr is slow!)
 	Obstacle_Data data;
 
 	void determine_situation_type(

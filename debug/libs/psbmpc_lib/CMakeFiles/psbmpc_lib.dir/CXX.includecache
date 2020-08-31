@@ -41,6 +41,8 @@ vector
 -
 memory
 -
+string
+-
 
 ../libs/psbmpc_lib/include/ownship.h
 Eigen/Dense
@@ -1146,6 +1148,18 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/xoshiro.hpp
 cstdint
+-
+
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_manager.cpp
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
+obstacle_manager.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_manager.h
+string
+-
+iostream
+-
+iomanip
 -
 
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp
