@@ -154,7 +154,7 @@ public:
 		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::Matrix<double, 6, 1> &ownship_state,
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		Obstacle_Data &in_data);
+		Obstacle_Data &data);
 
 };
 
