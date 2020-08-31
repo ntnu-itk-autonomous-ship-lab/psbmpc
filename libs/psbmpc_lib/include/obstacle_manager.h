@@ -41,8 +41,9 @@ enum ST
 	F 														// Give-way in Crossing 	(ST = CR, GW)
 };	
 
-struct Obstacle_Data
+class Obstacle_Data
 {
+public:
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
 	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
@@ -66,13 +67,12 @@ class Obstacle_Manager
 {
 private:
 
-	friend class PSBMPC;
-
 	double T_lost_limit, T_tracked_limit;
 
 	bool obstacle_filter_on;
 
-	std::shared_ptr<Obstacle_Data> data;
+	// This data is shared with PSBMPC (std::shared_ptr is slow!)
+	Obstacle_Data data;
 
 	void determine_situation_type(
 		ST &st_A,
@@ -100,7 +100,7 @@ public:
 
 	Obstacle_Manager();
 
-	std::shared_ptr<Obstacle_Data> get_data() const { return data; }
+	Obstacle_Data& get_data() { return data; }
 
 	void update_obstacle_status(const Eigen::Matrix<double, 6, 1> &ownship_state);
 

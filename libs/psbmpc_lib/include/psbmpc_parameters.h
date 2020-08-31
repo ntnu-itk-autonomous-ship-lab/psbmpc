@@ -62,7 +62,7 @@ enum Guidance_Method
 	CH 														// Course Hold
 };
 
-struct PSBMPC_Parameters
+class PSBMPC_Parameters
 {
 private:
 

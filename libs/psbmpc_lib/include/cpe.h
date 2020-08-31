@@ -54,7 +54,7 @@ private:
 	int n_CE, n_MCSKF;
 
 	// PRNG-related
-	// IMPORTANT NOTE: Some compilers (Older GCC versions < 9.2) implement this 
+	// IMPORTANT NOTE: Some compilers might implement this 
 	// random device using a PRNG, and if a non-deterministic device is not available
 	// => the same sequence is produced every time, this should be checked before
 	// real-time testing to ensure proper functionality.
@@ -135,6 +135,8 @@ private:
 		const int i);
 
 public:
+
+	CPE() {}
 
 	CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const int n_obst, const double dt);
 
