@@ -1150,18 +1150,6 @@ lapacke_mangling.h
 cstdint
 -
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_manager.cpp
-utilities.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h
-obstacle_manager.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/obstacle_manager.h
-string
--
-iostream
--
-iomanip
--
-
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/psbmpc.cpp
 utilities.h
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib/src/utilities.h

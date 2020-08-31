@@ -156,22 +156,6 @@ public:
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		Obstacle_Data &in_data);
 
-	void calculate_optimal_offsets(
-		double &u_opt, 
-		double &chi_opt, 
-		Eigen::Matrix<double, 2, -1> &predicted_trajectory,
-		Eigen::Matrix<double, -1, -1> &obstacle_status,
-		Eigen::Matrix<double, -1, 1> &colav_status,
-		const double u_d, 
-		const double chi_d, 
-		const Eigen::Matrix<double, 2, -1> &waypoints,
-		const Eigen::Matrix<double, 6, 1> &ownship_state,
-		const Eigen::Matrix<double, 9, -1> &obstacle_states, 
-		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
-		const Eigen::MatrixXd &obstacle_intention_probabilities,
-		const Eigen::VectorXd &obstacle_a_priori_CC_probabilities,
-		const Eigen::Matrix<double, 4, -1> &static_obstacles);
-
 };
 
 #endif 
