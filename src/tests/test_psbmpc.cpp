@@ -271,7 +271,7 @@ int main(){
 			obstacle_intention_probabilities.col(i) = Pr_a[i];
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
-		
+
 		obstacle_manager.operator()(
 			psbmpc.pars, 
 			trajectory.col(k), 
@@ -297,22 +297,6 @@ int main(){
 				trajectory.col(k),
 				static_obstacles,
 				obstacle_manager.get_data());
-
-			/* psbmpc.calculate_optimal_offsets(
-				u_opt,
-				chi_opt, 
-				predicted_trajectory,
-				obstacle_status,
-				colav_status,
-				u_d,
-				chi_d,
-				waypoints,
-				trajectory.col(k),
-				obstacle_states, 
-				obstacle_covariances, 
-				obstacle_intention_probabilities, 
-				obstacle_a_priori_CC_probabilities,
-				static_obstacles); */
 
 			end = std::chrono::system_clock::now();
 			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);

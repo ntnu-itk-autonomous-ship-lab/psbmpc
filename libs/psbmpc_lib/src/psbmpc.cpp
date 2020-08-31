@@ -68,7 +68,7 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
-	Obstacle_Data &in_data
+	Obstacle_Data &data														// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
@@ -78,12 +78,10 @@ void PSBMPC::calculate_optimal_offsets(
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
-	data = in_data;
-
 	int n_obst = data.new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
-	bool colav_active = determine_colav_active(n_static_obst);
+	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
 	{
 		u_opt = 1; 		u_m_last = u_opt;
@@ -91,7 +89,8 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 
-	initialize_prediction();
+	initialize_prediction(data);
+
 	if (!pars.obstacle_colav_on)
 	{
 		for (int i = 0; i < n_obst; i++)
@@ -180,7 +179,7 @@ void PSBMPC::calculate_optimal_offsets(
 	double cost;
 	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M), cost_i(n_obst);
 	Eigen::MatrixXd P_c_i;
-	in_data.HL_0.resize(n_obst); in_data.HL_0.setZero();
+	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	min_cost = 1e12;
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -201,12 +200,12 @@ void PSBMPC::calculate_optimal_offsets(
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			if (pars.obstacle_colav_on) { predict_trajectories_jointly(); }
+			if (pars.obstacle_colav_on) { predict_trajectories_jointly(data); }
 
-			//P_c_i.resize(n_ps[i], n_samples);
-			//calculate_collision_probabilities(P_c_i, i); 
+			P_c_i.resize(n_ps[i], n_samples);
+			calculate_collision_probabilities(P_c_i, data, i); 
 
-			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
+			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, data, i);
 
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
@@ -248,7 +247,7 @@ void PSBMPC::calculate_optimal_offsets(
 			for (int i = 0; i < n_obst; i++)
 			{
 				if (cost_i.sum() > 0)
-					in_data.HL_0(i) = cost_i(i) / cost_i.sum();
+					data.HL_0(i) = cost_i(i) / cost_i.sum();
 			}	
 		}
 		increment_control_behaviour();
@@ -281,121 +280,6 @@ void PSBMPC::calculate_optimal_offsets(
 	std::cout << "Cost at optimum : " << min_cost << std::endl;
 
 	/* engClose(ep);  */
-}
-
-
-void PSBMPC::calculate_optimal_offsets(									
-	double &u_opt, 															// In/out: Optimal surge offset
-	double &chi_opt, 														// In/out: Optimal course offset
-	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
-	Eigen::Matrix<double,-1,-1> &obstacle_status,							// In/out: Various information on obstacles
-	Eigen::Matrix<double,-1, 1> &colav_status,								// In/out: status on the COLAV system
-	const double u_d, 														// In: Surge reference
-	const double chi_d, 													// In: Course reference
-	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
-	const Eigen::Matrix<double, 9, -1> &obstacle_states, 					// In: Dynamic obstacle states 
-	const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 				// In: Dynamic obstacle covariances
-	const Eigen::MatrixXd &obstacle_intention_probabilities,  				// In: Intention probabilitiy information for the obstacles
-	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities, 				// In: Information on a priori COLREGS compliance probabilities for the obstacles
-	const Eigen::Matrix<double, 4, -1> &static_obstacles					// In: Static obstacle information
-	)
-{	
-	int n_samples = std::round(pars.T / pars.dt);
-
-	trajectory.resize(6, n_samples);
-	trajectory.col(0) = ownship_state;
-
-	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
-
-	update_obstacles(obstacle_states, obstacle_covariances, obstacle_intention_probabilities, obstacle_a_priori_CC_probabilities);
-	int n_obst = new_obstacles.size();
-	int n_static_obst = static_obstacles.cols();
-
-	update_situation_type_and_transitional_variables();
-
-	bool colav_active = determine_colav_active(n_static_obst);
-	if (!colav_active)
-	{
-		u_opt = 1; 		u_m_last = u_opt;
-		chi_opt = 0; 	chi_m_last = chi_opt;
-		return;
-	}
-
-	initialize_prediction();
-
-	for (int i = 0; i < n_obst; i++)
-	{
-		if (!pars.obstacle_colav_on)
-		{
-			// PSBMPC parameters needed to determine if obstacle breaches COLREGS 
-			// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
-			new_obstacles[i].predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), pars.phi_AH, pars.phi_CR, pars.phi_HO, pars.phi_OT, pars.d_close, pars.d_safe);
-		}
-	}
-
-	double cost;
-	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M), cost_i(n_obst);
-	Eigen::MatrixXd P_c_i;
-	Eigen::VectorXd HL_0(n_obst); HL_0.setZero();
-	min_cost = 1e12;
-	reset_control_behaviour();
-	for (int cb = 0; cb < pars.n_cbs; cb++)
-	{
-		cost = 0;
-		//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
-		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
-		ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
-
-		for (int i = 0; i < n_obst; i++)
-		{
-			if (pars.obstacle_colav_on) { predict_trajectories_jointly(); }
-
-			//P_c_i.resize(n_ps[i], n_samples);
-			//calculate_collision_probabilities(P_c_i, i); 
-
-			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i);
-		}
-
-		cost += cost_i.maxCoeff();
-
-		cost += calculate_grounding_cost(static_obstacles);
-
-		cost += calculate_control_deviation_cost();
-
-		cost += calculate_chattering_cost();
-
-		if (cost < min_cost) 
-		{
-			min_cost = cost;
-			opt_offset_sequence = offset_sequence;
-
-			assign_optimal_trajectory(predicted_trajectory);
-
-			// Assign current optimal hazard level for each obstacle
-			for (int i = 0; i < n_obst; i++)
-			{
-				if (cost_i.sum() > 0)
-					data.HL_0(i) = cost_i(i) / cost_i.sum();
-			}	
-		}
-		increment_control_behaviour();
-	}
-
-	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
-	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
-
-	std::cout << "Optimal offset sequence : ";
-	for (int M = 0; M < pars.n_M; M++)
-	{
-		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
-		if (M < pars.n_M - 1) std::cout << ", ";
-	}
-	std::cout << std::endl;
-
-	colav_status.resize(1,1);
-	colav_status << min_cost;
-
 }
 
 /****************************************************************************************
@@ -465,7 +349,9 @@ void PSBMPC::increment_control_behaviour()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::initialize_prediction()
+void PSBMPC::initialize_prediction(
+	Obstacle_Data &data														// In: Dynamic obstacle information
+	)
 {
 	int n_obst = data.new_obstacles.size();
 	cpe.set_number_of_obstacles(n_obst);
@@ -523,12 +409,12 @@ void PSBMPC::initialize_prediction()
 				}
 
 				n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
-				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, i, n_turns);
+				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, n_turns, data, i);
 			}
 			else // Set up dependent obstacle prediction scenarios
 			{
 				n_ps[i] = 3;
-				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, i);
+				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, data, i);
 			}	
 		}
 		data.new_obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);		
@@ -595,8 +481,9 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_weights_i, 											// In/out: Cost weights of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
-	const int i, 															// In: Index of obstacle in consideration
-	const int n_turns 														// In: number of predicted turns for the obstacle 
+	const int n_turns, 														// In: number of predicted turns for the obstacle 
+	const Obstacle_Data &data,												// In: Dynamic obstacle information
+	const int i 															// In: Index of obstacle in consideration
 	)
 {
 	double Pr_CC_i, t_obst_passed;
@@ -646,7 +533,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
 	ps_weights_i.resize(n_ps[i]);
 	Pr_CC_i = data.new_obstacles[i].get_a_priori_CC_probability();
-	switch(ST_i_0[i])
+	switch(data.ST_i_0[i])
 	{
 		case A : // Outside CC consideration zone
 			ps_weights_i(0) = 1;
@@ -689,7 +576,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 			}
 			break;
 		case F : // CR, GW
-			t_obst_passed = find_time_of_passing(i);
+			t_obst_passed = find_time_of_passing(data, i);
 			ps_weights_i(0) = 1 - Pr_CC_i;
 			for (int ps = 1; ps < n_ps[i]; ps++)
 			{
@@ -725,6 +612,7 @@ void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_weights_i, 											// In/out: Cost weights of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
+	const Obstacle_Data &data,												// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
@@ -743,7 +631,7 @@ void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 
 	ps_weights_i.resize(n_ps[i]);
 	Pr_CC_i = data.new_obstacles[i].get_a_priori_CC_probability();
-	switch(ST_i_0[i])
+	switch(data.ST_i_0[i])
 	{
 		case A : // Outside CC consideration zone
 			ps_weights_i(0) = 1;
@@ -812,6 +700,7 @@ void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::find_time_of_passing(
+	const Obstacle_Data &data,											// In: Dynamic obstacle information
 	const int i 														// In: Index of relevant obstacle
 	)
 {
@@ -868,7 +757,9 @@ double PSBMPC::find_time_of_passing(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::predict_trajectories_jointly()
+void PSBMPC::predict_trajectories_jointly(
+	const Obstacle_Data &data													// In: Dynamic obstacle information
+	)
 {
 
 }
@@ -881,6 +772,7 @@ void PSBMPC::predict_trajectories_jointly()
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_colav_active(
+	const Obstacle_Data &data,												// In: Dynamic obstacle information
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
@@ -968,61 +860,12 @@ bool PSBMPC::determine_transitional_cost_indicator(
 	const double psi_A, 													// In: Heading of vessel A
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-	const int i, 															// In: Index of obstacle
-	const double chi_m 														// In: Candidate course offset currently followed
+	const double chi_m, 													// In: Candidate course offset currently followed
+	const Obstacle_Data &data,												// In: Dynamic obstacle information
+	const int i 															// In: Index of obstacle
 	)
 {
 	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
-
-	// Obstacle on starboard side
-	S_TC = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-	// Ownship on starboard side of obstacle
-	S_i_TC = angle_difference_pmpi(atan2(-L_AB(1), -L_AB(0)), psi_B) > 0;
-
-	// For ownship overtaking the obstacle: Check if obstacle is on opposite side of 
-	// ownship to what was observed at t0
-	if (!data.S_TC_0[i]) { O_TC = data.O_TC_0[i] && S_TC; }
-	else { O_TC = data.O_TC_0[i] && !S_TC; };
-
-	// For obstacle overtaking the ownship: Check if ownship is on opposite side of 
-	// obstacle to what was observed at t0
-	if (!data.S_i_TC_0[i]) { Q_TC = data.Q_TC_0[i] && S_i_TC; }
-	else { Q_TC = data.Q_TC_0[i] && !S_i_TC; };
-
-	// For crossing: Check if obstacle is on opposite side of ownship to what was
-	// observed at t0
-	X_TC = data.X_TC_0[i] && data.S_TC_0[i] && S_TC && (chi_m < 0);
-
-	// This is not mentioned in article, but also implemented here..
-	// Transitional cost only valid by going from having obstacle on port side at
-	// t0, to starboard side at time t
-	if (!data.S_TC_0[i]) { H_TC = data.H_TC_0[i] && S_TC; }
-	else { H_TC = false; }
-	H_TC = H_TC && !X_TC;
-
-	return O_TC || Q_TC || X_TC || H_TC;
-}
-
-bool PSBMPC::determine_transitional_cost_indicator(
-	const Eigen::VectorXd &xs_A,											// In: State vector of vessel A (the ownship)
-	const Eigen::VectorXd &xs_B, 											// In: State vector of vessel B (the obstacle)
-	const int i, 															// In: Index of obstacle
-	const double chi_m 														// In: Candidate course offset currently followed
-	)
-{
-	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
-	double psi_A, psi_B;
-	Eigen::Vector2d L_AB;
-	if (xs_A.size() == 6) { psi_A = xs_A[2]; }
-	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); }
-	
-	if (xs_B.size() == 6) { psi_B = xs_B[2]; }
-	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); }
-
-	L_AB(0) = xs_B(0) - xs_A(0);
-	L_AB(1) = xs_B(1) - xs_A(1);
-	L_AB = L_AB / L_AB.norm();
 
 	// Obstacle on starboard side
 	S_TC = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
@@ -1062,8 +905,9 @@ bool PSBMPC::determine_transitional_cost_indicator(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::calculate_collision_probabilities(
-	Eigen::MatrixXd &P_c_i,									// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
-	const int i 											// In: Index of obstacle
+	Eigen::MatrixXd &P_c_i,								// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
+	const Obstacle_Data &data,							// In: Dynamic obstacle information
+	const int i 										// In: Index of obstacle
 	)
 {
 	Eigen::MatrixXd P_i_p = data.new_obstacles[i].get_trajectory_covariance();
@@ -1089,8 +933,9 @@ void PSBMPC::calculate_collision_probabilities(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::calculate_dynamic_obstacle_cost(
-	const Eigen::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
-	const int i 													// In: Index of obstacle
+	const Eigen::MatrixXd &P_c_i,								// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
+	const Obstacle_Data &data,									// In: Dynamic obstacle information
+	const int i 												// In: Index of obstacle
 	)
 {
 	// l_i is the collision cost modifier depending on the obstacle track loss.
@@ -1108,7 +953,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	double Pr_CC_i = data.new_obstacles[i].get_a_priori_CC_probability();
 
 	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
-	double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0), R(0.0);
+	double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0);
 	bool mu, trans;
 	for(int k = 0; k < n_samples; k++)
 	{
@@ -1157,9 +1002,9 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 
 			mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
 
-			trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, i, chi_m);
+			trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
 
-			R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
+			//R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
 
 			// Track loss modifier to collision cost
 			if (data.new_obstacles[i].get_duration_lost() > pars.p_step)
@@ -1170,8 +1015,11 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 				l_i = 1;
 			}
 			
-			cost_ps = l_i * C * R + pars.kappa * mu  + 0 * pars.kappa_TC * trans;
-			//cost_ps = l_i * C * P_c_i(ps, k) + pars.kappa * mu  + 0 * pars.kappa_TC * trans;
+			// SB-MPC formulation with ad-hoc collision risk
+			//cost_ps = l_i * C * R + pars.kappa * mu  + 0 * pars.kappa_TC * trans;
+
+			// PSB-MPC formulation with probabilistic collision cost
+			cost_ps = l_i * C * P_c_i(ps, k) + pars.kappa * mu  + pars.kappa_TC * trans;
 
 			// Maximize wrt time
 			if (cost_ps > max_cost_ps(ps))
@@ -1554,302 +1402,5 @@ void PSBMPC::assign_optimal_trajectory(
 	{
 		optimal_trajectory.resize(2, n_samples);
 		optimal_trajectory = trajectory.block(0, 0, 2, n_samples);
-	}
-}
-
-
-/****************************************************************************************
-*  Name     : determine_situation_type
-*  Function : Determines the situation type for vessel A and B  \in {A, B, C, D, E, F}
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::determine_situation_type(
-	ST& st_A,																// In/out: Situation type of vessel A
-	ST& st_B,																// In/out: Situation type of vessel B
-	const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A 
-	const double psi_A, 													// In: Heading of vessel A
-	const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B
-	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-	const double d_AB 														// In: Distance from vessel A to vessel B
-	)
-{
-	// Crash situation, assume reactive maneuvers like in an overtaking scenario
-	if (d_AB < pars.d_safe) 
-	{
-		st_A = D; st_B = D; 
-		return;
-	} 
-	// Outside consideration range
-	else if(d_AB > pars.d_close)
-	{
-		st_A = A; st_B = A;
-		return;
-	} 
-	// Inside consideration range
-	else
-	{
-		bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-		bool is_ahead, is_passed, is_head_on, is_crossing;
-
-		is_ahead = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
-
-		A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-						v_A.norm() < v_B.norm()							  		&&
-						v_A.norm() > 0.25;
-
-		B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-						v_B.norm() < v_A.norm()							  		&&
-						v_B.norm() > 0.25;
-
-		B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-					!A_is_overtaken) 											||
-					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-					!B_is_overtaken)) 											&&
-					d_AB > pars.d_safe;
-
-		is_head_on = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() > 0.25											&&
-					v_B.norm() > 0.25											&&
-					is_ahead;
-
-		is_crossing = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
-					v_A.norm() > 0.25											&&
-					v_B.norm() > 0.25											&&
-					!is_head_on 												&&
-					!is_passed;
-		
-		if (A_is_overtaken) 
-		{ 
-			st_A = B; st_B = D;
-		} 
-		else if (B_is_overtaken) 
-		{ 
-			st_A = D; st_B = B; 
-		} 
-		else if (is_head_on) 
-		{ 
-			st_A = E; st_B = E; 
-		} 
-		else if (is_crossing)
-		{
-			if (B_is_starboard) 
-			{
-				st_A = F; st_B = C;
-			} else
-			{
-				st_A = C; st_B = F;
-			}
-		} 
-		else 
-		{
-			st_A = A; st_B = A;
-		}
-	}
-}
-
-/****************************************************************************************
-*  Name     : update_obstacles
-*  Function : Takes in new obstacle information and updates the single obstacle data 
-*			  structures.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::update_obstacles(
-	const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
-	const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
-	const Eigen::MatrixXd &obstacle_intention_probabilities, 							// In: Obstacle intention probability information
-	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
-	) 			
-{
-	// Clear "old" new obstacles before the update
-	new_obstacles.clear();
-	
-	int n_obst_old = old_obstacles.size();
-	int n_obst_new = obstacle_states.cols();
-
-	bool obstacle_exist;
-	for (int i = 0; i < n_obst_new; i++)
-	{
-		obstacle_exist = false;
-		for (int j = 0; j < n_obst_old; j++)
-		{
-			if ((double)old_obstacles[j].get_ID() == obstacle_states(8, i))
-			{
-				old_obstacles[j].reset_duration_lost();
-
-				old_obstacles[j].update(
-					obstacle_states.col(i), 
-					obstacle_covariances.col(i), 
-					obstacle_intention_probabilities.col(i),
-					obstacle_a_priori_CC_probabilities(i),
-					obstacle_filter_on,
-					pars.dt);
-
-				new_obstacles.push_back(std::move(old_obstacles[j]));
-
-				obstacle_exist = true;
-
-				break;
-			}
-		}
-		if (!obstacle_exist)
-		{
-			new_obstacles.push_back(std::move(Tracked_Obstacle(
-				obstacle_states.col(i), 
-				obstacle_covariances.col(i),
-				obstacle_intention_probabilities.col(i), 
-				obstacle_a_priori_CC_probabilities(i),
-				obstacle_filter_on,  
-				pars.T, 
-				pars.dt)));
-		}
-	}
-	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
-	// Obstacle track may be lost due to sensor/detection failure, or the obstacle may go out of COLAV-target range
-	// Detection failure will lead to the start (creation) of a new track (obstacle), typically after a short duration,
-	// whereas an obstacle that is out of COLAV-target range may re-enter range with the same id.
-	if (obstacle_filter_on)
-	{
-		for (size_t j = 0; j < old_obstacles.size(); j++)
-		{
-			old_obstacles[j].increment_duration_lost(pars.dt * pars.p_step);
-
-			if (old_obstacles[j].get_duration_tracked() >= T_tracked_limit 	&&
-				(old_obstacles[j].get_duration_lost() < T_lost_limit || old_obstacles[j].kf->get_covariance()(0,0) <= 5.0))
-			{
-				old_obstacles[j].update(obstacle_filter_on, pars.dt);
-
-				new_obstacles.push_back(std::move(old_obstacles[j]));
-			}
-		}
-	}
-	// Clear old obstacle vector, which consist of transferred (nullptr) and terminated obstacles
-	// Then set equal to the new obstacle vector
-	old_obstacles.resize(new_obstacles.size());
-	for (size_t i = 0; i < new_obstacles.size(); i++)
-	{
-		old_obstacles[i] = Tracked_Obstacle(new_obstacles[i]);
-	}
-}
-
-/****************************************************************************************
-*  Name     : update_situation_type_and_transitional_variables
-*  Function : Updates the situation type for the own-ship (wrt all obstacles) and
-*			  obstacles (wrt own-ship) and the transitional cost indicators O, Q, X, S 
-*			  at the current time t0 wrt all obstacles.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::update_situation_type_and_transitional_variables()
-{
-	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
-
-	bool is_close;
-
-	// A : Own-ship, B : Obstacle i
-	Eigen::Vector2d v_A, v_B, L_AB;
-	double psi_A, psi_B, d_AB;
-	v_A(0) = xs(3);
-	v_A(1) = xs(4);
-	psi_A = wrap_angle_to_pmpi(xs(2));
-	v_A = rotate_vector_2D(v_A, psi_A);
-
-	int n_obst = new_obstacles.size();
-	ST_0.resize(n_obst);   ST_i_0.resize(n_obst);
-	
-	AH_0.resize(n_obst);   S_TC_0.resize(n_obst); S_i_TC_0.resize(n_obst); 
-	O_TC_0.resize(n_obst); Q_TC_0.resize(n_obst); IP_0.resize(n_obst); 
-	H_TC_0.resize(n_obst); X_TC_0.resize(n_obst);
-
-	//std::cout << "Situation types:: 0 : (ST = Ø), 1 : (ST = OT, SO), 2 : (ST = CR, SO), 3 : (ST = OT, GW), 4 : (ST = HO, GW), 5 : (ST = CR, GW)" << std::endl;
-	//std::cout << A << std::endl;
-	for (int i = 0; i < n_obst; i++)
-	{
-		v_B(0) = new_obstacles[i].kf->get_state()(2);
-		v_B(1) = new_obstacles[i].kf->get_state()(3);
-		psi_B = atan2(v_B(1), v_B(0));
-
-		L_AB(0) = new_obstacles[i].kf->get_state()(0) - xs(0);
-		L_AB(1) = new_obstacles[i].kf->get_state()(1) - xs(1);
-		d_AB = L_AB.norm();
-
-		// Decrease the distance between the vessels by their respective max dimension
-		d_AB = d_AB - 0.5 * (ownship.get_length() + data.new_obstacles[i].get_length()); 
-		
-		L_AB = L_AB.normalized();
-
-		determine_situation_type(ST_0[i], ST_i_0[i], v_A, psi_A, v_B, L_AB, d_AB);
-		
-		//std::cout << "Own-ship situation type wrt obst i = " << i << " ? " << ST_0[i] << std::endl;
-		//std::cout << "Obst i = " << i << " situation type wrt ownship ? " << ST_i_0[i] << std::endl;
-
-		/*********************************************************************
-		* Transitional variable update
-		*********************************************************************/
-		is_close = d_AB <= pars.d_close;
-
-		AH_0[i] = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
-
-		//std::cout << "Obst i = " << i << " ahead at t0 ? " << AH_0[i] << std::endl;
-		
-		// Obstacle on starboard side
-		S_TC_0[i] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-		//std::cout << "Obst i = " << i << " on starboard side at t0 ? " << S_TC_0[i] << std::endl;
-
-		// Ownship on starboard side of obstacle
-		S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
-
-		//std::cout << "Own-ship on starboard side of obst i = " << i << " at t0 ? " << S_i_TC_0[i] << std::endl;
-
-		// Ownship overtaking the obstacle
-		O_TC_0[i] = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-			  	v_B.norm() < v_B.norm()							    						&&
-				v_B.norm() > 0.25															&&
-				is_close 																	&&
-				AH_0[i];
-
-		//std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << O_TC_0[i] << std::endl;
-
-		// Obstacle overtaking the ownship
-		Q_TC_0[i] = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-				v_A.norm() < v_B.norm()							  			&&
-				v_A.norm() > 0.25 											&&
-				is_close 													&&
-				!AH_0[i];
-
-		//std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << Q_TC_0[i] << std::endl;
-
-		// Determine if the obstacle is passed by
-		IP_0[i] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
-				!Q_TC_0[i])		 										||
-				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 			&& // Obstacle's perspective	
-				!O_TC_0[i]))		 										&&
-				d_AB > pars.d_safe;
-		
-		//std::cout << "Obst i = " << i << " passed by at t0 ? " << IP_0[i] << std::endl;
-
-		// This is not mentioned in article, but also implemented here..				
-		H_TC_0[i] = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-				v_A.norm() > 0.25																&&
-				v_B.norm() > 0.25																&&
-				AH_0[i];
-		
-		//std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << H_TC_0[i] << std::endl;
-
-		// Crossing situation, a bit redundant with the !is_passed condition also, 
-		// but better safe than sorry (could be replaced with B_is_ahead also)
-		X_TC_0[i] = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()	&&
-				!H_TC_0[i]																&&
-				!O_TC_0[i] 															&&
-				!Q_TC_0[i] 	 														&&
-				!IP_0[i]																&&
-				v_A.norm() > 0.25															&&
-				v_B.norm() > 0.25;
-
-		//std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << X_TC_0[i] << std::endl;
 	}
 }

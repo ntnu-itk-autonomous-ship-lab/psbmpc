@@ -18,6 +18,7 @@
 
 #include "utilities.h"
 #include "obstacle_manager.h"
+#include <string>
 #include <iostream>
 #include <iomanip>
 
@@ -43,6 +44,20 @@ Obstacle_Manager::Obstacle_Manager()
 	T_tracked_limit = 15.0; // 15.0 s obstacle still relevant if tracked for so long, choice depends on survival rate
 
 	obstacle_filter_on = false;
+
+	width_arr[0] = 1; 		// Obstacle ID
+	width_arr[1] = 1;		// Obstacle SOG
+	width_arr[2] = 7; 		// Obstacle COG
+	width_arr[3] = 5;		// Obstacle R-BRG
+	width_arr[4] = 5; 		// Obstacle RNG
+	width_arr[5] = 2;		// Obstacle HL
+	width_arr[6] = 2; 		// Obstacle IP
+	width_arr[7] = 2;		// Obstacle AH
+	width_arr[8] = 2; 		// Obstacle SB
+	width_arr[9] = 2;		// Obstacle HO
+	width_arr[10] = 2; 		// Obstacle CRG
+	width_arr[11] = 2;		// Obstacle OTG
+	width_arr[12] = 2; 		// Obstacle OT
 }
 
 /****************************************************************************************
@@ -99,11 +114,26 @@ void Obstacle_Manager::update_obstacle_status(
 void Obstacle_Manager::display_obstacle_information() 			
 {
 	std::cout << "Obstacle information:" << std::endl;
-	std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;
+	//std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;
+
+	for (int i = 0; i < data.obstacle_status.rows(); i++)
+	{
+		std::cout << std::setw(5) << status_str[i];
+	}
+	std::cout << "\n";
+
 	for (size_t i = 0; i < data.new_obstacles.size(); i++)
 	{
-		std::cout << std::setw(4) << data.obstacle_status.col(i).transpose() << std::endl;
+		for (int j = 0; j < data.obstacle_status.rows(); j++)
+		{
+			std::cout << std::setw(width_arr[i] + 4) << std::setprecision(status_precision[i]) << data.obstacle_status(j, i) << std::fixed;
+		}
+		if (i < data.new_obstacles.size() - 1)
+		{
+			std::cout << "\n";
+		}
 	}
+	std::cout << std::endl;
 }
 
 /****************************************************************************************
@@ -407,7 +437,7 @@ void Obstacle_Manager::update_situation_type_and_transitional_variables(
 				!data.O_TC_0[i]))		 										&&
 				d_AB > psbmpc_pars.d_safe;
 		
-		std::cout << "Obst i = " << i << " passed by at t0 ? " << data.IP_0[i] << std::endl;
+		//std::cout << "Obst i = " << i << " passed by at t0 ? " << data.IP_0[i] << std::endl;
 
 		// This is not mentioned in article, but also implemented here..				
 		data.H_TC_0[i] = v_A.dot(v_B) < - cos(psbmpc_pars.phi_HO) * v_A.norm() * v_B.norm() 	&&

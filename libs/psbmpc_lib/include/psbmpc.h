@@ -53,8 +53,6 @@ private:
 	// Own-ship predicted trajectory
 	Eigen::Matrix<double, 6, -1> trajectory;
 
-	Obstacle_Data data;
-
 	Ownship ownship;
 
 	CPE cpe;
@@ -63,28 +61,30 @@ private:
 
 	void increment_control_behaviour();
 
-	void initialize_prediction();
+	void initialize_prediction(Obstacle_Data &data);
 
 	void set_up_independent_obstacle_prediction_variables(
 		std::vector<Intention> &ps_ordering,
 		Eigen::VectorXd &ps_course_changes,
 		Eigen::VectorXd &ps_weights,
 		Eigen::VectorXd &ps_maneuver_times,
-		const int i,
-		const int n_turns);
+		const int n_turns,
+		const Obstacle_Data &data,
+		const int i);
 
 	void set_up_dependent_obstacle_prediction_variables(
 		std::vector<Intention> &ps_ordering,
 		Eigen::VectorXd &ps_course_changes,
 		Eigen::VectorXd &ps_weights,
 		Eigen::VectorXd &ps_maneuver_times,
+		const Obstacle_Data &data,
 		const int i);
 
-	double find_time_of_passing(const int i);
+	double find_time_of_passing(const Obstacle_Data &data, const int i);
 
-	void predict_trajectories_jointly();
+	void predict_trajectories_jointly(const Obstacle_Data &data);
 
-	bool determine_colav_active(const int n_static_obst);
+	bool determine_colav_active(const Obstacle_Data &data, const int n_static_obst);
 
 	bool determine_COLREGS_violation(
 		const Eigen::Vector2d &v_A, 
@@ -97,13 +97,13 @@ private:
 		const double psi_A, 
 		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
-		const int i,
-		const double chi_m);
-	bool determine_transitional_cost_indicator(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B, const int i, const double chi_m);
+		const double chi_m,
+		const Obstacle_Data &data,
+		const int i);
 
-	void calculate_collision_probabilities(Eigen::MatrixXd &P_c_i, const int i);
+	void calculate_collision_probabilities(Eigen::MatrixXd &P_c_i, const Obstacle_Data &data, const int i);
 
-	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const int i);
+	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const Obstacle_Data &data, const int i);
 
 	inline double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); };
 
@@ -138,44 +138,6 @@ private:
 
 	//
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
-
-
-	//======================
-	// Remove this after implementing fast obstacle manager
-	//========================
-	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
-	// and <obstacle is passed> (IP_0) indicators
-	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
-
-	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
-	std::vector<ST> ST_0, ST_i_0;
-
-	// Obstacle hazard levels, on a scale from 0 to 1 (output from PSBMPC)
-	Eigen::VectorXd HL_0;
-
-	std::vector<Tracked_Obstacle> old_obstacles;
-	std::vector<Tracked_Obstacle> new_obstacles;
-
-	double T_lost_limit, T_tracked_limit;
-
-	bool obstacle_filter_on;
-
-	void determine_situation_type(
-		ST &st_A,
-		ST &st_B,
-		const Eigen::Vector2d &v_A, 
-		const double psi_A, 
-		const Eigen::Vector2d &v_B,
-		const Eigen::Vector2d &L_AB, 
-		const double d_AB);
-
-    void update_obstacles(
-		const Eigen::Matrix<double, 9, -1>& obstacle_states, 
-		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
-		const Eigen::MatrixXd &obstacle_intention_probabilities,
-		const Eigen::VectorXd &obstacle_a_priori_CC_probabilities);
-
-	void update_situation_type_and_transitional_variables();
 
 public:
 
