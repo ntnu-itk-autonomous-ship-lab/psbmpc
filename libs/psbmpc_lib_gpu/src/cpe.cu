@@ -18,13 +18,15 @@
 *
 *****************************************************************************************/
 
-#include <thrust/device_vector.h>
-#include <stdio.h>
 #include "cpe.cuh"
 #include "utilities.cuh"
+
+#include <thrust/device_vector.h>
+#include <stdio.h>
 #include <iostream>
 #include <cuda.h>
 #include <curand.h>
+#include "assert.h"
 
 //#define CUDA_CALL(x) do { if((x)!=cudaSuccess) { \printf("Error at %s:%d\n",__FILE__,__LINE__);\return EXIT_FAILURE;}} while(0)
 //#define CURAND_CALL(x) do { if((x)!=CURAND_STATUS_SUCCESS) { \printf("Error at %s:%d\n",__FILE__,__LINE__);\return EXIT_FAILURE;}} while(0)
@@ -88,45 +90,9 @@ __host__ __device__ CPE::CPE(
 *****************************************************************************************/
 __host__ __device__ CPE::CPE(
     const CPE &cpe                                                   // In: CPE object to copy
-    )
+    ) : mu_CE_last(nullptr), P_CE_last(nullptr)
 {
-    this->method = cpe.method;
-
-    this->n_obst = cpe.n_obst;
-
-    this->n_CE = cpe.n_CE; this->n_MCSKF = cpe.n_MCSKF;
-
-    this->prng_state = cpe.prng_state;
-
-    this->sigma_inject = cpe.sigma_inject;
-    this->alpha_n = cpe.alpha_n;
-    this->gate = cpe.gate;
-    this->rho = cpe.rho;
-    this->max_it = cpe.max_it;
-
-    this->converged_last = cpe.converged_last;
-
-    mu_CE_last = new CML::MatrixXd[n_obst];
-    P_CE_last = new CML::MatrixXd[n_obst];
-    for (int i = 0; i < n_obst; i++)
-    {
-        mu_CE_last[i] = cpe.mu_CE_last[i];
-        P_CE_last[i] = cpe.P_CE_last[i];
-    }
-
-    this->d_safe = cpe.d_safe;
-
-    this->N_e = cpe.N_e; this->e_count = cpe.e_count;
-    this->elite_samples = cpe.elite_samples;
-
-    this->q = cpe.q; this->r = cpe.r; this->dt_seg = cpe.dt_seg;
-
-    this->P_c_p = cpe.P_c_p; this->var_P_c_p = cpe.var_P_c_p;
-    this->P_c_upd = cpe.P_c_upd; this->var_P_c_upd = cpe.var_P_c_upd;
-
-    this->samples = cpe.samples; this->valid = cpe.valid;
-
-    this->L = cpe.L;
+    assign_data(cpe);
 }
 
 /****************************************************************************************
@@ -155,8 +121,10 @@ __host__ __device__ CPE& CPE::operator=(
         return *this;
     }
     clean();
+
+    assign_data(cpe);
     
-    return *this = CPE(cpe);
+    return *this;
 }
 
 /****************************************************************************************
@@ -167,8 +135,8 @@ __host__ __device__ CPE& CPE::operator=(
 *****************************************************************************************/
 __host__ __device__ void CPE::clean()
 {
-    delete[] mu_CE_last;
-    delete[] P_CE_last;
+    delete[] mu_CE_last; mu_CE_last = nullptr;
+    delete[] P_CE_last;  P_CE_last = nullptr;   
 }
 
 /****************************************************************************************
@@ -210,6 +178,8 @@ __device__ void CPE::initialize(
     const int i                                                                     // In: Index of obstacle i
     )
 {
+    assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 4 && P_i.get_rows() == P_i.get_cols());
+
     // The estimation is done considering one obstacle at the time, so the d_safe parameter
     // is initialized accordingly
     d_safe = d_safe_i;
@@ -247,6 +217,8 @@ __device__ double CPE::estimate(
     const int i                                         // In: Index of obstacle i
     )
 {
+    assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16);
+
     CML::MatrixXd P_i_2D;
     int n_cols = xs_os.get_cols();
     double P_c;
@@ -287,6 +259,8 @@ __device__ void CPE::estimate_over_trajectories(
         const double dt                                     // In: Prediction time step
     )
 {
+    assert(xs_p.get_rows() >= 4 && xs_p.get_rows() <= 6 && xs_i_p.get_rows() == 4 && P_i_p.get_rows() == 16);
+
     int n_samples = xs_p.get_cols();
 
     int n_seg_samples = std::round(dt_seg / dt) + 1, k_j_(0), k_j(0);
@@ -343,6 +317,8 @@ __host__ __device__ void CPE::assign_data(
 
     this->n_CE = cpe.n_CE; this->n_MCSKF = cpe.n_MCSKF;
 
+    this->prng_state = cpe.prng_state;
+
     this->sigma_inject = cpe.sigma_inject;
     this->alpha_n = cpe.alpha_n;
     this->gate = cpe.gate;
@@ -351,9 +327,17 @@ __host__ __device__ void CPE::assign_data(
 
     this->converged_last = cpe.converged_last;
 
-    this->mu_CE_last = cpe.mu_CE_last;
-    this->P_CE_last = cpe.P_CE_last;
-
+    if (mu_CE_last == nullptr && P_CE_last == nullptr)
+    {
+        mu_CE_last = new CML::MatrixXd[n_obst];
+        P_CE_last = new CML::MatrixXd[n_obst];
+        for (int i = 0; i < n_obst; i++)
+        {
+            mu_CE_last[i] = cpe.mu_CE_last[i];
+            P_CE_last[i] = cpe.P_CE_last[i];
+        }
+    }
+    
     this->N_e = cpe.N_e; this->e_count = cpe.e_count;
     this->elite_samples = cpe.elite_samples;
 
@@ -380,6 +364,11 @@ __host__ __device__ void CPE::resize_matrices()
     switch (method)
     {
         case CE :
+            for (int i = 0; i < n_obst; i++)
+            {
+                mu_CE_last[i].resize(2, 1);
+                P_CE_last[i].resize(2, 2);
+            }
             samples.resize(2, n_CE);
             elite_samples.resize(2, n_CE);
             valid.resize(n_CE, 1);
@@ -411,6 +400,8 @@ __device__ inline void CPE::update_L(
     const CML::MatrixXd &in                                                     // In: Matrix in consideration
     )
 {
+    assert(in.get_rows() == in.get_cols());
+
     int n = in.get_rows();
     L.set_zero();
     double sum;
@@ -443,28 +434,6 @@ __device__ inline void CPE::update_L(
 }
 
 /****************************************************************************************
-*  Name     : calculate_2x2_quadratic_form
-*  Function : Calculates val = x' A^-1 x for 2x2 system, basically hard-coded.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__device__ inline double CPE::calculate_2x2_quadratic_form(
-    const CML::MatrixXd &x,                                       // In: Vector in the quadratic form
-    const CML::MatrixXd &A                                        // In: Matrix to invert in the quadratic form
-    )
-{
-    CML::Matrix2d inv_A;
-    inv_A(0, 0) = A(1, 1);
-    inv_A(0, 1) = -A(0, 1);
-    inv_A(1, 0) = -A(1, 0);
-    inv_A(1, 1) = A(1, 1);
-    inv_A = inv_A / (A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0));
-
-    CML::MatrixXd result = x.transposed() * inv_A * x;
-    return (double)result(0, 0);
-}
-
-/****************************************************************************************
 *  Name     : norm_pdf_log
 *  Function : Calculates the logarithmic value of the multivariate normal distribution
 *  Author   : Trym Tengesdal
@@ -476,20 +445,16 @@ __device__ inline void CPE::norm_pdf_log(
     const CML::MatrixXd &Sigma                                                // In: Covariance of the MVN
     )
 {
+    assert(mu.get_rows() <=4 && mu.get_cols() == 1 && Sigma.get_rows() <= 4 && Sigma.get_rows() == Sigma.get_cols() && result.get_rows() == mu.get_rows());
+
     int n = samples.get_rows(), n_samples = samples.get_cols();
 
     double exp_val = 0;
     double log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
     for (int i = 0; i < n_samples; i++)
     {
-        if (n == 2)
-        {
-            exp_val = calculate_2x2_quadratic_form(samples.get_col(i) - mu, Sigma);
-        }
-        else
-        {
-            exp_val = (samples.get_col(i) - mu).transposed() * Sigma.inverse() * (samples.get_col(i) - mu);
-        }
+        exp_val = (samples.get_col(i) - mu).transposed() * Sigma.inverse() * (samples.get_col(i) - mu);
+
         exp_val = - exp_val / 2.0;
 
         result(i) = log_val + exp_val;
@@ -507,6 +472,8 @@ __device__ inline void CPE::generate_norm_dist_samples(
     const CML::MatrixXd &Sigma                                                // In: Covariance of the MVN
     )
 {
+    assert(mu.get_rows() <= 4 && mu.get_cols() == 1 && Sigma.get_rows() == Sigma.get_cols() && Sigma.get_rows() <= 4);
+
     int n = samples.get_rows(), n_samples = samples.get_cols();
 
     update_L(Sigma);
@@ -536,6 +503,8 @@ __device__ void CPE::calculate_roots_2nd_order(
     const double C                                                      // In: Coefficient in polynomial 
     )
 {
+    assert(r.get_rows() == 2 && r.get_cols() == 1); 
+
     is_complex = 0;
 
     double d = pow(B, 2) - 4 * A * C;
@@ -574,6 +543,9 @@ __device__ double CPE::produce_MCS_estimate(
 	const double t_cpa                                                         // In: Time to cpa
     )
 {
+    assert(xs_i.get_rows() == 4 && xs_i.get_cols() == 1 && P_i.get_rows() == P_i.get_cols() && P_i.get_rows() == 4 && 
+            p_os_cpa.get_rows() == 2 && p_os_cpa.get_cols() == 1);
+
     double P_c;
 
     generate_norm_dist_samples(xs_i, P_i);
@@ -600,6 +572,8 @@ __device__ void CPE::determine_sample_validity_4D(
     const double t_cpa                                                         // In: Time to cpa
     )
 {
+    assert(p_os_cpa.get_rows() == 1 && p_os_cpa.get_cols() == 1);
+
     int n_samples = samples.get_cols();
 
     bool complex_roots;
@@ -652,6 +626,8 @@ __device__ double CPE::MCSKF4D_estimation(
     const int i                                                                 // In: Index of obstacle i
     )
 {
+    assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16);
+
     // Collision probability "measurement" from MCS
     double y_P_c_i;
 
@@ -754,6 +730,8 @@ __device__ void CPE::determine_sample_validity_2D(
 	const CML::MatrixXd &p_os                                                // In: Own-ship position vector
     )
 {
+    assert(p_os.get_rows() == 2 && p_os.get_cols() == 1);
+
     int n_samples = samples.get_cols();
     bool inside_safety_zone;
     for (int j = 0; j < n_samples; j++)
@@ -779,6 +757,9 @@ __device__ void CPE::determine_best_performing_samples(
     const CML::MatrixXd &P_i                                                      // In: Obstacle i positional covariance
     )
 {
+    assert(p_os.get_rows() == 2 && p_os.get_cols() == 1 && p_i.get_rows() == 2 && p_i.get_cols() == 1 &&
+            P_i.get_rows() == 2 && P_i.get_rows() == P_i.get_cols());
+
     N_e = 0;
     bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
     for (int j = 0; j < n_CE; j++)
@@ -786,13 +767,9 @@ __device__ void CPE::determine_best_performing_samples(
         valid(j) = 0;
         inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= pow(d_safe, 2);
 
-        // Apparently the below expression is faster than the calculate_2x2.... expression, even
-        // though the opposite is the case in the norm_pdf_log function. Test this further if
-        // interested to see if this is actually the case.
-        /* inside_alpha_p_confidence_ellipse = 
-            (samples.col(j) - p_i).transpose() * P_i.inverse() * (samples.col(j) - p_i) <= gate; */
- 
-        inside_alpha_p_confidence_ellipse = calculate_2x2_quadratic_form(samples.get_col(j) - p_i, P_i) <= gate;
+        inside_alpha_p_confidence_ellipse = 
+            (samples.get_col(j) - p_i).transposed() * P_i.inverse() * (samples.get_col(j) - p_i) <= gate;
+
 
         if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
         {
@@ -815,6 +792,9 @@ __device__ double CPE::CE_estimation(
     const int i                                                               // In: Index of obstacle i
     )
 {
+    assert(p_os.get_rows() == 2 && p_os.get_cols() == 1 && p_i.get_rows() == 2 && p_i.get_cols() == 1 &&
+            P_i.get_rows() == 2 && P_i.get_rows() == P_i.get_cols());
+            
     double P_c(0.0);
     /******************************************************************************
     * Check if it is necessary to perform estimation

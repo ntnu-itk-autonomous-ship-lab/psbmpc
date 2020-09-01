@@ -23,7 +23,7 @@
 #define _CUDA_OBSTACLE_CUH_
 
 #include <thrust/device_vector.h>
-#include "Eigen/Dense"
+#include "cml.cuh"
 #include "obstacle.cuh"
 #include "tracked_obstacle.h"
 
@@ -38,33 +38,33 @@ private:
 	int n_ps;
 
 	// Vector of intention probabilities at the current time or last time of update
-	Eigen::VectorXd Pr_a;
+	CML::MatrixXd Pr_a;
 
 	// A priori COLREGS compliance probability at the current time or last time of update
 	double Pr_CC;
 
-	// If the AIS-based KF is on, the obstacle is tracked until it dies
+	// If the tracker-based KF is on, the obstacle is tracked until it dies
 	// while the duration lost may be reset if new measurements are aquired
 	double duration_tracked, duration_lost;
 
 	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: n_ps x 1
-	bool *mu;
+	CML::MatrixXb mu;
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
 	// This is equal for all prediction scenarios including those with active COLAV (using MROU)
-	Eigen::MatrixXd P_p;  
+	CML::MatrixXd P_p;  
 
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
-	Eigen::MatrixXd *xs_p;
+	CML::MatrixXd *xs_p;
 
 	// Mean predicted velocity for the obstacle (MROU): 
-	Eigen::Vector2d v_p;
+	CML::MatrixXd v_p;
 
 	// Prediction scenario ordering, size n_ps x 1 of intentions
 	Intention *ps_ordering;
 
 	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
-	Eigen::VectorXd ps_course_changes, ps_weights, ps_maneuver_times;
+	CML::MatrixXd ps_course_changes, ps_weights, ps_maneuver_times;
 
 	__host__ __device__ void assign_data(const Cuda_Obstacle &co);
 	
@@ -72,9 +72,9 @@ private:
 	
 public:
 
-	KF *kf;
+	KF kf;
 
-	MROU *mrou;
+	MROU mrou;
 
 	Obstacle_SBMPC *sbmpc;
 
@@ -92,15 +92,19 @@ public:
 
 	__host__ __device__ void clean();
 
-	__device__ bool* get_COLREGS_violation_indicator() const { return mu; };
+	__device__ inline CML::MatrixXb get_COLREGS_violation_indicator() const { return mu; }
 
-	__device__ double get_a_priori_CC_probability() const { return Pr_CC; };
+	__device__ inline double get_a_priori_CC_probability() const { return Pr_CC; }
 
-	__device__ Eigen::VectorXd get_intention_probabilities() const { return Pr_a; };
+	__device__ inline double get_duration_lost() const { return duration_lost; }
 
-	__device__ Eigen::MatrixXd* get_trajectories() const { return xs_p; };
+	__device__ inline double get_duration_tracked() const { return duration_tracked; }
 
-	__device__ Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
+	__device__ inline CML::MatrixXd get_intention_probabilities() const { return Pr_a; }
+
+	__device__ inline CML::MatrixXd* get_trajectories() const { return xs_p; }
+
+	__device__ inline CML::MatrixXd get_trajectory_covariance() const { return P_p; }
 };
 
 #endif

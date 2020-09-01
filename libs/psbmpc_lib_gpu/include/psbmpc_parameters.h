@@ -27,6 +27,7 @@
 
 class PSBMPC;
 class Obstacle_Manager;
+class CB_Cost_Functor;
 
 /* enum Par_Type 
 {
@@ -68,13 +69,12 @@ private:
 
 	friend class PSBMPC;
 	friend class Obstacle_Manager;
+	friend class CB_Cost_Functor;
 
 	int n_cbs, n_M;
 
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
-
-	Eigen::MatrixXd control_behaviours;
 
 	Eigen::VectorXd obstacle_course_changes;
 
