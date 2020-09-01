@@ -10,7 +10,6 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.o
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/obstacle_manager.h
  ../libs/psbmpc_lib_gpu/include/ownship.cuh
- ../libs/psbmpc_lib_gpu/include/ownship.h
  ../libs/psbmpc_lib_gpu/include/psbmpc.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
@@ -7589,7 +7588,6 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cu.o
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/obstacle_manager.h
  ../libs/psbmpc_lib_gpu/include/ownship.cuh
- ../libs/psbmpc_lib_gpu/include/ownship.h
  ../libs/psbmpc_lib_gpu/include/psbmpc.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
@@ -10032,7 +10030,6 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cpp.o
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/obstacle_manager.h
  ../libs/psbmpc_lib_gpu/include/ownship.cuh
- ../libs/psbmpc_lib_gpu/include/ownship.h
  ../libs/psbmpc_lib_gpu/include/psbmpc.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h

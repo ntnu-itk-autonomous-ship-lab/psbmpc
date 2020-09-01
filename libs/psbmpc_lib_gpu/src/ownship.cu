@@ -113,7 +113,7 @@ __host__ __device__ Ownship::Ownship()
 
 /****************************************************************************************
 *  Name     : determine_active_waypoint_segment
-*  Function : 
+*  Function : Two overloads depending on matrix library used.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -147,6 +147,18 @@ __host__ __device__ void Ownship::determine_active_waypoint_segment(
 		
 	}
 	wp_c_p = wp_c_0;
+}
+
+__host__ void Ownship::determine_active_waypoint_segment(
+	const Eigen::Matrix<double, 2, -1> &waypoints,  			// In: Waypoints to follow
+	const Eigen::Matrix<double, 6, 1> &xs 						// In: Ownship state
+	)	
+{
+	CML::MatrixXd waypoints_copy, xs_copy;
+	CML::assign_eigen_object(waypoints_copy, waypoints);
+	CML::assign_eigen_object(xs_copy, xs);
+
+	determine_active_waypoint_segment(waypoints_copy, xs_copy);
 }
 
 /****************************************************************************************
@@ -323,7 +335,7 @@ __host__ __device__ CML::MatrixXd Ownship::predict(
 /****************************************************************************************
 *  Name     : predict_trajectory
 *  Function : Predicts the ownship trajectory for a sequence of avoidance maneuvers in the 
-*			  offset sequence.
+*			  offset sequence. Two overloads depending on matrix library used. 
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -367,6 +379,28 @@ __host__ __device__ void Ownship::predict_trajectory(
 		
 		if (k < n_samples - 1) trajectory.set_col(k + 1, xs);
 	}
+}
+
+__host__ void Ownship::predict_trajectory(
+	Eigen::Matrix<double, 6, -1>& trajectory, 						// In/out: Own-ship trajectory
+	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
+	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
+	const double u_d, 												// In: Surge reference
+	const double chi_d, 											// In: Course reference
+	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Waypoints to follow
+	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
+	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
+	const double T,													// In: Prediction horizon
+	const double dt 												// In: Prediction time step
+	)
+{
+	CML::MatrixXd trajectory_copy, offset_sequence_copy, maneuver_times_copy, waypoints_copy;
+	CML::assign_eigen_object(trajectory_copy, trajectory); 
+	CML::assign_eigen_object(offset_sequence_copy, offset_sequence); 
+	CML::assign_eigen_object(maneuver_times_copy, maneuver_times); 
+	CML::assign_eigen_object(waypoints_copy, waypoints); 
+
+	predict_trajectory(trajectory_copy, offset_sequence_copy, maneuver_times_copy, u_d, chi_d, waypoints_copy, prediction_method, guidance_method, T, dt);
 }
 
 
