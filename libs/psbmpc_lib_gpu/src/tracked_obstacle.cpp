@@ -35,11 +35,10 @@ Tracked_Obstacle::Tracked_Obstacle(
 	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
 	const double Pr_CC, 										// In: A priori COLREGS compliance probability
 	const bool filter_on, 										// In: Indicator of whether the KF is active
-	const bool colav_on,										// In: Indicator of whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	Obstacle(xs_aug, P, colav_on), 
+	Obstacle(xs_aug, P, false), 
 	duration_lost(0.0),
 	kf(new KF(xs_0, P_0, ID, dt, 0.0)),
 	mrou(new MROU(0.8, 0, 0.8, 0.1, 0.1))

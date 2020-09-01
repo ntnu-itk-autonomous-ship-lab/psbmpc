@@ -73,7 +73,8 @@ namespace CML
 	/****************************************************************************************
 	*  Name     : assign_eigen_object
 	*  Function : Assigns rhs cml object, to the (dynamic) eigen object on the lhs. 
-				  Overloaded for dynamic and static cml objects.
+				  Overloaded for dynamic and static cml objects. Should be used with care
+				  such that e.g. Eigen::VectorXd is not assigned to a CML::Matrix2d..
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
