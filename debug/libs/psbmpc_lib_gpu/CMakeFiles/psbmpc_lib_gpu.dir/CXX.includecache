@@ -37,8 +37,8 @@ psbmpc_parameters.h
 ../libs/psbmpc_lib_gpu/include/cuda_obstacle.cuh
 thrust/device_vector.h
 -
-Eigen/Dense
-../libs/psbmpc_lib_gpu/include/Eigen/Dense
+cml.cuh
+../libs/psbmpc_lib_gpu/include/cml.cuh
 obstacle.cuh
 ../libs/psbmpc_lib_gpu/include/obstacle.cuh
 tracked_obstacle.h
@@ -79,6 +79,12 @@ string
 ../libs/psbmpc_lib_gpu/include/ownship.cuh
 thrust/device_vector.h
 -
+cml.cuh
+../libs/psbmpc_lib_gpu/include/cml.cuh
+psbmpc_parameters.h
+../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
+
+../libs/psbmpc_lib_gpu/include/ownship.h
 Eigen/Dense
 ../libs/psbmpc_lib_gpu/include/Eigen/Dense
 psbmpc_parameters.h
@@ -93,8 +99,8 @@ obstacle_manager.h
 ../libs/psbmpc_lib_gpu/include/obstacle_manager.h
 obstacle.cuh
 ../libs/psbmpc_lib_gpu/include/obstacle.cuh
-ownship.cuh
-../libs/psbmpc_lib_gpu/include/ownship.cuh
+ownship.h
+../libs/psbmpc_lib_gpu/include/ownship.h
 cpe.cuh
 ../libs/psbmpc_lib_gpu/include/cpe.cuh
 Eigen/Dense

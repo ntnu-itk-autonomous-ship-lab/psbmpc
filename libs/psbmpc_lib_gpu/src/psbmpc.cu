@@ -57,7 +57,6 @@ void PSBMPC::calculate_optimal_offsets(
 	int n_obst = data.new_obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
-
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
 	{
