@@ -27,18 +27,22 @@
 #include <thrust/device_vector.h>
 #include "Eigen/Dense"
 
-enum Prediction_Method {
+// NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below
+/* enum Prediction_Method
+{
 	Linear,													// Linear prediction
 	ERK1, 													// Explicit Runge Kutta 1 = Eulers method
-	ERK4 													// Explicit Runge Kutta of fourth order, not implemented.
+	ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
 };
 
-
-enum Guidance_Method {
+enum Guidance_Method 
+{
 	LOS, 													// Line-of-sight		
-	WPP,													// WP-Pursuit
+	WPP,													// Waypoint-Pursuit
 	CH 														// Course Hold
-};
+}; */
+// Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
+#include "psbmpc_parameters.h"
 
 class Ownship
 {

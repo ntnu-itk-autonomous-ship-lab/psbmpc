@@ -380,7 +380,7 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 100.0; 	      // 400.0, 300.0, 240 (sim/Euler)
+	T = 240.0; 	      // 400.0, 300.0, 240 (sim/Euler)
 	dt = 5.0;		      // 5.0, 0.5 (sim/Euler)
   	T_static = 60.0;		  // (50.0)
 

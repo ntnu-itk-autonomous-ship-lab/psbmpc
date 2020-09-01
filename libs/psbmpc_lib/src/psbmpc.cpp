@@ -953,7 +953,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	double Pr_CC_i = data.new_obstacles[i].get_a_priori_CC_probability();
 
 	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
-	double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0);
+	double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);
 	bool mu, trans;
 	for(int k = 0; k < n_samples; k++)
 	{
@@ -1016,7 +1016,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			}
 			
 			// SB-MPC formulation with ad-hoc collision risk
-			//cost_ps = l_i * C * R + pars.kappa * mu  + 0 * pars.kappa_TC * trans;
+			//cost_ps = l_i * C * R + pars.kappa * mu  + pars.kappa_TC * trans;
 
 			// PSB-MPC formulation with probabilistic collision cost
 			cost_ps = l_i * C * P_c_i(ps, k) + pars.kappa * mu  + pars.kappa_TC * trans;

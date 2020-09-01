@@ -43,7 +43,8 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	const double u_d,  													// In: Surge reference
 	const double chi_d, 												// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints, 						// In: Waypoints to follow
-	const Eigen::Matrix<double, 4, -1> &static_obstacles				// In: Static obstacle information
+	const Eigen::Matrix<double, 4, -1> &static_obstacles,				// In: Static obstacle information
+	Obstacle_Data &data													// In/Out: Dynamic obstacle information
 	) 
 {	
 	int n_obst = master.new_obstacles.size();
@@ -288,56 +289,6 @@ __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 	)
 {
 	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
-
-	// Obstacle on starboard side
-	S_TC = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-	// Ownship on starboard side of obstacle
-	S_i_TC = angle_difference_pmpi(atan2(-L_AB(1), -L_AB(0)), psi_B) > 0;
-
-	// For ownship overtaking the obstacle: Check if obstacle is on opposite side of 
-	// ownship to what was observed at t0
-	if (!S_TC_0[i]) { O_TC = O_TC_0[i] && S_TC; }
-	else { O_TC = O_TC_0[i] && !S_TC; };
-
-	// For obstacle overtaking the ownship: Check if ownship is on opposite side of 
-	// obstacle to what was observed at t0
-	if (!S_i_TC_0[i]) { Q_TC = Q_TC_0[i] && S_i_TC; }
-	else { Q_TC = Q_TC_0[i] && !S_i_TC; };
-
-	// For crossing: Check if obstacle is on opposite side of ownship to what was
-	// observed at t0
-	X_TC = X_TC_0[i] && S_TC_0[i] && S_TC && (chi_m < 0);
-
-	// This is not mentioned in article, but also implemented here..
-	// Transitional cost only valid by going from having obstacle on port side at
-	// t0, to starboard side at time t
-	if (!S_TC_0[i]) { H_TC = H_TC_0[i] && S_TC; }
-	else { H_TC = false; }
-	H_TC = H_TC && !X_TC;
-
-	return O_TC || Q_TC || X_TC || H_TC;
-}
-
-__device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
-	const CML::MatrixXd &xs_A,											// In: State vector of vessel A (the ownship), row vector
-	const CML::MatrixXd &xs_B, 											// In: State vector of vessel B (the obstacle), row vector
-	const int i, 															// In: Index of obstacle
-	const double chi_m 														// In: Candidate course offset currently followed
-	)
-{
-	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
-	double psi_A, psi_B;
-	CML::MatrixXd L_AB(2, 1);
-	if (xs_A.get_rows() == 6) { psi_A = xs_A[2]; }
-	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); }
-	
-	if (xs_B.get_rows() == 6) { psi_B = xs_B[2]; }
-	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); }
-
-	L_AB(0) = xs_B(0) - xs_A(0);
-	L_AB(1) = xs_B(1) - xs_A(1);
-	L_AB = L_AB / L_AB.norm();
 
 	// Obstacle on starboard side
 	S_TC = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;

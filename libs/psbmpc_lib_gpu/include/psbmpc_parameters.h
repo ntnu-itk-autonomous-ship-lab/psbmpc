@@ -22,14 +22,13 @@
 #define _PSBMPC_PARAMETERS_H_
 
 #include "psbmpc_index.h"
-#include "ownship.cuh"
-#include "cpe.cuh"
 #include "Eigen/Dense"
 #include <vector>
 
 class PSBMPC;
+class Obstacle_Manager;
 
-enum Par_Type 
+/* enum Par_Type 
 {
 	BPAR,					// Boolean type parameter
 	IPAR,					// Integer type parameter
@@ -39,13 +38,36 @@ enum Par_Type
 	CPEM,					// CPE_Method parameter
 	PREDM,					// Prediction_Method parameter
 	GUIDM					// Guidance_Method parameter
+}; */
+
+// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
+// "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
+enum CPE_Method 
+{
+	CE,														// Consider positional uncertainty only
+	MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments 
 };
 
-struct PSBMPC_Parameters
+enum Prediction_Method
+{
+	Linear,													// Linear prediction
+	ERK1, 													// Explicit Runge Kutta 1 = Eulers method
+	ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
+};
+
+enum Guidance_Method 
+{
+	LOS, 													// Line-of-sight		
+	WPP,													// Waypoint-Pursuit
+	CH 														// Course Hold
+};
+
+class PSBMPC_Parameters
 {
 private:
 
 	friend class PSBMPC;
+	friend class Obstacle_Manager;
 
 	int n_cbs, n_M;
 
@@ -78,20 +100,11 @@ private:
 	double G;
 	double q, p;
 	
-	bool obstacle_filter_on;
 	bool obstacle_colav_on;
-
-	double T_lost_limit, T_tracked_limit;
 
 	void initialize_par_limits();
 
 	void initialize_pars();
-
-	void map_offset_sequences();
-
-	void reset_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
-
-	void increment_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
 public:
 
@@ -107,11 +120,11 @@ public:
 
 	void set_par(const int index, const Eigen::VectorXd &value);
 
-	void set_cpe_method(CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
+	inline void set_cpe_method(CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
 
-	void set_prediction_method(Prediction_Method prediction_method) { if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
+	inline void set_prediction_method(Prediction_Method prediction_method) { if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
 
-	void set_guidance_method(Guidance_Method guidance_method) 		{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
+	inline void set_guidance_method(Guidance_Method guidance_method) 		{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
 
 	bool get_bpar(const int index) const;  
 
@@ -123,11 +136,11 @@ public:
 
 	Eigen::VectorXd get_evpar(const int index) const;
 
-	CPE_Method get_cpe_method() const { return cpe_method; }; 
+	inline CPE_Method get_cpe_method() const { return cpe_method; }; 
 
-	Prediction_Method get_prediction_method() const { return prediction_method; };
+	inline Prediction_Method get_prediction_method() const { return prediction_method; };
 
-	Guidance_Method get_guidance_method() const { return guidance_method; };
+	inline Guidance_Method get_guidance_method() const { return guidance_method; };
 
 };
 

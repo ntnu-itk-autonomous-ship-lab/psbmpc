@@ -58,10 +58,6 @@ struct CB_Functor_Vars
 	double K_sgn, T_sgn;
 	double G;
 	double q, p;
-	
-	bool obstacle_filter_on;
-
-	double T_lost_limit, T_tracked_limit;
 
 	CML::MatrixXd waypoints;
 
@@ -88,6 +84,8 @@ struct CB_Functor_Vars
 class CB_Cost_Functor
 {
 private: 
+
+	PSBMPC_Parameters pars;
 	
 	CML::MatrixXi n_ps;
 
@@ -117,8 +115,6 @@ private:
 		const CML::MatrixXd &L_AB, 
 		const int i,
 		const double chi_m);
-
-	__device__ bool determine_transitional_cost_indicator(const CML::MatrixXd &xs_A, const CML::MatrixXd &xs_B, const int i, const double chi_m);
 
 	__device__ void calculate_collision_probabilities(CML::MatrixXd &P_c_i, const int i);
 
@@ -163,7 +159,8 @@ public:
 		const double u_d, 
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
-		const Eigen::Matrix<double, 4, -1> &static_obstacles);
+		const Eigen::Matrix<double, 4, -1> &static_obstacles,
+		const Obstacle_Data &data);
 
 	__host__ __device__ ~CB_Cost_Functor();
 	
