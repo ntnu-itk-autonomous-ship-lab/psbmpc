@@ -74,8 +74,6 @@ private:
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
 
-	Eigen::MatrixXd control_behaviours;
-
 	Eigen::VectorXd obstacle_course_changes;
 
 	Eigen::VectorXd dpar_low, dpar_high;

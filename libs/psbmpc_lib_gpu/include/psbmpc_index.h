@@ -21,15 +21,14 @@
 #ifndef _PSBMPC_INDEX_H_
 #define _PSBMPC_INDEX_H_
 
-#define N_BPAR						2							// Number of boolean tyoe parameters in PSBMPC
+#define N_BPAR						1							// Number of boolean tyoe parameters in PSBMPC
 #define N_IPAR						1 							// Number of integer type parameters in PSBMPC
-#define N_DPAR						28 							// Number of double type parameters in PSBMPC
+#define N_DPAR						26 							// Number of double type parameters in PSBMPC
 #define N_OPAR						2							// Number of offset/control behavior related parameters in PSBMPC
 #define N_EVPAR						1							// Number of Eigen::Vector type parameters in PSBMPC
 
 // Indices for parameters of type bool
-#define i_bpar_obstacle_filter_on	0
-#define i_bpar_obstacle_colav_on	1
+#define i_bpar_obstacle_colav_on	0
 
 // Indices for parameters of type int
 #define i_ipar_n_M					0
@@ -71,9 +70,6 @@
 
 #define i_dpar_q                    24
 #define i_dpar_p                    25
-
-#define i_dpar_T_lost_limit			26
-#define i_dpar_T_tracked_limit		27
 
 // Indices for offset/control behaviour parameters of type std::vector/Eigen::MatrixXd
 #define i_opar_u_offsets			0

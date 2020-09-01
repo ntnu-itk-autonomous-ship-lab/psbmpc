@@ -145,6 +145,87 @@ psbmpc_lib_gpu/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build
 .PHONY : psbmpc_lib_gpu/fast
 
+src/cb_cost_functor.o: src/cb_cost_functor.cu.o
+
+.PHONY : src/cb_cost_functor.o
+
+# target to build an object file
+src/cb_cost_functor.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.o
+.PHONY : src/cb_cost_functor.cu.o
+
+src/cb_cost_functor.i: src/cb_cost_functor.cu.i
+
+.PHONY : src/cb_cost_functor.i
+
+# target to preprocess a source file
+src/cb_cost_functor.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.i
+.PHONY : src/cb_cost_functor.cu.i
+
+src/cb_cost_functor.s: src/cb_cost_functor.cu.s
+
+.PHONY : src/cb_cost_functor.s
+
+# target to generate assembly for a file
+src/cb_cost_functor.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.s
+.PHONY : src/cb_cost_functor.cu.s
+
+src/cpe.o: src/cpe.cu.o
+
+.PHONY : src/cpe.o
+
+# target to build an object file
+src/cpe.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cpe.cu.o
+.PHONY : src/cpe.cu.o
+
+src/cpe.i: src/cpe.cu.i
+
+.PHONY : src/cpe.i
+
+# target to preprocess a source file
+src/cpe.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cpe.cu.i
+.PHONY : src/cpe.cu.i
+
+src/cpe.s: src/cpe.cu.s
+
+.PHONY : src/cpe.s
+
+# target to generate assembly for a file
+src/cpe.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cpe.cu.s
+.PHONY : src/cpe.cu.s
+
+src/cuda_obstacle.o: src/cuda_obstacle.cu.o
+
+.PHONY : src/cuda_obstacle.o
+
+# target to build an object file
+src/cuda_obstacle.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cuda_obstacle.cu.o
+.PHONY : src/cuda_obstacle.cu.o
+
+src/cuda_obstacle.i: src/cuda_obstacle.cu.i
+
+.PHONY : src/cuda_obstacle.i
+
+# target to preprocess a source file
+src/cuda_obstacle.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cuda_obstacle.cu.i
+.PHONY : src/cuda_obstacle.cu.i
+
+src/cuda_obstacle.s: src/cuda_obstacle.cu.s
+
+.PHONY : src/cuda_obstacle.s
+
+# target to generate assembly for a file
+src/cuda_obstacle.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cuda_obstacle.cu.s
+.PHONY : src/cuda_obstacle.cu.s
+
 src/kf.o: src/kf.cpp.o
 
 .PHONY : src/kf.o
@@ -199,6 +280,276 @@ src/mrou.cpp.s:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/mrou.cpp.s
 .PHONY : src/mrou.cpp.s
 
+src/obstacle.o: src/obstacle.cu.o
+
+.PHONY : src/obstacle.o
+
+# target to build an object file
+src/obstacle.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle.cu.o
+.PHONY : src/obstacle.cu.o
+
+src/obstacle.i: src/obstacle.cu.i
+
+.PHONY : src/obstacle.i
+
+# target to preprocess a source file
+src/obstacle.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle.cu.i
+.PHONY : src/obstacle.cu.i
+
+src/obstacle.s: src/obstacle.cu.s
+
+.PHONY : src/obstacle.s
+
+# target to generate assembly for a file
+src/obstacle.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle.cu.s
+.PHONY : src/obstacle.cu.s
+
+src/obstacle_manager.o: src/obstacle_manager.cpp.o
+
+.PHONY : src/obstacle_manager.o
+
+# target to build an object file
+src/obstacle_manager.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_manager.cpp.o
+.PHONY : src/obstacle_manager.cpp.o
+
+src/obstacle_manager.i: src/obstacle_manager.cpp.i
+
+.PHONY : src/obstacle_manager.i
+
+# target to preprocess a source file
+src/obstacle_manager.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_manager.cpp.i
+.PHONY : src/obstacle_manager.cpp.i
+
+src/obstacle_manager.s: src/obstacle_manager.cpp.s
+
+.PHONY : src/obstacle_manager.s
+
+# target to generate assembly for a file
+src/obstacle_manager.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_manager.cpp.s
+.PHONY : src/obstacle_manager.cpp.s
+
+src/obstacle_sbmpc.o: src/obstacle_sbmpc.cu.o
+
+.PHONY : src/obstacle_sbmpc.o
+
+# target to build an object file
+src/obstacle_sbmpc.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_sbmpc.cu.o
+.PHONY : src/obstacle_sbmpc.cu.o
+
+src/obstacle_sbmpc.i: src/obstacle_sbmpc.cu.i
+
+.PHONY : src/obstacle_sbmpc.i
+
+# target to preprocess a source file
+src/obstacle_sbmpc.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_sbmpc.cu.i
+.PHONY : src/obstacle_sbmpc.cu.i
+
+src/obstacle_sbmpc.s: src/obstacle_sbmpc.cu.s
+
+.PHONY : src/obstacle_sbmpc.s
+
+# target to generate assembly for a file
+src/obstacle_sbmpc.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_sbmpc.cu.s
+.PHONY : src/obstacle_sbmpc.cu.s
+
+src/obstacle_ship.o: src/obstacle_ship.cu.o
+
+.PHONY : src/obstacle_ship.o
+
+# target to build an object file
+src/obstacle_ship.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_ship.cu.o
+.PHONY : src/obstacle_ship.cu.o
+
+src/obstacle_ship.i: src/obstacle_ship.cu.i
+
+.PHONY : src/obstacle_ship.i
+
+# target to preprocess a source file
+src/obstacle_ship.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_ship.cu.i
+.PHONY : src/obstacle_ship.cu.i
+
+src/obstacle_ship.s: src/obstacle_ship.cu.s
+
+.PHONY : src/obstacle_ship.s
+
+# target to generate assembly for a file
+src/obstacle_ship.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_ship.cu.s
+.PHONY : src/obstacle_ship.cu.s
+
+src/ownship.o: src/ownship.cu.o
+
+.PHONY : src/ownship.o
+
+# target to build an object file
+src/ownship.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/ownship.cu.o
+.PHONY : src/ownship.cu.o
+
+src/ownship.i: src/ownship.cu.i
+
+.PHONY : src/ownship.i
+
+# target to preprocess a source file
+src/ownship.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/ownship.cu.i
+.PHONY : src/ownship.cu.i
+
+src/ownship.s: src/ownship.cu.s
+
+.PHONY : src/ownship.s
+
+# target to generate assembly for a file
+src/ownship.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/ownship.cu.s
+.PHONY : src/ownship.cu.s
+
+src/prediction_obstacle.o: src/prediction_obstacle.cu.o
+
+.PHONY : src/prediction_obstacle.o
+
+# target to build an object file
+src/prediction_obstacle.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/prediction_obstacle.cu.o
+.PHONY : src/prediction_obstacle.cu.o
+
+src/prediction_obstacle.i: src/prediction_obstacle.cu.i
+
+.PHONY : src/prediction_obstacle.i
+
+# target to preprocess a source file
+src/prediction_obstacle.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/prediction_obstacle.cu.i
+.PHONY : src/prediction_obstacle.cu.i
+
+src/prediction_obstacle.s: src/prediction_obstacle.cu.s
+
+.PHONY : src/prediction_obstacle.s
+
+# target to generate assembly for a file
+src/prediction_obstacle.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/prediction_obstacle.cu.s
+.PHONY : src/prediction_obstacle.cu.s
+
+src/psbmpc.o: src/psbmpc.cpp.o
+
+.PHONY : src/psbmpc.o
+
+# target to build an object file
+src/psbmpc.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cpp.o
+.PHONY : src/psbmpc.cpp.o
+
+src/psbmpc.i: src/psbmpc.cpp.i
+
+.PHONY : src/psbmpc.i
+
+# target to preprocess a source file
+src/psbmpc.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cpp.i
+.PHONY : src/psbmpc.cpp.i
+
+src/psbmpc.s: src/psbmpc.cpp.s
+
+.PHONY : src/psbmpc.s
+
+# target to generate assembly for a file
+src/psbmpc.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cpp.s
+.PHONY : src/psbmpc.cpp.s
+
+src/psbmpc.o: src/psbmpc.cu.o
+
+.PHONY : src/psbmpc.o
+
+# target to build an object file
+src/psbmpc.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cu.o
+.PHONY : src/psbmpc.cu.o
+
+src/psbmpc.i: src/psbmpc.cu.i
+
+.PHONY : src/psbmpc.i
+
+# target to preprocess a source file
+src/psbmpc.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cu.i
+.PHONY : src/psbmpc.cu.i
+
+src/psbmpc.s: src/psbmpc.cu.s
+
+.PHONY : src/psbmpc.s
+
+# target to generate assembly for a file
+src/psbmpc.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cu.s
+.PHONY : src/psbmpc.cu.s
+
+src/psbmpc_parameters.o: src/psbmpc_parameters.cpp.o
+
+.PHONY : src/psbmpc_parameters.o
+
+# target to build an object file
+src/psbmpc_parameters.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc_parameters.cpp.o
+.PHONY : src/psbmpc_parameters.cpp.o
+
+src/psbmpc_parameters.i: src/psbmpc_parameters.cpp.i
+
+.PHONY : src/psbmpc_parameters.i
+
+# target to preprocess a source file
+src/psbmpc_parameters.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc_parameters.cpp.i
+.PHONY : src/psbmpc_parameters.cpp.i
+
+src/psbmpc_parameters.s: src/psbmpc_parameters.cpp.s
+
+.PHONY : src/psbmpc_parameters.s
+
+# target to generate assembly for a file
+src/psbmpc_parameters.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc_parameters.cpp.s
+.PHONY : src/psbmpc_parameters.cpp.s
+
+src/tracked_obstacle.o: src/tracked_obstacle.cpp.o
+
+.PHONY : src/tracked_obstacle.o
+
+# target to build an object file
+src/tracked_obstacle.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cpp.o
+.PHONY : src/tracked_obstacle.cpp.o
+
+src/tracked_obstacle.i: src/tracked_obstacle.cpp.i
+
+.PHONY : src/tracked_obstacle.i
+
+# target to preprocess a source file
+src/tracked_obstacle.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cpp.i
+.PHONY : src/tracked_obstacle.cpp.i
+
+src/tracked_obstacle.s: src/tracked_obstacle.cpp.s
+
+.PHONY : src/tracked_obstacle.s
+
+# target to generate assembly for a file
+src/tracked_obstacle.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cpp.s
+.PHONY : src/tracked_obstacle.cpp.s
+
 src/utilities.o: src/utilities.cpp.o
 
 .PHONY : src/utilities.o
@@ -235,12 +586,51 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... psbmpc_lib_gpu"
+	@echo "... src/cb_cost_functor.o"
+	@echo "... src/cb_cost_functor.i"
+	@echo "... src/cb_cost_functor.s"
+	@echo "... src/cpe.o"
+	@echo "... src/cpe.i"
+	@echo "... src/cpe.s"
+	@echo "... src/cuda_obstacle.o"
+	@echo "... src/cuda_obstacle.i"
+	@echo "... src/cuda_obstacle.s"
 	@echo "... src/kf.o"
 	@echo "... src/kf.i"
 	@echo "... src/kf.s"
 	@echo "... src/mrou.o"
 	@echo "... src/mrou.i"
 	@echo "... src/mrou.s"
+	@echo "... src/obstacle.o"
+	@echo "... src/obstacle.i"
+	@echo "... src/obstacle.s"
+	@echo "... src/obstacle_manager.o"
+	@echo "... src/obstacle_manager.i"
+	@echo "... src/obstacle_manager.s"
+	@echo "... src/obstacle_sbmpc.o"
+	@echo "... src/obstacle_sbmpc.i"
+	@echo "... src/obstacle_sbmpc.s"
+	@echo "... src/obstacle_ship.o"
+	@echo "... src/obstacle_ship.i"
+	@echo "... src/obstacle_ship.s"
+	@echo "... src/ownship.o"
+	@echo "... src/ownship.i"
+	@echo "... src/ownship.s"
+	@echo "... src/prediction_obstacle.o"
+	@echo "... src/prediction_obstacle.i"
+	@echo "... src/prediction_obstacle.s"
+	@echo "... src/psbmpc.o"
+	@echo "... src/psbmpc.i"
+	@echo "... src/psbmpc.s"
+	@echo "... src/psbmpc.o"
+	@echo "... src/psbmpc.i"
+	@echo "... src/psbmpc.s"
+	@echo "... src/psbmpc_parameters.o"
+	@echo "... src/psbmpc_parameters.i"
+	@echo "... src/psbmpc_parameters.s"
+	@echo "... src/tracked_obstacle.o"
+	@echo "... src/tracked_obstacle.i"
+	@echo "... src/tracked_obstacle.s"
 	@echo "... src/utilities.o"
 	@echo "... src/utilities.i"
 	@echo "... src/utilities.s"

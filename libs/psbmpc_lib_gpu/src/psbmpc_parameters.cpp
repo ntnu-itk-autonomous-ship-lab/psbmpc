@@ -47,7 +47,6 @@ bool PSBMPC_Parameters::get_bpar(
 	) const
 {
 	switch(index){
-		case i_bpar_obstacle_filter_on 				: return obstacle_filter_on; 
 		case i_bpar_obstacle_colav_on 				: return obstacle_colav_on; 
 		default : 
 			// Throw
@@ -97,12 +96,9 @@ double PSBMPC_Parameters::get_dpar(
 		case i_dpar_G					: return G;
 		case i_dpar_q					: return q;
 		case i_dpar_p					: return p;
-		case i_dpar_T_lost_limit		: return T_lost_limit;
-		case i_dpar_T_tracked_limit		: return T_tracked_limit;
-
 		default : 
 			// Throw
-			break;
+			return 0.0;
 	}
 }
 
@@ -151,8 +147,7 @@ void PSBMPC_Parameters::set_par(
 {	
 	switch(index)
 	{
-		case i_bpar_obstacle_filter_on 			: obstacle_filter_on = value; break;
-		case i_bpar_obstacle_colav_on 			: obstacle_filter_on = value; break;
+		case i_bpar_obstacle_colav_on 			: obstacle_colav_on = value; break;
 		default : 
 			// Throw invalid index
 			break;
@@ -219,8 +214,6 @@ void PSBMPC_Parameters::set_par(
 			case i_dpar_G 					: G = value; break;
 			case i_dpar_q 					: q = value; break;
 			case i_dpar_p 					: p = value; break;
-			case i_dpar_T_lost_limit		: T_lost_limit = value; break;
-			case i_dpar_T_tracked_limit		: T_tracked_limit = value; break;
 			default : // Throw invalid index
 				break;
 		}
@@ -237,7 +230,7 @@ void PSBMPC_Parameters::set_par(
 	const std::vector<Eigen::VectorXd> &value 								// In: Value to set for parameter
 	)
 {
-	if (value.size() == n_M)
+	if ((int)value.size() == n_M)
 	{
 		switch (index){
 			case i_opar_u_offsets : 
@@ -379,7 +372,6 @@ void PSBMPC_Parameters::initialize_pars()
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
 	}
-	map_offset_sequences();
 
 	obstacle_course_changes.resize(1);
 	obstacle_course_changes << 30 * DEG2RAD; //60 * DEG2RAD, 90 * DEG2RAD;
@@ -388,7 +380,7 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 100.0; 	      // 400.0, 300.0, 240 (sim/Euler)
+	T = 240.0; 	      // 400.0, 300.0, 240 (sim/Euler)
 	dt = 5.0;		      // 5.0, 0.5 (sim/Euler)
   	T_static = 60.0;		  // (50.0)
 
@@ -422,96 +414,5 @@ void PSBMPC_Parameters::initialize_pars()
 	q = 4.0;
 	p = 1.0;
 
-	obstacle_filter_on = false;
 	obstacle_colav_on = false;
-	
-	T_lost_limit = 15.0; 	// 15.0 s obstacle no longer relevant after this time
-	T_tracked_limit = 15.0; // 15.0 s obstacle still relevant if tracked for so long, choice depends on survival rate
-}
-
-/****************************************************************************************
-*  Name     : map_offset_sequences
-*  Function : Maps the currently set surge and course modifications into a matrix of 
-*			  offset sequences/control behaviours
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC_Parameters::map_offset_sequences()
-{
-	Eigen::VectorXd offset_sequence_counter(2 * n_M), offset_sequence(2 * n_M);
-	reset_control_behaviour(offset_sequence_counter, offset_sequence);
-
-	control_behaviours.resize(2 * n_M, n_cbs);
-	for (int cb = 0; cb < n_cbs; cb++)
-	{
-		control_behaviours.col(cb) = offset_sequence;
-
-		increment_control_behaviour(offset_sequence_counter, offset_sequence);
-	}
-	std::cout << "Control behaviours: " << std::endl;
-	std::cout << control_behaviours << std::endl;
-}
-
-/****************************************************************************************
-*  Name     : reset_control_behavior
-*  Function : Sets the offset sequence back to the initial starting point, i.e. the 
-*			  leftmost branch of the control behavior tree
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC_Parameters::reset_control_behaviour(
-	Eigen::VectorXd &offset_sequence_counter, 									// In/out: Counter to keep track of current offset sequence
-	Eigen::VectorXd &offset_sequence 											// In/out: Control behaviour to increment
-)
-{
-	offset_sequence_counter.setZero();
-	for (int M = 0; M < n_M; M++)
-	{
-		offset_sequence(2 * M) = u_offsets[M](0);
-		offset_sequence(2 * M + 1) = chi_offsets[M](0);
-	}
-}
-
-/****************************************************************************************
-*  Name     : increment_control_behavior
-*  Function : Increments the control behavior counter and changes the offset sequence 
-*			  accordingly. Backpropagation is used for the incrementation
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC_Parameters::increment_control_behaviour(
-	Eigen::VectorXd &offset_sequence_counter, 									// In/out: Counter to keep track of current offset sequence
-	Eigen::VectorXd &offset_sequence 											// In/out: Control behaviour to increment
-	)
-{
-	for (int M = n_M - 1; M > -1; M--)
-	{
-		// Only increment counter for "leaf node offsets" on each iteration, which are the
-		// course offsets in the last maneuver
-		if (M == n_M - 1)
-		{
-			offset_sequence_counter(2 * M + 1) += 1;
-		}
-
-		// If one reaches the end of maneuver M's course offsets, reset corresponding
-		// counter and increment surge offset counter above
-		if (offset_sequence_counter(2 * M + 1) == chi_offsets[M].size())
-		{
-			offset_sequence_counter(2 * M + 1) = 0;
-			offset_sequence_counter(2 * M) += 1;
-		}
-		offset_sequence(2 * M + 1) = chi_offsets[M](offset_sequence_counter(2 * M + 1));
-
-		// If one reaches the end of maneuver M's surge offsets, reset corresponding
-		// counter and increment course offset counter above (if any)
-		if (offset_sequence_counter(2 * M) == u_offsets[M].size())
-		{
-			offset_sequence_counter(2 * M) = 0;
-			if (M > 0)
-			{
-				offset_sequence_counter(2 * M - 1) += 1;
-			}
-		}
-		offset_sequence(2 * M) = u_offsets[M](offset_sequence_counter(2 * M));
-	}
 }
