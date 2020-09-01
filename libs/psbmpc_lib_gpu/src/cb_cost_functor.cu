@@ -46,7 +46,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,				// In: Static obstacle information
 	const Obstacle_Data &odata											// In: Dynamic obstacle information
 	) :
-	pars(master.pars), ownship(master.ownship), cpe(master.cpe)
+	pars(master.pars), cpe(master.cpe)
 {	
 	fdata.n_obst = odata.new_obstacles.size();
 
@@ -89,6 +89,12 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 
 		fdata.obstacles[i] = odata.new_obstacles[i];
 	}
+
+	// Two different own-ship versions, as the psbmpc (CPU part) uses the version with
+	// Eigen, whereas the GPU part on the cost functor uses the CML. Only thing that
+	// needs to be transferred is the active waypoint segment. 
+	ownship = Ownship();
+	ownship.set_wp_counter(master.ownship.get_wp_counter());
 }
 
 /****************************************************************************************

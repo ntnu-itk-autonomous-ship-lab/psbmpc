@@ -26,6 +26,7 @@
 
 #include <thrust/device_vector.h>
 #include "cml.cuh"
+#include "Eigen/Dense"
 
 // NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below
 /* enum Prediction_Method
@@ -103,7 +104,7 @@ private:
 	double x_offset, y_offset;
 
 	// Calculates the offsets according to the position of the GPS receiver
-	__host__ __device__ void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
+	__host__ __device__ inline void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
 
 	__host__ __device__ void update_Cvv(const CML::MatrixXd &nu);
 
@@ -143,9 +144,26 @@ public:
 		const double dt
 	);
 
-	__host__ __device__ double get_length() const { return l; };
+	__host__ void predict_trajectory(
+		Eigen::Matrix<double, 6, -1> &trajectory,
+		const Eigen::VectorXd &offset_sequence,
+		const Eigen::VectorXd &maneuver_times,
+		const double u_d,
+		const double chi_d,
+		const Eigen::Matrix<double, 2, -1> &waypoints,
+		const Prediction_Method prediction_method,
+		const Guidance_Method guidance_method,
+		const double T,
+		const double dt
+	);
 
-	__host__ __device__ double get_width() const { return w; };
+	__host__ __device__ inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; }
+
+	__host__ __device__ inline int get_wp_counter() const { return wp_c_0; }
+
+	__host__ __device__ inline double get_length() const { return l; }
+
+	__host__ __device__ inline double get_width() const { return w; }
 
 };
 

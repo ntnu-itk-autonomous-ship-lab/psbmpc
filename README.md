@@ -8,13 +8,13 @@ To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_
 ## Dependencies
 
 - Matlab C API is used for the debugging and plotting functionality.
-- Eigen 3.3.7 release is used for the CPU and GPU version.
-- CUDA and Thrust are necessary for the GPU version.
+- Eigen >= 3.3.7 release is used for the CPU and GPU version.
+- CUDA and Thrust are necessary for the GPU version. I have used CUDA 10.2 and Thrust 1.9.7
 
 ## Overall Structure
 The library for the CPU-implementation has the following structure (and similar for the GPU-version)
 
-<img src="tree_psbmpc.png" width="400"> 
+<img src="psbmpc_lib_structure.png" width="400"> 
 
 with an explanation of the modules (classes) below: 
 
@@ -25,21 +25,32 @@ with an explanation of the modules (classes) below:
 The main function to use is the **calculate_optimal_offsets(..)** function, which requires the following **inputs**: </p>
 
 - Planned guidance references for surge and course
-- The waypoints that the own-ship is supposed to follow (curved/continuous path following is not implemented)
-- The current own-ship state (3DOF) <img src="https://render.githubusercontent.com/render/math?math={[x, y, \psi, u, v, r]}^T">
-- Nearby obstacle states, an aggregated matrix with columns of <img src="https://render.githubusercontent.com/render/math?math={[x, y, V_x, V_y, A, B, C, D, ID]}^T"> where the first 4 variables are the north and east position and velocity, respectively. The A, B, C, D parameters are the square approximation of the obstacle's dimensions, and ID is its indentification number.
-- The corresponding covariance information or uncertainty associated with the estimates/measurement on <img src="https://render.githubusercontent.com/render/math?math={[x, y, V_x, V_y]}^T">, flattened into a 16-element vector. 
-- The corresponding intention probabilities for the obstacle, obtained by some intention inference module. If the PSB-MPC is configured to not consider intentions, these inputs are not used.
-- The corresponding a priori probability of the obstacle being COLREGS compliant, obtained by some intention inference module. If the PSB-MPC is configured to not consider intentions, these inputs are not used.
+- The waypoints that the own-ship is supposed to follow (curved/continuous path following is not implemented yet)
+- The current time own-ship state (3DOF) <img src="https://render.githubusercontent.com/render/math?math={[x, y, \psi, u, v, r]}^T">
 - Nearby static obstacles, parameterized as for instance polygons, lines or similar. Not fully specified yet.
+- A data structure Obstacle_Data containing dynamic obstacle information.
 
 and has the following **outputs**:
 
 - Optimal surge and course modification to the planned guidance references
 - A predicted trajectory for the own-ship when implementing the optimal avoidance maneuver(s).
-- A status matrix on the obstacles, displaying information such as the relative bearing, range and ID of the obstacles.
-- A status vector on the collision avoidance system, displaying the minimal cost output associated with the optimal avoidance maneuver, and an ad hoc measure of its control freedom. 
+- Obstacle_Data: Some parts of the Obstacle_Data is modified by the PSB-MPC (predicted relative hazard levels for each obstacle)
 
+### PSBMPC_Parameters
+<p> contains all PSB-MPC parameters in a class, which should be modified according to tuning changes. The class has get/set functionality for each parameter according to an index file "psbmpc_index.h", and uses limits on double and integer type parameters to assure that the setting of these parameters makes sense. Work could although be done to make the get/set functionality even better. </p>
+
+## Obstacle Manager
+
+<p> Is the class responsible for updating dynamic obstacle information, taking the following inputs in its main update functionality: </p>
+
+- Nearby obstacle states, an aggregated matrix with columns of <img src="https://render.githubusercontent.com/render/math?math={[x, y, V_x, V_y, A, B, C, D, ID]}^T"> where the first 4 variables are the north and east position and velocity, respectively. The A, B, C, D parameters are the square approximation of the obstacle's dimensions, and ID is its indentification number.
+- The corresponding covariance information or uncertainty associated with the estimates/measurement on <img src="https://render.githubusercontent.com/render/math?math={[x, y, V_x, V_y]}^T">, flattened into a 16-element vector. 
+- The corresponding intention probabilities for the obstacle, obtained by some intention inference module. If the PSB-MPC is configured to not consider intentions, these inputs are not used.
+- The corresponding a priori probability of the obstacle being COLREGS compliant, obtained by some intention inference module. If the PSB-MPC is configured to not consider intentions, these inputs are not used.
+
+and also updates the current situation type that the own-ship is in, wrt to each obstacle, and also transitional variables (if an obstacle is passed by, is head on, is ahead, is overtaking the own-ship etc.).
+
+<p> An Obstacle_Data structure containing this dynamic obstacle information is sent to the PSBMPC at each COLAV iteration. </p>
 
 ### Obstacle
 
@@ -52,7 +63,7 @@ The obstacle class maintains information about the obstacle, in addition to its 
 
 ### Obstacle_Ship 
 
-<p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with some first order time constant delay.
+<p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with some first order time constant delay.  </p>
 The model is on the form <br>
 
 <img src="https://render.githubusercontent.com/render/math?math=x_{k%2B1} = x_{k} %2B U_k \cos(\chi_{k})"> <br>
@@ -60,7 +71,7 @@ The model is on the form <br>
 <img src="https://render.githubusercontent.com/render/math?math=\chi_{k%2B1} = \chi_{k} %2B \frac{1}{T_{\chi}}(\chi_d - \chi_{k})"> <br>
 <img src="https://render.githubusercontent.com/render/math?math=U_{k%2B1} = U_{k} %2B \frac{1}{T_{U}}(U_d - U_{k})"> <br>
 
-**Not fully tested** yet. </p>
+
 
 ### Obstacle_SBMPC
 

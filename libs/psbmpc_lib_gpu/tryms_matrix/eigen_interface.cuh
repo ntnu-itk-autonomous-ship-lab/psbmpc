@@ -33,6 +33,14 @@
 
 namespace CML
 {
+
+	/****************************************************************************************
+	*  Name     : assign_eigen_object
+	*  Function : Assigns rhs eigen object of any type, to the CML matrix on the lhs.
+	*		      Overloaded for dynamic and static cml objects.
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
 	template<class T, typename Eigen_Type_T>
 	__host__ __device__ void assign_eigen_object(Dynamic_Matrix<T> &lhs, Eigen_Type_T &rhs)
 	{
@@ -61,6 +69,41 @@ namespace CML
 			}
 		}
 	}
+
+	/****************************************************************************************
+	*  Name     : assign_eigen_object
+	*  Function : Assigns rhs cml object, to the (dynamic) eigen object on the lhs. 
+				  Overloaded for dynamic and static cml objects.
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template<class T, typename Eigen_Type_T>
+	__host__ __device__ void assign_cml_object(Eigen_Type_T &lhs, Dynamic_Matrix<T> &rhs)
+	{
+		int n_rows = rhs.get_rows(), n_cols = rhs.get_cols();
+		lhs.resize(n_rows, n_cols);
+		for (int i = 0; i < n_rows; i++)
+		{
+			for (int j = 0; j < n_cols; j++)
+			{
+				lhs(i, j) = rhs(i, j);
+			}
+		}
+	}
+
+	template<class T, int Rows, int Cols, typename Eigen_Type_T>
+	__host__ __device__ void assign_cml_object(Eigen_Type_T &lhs, Static_Matrix<T, Rows, Cols> &rhs)
+	{
+		lhs.resize(Rows, Cols);
+		for (int i = 0; i < Rows; i++)
+		{
+			for (int j = 0; j < Cols; j++)
+			{
+				lhs(i, j) = rhs(i, j);
+			}
+		}
+	}
+
 }
 
 #endif
