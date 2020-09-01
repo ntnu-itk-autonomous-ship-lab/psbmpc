@@ -29,9 +29,9 @@
 #include "cpe.cuh"
 #include <vector>
 
-struct CB_Functor_Vars
+class CB_Functor_Data
 {
-	int n_M, n_a, n_obst;
+public:
 
 	CML::MatrixXd maneuver_times;
 	CML::MatrixXd control_behaviours;
@@ -41,42 +41,31 @@ struct CB_Functor_Vars
 	double u_m_last;
 	double chi_m_last;
 
-	CPE_Method cpe_method;
-
-	Prediction_Method prediction_method;
-
-	Guidance_Method guidance_method;
-
-	double T, T_static, dt;
-	double d_safe, d_close, d_init;
-	double K_coll;
-	double phi_AH, phi_OT, phi_HO, phi_CR;
-	double kappa, kappa_TC;
-	double K_u, K_du;
-	double K_chi_strb, K_dchi_strb;
-	double K_chi_port, K_dchi_port; 
-	double K_sgn, T_sgn;
-	double G;
-	double q, p;
-
 	CML::MatrixXd waypoints;
-
-	Ownship ownship;
-
-	CPE cpe;
 
 	CML::MatrixXd trajectory;
 
 	CML::MatrixXd static_obstacles;
+
+	int n_obst;
+
+	CML::MatrixXi n_ps;
+
+	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
+	// and <obstacle is passed> (IP_0) indicators
+	CML::MatrixXb AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
+
+	Cuda_Obstacle *obstacles;
 
 	__host__ void assign_master_data(
 		const PSBMPC &master, 
 		const double u_d, 
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
-		const Eigen::Matrix<double, 4, -1> &static_obstacles);
+		const Eigen::Matrix<double, 4, -1> &static_obstacles,
+		const Obstacle_Data &odata);
 
-	__host__ __device__ CB_Functor_Vars() {};
+	__host__ __device__ CB_Functor_Data() {};
 };
 
 // DEVICE methods
@@ -86,19 +75,12 @@ class CB_Cost_Functor
 private: 
 
 	PSBMPC_Parameters pars;
-	
-	CML::MatrixXi n_ps;
 
-	CB_Functor_Vars *vars;
+	CB_Functor_Data fdata;
 
-	CML::MatrixXb obstacle_colav_on;
+	Ownship ownship;
 
-	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
-	// and <obstacle is passed> (IP_0) indicators
-	CML::MatrixXb AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
-
-	Cuda_Obstacle *old_obstacles;
-	Cuda_Obstacle *new_obstacles;
+	CPE cpe;
 
 	__device__ void predict_trajectories_jointly();
 
@@ -113,25 +95,25 @@ private:
 		const double psi_A, 
 		const double psi_B, 
 		const CML::MatrixXd &L_AB, 
-		const int i,
-		const double chi_m);
+		const double chi_m,
+		const int i);
 
 	__device__ void calculate_collision_probabilities(CML::MatrixXd &P_c_i, const int i);
 
 	__device__ double calculate_dynamic_obstacle_cost(const CML::MatrixXd &P_c_i, const int i, const CML::MatrixXd &offset_sequence);
 
-	__device__ inline double calculate_collision_cost(const CML::MatrixXd &v_1, const CML::MatrixXd &v_2) { return vars->K_coll * (v_1 - v_2).norm(); };
+	__device__ inline double calculate_collision_cost(const CML::MatrixXd &v_1, const CML::MatrixXd &v_2) { return pars.K_coll * (v_1 - v_2).norm(); };
 
 	__device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	__device__ double calculate_control_deviation_cost(const CML::MatrixXd &offset_sequence);
 
-	__device__ inline double Delta_u(const double u_1, const double u_2) 		{ return vars->K_du * fabs(u_1 - u_2); }
+	__device__ inline double Delta_u(const double u_1, const double u_2) 		{ return pars.K_du * fabs(u_1 - u_2); }
 
-	__device__ inline double K_chi(const double chi) 							{ if (chi > 0) return vars->K_chi_strb * pow(chi, 2); else return vars->K_chi_port * pow(chi, 2); };
+	__device__ inline double K_chi(const double chi) 							{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); };
 
-	__device__ inline double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return vars->K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return vars->K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
+	__device__ inline double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
 	__device__ double calculate_chattering_cost(const CML::MatrixXd &offset_sequence);

@@ -97,11 +97,8 @@ __host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 *****************************************************************************************/
 __host__ __device__ void Cuda_Obstacle::clean()
 {
-	if (mu != nullptr)	 		{ delete[] mu; mu = nullptr; }
 	if (xs_p != nullptr) 		{ delete[] xs_p; xs_p = nullptr; }
 	if (ps_ordering != nullptr) { delete[] ps_ordering; ps_ordering = nullptr; }
-	if (kf != nullptr) 			{ delete kf; kf = nullptr; }
-	if (mrou != nullptr) 		{ delete mrou; mrou = nullptr; }
 	if (sbmpc != nullptr) 		{ delete sbmpc; sbmpc = nullptr; }
 }
 
@@ -126,24 +123,24 @@ void Cuda_Obstacle::assign_data(
 
 	this->duration_tracked = co.duration_tracked; this->duration_lost = co.duration_lost;
 	
+	this->mu = co.mu;
+
 	this->P_p = co.P_p;
 	this->v_p = co.v_p;
 
 	this->ps_course_changes = co.ps_course_changes; this->ps_weights = co.ps_weights; this->ps_maneuver_times = co.ps_maneuver_times;
 	
-	this->kf = new KF(*(co.kf));
+	this->kf = KF(co.kf);
 
-	this->mrou = new MROU(*(co.mrou));
+	this->mrou = MROU(co.mrou);
 
 	this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
 	
-	this->mu = new bool[n_ps];
-	this->xs_p = new Eigen::MatrixXd[n_ps];
+	this->xs_p = new CML::MatrixXd[n_ps];
 	this->ps_ordering = new Intention[n_ps];
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
-		this->mu[ps] = co.mu[ps];
 		this->xs_p[ps] = co.xs_p[ps];
 		this->ps_ordering[ps] = co.ps_ordering[ps];
 	}
@@ -155,31 +152,33 @@ void Cuda_Obstacle::assign_data(
 {
 	this->n_ps = to.ps_weights.size();
 
-	this->Pr_a = to.Pr_a;
+	CML::assign_eigen_object(this->Pr_a, to.Pr_a);
 
 	this->Pr_CC = to.Pr_CC;
 
 	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
 	
-	this->P_p = to.P_p;
-	this->v_p = to.v_p;
+	CML::assign_eigen_object(this->mu, to.mu);
+	CML::assign_eigen_object(this->P_p, to.P_p);
+	CML::assign_eigen_object(this->v_p, to.v_p);
 
-	this->ps_course_changes = to.ps_course_changes; this->ps_weights = to.ps_weights; this->ps_maneuver_times = to.ps_maneuver_times;
+	CML::assign_eigen_object(this->ps_course_changes, to.ps_course_changes); 
+	CML::assign_eigen_object(this->ps_weights, to.ps_weights); 
+	CML::assign_eigen_object(this->ps_maneuver_times, to.ps_maneuver_times);
 	
-	this->kf = new KF(*(to.kf));
+	this->kf = KF(*(to.kf));
 
-	this->mrou = new MROU(*(to.mrou));
+	this->mrou = MROU(*(to.mrou));
 
 	this->sbmpc = new Obstacle_SBMPC();
 	
-	this->mu = new bool[n_ps];
-	this->xs_p = new Eigen::MatrixXd[n_ps];
+	this->xs_p = new CML::MatrixXd[n_ps];
 	this->ps_ordering = new Intention[n_ps];
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
-		this->mu[ps] = to.mu[ps];
-		this->xs_p[ps] = to.xs_p[ps];
+		CML::assign_eigen_object(this->xs_p[ps], to.xs_p[ps]);
+
 		this->ps_ordering[ps] = to.ps_ordering[ps];
 	}
 }

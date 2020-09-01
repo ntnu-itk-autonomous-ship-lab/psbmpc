@@ -25,6 +25,7 @@
 #include <vector>
 #include <memory>
 #include "Eigen/Dense"
+
 #include "obstacle.cuh"
 #include "mrou.h"
 #include "kf.h"
@@ -89,31 +90,31 @@ public:
 
 	Tracked_Obstacle& operator=(const Tracked_Obstacle &to);
 
-	std::vector<bool> get_COLREGS_violation_indicator() const { return mu; };
+	inline std::vector<bool> get_COLREGS_violation_indicator() const { return mu; };
 
-	double get_a_priori_CC_probability() const { return Pr_CC; };
+	inline double get_a_priori_CC_probability() const { return Pr_CC; };
 
-	Eigen::VectorXd get_intention_probabilities() const { return Pr_a; };
+	inline Eigen::VectorXd get_intention_probabilities() const { return Pr_a; };
 
 	// KF related methods
-	double get_duration_tracked() const { return duration_tracked; };
+	inline double get_duration_tracked() const { return duration_tracked; };
 
-	void reset_duration_tracked() { duration_tracked = 0.0; };
+	inline void reset_duration_tracked() { duration_tracked = 0.0; };
 
-	double get_duration_lost() const { return duration_lost; };
+	inline double get_duration_lost() const { return duration_lost; };
 
-	void reset_duration_lost() { duration_lost = 0.0; };
+	inline void reset_duration_lost() { duration_lost = 0.0; };
 
-	void increment_duration_tracked(const double dt) { duration_tracked += dt; };
+	inline void increment_duration_tracked(const double dt) { duration_tracked += dt; };
 
-	void increment_duration_lost(const double dt) { duration_lost += dt; };
+	inline void increment_duration_lost(const double dt) { duration_lost += dt; };
 
 	// Trajectory prediction related methods
 	void resize_trajectories(const int n_samples);
 
-	std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; };
+	inline std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; };
 
-	Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
+	inline Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
 
 	void initialize_prediction(	
 		const std::vector<Intention> &ps_ordering,

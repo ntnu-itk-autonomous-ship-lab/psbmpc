@@ -90,8 +90,6 @@ private:
 
 	__device__ inline void update_L(const CML::MatrixXd &in);
 
-	__device__ inline double calculate_2x2_quadratic_form(const CML::MatrixXd &x, const CML::MatrixXd &A);
-
 	__device__ inline void norm_pdf_log(CML::MatrixXd &result, const CML::MatrixXd &mu, const CML::MatrixXd &Sigma);
 
 	__device__ inline void generate_norm_dist_samples(const CML::MatrixXd &mu, const CML::MatrixXd &Sigma);

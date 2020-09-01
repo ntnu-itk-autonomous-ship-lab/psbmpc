@@ -58,7 +58,6 @@ private:
 
 	Eigen::Matrix<double, 6, -1> trajectory;
 
-	// Thrust functor
 	friend class CB_Cost_Functor;
 	std::unique_ptr<CB_Cost_Functor> op;
 
