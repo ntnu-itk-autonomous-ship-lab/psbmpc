@@ -363,7 +363,7 @@ namespace CML
 		Dynamic_Matrix<T> result(1, n_cols);
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			result(0, j) = this->get_block(0, j, n_rows, 1).transpose() * other.get_block(0, j, other.n_rows, 1);	
+			result(0, j) = this->get_block(0, j, n_rows, 1).transposed() * other.get_block(0, j, other.n_rows, 1);	
 		}
 		return result;
 	}
@@ -409,6 +409,7 @@ namespace CML
 			}
 			result(i) /= (T)n_rows;
 		}
+		return result;
 	}
 
 	/****************************************************************************************

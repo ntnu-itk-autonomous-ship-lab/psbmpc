@@ -28,8 +28,6 @@
 #include <thrust/device_vector.h>
 #include "cml.cuh"
 
-#include <random>
-
 // NOTE: If you want standalone use of this module, define the enum CPE_Method below
 /* // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
@@ -56,7 +54,6 @@ private:
 
 	// PRNG-related
 	curandState prng_state;
-
 
 	// CE-method parameters and internal states
 	double sigma_inject, alpha_n, gate, rho, max_it;

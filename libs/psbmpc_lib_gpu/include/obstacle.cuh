@@ -28,7 +28,6 @@
 
 #include "cml.cuh"
 #include "Eigen/Dense"
-#include <memory>
 
 class Obstacle_SBMPC;
 
