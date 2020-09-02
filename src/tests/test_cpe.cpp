@@ -24,9 +24,9 @@
 #endif
 
 #include "utilities.h"
-#include "cpe.h"
+#include "cpe.cuh"
 #include "mrou.h"
-#include "ownship.h"
+#include "ownship.cuh"
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -163,6 +163,8 @@ int main(){
 	double t = 0;
 	int n_seg_samples = std::round(dt_seg / dt) + 1;
 
+	CML::MatrixXd trajectory_copy(6, n_samples), xs_p_copy(4, n_samples), P_p(16, n_samples);
+
 	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
 	Eigen::Matrix4d P_i_ps_k;
 	int k_j_ = 0, k_j = 0;
@@ -186,6 +188,14 @@ int main(){
 		cpe->set_method(CE);
 
 		auto start = std::chrono::system_clock::now();
+
+		cpe->initialize(trajectory_copy.col(0), xs_p[0].col(0), P_p.col(0), d_safe, 0);
+		for (int k = 0; k < n_samples; k++)
+		{
+			// Collision probability estimation using CE
+			P_c_i_CE[ps](k) = cpe->estimate(trajectory.col(k), xs_p[ps].col(k), P_p.col(k), 0);
+		}
+
 
 		cpe->initialize(trajectory.col(0), xs_p[0].col(0), P_p.col(0), d_safe, 0);
 		for (int k = 0; k < n_samples; k++)

@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test_cml.o: test_cml.cpp.o
+test_cpe.o: test_cpe.cpp.o
 
-.PHONY : test_cml.o
+.PHONY : test_cpe.o
 
 # target to build an object file
-test_cml.cpp.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cml.cpp.o
-.PHONY : test_cml.cpp.o
+test_cpe.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.o
+.PHONY : test_cpe.cpp.o
 
-test_cml.i: test_cml.cpp.i
+test_cpe.i: test_cpe.cpp.i
 
-.PHONY : test_cml.i
+.PHONY : test_cpe.i
 
 # target to preprocess a source file
-test_cml.cpp.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cml.cpp.i
-.PHONY : test_cml.cpp.i
+test_cpe.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.i
+.PHONY : test_cpe.cpp.i
 
-test_cml.s: test_cml.cpp.s
+test_cpe.s: test_cpe.cpp.s
 
-.PHONY : test_cml.s
+.PHONY : test_cpe.s
 
 # target to generate assembly for a file
-test_cml.cpp.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cml.cpp.s
-.PHONY : test_cml.cpp.s
+test_cpe.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.s
+.PHONY : test_cpe.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... test_cml.o"
-	@echo "... test_cml.i"
-	@echo "... test_cml.s"
+	@echo "... test_cpe.o"
+	@echo "... test_cpe.i"
+	@echo "... test_cpe.s"
 .PHONY : help
 
 

@@ -27,7 +27,7 @@
 
 #include <thrust/device_vector.h>
 #include <assert.h>
-#include <math.h>
+#include <cmath>
 
 #include "dynamic_matrix.cuh"
 #include "static_matrix.cuh"
@@ -585,7 +585,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < self.get_cols(); j++)
 			{
-				result(i, j) = exp(result(i, j));		
+				result(i, j) = std::exp(result(i, j));		
 			}
 		}
 		return result;
@@ -606,7 +606,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < self.get_cols(); j++)
 			{
-				result(i, j) = log(result(i, j));		
+				result(i, j) = std::log(result(i, j));		
 			}
 		}
 		return result;

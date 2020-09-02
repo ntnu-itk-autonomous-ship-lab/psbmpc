@@ -23,7 +23,6 @@
 
 #include <thrust/device_vector.h>
 #include <stdio.h>
-#include <iostream>
 #include <cuda.h>
 #include <curand.h>
 #include "assert.h"
@@ -903,7 +902,7 @@ __device__ double CPE::CE_estimation(
     weights = (integrand - importance).exp();
     weights = weights.cwise_product(valid);
 
-    P_c = weights.rwise_mean()(0, 0);
+    P_c = weights.rwise_mean();
     if (P_c > 1) return 1;
     else return P_c;
 }
