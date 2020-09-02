@@ -22,20 +22,25 @@
 #ifndef _OBSTACLE_SHIP_CUH_
 #define _OBSTACLE_SHIP_CUH_
 
-#include "Eigen/Dense"
+#include "cml.cuh"
 #include <thrust/device_vector.h>
 
-enum Prediction_Method {
+// NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below
+/* enum Prediction_Method
+{
 	Linear,													// Linear prediction
 	ERK1, 													// Explicit Runge Kutta 1 = Eulers method
-	ERK4 													// Explicit Runge Kutta of fourth order, not implemented.
+	ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
 };
 
-enum Guidance_Method {
+enum Guidance_Method 
+{
 	LOS, 													// Line-of-sight		
-	WPP,													// WP-Pursuit
+	WPP,													// Waypoint-Pursuit
 	CH 														// Course Hold
-};
+}; */
+// Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
+#include "psbmpc_parameters.h"
 
 class Obstacle_Ship
 {
@@ -57,30 +62,30 @@ public:
 
 	__host__ __device__ Obstacle_Ship();
 
-	__host__ __device__ void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Vector4d &xs);
+	__host__ __device__ void determine_active_waypoint_segment(const CML::MatrixXd &waypoints, const CML::MatrixXd &xs);
 
 	__host__ __device__ void update_guidance_references(
 		double &u_d, 
 		double &chi_d, 
-		const Eigen::Matrix<double, 2, -1> &waypoints, 
-		const Eigen::Vector4d &xs,
+		const CML::MatrixXd &waypoints, 
+		const CML::MatrixXd &xs,
 		const double dt,
 		const Guidance_Method guidance_method);
 
-	__host__ __device__ Eigen::Vector4d predict(
-		const Eigen::Vector4d &xs_old, 
+	__host__ __device__ CML::MatrixXd predict(
+		const CML::MatrixXd &xs_old, 
 		const double U_d,
 		const double chi_d,
 		const double dt, 
 		const Prediction_Method prediction_method);
 
 	__host__ __device__ void predict_trajectory(
-		Eigen::Matrix<double, 4, -1> &trajectory,
-		const Eigen::VectorXd offset_sequence,
-		const Eigen::VectorXd maneuver_times,
+		CML::MatrixXd &trajectory,
+		const CML::MatrixXd &offset_sequence,
+		const CML::MatrixXd &maneuver_times,
 		const double u_d,
 		const double chi_d,
-		const Eigen::Matrix<double, 2, -1> &waypoints,
+		const CML::MatrixXd &waypoints,
 		const Prediction_Method prediction_method,
 		const Guidance_Method guidance_method,
 		const double T,

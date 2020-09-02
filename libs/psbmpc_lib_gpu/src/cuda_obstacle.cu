@@ -158,7 +158,6 @@ void Cuda_Obstacle::assign_data(
 
 	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
 	
-	CML::assign_eigen_object(this->mu, to.mu);
 	CML::assign_eigen_object(this->P_p, to.P_p);
 	CML::assign_eigen_object(this->v_p, to.v_p);
 
@@ -175,8 +174,11 @@ void Cuda_Obstacle::assign_data(
 	this->xs_p = new CML::MatrixXd[n_ps];
 	this->ps_ordering = new Intention[n_ps];
 
+	this->mu.resize(n_ps, 1);
 	for (int ps = 0; ps < n_ps; ps++)
 	{
+		this->mu[ps] = to.mu[ps];
+
 		CML::assign_eigen_object(this->xs_p[ps], to.xs_p[ps]);
 
 		this->ps_ordering[ps] = to.ps_ordering[ps];
