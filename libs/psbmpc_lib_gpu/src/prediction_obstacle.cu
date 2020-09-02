@@ -33,23 +33,32 @@
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
-	const Eigen::VectorXd& xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID] at the current time
-	const Eigen::VectorXd &P, 									// In: Obstacle covariance at the current time
+	const CML::MatrixXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID] at the current time
+	const CML::MatrixXd &P, 									// In: Obstacle covariance at the current time
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	Obstacle(xs_aug, P, colav_on)
+	Obstacle(xs_aug, colav_on)
 {
+	assert(P.get_rows() == 16 && P.get_cols() == 1);
+
+	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
+
+	P_0 = reshape(P, 4, 4);
+
 	int n_samples = std::round(T / dt);
 	
-	A_CV << 1, 0, dt, 0,
-		 0, 1, 0, dt,
-		 0, 0, 1, 0,
-		 0, 0, 0, 1;
+	A_CV = CML::MatrixXd::identity(4, 4);
+	A_CV(0, 2) = dt;
+	A_CV(1, 3) = dt;
 
 	xs_p.resize(4, n_samples);
-	xs_p.col(0) = xs_0;
+	xs_p.set_col(0, xs_0);
 }
 
 /****************************************************************************************
@@ -98,6 +107,20 @@ __host__ __device__ Prediction_Obstacle& Prediction_Obstacle::operator=(
 }
 
 /****************************************************************************************
+*  Name     : clean
+*  Function : 
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ void Prediction_Obstacle::clean() 
+{ 
+	if (sbmpc != nullptr) 
+	{ 
+		delete sbmpc; sbmpc = nullptr;
+	}
+}
+
+/****************************************************************************************
 *  Name     : predict_independent_trajectory
 *  Function : Predicts the straight line obstacle trajectory for use in other obstacle
 *			  SB-MPC predictions (if this obstacle's COLAV is not assumed to be acting).
@@ -111,18 +134,17 @@ __host__ __device__ void Prediction_Obstacle::predict_independent_trajectory(
 {
 	int n_samples = std::round(T / dt);
 	xs_p.resize(4, n_samples);
-	xs_p.col(0) = xs_0;
+	xs_p.set_col(0, xs_0);
 
-	A_CV << 1, 0, dt, 0,
-		 0, 1, 0, dt,
-		 0, 0, 1, 0,
-		 0, 0, 0, 1;
+	A_CV = CML::MatrixXd::identity(4, 4);
+	A_CV(0, 2) = dt;
+	A_CV(1, 3) = dt;
 
 	for(int k = 0; k < n_samples; k++)
 	{
 		if (k < n_samples - 1) 
 		{
-			xs_p.col(k + 1) = A_CV * xs_p.col(k);
+			xs_p.set_col(k + 1, A_CV * xs_p.get_col(k));
 		}
 	}
 }
@@ -135,9 +157,11 @@ __host__ __device__ void Prediction_Obstacle::predict_independent_trajectory(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Prediction_Obstacle::update(
-	const Eigen::Vector4d &xs 								// In: Predicted obstacle state [x, y, V_x, V_y]
+	const CML::MatrixXd &xs 								// In: Predicted obstacle state [x, y, V_x, V_y]
 	)
 {
+	assert(xs.get_rows() == 4 && xs.get_cols() == 1);
+
 	double psi = atan2(xs(3), xs(2));
 	xs_0(0) = xs(0) + x_offset * cos(psi) - y_offset * sin(psi); 
 	xs_0(1) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);

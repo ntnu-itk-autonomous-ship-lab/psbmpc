@@ -21,6 +21,8 @@
 *****************************************************************************************/
 
 #include <thrust/device_vector.h>
+#include "assert.h"
+
 #include "obstacle.cuh"
 #include "obstacle_sbmpc.cuh"
 #include "utilities.cuh"
@@ -33,7 +35,6 @@
 *****************************************************************************************/
 __host__ __device__ Obstacle::Obstacle(
 	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
-	const Eigen::VectorXd &P, 									// In: Obstacle covariance
 	const bool colav_on											// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	) : 
 	ID(xs_aug(8)), colav_on(colav_on),
@@ -41,13 +42,19 @@ __host__ __device__ Obstacle::Obstacle(
 	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
 	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6))
 {
-	double psi = atan2(xs_aug(3), xs_aug(2));
-	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
-	xs_0(2) = xs_aug(2);
-	xs_0(3) = xs_aug(3);
 
-	P_0 = reshape(P, 4, 4);
+}
+
+__host__ __device__ Obstacle::Obstacle(
+	const CML::MatrixXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const bool colav_on											// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
+	) : 
+	ID(xs_aug(8)), colav_on(colav_on),
+	A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
+	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
+	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6))
+{
+	assert(xs_aug.get_cols() == 1);
 }
 
 /****************************************************************************************
@@ -104,7 +111,4 @@ __host__ __device__ void Obstacle::assign_data(
 	this->l = o.l; this->w = o.w;
 
 	this->x_offset = o.x_offset; this->y_offset = o.y_offset;
-
-	this->xs_0 = o.xs_0;
-	this->P_0 = o.P_0;
 }

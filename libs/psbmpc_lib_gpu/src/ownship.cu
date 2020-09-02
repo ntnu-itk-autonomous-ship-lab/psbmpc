@@ -119,10 +119,10 @@ __host__ __device__ Ownship::Ownship()
 *****************************************************************************************/
 __host__ __device__ void Ownship::determine_active_waypoint_segment(
 	const CML::MatrixXd &waypoints,  			// In: Waypoints to follow
-	const CML::MatrixXd &xs 						// In: Ownship state
+	const CML::MatrixXd &xs 					// In: Ownship state
 	)	
 {
-	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6);
+	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
 
 	int n_wps = waypoints.get_cols();
 	CML::MatrixXd d_0_wp(2, 1), L_wp_segment(2, 1), L_0wp(2, 1);

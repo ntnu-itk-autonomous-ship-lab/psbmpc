@@ -38,7 +38,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	Obstacle(xs_aug, P, false), 
+	Obstacle(xs_aug, false), 
 	duration_lost(0.0),
 	kf(new KF(xs_0, P_0, ID, dt, 0.0)),
 	mrou(new MROU(0.8, 0, 0.8, 0.1, 0.1))

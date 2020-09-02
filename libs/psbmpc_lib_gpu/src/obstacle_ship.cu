@@ -53,12 +53,14 @@ __host__ __device__ Obstacle_Ship::Obstacle_Ship()
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
-	const Eigen::Matrix<double, 2, -1> &waypoints,  				// In: Waypoints to follow
-	const Eigen::Vector4d &xs 										// In: Ownship state
+	const CML::MatrixXd &waypoints,  				// In: Waypoints to follow
+	const CML::MatrixXd &xs 						// In: Ownship state
 	)	
 {
-	int n_wps = waypoints.cols();
-	Eigen::Vector2d d_0_wp, L_wp_segment, L_0wp;
+	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
+
+	int n_wps = waypoints.get_cols();
+	CML::MatrixXd d_0_wp(2, 1), L_wp_segment(2, 1), L_0wp(2, 1);
 	bool segment_passed = false;
 
 	if (n_wps <= 2) { wp_c_0 = 0; wp_c_p = 0; return; }
@@ -75,7 +77,7 @@ __host__ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
 		segment_passed = L_wp_segment.dot(d_0_wp.normalized()) < cos(90 * DEG2RAD);
 
 		//(s > R_a && fabs(e) <= R_a))) 	
-		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; std::cout << "Segment " << i << " passed" << std::endl; } 
+		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
 		else										{ break; }		
 		
 	}
@@ -91,15 +93,17 @@ __host__ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
 __host__ __device__ void Obstacle_Ship::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
 	double &chi_d,												// In/out: Course reference 
-	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
-	const Eigen::Vector4d &xs, 									// In: Ownship state	
+	const CML::MatrixXd &waypoints,								// In: Waypoints to follow.
+	const CML::MatrixXd &xs, 									// In: Ownship state	
 	const double dt, 											// In: Time step
 	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
 {
-	int n_wps = waypoints.cols();
+	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
+
+	int n_wps = waypoints.get_cols();
 	double alpha, e;
-	Eigen::Vector2d d_next_wp, L_wp_segment;
+	CML::MatrixXd d_next_wp(2, 1), L_wp_segment(2, 1);
 	bool segment_passed = false;
 	
 	if (wp_c_p < n_wps - 1 && (guidance_method == LOS || guidance_method == WPP))
@@ -175,24 +179,27 @@ __host__ __device__ void Obstacle_Ship::update_guidance_references(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ Eigen::Vector4d Obstacle_Ship::predict(
-	const Eigen::Vector4d &xs_old, 									// In: State [x, y, chi, U] to predict forward
+__host__ __device__ CML::MatrixXd Obstacle_Ship::predict(
+	const CML::MatrixXd &xs_old, 									// In: State [x, y, chi, U] to predict forward
 	const double U_d, 												// In: Speed over ground (SOG) reference
 	const double chi_d, 											// In: Course (COG) reference
 	const double dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
 	)
 {
-	Eigen::Vector4d xs_new;
+	assert(xs_old.get_rows() == 4 && xs_old.get_cols() == 1);
+
+	CML::MatrixXd xs_new(4, 1);
 	double chi_diff = angle_difference_pmpi(chi_d, xs_old(2));
 
 	switch (prediction_method)
 	{
 		case Linear : 
-			// Straight line trajectory with the current heading and surge speed
+			// Straight line trajectory with the current heading and speed
 			xs_new(0) = xs_old(0) + dt * xs_old(3) * cos(xs_old(2));
 			xs_new(1) = xs_old(1) + dt * xs_old(3) * sin(xs_old(2));
-			xs_new.block<2, 1>(2, 0) = xs_old.block<2, 1>(2, 0);
+			xs_new(2) = xs_old(2); 
+			xs_new(3) = xs_old(3);
 			break;
 		case ERK1 : 
 			// First set xs_new to the continuous time derivative of the model
@@ -206,7 +213,7 @@ __host__ __device__ Eigen::Vector4d Obstacle_Ship::predict(
 			break;
 		default :
 			// Throw
-			xs_new.setZero(); 
+			xs_new.set_zero(); 
 	}
 	xs_new(2) = wrap_angle_to_pmpi(xs_new(2));
 	return xs_new;
@@ -220,28 +227,30 @@ __host__ __device__ Eigen::Vector4d Obstacle_Ship::predict(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Obstacle_Ship::predict_trajectory(
-	Eigen::Matrix<double, 4, -1>& trajectory, 						// In/out: Obstacle ship trajectory
-	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
-	const Eigen::VectorXd maneuver_times,							// In: Time indices for each Obstacle_Model avoidance maneuver
+	CML::MatrixXd &trajectory, 										// In/out: Obstacle ship trajectory
+	const CML::MatrixXd &offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
+	const CML::MatrixXd &maneuver_times,								// In: Time indices for each Obstacle_Model avoidance maneuver
 	const double u_d, 												// In: Surge reference
 	const double chi_d, 											// In: Course reference
-	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Obstacle waypoints
+	const CML::MatrixXd &waypoints, 								// In: Obstacle waypoints
 	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
 	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
 	const double T,													// In: Prediction horizon
 	const double dt 												// In: Prediction time step
 	)
 {
+	assert(waypoints.get_rows() == 2);
+
 	int n_samples = T / dt;
 	
-	trajectory.conservativeResize(4, n_samples);
+	trajectory.conservative_resize(4, n_samples);
 
 	wp_c_p = wp_c_0;
 
 	int man_count = 0;
 	double u_m = 1, u_d_p = u_d;
 	double chi_m = 0, chi_d_p = chi_d;
-	Eigen::Vector4d xs = trajectory.col(0);
+	CML::MatrixXd xs = trajectory.get_col(0);
 
 	for (int k = 0; k < n_samples; k++)
 	{ 
@@ -255,7 +264,7 @@ __host__ __device__ void Obstacle_Ship::predict_trajectory(
 
 		xs = predict(xs, u_m * u_d_p , chi_d_p + chi_m, dt, prediction_method);
 		
-		if (k < n_samples - 1) trajectory.col(k + 1) = xs;
+		if (k < n_samples - 1) trajectory.set_col(k + 1, xs);
 	}
 }
 

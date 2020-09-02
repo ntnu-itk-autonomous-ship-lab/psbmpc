@@ -25,6 +25,8 @@
 
 #include <thrust/device_vector.h>
 #include <vector>
+
+#include "cml.cuh"
 #include "Eigen/Dense"
 #include <memory>
 
@@ -49,17 +51,15 @@ protected:
 
 	double x_offset, y_offset;
 
-	// State and covariance at the current time or predicted time (depending on the derived class usage)
-	Eigen::Vector4d xs_0;
-	Eigen::Matrix4d P_0;
-
 	__host__ __device__ void assign_data(const Obstacle &o);
 
 public:
 
 	__host__ __device__ Obstacle() {};
 
-	__host__ __device__ Obstacle(const Eigen::VectorXd &xs_aug, const Eigen::VectorXd &P, const bool colav_on);
+	__host__ __device__ Obstacle(const Eigen::VectorXd &xs_aug, const bool colav_on);
+
+	__host__ __device__ Obstacle(const CML::MatrixXd &xs_aug, const bool colav_on);
 
 	__host__ __device__ Obstacle(const Obstacle &o); 
 
