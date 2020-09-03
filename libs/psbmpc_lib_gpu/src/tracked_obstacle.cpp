@@ -21,6 +21,8 @@
 
 #include "tracked_obstacle.h"
 #include "utilities.h"
+
+#include "assert.h"
 #include <iostream> 
 
 /****************************************************************************************
@@ -43,6 +45,14 @@ Tracked_Obstacle::Tracked_Obstacle(
 	kf(new KF(xs_0, P_0, ID, dt, 0.0)),
 	mrou(new MROU(0.8, 0, 0.8, 0.1, 0.1))
 {
+	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
+
+	P_0 = reshape(P, 4, 4);
+
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	
 	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}

@@ -18,15 +18,15 @@
 *
 *****************************************************************************************/
 
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
+
+#include "cpe.h"
 #include "utilities.h"
-#include "cpe.cuh"
 #include "mrou.h"
-#include "ownship.cuh"
+#include "ownship.h"
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -38,12 +38,12 @@
 
 int main(){
 	// Matlab engine setup
-/* 	Engine *ep = engOpen(NULL);
+	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1]; */
+	char buffer[BUFSIZE+1];
 	
 	//*****************************************************************************************************************
 	// Own-ship prediction setup
@@ -141,16 +141,13 @@ int main(){
 	//*****************************************************************************************************************
 	// Collision Probability Estimator setup
 	//*****************************************************************************************************************
-	double d_safe = 50, dt_seg = 0.5;
+	double d_safe = 50;
 	int n_CE = 1000, n_MCSKF = 1000;
 	std::cout << "n_CE = " << n_CE << std::endl;
 	std::cout << "n_MCSKF = " << n_MCSKF << std::endl;
 
-	std::vector<Eigen::VectorXd> P_c_i_CE, P_c_i_MCSKF;
-	P_c_i_CE.resize(1); P_c_i_MCSKF.resize(1);
-	P_c_i_CE[0].resize(n_samples);
-	P_c_i_MCSKF[0].resize(n_samples);
-
+	Eigen::MatrixXd P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
+	Eigen::Matrix<double, 1, -1> P_c_i_temp(1, n_samples);
 	std::unique_ptr<CPE> cpe(new CPE(CE, n_CE, n_MCSKF, d_safe, dt));
 
 	//*****************************************************************************************************************
@@ -161,13 +158,7 @@ int main(){
 	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
 
 	double t = 0;
-	int n_seg_samples = std::round(dt_seg / dt) + 1;
 
-	CML::MatrixXd trajectory_copy(6, n_samples), xs_p_copy(4, n_samples), P_p(16, n_samples);
-
-	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
-	Eigen::Matrix4d P_i_ps_k;
-	int k_j_ = 0, k_j = 0;
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		//=======================================================================================
@@ -185,24 +176,13 @@ int main(){
 		//=======================================================================================
 		// CE Estimation
 		//=======================================================================================
+
 		cpe->set_method(CE);
 
 		auto start = std::chrono::system_clock::now();
 
-		cpe->initialize(trajectory_copy.col(0), xs_p[0].col(0), P_p.col(0), d_safe, 0);
-		for (int k = 0; k < n_samples; k++)
-		{
-			// Collision probability estimation using CE
-			P_c_i_CE[ps](k) = cpe->estimate(trajectory.col(k), xs_p[ps].col(k), P_p.col(k), 0);
-		}
-
-
-		cpe->initialize(trajectory.col(0), xs_p[0].col(0), P_p.col(0), d_safe, 0);
-		for (int k = 0; k < n_samples; k++)
-		{
-			// Collision probability estimation using CE
-			P_c_i_CE[ps](k) = cpe->estimate(trajectory.col(k), xs_p[ps].col(k), P_p.col(k), 0);
-		}
+		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, 0, dt);
+		P_c_i_CE.row(ps) = P_c_i_temp;
 
 		auto end = std::chrono::system_clock::now();
     	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -215,25 +195,10 @@ int main(){
 		cpe->set_method(MCSKF4D);
 
 		start = std::chrono::system_clock::now();
-
-		cpe->initialize(trajectory.col(0), xs_p[ps].col(0), P_p.col(0), d_safe, 0);
-		for (int k = 0; k < n_samples; k++)
-		{
-			if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
-			{
-				k_j_ = k_j; k_j = k;
-				xs_os_seg = trajectory.block(0, k_j_, 6, n_seg_samples);
-				xs_i_seg = xs_p[ps].block(0, k_j_, 4, n_seg_samples);
-
-				P_i_seg = P_p.block(0, k_j_, 16, n_seg_samples);
-
-				// Collision probability estimation using MCSKF4D
-				P_c_i_MCSKF[ps](k_j_) = cpe->estimate(xs_os_seg, xs_i_seg, P_i_seg, 0);
-				// Collision probability on this active segment are all equal
-				P_c_i_MCSKF[ps].block(k_j_, 0, n_seg_samples, 1) = P_c_i_MCSKF[ps](k_j_) * Eigen::MatrixXd::Ones(k_j - k_j_ + 1, 1);
-			}	
-		}
 		
+		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, 0, dt);
+		P_c_i_MCSKF.row(ps) = P_c_i_temp;
+
 		end = std::chrono::system_clock::now();
     	elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
@@ -243,7 +208,7 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
-/* 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
 	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
 
 	double *ptraj_os = mxGetPr(traj_os);
@@ -278,11 +243,11 @@ int main(){
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 	map_P_traj_i = P_p;
 
-	Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, n_samples, 1);
-	map_Pcoll_CE = P_c_i_CE[0];
+	Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, 1, n_samples);
+	map_Pcoll_CE = P_c_i_CE;
 
-	Eigen::Map<Eigen::MatrixXd> map_Pcoll_MCSKF(p_MCSKF, n_samples, 1);
-	map_Pcoll_MCSKF = P_c_i_MCSKF[0];
+	Eigen::Map<Eigen::MatrixXd> map_Pcoll_MCSKF(p_MCSKF, 1, n_samples);
+	map_Pcoll_MCSKF = P_c_i_MCSKF;
 
 	buffer[BUFSIZE] = '\0';
 	engOutputBuffer(ep, buffer, BUFSIZE);
@@ -311,7 +276,7 @@ int main(){
 
 	mxDestroyArray(Pcoll_CE);
 	mxDestroyArray(Pcoll_MCSKF);
-	engClose(ep); */
+	engClose(ep);
 
 	return 0;
 }

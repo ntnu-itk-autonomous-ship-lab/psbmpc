@@ -40,21 +40,11 @@ Tracked_Obstacle::Tracked_Obstacle(
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	Obstacle(xs_aug, false), 
+	Obstacle(xs_aug, P, false), 
 	duration_lost(0.0),
 	kf(new KF(xs_0, P_0, ID, dt, 0.0)),
 	mrou(new MROU(0.8, 0, 0.8, 0.1, 0.1))
 {
-	assert(P.get_rows() == 16 && P.get_cols() == 1);
-
-	double psi = atan2(xs_aug(3), xs_aug(2));
-	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
-	xs_0(2) = xs_aug(2);
-	xs_0(3) = xs_aug(3);
-
-	P_0 = reshape(P, 4, 4);
-
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	
 	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}

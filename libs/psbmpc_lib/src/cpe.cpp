@@ -230,9 +230,7 @@ void CPE::estimate_over_trajectories(
             case CE :	
                 P_c_i(0, k) = estimate(xs_p.col(k), xs_i_p.col(k), P_i_p.col(k), i);
                 break;
-            case MCSKF4D :
-                k_j_ = 0; k_j = 0;
-                
+            case MCSKF4D :                
                 if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
                 {
                     k_j_ = k_j; k_j = k;
@@ -242,6 +240,7 @@ void CPE::estimate_over_trajectories(
                     P_i_seg = P_i_p.block(0, k_j_, 16, n_seg_samples);
 
                     P_c_i(0, k_j_) = estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
+
                     // Collision probability on this active segment are all equal
                     P_c_i.block(0, k_j_, 1, n_seg_samples) = P_c_i(0, k_j_) * Eigen::MatrixXd::Ones(1, k_j - k_j_ + 1);
                 }	
