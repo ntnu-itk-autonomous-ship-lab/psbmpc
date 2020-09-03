@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.17.3)
-project(psbmpc_test LANGUAGES CXX CUDA)
+project(psbmpc_test LANGUAGES CUDA CXX)
 
 if (MSVC)
 	add_compile_options(/W4)
@@ -17,9 +17,10 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 target_link_libraries(tester 
 	PRIVATE psbmpc_lib_gpu 
-	PRIVATE ${CUDA_LIBRARIES}
 )
 
+#target_link_options(tester 
+#	$<$<LINK_LANGUAGE:CUDA>:-Xlinker -dlink>)
 #target_link_libraries(tester psbmpc_lib)
 
 

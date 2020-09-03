@@ -34,10 +34,10 @@ message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
 message("CUDA_LIBARIES: ${CUDA_LIBRARIES}")
 
 target_compile_options(psbmpc_lib_gpu
-	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -Wno-pedantic -dc -gencode arch=compute_61,code=sm_61 --expt-relaxed-constexpr -Xlinker -dlink>
+	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -Wno-pedantic -rdc=true -gencode arch=compute_61,code=sm_61 --expt-relaxed-constexpr -Xlinker -dlink>
 )
 
 target_link_libraries(psbmpc_lib_gpu 
 	PRIVATE ${Matlab_LIBRARIES} 
-	PRIVATE ${CUDA_LIBRARIES}
+	PUBLIC ${CUDA_LIBRARIES}
 )

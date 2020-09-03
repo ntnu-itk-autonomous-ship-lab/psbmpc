@@ -274,9 +274,7 @@ __device__ void CPE::estimate_over_trajectories(
             case CE :	
                 P_c_i(0, k) = estimate(xs_p.get_col(k), xs_i_p.get_col(k), P_i_p.get_col(k), i);
                 break;
-            case MCSKF4D :
-                k_j_ = 0; k_j = 0;
-                
+            case MCSKF4D :                
                 if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
                 {
                     k_j_ = k_j; k_j = k;

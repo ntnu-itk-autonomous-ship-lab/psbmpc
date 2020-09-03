@@ -19,5 +19,4 @@ target_include_directories(tester PUBLIC
 
 target_compile_features(tester 
 	PRIVATE cxx_std_11
-	#PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -Wno-pedantic -dc -gencode arch=compute_61,code=sm_61 --expt-relaxed-constexpr -Xlinker -dlink>
 )
