@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test_cpe.o: test_cpe.cpp.o
+gpu_implementation_test_files/test_cpe.o: gpu_implementation_test_files/test_cpe.cpp.o
 
-.PHONY : test_cpe.o
+.PHONY : gpu_implementation_test_files/test_cpe.o
 
 # target to build an object file
-test_cpe.cpp.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.o
-.PHONY : test_cpe.cpp.o
+gpu_implementation_test_files/test_cpe.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_cpe.cpp.o
+.PHONY : gpu_implementation_test_files/test_cpe.cpp.o
 
-test_cpe.i: test_cpe.cpp.i
+gpu_implementation_test_files/test_cpe.i: gpu_implementation_test_files/test_cpe.cpp.i
 
-.PHONY : test_cpe.i
+.PHONY : gpu_implementation_test_files/test_cpe.i
 
 # target to preprocess a source file
-test_cpe.cpp.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.i
-.PHONY : test_cpe.cpp.i
+gpu_implementation_test_files/test_cpe.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_cpe.cpp.i
+.PHONY : gpu_implementation_test_files/test_cpe.cpp.i
 
-test_cpe.s: test_cpe.cpp.s
+gpu_implementation_test_files/test_cpe.s: gpu_implementation_test_files/test_cpe.cpp.s
 
-.PHONY : test_cpe.s
+.PHONY : gpu_implementation_test_files/test_cpe.s
 
 # target to generate assembly for a file
-test_cpe.cpp.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_cpe.cpp.s
-.PHONY : test_cpe.cpp.s
+gpu_implementation_test_files/test_cpe.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_cpe.cpp.s
+.PHONY : gpu_implementation_test_files/test_cpe.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... test_cpe.o"
-	@echo "... test_cpe.i"
-	@echo "... test_cpe.s"
+	@echo "... gpu_implementation_test_files/test_cpe.o"
+	@echo "... gpu_implementation_test_files/test_cpe.i"
+	@echo "... gpu_implementation_test_files/test_cpe.s"
 .PHONY : help
 
 

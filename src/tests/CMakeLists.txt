@@ -1,7 +1,10 @@
+find_package(CUDA COMPONENTS THRUST REQUIRED)
+
 #add_executable(tester test_ownship.cpp)
 #add_executable(tester test_obstacle_ship.cpp)
 #add_executable(tester test_obstacle.cpp)
-add_executable(tester test_cpe.cpp)
+#add_executable(tester test_cpe.cpp)
+add_executable(tester gpu_implementation_test_files/test_cpe.cpp)
 #add_executable(tester test_mrou.cpp)
 #add_executable(tester test_kf.cpp)
 #add_executable(tester test_psbmpc.cpp)
@@ -14,4 +17,7 @@ target_include_directories(tester PUBLIC
 	${CMAKE_SOURCE_DIR}/libs
 	)
 
-target_compile_features(tester PRIVATE cxx_std_11)
+target_compile_features(tester 
+	PRIVATE cxx_std_11
+	#PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler -Wno-pedantic -dc -gencode arch=compute_61,code=sm_61 --expt-relaxed-constexpr -Xlinker -dlink>
+)

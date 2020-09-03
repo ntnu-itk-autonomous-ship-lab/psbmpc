@@ -1138,15 +1138,15 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/src/tests/test_cpe.cpp
-utilities.h
-/home/trymte/Desktop/cybercolav_cxx/src/tests/utilities.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/test_cpe.cpp
 cpe.cuh
-/home/trymte/Desktop/cybercolav_cxx/src/tests/cpe.cuh
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/cpe.cuh
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/utilities.h
 mrou.h
-/home/trymte/Desktop/cybercolav_cxx/src/tests/mrou.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/mrou.h
 ownship.cuh
-/home/trymte/Desktop/cybercolav_cxx/src/tests/ownship.cuh
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/ownship.cuh
 iostream
 -
 vector
@@ -1156,9 +1156,9 @@ memory
 chrono
 -
 Eigen/Dense
-/home/trymte/Desktop/cybercolav_cxx/src/tests/Eigen/Dense
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/Eigen/Dense
 engine.h
-/home/trymte/Desktop/cybercolav_cxx/src/tests/engine.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/engine.h
 
 /usr/local/MATLAB/R2019a/extern/include/engine.h
 matrix.h
