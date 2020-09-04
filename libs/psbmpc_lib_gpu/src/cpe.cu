@@ -24,7 +24,7 @@
 #include <thrust/device_vector.h>
 #include <stdio.h>
 #include <cuda.h>
-#include <curand.h>
+#include <curand_kernel.h>
 #include "assert.h"
 
 //#define CUDA_CALL(x) do { if((x)!=cudaSuccess) { \printf("Error at %s:%d\n",__FILE__,__LINE__);\return EXIT_FAILURE;}} while(0)

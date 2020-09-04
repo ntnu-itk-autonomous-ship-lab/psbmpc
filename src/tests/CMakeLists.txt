@@ -1,5 +1,3 @@
-find_package(CUDA COMPONENTS THRUST REQUIRED)
-
 #add_executable(tester test_ownship.cpp)
 #add_executable(tester test_obstacle_ship.cpp)
 #add_executable(tester test_obstacle.cpp)

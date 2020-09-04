@@ -15,12 +15,13 @@ add_subdirectory(src/tests)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
+target_link_options(tester 
+	PRIVATE $<$<LINK_LANGUAGE:CUDA>:-Xlinker -dlink>
+)
+
 target_link_libraries(tester 
 	PRIVATE psbmpc_lib_gpu 
 )
-
-#target_link_options(tester 
-#	$<$<LINK_LANGUAGE:CUDA>:-Xlinker -dlink>)
 #target_link_libraries(tester psbmpc_lib)
 
 
