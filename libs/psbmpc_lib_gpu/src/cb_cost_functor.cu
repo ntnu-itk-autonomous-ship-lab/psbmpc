@@ -103,10 +103,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 *  Author   : 
 *  Modified :
 ****************************************************************************************/
-/* __host__ __device__ CB_Cost_Functor::~CB_Cost_Functor()
- {
-
- } */
+__host__ __device__ CB_Cost_Functor::~CB_Cost_Functor() = default;
 
 /****************************************************************************************
 *  Name     : operator()

@@ -272,7 +272,7 @@ __host__ void Ownship::update_guidance_references(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void Ownship::update_ctrl_input(
+__host__ void Ownship::update_ctrl_input(
 	const double u_d,										// In: Surge reference
 	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
 	const CML::MatrixXd &xs 								// In: State
@@ -300,7 +300,7 @@ __host__ __device__ void Ownship::update_ctrl_input(
 	tau(2) = l_r * Fy;
 }
 
-__host__ __device__ void Ownship::update_ctrl_input(
+__host__ void Ownship::update_ctrl_input(
 	const double u_d,										// In: Surge reference
 	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
 	const Eigen::Matrix<double, 6, 1> &xs 					// In: State
@@ -361,7 +361,7 @@ __host__ __device__ CML::MatrixXd Ownship::predict(
 	return xs_new;
 }
 
-__host__ __device__ Eigen::Matrix<double, 6, 1> Ownship::predict(
+__host__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
 	const double dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction

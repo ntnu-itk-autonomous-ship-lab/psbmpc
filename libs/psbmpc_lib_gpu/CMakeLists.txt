@@ -21,6 +21,9 @@ add_library(psbmpc_lib_gpu STATIC
 	src/utilities.cpp
 )
 
+set_target_properties(psbmpc_lib_gpu PROPERTIES
+	CUDA_SEPARABLE_COMPILATION ON
+)
 
 target_include_directories(psbmpc_lib_gpu PUBLIC 
 	include
