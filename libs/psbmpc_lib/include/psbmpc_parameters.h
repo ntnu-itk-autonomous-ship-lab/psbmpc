@@ -27,6 +27,7 @@
 
 class PSBMPC;
 class Obstacle_Manager;
+class Obstacle_SBMPC;
 
 /* enum Par_Type 
 {
@@ -68,6 +69,7 @@ private:
 
 	friend class PSBMPC;
 	friend class Obstacle_Manager;
+	friend class Obstacle_SBMPC;
 
 	int n_cbs, n_M;
 

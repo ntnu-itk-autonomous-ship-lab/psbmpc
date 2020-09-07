@@ -38,7 +38,7 @@
 
 #define BUFSIZE 1000000
 
-int main(){
+__host__ __device__ int main(){
 	// Matlab engine setup
 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
@@ -167,7 +167,6 @@ int main(){
 
 	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
 	Eigen::Matrix4d P_i_ps_k;
-	int k_j_ = 0, k_j = 0;
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		//=======================================================================================

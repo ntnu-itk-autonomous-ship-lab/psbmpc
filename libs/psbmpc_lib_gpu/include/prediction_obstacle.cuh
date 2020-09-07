@@ -45,7 +45,7 @@ private:
 	
 public:
 
-	Obstacle_SBMPC *sbmpc;
+	//Obstacle_SBMPC *sbmpc;
 
 	__host__ __device__ Prediction_Obstacle() {};
 

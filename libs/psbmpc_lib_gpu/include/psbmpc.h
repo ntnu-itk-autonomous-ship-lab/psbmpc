@@ -98,6 +98,8 @@ public:
 
 	PSBMPC();
 
+	~PSBMPC();
+
 	void calculate_optimal_offsets(
 		double &u_opt, 
 		double &chi_opt, 

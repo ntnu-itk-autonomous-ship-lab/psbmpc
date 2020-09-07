@@ -126,12 +126,24 @@ public:
 		const double dt,
 		const Guidance_Method guidance_method);
 
+	__host__ void update_guidance_references(
+		double &u_d, 
+		double &chi_d, 
+		const Eigen::Matrix<double, 2, -1> &waypoints, 
+		const Eigen::Matrix<double, 6, 1> &xs,
+		const double dt,
+		const Guidance_Method guidance_method);
+
 	__host__ __device__ void update_ctrl_input(const double u_d, const double psi_d, const CML::MatrixXd &xs);
+	
+	__host__ void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
 	__host__ __device__ CML::MatrixXd predict(
 		const CML::MatrixXd &xs_old, 
 		const double dt, 
 		const Prediction_Method prediction_method);
+
+	__host__ Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
 	__host__ __device__ void predict_trajectory(
 		CML::MatrixXd &trajectory,

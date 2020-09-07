@@ -76,7 +76,7 @@ public:
 
 	MROU mrou;
 
-	Obstacle_SBMPC *sbmpc;
+	//Obstacle_SBMPC *sbmpc;
 
 	__host__ __device__ Cuda_Obstacle() {};
 

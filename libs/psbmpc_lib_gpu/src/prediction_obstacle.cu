@@ -114,10 +114,10 @@ __host__ __device__ Prediction_Obstacle& Prediction_Obstacle::operator=(
 *****************************************************************************************/
 __host__ __device__ void Prediction_Obstacle::clean() 
 { 
-	if (sbmpc != nullptr) 
+	/* if (sbmpc != nullptr) 
 	{ 
 		delete sbmpc; sbmpc = nullptr;
-	}
+	} */
 }
 
 /****************************************************************************************
@@ -187,5 +187,5 @@ void Prediction_Obstacle::assign_data(
 	this->xs_p = po.xs_p;
 
 	clean();
-	this->sbmpc = new Obstacle_SBMPC(*(po.sbmpc));
+	//this->sbmpc = new Obstacle_SBMPC(*(po.sbmpc));
 }

@@ -99,7 +99,7 @@ __host__ __device__ void Cuda_Obstacle::clean()
 {
 	if (xs_p != nullptr) 		{ delete[] xs_p; xs_p = nullptr; }
 	if (ps_ordering != nullptr) { delete[] ps_ordering; ps_ordering = nullptr; }
-	if (sbmpc != nullptr) 		{ delete sbmpc; sbmpc = nullptr; }
+	//if (sbmpc != nullptr) 		{ delete sbmpc; sbmpc = nullptr; }
 }
 
 /****************************************************************************************
@@ -134,7 +134,7 @@ void Cuda_Obstacle::assign_data(
 
 	this->mrou = MROU(co.mrou);
 
-	this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
+	//this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
 	
 	this->xs_p = new CML::MatrixXd[n_ps];
 	this->ps_ordering = new Intention[n_ps];
@@ -169,7 +169,7 @@ void Cuda_Obstacle::assign_data(
 
 	this->mrou = MROU(*(to.mrou));
 
-	this->sbmpc = new Obstacle_SBMPC();
+	//this->sbmpc = new Obstacle_SBMPC();
 	
 	this->xs_p = new CML::MatrixXd[n_ps];
 	this->ps_ordering = new Intention[n_ps];

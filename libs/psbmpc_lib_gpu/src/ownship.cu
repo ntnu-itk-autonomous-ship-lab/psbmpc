@@ -42,7 +42,8 @@
 __host__ __device__ Ownship::Ownship()
 {
 	tau.resize(3, 1); tau.set_zero();
-	Cvv.resize(3, 1); Dvv.resize(3, 1);
+	Cvv.resize(3, 1); Cvv.set_zero(); 
+	Dvv.resize(3, 1); Dvv.set_zero();
 
 	// Model parameters
 	l_r = 4.0; // distance from rudder to CG
@@ -176,7 +177,7 @@ __host__ __device__ void Ownship::update_guidance_references(
 	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
 {
-	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6);
+	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
 
 	int n_wps = waypoints.get_cols();
 	double alpha, e;
@@ -249,6 +250,22 @@ __host__ __device__ void Ownship::update_guidance_references(
 	}
 }
 
+__host__ void Ownship::update_guidance_references(
+	double &u_d,												// In/out: Surge reference
+	double &chi_d,												// In/out: Course reference 
+	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
+	const Eigen::Matrix<double, 6, 1> &xs, 						// In: Ownship state	
+	const double dt, 											// In: Time step
+	const Guidance_Method guidance_method						// In: Type of guidance used	
+	)
+{
+	CML::MatrixXd waypoints_copy, xs_copy;
+	CML::assign_eigen_object(waypoints_copy, waypoints); 
+	CML::assign_eigen_object(xs_copy, xs); 
+
+	update_guidance_references(u_d, chi_d, waypoints_copy, xs_copy, dt, guidance_method);
+}
+
 /****************************************************************************************
 *  Name     : update_ctrl_input
 *  Function : 
@@ -281,6 +298,18 @@ __host__ __device__ void Ownship::update_ctrl_input(
 	tau(0) = Fx;
 	tau(1) = Fy;
 	tau(2) = l_r * Fy;
+}
+
+__host__ __device__ void Ownship::update_ctrl_input(
+	const double u_d,										// In: Surge reference
+	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
+	const Eigen::Matrix<double, 6, 1> &xs 					// In: State
+	)
+{
+	CML::MatrixXd xs_copy(6, 1);
+	CML::assign_eigen_object(xs_copy, xs);
+
+	update_ctrl_input(u_d, psi_d, xs_copy);
 }
 
 /****************************************************************************************
@@ -332,6 +361,18 @@ __host__ __device__ CML::MatrixXd Ownship::predict(
 	return xs_new;
 }
 
+__host__ __device__ Eigen::Matrix<double, 6, 1> Ownship::predict(
+	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
+	const double dt, 												// In: Time step
+	const Prediction_Method prediction_method 						// In: Method used for prediction
+	)
+{
+	CML::MatrixXd xs_old_copy(6, 1);
+	CML::assign_eigen_object(xs_old_copy, xs_old);
+
+	predict(xs_old_copy, dt, prediction_method);
+}
+
 /****************************************************************************************
 *  Name     : predict_trajectory
 *  Function : Predicts the ownship trajectory for a sequence of avoidance maneuvers in the 
@@ -352,6 +393,10 @@ __host__ __device__ void Ownship::predict_trajectory(
 	const double dt 												// In: Prediction time step
 	)
 {
+	assert((offset_sequence.get_rows() == 1 || offset_sequence.get_cols() == 1) && 
+			(maneuver_times.get_rows() == 1 || maneuver_times.get_cols() == 1) &&
+			waypoints.get_rows() == 2);
+
 	int n_samples = T / dt;
 	
 	trajectory.conservative_resize(6, n_samples);
