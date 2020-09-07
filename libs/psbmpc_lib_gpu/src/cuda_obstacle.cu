@@ -20,7 +20,7 @@
 *****************************************************************************************/
 
 #include "cuda_obstacle.cuh"
-#include "obstacle_sbmpc.cuh"
+//#include "obstacle_sbmpc.cuh"
 #include "kf.h"
 #include "mrou.h"
 #include "utilities.cuh"

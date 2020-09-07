@@ -14,5 +14,3 @@ target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_SOURCE_DIR}/libs
 	)
-
-add_link_options($<DEVICE_LINK:-gencode arch=compute_61,code=sm_61 -dlink>)

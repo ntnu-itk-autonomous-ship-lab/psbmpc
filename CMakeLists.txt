@@ -7,9 +7,6 @@ else()
 	add_compile_options(-Wall -Wextra -fno-omit-frame-pointer -g)
 endif()
 
-set(CUDA_SEPARATE_COMPILATION ON)
-
-
 add_subdirectory(libs/psbmpc_lib_gpu)
 #add_subdirectory(libs/psbmpc_lib)
 

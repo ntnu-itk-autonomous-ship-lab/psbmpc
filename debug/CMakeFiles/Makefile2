@@ -163,12 +163,12 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/clean:
 src/tests/CMakeFiles/tester.dir/all: libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/all
 	$(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles --progress-num=16,17 "Built target tester"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles --progress-num=16,17,18 "Built target tester"
 .PHONY : src/tests/CMakeFiles/tester.dir/all
 
 # Build rule for subdir invocation for target.
 src/tests/CMakeFiles/tester.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles 17
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles 18
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/CMakeFiles/tester.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/debug/CMakeFiles 0
 .PHONY : src/tests/CMakeFiles/tester.dir/rule

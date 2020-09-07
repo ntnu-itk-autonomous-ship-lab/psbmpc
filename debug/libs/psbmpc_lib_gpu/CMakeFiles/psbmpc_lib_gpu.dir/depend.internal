@@ -1929,11 +1929,6 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cuda_obstacle.cu.o
  ../libs/psbmpc_lib_gpu/include/kf.h
  ../libs/psbmpc_lib_gpu/include/mrou.h
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
- ../libs/psbmpc_lib_gpu/include/obstacle_sbmpc.cuh
- ../libs/psbmpc_lib_gpu/include/obstacle_ship.cuh
- ../libs/psbmpc_lib_gpu/include/prediction_obstacle.cuh
- ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
- ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
  ../libs/psbmpc_lib_gpu/include/tracked_obstacle.h
  ../libs/psbmpc_lib_gpu/include/utilities.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/cml.cuh
