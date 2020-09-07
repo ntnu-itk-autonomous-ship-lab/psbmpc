@@ -388,33 +388,6 @@ src/ownship.cu.s:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/ownship.cu.s
 .PHONY : src/ownship.cu.s
 
-src/prediction_obstacle.o: src/prediction_obstacle.cu.o
-
-.PHONY : src/prediction_obstacle.o
-
-# target to build an object file
-src/prediction_obstacle.cu.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/prediction_obstacle.cu.o
-.PHONY : src/prediction_obstacle.cu.o
-
-src/prediction_obstacle.i: src/prediction_obstacle.cu.i
-
-.PHONY : src/prediction_obstacle.i
-
-# target to preprocess a source file
-src/prediction_obstacle.cu.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/prediction_obstacle.cu.i
-.PHONY : src/prediction_obstacle.cu.i
-
-src/prediction_obstacle.s: src/prediction_obstacle.cu.s
-
-.PHONY : src/prediction_obstacle.s
-
-# target to generate assembly for a file
-src/prediction_obstacle.cu.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/prediction_obstacle.cu.s
-.PHONY : src/prediction_obstacle.cu.s
-
 src/psbmpc.o: src/psbmpc.cpp.o
 
 .PHONY : src/psbmpc.o
@@ -586,9 +559,6 @@ help:
 	@echo "... src/ownship.o"
 	@echo "... src/ownship.i"
 	@echo "... src/ownship.s"
-	@echo "... src/prediction_obstacle.o"
-	@echo "... src/prediction_obstacle.i"
-	@echo "... src/prediction_obstacle.s"
 	@echo "... src/psbmpc.o"
 	@echo "... src/psbmpc.i"
 	@echo "... src/psbmpc.s"

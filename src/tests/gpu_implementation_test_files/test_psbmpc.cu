@@ -1,9 +1,9 @@
 /****************************************************************************************
 *
-*  File name : test_psbmpc.cpp
+*  File name : test_psbmpc.cu
 *
 *  Function  : Test file for the Probabilistic Scenario-based Model Predictive Control
-*			   using Matlab for visualization 
+*			   using Matlab for visualization. GPU version
 *			   
 *	           ---------------------
 *

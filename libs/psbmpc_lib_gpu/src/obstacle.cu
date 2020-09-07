@@ -24,7 +24,6 @@
 #include "assert.h"
 
 #include "obstacle.cuh"
-#include "obstacle_sbmpc.cuh"
 #include "utilities.cuh"
 
 /****************************************************************************************

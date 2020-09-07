@@ -2,19 +2,17 @@
 #add_executable(tester test_obstacle_ship.cpp)
 #add_executable(tester test_obstacle.cpp)
 #add_executable(tester test_cpe.cpp)
-add_executable(tester gpu_implementation_test_files/test_cpe.cpp)
 #add_executable(tester test_mrou.cpp)
 #add_executable(tester test_kf.cpp)
-#add_executable(tester test_psbmpc.cpp)
+#add_executable(tester test_psbmpc.cpp) # for CPU PSBMPC
+add_executable(tester gpu_implementation_test_files/test_psbmpc.cu) # for GPU PSBMPC
 #add_executable(tester test_prng.cpp)
 #add_executable(tester test_thrust.cu)
 #add_executable(tester test_cml.cpp)
 
-target_include_directories(tester PUBLIC
+target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_SOURCE_DIR}/libs
 	)
 
-target_compile_features(tester 
-	PRIVATE cxx_std_11
-)
+add_link_options($<DEVICE_LINK:-gencode arch=compute_61,code=sm_61 -dlink>)
