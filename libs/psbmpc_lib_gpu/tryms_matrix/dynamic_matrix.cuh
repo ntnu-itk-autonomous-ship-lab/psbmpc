@@ -641,6 +641,7 @@ namespace CML
 				resized(i, j) = this->operator()(i, j);
 			}
 		}
+		
 		*this = resized;
 	}
 

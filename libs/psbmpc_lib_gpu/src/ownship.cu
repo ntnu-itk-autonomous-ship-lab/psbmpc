@@ -370,7 +370,9 @@ __host__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 	CML::MatrixXd xs_old_copy(6, 1);
 	CML::assign_eigen_object(xs_old_copy, xs_old);
 
-	predict(xs_old_copy, dt, prediction_method);
+	CML::MatrixXd result = predict(xs_old_copy, dt, prediction_method);
+	Eigen::Matrix<double, 6, 1> xs_new;
+	CML::assign_cml_object(xs_new, result);
 }
 
 /****************************************************************************************
