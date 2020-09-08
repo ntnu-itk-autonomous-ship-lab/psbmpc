@@ -35,6 +35,8 @@ namespace CML
 
 		T* data;
 
+		bool is_allocated;
+
 		__host__ __device__ void allocate_data();
 
 		__host__ __device__ void deallocate_data();
@@ -43,7 +45,7 @@ namespace CML
 
 	public:
 		
-		__host__ __device__ Dynamic_Matrix() : data(nullptr) {}
+		__host__ __device__ Dynamic_Matrix() : data(nullptr), is_allocated(false) {}
 
 		__host__ __device__ Dynamic_Matrix(const size_t n_rows);
 
@@ -193,7 +195,7 @@ namespace CML
 	__host__ __device__ Dynamic_Matrix<T>::Dynamic_Matrix(
 		const size_t n_rows 										// In: Amount of matrix rows
 		) :
-		n_rows(n_rows), n_cols(n_rows), data(nullptr)
+		n_rows(n_rows), n_cols(n_rows), data(nullptr), is_allocated(false)
 	{
 		allocate_data();
 	}
@@ -203,7 +205,7 @@ namespace CML
 		const size_t n_rows,  										// In: Amount of matrix rows
 		const size_t n_cols 										// In: New amount of matrix columns
 		) :
-		n_rows(n_rows), n_cols(n_cols), data(nullptr)
+		n_rows(n_rows), n_cols(n_cols), data(nullptr), is_allocated(false)
 	{
 		allocate_data();
 	}
@@ -212,7 +214,7 @@ namespace CML
 	__host__ __device__ Dynamic_Matrix<T>::Dynamic_Matrix(
 		const Dynamic_Matrix<T> &other 									// In: Matrix/vector to copy
 		) :
-		data(nullptr)
+		data(nullptr), is_allocated(false)
 	{
 		assign_data(other);
 	}
@@ -660,6 +662,8 @@ namespace CML
 		assert(n_rows > 0 && n_cols > 0);
 
 		data = new T[n_rows * n_cols];
+
+		is_allocated = true;
 	}
 
 	/****************************************************************************************
@@ -679,6 +683,8 @@ namespace CML
 		delete[] data;
 
 		data = nullptr;
+
+		is_allocated = false;
 	}
 
 	/****************************************************************************************
@@ -692,6 +698,11 @@ namespace CML
 		const Dynamic_Matrix<T> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
+		if (!other.is_allocated)
+		{
+			return;
+		}
+
 		n_rows = other.n_rows;
 		n_cols = other.n_cols;
 
