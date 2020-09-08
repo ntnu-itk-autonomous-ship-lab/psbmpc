@@ -125,7 +125,7 @@ private:
 
 public:
 	
-	__host__ __device__ CPE() {};
+	__host__ __device__ CPE() : mu_CE_last(nullptr), P_CE_last(nullptr) {}
 
 	__host__ __device__ CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const int n_obst, const double dt);
 
@@ -138,11 +138,11 @@ public:
 	__host__ __device__ void clean();
 
 	__host__ __device__ inline void set_method(const CPE_Method cpe_method) 
-	{ if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
+	{ if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }}
 
 	__host__ __device__ void set_number_of_obstacles(const int n_obst);
 
-	__device__ inline double get_segment_discretization_time() const { return dt_seg; };
+	__device__ inline double get_segment_discretization_time() const { return dt_seg; }
 
 	__device__ inline void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
 

@@ -43,7 +43,7 @@ namespace CML
 
 	public:
 		
-		__host__ __device__ Dynamic_Matrix() {}
+		__host__ __device__ Dynamic_Matrix() : data(nullptr) {}
 
 		__host__ __device__ Dynamic_Matrix(const size_t n_rows);
 
@@ -546,8 +546,8 @@ namespace CML
 		) const
 	{
 
-		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && n_rows > 0 && n_cols > 0 && 
-				start_row < n_rows && start_col < n_cols);
+		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && 
+				start_row < this->n_rows && start_col < this->n_cols);
 
 		Dynamic_Matrix<T> result(n_rows, n_cols);
 		for (size_t i = 0; i < n_rows; i++)

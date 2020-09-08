@@ -49,13 +49,13 @@ __host__ __device__ CPE::CPE(
     const int n_obst,                                               // In: Number of obstacles
     const double dt                                                 // In: Time step of calling function simulation environment
     ) :
-    method(cpe_method), n_obst(n_obst), n_CE(n_CE), n_MCSKF(n_MCSKF)
+    method(cpe_method), n_obst(n_obst), n_CE(n_CE), n_MCSKF(n_MCSKF), mu_CE_last(nullptr), P_CE_last(nullptr)
 {
     set_number_of_obstacles(n_obst);
 
     // CE pars
     
-    sigma_inject = 1 / 3; // dependent on d_safe wrt obstacle i => set in CE-method
+    sigma_inject = 1.0 / 3.0; // dependent on d_safe wrt obstacle i => set in CE-method
 
     alpha_n = 0.9;
 
@@ -150,16 +150,19 @@ __host__ __device__ void CPE::set_number_of_obstacles(
     ) 
 { 
     this->n_obst = n_obst; 
-    
+
     clean();
 
-    mu_CE_last = new CML::MatrixXd[n_obst];
-    P_CE_last = new CML::MatrixXd[n_obst];
-    
-    P_c_p.resize(n_obst, 1); P_c_upd.resize(n_obst, 1);
-    var_P_c_p.resize(n_obst, 1); var_P_c_upd.resize(n_obst, 1);
+    if (n_obst > 0)
+    {
+        mu_CE_last = new CML::MatrixXd[n_obst];
+        P_CE_last = new CML::MatrixXd[n_obst];
+        
+        P_c_p.resize(n_obst, 1); P_c_upd.resize(n_obst, 1);
+        var_P_c_p.resize(n_obst, 1); var_P_c_upd.resize(n_obst, 1);
 
-    resize_matrices();
+        resize_matrices();
+    }
 }
 
 /****************************************************************************************

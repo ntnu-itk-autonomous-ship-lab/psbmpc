@@ -131,7 +131,7 @@ __host__ __device__ inline double angle_difference_pmpi(const double a_1, const 
 *****************************************************************************************/
 __host__ __device__ inline CML::MatrixXd rotate_vector_2D(const CML::MatrixXd &v, const double angle)
 {
-	CML::MatrixXd v_temp;
+	CML::MatrixXd v_temp(2, 1);
 	v_temp(0) = v(0) * cos(angle) - v(1) * sin(angle);
 	v_temp(1) = v(0) * sin(angle) - v(1) * cos(angle);
 	return v_temp;
@@ -145,7 +145,8 @@ __host__ __device__ inline CML::MatrixXd rotate_vector_2D(const CML::MatrixXd &v
 *****************************************************************************************/
 __host__ __device__ inline CML::MatrixXd rotate_vector_3D(const CML::MatrixXd &v, const double angle, const Axis axis)
 {
-	CML::MatrixXd v_temp;
+	assert(v.get_rows() == 3 && v.get_cols() == 1);
+	CML::MatrixXd v_temp(3, 1);
 	switch (axis) 
 	{
 		case Roll : 
@@ -185,8 +186,7 @@ __host__ __device__ inline CML::MatrixXd flatten(const CML::MatrixXd &in)
 	int n_rows = in.get_rows();
 	int n_cols = in.get_cols();
 
-	CML::MatrixXd out;
-	out.resize(n_rows * n_cols, 1);
+	CML::MatrixXd out(n_rows * n_cols, 1);
 	int count = 0;
 	for(int i = 0; i < n_rows; i++)
 	{
@@ -208,8 +208,8 @@ __host__ __device__ inline CML::MatrixXd flatten(const CML::MatrixXd &in)
 *****************************************************************************************/
 __host__ __device__ inline CML::MatrixXd reshape(const CML::MatrixXd &in, const int n_rows, const int n_cols)
 {
-	CML::MatrixXd out;
-	out.resize(n_rows, n_cols);
+	CML::MatrixXd out(n_rows, n_cols);
+
 	int count = 0;
 	for(int i = 0; i < n_rows; i++)
 	{
@@ -237,6 +237,8 @@ __host__ __device__ inline void calculate_cpa(
 	const CML::MatrixXd &xs_B 												// In: State of vessel B
 	)
 {
+	assert(p_cpa.get_rows() == 2 && p_cpa.get_cols() == 1 && xs_A.get_cols() == 1 && xs_B.get_cols());
+
 	double epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
 	double psi_A, psi_B;
 	CML::MatrixXd v_A, v_B, p_A, p_B, L_AB;
@@ -280,6 +282,8 @@ __host__ __device__ inline bool determine_COLREGS_violation(
 	const double d_safe
 	)
 {
+	assert(xs_A.get_cols() == 1 && xs_B.get_cols() == 1);
+
 	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
 	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
 
