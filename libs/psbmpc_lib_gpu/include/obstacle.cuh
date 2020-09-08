@@ -60,10 +60,6 @@ public:
 
 	__host__ __device__ Obstacle(const CML::MatrixXd &xs_aug, const bool colav_on);
 
-	__host__ __device__ Obstacle(const Obstacle &o); 
-
-	__host__ __device__ Obstacle& operator=(const Obstacle &rhs);
-
 	__host__ __device__ int get_ID() const { return ID; };
 
 	__host__ __device__ void set_colav_on(const bool colav_on) { this->colav_on = colav_on; };

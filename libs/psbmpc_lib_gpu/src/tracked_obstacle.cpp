@@ -43,7 +43,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	Obstacle(xs_aug, false), 
 	duration_lost(0.0),
 	kf(new KF(xs_0, P_0, ID, dt, 0.0)),
-	mrou(new MROU(0.8, 0, 0.8, 0.1, 0.1))
+	mrou(new MROU())
 {
 	double psi = atan2(xs_aug(3), xs_aug(2));
 	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 

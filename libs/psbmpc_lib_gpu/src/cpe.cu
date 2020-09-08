@@ -134,8 +134,14 @@ __host__ __device__ CPE& CPE::operator=(
 *****************************************************************************************/
 __host__ __device__ void CPE::clean()
 {
-    delete[] mu_CE_last; mu_CE_last = nullptr;
-    delete[] P_CE_last;  P_CE_last = nullptr;   
+    if (mu_CE_last != nullptr)
+    {
+        delete[] mu_CE_last; mu_CE_last = nullptr;
+    }
+    if (P_CE_last != nullptr)
+    {
+        delete[] P_CE_last;  P_CE_last = nullptr;  
+    }
 }
 
 /****************************************************************************************
@@ -338,19 +344,20 @@ __host__ __device__ void CPE::assign_data(
         }
     }
     
-    this->N_e = cpe.N_e; this->e_count = cpe.e_count;
-    this->elite_samples = cpe.elite_samples;
+    // Not necessary to transfer internal temporary data
+    //this->N_e = cpe.N_e; this->e_count = cpe.e_count;
+    //this->elite_samples = cpe.elite_samples;
+
+    //this->samples = cpe.samples; this->valid = cpe.valid;
+
+    //this->L = cpe.L;
 
     this->q = cpe.q; this->r = cpe.r; this->dt_seg = cpe.dt_seg;
 
     this->P_c_p = cpe.P_c_p; this->var_P_c_p = cpe.var_P_c_p;
     this->P_c_upd = cpe.P_c_upd; this->var_P_c_upd = cpe.var_P_c_upd;
 
-    this->samples = cpe.samples; this->valid = cpe.valid;
-
     this->d_safe = cpe.d_safe;
-
-    this->L = cpe.L;
 }
 
 /****************************************************************************************
