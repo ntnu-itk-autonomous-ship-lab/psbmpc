@@ -111,7 +111,7 @@ __host__ __device__ void Cuda_Obstacle::clean()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Cuda_Obstacle::assign_data(
+__host__ __device__ void Cuda_Obstacle::assign_data(
 	const Cuda_Obstacle &co 												// In: Cuda_Obstacle whose data to assign to *this
 	)
 {
@@ -146,7 +146,7 @@ void Cuda_Obstacle::assign_data(
 	}
 }
 
-void Cuda_Obstacle::assign_data(
+__host__ void Cuda_Obstacle::assign_data(
 	const Tracked_Obstacle &to 												// In: Tracked_Obstacle whose data to assign to *this
 	)
 {

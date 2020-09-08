@@ -68,7 +68,7 @@ private:
 
 	__host__ __device__ void assign_data(const Cuda_Obstacle &co);
 	
-	__host__ __device__ void assign_data(const Tracked_Obstacle &to);
+	__host__ void assign_data(const Tracked_Obstacle &to);
 	
 public:
 
@@ -82,7 +82,7 @@ public:
 
 	__host__ __device__ Cuda_Obstacle(const Cuda_Obstacle &co);
 
-	__host__ __device__ Cuda_Obstacle(const Tracked_Obstacle &to);
+	__host__ Cuda_Obstacle(const Tracked_Obstacle &to);
 
 	__host__ __device__ ~Cuda_Obstacle();
 
