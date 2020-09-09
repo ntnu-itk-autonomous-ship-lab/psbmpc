@@ -165,9 +165,9 @@ __host__ void Cuda_Obstacle::assign_data(
 	CML::assign_eigen_object(this->ps_weights, to.ps_weights); 
 	CML::assign_eigen_object(this->ps_maneuver_times, to.ps_maneuver_times);
 	
-	this->kf = KF(*(to.kf));
+	this->kf = to.kf;
 
-	this->mrou = MROU(*(to.mrou));
+	this->mrou = to.mrou;
 
 	//this->sbmpc = new Obstacle_SBMPC();
 	

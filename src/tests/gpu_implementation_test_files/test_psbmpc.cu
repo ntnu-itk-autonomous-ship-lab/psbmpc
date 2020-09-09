@@ -37,12 +37,12 @@
 
 int main(){
 	// Matlab engine setup
- 	Engine *ep = engOpen(NULL);
+ 	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1]; 
+	char buffer[BUFSIZE+1];  */
 
 //*****************************************************************************************************************
 // Simulation setup
@@ -113,7 +113,7 @@ int main(){
 	//=====================================================================
 	// Matlab array setup for the ownship and obstacle, ++
 	//=====================================================================
-	mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);
+	/* mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
 
 	double *ptraj_os = mxGetPr(traj_os); 
@@ -128,7 +128,7 @@ int main(){
 
 	double* ptraj_i; 
 	double* p_P_traj_i; 
-	double* p_wps_i;
+	double* p_wps_i; */
 	int n_wps_i;
 
 	for (int i = 0; i < n_obst; i++)
@@ -155,8 +155,7 @@ int main(){
 		waypoints_i[i].resize(2, n_wps_i); 
 		waypoints_i[i] << 500, 500,
 					300, -300;
-		wps_i[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
-
+		
 		offset_sequence_i[i].resize(6);
 		offset_sequence_i[i] << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 
@@ -166,8 +165,9 @@ int main(){
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], ERK1, LOS, T_sim, dt);
 
+		/* wps_i[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
 		traj_i[i] = mxCreateDoubleMatrix(6, N, mxREAL);
-		P_traj_i[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
+		P_traj_i[i] = mxCreateDoubleMatrix(16, 1, mxREAL); */
 	}
 
 //*****************************************************************************************************************
@@ -213,7 +213,7 @@ int main(){
 	//=========================================================
 	// Matlab plot setup
 	//=========================================================
-	mxArray *T_sim_mx, *n_obst_mx, *n_static_obst_mx;
+	/* mxArray *T_sim_mx, *n_obst_mx, *n_static_obst_mx;
 	T_sim_mx = mxCreateDoubleScalar(T_sim);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
 	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
@@ -249,7 +249,7 @@ int main(){
 		engPutVariable(ep, "i", i_mx);
 
 		engEvalString(ep, "init_obstacle_plot");
-	}
+	} */
 	//=========================================================
 	
 	Eigen::Vector4d xs_i_k;
@@ -317,7 +317,7 @@ int main(){
 		//===========================================
 		// Send trajectory data to matlab
 		//===========================================
-		buffer[BUFSIZE] = '\0';
+		/* buffer[BUFSIZE] = '\0';
 		engOutputBuffer(ep, buffer, BUFSIZE);
 
 		k_s = mxCreateDoubleScalar(k + 1);
@@ -355,12 +355,12 @@ int main(){
 			engPutVariable(ep, "i", i_mx);
 
 			engEvalString(ep, "update_obstacle_plot");
-		}
+		} */
 		//======================================================
 		
 	}
 
-	mxDestroyArray(traj_os);
+	/* mxDestroyArray(traj_os);
 	mxDestroyArray(wps_os);
 	mxDestroyArray(pred_traj);
 	for (int i = 0; i < n_obst; i++)
@@ -369,7 +369,7 @@ int main(){
 		mxDestroyArray(P_traj_i[i]);
 		mxDestroyArray(wps_i[i]);
 	}
-	engClose(ep);  
+	engClose(ep);   */
 
 	return 0;
 }
