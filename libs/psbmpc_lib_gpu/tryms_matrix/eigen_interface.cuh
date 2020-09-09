@@ -42,7 +42,7 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template<class T, typename Eigen_Type_T>
-	__host__ __device__ void assign_eigen_object(Dynamic_Matrix<T> &lhs, Eigen_Type_T &rhs)
+	__host__ __device__ void assign_eigen_object(Dynamic_Matrix<T> &lhs, const Eigen_Type_T &rhs)
 	{
 		int n_rows = rhs.rows(), n_cols = rhs.cols();
 		lhs.resize(n_rows, n_cols);
@@ -56,7 +56,7 @@ namespace CML
 	}
 
 	template<class T, int Rows, int Cols, typename Eigen_Type_T>
-	__host__ __device__ void assign_eigen_object(Static_Matrix<T, Rows, Cols> &lhs, Eigen_Type_T &rhs)
+	__host__ __device__ void assign_eigen_object(Static_Matrix<T, Rows, Cols> &lhs, const Eigen_Type_T &rhs)
 	{
 		int n_rows = rhs.rows(), n_cols = rhs.cols();
 		assert(Rows == n_rows && Cols == n_cols);
@@ -79,7 +79,7 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template<class T, typename Eigen_Type_T>
-	__host__ __device__ void assign_cml_object(Eigen_Type_T &lhs, Dynamic_Matrix<T> &rhs)
+	__host__ __device__ void assign_cml_object(Eigen_Type_T &lhs, const Dynamic_Matrix<T> &rhs)
 	{
 		int n_rows = rhs.get_rows(), n_cols = rhs.get_cols();
 		lhs.resize(n_rows, n_cols);
@@ -93,7 +93,7 @@ namespace CML
 	}
 
 	template<class T, int Rows, int Cols, typename Eigen_Type_T>
-	__host__ __device__ void assign_cml_object(Eigen_Type_T &lhs, Static_Matrix<T, Rows, Cols> &rhs)
+	__host__ __device__ void assign_cml_object(Eigen_Type_T &lhs, const Static_Matrix<T, Rows, Cols> &rhs)
 	{
 		lhs.resize(Rows, Cols);
 		for (int i = 0; i < Rows; i++)

@@ -26,6 +26,7 @@
 #include <vector>
 #include <iostream>
 #include "assert.h"
+#include "stdio.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -373,6 +374,8 @@ __host__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 	CML::MatrixXd result = predict(xs_old_copy, dt, prediction_method);
 	Eigen::Matrix<double, 6, 1> xs_new;
 	CML::assign_cml_object(xs_new, result);
+
+	return xs_new;
 }
 
 /****************************************************************************************
@@ -423,13 +426,21 @@ __host__ __device__ void Ownship::predict_trajectory(
 		update_ctrl_input(u_m * u_d_p, chi_m + chi_d_p, xs);
 
 		xs = predict(xs, dt, prediction_method);
+
+		//printf("xs = %f %f %f %f %f %f \n", xs(0), xs(1), xs(2), xs(3), xs(4), xs(5));
 		
-		if (k < n_samples - 1) trajectory.set_col(k + 1, xs);
+		if (k < n_samples - 1) 
+		{
+			trajectory.set_col(k + 1, xs);
+
+			/* printf("xs = %f %f %f %f %f %f \n", trajectory.get_col(k + 1)(0), trajectory.get_col(k+1)(1), 
+				trajectory.get_col(k + 1)(2), trajectory.get_col(k + 1)(3), trajectory.get_col(k + 1)(4), trajectory.get_col(k + 1)(5)); */
+		}
 	}
 }
 
 __host__ void Ownship::predict_trajectory(
-	Eigen::Matrix<double, 6, -1>& trajectory, 						// In/out: Own-ship trajectory
+	Eigen::Matrix<double, 6, -1> &trajectory, 						// In/out: Own-ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference
@@ -448,6 +459,8 @@ __host__ void Ownship::predict_trajectory(
 	CML::assign_eigen_object(waypoints_copy, waypoints); 
 
 	predict_trajectory(trajectory_copy, offset_sequence_copy, maneuver_times_copy, u_d, chi_d, waypoints_copy, prediction_method, guidance_method, T, dt);
+
+	CML::assign_cml_object(trajectory, trajectory_copy);
 }
 
 

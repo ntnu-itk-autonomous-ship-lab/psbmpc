@@ -27,7 +27,6 @@
 #include "tracked_obstacle.h"
 #include "Eigen/Dense"
 #include <vector>
-#include <memory>
 #include <string>
 
 class PSBMPC;
@@ -112,7 +111,7 @@ public:
 
 	void update_obstacle_status(const Eigen::Matrix<double, 6, 1> &ownship_state);
 
-	void display_obstacle_information();
+	void display_obstacle_information() const;
 
 	void operator()(
 		const PSBMPC_Parameters &psbmpc_pars,

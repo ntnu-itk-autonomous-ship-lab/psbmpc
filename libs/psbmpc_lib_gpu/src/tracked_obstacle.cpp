@@ -79,39 +79,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	}
 }
 
-/****************************************************************************************
-*  Name     : Tracked_Obstacle
-*  Function : Copy constructor, prevents shallow copies and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-/* Tracked_Obstacle::Tracked_Obstacle(
-	const Tracked_Obstacle &to 													// In: Tracked obstacle to copy
-	) : 
-	Obstacle(to)
-{
-	assign_data(to);
-} */
-
-/****************************************************************************************
-*  Name     : operator=
-*  Function : Assignment operator to prevent shallow assignments and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-/* Tracked_Obstacle& Tracked_Obstacle::operator=(
-	const Tracked_Obstacle &rhs 										// In: Rhs tracked obstacle to assign
-	)
-{
-	if (this == &rhs)
-	{
-		return *this;
-	}
-
-	assign_data(rhs);
-
-	return *this;
-} */
+Tracked_Obstacle::~Tracked_Obstacle() = default;
 
 /****************************************************************************************
 *  Name     : resize_trajectories
@@ -333,31 +301,3 @@ void Tracked_Obstacle::update(
 /****************************************************************************************
 *  Private functions
 *****************************************************************************************/
-/****************************************************************************************
-*  Name     : assign_data
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-/* void Tracked_Obstacle::assign_data(
-	const Tracked_Obstacle &to 												// In: Tracked_Obstacle whose data to assign to *this
-	)
-{
-	this->Pr_a = to.Pr_a; 
-
-	this->Pr_CC = to.Pr_CC;
-
-	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
-	
-	this->mu = to.mu;
-
-	this->P_p = to.P_p;
-	this->xs_p = to.xs_p;
-	this->v_p = to.v_p;
-
-	this->ps_ordering = to.ps_ordering;
-	this->ps_course_changes = to.ps_course_changes; this->ps_weights = to.ps_weights; this->ps_maneuver_times = to.ps_maneuver_times;
-
-	this->kf = to.kf;
-	this->mrou = to.mrou;
-} */

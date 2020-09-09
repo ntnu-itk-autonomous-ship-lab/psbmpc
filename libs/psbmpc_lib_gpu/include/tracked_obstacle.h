@@ -89,6 +89,8 @@ public:
 			 const double T, 
 			 const double dt);
 
+	~Tracked_Obstacle();
+
 	inline std::vector<bool> get_COLREGS_violation_indicator() const { return mu; }
 
 	inline double get_a_priori_CC_probability() const { return Pr_CC; }

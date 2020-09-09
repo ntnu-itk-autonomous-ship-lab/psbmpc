@@ -73,6 +73,7 @@ void Obstacle_Manager::update_obstacle_status(
 	int n_obst = data.new_obstacles.size();
 	data.obstacle_status.resize(13, n_obst);
 	double ID_0, RB_0, COG_0, SOG_0; 
+	data.HL_0.resize(1); data.HL_0(0) = 0; // temporary
 	Eigen::Vector2d d_0i;
 	Eigen::Vector4d xs_i;
 	for(int i = 0; i < n_obst; i++)
@@ -111,7 +112,7 @@ void Obstacle_Manager::update_obstacle_status(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Manager::display_obstacle_information() 			
+void Obstacle_Manager::display_obstacle_information() const	
 {
 	std::cout << "Obstacle information:" << std::endl;
 	//std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;
@@ -332,12 +333,8 @@ void Obstacle_Manager::update_obstacles(
 		}
 	}
 	// Clear old obstacle vector, which consist of transferred (nullptr) and terminated obstacles
-	// Then set equal to the new obstacle vector
-	data.old_obstacles.resize(data.new_obstacles.size());
-	for (size_t i = 0; i < data.new_obstacles.size(); i++)
-	{
-		data.old_obstacles[i] = Tracked_Obstacle(data.new_obstacles[i]);
-	}
+	// (set equal to the new obstacle vector)
+	data.old_obstacles = data.new_obstacles;
 }
 
 /****************************************************************************************
