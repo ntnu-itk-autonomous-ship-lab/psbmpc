@@ -28,7 +28,6 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
-#include <memory>
 #include "Eigen/Dense"
 #include "engine.h"
 
@@ -182,9 +181,6 @@ int main(){
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
 
-	Eigen::Matrix<double,-1,-1> obstacle_status; 				
-	Eigen::Matrix<double,-1, 1> colav_status; 
-
 	Eigen::Matrix<double, 9, -1> obstacle_states;
 	obstacle_states.resize(9, n_obst);
 
@@ -269,6 +265,7 @@ int main(){
 			obstacle_covariances.col(i) = flatten(P_0);
 
 			obstacle_intention_probabilities.col(i) = Pr_a[i];
+
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
 
@@ -280,6 +277,11 @@ int main(){
 			obstacle_covariances, 
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
+
+		Obstacle_Data ref = obstacle_manager.get_data();
+
+		obstacle_manager.update_obstacle_status(trajectory.col(k));
+		obstacle_manager.display_obstacle_information();
 
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
@@ -304,9 +306,6 @@ int main(){
 			mean_t = elapsed.count();
 
 			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
-
-			obstacle_manager.update_obstacle_status(trajectory.col(k));
-			obstacle_manager.display_obstacle_information();
 		
 		}
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;

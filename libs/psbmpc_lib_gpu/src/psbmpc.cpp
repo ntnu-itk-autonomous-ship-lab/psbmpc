@@ -44,8 +44,9 @@ PSBMPC::PSBMPC()
 	: 
 	ownship(Ownship()), pars(PSBMPC_Parameters())
 {
-
 	cpe = CPE(pars.cpe_method, 1000, 100, 0, pars.dt);
+
+	map_offset_sequences();
 }
 
 /****************************************************************************************
@@ -79,8 +80,7 @@ void PSBMPC::map_offset_sequences()
 
 		increment_control_behaviour(offset_sequence_counter, offset_sequence);
 	}
-	std::cout << "Control behaviours: " << std::endl;
-	std::cout << control_behaviours << std::endl;
+	std::cout << "Number of control behaviours: " << control_behaviours.cols() << std::endl;
 }
 
 /****************************************************************************************
