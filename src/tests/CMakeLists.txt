@@ -8,13 +8,9 @@
 add_executable(tester gpu_implementation_test_files/test_psbmpc.cu) # for GPU PSBMPC
 #add_executable(tester test_prng.cpp)
 #add_executable(tester test_thrust.cu)
-#add_executable(tester test_cml.cpp)
+#add_executable(tester gpu_implementation_test_files/test_cml.cu)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_SOURCE_DIR}/libs
 )
-
-#add_link_options(tester 
-#	PRIVATE $<DEVICE_LINK:-gencode arch=compute_61, code=sm_61>
-#)

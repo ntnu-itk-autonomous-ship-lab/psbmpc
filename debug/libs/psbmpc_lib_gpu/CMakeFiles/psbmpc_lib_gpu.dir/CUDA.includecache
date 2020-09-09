@@ -119,8 +119,6 @@ thrust/device_vector.h
 -
 vector
 -
-memory
--
 Eigen/Dense
 ../libs/psbmpc_lib_gpu/include/Eigen/Dense
 obstacle.cuh
@@ -1255,16 +1253,6 @@ utilities.cuh
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cuh
 iostream
 -
-
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle.cu
-thrust/device_vector.h
--
-assert.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/assert.h
-obstacle.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle.cuh
-utilities.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cuh
 
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/psbmpc.cu
 thrust/device_vector.h

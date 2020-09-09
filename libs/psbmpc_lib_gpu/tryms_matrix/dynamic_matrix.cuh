@@ -45,7 +45,7 @@ namespace CML
 
 	public:
 		
-		__host__ __device__ Dynamic_Matrix() : data(nullptr), is_allocated(false) {}
+		__host__ __device__ Dynamic_Matrix() : n_rows(0), n_cols(0), data(nullptr), is_allocated(false) {}
 
 		__host__ __device__ Dynamic_Matrix(const size_t n_rows);
 

@@ -93,8 +93,6 @@ thrust/device_vector.h
 -
 vector
 -
-memory
--
 Eigen/Dense
 ../libs/psbmpc_lib_gpu/include/Eigen/Dense
 obstacle.cuh
