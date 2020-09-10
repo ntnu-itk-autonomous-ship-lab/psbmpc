@@ -333,7 +333,12 @@ __host__ __device__ void CPE::assign_data(
 
     this->converged_last = cpe.converged_last;
 
-    if (mu_CE_last == nullptr && P_CE_last == nullptr)
+    if (mu_CE_last != nullptr && P_CE_last != nullptr)
+    {
+        clean();
+    }
+
+    if (n_obst > 0)
     {
         mu_CE_last = new CML::MatrixXd[n_obst];
         P_CE_last = new CML::MatrixXd[n_obst];

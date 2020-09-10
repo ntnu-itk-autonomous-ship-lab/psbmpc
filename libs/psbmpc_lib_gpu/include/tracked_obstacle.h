@@ -23,6 +23,7 @@
 
 #include <thrust/device_vector.h>
 #include <vector>
+#include <memory>
 #include "Eigen/Dense"
 
 #include "obstacle.cuh"
@@ -75,9 +76,9 @@ private:
 	
 public:
 
-	KF kf;
+	std::unique_ptr<KF> kf;
 
-	MROU mrou;
+	std::unique_ptr<MROU> mrou;
 
 	Tracked_Obstacle();
 
@@ -89,7 +90,11 @@ public:
 			 const double T, 
 			 const double dt);
 
+	Tracked_Obstacle(const Tracked_Obstacle &to);
+
 	~Tracked_Obstacle();
+
+	Tracked_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
 	inline std::vector<bool> get_COLREGS_violation_indicator() const { return mu; }
 

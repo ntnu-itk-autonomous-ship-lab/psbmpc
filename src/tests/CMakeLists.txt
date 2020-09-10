@@ -12,5 +12,6 @@ add_executable(tester gpu_implementation_test_files/test_psbmpc.cu) # for GPU PS
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include
-	${CMAKE_SOURCE_DIR}/libs
+	#${CMAKE_SOURCE_DIR}/libs/psbmpc_lib
+	${CMAKE_SOURCE_DIR}/libs/psbmpc_lib_gpu
 )

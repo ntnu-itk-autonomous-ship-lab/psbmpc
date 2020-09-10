@@ -45,6 +45,10 @@ Obstacle_Manager::Obstacle_Manager()
 
 	obstacle_filter_on = false;
 
+	// Array of strings and precisions for the obstacle status states
+	status_str = {"ID", "SOG", "COG", "RB", "RNG", "HL", "IP", "AH", "SB", "HO", "CRG", "OTG", "OT"};
+	status_precision = {0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0};
+
 	width_arr[0] = 1; 		// Obstacle ID
 	width_arr[1] = 1;		// Obstacle SOG
 	width_arr[2] = 7; 		// Obstacle COG
@@ -78,7 +82,7 @@ void Obstacle_Manager::update_obstacle_status(
 	Eigen::Vector4d xs_i;
 	for(int i = 0; i < n_obst; i++)
 	{
-		xs_i = data.new_obstacles[i].kf.get_state();
+		xs_i = data.new_obstacles[i].kf->get_state();
 
 		ID_0 = data.new_obstacles[i].get_ID();
 		
@@ -115,13 +119,13 @@ void Obstacle_Manager::update_obstacle_status(
 void Obstacle_Manager::display_obstacle_information() const	
 {
 	std::cout << "Obstacle information:" << std::endl;
-	//std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;
+	//std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;	
 
 	for (int i = 0; i < data.obstacle_status.rows(); i++)
 	{
 		std::cout << std::setw(5) << status_str[i];
 	}
-	std::cout << "\n";
+	std::cout << std::endl;
 
 	for (size_t i = 0; i < data.new_obstacles.size(); i++)
 	{
@@ -134,7 +138,7 @@ void Obstacle_Manager::display_obstacle_information() const
 			std::cout << "\n";
 		}
 	}
-	std::cout << std::endl;
+	std::cout << "\n";
 }
 
 /****************************************************************************************
@@ -156,7 +160,11 @@ void Obstacle_Manager::operator()(
 {
 	update_obstacles(psbmpc_pars, obstacle_states, obstacle_covariances, obstacle_intention_probabilities, obstacle_a_priori_CC_probabilities);
 
+	std::cout << data.new_obstacles[0].kf->get_state() << std::endl;
+
 	update_situation_type_and_transitional_variables(psbmpc_pars, ownship_state, ownship_length);
+
+	std::cout << data.new_obstacles[0].kf->get_state() << std::endl;
 }
 
 /****************************************************************************************
@@ -270,11 +278,11 @@ void Obstacle_Manager::update_obstacles(
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
 	) 			
 {
-	// Clear "old" new obstacles before the update
-	data.new_obstacles.clear();
-	
 	int n_obst_old = data.old_obstacles.size();
 	int n_obst_new = obstacle_states.cols();
+
+	data.new_obstacles.clear();
+	std::cout << data.new_obstacles.size() << std::endl;
 
 	bool obstacle_exist;
 	for (int i = 0; i < n_obst_new; i++)
@@ -311,6 +319,8 @@ void Obstacle_Manager::update_obstacles(
 				obstacle_filter_on,  
 				psbmpc_pars.T, 
 				psbmpc_pars.dt)));
+
+			std::cout << data.new_obstacles.size() << std::endl;
 		}
 	}
 	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
@@ -324,7 +334,7 @@ void Obstacle_Manager::update_obstacles(
 			data.old_obstacles[j].increment_duration_lost(psbmpc_pars.dt * psbmpc_pars.p_step);
 
 			if (data.old_obstacles[j].get_duration_tracked() >= T_tracked_limit 	&&
-				(data.old_obstacles[j].get_duration_lost() < T_lost_limit || data.old_obstacles[j].kf.get_covariance()(0,0) <= 5.0))
+				(data.old_obstacles[j].get_duration_lost() < T_lost_limit || data.old_obstacles[j].kf->get_covariance()(0,0) <= 5.0))
 			{
 				data.old_obstacles[j].update(obstacle_filter_on, psbmpc_pars.dt);
 
@@ -334,7 +344,12 @@ void Obstacle_Manager::update_obstacles(
 	}
 	// Clear old obstacle vector, which consist of transferred (nullptr) and terminated obstacles
 	// (set equal to the new obstacle vector)
-	data.old_obstacles = data.new_obstacles;
+	std::cout << data.new_obstacles.size() << std::endl;
+	data.old_obstacles.resize(data.new_obstacles.size());
+	for (int i = 0; i < data.new_obstacles.size(); i++)
+	{
+		data.old_obstacles[i] = data.new_obstacles[i];
+	}	
 }
 
 /****************************************************************************************
@@ -372,12 +387,12 @@ void Obstacle_Manager::update_situation_type_and_transitional_variables(
 	//std::cout << A << std::endl;
 	for (int i = 0; i < n_obst; i++)
 	{
-		v_B(0) = data.new_obstacles[i].kf.get_state()(2);
-		v_B(1) = data.new_obstacles[i].kf.get_state()(3);
+		v_B(0) = data.new_obstacles[i].kf->get_state()(2);
+		v_B(1) = data.new_obstacles[i].kf->get_state()(3);
 		psi_B = atan2(v_B(1), v_B(0));
 
-		L_AB(0) = data.new_obstacles[i].kf.get_state()(0) - ownship_state(0);
-		L_AB(1) = data.new_obstacles[i].kf.get_state()(1) - ownship_state(1);
+		L_AB(0) = data.new_obstacles[i].kf->get_state()(0) - ownship_state(0);
+		L_AB(1) = data.new_obstacles[i].kf->get_state()(1) - ownship_state(1);
 		d_AB = L_AB.norm();
 
 		// Decrease the distance between the vessels by their respective max dimension

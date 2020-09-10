@@ -55,3 +55,21 @@ __host__ __device__ Obstacle::Obstacle(
 {
 	assert(xs_aug.get_cols() == 1);
 }
+
+__host__ __device__ Obstacle::Obstacle(const Obstacle &o) = default;
+
+/****************************************************************************************
+*  Name     : ~Obstacle
+*  Function : Class destructor
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ Obstacle::~Obstacle() = default;
+
+/****************************************************************************************
+*  Name     : operator=
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ Obstacle& Obstacle::operator=(const Obstacle &rhs) = default;

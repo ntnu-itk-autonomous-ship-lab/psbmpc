@@ -35,7 +35,7 @@
 __host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
 	const Cuda_Obstacle &co 													// In: Obstacle to copy
 	) : 
-	Obstacle(co)
+	Obstacle(co), xs_p(nullptr), ps_ordering(nullptr)
 {
 	assign_data(co);
 }
@@ -43,7 +43,7 @@ __host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
 __host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
 	const Tracked_Obstacle &to 													// In: Obstacle to copy
 	) : 
-	Obstacle(to)
+	Obstacle(to), xs_p(nullptr), ps_ordering(nullptr)
 {
 	assign_data(to);
 }
@@ -115,6 +115,9 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 	const Cuda_Obstacle &co 												// In: Cuda_Obstacle whose data to assign to *this
 	)
 {
+	this->xs_0 = co.xs_0;
+	this->P_0 = co.P_0;
+
 	this->n_ps = co.ps_weights.size();
 
 	this->Pr_a = co.Pr_a;
@@ -129,13 +132,14 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 	this->v_p = co.v_p;
 
 	this->ps_course_changes = co.ps_course_changes; this->ps_weights = co.ps_weights; this->ps_maneuver_times = co.ps_maneuver_times;
-	
-	this->kf = KF(co.kf);
-
-	this->mrou = MROU(co.mrou);
 
 	//this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
 	
+	if (xs_p != nullptr && ps_ordering != nullptr)
+	{
+		clean();
+	}
+
 	this->xs_p = new CML::MatrixXd[n_ps];
 	this->ps_ordering = new Intention[n_ps];
 
@@ -150,6 +154,9 @@ __host__ void Cuda_Obstacle::assign_data(
 	const Tracked_Obstacle &to 												// In: Tracked_Obstacle whose data to assign to *this
 	)
 {
+	CML::assign_eigen_object(this->xs_0, to.xs_0);
+	CML::assign_eigen_object(this->P_0, to.P_0);
+
 	this->n_ps = to.ps_weights.size();
 
 	CML::assign_eigen_object(this->Pr_a, to.Pr_a);
@@ -164,13 +171,14 @@ __host__ void Cuda_Obstacle::assign_data(
 	CML::assign_eigen_object(this->ps_course_changes, to.ps_course_changes); 
 	CML::assign_eigen_object(this->ps_weights, to.ps_weights); 
 	CML::assign_eigen_object(this->ps_maneuver_times, to.ps_maneuver_times);
-	
-	this->kf = to.kf;
-
-	this->mrou = to.mrou;
 
 	//this->sbmpc = new Obstacle_SBMPC();
 	
+	if (xs_p != nullptr && ps_ordering != nullptr)
+	{
+		clean();
+	}
+
 	this->xs_p = new CML::MatrixXd[n_ps];
 	this->ps_ordering = new Intention[n_ps];
 

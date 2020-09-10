@@ -35,6 +35,10 @@ class Cuda_Obstacle : public Obstacle
 {
 private:
 
+	// State and covariance at the current time or predicted time
+	CML::MatrixXd xs_0;
+	CML::MatrixXd P_0;
+
 	int n_ps;
 
 	// Vector of intention probabilities at the current time or last time of update
@@ -72,13 +76,9 @@ private:
 	
 public:
 
-	KF kf;
-
-	MROU mrou;
-
 	//Obstacle_SBMPC *sbmpc;
 
-	__host__ __device__ Cuda_Obstacle() {};
+	__host__ __device__ Cuda_Obstacle() : xs_p(nullptr), ps_ordering(nullptr) {};
 
 	__host__ __device__ Cuda_Obstacle(const Cuda_Obstacle &co);
 
