@@ -87,7 +87,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 		fdata.H_TC_0[i] = odata.H_TC_0[i]; 
 		fdata.X_TC_0[i] = odata.X_TC_0[i];
 
-		fdata.obstacles[i] = odata.new_obstacles[i];
+		fdata.obstacles[i] = *(odata.new_obstacles[i]);
 	}
 
 	// Two different own-ship versions, as the psbmpc (CPU part) uses the version with

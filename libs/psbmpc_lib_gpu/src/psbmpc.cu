@@ -73,7 +73,7 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			// PSBMPC parameters needed to determine if obstacle breaches COLREGS 
 			// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
-			data.new_obstacles[i].predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), pars.phi_AH, pars.phi_CR, pars.phi_HO, pars.phi_OT, pars.d_close, pars.d_safe);
+			data.new_obstacles[i]->predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), pars.phi_AH, pars.phi_CR, pars.phi_HO, pars.phi_OT, pars.d_close, pars.d_safe);
 		}
 	}
 

@@ -282,7 +282,7 @@ int main(){
 
 		Obstacle_Data ref = obstacle_manager.get_data();
 
-		std::cout << ref.new_obstacles[0].kf->get_state() << std::endl;
+		std::cout << ref.new_obstacles[0]->kf->get_state() << std::endl;
 
 		obstacle_manager.update_obstacle_status(trajectory.col(k));
 		obstacle_manager.display_obstacle_information();

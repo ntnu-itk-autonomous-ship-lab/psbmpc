@@ -69,7 +69,7 @@ public:
 
 	std::unique_ptr<MROU> mrou;
 
-	Tracked_Obstacle() {};
+	Tracked_Obstacle() {}
 
 	Tracked_Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const Eigen::VectorXd &P, 

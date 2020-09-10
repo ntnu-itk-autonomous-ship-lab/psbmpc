@@ -43,7 +43,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	Obstacle(xs_aug, P, false), 
 	duration_lost(0.0),
 	kf(new KF(xs_0, P_0, ID, dt, 0.0)),
-	mrou(new MROU(0.8, 0, 0.8, 0.1, 0.1))
+	mrou(new MROU(0.8, 0.0, 0.8, 0.1, 0.1))
 {
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	
