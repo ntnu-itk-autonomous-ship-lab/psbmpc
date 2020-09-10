@@ -69,8 +69,8 @@ class Obstacle_Manager
 private:
 
 	// Array of strings and precisions for the obstacle status states
-	std::vector<std::string> status_str = {"ID", "SOG", "COG", "RB", "RNG", "HL", "IP", "AH", "SB", "HO", "CRG", "OTG", "OT"};
-	std::vector<int> status_precision = {0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0};
+	std::vector<std::string> status_str;
+	std::vector<int> status_precision;
 
 	// Array to determine width of print in status display
 	int width_arr[13];

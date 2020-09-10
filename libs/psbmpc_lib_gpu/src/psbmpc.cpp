@@ -180,7 +180,7 @@ void PSBMPC::initialize_prediction(
 		//Typically three intentions: KCC, SM, PM
 		//std::cout << trajectory.col(0).transpose() << std::endl;
 		//std::cout << new_obstacles[i]->kf->get_state() << std::endl;
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.new_obstacles[i].kf.get_state());
+		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.new_obstacles[i].kf->get_state());
 		//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
 		//std::cout << "t_cpa = " << t_cpa(i) << std::endl;
 		//std::cout << "d_cpa = " << d_cpa(i) << std::endl;
@@ -511,7 +511,7 @@ double PSBMPC::find_time_of_passing(
 {
 	double t_obst_passed(1e12), t, psi_A, d_AB;
 	Eigen::VectorXd xs_A = trajectory.col(0);
-	Eigen::VectorXd xs_B = data.new_obstacles[i].kf.get_state();
+	Eigen::VectorXd xs_B = data.new_obstacles[i].kf->get_state();
 	Eigen::Vector2d p_A, p_B, v_A, v_B, L_AB;
 	p_A(0) = xs_A(0); p_A(1) = xs_A(1); psi_A = xs_A(2);
 	v_A(0) = xs_A(3); v_A(1) = xs_A(4); 
@@ -572,8 +572,8 @@ bool PSBMPC::determine_colav_active(
 	Eigen::Vector2d d_0i;
 	for (size_t i = 0; i < data.new_obstacles.size(); i++)
 	{
-		d_0i(0) = data.new_obstacles[i].kf.get_state()(0) - xs(0);
-		d_0i(1) = data.new_obstacles[i].kf.get_state()(1) - xs(1);
+		d_0i(0) = data.new_obstacles[i].kf->get_state()(0) - xs(0);
+		d_0i(1) = data.new_obstacles[i].kf->get_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 
 		// If all obstacles are passed, even though inside colav range,

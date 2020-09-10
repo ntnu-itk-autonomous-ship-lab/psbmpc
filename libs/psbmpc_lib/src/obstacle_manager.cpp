@@ -75,6 +75,8 @@ void Obstacle_Manager::update_obstacle_status(
 	double ID_0, RB_0, COG_0, SOG_0; 
 	Eigen::Vector2d d_0i;
 	Eigen::Vector4d xs_i;
+
+	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	for(int i = 0; i < n_obst; i++)
 	{
 		xs_i = data.new_obstacles[i].kf->get_state();

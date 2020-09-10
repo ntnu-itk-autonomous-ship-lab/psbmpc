@@ -46,7 +46,7 @@ int main(){
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
-	double T_sim = 200; double dt = 0.5;
+	double T_sim = 0.5; double dt = 0.5;
 	int N = std::round(T_sim / dt);
 
 //*****************************************************************************************************************
@@ -268,8 +268,10 @@ int main(){
 
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
+		
+		std::cout << obstacle_states.transpose() << std::endl;
 
-		obstacle_manager.operator()(
+		 obstacle_manager.operator()(
 			psbmpc.pars, 
 			trajectory.col(k), 
 			asv_sim.get_length(),
@@ -280,12 +282,14 @@ int main(){
 
 		Obstacle_Data ref = obstacle_manager.get_data();
 
+		std::cout << ref.new_obstacles[0].kf->get_state() << std::endl;
+
 		obstacle_manager.update_obstacle_status(trajectory.col(k));
 		obstacle_manager.display_obstacle_information();
 
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
-		if (fmod(t, 5) == 0)
+		/* if (fmod(t, 5) == 0)
 		{
 			start = std::chrono::system_clock::now();		
 
@@ -307,11 +311,12 @@ int main(){
 
 			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
 		
-		}
+		} 
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 		asv_sim.update_ctrl_input(u_c, chi_c, trajectory.col(k));
 		
 		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), dt, ERK1); }
+		*/
 
 		//===========================================
 		// Send trajectory data to matlab
