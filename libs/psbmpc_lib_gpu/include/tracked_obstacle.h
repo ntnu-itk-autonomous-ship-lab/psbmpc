@@ -76,9 +76,9 @@ private:
 	
 public:
 
-	std::unique_ptr<KF> kf;
+	KF kf;
 
-	std::unique_ptr<MROU> mrou;
+	MROU mrou;
 
 	Tracked_Obstacle();
 
@@ -92,9 +92,13 @@ public:
 
 	Tracked_Obstacle(const Tracked_Obstacle &to);
 
+	Tracked_Obstacle(Tracked_Obstacle &&to);
+
 	~Tracked_Obstacle();
 
 	Tracked_Obstacle& operator=(const Tracked_Obstacle &rhs);
+
+	Tracked_Obstacle& operator=(Tracked_Obstacle &&rhs);
 
 	inline std::vector<bool> get_COLREGS_violation_indicator() const { return mu; }
 

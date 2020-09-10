@@ -43,9 +43,9 @@ Tracked_Obstacle::Tracked_Obstacle(
 	const double dt 											// In: Sampling interval
 	) : 
 	Obstacle(xs_aug, false), 
-	duration_lost(0.0), duration_tracked(0.0),
-	kf(new KF(xs_0, P_0, ID, dt, 0.0)),
-	mrou(new MROU())
+	duration_tracked(0.0), duration_lost(0.0), 
+	kf(KF(xs_0, P_0, ID, dt, 0.0)),
+	mrou(MROU())
 {
 	double psi = atan2(xs_aug(3), xs_aug(2));
 	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
@@ -73,9 +73,9 @@ Tracked_Obstacle::Tracked_Obstacle(
 
 	if(filter_on) 
 	{
-		kf->update(xs_0, duration_lost, dt);
+		kf.update(xs_0, duration_lost, dt);
 
-		duration_tracked = kf->get_time();
+		duration_tracked = kf.get_time();
 	}
 }
 
@@ -92,6 +92,15 @@ Tracked_Obstacle::Tracked_Obstacle(
 {
 	assign_data(to);
 }
+
+
+/****************************************************************************************
+*  Name     : Tracked_Obstacle
+*  Function : Move constructor
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+Tracked_Obstacle::Tracked_Obstacle(Tracked_Obstacle &&to) = default;
 
 /****************************************************************************************
 *  Name     : ~Tracked_Obstacle
@@ -122,6 +131,14 @@ Tracked_Obstacle& Tracked_Obstacle::operator=(
 }
 
 /****************************************************************************************
+*  Name     : operator=
+*  Function : Move assignment
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+Tracked_Obstacle& Tracked_Obstacle::operator=(Tracked_Obstacle &&rhs) = default;
+
+/****************************************************************************************
 *  Name     : resize_trajectories
 *  Function : Resizes independent trajectories, and also the trajectory covariance
 *			  which is the same for all trajectories.
@@ -134,10 +151,10 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 	xs_p.resize(n_ps);
 	for(int ps = 0; ps < n_ps; ps++)
 	{
-		xs_p[ps].resize(4, n_samples); 	xs_p[ps].col(0) = kf->get_state();
+		xs_p[ps].resize(4, n_samples); 	xs_p[ps].col(0) = kf.get_state();
 	}
 	P_p.resize(16, n_samples);
-	P_p.col(0) 	= flatten(kf->get_covariance());
+	P_p.col(0) 	= flatten(kf.get_covariance());
 }
 
 /****************************************************************************************
@@ -193,7 +210,7 @@ void Tracked_Obstacle::predict_independent_trajectories(
 	mu.resize(n_ps);
 	
 	Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
-	P_p.col(0) = flatten(kf->get_covariance());
+	P_p.col(0) = flatten(kf.get_covariance());
 
 	Eigen::Vector2d v_p_new, d_0i_p;
 	double chi_ps, t = 0;
@@ -201,9 +218,9 @@ void Tracked_Obstacle::predict_independent_trajectories(
 	for(int ps = 0; ps < n_ps; ps++)
 	{
 		ownship_state_sl = ownship_state;
-		v_p(0) = kf->get_state()(2);
-		v_p(1) = kf->get_state()(3);
-		xs_p[ps].col(0) = kf->get_state();
+		v_p(0) = kf.get_state()(2);
+		v_p(1) = kf.get_state()(3);
+		xs_p[ps].col(0) = kf.get_state();
 		
 		have_turned = false;	
 		for(int k = 0; k < n_samples; k++)
@@ -250,9 +267,9 @@ void Tracked_Obstacle::predict_independent_trajectories(
 
 			if (k < n_samples - 1)
 			{
-				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p, dt);
+				xs_p[ps].col(k + 1) = mrou.predict_state(xs_p[ps].col(k), v_p, dt);
 
-				if (ps == 0) P_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
+				if (ps == 0) P_p.col(k + 1) = flatten(mrou.predict_covariance(P_0, t));
 
 				// Propagate ownship assuming straight line trajectory
 				ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
@@ -281,17 +298,17 @@ void Tracked_Obstacle::update(
 	// data (xs_0 and P_0)
 	if (filter_on)
 	{
-		kf->update(xs_0, duration_lost, dt);
+		kf.update(xs_0, duration_lost, dt);
 
-		duration_tracked = kf->get_time();
+		duration_tracked = kf.get_time();
 
-		xs_0 = kf->get_state();
+		xs_0 = kf.get_state();
 
-		P_0 = kf->get_covariance();
+		P_0 = kf.get_covariance();
 	}
 	else
 	{ 
-		kf->reset(xs_0, P_0, 0.0); 
+		kf.reset(xs_0, P_0, 0.0); 
 	}
 	std::cout << "Inside obstacle update 1: xs_0 = " << xs_0.transpose() << std::endl;
 }
@@ -318,17 +335,17 @@ void Tracked_Obstacle::update(
 	// data (xs_0 and P_0)
 	if (filter_on)
 	{
-		kf->update(xs_0, duration_lost, dt);
+		kf.update(xs_0, duration_lost, dt);
 
-		duration_tracked = kf->get_time();
+		duration_tracked = kf.get_time();
 
-		xs_0 = kf->get_state();
+		xs_0 = kf.get_state();
 
-		P_0 = kf->get_covariance();
+		P_0 = kf.get_covariance();
 	}
 	else
 	{ 
-		kf->reset(xs_0, P_0, 0.0); 
+		kf.reset(xs_0, P_0, 0.0); 
 	}
 	std::cout << "Inside obstacle update 2: xs_0 = " << xs_0.transpose() << std::endl;
 	
@@ -369,6 +386,6 @@ void Tracked_Obstacle::assign_data(
 	this->ps_ordering = to.ps_ordering;
 	this->ps_course_changes = to.ps_course_changes; this->ps_weights = to.ps_weights; this->ps_maneuver_times = to.ps_maneuver_times;
 
-	this->kf.reset(new KF(*(to.kf)));
-	this->mrou.reset(new MROU(*(to.mrou)));
+	this->kf = to.kf;
+	this->mrou = to.mrou;
 }
