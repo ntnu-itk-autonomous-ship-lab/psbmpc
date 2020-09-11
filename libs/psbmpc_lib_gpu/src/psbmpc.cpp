@@ -158,11 +158,11 @@ void PSBMPC::initialize_prediction(
 	Obstacle_Data &data														// In: Dynamic obstacle information
 	)
 {
-	int n_obst = data.new_obstacles.size();
+	int n_obst = data.obstacles.size();
 	cpe.set_number_of_obstacles(n_obst);
 	n_ps.resize(n_obst);
 
-	int n_a = data.new_obstacles[0]->get_intention_probabilities().size();
+	int n_a = data.obstacles[0]->get_intention_probabilities().size();
 	
 	//***********************************************************************************
 	// Obstacle prediction initialization
@@ -179,8 +179,8 @@ void PSBMPC::initialize_prediction(
 	{
 		//Typically three intentions: KCC, SM, PM
 		//std::cout << trajectory.col(0).transpose() << std::endl;
-		//std::cout << new_obstacles[i]->kf.get_state() << std::endl;
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.new_obstacles[i]->kf.get_state());
+		//std::cout << obstacles[i]->kf.get_state() << std::endl;
+		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i]->kf.get_state());
 		//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
 		//std::cout << "t_cpa = " << t_cpa(i) << std::endl;
 		//std::cout << "d_cpa = " << d_cpa(i) << std::endl;
@@ -222,7 +222,7 @@ void PSBMPC::initialize_prediction(
 				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, data, i);
 			}	
 		}
-		data.new_obstacles[i]->initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);		
+		data.obstacles[i]->initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);		
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -247,7 +247,7 @@ void PSBMPC::initialize_prediction(
 		t_cpa_min = 1e10; index_closest = -1;
 		for (int i = 0; i < n_obst; i++)
 		{
-			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.new_obstacles[i]->get_length());
+			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i]->get_length());
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
 			// that the previous avoidance maneuver happened before CPA with this obstacle)
@@ -260,7 +260,7 @@ void PSBMPC::initialize_prediction(
 
 		if (index_closest != -1)
 		{
-			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.new_obstacles[index_closest]->get_length());
+			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[index_closest]->get_length());
 			// If no predicted collision,  avoidance maneuver M with the closest
 			// obstacle (that is not passed) is taken at t_cpa_min
 			if (d_cpa(index_closest) > d_safe_i)
@@ -337,7 +337,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
 	// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
 	ps_weights_i.resize(n_ps[i]);
-	Pr_CC_i = data.new_obstacles[i]->get_a_priori_CC_probability();
+	Pr_CC_i = data.obstacles[i]->get_a_priori_CC_probability();
 	switch(data.ST_i_0[i])
 	{
 		case A : // Outside CC consideration zone
@@ -435,7 +435,7 @@ void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 	ps_course_changes_i.resize(0);
 
 	ps_weights_i.resize(n_ps[i]);
-	Pr_CC_i = data.new_obstacles[i]->get_a_priori_CC_probability();
+	Pr_CC_i = data.obstacles[i]->get_a_priori_CC_probability();
 	switch(data.ST_i_0[i])
 	{
 		case A : // Outside CC consideration zone
@@ -511,7 +511,7 @@ double PSBMPC::find_time_of_passing(
 {
 	double t_obst_passed(1e12), t, psi_A, d_AB;
 	Eigen::VectorXd xs_A = trajectory.col(0);
-	Eigen::VectorXd xs_B = data.new_obstacles[i]->kf.get_state();
+	Eigen::VectorXd xs_B = data.obstacles[i]->kf.get_state();
 	Eigen::Vector2d p_A, p_B, v_A, v_B, L_AB;
 	p_A(0) = xs_A(0); p_A(1) = xs_A(1); psi_A = xs_A(2);
 	v_A(0) = xs_A(3); v_A(1) = xs_A(4); 
@@ -557,7 +557,7 @@ double PSBMPC::find_time_of_passing(
 
 /****************************************************************************************
 *  Name     : determine_colav_active
-*  Function : Uses the freshly updated new_obstacles vector and the number of static 
+*  Function : Uses the dynamic obstacle vector and the number of static 
 *			  obstacles to determine whether it is necessary to run the PSBMPC
 *  Author   : Trym Tengesdal
 *  Modified :
@@ -570,10 +570,10 @@ bool PSBMPC::determine_colav_active(
 	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
-	for (size_t i = 0; i < data.new_obstacles.size(); i++)
+	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
-		d_0i(0) = data.new_obstacles[i]->kf.get_state()(0) - xs(0);
-		d_0i(1) = data.new_obstacles[i]->kf.get_state()(1) - xs(1);
+		d_0i(0) = data.obstacles[i]->kf.get_state()(0) - xs(0);
+		d_0i(1) = data.obstacles[i]->kf.get_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 
 		// If all obstacles are passed, even though inside colav range,

@@ -49,7 +49,7 @@ private:
 	// A priori COLREGS compliance probability at the current time or last time of update
 	double Pr_CC;
 
-	// If the AIS-based KF is on, the obstacle is tracked until it dies
+	// If the KF is on, the obstacle is tracked until it dies
 	// while the duration lost may be reset if new measurements are aquired
 	double duration_tracked, duration_lost;
 

@@ -44,7 +44,6 @@ Tracked_Obstacle::Tracked_Obstacle(
 	) : 
 	Obstacle(xs_aug, false), 
 	duration_tracked(0.0), duration_lost(0.0), 
-	kf(KF(xs_0, P_0, ID, dt, 0.0)),
 	mrou(MROU())
 {
 	double psi = atan2(xs_aug(3), xs_aug(2));
@@ -54,6 +53,8 @@ Tracked_Obstacle::Tracked_Obstacle(
 	xs_0(3) = xs_aug(3);
 
 	P_0 = reshape(P, 4, 4);
+
+	kf = KF(xs_0, P_0, ID, dt, 0.0);
 
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	

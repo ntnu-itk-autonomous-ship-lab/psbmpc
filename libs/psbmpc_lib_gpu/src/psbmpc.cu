@@ -54,7 +54,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
-	int n_obst = data.new_obstacles.size();
+	int n_obst = data.obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
 	bool colav_active = determine_colav_active(data, n_static_obst);
@@ -73,7 +73,7 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			// PSBMPC parameters needed to determine if obstacle breaches COLREGS 
 			// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
-			data.new_obstacles[i]->predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), pars.phi_AH, pars.phi_CR, pars.phi_HO, pars.phi_OT, pars.d_close, pars.d_safe);
+			data.obstacles[i]->predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), pars.phi_AH, pars.phi_CR, pars.phi_HO, pars.phi_OT, pars.d_close, pars.d_safe);
 		}
 	}
 
@@ -117,8 +117,8 @@ void PSBMPC::calculate_optimal_offsets(
 
  	for(int i = 0; i < n_obst; i++)
 	{
-		Eigen::MatrixXd P_i_p = data.new_obstacles[i].get_trajectory_covariance();
-		std::vector<Eigen::MatrixXd> xs_i_p = data.new_obstacles[i].get_trajectories();
+		Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
+		std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
 
 		i_mx = mxCreateDoubleScalar(i + 1);
 		engPutVariable(ep, "i", i_mx);
