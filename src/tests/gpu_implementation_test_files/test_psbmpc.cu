@@ -46,7 +46,7 @@ int main(){
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
-	double T_sim = 0.5; double dt = 0.5;
+	double T_sim = 200; double dt = 0.5;
 	int N = std::round(T_sim / dt);
 
 //*****************************************************************************************************************
@@ -280,16 +280,15 @@ int main(){
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
 
-		Obstacle_Data ref = obstacle_manager.get_data();
-
-		std::cout << ref.new_obstacles[0]->kf->get_state() << std::endl;
-
 		obstacle_manager.update_obstacle_status(trajectory.col(k));
 		obstacle_manager.display_obstacle_information();
 
+		Obstacle_Data& ref = obstacle_manager.get_data();
+		std::cout << ref.obstacles.size() << std::endl;
+
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
-		/* if (fmod(t, 5) == 0)
+		if (fmod(t, 5) == 0)
 		{
 			start = std::chrono::system_clock::now();		
 
@@ -302,7 +301,7 @@ int main(){
 				waypoints,
 				trajectory.col(k),
 				static_obstacles,
-				obstacle_manager.get_data());
+				ref);
 
 			end = std::chrono::system_clock::now();
 			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -316,7 +315,7 @@ int main(){
 		asv_sim.update_ctrl_input(u_c, chi_c, trajectory.col(k));
 		
 		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), dt, ERK1); }
-		*/
+		
 
 		//===========================================
 		// Send trajectory data to matlab

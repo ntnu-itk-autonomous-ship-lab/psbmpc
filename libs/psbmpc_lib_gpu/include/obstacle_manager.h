@@ -55,7 +55,10 @@ public:
 	// Obstacle hazard levels, on a scale from 0 to 1 (output from PSBMPC)
 	Eigen::VectorXd HL_0;
 
-	std::vector<std::unique_ptr<Tracked_Obstacle>> old_obstacles;
+	// The "obstacle" vector is the updated list of obstacles used in the PSB-MPC, whereas
+	// the "new_obstacles" is used to transfer relevant obstacles in "obstacles" from previous 
+	// iterations, in addition to adding newly detected ones
+	std::vector<std::unique_ptr<Tracked_Obstacle>> obstacles;
 	std::vector<std::unique_ptr<Tracked_Obstacle>> new_obstacles;
 
 	Eigen::MatrixXd obstacle_status;
@@ -71,8 +74,8 @@ class Obstacle_Manager
 private:
 
 	// Array of strings and precisions for the obstacle status states
-	std::vector<std::string> status_str;
-	std::vector<int> status_precision;
+	std::vector<std::string> status_str = {"ID", "SOG", "COG", "RB", "RNG", "HL", "IP", "AH", "SB", "HO", "CRG", "OTG", "OT"};
+	std::vector<int> status_precision = {0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0};
 
 	// Array to determine width of print in status display
 	int width_arr[13];

@@ -159,6 +159,12 @@ __host__ void Cuda_Obstacle::assign_data(
 
 	this->n_ps = to.ps_weights.size();
 
+	int n_a = to.Pr_a.size();
+	for (int a = 0; a < n_a; a++)
+	{
+		printf("xs = %f ", to.Pr_a(a));
+	}
+	printf("\n");
 	CML::assign_eigen_object(this->Pr_a, to.Pr_a);
 
 	this->Pr_CC = to.Pr_CC;
