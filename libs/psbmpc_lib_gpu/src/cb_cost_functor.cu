@@ -73,8 +73,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	fdata.O_TC_0.resize(fdata.n_obst, 1); 	fdata.Q_TC_0.resize(fdata.n_obst, 1); fdata.IP_0.resize(fdata.n_obst, 1);
 	fdata.H_TC_0.resize(fdata.n_obst, 1); 	fdata.X_TC_0.resize(fdata.n_obst, 1);
 
-	std::cout << odata.obstacles[0]->get_a_priori_CC_probability() << std::endl;
-	std::cout << odata.obstacles[0]->get_intention_probabilities() << std::endl;
+	std::cout << odata.obstacles[0]->kf.get_state().transpose() << std::endl;
 
 	fdata.obstacles = new Cuda_Obstacle[fdata.n_obst];
 	for (int i = 0; i < fdata.n_obst; i++)
@@ -90,14 +89,11 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 		fdata.H_TC_0[i] = odata.H_TC_0[i]; 
 		fdata.X_TC_0[i] = odata.X_TC_0[i];
 
-		fdata.obstacles[i] = *(odata.obstacles[i]);
+		std::cout << odata.obstacles[0]->kf.get_state().transpose() << std::endl;
+		fdata.obstacles[i] = odata.obstacles[i];
 	}
-
-	// Two different own-ship versions, as the psbmpc (CPU part) uses the version with
-	// Eigen, whereas the GPU part on the cost functor uses the CML. Only thing that
-	// needs to be transferred is the active waypoint segment. 
-	ownship = Ownship();
-	ownship.set_wp_counter(master.ownship.get_wp_counter());
+	
+	ownship = master.ownship;
 }
 
 /****************************************************************************************

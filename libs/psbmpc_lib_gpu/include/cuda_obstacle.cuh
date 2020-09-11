@@ -72,7 +72,7 @@ private:
 
 	__host__ __device__ void assign_data(const Cuda_Obstacle &co);
 	
-	__host__ void assign_data(const Tracked_Obstacle &to);
+	__host__ void assign_data(const std::unique_ptr<Tracked_Obstacle> &to);
 	
 public:
 
@@ -88,7 +88,7 @@ public:
 
 	__host__ __device__ Cuda_Obstacle& operator=(const Cuda_Obstacle &rhs);
 
-	__host__ __device__ Cuda_Obstacle& operator=(const Tracked_Obstacle &rhs);
+	__host__ Cuda_Obstacle& operator=(const std::unique_ptr<Tracked_Obstacle> &rhs);
 
 	__host__ __device__ void clean();
 
