@@ -40,7 +40,7 @@ __host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
 	assign_data(co);
 }
 
-__host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
+__host__ Cuda_Obstacle::Cuda_Obstacle(
 	const Tracked_Obstacle &to 													// In: Obstacle to copy
 	) : 
 	Obstacle(to), xs_p(nullptr), ps_ordering(nullptr)
@@ -78,10 +78,10 @@ __host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 	return *this;
 }
 
-__host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
-	const Tracked_Obstacle &rhs 									// In: Rhs to assign
+__host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
+	const std::unique_ptr<Tracked_Obstacle> &rhs 									// In: Rhs pointer whose to assign
 	)
-{	
+{		
 	clean();
 
 	assign_data(rhs);
@@ -115,6 +115,16 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 	const Cuda_Obstacle &co 												// In: Cuda_Obstacle whose data to assign to *this
 	)
 {
+	this->ID = co.ID;
+
+	this->colav_on = co.colav_on;
+
+	this->A = co.A; this->B = co.B; this->C = co.C; this->D = co.D;
+
+	this->l = co.l; this->w = co.w;
+
+	this->x_offset = co.x_offset; this->y_offset = co.y_offset;
+
 	this->xs_0 = co.xs_0;
 	this->P_0 = co.P_0;
 
@@ -151,39 +161,46 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 }
 
 __host__ void Cuda_Obstacle::assign_data(
-	const Tracked_Obstacle &to 												// In: Tracked_Obstacle whose data to assign to *this
+	const std::unique_ptr<Tracked_Obstacle> &to 										// In: Tracked_Obstacle ptr whose data to assign to *this
 	)
 {
-	CML::assign_eigen_object(this->xs_0, to.xs_0);
-	CML::assign_eigen_object(this->P_0, to.P_0);
+	this->ID = to->ID;
 
-	this->n_ps = to.ps_weights.size();
+	this->colav_on = to->colav_on;
 
-	int n_a = to.Pr_a.size();
+	this->A = to->A; this->B = to->B; this->C = to->C; this->D = to->D;
+
+	this->l = to->l; this->w = to->w;
+
+	this->x_offset = to->x_offset; this->y_offset = to->y_offset;
+
+	CML::assign_eigen_object(this->xs_0, to->xs_0);
+	CML::assign_eigen_object(this->P_0, to->P_0);
+
+	std::cout << to->xs_0 << std::endl;
+
+	this->n_ps = to->ps_weights.size();
+
+	int n_a = to->Pr_a.size();
 	for (int a = 0; a < n_a; a++)
 	{
-		printf("xs = %f ", to.Pr_a(a));
+		printf("xs = %f ", to->Pr_a(a));
 	}
 	printf("\n");
-	CML::assign_eigen_object(this->Pr_a, to.Pr_a);
+	CML::assign_eigen_object(this->Pr_a, to->Pr_a);
 
-	this->Pr_CC = to.Pr_CC;
+	this->Pr_CC = to->Pr_CC;
 
-	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
+	this->duration_tracked = to->duration_tracked; this->duration_lost = to->duration_lost;
 	
-	CML::assign_eigen_object(this->P_p, to.P_p);
-	CML::assign_eigen_object(this->v_p, to.v_p);
+	CML::assign_eigen_object(this->P_p, to->P_p);
+	CML::assign_eigen_object(this->v_p, to->v_p);
 
-	CML::assign_eigen_object(this->ps_course_changes, to.ps_course_changes); 
-	CML::assign_eigen_object(this->ps_weights, to.ps_weights); 
-	CML::assign_eigen_object(this->ps_maneuver_times, to.ps_maneuver_times);
+	CML::assign_eigen_object(this->ps_course_changes, to->ps_course_changes); 
+	CML::assign_eigen_object(this->ps_weights, to->ps_weights); 
+	CML::assign_eigen_object(this->ps_maneuver_times, to->ps_maneuver_times);
 
 	//this->sbmpc = new Obstacle_SBMPC();
-	
-	if (xs_p != nullptr && ps_ordering != nullptr)
-	{
-		clean();
-	}
 
 	this->xs_p = new CML::MatrixXd[n_ps];
 	this->ps_ordering = new Intention[n_ps];
@@ -191,10 +208,10 @@ __host__ void Cuda_Obstacle::assign_data(
 	this->mu.resize(n_ps, 1);
 	for (int ps = 0; ps < n_ps; ps++)
 	{
-		this->mu[ps] = to.mu[ps];
+		this->mu[ps] = to->mu[ps];
 
-		CML::assign_eigen_object(this->xs_p[ps], to.xs_p[ps]);
+		CML::assign_eigen_object(this->xs_p[ps], to->xs_p[ps]);
 
-		this->ps_ordering[ps] = to.ps_ordering[ps];
+		this->ps_ordering[ps] = to->ps_ordering[ps];
 	}
 }

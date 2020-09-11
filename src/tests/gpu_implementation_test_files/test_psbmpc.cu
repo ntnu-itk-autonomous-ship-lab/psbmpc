@@ -142,11 +142,11 @@ int main(){
 		trajectory_covariances_i[i].resize(16, 1);
 		trajectory_covariances_i[i].col(0) = flatten(P_0);
 
-		/* Pr_a[i].resize(3);
+		Pr_a[i].resize(3);
 		Pr_a[i] << 1, 1, 1;
-		Pr_a[i] = Pr_a[0] / Pr_a[0].sum(); */
-		Pr_a[i].resize(1);
-		Pr_a[i] << 1;
+		Pr_a[i] = Pr_a[0] / Pr_a[0].sum();
+		/* Pr_a[i].resize(1);
+		Pr_a[i] << 1; */
 
 		Pr_CC[i] = 1;
 
@@ -188,7 +188,7 @@ int main(){
 	obstacle_covariances.resize(16, n_obst);
 
 	Eigen::MatrixXd obstacle_intention_probabilities;
-	obstacle_intention_probabilities.resize(1, n_obst);
+	obstacle_intention_probabilities.resize(3, n_obst);
 
 	Eigen::VectorXd obstacle_a_priori_CC_probabilities(n_obst);
 
@@ -280,11 +280,14 @@ int main(){
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
 
+		std::cout << obstacle_manager.get_data().obstacles[0]->get_intention_probabilities() << std::endl;
+
 		obstacle_manager.update_obstacle_status(trajectory.col(k));
 		obstacle_manager.display_obstacle_information();
 
 		Obstacle_Data& ref = obstacle_manager.get_data();
-		std::cout << ref.obstacles.size() << std::endl;
+		
+		std::cout << obstacle_manager.get_data().obstacles[0]->get_intention_probabilities() << std::endl;
 
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
