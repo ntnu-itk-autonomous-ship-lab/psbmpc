@@ -158,9 +158,7 @@ void Obstacle_Manager::operator()(
 
 	update_situation_type_and_transitional_variables(psbmpc_pars, ownship_state, ownship_length);
 
-	std::cout << data.obstacles[0]->get_intention_probabilities() << std::endl;
-
-	std::cout << data.obstacles[0]->kf.get_state().transpose() << std::endl;
+	std::cout << data.obstacles[0]->get_intention_probabilities().transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -306,14 +304,20 @@ void Obstacle_Manager::update_obstacles(
 		{
 			std::cout << data.new_obstacles.size() << std::endl;
 
-			data.new_obstacles.push_back(std::unique_ptr<Tracked_Obstacle>(new Tracked_Obstacle(
+			std::unique_ptr<Tracked_Obstacle> new_to = std::make_unique<Tracked_Obstacle>(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
 				obstacle_a_priori_CC_probabilities(i),
 				obstacle_filter_on, 
 				psbmpc_pars.T, 
-				psbmpc_pars.dt)));
+				psbmpc_pars.dt);
+
+			std::cout << new_to->get_intention_probabilities().transpose() << std::endl;
+
+			data.new_obstacles.push_back(std::move(new_to));
+
+			std::cout << data.new_obstacles[0]->get_intention_probabilities().transpose() << std::endl;
 
 			std::cout << data.new_obstacles.size() << std::endl;
 		}

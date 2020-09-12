@@ -63,8 +63,6 @@ public:
 
 	Eigen::MatrixXd obstacle_status;
 
-	Obstacle_Data() = default;
-
 	~Obstacle_Data() = default;
 
 };
