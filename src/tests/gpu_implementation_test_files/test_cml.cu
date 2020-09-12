@@ -88,7 +88,7 @@ int main()
 	//================================================================================
 	n_rows = 3; n_cols = 3;
 	M1.resize(n_rows, n_cols); M1_inv.resize(n_rows, n_cols);
-	M2.resize(n_rows, n_cols); 
+	M2.resize(n_rows, n_cols); M2.setZero();
 	M_diff.resize(n_rows, n_cols);
 	while (M2.determinant() <= 0)
 	{
@@ -127,7 +127,7 @@ int main()
 	//================================================================================
 	n_rows = 4; n_cols = 4;
 	M1.resize(n_rows, n_cols); M1_inv.resize(n_rows, n_cols);
-	M2.resize(n_rows, n_cols); 
+	M2.resize(n_rows, n_cols); M2.setZero();
 	M_diff.resize(n_rows, n_cols);
 
 	//M2 = kf->get_covariance();
@@ -354,7 +354,7 @@ int main()
 	//================================================================================
 	n_rows = 4; n_cols = 4;
 	CML::MatrixXd x(n_rows, 1);
-	A.resize(n_rows, n_cols);
+	A.resize(n_rows, n_cols); A.set_zero();
 	CML::MatrixXd res;
 	A_e.resize(n_rows, n_cols);
 	Eigen::VectorXd x_e(n_rows);

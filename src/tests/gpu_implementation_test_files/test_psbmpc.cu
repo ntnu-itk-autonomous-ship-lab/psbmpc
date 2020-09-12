@@ -172,11 +172,11 @@ int main(){
 //*****************************************************************************************************************
 // Obstacle Manager setup
 //*****************************************************************************************************************	
-	Obstacle_Manager obstacle_manager;
+	std::unique_ptr<Obstacle_Manager> obstacle_manager = std::make_unique<Obstacle_Manager>();
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************	
-	PSBMPC psbmpc;
+	std::unique_ptr<PSBMPC> psbmpc = std::make_unique<PSBMPC>();
 	double u_opt, chi_opt;
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
@@ -268,11 +268,9 @@ int main(){
 
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
-		
-		std::cout << obstacle_states.transpose() << std::endl;
 
-		 obstacle_manager.operator()(
-			psbmpc.pars, 
+		 obstacle_manager->operator()(
+			psbmpc->pars, 
 			trajectory.col(k), 
 			asv_sim.get_length(),
 			obstacle_states, 
@@ -280,24 +278,20 @@ int main(){
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
 
-		std::cout << obstacle_manager.get_data().obstacles[0]->get_intention_probabilities() << std::endl;
+		std::cout << obstacle_manager->get_data().obstacles[0]->get_intention_probabilities() << std::endl;
 
-		obstacle_manager.update_obstacle_status(trajectory.col(k));
-		obstacle_manager.display_obstacle_information();
+		obstacle_manager->update_obstacle_status(trajectory.col(k));
+		obstacle_manager->display_obstacle_information();
 
-		//Obstacle_Data& ref = obstacle_manager.get_data();
-		
-		std::cout << obstacle_manager.get_data().obstacles[0]->get_intention_probabilities() << std::endl;
+		Obstacle_Data& ref = obstacle_manager->get_data();
 
-		std::cout << obstacle_manager.get_data().obstacles[0]->kf.get_state().transpose() << std::endl;
-
-		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
+		/* asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
 		if (fmod(t, 5) == 0)
 		{
 			start = std::chrono::system_clock::now();		
 
-			psbmpc.calculate_optimal_offsets(
+			psbmpc->calculate_optimal_offsets(
 				u_opt,
 				chi_opt, 
 				predicted_trajectory,
@@ -306,7 +300,7 @@ int main(){
 				waypoints,
 				trajectory.col(k),
 				static_obstacles,
-				obstacle_manager.get_data());
+				obstacle_manager->get_data());
 
 			end = std::chrono::system_clock::now();
 			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -320,7 +314,7 @@ int main(){
 		asv_sim.update_ctrl_input(u_c, chi_c, trajectory.col(k));
 		
 		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), dt, ERK1); }
-		
+		 */
 
 		//===========================================
 		// Send trajectory data to matlab

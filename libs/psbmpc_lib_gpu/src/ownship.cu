@@ -432,9 +432,6 @@ __host__ __device__ void Ownship::predict_trajectory(
 		if (k < n_samples - 1) 
 		{
 			trajectory.set_col(k + 1, xs);
-
-			/* printf("xs = %f %f %f %f %f %f \n", trajectory.get_col(k + 1)(0), trajectory.get_col(k+1)(1), 
-				trajectory.get_col(k + 1)(2), trajectory.get_col(k + 1)(3), trajectory.get_col(k + 1)(4), trajectory.get_col(k + 1)(5)); */
 		}
 	}
 }

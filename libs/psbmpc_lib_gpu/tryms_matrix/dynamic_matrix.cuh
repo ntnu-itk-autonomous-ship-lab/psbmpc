@@ -706,7 +706,7 @@ namespace CML
 		n_rows = other.n_rows;
 		n_cols = other.n_cols;
 
-		if (data == nullptr)
+		if (!is_allocated)
 		{
 			allocate_data();
 		}

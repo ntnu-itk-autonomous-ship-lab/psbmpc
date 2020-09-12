@@ -47,14 +47,14 @@ Tracked_Obstacle::Tracked_Obstacle(
 	mrou(MROU())
 {
 	double psi = atan2(xs_aug(3), xs_aug(2));
-	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
-	xs_0(2) = xs_aug(2);
-	xs_0(3) = xs_aug(3);
+	this->xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	this->xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	this->xs_0(2) = xs_aug(2);
+	this->xs_0(3) = xs_aug(3);
 
-	P_0 = reshape(P, 4, 4);
+	this->P_0 = reshape(P, 4, 4);
 
-	kf = KF(xs_0, P_0, ID, dt, 0.0);
+	this->kf = KF(xs_0, P_0, ID, dt, 0.0);
 
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	
@@ -64,22 +64,19 @@ Tracked_Obstacle::Tracked_Obstacle(
 	int n_samples = std::round(T / dt);
 
 	// n = 4 states in obstacle model for independent trajectories, using MROU
-	xs_p.resize(1);
-	xs_p[0].resize(4, n_samples);
+	this->xs_p.resize(1);
+	this->xs_p[0].resize(4, n_samples);
+	this->xs_p[0].col(0) = xs_0;
 
-	P_p.resize(16, n_samples);
-	P_p.col(0) = P;
-	
-	xs_p[0].col(0) = xs_0;
+	this->P_p.resize(16, n_samples);
+	this->P_p.col(0) = P;
 
 	if(filter_on) 
 	{
-		kf.update(xs_0, duration_lost, dt);
+		this->kf.update(xs_0, duration_lost, dt);
 
-		duration_tracked = kf.get_time();
-	}
-	std::cout << Pr_a.transpose() << std::endl;
-	
+		this->duration_tracked = kf.get_time();
+	}	
 }
 
 /****************************************************************************************
