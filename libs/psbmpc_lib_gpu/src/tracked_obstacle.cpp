@@ -78,6 +78,8 @@ Tracked_Obstacle::Tracked_Obstacle(
 
 		duration_tracked = kf.get_time();
 	}
+	std::cout << Pr_a.transpose() << std::endl;
+	
 }
 
 /****************************************************************************************
