@@ -24,28 +24,6 @@ cml.cuh
 Eigen/Dense
 ../libs/psbmpc_lib_gpu/include/Eigen/Dense
 
-../libs/psbmpc_lib_gpu/include/obstacle_manager.h
-psbmpc_parameters.h
-../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
-tracked_obstacle.h
-../libs/psbmpc_lib_gpu/include/tracked_obstacle.h
-Eigen/Dense
-../libs/psbmpc_lib_gpu/include/Eigen/Dense
-vector
--
-string
--
-
-../libs/psbmpc_lib_gpu/include/psbmpc_index.h
-
-../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
-psbmpc_index.h
-../libs/psbmpc_lib_gpu/include/psbmpc_index.h
-Eigen/Dense
-../libs/psbmpc_lib_gpu/include/Eigen/Dense
-vector
--
-
 ../libs/psbmpc_lib_gpu/include/tracked_obstacle.h
 thrust/device_vector.h
 -
@@ -1160,18 +1138,14 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle_manager.cpp
-utilities.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.h
-obstacle_manager.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle_manager.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/tracked_obstacle.cpp
 tracked_obstacle.h
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/tracked_obstacle.h
-string
--
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.h
+assert.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/assert.h
 iostream
--
-iomanip
 -
 
 /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h

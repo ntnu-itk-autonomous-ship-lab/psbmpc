@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-gpu_implementation_test_files/test_psbmpc.o: gpu_implementation_test_files/test_psbmpc.cu.o
+gpu_implementation_test_files/test_obstacle.o: gpu_implementation_test_files/test_obstacle.cu.o
 
-.PHONY : gpu_implementation_test_files/test_psbmpc.o
+.PHONY : gpu_implementation_test_files/test_obstacle.o
 
 # target to build an object file
-gpu_implementation_test_files/test_psbmpc.cu.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_psbmpc.cu.o
-.PHONY : gpu_implementation_test_files/test_psbmpc.cu.o
+gpu_implementation_test_files/test_obstacle.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_obstacle.cu.o
+.PHONY : gpu_implementation_test_files/test_obstacle.cu.o
 
-gpu_implementation_test_files/test_psbmpc.i: gpu_implementation_test_files/test_psbmpc.cu.i
+gpu_implementation_test_files/test_obstacle.i: gpu_implementation_test_files/test_obstacle.cu.i
 
-.PHONY : gpu_implementation_test_files/test_psbmpc.i
+.PHONY : gpu_implementation_test_files/test_obstacle.i
 
 # target to preprocess a source file
-gpu_implementation_test_files/test_psbmpc.cu.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_psbmpc.cu.i
-.PHONY : gpu_implementation_test_files/test_psbmpc.cu.i
+gpu_implementation_test_files/test_obstacle.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_obstacle.cu.i
+.PHONY : gpu_implementation_test_files/test_obstacle.cu.i
 
-gpu_implementation_test_files/test_psbmpc.s: gpu_implementation_test_files/test_psbmpc.cu.s
+gpu_implementation_test_files/test_obstacle.s: gpu_implementation_test_files/test_obstacle.cu.s
 
-.PHONY : gpu_implementation_test_files/test_psbmpc.s
+.PHONY : gpu_implementation_test_files/test_obstacle.s
 
 # target to generate assembly for a file
-gpu_implementation_test_files/test_psbmpc.cu.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_psbmpc.cu.s
-.PHONY : gpu_implementation_test_files/test_psbmpc.cu.s
+gpu_implementation_test_files/test_obstacle.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_obstacle.cu.s
+.PHONY : gpu_implementation_test_files/test_obstacle.cu.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... gpu_implementation_test_files/test_psbmpc.o"
-	@echo "... gpu_implementation_test_files/test_psbmpc.i"
-	@echo "... gpu_implementation_test_files/test_psbmpc.s"
+	@echo "... gpu_implementation_test_files/test_obstacle.o"
+	@echo "... gpu_implementation_test_files/test_obstacle.i"
+	@echo "... gpu_implementation_test_files/test_obstacle.s"
 .PHONY : help
 
 

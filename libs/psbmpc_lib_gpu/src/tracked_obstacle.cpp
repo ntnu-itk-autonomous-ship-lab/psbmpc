@@ -31,8 +31,6 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Tracked_Obstacle::Tracked_Obstacle() = default;
-
 Tracked_Obstacle::Tracked_Obstacle(
 	const Eigen::VectorXd &xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
@@ -43,8 +41,8 @@ Tracked_Obstacle::Tracked_Obstacle(
 	const double dt 											// In: Sampling interval
 	) : 
 	Obstacle(xs_aug, false), 
-	duration_tracked(0.0), duration_lost(0.0), 
-	mrou(MROU())
+	duration_tracked(0.0), duration_lost(0.0)
+	//mrou(MROU())
 {
 	double psi = atan2(xs_aug(3), xs_aug(2));
 	this->xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
@@ -52,9 +50,13 @@ Tracked_Obstacle::Tracked_Obstacle(
 	this->xs_0(2) = xs_aug(2);
 	this->xs_0(3) = xs_aug(3);
 
+	std::cout << xs_aug.transpose() << std::endl;
+
+	//std::cout << P.transpose() << std::endl;
+
 	this->P_0 = reshape(P, 4, 4);
 
-	this->kf = KF(xs_0, P_0, ID, dt, 0.0);
+	//this->kf = KF(xs_0, P_0, ID, dt, 0.0);
 
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	
@@ -71,72 +73,13 @@ Tracked_Obstacle::Tracked_Obstacle(
 	this->P_p.resize(16, n_samples);
 	this->P_p.col(0) = P;
 
-	if(filter_on) 
+	/* if(filter_on) 
 	{
 		this->kf.update(xs_0, duration_lost, dt);
 
 		this->duration_tracked = kf.get_time();
-	}	
+	}	 */
 }
-
-/****************************************************************************************
-*  Name     : Tracked_Obstacle
-*  Function : Copy constructor, prevents shallow copies and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-Tracked_Obstacle::Tracked_Obstacle(
-	const Tracked_Obstacle &to 													// In: Tracked obstacle to copy
-	) : 
-	Obstacle(to)
-{
-	assign_data(to);
-}
-
-
-/****************************************************************************************
-*  Name     : Tracked_Obstacle
-*  Function : Move constructor
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-Tracked_Obstacle::Tracked_Obstacle(Tracked_Obstacle &&to) = default;
-
-/****************************************************************************************
-*  Name     : ~Tracked_Obstacle
-*  Function : Class destructor
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-Tracked_Obstacle::~Tracked_Obstacle() = default;
-
-/****************************************************************************************
-*  Name     : operator=
-*  Function : Assignment operator to prevent shallow assignments and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-Tracked_Obstacle& Tracked_Obstacle::operator=(
-	const Tracked_Obstacle &rhs 										// In: Rhs tracked obstacle to assign
-	)
-{
-	if (this == &rhs)
-	{
-		return *this;
-	}
-
-	assign_data(rhs);
-
-	return *this;
-}
-
-/****************************************************************************************
-*  Name     : operator=
-*  Function : Move assignment
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-Tracked_Obstacle& Tracked_Obstacle::operator=(Tracked_Obstacle &&rhs) = default;
 
 /****************************************************************************************
 *  Name     : resize_trajectories
@@ -145,7 +88,7 @@ Tracked_Obstacle& Tracked_Obstacle::operator=(Tracked_Obstacle &&rhs) = default;
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::resize_trajectories(const int n_samples)
+/* void Tracked_Obstacle::resize_trajectories(const int n_samples)
 {
 	int n_ps = ps_ordering.size();
 	xs_p.resize(n_ps);
@@ -155,7 +98,7 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 	}
 	P_p.resize(16, n_samples);
 	P_p.col(0) 	= flatten(kf.get_covariance());
-}
+} */
 
 /****************************************************************************************
 *  Name     : initialize_prediction
@@ -166,7 +109,7 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::initialize_prediction(
+/* void Tracked_Obstacle::initialize_prediction(
 	const std::vector<Intention> &ps_ordering, 						// In: Prediction scenario ordering
 	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
 	const Eigen::VectorXd &ps_weights,	 							// In: The cost function weights for the prediction scenarios
@@ -180,7 +123,7 @@ void Tracked_Obstacle::initialize_prediction(
 	this->ps_weights = ps_weights;
 
 	this->ps_maneuver_times = ps_maneuver_times;
-}
+} */
 
 /****************************************************************************************
 *  Name     : predict_independent_trajectories
@@ -191,7 +134,7 @@ void Tracked_Obstacle::initialize_prediction(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::predict_independent_trajectories(						
+/* void Tracked_Obstacle::predict_independent_trajectories(						
 	const double T, 											// In: Time horizon
 	const double dt, 											// In: Time step
 	const Eigen::Matrix<double, 6, 1> &ownship_state, 			// In: State of own-ship to use for COLREGS penalization calculation
@@ -227,8 +170,7 @@ void Tracked_Obstacle::predict_independent_trajectories(
 		{
 			t = (k + 1) * dt;
 
-			/* d_0i_p = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl;
-			d_0i_p = */ 
+			// d_0i_p = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl; 
 
 			if (!mu[ps])
 			{
@@ -278,7 +220,7 @@ void Tracked_Obstacle::predict_independent_trajectories(
 			}
 		}
 	}
-}
+} */
 
 /****************************************************************************************
 *  Name     : update
@@ -288,7 +230,7 @@ void Tracked_Obstacle::predict_independent_trajectories(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::update(
+/* void Tracked_Obstacle::update(
 	const bool filter_on, 										// In: Indicator of whether the KF is active
 	const double dt 											// In: Prediction time step
 	)
@@ -353,39 +295,8 @@ void Tracked_Obstacle::update(
 	
 	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}
 	else 			{ this->Pr_CC = Pr_CC; }
-}
+} */
 
 /****************************************************************************************
 *  Private functions
 *****************************************************************************************/
-/****************************************************************************************
-*  Name     : assign_data
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-void Tracked_Obstacle::assign_data(
-	const Tracked_Obstacle &to 												// In: Tracked_Obstacle whose data to assign to *this
-	)
-{
-	this->xs_0 = to.xs_0;
-	this->P_0 = to.P_0;
-
-	this->Pr_a = to.Pr_a; 
-
-	this->Pr_CC = to.Pr_CC;
-
-	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
-	
-	this->mu = to.mu;
-
-	this->P_p = to.P_p;
-	this->xs_p = to.xs_p;
-	this->v_p = to.v_p;
-
-	this->ps_ordering = to.ps_ordering;
-	this->ps_course_changes = to.ps_course_changes; this->ps_weights = to.ps_weights; this->ps_maneuver_times = to.ps_maneuver_times;
-
-	this->kf = to.kf;
-	this->mrou = to.mrou;
-}
