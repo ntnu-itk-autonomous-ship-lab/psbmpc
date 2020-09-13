@@ -26,15 +26,13 @@
 #include "obstacle.cuh"
 #include "utilities.cuh"
 
-#include <iostream>
-
 /****************************************************************************************
 *  Name     : Obstacle
 *  Function : Class constructor, initializes parameters, variables and objects
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ Obstacle::Obstacle(
+__host__ __device__ Obstacle::Obstacle(
 	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const bool colav_on											// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	) : 
@@ -43,7 +41,7 @@ __host__ Obstacle::Obstacle(
 	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
 	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6))
 {
-	std::cout << "Obstacle base initialized" << std::endl;
+
 }
 
 __host__ __device__ Obstacle::Obstacle(
@@ -57,21 +55,3 @@ __host__ __device__ Obstacle::Obstacle(
 {
 	assert(xs_aug.get_cols() == 1);
 }
-
-//__host__ __device__ Obstacle::Obstacle(const Obstacle &o) = default;
-
-/****************************************************************************************
-*  Name     : ~Obstacle
-*  Function : Class destructor
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-//__host__ __device__ Obstacle::~Obstacle() = default;
-
-/****************************************************************************************
-*  Name     : operator=
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-//__host__ __device__ Obstacle& Obstacle::operator=(const Obstacle &rhs) = default;

@@ -226,32 +226,32 @@ src/obstacle.cu.s:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle.cu.s
 .PHONY : src/obstacle.cu.s
 
-src/tracked_obstacle.o: src/tracked_obstacle.cpp.o
+src/tracked_obstacle.o: src/tracked_obstacle.cu.o
 
 .PHONY : src/tracked_obstacle.o
 
 # target to build an object file
-src/tracked_obstacle.cpp.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cpp.o
-.PHONY : src/tracked_obstacle.cpp.o
+src/tracked_obstacle.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cu.o
+.PHONY : src/tracked_obstacle.cu.o
 
-src/tracked_obstacle.i: src/tracked_obstacle.cpp.i
+src/tracked_obstacle.i: src/tracked_obstacle.cu.i
 
 .PHONY : src/tracked_obstacle.i
 
 # target to preprocess a source file
-src/tracked_obstacle.cpp.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cpp.i
-.PHONY : src/tracked_obstacle.cpp.i
+src/tracked_obstacle.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cu.i
+.PHONY : src/tracked_obstacle.cu.i
 
-src/tracked_obstacle.s: src/tracked_obstacle.cpp.s
+src/tracked_obstacle.s: src/tracked_obstacle.cu.s
 
 .PHONY : src/tracked_obstacle.s
 
 # target to generate assembly for a file
-src/tracked_obstacle.cpp.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cpp.s
-.PHONY : src/tracked_obstacle.cpp.s
+src/tracked_obstacle.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cu.s
+.PHONY : src/tracked_obstacle.cu.s
 
 src/utilities.o: src/utilities.cpp.o
 

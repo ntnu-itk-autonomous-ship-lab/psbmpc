@@ -22,7 +22,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "tracked_obstacle.h"
+#include "tracked_obstacle.cuh"
 #include "utilities.h"
 #include <iostream>
 #include <vector>
@@ -55,7 +55,7 @@ int main(){
 
 	bool filter_on = true;
 
-	Tracked_Obstacle obstacle = Tracked_Obstacle(xs_aug, flatten(P), Pr_a, Pr_CC, filter_on, T, dt);
+	Tracked_Obstacle obstacle(xs_aug, flatten(P), Pr_a, Pr_CC, filter_on, T, dt);
 
 	std::cout << obstacle.get_intention_probabilities() << std::endl;
 

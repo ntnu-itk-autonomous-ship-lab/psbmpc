@@ -19,7 +19,7 @@
 *
 *****************************************************************************************/
 
-#include "tracked_obstacle.h"
+#include "tracked_obstacle.cuh"
 #include "utilities.h"
 
 #include "assert.h"
@@ -39,31 +39,33 @@ Tracked_Obstacle::Tracked_Obstacle(
 	const bool filter_on, 										// In: Indicator of whether the KF is active
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
-	) : 
+	) :
 	Obstacle(xs_aug, false), 
-	duration_tracked(0.0), duration_lost(0.0)
-	//mrou(MROU())
+	duration_tracked(0.0), duration_lost(0.0),
+	mrou(MROU())
 {
-	double psi = atan2(xs_aug(3), xs_aug(2));
-	this->xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	this->xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
-	this->xs_0(2) = xs_aug(2);
-	this->xs_0(3) = xs_aug(3);
+ 	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
 
 	std::cout << xs_aug.transpose() << std::endl;
 
-	//std::cout << P.transpose() << std::endl;
+	std::cout << P.transpose() << std::endl;
 
-	this->P_0 = reshape(P, 4, 4);
+	P_0 = reshape(P, 4, 4); 
 
-	//this->kf = KF(xs_0, P_0, ID, dt, 0.0);
+	std::cout << P_0 << std::endl;
+
+	this->kf = KF(xs_0, P_0, ID, dt, 0.0);
 
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	
 	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}
 	else 			{ this->Pr_CC = Pr_CC; }
 
-	int n_samples = std::round(T / dt);
+ 	int n_samples = std::round(T / dt);
 
 	// n = 4 states in obstacle model for independent trajectories, using MROU
 	this->xs_p.resize(1);
@@ -71,14 +73,14 @@ Tracked_Obstacle::Tracked_Obstacle(
 	this->xs_p[0].col(0) = xs_0;
 
 	this->P_p.resize(16, n_samples);
-	this->P_p.col(0) = P;
+	this->P_p.col(0) = P; 
 
-	/* if(filter_on) 
+	if(filter_on) 
 	{
 		this->kf.update(xs_0, duration_lost, dt);
 
 		this->duration_tracked = kf.get_time();
-	}	 */
+	}
 }
 
 /****************************************************************************************
@@ -88,7 +90,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-/* void Tracked_Obstacle::resize_trajectories(const int n_samples)
+void Tracked_Obstacle::resize_trajectories(const int n_samples)
 {
 	int n_ps = ps_ordering.size();
 	xs_p.resize(n_ps);
@@ -98,7 +100,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	}
 	P_p.resize(16, n_samples);
 	P_p.col(0) 	= flatten(kf.get_covariance());
-} */
+}
 
 /****************************************************************************************
 *  Name     : initialize_prediction
@@ -109,7 +111,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-/* void Tracked_Obstacle::initialize_prediction(
+void Tracked_Obstacle::initialize_prediction(
 	const std::vector<Intention> &ps_ordering, 						// In: Prediction scenario ordering
 	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
 	const Eigen::VectorXd &ps_weights,	 							// In: The cost function weights for the prediction scenarios
@@ -123,7 +125,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	this->ps_weights = ps_weights;
 
 	this->ps_maneuver_times = ps_maneuver_times;
-} */
+}
 
 /****************************************************************************************
 *  Name     : predict_independent_trajectories
@@ -134,7 +136,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-/* void Tracked_Obstacle::predict_independent_trajectories(						
+void Tracked_Obstacle::predict_independent_trajectories(						
 	const double T, 											// In: Time horizon
 	const double dt, 											// In: Time step
 	const Eigen::Matrix<double, 6, 1> &ownship_state, 			// In: State of own-ship to use for COLREGS penalization calculation
@@ -220,7 +222,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 			}
 		}
 	}
-} */
+}
 
 /****************************************************************************************
 *  Name     : update
@@ -230,7 +232,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-/* void Tracked_Obstacle::update(
+void Tracked_Obstacle::update(
 	const bool filter_on, 										// In: Indicator of whether the KF is active
 	const double dt 											// In: Prediction time step
 	)
@@ -295,7 +297,7 @@ void Tracked_Obstacle::update(
 	
 	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}
 	else 			{ this->Pr_CC = Pr_CC; }
-} */
+}
 
 /****************************************************************************************
 *  Private functions

@@ -54,7 +54,7 @@ public:
 
 	__host__ __device__ Obstacle() {}
 
-	__host__ Obstacle(const Eigen::VectorXd &xs_aug, const bool colav_on);
+	__host__ __device__ Obstacle(const Eigen::VectorXd &xs_aug, const bool colav_on);
 
 	__host__ __device__ Obstacle(const CML::MatrixXd &xs_aug, const bool colav_on);
 
