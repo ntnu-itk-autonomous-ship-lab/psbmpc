@@ -24,7 +24,7 @@ cml.cuh
 Eigen/Dense
 ../libs/psbmpc_lib_gpu/include/Eigen/Dense
 
-../libs/psbmpc_lib_gpu/include/tracked_obstacle.h
+../libs/psbmpc_lib_gpu/include/tracked_obstacle.cuh
 thrust/device_vector.h
 -
 vector
@@ -1139,8 +1139,8 @@ lapacke_mangling.h
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
 /home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/test_obstacle.cu
-tracked_obstacle.h
-/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/tracked_obstacle.h
+tracked_obstacle.cuh
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/tracked_obstacle.cuh
 utilities.h
 /home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/utilities.h
 iostream
