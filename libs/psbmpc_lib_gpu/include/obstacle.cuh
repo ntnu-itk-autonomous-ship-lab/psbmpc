@@ -29,8 +29,6 @@
 #include "cml.cuh"
 #include "Eigen/Dense"
 
-class Obstacle_SBMPC;
-
 enum Intention 
 {
 	KCC, 					// Keep current course
@@ -50,21 +48,21 @@ protected:
 
 	double x_offset, y_offset;
 
-	__host__ __device__ void assign_data(const Obstacle &o);
+	//__host__ __device__ void assign_data(const Obstacle &o);
 
 public:
 
-	__host__ __device__ Obstacle() {};
+	__host__ __device__ Obstacle() {}
 
-	__host__ __device__ Obstacle(const Eigen::VectorXd &xs_aug, const bool colav_on);
+	__host__ Obstacle(const Eigen::VectorXd &xs_aug, const bool colav_on);
 
 	__host__ __device__ Obstacle(const CML::MatrixXd &xs_aug, const bool colav_on);
 
-	__host__ __device__ Obstacle(const Obstacle &o);
+	//__host__ __device__ Obstacle(const Obstacle &o);
 
-	__host__ __device__ ~Obstacle();
+	//__host__ __device__ ~Obstacle();
 
-	__host__ __device__ Obstacle& operator=(const Obstacle &rhs);
+	//__host__ __device__ Obstacle& operator=(const Obstacle &rhs);
 
 	__host__ __device__ int get_ID() const { return ID; };
 

@@ -37,7 +37,7 @@ class Tracked_Obstacle : public Obstacle
 private:
 
 	// To make transfer of data from cpu to gpu obstacle objects easier
-	friend class Cuda_Obstacle;
+	//friend class Cuda_Obstacle;
 
 	// State and covariance at the current time or predicted time
 	Eigen::Vector4d xs_0;
@@ -54,7 +54,7 @@ private:
 	double duration_tracked, duration_lost;
 
 	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: n_ps x 1
-	std::vector<bool> mu;
+	//std::vector<bool> mu;
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
 	// This is equal for all prediction scenarios including those with active COLAV (using MROU)
@@ -63,24 +63,22 @@ private:
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 	std::vector<Eigen::MatrixXd> xs_p;
 
-	// Mean predicted velocity for the obstacle (MROU): 
+/* 	// Mean predicted velocity for the obstacle (MROU): 
 	Eigen::Vector2d v_p;
 
 	// Prediction scenario ordering, size n_ps x 1 of intentions
 	std::vector<Intention> ps_ordering;
 
 	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
-	Eigen::VectorXd ps_course_changes, ps_weights, ps_maneuver_times;
-
-	void assign_data(const Tracked_Obstacle &to);
+	Eigen::VectorXd ps_course_changes, ps_weights, ps_maneuver_times; */
 	
 public:
 
-	KF kf;
+	//KF kf;
 
-	MROU mrou;
+	//MROU mrou;
 
-	Tracked_Obstacle();
+	Tracked_Obstacle() {}
 
 	Tracked_Obstacle(const Eigen::VectorXd &xs_aug, 
 			 const Eigen::VectorXd &P, 
@@ -90,23 +88,13 @@ public:
 			 const double T, 
 			 const double dt);
 
-	Tracked_Obstacle(const Tracked_Obstacle &to);
-
-	Tracked_Obstacle(Tracked_Obstacle &&to);
-
-	~Tracked_Obstacle();
-
-	Tracked_Obstacle& operator=(const Tracked_Obstacle &rhs);
-
-	Tracked_Obstacle& operator=(Tracked_Obstacle &&rhs);
-
-	inline std::vector<bool> get_COLREGS_violation_indicator() const { return mu; }
+	//inline std::vector<bool> get_COLREGS_violation_indicator() const { return mu; }
 
 	inline double get_a_priori_CC_probability() const { return Pr_CC; }
 
 	inline Eigen::VectorXd get_intention_probabilities() const { return Pr_a; }
 
-	// KF related methods
+	/* // KF related methods
 	inline double get_duration_tracked() const { return duration_tracked; }
 
 	inline void reset_duration_tracked() { duration_tracked = 0.0; }
@@ -156,7 +144,7 @@ public:
 
 	void update(
 		const bool filter_on,
-		const double dt);
+		const double dt); */
 };
 
 #endif

@@ -37,8 +37,7 @@ MROU::MROU() :
 	gamma_x(0.1), 						
 	gamma_y(0.1)
 {
-
-	// Calculate constant part of OU predictor covariance
+	// Constant part of OU predictor covariance
 	Sigma_1 << pow(sigma_x, 2) / pow(gamma_x, 3), sigma_xy / (gamma_x * gamma_y), pow(sigma_x, 2) / (2 * pow(gamma_x, 2)), 2 * sigma_xy / gamma_x,
 
 				sigma_xy / (gamma_x * gamma_y), pow(sigma_y, 2) / pow(gamma_y, 3),  2 * sigma_xy / gamma_y, pow(sigma_y, 2) / (2 * pow(gamma_y, 2)),

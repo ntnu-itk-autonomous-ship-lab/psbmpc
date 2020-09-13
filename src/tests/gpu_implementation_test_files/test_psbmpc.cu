@@ -269,7 +269,35 @@ int main(){
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
 
-		 obstacle_manager->operator()(
+		std::cout << obstacle_states.transpose() << std::endl;
+
+		std::cout << obstacle_covariances.transpose() << std::endl;
+
+		std::cout << obstacle_intention_probabilities.transpose() << std::endl;
+
+		std::cout << obstacle_a_priori_CC_probabilities.transpose() << std::endl;
+
+		Tracked_Obstacle new_to = Tracked_Obstacle(
+				obstacle_states.col(0), 
+				obstacle_covariances.col(0),
+				obstacle_intention_probabilities.col(0), 
+				obstacle_a_priori_CC_probabilities(0),
+				false, 
+				200, 
+				0.5);
+
+		/* std::unique_ptr<Tracked_Obstacle> new_to = std::make_unique<Tracked_Obstacle>(
+				obstacle_states.col(0), 
+				obstacle_covariances.col(0),
+				obstacle_intention_probabilities.col(0), 
+				obstacle_a_priori_CC_probabilities(0),
+				false, 
+				200, 
+				0.5); */
+
+		std::cout << new_to.get_intention_probabilities().transpose() << std::endl;
+
+/* 		 obstacle_manager->operator()(
 			psbmpc->pars, 
 			trajectory.col(k), 
 			asv_sim.get_length(),
@@ -283,7 +311,7 @@ int main(){
 		obstacle_manager->update_obstacle_status(trajectory.col(k));
 		obstacle_manager->display_obstacle_information();
 
-		Obstacle_Data& ref = obstacle_manager->get_data();
+		Obstacle_Data& ref = obstacle_manager->get_data(); */
 
 		/* asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
