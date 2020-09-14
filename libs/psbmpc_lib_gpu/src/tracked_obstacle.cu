@@ -51,13 +51,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	xs_0(2) = xs_aug(2);
 	xs_0(3) = xs_aug(3);
 
-	std::cout << xs_aug.transpose() << std::endl;
-
-	std::cout << P.transpose() << std::endl;
-
 	P_0 = reshape(P, 4, 4); 
-
-	std::cout << P_0 << std::endl;
 
 	this->kf = KF(xs_0, P_0, ID, dt, 0.0);
 

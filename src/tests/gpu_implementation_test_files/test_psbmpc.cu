@@ -255,6 +255,8 @@ int main(){
 	{
 		t = k * dt;
 
+		std::cout << Pr_a[0].transpose() << std::endl;
+
 		// Aquire obstacle information
 		for (int i = 0; i < n_obst; i++)
 		{
@@ -269,6 +271,8 @@ int main(){
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
 
+		std::cout << obstacle_intention_probabilities.transpose() << std::endl;
+
 		 obstacle_manager->operator()(
 			psbmpc->pars, 
 			trajectory.col(k), 
@@ -278,12 +282,15 @@ int main(){
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
 
-		std::cout << obstacle_manager->get_data().obstacles[0].get_intention_probabilities().transpose() << std::endl;
+		std::cout << Pr_a[0].transpose() << std::endl;
 
 		obstacle_manager->update_obstacle_status(trajectory.col(k));
+
+		std::cout << Pr_a[0].transpose() << std::endl;
+
 		obstacle_manager->display_obstacle_information();
 
-		Obstacle_Data& ref = obstacle_manager->get_data();
+		std::cout << Pr_a[0].transpose() << std::endl;
 
 		/* asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
