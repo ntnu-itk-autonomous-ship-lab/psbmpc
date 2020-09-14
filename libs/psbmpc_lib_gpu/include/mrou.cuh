@@ -1,8 +1,9 @@
 /****************************************************************************************
 *
-*  File name : mrou.h
+*  File name : mrou.cuh
 *
-*  Function  : Header file for the Mean-Reverting Ornstein-Uhlenbeck process predictor
+*  Function  : Header file for the Mean-Reverting Ornstein-Uhlenbeck process predictor,
+*			   modified with .cuh for this GPU-implementation.
 *
 *  
 *	           ---------------------
@@ -18,8 +19,8 @@
 *
 *****************************************************************************************/
 
-#ifndef _MROU_H_
-#define _MROU_H_
+#ifndef _MROU_CUH_
+#define _MROU_CUH_
 
 #include "Eigen/Dense"
 

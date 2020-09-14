@@ -1,13 +1,10 @@
 /****************************************************************************************
 *
-*  File name : psbmpc.h
+*  File name : psbmpc.cuh
 *
-*  Function  : Header file for Probabilistic Scenario-based Model Predictive Control.
-*			   Brand new extended and improved version of the SB-MPC implemented by  
-*			   Inger Berge Hagen and Giorgio D. Kwame Minde Kufoalor through the Autosea 
-*			   project.
-*
-*  
+*  Function  : Header file for Probabilistic Scenario-based Model Predictive Control, 
+*			   slightly modified for this GPU-implementation.
+*			   
 *	           ---------------------
 *
 *  Version 1.0
@@ -21,12 +18,12 @@
 *
 *****************************************************************************************/
 
-#ifndef _PSBMPC_H_
-#define _PSBMPC_H_
+#ifndef _PSBMPC_CUH_
+#define _PSBMPC_CUH_
 
 #include "psbmpc_index.h"
 #include "psbmpc_parameters.h"
-#include "obstacle_manager.h"
+#include "obstacle_manager.cuh"
 #include "obstacle.cuh"
 #include "ownship.cuh"
 #include "cpe.cuh"

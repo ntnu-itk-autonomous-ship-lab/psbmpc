@@ -1,8 +1,9 @@
 /****************************************************************************************
 *
-*  File name : tracked_obstacle.h
+*  File name : tracked_obstacle.cuh
 *
-*  Function  : Header file for the tracked obstacle class used by the PSB-MPC
+*  Function  : Header file for the tracked obstacle class used by the PSB-MPC, slightly
+*			   modified for this GPU-implementation
 *  
 *	           ---------------------
 *
@@ -18,19 +19,17 @@
 *****************************************************************************************/
 
 
-#ifndef _TRACKED_OBSTACLE_H_
-#define _TRACKED_OBSTACLE_H_
+#ifndef _TRACKED_OBSTACLE_CUH_
+#define _TRACKED_OBSTACLE_CUH_
 
-#include <thrust/device_vector.h>
 #include <vector>
-#include <memory>
 #include "Eigen/Dense"
 
 #include "obstacle.cuh"
-#include "mrou.h"
-#include "kf.h"
+#include "mrou.cuh"
+#include "kf.cuh"
 
-//class Cuda_Obstacle;
+class Cuda_Obstacle;
 
 class Tracked_Obstacle : public Obstacle
 {

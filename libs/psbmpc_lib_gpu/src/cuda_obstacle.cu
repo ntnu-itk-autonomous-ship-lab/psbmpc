@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : cuda_obstacle.cpp
+*  File name : cuda_obstacle.cu
 *
 *  Function  : Cuda obstacle class functions. Derived class of base Obstacle class,
 *		  	   used in the PSB-MPC GPU CB_Cost_Functor computation.
@@ -21,8 +21,6 @@
 
 #include "cuda_obstacle.cuh"
 //#include "obstacle_sbmpc.cuh"
-#include "kf.h"
-#include "mrou.h"
 #include "utilities.cuh"
 #include <iostream> 
 
@@ -79,7 +77,7 @@ __host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 }
 
 __host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
-	const std::unique_ptr<Tracked_Obstacle> &rhs 									// In: Rhs pointer whose to assign
+	const Tracked_Obstacle &rhs 									// In: Rhs Tracked_Obstacle whose data to assign
 	)
 {		
 	clean();
@@ -161,44 +159,44 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 }
 
 __host__ void Cuda_Obstacle::assign_data(
-	const std::unique_ptr<Tracked_Obstacle> &to 										// In: Tracked_Obstacle ptr whose data to assign to *this
+	const Tracked_Obstacle &to 										// In: Tracked_Obstacle ptr whose data to assign to *this
 	)
 {
-	this->ID = to->ID;
+	this->ID = to.ID;
 
-	this->colav_on = to->colav_on;
+	this->colav_on = to.colav_on;
 
-	this->A = to->A; this->B = to->B; this->C = to->C; this->D = to->D;
+	this->A = to.A; this->B = to.B; this->C = to.C; this->D = to.D;
 
-	this->l = to->l; this->w = to->w;
+	this->l = to.l; this->w = to.w;
 
-	this->x_offset = to->x_offset; this->y_offset = to->y_offset;
+	this->x_offset = to.x_offset; this->y_offset = to.y_offset;
 
-	CML::assign_eigen_object(this->xs_0, to->xs_0);
-	CML::assign_eigen_object(this->P_0, to->P_0);
+	CML::assign_eigen_object(this->xs_0, to.xs_0);
+	CML::assign_eigen_object(this->P_0, to.P_0);
 
-	std::cout << to->xs_0 << std::endl;
+	std::cout << to.xs_0 << std::endl;
 
-	this->n_ps = to->ps_weights.size();
+	this->n_ps = to.ps_weights.size();
 
-	int n_a = to->Pr_a.size();
+	int n_a = to.Pr_a.size();
 	for (int a = 0; a < n_a; a++)
 	{
-		printf("xs = %f ", to->Pr_a(a));
+		printf("xs = %f ", to.Pr_a(a));
 	}
 	printf("\n");
-	CML::assign_eigen_object(this->Pr_a, to->Pr_a);
+	CML::assign_eigen_object(this->Pr_a, to.Pr_a);
 
-	this->Pr_CC = to->Pr_CC;
+	this->Pr_CC = to.Pr_CC;
 
-	this->duration_tracked = to->duration_tracked; this->duration_lost = to->duration_lost;
+	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
 	
-	CML::assign_eigen_object(this->P_p, to->P_p);
-	CML::assign_eigen_object(this->v_p, to->v_p);
+	CML::assign_eigen_object(this->P_p, to.P_p);
+	CML::assign_eigen_object(this->v_p, to.v_p);
 
-	CML::assign_eigen_object(this->ps_course_changes, to->ps_course_changes); 
-	CML::assign_eigen_object(this->ps_weights, to->ps_weights); 
-	CML::assign_eigen_object(this->ps_maneuver_times, to->ps_maneuver_times);
+	CML::assign_eigen_object(this->ps_course_changes, to.ps_course_changes); 
+	CML::assign_eigen_object(this->ps_weights, to.ps_weights); 
+	CML::assign_eigen_object(this->ps_maneuver_times, to.ps_maneuver_times);
 
 	//this->sbmpc = new Obstacle_SBMPC();
 
@@ -208,10 +206,10 @@ __host__ void Cuda_Obstacle::assign_data(
 	this->mu.resize(n_ps, 1);
 	for (int ps = 0; ps < n_ps; ps++)
 	{
-		this->mu[ps] = to->mu[ps];
+		this->mu[ps] = to.mu[ps];
 
-		CML::assign_eigen_object(this->xs_p[ps], to->xs_p[ps]);
+		CML::assign_eigen_object(this->xs_p[ps], to.xs_p[ps]);
 
-		this->ps_ordering[ps] = to->ps_ordering[ps];
+		this->ps_ordering[ps] = to.ps_ordering[ps];
 	}
 }
