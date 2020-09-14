@@ -18,12 +18,10 @@
 *
 *****************************************************************************************/
 
-#include <thrust/device_vector.h>
-#include "cml.cuh"
-#include "utilities.cuh"
-#include "psbmpc.h"
 #include "cb_cost_functor.cuh"
-#include <math.h>
+#include "utilities.cuh"
+
+#include <cmath>
 #include <iostream>
 
 #ifndef M_PI
@@ -73,7 +71,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	fdata.O_TC_0.resize(fdata.n_obst, 1); 	fdata.Q_TC_0.resize(fdata.n_obst, 1); fdata.IP_0.resize(fdata.n_obst, 1);
 	fdata.H_TC_0.resize(fdata.n_obst, 1); 	fdata.X_TC_0.resize(fdata.n_obst, 1);
 
-	std::cout << odata.obstacles[0]->kf.get_state().transpose() << std::endl;
+	std::cout << odata.obstacles[0].kf.get_state().transpose() << std::endl;
 
 	fdata.obstacles = new Cuda_Obstacle[fdata.n_obst];
 	for (int i = 0; i < fdata.n_obst; i++)
@@ -89,7 +87,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 		fdata.H_TC_0[i] = odata.H_TC_0[i]; 
 		fdata.X_TC_0[i] = odata.X_TC_0[i];
 
-		std::cout << odata.obstacles[0]->kf.get_state().transpose() << std::endl;
+		std::cout << odata.obstacles[0].kf.get_state().transpose() << std::endl;
 		fdata.obstacles[i] = odata.obstacles[i];
 	}
 	

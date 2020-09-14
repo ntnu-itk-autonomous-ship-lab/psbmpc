@@ -1,10 +1,11 @@
 /****************************************************************************************
 *
-*  File name : obstacle_manager.h
+*  File name : obstacle_manager.cuh
 *
 *  Function  : Header file for the obstacle management interface and data structure for
 *			   keeping information on dynamic obstacles. As of now only
-*			   used for dynamic obstacle management.
+*			   used for dynamic obstacle management, modified with .cuh for this
+*			   GPU-implementation.
 *
 *  
 *	           ---------------------
@@ -20,11 +21,11 @@
 *
 *****************************************************************************************/
 
-#ifndef _OBSTACLE_MANAGER_H_
-#define _OBSTACLE_MANAGER_H_
+#ifndef _OBSTACLE_MANAGER_CUH_
+#define _OBSTACLE_MANAGER_CUH_
 
 #include "psbmpc_parameters.h"
-#include "tracked_obstacle.h"
+#include "tracked_obstacle.cuh"
 #include "Eigen/Dense"
 #include <vector>
 #include <string>
@@ -58,8 +59,8 @@ public:
 	// The "obstacle" vector is the updated list of obstacles used in the PSB-MPC, whereas
 	// the "new_obstacles" is used to transfer relevant obstacles in "obstacles" from previous 
 	// iterations, in addition to adding newly detected ones
-	std::vector<std::unique_ptr<Tracked_Obstacle>> obstacles;
-	std::vector<std::unique_ptr<Tracked_Obstacle>> new_obstacles;
+	std::vector<Tracked_Obstacle> obstacles;
+	std::vector<Tracked_Obstacle> new_obstacles;
 
 	Eigen::MatrixXd obstacle_status;
 

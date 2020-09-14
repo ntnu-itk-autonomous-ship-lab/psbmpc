@@ -1,10 +1,10 @@
 /****************************************************************************************
 *
-*  File name : kf.h
+*  File name : kf.cu
 *
 *  Function  : Class functions for a "hardcoded" Kalman Filter (KF). Alternative version
 *			   of the one created by Giorgio D. Kwame Minde Kufoalor through the Autosea
-*		       project
+*		       project, modified with .cu for this GPU-implementation.
 *
 *  
 *            ---------------------
@@ -20,9 +20,8 @@
 *
 *****************************************************************************************/
 
-#include "kf.h"
+#include "kf.cuh"
 #include <stdexcept>
-
 
 /****************************************************************************************
 *  Name     : KF

@@ -1,9 +1,10 @@
 /****************************************************************************************
 *
-*  File name : tracked_obstacle.cpp
+*  File name : tracked_obstacle.cu
 *
 *  Function  : Tracked bstacle class functions. Derived class of base Obstacle class,
-*		  	   used in the PSB-MPC obstacle management.
+*		  	   used in the PSB-MPC obstacle management. Modified with .cu for this 
+*			   GPU-implementation.
 *
 *  
 *	           ---------------------

@@ -2,9 +2,8 @@
 *
 *  File name : obstacle.cuh
 *
-*  Function  : Header file for the obstacle class. New version of the one created
-*			   for SBMPC by Inger Berge Hagen and Giorgio D. Kwame Minde Kufoalor
-*			   through the Autosea project.
+*  Function  : Header file for the obstacle class, slightly
+*			   modified for this GPU-implementation.
 *  
 *	           ---------------------
 *

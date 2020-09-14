@@ -22,7 +22,7 @@
 #define _CB_COST_FUNCTOR_H_
 
 #include <thrust/device_vector.h>
-#include "psbmpc.h"
+#include "psbmpc.cuh"
 #include "cml.cuh"
 #include "ownship.cuh"
 #include "cuda_obstacle.cuh"
@@ -65,7 +65,7 @@ public:
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		const Obstacle_Data &odata);
 
-	__host__ __device__ CB_Functor_Data() {};
+	__host__ __device__ CB_Functor_Data() : obstacles(nullptr) {};
 };
 
 // DEVICE methods
@@ -134,7 +134,7 @@ private:
 	__device__ double distance_to_static_obstacle(const CML::MatrixXd &p, const CML::MatrixXd &v_1, const CML::MatrixXd &v_2);
 
 public: 
-	//__host__ CB_Cost_Functor();
+	__host__ CB_Cost_Functor() {}
 
 	__host__ CB_Cost_Functor(
 		const PSBMPC &master, 

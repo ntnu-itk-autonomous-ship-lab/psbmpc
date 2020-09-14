@@ -1,9 +1,9 @@
 /****************************************************************************************
 *
-*  File name : mrou.cpp
+*  File name : mrou.cu
 *
 *  Function  : Implements class functions for the Mean-Reverting Ornstein-Uhlenbeck 
-*			   process
+*			   process, modified with .cu for this GPU-implementation.
 *  
 *	           ---------------------
 *
@@ -18,8 +18,8 @@
 *
 *****************************************************************************************/
 
-#include "mrou.h"
-#include "math.h"
+#include "mrou.cuh"
+#include <cmath>
 #include <iostream>
 
 

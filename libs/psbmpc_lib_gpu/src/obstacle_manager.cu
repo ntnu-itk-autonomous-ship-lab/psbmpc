@@ -1,8 +1,9 @@
 /****************************************************************************************
 *
-*  File name : obstacle_manager.cpp
+*  File name : obstacle_manager.cu
 *
-*  Function  : Class functions for the obstacle management interface
+*  Function  : Class functions for the obstacle management interface, modified with
+*			   .cu for this GPU-implementation.
 *	           ---------------------
 *
 *  Version 1.0
@@ -17,7 +18,7 @@
 *****************************************************************************************/
 
 #include "utilities.h"
-#include "obstacle_manager.h"
+#include "obstacle_manager.cuh"
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -78,9 +79,9 @@ void Obstacle_Manager::update_obstacle_status(
 	Eigen::Vector4d xs_i;
 	for(int i = 0; i < n_obst; i++)
 	{
-		xs_i = data.obstacles[i]->kf.get_state();
+		xs_i = data.obstacles[i].kf.get_state();
 
-		ID_0 = data.obstacles[i]->get_ID();
+		ID_0 = data.obstacles[i].get_ID();
 		
 		d_0i = (xs_i.block<2, 1>(0, 0) - ownship_state.block<2, 1>(0, 0));
 
@@ -158,7 +159,7 @@ void Obstacle_Manager::operator()(
 
 	update_situation_type_and_transitional_variables(psbmpc_pars, ownship_state, ownship_length);
 
-	std::cout << data.obstacles[0]->get_intention_probabilities().transpose() << std::endl;
+	std::cout << data.obstacles[0].get_intention_probabilities().transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -281,11 +282,11 @@ void Obstacle_Manager::update_obstacles(
 		obstacle_exist = false;
 		for (int j = 0; j < n_obst_old; j++)
 		{
-			if ((double)data.obstacles[j]->get_ID() == obstacle_states(8, i))
+			if ((double)data.obstacles[j].get_ID() == obstacle_states(8, i))
 			{
-				data.obstacles[j]->reset_duration_lost();
+				data.obstacles[j].reset_duration_lost();
 
-				data.obstacles[j]->update(
+				data.obstacles[j].update(
 					obstacle_states.col(i), 
 					obstacle_covariances.col(i), 
 					obstacle_intention_probabilities.col(i),
@@ -304,7 +305,7 @@ void Obstacle_Manager::update_obstacles(
 		{
 			std::cout << data.new_obstacles.size() << std::endl;
 
-			std::unique_ptr<Tracked_Obstacle> new_to = std::make_unique<Tracked_Obstacle>(
+			data.new_obstacles.emplace_back(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
 				obstacle_intention_probabilities.col(i), 
@@ -312,12 +313,6 @@ void Obstacle_Manager::update_obstacles(
 				obstacle_filter_on, 
 				psbmpc_pars.T, 
 				psbmpc_pars.dt);
-
-			std::cout << new_to->get_intention_probabilities().transpose() << std::endl;
-
-			data.new_obstacles.push_back(std::move(new_to));
-
-			std::cout << data.new_obstacles[0]->get_intention_probabilities().transpose() << std::endl;
 
 			std::cout << data.new_obstacles.size() << std::endl;
 		}
@@ -330,12 +325,12 @@ void Obstacle_Manager::update_obstacles(
 	{
 		for (size_t j = 0; j < data.obstacles.size(); j++)
 		{
-			data.obstacles[j]->increment_duration_lost(psbmpc_pars.dt * psbmpc_pars.p_step);
+			data.obstacles[j].increment_duration_lost(psbmpc_pars.dt * psbmpc_pars.p_step);
 
-			if (data.obstacles[j]->get_duration_tracked() >= T_tracked_limit 	&&
-				(data.obstacles[j]->get_duration_lost() < T_lost_limit || data.obstacles[j]->kf.get_covariance()(0,0) <= 5.0))
+			if (data.obstacles[j].get_duration_tracked() >= T_tracked_limit 	&&
+				(data.obstacles[j].get_duration_lost() < T_lost_limit || data.obstacles[j].kf.get_covariance()(0,0) <= 5.0))
 			{
-				data.obstacles[j]->update(obstacle_filter_on, psbmpc_pars.dt);
+				data.obstacles[j].update(obstacle_filter_on, psbmpc_pars.dt);
 
 				data.new_obstacles.push_back(std::move(data.obstacles[j]));
 			}
@@ -381,16 +376,16 @@ void Obstacle_Manager::update_situation_type_and_transitional_variables(
 	//std::cout << A << std::endl;
 	for (int i = 0; i < n_obst; i++)
 	{
-		v_B(0) = data.obstacles[i]->kf.get_state()(2);
-		v_B(1) = data.obstacles[i]->kf.get_state()(3);
+		v_B(0) = data.obstacles[i].kf.get_state()(2);
+		v_B(1) = data.obstacles[i].kf.get_state()(3);
 		psi_B = atan2(v_B(1), v_B(0));
 
-		L_AB(0) = data.obstacles[i]->kf.get_state()(0) - ownship_state(0);
-		L_AB(1) = data.obstacles[i]->kf.get_state()(1) - ownship_state(1);
+		L_AB(0) = data.obstacles[i].kf.get_state()(0) - ownship_state(0);
+		L_AB(1) = data.obstacles[i].kf.get_state()(1) - ownship_state(1);
 		d_AB = L_AB.norm();
 
 		// Decrease the distance between the vessels by their respective max dimension
-		d_AB = d_AB - 0.5 * (ownship_length + data.obstacles[i]->get_length()); 
+		d_AB = d_AB - 0.5 * (ownship_length + data.obstacles[i].get_length()); 
 		
 		L_AB = L_AB.normalized();
 
