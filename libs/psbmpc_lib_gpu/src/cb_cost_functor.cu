@@ -71,8 +71,6 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	fdata.O_TC_0.resize(fdata.n_obst, 1); 	fdata.Q_TC_0.resize(fdata.n_obst, 1); fdata.IP_0.resize(fdata.n_obst, 1);
 	fdata.H_TC_0.resize(fdata.n_obst, 1); 	fdata.X_TC_0.resize(fdata.n_obst, 1);
 
-	std::cout << odata.obstacles[0].kf.get_state().transpose() << std::endl;
-
 	fdata.obstacles = new Cuda_Obstacle[fdata.n_obst];
 	for (int i = 0; i < fdata.n_obst; i++)
 	{

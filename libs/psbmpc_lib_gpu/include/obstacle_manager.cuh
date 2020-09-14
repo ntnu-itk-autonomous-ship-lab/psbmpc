@@ -77,7 +77,7 @@ private:
 	std::vector<int> status_precision = {0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0};
 
 	// Array to determine width of print in status display
-	int width_arr[13];
+	std::vector<int> width_arr;
 
 	double T_lost_limit, T_tracked_limit;
 
