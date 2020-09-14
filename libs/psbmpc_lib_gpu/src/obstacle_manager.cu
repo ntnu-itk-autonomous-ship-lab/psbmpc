@@ -135,7 +135,7 @@ void Obstacle_Manager::display_obstacle_information() const
 			std::cout << "\n";
 		}
 	}
-	std::cout << "\n";
+	std::cout << std::endl;
 }
 
 /****************************************************************************************
@@ -158,8 +158,6 @@ void Obstacle_Manager::operator()(
 	update_obstacles(psbmpc_pars, obstacle_states, obstacle_covariances, obstacle_intention_probabilities, obstacle_a_priori_CC_probabilities);
 
 	update_situation_type_and_transitional_variables(psbmpc_pars, ownship_state, ownship_length);
-
-	std::cout << data.obstacles[0].get_intention_probabilities().transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -303,8 +301,6 @@ void Obstacle_Manager::update_obstacles(
 		}
 		if (!obstacle_exist)
 		{
-			std::cout << data.new_obstacles.size() << std::endl;
-
 			data.new_obstacles.emplace_back(
 				obstacle_states.col(i), 
 				obstacle_covariances.col(i),
@@ -313,8 +309,6 @@ void Obstacle_Manager::update_obstacles(
 				obstacle_filter_on, 
 				psbmpc_pars.T, 
 				psbmpc_pars.dt);
-
-			std::cout << data.new_obstacles.size() << std::endl;
 		}
 	}
 	// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
