@@ -46,19 +46,20 @@ Obstacle_Manager::Obstacle_Manager()
 
 	obstacle_filter_on = false;
 
+	width_arr.resize(13);
 	width_arr[0] = 1; 		// Obstacle ID
 	width_arr[1] = 1;		// Obstacle SOG
-	width_arr[2] = 7; 		// Obstacle COG
-	width_arr[3] = 5;		// Obstacle R-BRG
-	width_arr[4] = 5; 		// Obstacle RNG
-	width_arr[5] = 2;		// Obstacle HL
-	width_arr[6] = 2; 		// Obstacle IP
-	width_arr[7] = 2;		// Obstacle AH
-	width_arr[8] = 2; 		// Obstacle SB
-	width_arr[9] = 2;		// Obstacle HO
-	width_arr[10] = 2; 		// Obstacle CRG
-	width_arr[11] = 2;		// Obstacle OTG
-	width_arr[12] = 2; 		// Obstacle OT
+	width_arr[2] = 1; 		// Obstacle COG
+	width_arr[3] = 1;		// Obstacle R-BRG
+	width_arr[4] = 1; 		// Obstacle RNG
+	width_arr[5] = 1;		// Obstacle HL
+	width_arr[6] = 1; 		// Obstacle IP
+	width_arr[7] = 1;		// Obstacle AH
+	width_arr[8] = 1; 		// Obstacle SB
+	width_arr[9] = 1;		// Obstacle HO
+	width_arr[10] = 1; 		// Obstacle CRG
+	width_arr[11] = 1;		// Obstacle OTG
+	width_arr[12] = 1; 		// Obstacle OT
 }
 
 /****************************************************************************************
@@ -115,20 +116,21 @@ void Obstacle_Manager::update_obstacle_status(
 *****************************************************************************************/
 void Obstacle_Manager::display_obstacle_information() const	
 {
-	std::cout << "Obstacle information:" << std::endl;
-	//std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;	
+	std::cout << "Dynamic obstacle information:\n";
+	//std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;
 
 	for (int i = 0; i < data.obstacle_status.rows(); i++)
 	{
 		std::cout << std::setw(5) << status_str[i];
 	}
-	std::cout << std::endl;
+	std::cout << "\n";
 
 	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
 		for (int j = 0; j < data.obstacle_status.rows(); j++)
 		{
-			std::cout << std::setw(width_arr[i] + 4) << std::setprecision(status_precision[i]) << data.obstacle_status(j, i) << std::fixed;
+			std::cout.width(width_arr[j] + 4);
+			std::cout << (int)data.obstacle_status(j, i); // int conversion ok due to variables displayed.
 		}
 		if (i < data.obstacles.size() - 1)
 		{

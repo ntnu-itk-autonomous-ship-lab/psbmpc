@@ -46,7 +46,7 @@ int main(){
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
-	double T_sim = 200; double dt = 0.5;
+	double T_sim = 1.5; double dt = 0.5;
 	int N = std::round(T_sim / dt);
 
 //*****************************************************************************************************************
@@ -255,8 +255,6 @@ int main(){
 	{
 		t = k * dt;
 
-		std::cout << Pr_a[0].transpose() << std::endl;
-
 		// Aquire obstacle information
 		for (int i = 0; i < n_obst; i++)
 		{
@@ -271,8 +269,6 @@ int main(){
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
 
-		std::cout << obstacle_intention_probabilities.transpose() << std::endl;
-
 		 obstacle_manager->operator()(
 			psbmpc->pars, 
 			trajectory.col(k), 
@@ -282,17 +278,16 @@ int main(){
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
 
-		std::cout << Pr_a[0].transpose() << std::endl;
-
 		obstacle_manager->update_obstacle_status(trajectory.col(k));
-
-		std::cout << Pr_a[0].transpose() << std::endl;
 
 		obstacle_manager->display_obstacle_information();
 
-		std::cout << Pr_a[0].transpose() << std::endl;
+		Obstacle_Data& ref = obstacle_manager->get_data();
 
-		/* asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
+		std::cout << ref.obstacles[0].get_intention_probabilities().transpose() << std::endl;
+
+
+		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
 		if (fmod(t, 5) == 0)
 		{
@@ -321,7 +316,7 @@ int main(){
 		asv_sim.update_ctrl_input(u_c, chi_c, trajectory.col(k));
 		
 		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), dt, ERK1); }
-		 */
+		
 
 		//===========================================
 		// Send trajectory data to matlab
