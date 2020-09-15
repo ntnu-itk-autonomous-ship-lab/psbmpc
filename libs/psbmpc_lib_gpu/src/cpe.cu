@@ -333,11 +333,6 @@ __host__ __device__ void CPE::assign_data(
 
     this->converged_last = cpe.converged_last;
 
-    if (mu_CE_last != nullptr && P_CE_last != nullptr)
-    {
-        clean();
-    }
-
     if (n_obst > 0)
     {
         mu_CE_last = new CML::MatrixXd[n_obst];
@@ -349,13 +344,13 @@ __host__ __device__ void CPE::assign_data(
         }
     }
     
-    // Not necessary to transfer internal temporary data
-    //this->N_e = cpe.N_e; this->e_count = cpe.e_count;
-    //this->elite_samples = cpe.elite_samples;
+    // Not necessary to transfer internal temporary data but
+    this->N_e = cpe.N_e; this->e_count = cpe.e_count;
+    this->elite_samples = cpe.elite_samples;
 
-    //this->samples = cpe.samples; this->valid = cpe.valid;
+    this->samples = cpe.samples; this->valid = cpe.valid;
 
-    //this->L = cpe.L;
+    this->L = cpe.L;
 
     this->q = cpe.q; this->r = cpe.r; this->dt_seg = cpe.dt_seg;
 

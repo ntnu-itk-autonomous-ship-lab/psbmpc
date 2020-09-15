@@ -69,7 +69,7 @@ private:
 
 	friend class PSBMPC;
 	friend class Obstacle_Manager;
-	friend class CB_Cost_Functor;
+	friend class CB_Functor_Pars;
 
 	int n_cbs, n_M;
 
