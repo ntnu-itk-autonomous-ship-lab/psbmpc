@@ -711,10 +711,14 @@ namespace CML
 			allocate_data();
 		}
 
+		printf("Dynamic matrix assign data, is_allocated? %d, is_other_allocated? %d \n", is_allocated, other.is_allocated);
+		printf("n_rows = %d, n_cols = %d \n", n_rows, n_cols);
 		for (size_t i = 0; i < n_rows; i++)
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
+				printf("i = %d, j = %d", i, j);
+				printf("Dynamic matrix assign data, this->operator()(i, j) = %.2f, other(i, j) = %.2f \n", this->operator()(i, j), other(i, j));
 				this->operator()(i, j) = other(i, j);
 			}
 		}

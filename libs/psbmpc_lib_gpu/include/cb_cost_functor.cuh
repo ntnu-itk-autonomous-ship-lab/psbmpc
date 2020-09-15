@@ -21,52 +21,7 @@
 #ifndef _CB_COST_FUNCTOR_H_
 #define _CB_COST_FUNCTOR_H_
 
-#include <thrust/device_vector.h>
-#include "psbmpc.cuh"
-#include "cml.cuh"
-#include "ownship.cuh"
-#include "cuda_obstacle.cuh"
-#include "cpe.cuh"
-#include <vector>
-
-class CB_Functor_Data
-{
-public:
-
-	CML::MatrixXd maneuver_times;
-	CML::MatrixXd control_behaviours;
-
-	double u_d, chi_d;
-
-	double u_m_last;
-	double chi_m_last;
-
-	CML::MatrixXd waypoints;
-
-	CML::MatrixXd trajectory;
-
-	CML::MatrixXd static_obstacles;
-
-	int n_obst;
-
-	CML::MatrixXi n_ps;
-
-	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
-	// and <obstacle is passed> (IP_0) indicators
-	CML::MatrixXb AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
-
-	Cuda_Obstacle *obstacles;
-
-	__host__ void assign_master_data(
-		const PSBMPC &master, 
-		const double u_d, 
-		const double chi_d, 
-		const Eigen::Matrix<double, 2, -1> &waypoints, 
-		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		const Obstacle_Data &odata);
-
-	__host__ __device__ CB_Functor_Data() : obstacles(nullptr) {};
-};
+#include "cb_cost_functor_structures.cuh"
 
 // DEVICE methods
 // Functor for use in thrust transform
@@ -74,13 +29,13 @@ class CB_Cost_Functor
 {
 private: 
 
-	PSBMPC_Parameters pars;
+	CB_Functor_Pars pars;
 
-	CB_Functor_Data fdata;
+	//CB_Functor_Data fdata;
 
 	Ownship ownship;
 
-	CPE cpe;
+	//CPE cpe;
 
 	__device__ void predict_trajectories_jointly();
 
@@ -137,12 +92,12 @@ public:
 	__host__ CB_Cost_Functor() {}
 
 	__host__ CB_Cost_Functor(
-		const PSBMPC &master, 
+		const PSBMPC master, 
 		const double u_d, 
 		const double chi_d, 
-		const Eigen::Matrix<double, 2, -1> &waypoints, 
-		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		const Obstacle_Data &data);
+		const Eigen::Matrix<double, 2, -1> waypoints, 
+		const Eigen::Matrix<double, 4, -1> static_obstacles,
+		const Obstacle_Data data);
 
 	__host__ __device__ ~CB_Cost_Functor();
 	

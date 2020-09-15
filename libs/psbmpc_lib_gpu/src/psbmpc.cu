@@ -26,7 +26,7 @@
 #include "psbmpc.cuh"
 #include "cb_cost_functor.cuh"
 
-#include "iostream"
+#include <iostream>
 #include "engine.h"
 
 /****************************************************************************************
@@ -40,6 +40,8 @@ PSBMPC::PSBMPC()
 	ownship(Ownship()), pars(PSBMPC_Parameters())
 {
 	cpe = CPE(pars.cpe_method, 1000, 100, 0, pars.dt);
+
+	u_m_last = 1; chi_m_last = 0;
 
 	map_offset_sequences();
 }
@@ -160,18 +162,17 @@ void PSBMPC::calculate_optimal_offsets(
 	// Cost evaluation
 	//===============================================================================================================
 	Eigen::VectorXd HL_0(n_obst); HL_0.setZero();
-
-	op.reset(new CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles, data));
-
+	
 	// Allocate device vector for computing CB costs
 	thrust::device_vector<double> cb_costs(pars.n_cbs);
-	
+
 	// Allocate iterator for passing the index of the control behavior to the kernels
 	thrust::counting_iterator<unsigned int> index_iter(0);
 	
+	std::cout << "right before gpu stuff" << std::endl;
 	// Perform the calculations on the GPU
-    thrust::transform(thrust::device, index_iter, index_iter + pars.n_cbs, cb_costs.begin(), *op);
-
+    thrust::transform(thrust::device, index_iter, index_iter + pars.n_cbs, cb_costs.begin(), CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles, data));
+	std::cout << "right after gpu stuff" << std::endl;
 	// Extract minimum cost
 	thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
 	min_index = min_cost_iter - cb_costs.begin();

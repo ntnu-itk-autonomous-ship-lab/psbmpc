@@ -3,6 +3,7 @@
 
 libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.o
  ../libs/psbmpc_lib_gpu/include/cb_cost_functor.cuh
+ ../libs/psbmpc_lib_gpu/include/cb_cost_functor_structures.cuh
  ../libs/psbmpc_lib_gpu/include/cpe.cuh
  ../libs/psbmpc_lib_gpu/include/cuda_obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/kf.cuh
@@ -7241,6 +7242,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/ownship.cu.o
  /usr/local/cuda-11.0/include/vector_types.h
 libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cu.o
  ../libs/psbmpc_lib_gpu/include/cb_cost_functor.cuh
+ ../libs/psbmpc_lib_gpu/include/cb_cost_functor_structures.cuh
  ../libs/psbmpc_lib_gpu/include/cpe.cuh
  ../libs/psbmpc_lib_gpu/include/cuda_obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/kf.cuh

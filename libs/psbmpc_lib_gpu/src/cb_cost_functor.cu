@@ -38,16 +38,16 @@
 *  Modified :
 ****************************************************************************************/
 __host__ CB_Cost_Functor::CB_Cost_Functor(
-	const PSBMPC &master, 												// In: Parent class
+	const PSBMPC master, 												// In: Parent class
 	const double u_d,  													// In: Surge reference
 	const double chi_d, 												// In: Course reference
-	const Eigen::Matrix<double, 2, -1> &waypoints, 						// In: Waypoints to follow
-	const Eigen::Matrix<double, 4, -1> &static_obstacles,				// In: Static obstacle information
-	const Obstacle_Data &odata											// In: Dynamic obstacle information
+	const Eigen::Matrix<double, 2, -1> waypoints, 						// In: Waypoints to follow
+	const Eigen::Matrix<double, 4, -1> static_obstacles,				// In: Static obstacle information
+	const Obstacle_Data odata											// In: Dynamic obstacle information
 	) :
-	pars(master.pars), cpe(master.cpe)
+	pars(master.pars)//, cpe(master.cpe)
 {	
-	fdata.n_obst = odata.obstacles.size();
+/* 	fdata.n_obst = odata.obstacles.size();
 
 	fdata.u_d = u_d;
 	fdata.chi_d = chi_d;
@@ -57,6 +57,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 
 	// Assign Eigen objects to CML objects
 	CML::assign_eigen_object(fdata.maneuver_times, master.maneuver_times);
+
 	CML::assign_eigen_object(fdata.control_behaviours, master.control_behaviours);
 
 	CML::assign_eigen_object(fdata.trajectory, master.trajectory);
@@ -85,11 +86,10 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 		fdata.H_TC_0[i] = odata.H_TC_0[i]; 
 		fdata.X_TC_0[i] = odata.X_TC_0[i];
 
-		std::cout << odata.obstacles[0].kf.get_state().transpose() << std::endl;
 		fdata.obstacles[i] = odata.obstacles[i];
-	}
+	} */
 	
-	ownship = master.ownship;
+	//ownship = Ownship();
 }
 
 /****************************************************************************************
@@ -110,12 +110,13 @@ __device__ double CB_Cost_Functor::operator()(
 	const unsigned int cb_index 									// In: Index of control behaviour evaluated in this kernel
 	)
 {
-	int n_samples = fdata.trajectory.get_cols();
 	double cost = 0;
+
+/*	int n_samples = fdata.trajectory.get_cols();
 	CML::MatrixXd P_c_i;
 	CML::MatrixXd cost_i(fdata.n_obst, 1), offset_sequence = fdata.control_behaviours.get_col(cb_index);
 
-	ownship.predict_trajectory(
+ 	ownship.predict_trajectory(
 		fdata.trajectory, 
 		offset_sequence, 
 		fdata.maneuver_times, 
@@ -127,9 +128,9 @@ __device__ double CB_Cost_Functor::operator()(
 		pars.T, 
 		pars.dt);
 	
-	cpe.seed_prng(cb_index);
+	cpe.seed_prng(cb_index); */
 	
-	for (int i = 0; i < fdata.n_obst; i++)
+	/* for (int i = 0; i < fdata.n_obst; i++)
 	{
 		if (pars.obstacle_colav_on) { predict_trajectories_jointly(); }
 
@@ -145,35 +146,35 @@ __device__ double CB_Cost_Functor::operator()(
 
 	cost += calculate_control_deviation_cost(offset_sequence);
 
-	cost += calculate_chattering_cost(offset_sequence);
+	cost += calculate_chattering_cost(offset_sequence); */
 	
 	return cost;
 }
 
+/* 
+//=======================================================================================
+//	Private functions
+//=======================================================================================
 
-/****************************************************************************************
-	Private functions
-****************************************************************************************/
-
-/****************************************************************************************
-*  Name     : predict_trajectories_jointly
-*  Function : Predicts the trajectory of the ownship and obstacles with an active COLAV
-*			  system
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : predict_trajectories_jointly
+//  Function : Predicts the trajectory of the ownship and obstacles with an active COLAV
+//			  system
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
 __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 {
 
 }
 
-/****************************************************************************************
-*  Name     : determine_COLREGS_violation
-*  Function : Determine if vessel A violates COLREGS with respect to vessel B.
-*			  
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : determine_COLREGS_violation
+//  Function : Determine if vessel A violates COLREGS with respect to vessel B.
+//			  
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
 __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
 	const CML::MatrixXd &v_A,												// In: (NE) Velocity vector of vessel A, row vector
 	const double psi_A, 													// In: Heading of vessel A
@@ -221,13 +222,13 @@ __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
 
 
 
-/****************************************************************************************
-*  Name     : determine_transitional_cost_indicator
-*  Function : Determine if a transitional cost should be applied for the current
-*			  control behavior, using the method in Hagen, 2018. Two overloads
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : determine_transitional_cost_indicator
+//  Function : Determine if a transitional cost should be applied for the current
+//			  control behavior, using the method in Hagen, 2018. Two overloads
+// Author   : 
+//  Modified :
+//=======================================================================================
 __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 	const double psi_A, 													// In: Heading of vessel A
 	const double psi_B, 													// In: Heading of vessel B
@@ -268,13 +269,13 @@ __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 	return O_TC || Q_TC || X_TC || H_TC;
 }
 
-/****************************************************************************************
-*  Name     : calculate_collision_probabilities
-*  Function : Estimates collision probabilities for the own-ship and an obstacle i in
-*			  consideration
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : calculate_collision_probabilities
+//  Function : Estimates collision probabilities for the own-ship and an obstacle i in
+//			  consideration
+// Author   : Trym Tengesdal
+// Modified :
+//=======================================================================================
 __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 	CML::MatrixXd &P_c_i,									// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const int i 											// In: Index of obstacle
@@ -295,14 +296,15 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 
 		P_c_i.set_block(ps, 0, 1, P_c_i_row.get_cols(), P_c_i_row);
 	}		
+	delete[] xs_i_p;
 }
 
-/****************************************************************************************
-*  Name     : calculate_dynamic_obstacle_cost
-*  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : calculate_dynamic_obstacle_cost
+//  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
 __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	const CML::MatrixXd &P_c_i,									// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
 	const int i, 													// In: Index of obstacle
@@ -445,12 +447,12 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	return cost;
 }
 
-/****************************************************************************************
-*  Name     : calculate_ad_hoc_collision_risk
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : calculate_ad_hoc_collision_risk
+//  Function : 
+//  Author   : 
+//  Modified :
+//=======================================================================================
 __device__ double CB_Cost_Functor::calculate_ad_hoc_collision_risk(
 	const double d_AB, 												// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
 																	// 	   reduced by half the length of the two vessels
@@ -466,12 +468,12 @@ __device__ double CB_Cost_Functor::calculate_ad_hoc_collision_risk(
 	return R;
 }
 
-/****************************************************************************************
-*  Name     : calculate_control_deviation_cost
-*  Function : Determines penalty due to using offsets to guidance references ++
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : calculate_control_deviation_cost
+//  Function : Determines penalty due to using offsets to guidance references ++
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
 __device__ double CB_Cost_Functor::calculate_control_deviation_cost(
 	const CML::MatrixXd &offset_sequence 								// In: Control behaviour currently followed
 	)
@@ -490,16 +492,16 @@ __device__ double CB_Cost_Functor::calculate_control_deviation_cost(
 				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 		}
 	}
-	return cost / pars.n_M;
+	return cost / (double)pars.n_M;
 }
 
-/****************************************************************************************
-*  Name     : calculate_chattering_cost
-*  Function : Determines penalty due to using wobbly (changing between positive and negative)
-* 			  course modifications
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : calculate_chattering_cost
+//  Function : Determines penalty due to using wobbly (changing between positive and negative)
+// 			  course modifications
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
 __device__ double CB_Cost_Functor::calculate_chattering_cost(
 	const CML::MatrixXd &offset_sequence 								// In: Control behaviour currently followed
 )
@@ -522,12 +524,12 @@ __device__ double CB_Cost_Functor::calculate_chattering_cost(
 	return cost;
 }
 
-/****************************************************************************************
-*  Name     : calculate_grounding_cost
-*  Function : Determines penalty due grounding ownship on static obstacles (no-go zones)
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : calculate_grounding_cost
+//  Function : Determines penalty due grounding ownship on static obstacles (no-go zones)
+//  Author   : 
+//  Modified :
+//=======================================================================================
 __device__ double CB_Cost_Functor::calculate_grounding_cost()
 {
 	double cost = 0;
@@ -535,12 +537,12 @@ __device__ double CB_Cost_Functor::calculate_grounding_cost()
 	return cost;
 }
 
-/****************************************************************************************
-*  Name     : find_triplet_orientation
-*  Function : Find orientation of ordered triplet (p, q, r)
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : find_triplet_orientation
+//  Function : Find orientation of ordered triplet (p, q, r)
+//  Author   : Giorgio D. Kwame Minde Kufoalor
+//  Modified :
+//=======================================================================================
 __device__ int CB_Cost_Functor::find_triplet_orientation(
 	const CML::MatrixXd &p, 
 	const CML::MatrixXd &q, 
@@ -554,13 +556,13 @@ __device__ int CB_Cost_Functor::find_triplet_orientation(
     return val < 0 ? 1 : 2; // clock or counterclockwise
 }
 
-/****************************************************************************************
-*  Name     : determine_if_on_segment
-*  Function : Determine if the point q is on the segment pr
-*			  (really if q is inside the rectangle with diagonal pr...)
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : determine_if_on_segment
+//  Function : Determine if the point q is on the segment pr
+//			  (really if q is inside the rectangle with diagonal pr...)
+//  Author   : Giorgio D. Kwame Minde Kufoalor
+//  Modified :
+//=======================================================================================
 __device__ bool CB_Cost_Functor::determine_if_on_segment(
 	const CML::MatrixXd &p, 
 	const CML::MatrixXd &q, 
@@ -573,12 +575,12 @@ __device__ bool CB_Cost_Functor::determine_if_on_segment(
     return false;
 }
 
-/****************************************************************************************
-*  Name     : determine_if_behind
-*  Function : Check if the point p_1 is behind the line defined by v_1 and v_2
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : determine_if_behind
+//  Function : Check if the point p_1 is behind the line defined by v_1 and v_2
+//  Author   : Giorgio D. Kwame Minde Kufoalor
+//  Modified :
+//=======================================================================================
 __device__ bool CB_Cost_Functor::determine_if_behind(
 	const CML::MatrixXd &p_1, 
 	const CML::MatrixXd &v_1, 
@@ -596,12 +598,12 @@ __device__ bool CB_Cost_Functor::determine_if_behind(
     return (determine_if_on_segment(v_1 + n, p_1, v_2 + n));
 }
 
-/****************************************************************************************
-*  Name     : determine_if_lines_intersect
-*  Function : Determine if the line segments defined by p_1, q_1 and p_2, q_2 intersects 
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : determine_if_lines_intersect
+//  Function : Determine if the line segments defined by p_1, q_1 and p_2, q_2 intersects 
+//  Author   : Giorgio D. Kwame Minde Kufoalor
+//  Modified :
+//=======================================================================================
 __device__ bool CB_Cost_Functor::determine_if_lines_intersect(
 	const CML::MatrixXd &p_1, 
 	const CML::MatrixXd &q_1, 
@@ -636,12 +638,12 @@ __device__ bool CB_Cost_Functor::determine_if_lines_intersect(
     return false; // Doesn't fall in any of the above cases
 }
 
-/****************************************************************************************
-*  Name     : distance_from_point_to_line
-*  Function : Calculate distance from p to the line segment defined by q_1 and q_2
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : distance_from_point_to_line
+//  Function : Calculate distance from p to the line segment defined by q_1 and q_2
+//  Author   : Giorgio D. Kwame Minde Kufoalor
+//  Modified :
+//=======================================================================================
 __device__ double CB_Cost_Functor::distance_from_point_to_line(
 	const CML::MatrixXd &p, 
 	const CML::MatrixXd &q_1, 
@@ -658,12 +660,12 @@ __device__ double CB_Cost_Functor::distance_from_point_to_line(
     else return -1;
 }
 
-/****************************************************************************************
-*  Name     : distance_to_static_obstacle
-*  Function : Calculate distance from p to obstacle defined by line segment {v_1, v_2}
-*  Author   : Giorgio D. Kwame Minde Kufoalor
-*  Modified :
-*****************************************************************************************/
+//=======================================================================================
+//  Name     : distance_to_static_obstacle
+//  Function : Calculate distance from p to obstacle defined by line segment {v_1, v_2}
+//  Author   : Giorgio D. Kwame Minde Kufoalor
+//  Modified :
+//=======================================================================================
 __device__ double CB_Cost_Functor::distance_to_static_obstacle(
 	const CML::MatrixXd &p, 
 	const CML::MatrixXd &v_1, 
@@ -674,4 +676,4 @@ __device__ double CB_Cost_Functor::distance_to_static_obstacle(
 
     if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line)) return d2line;
     else return (double)fmin((v_1-p).norm(),(v_2-p).norm());
-}
+} */

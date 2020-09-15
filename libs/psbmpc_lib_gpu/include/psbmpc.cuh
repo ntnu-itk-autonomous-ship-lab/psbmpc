@@ -56,7 +56,6 @@ private:
 	Eigen::Matrix<double, 6, -1> trajectory;
 
 	friend class CB_Cost_Functor;
-	std::unique_ptr<CB_Cost_Functor> op;
 
 	void map_offset_sequences();
 
