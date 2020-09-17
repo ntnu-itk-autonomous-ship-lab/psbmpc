@@ -168,10 +168,10 @@ void PSBMPC::calculate_optimal_offsets(
 
 	// Allocate iterator for passing the index of the control behavior to the kernels
 	thrust::counting_iterator<unsigned int> index_iter(0);
-	
+	//CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles, data)
 	std::cout << "right before gpu stuff" << std::endl;
 	// Perform the calculations on the GPU
-    thrust::transform(thrust::device, index_iter, index_iter + pars.n_cbs, cb_costs.begin(), CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles, data));
+    thrust::transform(index_iter, index_iter + pars.n_cbs, cb_costs.begin(), CB_Cost_Functor());
 	std::cout << "right after gpu stuff" << std::endl;
 	// Extract minimum cost
 	thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());

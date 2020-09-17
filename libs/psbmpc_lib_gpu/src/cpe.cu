@@ -378,12 +378,12 @@ __host__ __device__ void CPE::resize_matrices()
             }
             samples.resize(2, n_CE);
             elite_samples.resize(2, n_CE);
-            valid.resize(n_CE, 1);
+            valid.resize(1, n_CE);
             L.resize(2, 2);
             break;
         case MCSKF4D :
             samples.resize(4, n_MCSKF);
-            valid.resize(n_MCSKF, 1);
+            valid.resize(1, n_MCSKF);
             L.resize(4, 4);
             break;
         default :
