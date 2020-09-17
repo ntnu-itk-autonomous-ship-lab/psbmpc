@@ -89,7 +89,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 		fdata.obstacles[i] = odata.obstacles[i];
 	} */
 	
-	//ownship = Ownship();
+	ownship = Ownship();
 }
 
 /****************************************************************************************

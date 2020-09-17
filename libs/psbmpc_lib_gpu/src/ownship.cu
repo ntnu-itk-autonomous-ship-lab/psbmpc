@@ -42,9 +42,9 @@
 *****************************************************************************************/
 __host__ __device__ Ownship::Ownship()
 {
-	tau.resize(3, 1); tau.set_zero();
-	Cvv.resize(3, 1); Cvv.set_zero(); 
-	Dvv.resize(3, 1); Dvv.set_zero();
+	tau.resize(3, 1); //tau.set_zero();
+	Cvv.resize(3, 1); //Cvv.set_zero(); 
+	Dvv.resize(3, 1); //Dvv.set_zero();
 
 	// Model parameters
 	l_r = 4.0; // distance from rudder to CG
@@ -86,7 +86,7 @@ __host__ __device__ Ownship::Ownship()
 	M_tot(1, 0) = 0; M_tot(1, 1) = m - Y_vdot; M_tot(1, 2) = -Y_rdot;
 	M_tot(2, 0) = 0; M_tot(2, 1) = -Y_rdot; M_tot(2, 2) = I_z - N_rdot;
 
-	M_inv = M_tot.inverse();
+	M_inv = CML::MatrixXd::identity(3, 3); //M_tot.inverse();
 
 	//Force limits
 	Fx_min = -6550.0;
