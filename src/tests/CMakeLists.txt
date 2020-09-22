@@ -6,7 +6,8 @@
 #add_executable(tester test_mrou.cpp)
 #add_executable(tester test_kf.cpp)
 #add_executable(tester test_psbmpc.cpp) # for CPU PSBMPC
-add_executable(tester gpu_implementation_test_files/test_psbmpc.cu) # for GPU PSBMPC
+#add_executable(tester gpu_implementation_test_files/test_psbmpc.cu) # for GPU PSBMPC
+add_executable(tester gpu_implementation_test_files/stack_overflow.cu)
 #add_executable(tester test_prng.cpp)
 #add_executable(tester gpu_implementation_test_files/test_thrust.cu)
 #add_executable(tester gpu_implementation_test_files/test_cml.cu)

@@ -89,7 +89,9 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 		fdata.obstacles[i] = odata.obstacles[i];
 	} */
 	
-	ownship = Ownship();
+	cudaMalloc(&ownship, sizeof(Ownship));
+
+	ownship->set_wp_counter(master.ownship.get_wp_counter());
 }
 
 /****************************************************************************************
@@ -98,7 +100,12 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 *  Author   : 
 *  Modified :
 ****************************************************************************************/
-__host__ __device__ CB_Cost_Functor::~CB_Cost_Functor() = default;
+__host__ __device__ CB_Cost_Functor::~CB_Cost_Functor()
+{
+	cudaFree(ownship);
+
+	//cudaFree(cpe);
+}
 
 /****************************************************************************************
 *  Name     : operator()

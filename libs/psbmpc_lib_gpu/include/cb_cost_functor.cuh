@@ -33,7 +33,7 @@ private:
 
 	//CB_Functor_Data fdata;
 
-	Ownship ownship;
+	Ownship* ownship;
 
 	//CPE cpe;
 
