@@ -123,7 +123,10 @@ public:
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		const Obstacle_Data &odata);
+		const Obstacle_Data &odata)
+	{
+		
+	}
 
 	__host__ __device__ CB_Functor_Data() : obstacles(nullptr) {}
 
