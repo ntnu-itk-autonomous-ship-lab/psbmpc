@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : cpe.h
+*  File name : cpe.cuh
 *
 *  Function  : Header file for the Collision Probability Estimator (CPE).
 *			   The module estimates the collision probability wrt all nearby

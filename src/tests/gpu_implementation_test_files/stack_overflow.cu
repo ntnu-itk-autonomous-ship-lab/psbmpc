@@ -1,10 +1,24 @@
 
+
+#include "cb_cost_functor_structures.cuh"
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
+#include <thrust/sequence.h>
+#include <thrust/execution_policy.h>
 #include <thrust/random.h>
 #include <thrust/iterator/counting_iterator.h>
 
 #include <assert.h>
+
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess) 
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
 
 namespace CML
 {
@@ -104,19 +118,21 @@ public:
 class myFunctor
 {
 private: 
-    My_Class* my_class;
+    //My_Class* my_class;
 public: 
+    __host__ __device__ myFunctor() {} 
+
     __host__ __device__ myFunctor(const My_Class &other) 
     {
-         cudaMalloc((void **)&my_class, sizeof(My_Class));
+         //gpuErrchk( cudaMalloc((void **)&my_class, sizeof(My_Class)) );
     }
 
-    __host__ __device__ ~myFunctor() { cudaFree(my_class); }
+    //__host__ __device__ ~myFunctor() { gpuErrchk( cudaFree(my_class) ); }
 
-    __device__ double operator()(const unsigned int n) 
+    __device__ double operator()(const unsigned int n, const double cb, const CB_Functor_Data fdata) 
     { 
-        double ret = my_class->calc(); 
-         
+        double ret = fdata.chi_d; 
+
         return ret; 
     }
 };
@@ -124,15 +140,21 @@ public:
 int main()
 {
     int n_cbs = 10;
-    My_Class my_class;
-    thrust::device_vector<double> cb_costs(n_cbs);
-
-    thrust::counting_iterator<unsigned int> index_iter(0);
     
-    thrust::transform(thrust::device, index_iter, index_iter + n_cbs, cb_costs.begin(), myFunctor(my_class));
+    CB_Functor_Data fdata;
 
-    thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
-    int min_index = min_cost_iter - cb_costs.begin();
-    int min_cost = cb_costs[min_index];
+    thrust::device_vector<unsigned int> seq(n_cbs);
+    thrust::sequence(seq.begin(), seq.end());
+    thrust::device_vector<double> cb_costs(n_cbs);
+    thrust::device_vector<CB_Functor_Data> cb_fdata(n_cbs);
+    
+    thrust::zip_iterator<thrust::tuple<unsigned int, CB_Functor_Data>> input = 
+        thrust::make_zip_iterator(thrust::make_tuple(seq.begin(), cb_fdata.begin()));
+    
+    thrust::transform(thrust::device, input, input + n_cbs, cb_costs.begin(), myFunctor());
+
+    //thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
+    //int min_index = min_cost_iter - cb_costs.begin();
+    //int min_cost = cb_costs[min_index];
     return 0;
 }

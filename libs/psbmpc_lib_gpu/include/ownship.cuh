@@ -21,8 +21,8 @@
 *****************************************************************************************/
 
 
-#ifndef _Ownship_CUH_
-#define _Ownship_CUH_
+#ifndef _OWNSHIP_CUH_
+#define _OWNSHIP_CUH_
 
 #include <thrust/device_vector.h>
 #include "cml.cuh"
