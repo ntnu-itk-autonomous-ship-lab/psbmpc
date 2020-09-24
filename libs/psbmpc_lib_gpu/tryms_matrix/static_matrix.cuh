@@ -28,6 +28,9 @@
 namespace CML
 {
 	template<class T, class Derived> class Matrix_Base;
+	template<class T> class Dynamic_Matrix;
+	template<class T, int Max_Rows, int Max_Cols> class Pseudo_Dynamic_Matrix;
+
 	template <class T, int Rows, int Cols>
 	class Static_Matrix : public Matrix_Base<T, Static_Matrix<T, Rows, Cols>> 
 	{
@@ -38,7 +41,11 @@ namespace CML
 
 		__host__ __device__ void assign_data(const Static_Matrix &other);
 
-		__host__ __device__ void assign_data(const Static_Matrix &other);
+		template <class U>
+		__host__ __device__ void assign_data(const Dynamic_Matrix<U> &other);
+
+		template <class U, int Max_Rows, int Max_Cols>
+		__host__ __device__ void assign_data(const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other);
 
 	public:
 
