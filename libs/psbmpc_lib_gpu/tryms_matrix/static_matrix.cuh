@@ -31,23 +31,43 @@ namespace CML
 	template <class T, int Rows, int Cols>
 	class Static_Matrix : public Matrix_Base<T, Static_Matrix<T, Rows, Cols>> 
 	{
-	protected:
+	private:
 		size_t n_rows = Rows, n_cols = Cols;
 
 		T data[Rows * Cols];
 
 		__host__ __device__ void assign_data(const Static_Matrix &other);
 
-	public:
+		__host__ __device__ void assign_data(const Static_Matrix &other);
 
-		__host__ __device__ Static_Matrix() : n_rows(Rows), n_cols(Cols) {}
+	public:
 
 		__host__ __device__ Static_Matrix(const Static_Matrix &other);
 
 		__host__ __device__ Static_Matrix& operator=(const Static_Matrix &rhs);
 
-		template<class U, int Other_Rows, int Other_Cols>
+		template <class U>
+		__host__ __device__ Static_Matrix& operator=(const Dynamic_Matrix<U> &rhs);
+
+		template <class U, int Max_Rows, int Max_Cols>
+		__host__ __device__ Static_Matrix& operator=(const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &rhs);
+
+		template <class U, int Other_Rows, int Other_Cols>
 		__host__ __device__ Static_Matrix operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
+
+		__host__ __device__ operator Dynamic_Matrix() const
+		{
+			Dynamic_Matrix<T> result;
+			result = *this;
+			return result;
+		}
+		
+		__host__ __device__ operator Pseudo_Dynamic_Matrix() const
+		{
+			Pseudo_Dynamic_Matrix<T, Rows, Cols> result;
+			result = *this;
+			return result;
+		}
 
 		__host__ __device__ Static_Matrix<T, Cols, Rows> transposed() const;
 
@@ -165,6 +185,7 @@ namespace CML
 		}
 		return result;
 	}
+
 	template <class T, int Rows, int Cols>
 	__host__ __device__ inline Static_Matrix<T, Rows, Cols> operator*(const T scalar, const Static_Matrix<T, Rows, Cols> &other) { return other * scalar; }
 
@@ -205,6 +226,28 @@ namespace CML
 			return *this;
 		}
 
+		assign_data(rhs);
+		
+		return *this;
+	}
+
+	template <class T, int Rows, int Cols>
+	template <class U>
+	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator=(
+		const Dynamic_Matrix<U> &rhs 								// In: Right hand side matrix/vector to assign
+		)
+	{
+		assign_data(rhs);
+		
+		return *this;
+	}
+
+	template <class T, int Rows, int Cols>
+	template <class U, int Max_Rows, int Max_Cols>
+	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator=(
+		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &rhs 								// In: Right hand side matrix/vector to assign
+		)
+	{
 		assign_data(rhs);
 		
 		return *this;
