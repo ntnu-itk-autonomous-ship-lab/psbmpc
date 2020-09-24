@@ -30,6 +30,7 @@
 #include <cmath>
 
 #include "dynamic_matrix.cuh"
+#include "pseudo_dynamic_matrix.cuh"
 #include "static_matrix.cuh"
 #include "eigen_interface.cuh"
 

@@ -28,6 +28,14 @@
 #include <random>
 #include "Eigen/Dense"
 
+// Conversion does not work with non-const parameters, because the implicit conversion is temporary.
+void test_conversion(const CML::MatrixXd &m) { std::cout << m << std::endl; }
+
+void test_conversion2(const CML::Vector3d &v3d) { std::cout << v3d << std::endl; }
+
+void test_conversion3(const CML::Pseudo_Dynamic_Matrix<double, 100, 100> &pdm) { std::cout << pdm << std::endl; }
+
+
 int main()
 {
 	std::random_device seed;
@@ -486,12 +494,39 @@ int main()
 	CML::assign_eigen_object(assign_to_1, test6);
 	std::cout << assign_to_1 << std::endl;
 	//================================================================================
+	// Pseudo_Dynamic_Matrix tests
+	//================================================================================
+	CML::MatrixXd samples_d(4, 10); samples_d.set_ones();
+	Eigen::MatrixXd transfer(4, 10); transfer.setZero();
+	CML::Pseudo_Dynamic_Matrix<double, 4, 100> samples = samples_d, samples_2;
+	std::cout << samples << std::endl;
+	CML::assign_eigen_object(samples_2, transfer);
+	std::cout << samples_2 << std::endl;
+	
+	CML::Static_Matrix<double, 4, 4> testc1; testc1.set_ones();
+	CML::Pseudo_Dynamic_Matrix<double, 1000, 1000> testc1_pdm(2, 2); testc1_pdm.set_all_coeffs(2.0);
+	test_conversion(testc1);
+	test_conversion(testc1_pdm);
+
+
+	CML::MatrixXd testc2(3, 1); testc2.set_ones();
+	CML::Pseudo_Dynamic_Matrix<double, 100, 1000> testc2_pdm(3, 1); //testc2_pdm.set_all_coeffs(2.0);
+	test_conversion2(testc2);
+	//test_conversion2(testc2_pdm);
+
+	/* CML::MatrixXd testc3(3, 3); testc3.set_ones();
+	CML::Vector4d testc3_sm; testc3_sm.set_all_coeffs(2.0);
+	test_conversion3(testc3);
+	test_conversion3(testc3_sm); */
+
+
+
+	//================================================================================
 	// Other tests
 	//================================================================================
-	std::cout << CML::Dynamic_Matrix<double>::identity(3, 3) << std::endl;
-	std::cout << CML::Dynamic_Matrix<double>::ones(3, 3) << std::endl;
+	//std::cout << CML::Dynamic_Matrix<double>::identity(3, 3) << std::endl;
+	//std::cout << CML::Dynamic_Matrix<double>::ones(3, 3) << std::endl;
 
-	Eigen::Matrix<double, 4, 2> m42; m42.transpose();
-
+	//Eigen::Matrix<double, 4, 2> m42; m42.transpose();
 	return 0;
 }

@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-gpu_implementation_test_files/stack_overflow.o: gpu_implementation_test_files/stack_overflow.cu.o
+gpu_implementation_test_files/test_cml.o: gpu_implementation_test_files/test_cml.cpp.o
 
-.PHONY : gpu_implementation_test_files/stack_overflow.o
+.PHONY : gpu_implementation_test_files/test_cml.o
 
 # target to build an object file
-gpu_implementation_test_files/stack_overflow.cu.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/stack_overflow.cu.o
-.PHONY : gpu_implementation_test_files/stack_overflow.cu.o
+gpu_implementation_test_files/test_cml.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_cml.cpp.o
+.PHONY : gpu_implementation_test_files/test_cml.cpp.o
 
-gpu_implementation_test_files/stack_overflow.i: gpu_implementation_test_files/stack_overflow.cu.i
+gpu_implementation_test_files/test_cml.i: gpu_implementation_test_files/test_cml.cpp.i
 
-.PHONY : gpu_implementation_test_files/stack_overflow.i
+.PHONY : gpu_implementation_test_files/test_cml.i
 
 # target to preprocess a source file
-gpu_implementation_test_files/stack_overflow.cu.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/stack_overflow.cu.i
-.PHONY : gpu_implementation_test_files/stack_overflow.cu.i
+gpu_implementation_test_files/test_cml.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_cml.cpp.i
+.PHONY : gpu_implementation_test_files/test_cml.cpp.i
 
-gpu_implementation_test_files/stack_overflow.s: gpu_implementation_test_files/stack_overflow.cu.s
+gpu_implementation_test_files/test_cml.s: gpu_implementation_test_files/test_cml.cpp.s
 
-.PHONY : gpu_implementation_test_files/stack_overflow.s
+.PHONY : gpu_implementation_test_files/test_cml.s
 
 # target to generate assembly for a file
-gpu_implementation_test_files/stack_overflow.cu.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/stack_overflow.cu.s
-.PHONY : gpu_implementation_test_files/stack_overflow.cu.s
+gpu_implementation_test_files/test_cml.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_cml.cpp.s
+.PHONY : gpu_implementation_test_files/test_cml.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... gpu_implementation_test_files/stack_overflow.o"
-	@echo "... gpu_implementation_test_files/stack_overflow.i"
-	@echo "... gpu_implementation_test_files/stack_overflow.s"
+	@echo "... gpu_implementation_test_files/test_cml.o"
+	@echo "... gpu_implementation_test_files/test_cml.i"
+	@echo "... gpu_implementation_test_files/test_cml.s"
 .PHONY : help
 
 

@@ -71,6 +71,22 @@ namespace CML
 		template<class U, int Rows, int Cols>
 		__host__ __device__ Dynamic_Matrix& operator=(const Static_Matrix<U, Rows, Cols> &rhs);
 
+		template<class U, int Rows, int Cols>
+		__host__ __device__ operator Static_Matrix<U, Rows, Cols>() const
+		{
+			Static_Matrix<U, Rows, Cols> result;
+			result = *this;
+			return result;
+		}
+		
+		template<class U, int Max_Rows, int Max_Cols>
+		__host__ __device__ operator Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>() const
+		{
+			Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> result;
+			result = *this;
+			return result;
+		}
+
 		__host__ __device__ Dynamic_Matrix operator*(const Dynamic_Matrix &other) const;
 
 		//__host__ __device__ Static_Matrix<T, Rows, Cols>() const { }
@@ -767,8 +783,8 @@ namespace CML
 		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
-		n_rows = other.n_rows;
-		n_cols = other.n_cols;
+		n_rows = other.get_rows();
+		n_cols = other.get_cols();
 
 		if (!is_allocated)
 		{
@@ -791,8 +807,8 @@ namespace CML
 		const Static_Matrix<U, Rows, Cols> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
-		n_rows = other.n_rows;
-		n_cols = other.n_cols;
+		n_rows = other.get_rows();
+		n_cols = other.get_cols();
 
 		if (!is_allocated)
 		{

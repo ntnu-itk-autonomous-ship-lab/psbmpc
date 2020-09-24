@@ -6,14 +6,6 @@
 
 #IncludeRegexTransform: 
 
-../libs/psbmpc_lib_gpu/include/utilities.cuh
-thrust/device_vector.h
--
-cml.cuh
-../libs/psbmpc_lib_gpu/include/cml.cuh
-iostream
-../libs/psbmpc_lib_gpu/include/iostream
-
 ../libs/psbmpc_lib_gpu/tryms_matrix/cml.cuh
 thrust/device_vector.h
 -
@@ -1116,17 +1108,15 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cpp
-utilities.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cuh
-Eigen/Dense
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/Eigen/Dense
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/test_cml.cpp
+cml.cuh
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/cml.cuh
 iostream
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/iostream
-fstream
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/fstream
-cstdlib
 -
+random
+-
+Eigen/Dense
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/Eigen/Dense
 
 /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
 complex
