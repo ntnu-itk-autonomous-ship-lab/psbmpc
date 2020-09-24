@@ -27,6 +27,7 @@
 namespace CML
 {
 	template<class T, class Derived> class Matrix_Base;
+	template <class T, int Rows, int Cols> class Static_Matrix;
 	template <class T>
 	class Dynamic_Matrix : public Matrix_Base<T, Dynamic_Matrix<T>> 
 	{
@@ -58,6 +59,8 @@ namespace CML
 		__host__ __device__ Dynamic_Matrix& operator=(const Dynamic_Matrix &rhs);
 
 		__host__ __device__ Dynamic_Matrix operator*(const Dynamic_Matrix &other) const;
+
+		//__host__ __device__ Static_Matrix<T, Rows, Cols>() const { }
 
 		__host__ __device__ void transpose();
 
@@ -714,7 +717,7 @@ namespace CML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				this->data[n_cols * i + j] = other.data[n_cols * i + j];
+				this->operator()(i, j) = other(i, j);
 			}
 		}
 	}
