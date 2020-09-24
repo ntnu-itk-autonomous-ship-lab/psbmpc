@@ -45,6 +45,12 @@ namespace CML
 
 		__host__ __device__ void assign_data(const Dynamic_Matrix &other);
 
+		template<class U, int Max_Rows, int Max_Cols>
+		__host__ __device__ void assign_data(const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other);
+
+		template<class U, int Rows, int Cols>
+		__host__ __device__ void assign_data(const Static_Matrix<U, Rows, Cols> &other);
+
 	public:
 		
 		__host__ __device__ Dynamic_Matrix() : n_rows(0), n_cols(0), data(nullptr), is_allocated(false) {}
@@ -754,6 +760,54 @@ namespace CML
 			}
 		}
 	}
+
+	template <class T>
+	template <class U, int Max_Rows, int Max_Cols>
+	__host__ __device__ void Dynamic_Matrix<T>::assign_data(
+		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other 									// In: Matrix whose data to assign to *this;
+		)
+	{
+		n_rows = other.n_rows;
+		n_cols = other.n_cols;
+
+		if (!is_allocated)
+		{
+			allocate_data();
+		}
+	
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				this->operator()(i, j) = other(i, j);
+			}
+		}
+	}
+
+
+	template <class T>
+	template <class U, int Rows, int Cols>
+	__host__ __device__ void Dynamic_Matrix<T>::assign_data(
+		const Static_Matrix<U, Rows, Cols> &other 									// In: Matrix whose data to assign to *this;
+		)
+	{
+		n_rows = other.n_rows;
+		n_cols = other.n_cols;
+
+		if (!is_allocated)
+		{
+			allocate_data();
+		}
+	
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				this->operator()(i, j) = other(i, j);
+			}
+		}
+	}
+
 
 	//=========================================================================================================
 	// TYPEDEFS

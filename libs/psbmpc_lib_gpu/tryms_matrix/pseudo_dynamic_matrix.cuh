@@ -37,7 +37,7 @@ namespace CML
 	class Pseudo_Dynamic_Matrix : public Matrix_Base<T, Pseudo_Dynamic_Matrix<T, MaxRows, MaxCols>> 
 	{
 	private:
-		size_t n_rows, n_cols;
+		size_t n_rows, n_cols; // should be less than MaxRows and MaxCols, respectively
 
 		T data[Max_Rows * Max_Cols];
 
@@ -62,11 +62,8 @@ namespace CML
 		template<class U>
 		__host__ __device__ Pseudo_Dynamic_Matrix& operator=(const Dynamic_Matrix<U> &rhs);
 
-		__host__ __device__ Pseudo_Dynamic_Matrix get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
-
-		__host__ __device__ Pseudo_Dynamic_Matrix get_row(const size_t row) const;
-
-		__host__ __device__ Pseudo_Dynamic_Matrix get_col(const size_t col) const;
+		template<class U, int Rows, int Cols>
+		__host__ __device__ Pseudo_Dynamic_Matrix& operator=(const Static_Matrix<U, Rows, Cols> &rhs);
 
 		__host__ __device__ inline size_t get_rows() const { return n_rows; }
 
@@ -81,9 +78,12 @@ namespace CML
 			else 					{ return n_cols; } 
 		}
 
-		__host__ __device__ void resize(const size_t n_rows, const size_t n_cols);
+		__host__ __device__ inline void resize(const size_t n_rows, const size_t n_cols)
+		{
+			assert(n_rows > 0 && n_cols > 0 && n_rows <= Max_Rows && n_cols <= Max_Cols);
 
-		__host__ __device__ void conservative_resize(const size_t n_rows, const size_t n_cols);
+			this->n_rows = n_rows; this->n_cols = n_cols;
+		}
 		
 	};
 
@@ -119,121 +119,6 @@ namespace CML
 		assign_data(rhs);
 		
 		return *this;
-	}
-
-	/****************************************************************************************
-	*  Name     : get_block
-	*  Function : returns the n_rows x n_cols block of this object, with upper left reference
-	*			  index (start_row, start_col).
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, int Max_Rows, int Max_Cols>
-	__host__ __device__ Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_block(
-		const size_t start_row, 									// In: Start row of matrix block
-		const size_t start_col, 									// In: Start column of matrix block
-		const size_t n_rows,  										// In: Amount of rows
-		const size_t n_cols 										// In: Amount of columns
-		) const
-	{
-
-		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && 
-				start_row < this->n_rows && start_col < this->n_cols);
-
-		Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> result(n_rows, n_cols);
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols; j++)
-			{
-				result(i, j) = this->operator()(start_row + i, start_col + j);
-			}
-		}
-		return result;
-	}
-
-	/****************************************************************************************
-	*  Name     : get_row
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, int Max_Rows, int Max_Cols>
-	__host__ __device__ Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_row(
-		const size_t row											// In: Index of row to fetch
-		) const
-	{
-		assert(row < this->n_rows);
-
-		Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> result(1, n_cols);
-		for (size_t j = 0; j < n_cols; j++)
-		{
-				result(0, j) = this->operator()(row, j);
-		}
-		return result;
-	}
-
-	/****************************************************************************************
-	*  Name     : get_col
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, int Max_Rows, int Max_Cols>
-	__host__ __device__ Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_col(
-		const size_t col											// In: Index of column to fetch
-		) const
-	{
-		assert(col < this->n_cols);
-
-		Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> result(n_rows, 1);
-		for (size_t i = 0; i < n_rows; i++)
-		{
-				result(i, 0) = this->operator()(i, col);
-		}
-		return result;
-	}
-
-	/****************************************************************************************
-	*  Name     : resize
-	*  Function : Resizes the Matrix_Base without keeping old data
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, int Max_Rows, int Max_Cols>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::resize(
-		const size_t n_rows,  										// In: New amount of rows
-		const size_t n_cols 										// In: New amount of columns
-		)
-	{
-		assert(n_rows > 0 && n_cols > 0);
-
-		*this = Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>(n_rows, n_cols);
-	}
-
-	/****************************************************************************************
-	*  Name     : conservative_resize
-	*  Function : Resizes the Matrix_Base, keeping the old data
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, int Max_Rows, int Max_Cols>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::conservative_resize(
-		const size_t n_rows,  										// In: New amount of rows
-		const size_t n_cols 										// In: New amount of columns
-		)
-	{
-		assert(n_rows > 0 && n_cols > 0);
-		
-		Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> resized(n_rows, n_cols);
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols; j++)
-			{
-				resized(i, j) = this->operator()(i, j);
-			}
-		}
-		
-		*this = resized;
 	}
 
 	/****************************************************************************************
@@ -281,6 +166,26 @@ namespace CML
 			}
 		}
 	}
+
+	template <class T, int Max_Rows, int Max_Cols>
+	template <class U, int Rows, int Cols>
+	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::assign_data(
+		const Static_Matrix<U, Rows, Cols> &other 													// In: Matrix whose data to assign to *this;
+		)
+	{
+		assert(Rows <= Max_Rows && Cols <= Max_Cols);
+		n_rows = other.n_rows;
+		n_cols = other.n_cols;
+	
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				this->operator()(i, j) = other(i, j);
+			}
+		}
+	}
+	
 
 	//=========================================================================================================
 	// TYPEDEFS
