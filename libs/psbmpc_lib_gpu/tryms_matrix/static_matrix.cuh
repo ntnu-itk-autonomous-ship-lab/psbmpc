@@ -49,6 +49,8 @@ namespace CML
 
 	public:
 
+		__host__ __device__ Static_Matrix() = default;
+
 		__host__ __device__ Static_Matrix(const Static_Matrix &other);
 
 		__host__ __device__ Static_Matrix& operator=(const Static_Matrix &rhs);
@@ -62,16 +64,18 @@ namespace CML
 		template <class U, int Other_Rows, int Other_Cols>
 		__host__ __device__ Static_Matrix operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
 
-		__host__ __device__ operator Dynamic_Matrix() const
+		template <class U>
+		__host__ __device__ inline operator Dynamic_Matrix<U>() const
 		{
-			Dynamic_Matrix<T> result;
+			Dynamic_Matrix<U> result;
 			result = *this;
 			return result;
 		}
 		
-		__host__ __device__ operator Pseudo_Dynamic_Matrix() const
+		template <class U, int Max_Rows, int Max_Cols>
+		__host__ __device__ inline operator Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols>() const
 		{
-			Pseudo_Dynamic_Matrix<T, Rows, Cols> result;
+			Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> result;
 			result = *this;
 			return result;
 		}
@@ -615,7 +619,7 @@ namespace CML
 		const Dynamic_Matrix<U> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
-		assert(n_rows == other.n_rows && n_cols == other.n_cols);
+		assert(n_rows == other.get_rows() && n_cols == other.get_cols());
 
 		for (size_t i = 0; i < n_rows; i++)
 		{
@@ -632,7 +636,7 @@ namespace CML
 		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
-		assert(n_rows == other.n_rows && n_cols == other.n_cols);
+		assert(n_rows == other.get_rows() && n_cols == other.get_cols());
 
 		for (size_t i = 0; i < n_rows; i++)
 		{
