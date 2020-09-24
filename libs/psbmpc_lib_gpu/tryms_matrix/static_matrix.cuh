@@ -609,6 +609,40 @@ namespace CML
 		}
 	}
 
+	template <class T, int Rows, int Cols>
+	template <class U>
+	__host__ __device__ void Static_Matrix<T, Rows, Cols>::assign_data(
+		const Dynamic_Matrix<U> &other 									// In: Matrix whose data to assign to *this;
+		)
+	{
+		assert(n_rows == other.n_rows && n_cols == other.n_cols);
+
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				this->operator()(i, j) = other(i, j);
+			}
+		}
+	}
+
+	template <class T, int Rows, int Cols>
+	template <class U, int Max_Rows, int Max_Cols>
+	__host__ __device__ void Static_Matrix<T, Rows, Cols>::assign_data(
+		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other 									// In: Matrix whose data to assign to *this;
+		)
+	{
+		assert(n_rows == other.n_rows && n_cols == other.n_cols);
+
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				this->operator()(i, j) = other(i, j);
+			}
+		}
+	}
+
 	//=========================================================================================================
 	// TYPEDEFS
 	//=========================================================================================================
