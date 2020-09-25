@@ -6,6 +6,16 @@
 
 #IncludeRegexTransform: 
 
+../libs/psbmpc_lib_gpu/include/psbmpc_index.h
+
+../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
+psbmpc_index.h
+../libs/psbmpc_lib_gpu/include/psbmpc_index.h
+Eigen/Dense
+../libs/psbmpc_lib_gpu/include/Eigen/Dense
+vector
+-
+
 ../libs/psbmpc_lib_gpu/include/utilities.cuh
 thrust/device_vector.h
 -
@@ -1115,6 +1125,14 @@ lapacke_mangling.h
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
+
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/psbmpc_parameters.cpp
+psbmpc_parameters.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/psbmpc_parameters.h
+Eigen/Dense
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/Eigen/Dense
+vector
+-
 
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cpp
 utilities.cuh

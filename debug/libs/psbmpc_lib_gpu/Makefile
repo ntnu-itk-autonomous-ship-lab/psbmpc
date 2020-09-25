@@ -145,6 +145,60 @@ psbmpc_lib_gpu/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build
 .PHONY : psbmpc_lib_gpu/fast
 
+src/ownship.o: src/ownship.cu.o
+
+.PHONY : src/ownship.o
+
+# target to build an object file
+src/ownship.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/ownship.cu.o
+.PHONY : src/ownship.cu.o
+
+src/ownship.i: src/ownship.cu.i
+
+.PHONY : src/ownship.i
+
+# target to preprocess a source file
+src/ownship.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/ownship.cu.i
+.PHONY : src/ownship.cu.i
+
+src/ownship.s: src/ownship.cu.s
+
+.PHONY : src/ownship.s
+
+# target to generate assembly for a file
+src/ownship.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/ownship.cu.s
+.PHONY : src/ownship.cu.s
+
+src/psbmpc_parameters.o: src/psbmpc_parameters.cpp.o
+
+.PHONY : src/psbmpc_parameters.o
+
+# target to build an object file
+src/psbmpc_parameters.cpp.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc_parameters.cpp.o
+.PHONY : src/psbmpc_parameters.cpp.o
+
+src/psbmpc_parameters.i: src/psbmpc_parameters.cpp.i
+
+.PHONY : src/psbmpc_parameters.i
+
+# target to preprocess a source file
+src/psbmpc_parameters.cpp.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc_parameters.cpp.i
+.PHONY : src/psbmpc_parameters.cpp.i
+
+src/psbmpc_parameters.s: src/psbmpc_parameters.cpp.s
+
+.PHONY : src/psbmpc_parameters.s
+
+# target to generate assembly for a file
+src/psbmpc_parameters.cpp.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc_parameters.cpp.s
+.PHONY : src/psbmpc_parameters.cpp.s
+
 src/utilities.o: src/utilities.cpp.o
 
 .PHONY : src/utilities.o
@@ -181,6 +235,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... psbmpc_lib_gpu"
+	@echo "... src/ownship.o"
+	@echo "... src/ownship.i"
+	@echo "... src/ownship.s"
+	@echo "... src/psbmpc_parameters.o"
+	@echo "... src/psbmpc_parameters.i"
+	@echo "... src/psbmpc_parameters.s"
 	@echo "... src/utilities.o"
 	@echo "... src/utilities.i"
 	@echo "... src/utilities.s"

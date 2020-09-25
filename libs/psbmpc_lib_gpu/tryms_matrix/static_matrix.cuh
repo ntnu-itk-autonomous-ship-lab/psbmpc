@@ -48,7 +48,7 @@ namespace CML
 
 	public:
 
-		__host__ __device__ Static_Matrix() = default;
+		__host__ __device__ inline Static_Matrix() {}
 
 		__host__ __device__ Static_Matrix(const Static_Matrix &other);
 
@@ -57,7 +57,7 @@ namespace CML
 		template <class U>
 		__host__ __device__ Static_Matrix& operator=(const Dynamic_Matrix<U> &rhs);
 
-		template <class U, int Max_Rows, int Max_Cols>
+		template <class U, size_t Max_Rows, size_t Max_Cols>
 		__host__ __device__ Static_Matrix& operator=(const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &rhs);
 
 		template <class U, size_t Other_Rows, size_t Other_Cols>
@@ -71,7 +71,7 @@ namespace CML
 			return result;
 		}
 		
-		template <class U, int Max_Rows, int Max_Cols>
+		template <class U, size_t Max_Rows, size_t Max_Cols>
 		__host__ __device__ inline operator Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols>() const
 		{
 			Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> result;
@@ -252,7 +252,7 @@ namespace CML
 	}
 
 	template <class T, size_t Rows, size_t Cols>
-	template <class U, int Max_Rows, int Max_Cols>
+	template <class U, size_t Max_Rows, size_t Max_Cols>
 	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator=(
 		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &rhs 								// In: Right hand side matrix/vector to assign
 		)
@@ -459,9 +459,9 @@ namespace CML
 		assert(	Block_Rows <= Rows && Block_Cols <= Cols && 
 				start_row < Rows && start_col < Cols);
 
-		for (size_t i = 0; i < Rows; i++)
+		for (size_t i = 0; i < Block_Rows; i++)
 		{
-			for (size_t j = 0; j < Cols; j++)
+			for (size_t j = 0; j < Block_Cols; j++)
 			{
 				this->operator()(start_row + i, start_col + j) = block(i, j);
 			}
