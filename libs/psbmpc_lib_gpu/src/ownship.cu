@@ -42,9 +42,6 @@
 *****************************************************************************************/
 __host__ __device__ Ownship::Ownship()
 {
-	tau.resize(3, 1); //tau.set_zero();
-	Cvv.resize(3, 1); //Cvv.set_zero(); 
-	Dvv.resize(3, 1); //Dvv.set_zero();
 
 	// Model parameters
 	l_r = 4.0; // distance from rudder to CG
@@ -81,12 +78,12 @@ __host__ __device__ Ownship::Ownship()
 	Y_vvv = 0.0;
 	N_rrr = -3224.0;
 
-	CML::MatrixXd M_tot(3, 3);
+	CML::Matrix3d M_tot;
 	M_tot(0, 0) =  m - X_udot; M_tot(0, 1) = 0; M_tot(0, 2) = 0;
 	M_tot(1, 0) = 0; M_tot(1, 1) = m - Y_vdot; M_tot(1, 2) = -Y_rdot;
 	M_tot(2, 0) = 0; M_tot(2, 1) = -Y_rdot; M_tot(2, 2) = I_z - N_rdot;
 
-	M_inv = CML::MatrixXd::identity(3, 3); //M_tot.inverse();
+	M_inv = M_tot.inverse();
 
 	//Force limits
 	Fx_min = -6550.0;
@@ -121,13 +118,13 @@ __host__ __device__ Ownship::Ownship()
 *****************************************************************************************/
 __host__ __device__ void Ownship::determine_active_waypoint_segment(
 	const CML::MatrixXd &waypoints,  			// In: Waypoints to follow
-	const CML::MatrixXd &xs 					// In: Ownship state
+	const CML::Vector6d &xs 					// In: Ownship state
 	)	
 {
 	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
 
 	int n_wps = waypoints.get_cols();
-	CML::MatrixXd d_0_wp(2, 1), L_wp_segment(2, 1), L_0wp(2, 1);
+	CML::Vector2d d_0_wp, L_wp_segment, L_0wp;
 	bool segment_passed = false;
 
 	if (n_wps <= 2) { wp_c_0 = 0; wp_c_p = 0; return; }
@@ -182,7 +179,7 @@ __host__ __device__ void Ownship::update_guidance_references(
 
 	int n_wps = waypoints.get_cols();
 	double alpha, e;
-	CML::MatrixXd d_next_wp(2, 1), L_wp_segment(2, 1);
+	CML::Vector2d d_next_wp, L_wp_segment;
 	bool segment_passed = false;
 	
 	if (wp_c_p < n_wps - 1 && (guidance_method == LOS || guidance_method == WPP))
@@ -276,13 +273,13 @@ __host__ void Ownship::update_guidance_references(
 __host__ void Ownship::update_ctrl_input(
 	const double u_d,										// In: Surge reference
 	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
-	const CML::MatrixXd &xs 								// In: State
+	const CML::Vector6d &xs 								// In: State
 	)
 {
 	assert(xs.get_rows() == 6 && xs.get_cols() == 1);
 
-	update_Cvv(xs.get_block(3, 0, 3, 1));
-	update_Dvv(xs.get_block(3, 0, 3, 1));
+	update_Cvv(xs.get_block<double, 3, 1>(3, 0));
+	update_Dvv(xs.get_block<double, 3, 1>(3, 0));
 
 	double Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
 	
@@ -307,7 +304,7 @@ __host__ void Ownship::update_ctrl_input(
 	const Eigen::Matrix<double, 6, 1> &xs 					// In: State
 	)
 {
-	CML::MatrixXd xs_copy(6, 1);
+	CML::Vector6d xs_copy;
 	CML::assign_eigen_object(xs_copy, xs);
 
 	update_ctrl_input(u_d, psi_d, xs_copy);
@@ -320,18 +317,18 @@ __host__ void Ownship::update_ctrl_input(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CML::MatrixXd Ownship::predict(
-	const CML::MatrixXd &xs_old, 									// In: State to predict forward
+__host__ __device__ CML::Vector6d Ownship::predict(
+	const CML::Vector6d &xs_old, 									// In: State to predict forward
 	const double dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
 	)
 {
 	assert(xs_old.get_rows() == 6 && xs_old.get_cols() == 1);
 
-	CML::MatrixXd xs_new(6, 1);
-	CML::MatrixXd eta(3, 1), nu(3, 1);
-	eta = xs_old.get_block(0, 0, 3, 1);
-	nu = xs_old.get_block(3, 0, 3, 1);
+	CML::Vector6d xs_new;
+	CML::Vector3d eta, nu;
+	eta = xs_old.get_block<double, 3, 1>(0, 0);
+	nu = xs_old.get_block<double, 3, 1>(3, 0);
 
 	switch (prediction_method)
 	{
@@ -341,8 +338,8 @@ __host__ __device__ CML::MatrixXd Ownship::predict(
 			nu(0) = nu(0);
 			nu(1) = 0;
 			nu(2) = 0;
-			xs_new.set_block(0, 0, 3, 1, eta); 
-			xs_new.set_block(3, 0, 3, 1, nu);
+			xs_new.set_block<double, 3, 1>(0, 0, eta); 
+			xs_new.set_block<double, 3, 1>(3, 0, nu);
 			break;
 		case ERK1 : 
 			update_Cvv(nu); 
@@ -351,8 +348,8 @@ __host__ __device__ CML::MatrixXd Ownship::predict(
 			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
 			nu  = nu  + dt * M_inv * (- Cvv - Dvv + tau);
 			
-			xs_new.set_block(0, 0, 3, 1, eta); 
-			xs_new.set_block(3, 0, 3, 1, nu);
+			xs_new.set_block<double, 3, 1>(0, 0, eta); 
+			xs_new.set_block<double, 3, 1>(3, 0, nu);
 			break;
 		default :
 			// Throw
@@ -473,7 +470,7 @@ __host__ void Ownship::predict_trajectory(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::update_Cvv(
-	const CML::MatrixXd &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
+	const CML::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
 	)
 {
 	assert(nu.get_rows() == 3 && nu.get_cols() == 1);
@@ -491,7 +488,7 @@ __host__ __device__ void Ownship::update_Cvv(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::update_Dvv(
-	const CML::MatrixXd &nu 									// In: BODY velocity vector nu = [u, v, r]^T
+	const CML::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T
 	)
 {
 	assert(nu.get_rows() == 3 && nu.get_cols() == 1);
