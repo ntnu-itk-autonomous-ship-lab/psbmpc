@@ -53,7 +53,7 @@ namespace CML
 
 	public:
 		
-		__host__ __device__ Dynamic_Matrix() : n_rows(0), n_cols(0), data(nullptr), is_allocated(false) {}
+		__host__ __device__ inline Dynamic_Matrix() : n_rows(0), n_cols(0), data(nullptr), is_allocated(false) {}
 
 		__host__ __device__ Dynamic_Matrix(const size_t n_rows);
 
@@ -72,15 +72,15 @@ namespace CML
 		__host__ __device__ Dynamic_Matrix& operator=(const Static_Matrix<U, Rows, Cols> &rhs);
 
 		template<class U, size_t Rows, size_t Cols>
-		__host__ __device__ operator Static_Matrix<U, Rows, Cols>() const
+		__host__ __device__ inline operator Static_Matrix<U, Rows, Cols>() const
 		{
 			Static_Matrix<U, Rows, Cols> result;
 			result = *this;
 			return result;
 		}
 		
-		template<class U, size_t Max_Rows, size_t Max_Cols>
-		__host__ __device__ operator Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>() const
+		template<size_t Max_Rows, size_t Max_Cols>
+		__host__ __device__ inline operator Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>() const
 		{
 			Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> result;
 			result = *this;

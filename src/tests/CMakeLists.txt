@@ -7,10 +7,10 @@
 #add_executable(tester test_kf.cpp)
 #add_executable(tester test_psbmpc.cpp) # for CPU PSBMPC
 #add_executable(tester gpu_implementation_test_files/test_psbmpc.cu) # for GPU PSBMPC
-#add_executable(tester gpu_implementation_test_files/stack_overflow.cu)
+add_executable(tester gpu_implementation_test_files/stack_overflow.cu)
 #add_executable(tester test_prng.cpp)
 #add_executable(tester gpu_implementation_test_files/test_thrust.cu)
-add_executable(tester gpu_implementation_test_files/test_cml.cpp)
+#add_executable(tester gpu_implementation_test_files/test_cml.cpp)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include

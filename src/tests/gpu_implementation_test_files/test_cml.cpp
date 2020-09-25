@@ -737,7 +737,7 @@ int main()
 	std::cout << "A + scalar = " << std::endl; 
 	std::cout << As + scalar << std::endl;
 
-	std::cout << "scalar + A= " << std::endl; 
+	std::cout << "scalar + A = " << std::endl; 
 	std::cout << scalar + As << std::endl;
 
 	std::cout << "A - scalar = " << std::endl; 
@@ -745,28 +745,6 @@ int main()
 
 	std::cout << "scalar - A = " << std::endl; 
 	std::cout << scalar - As << std::endl;
-
-	CML::Vector4d a_cvec;
-	for (size_t i = 0; i < n_rows; i++)
-	{
-		a_cvec(i) = i + 1;
-	}
-	std::cout << "Cwise add of vector : " << std::endl;
-	std::cout << As + a_cvec << std::endl;
-	As.set_zero();
-	std::cout << "Cwise subtract of vector : " << std::endl;
-	std::cout << As - a_cvec << std::endl;
-
-	CML::Static_Matrix<double, 1, 4> a_rvec;
-	for (size_t j = 0; j < n_cols; j++)
-	{
-		a_rvec(j) = j + 1;
-	}
-	std::cout << "Rwise add of vector : " << std::endl;
-	std::cout << a_rvec + As << std::endl;
-	As.set_zero();
-	std::cout << "Rwise subtract of vector : " << std::endl;
-	std::cout << (double)-1 * a_rvec + As << std::endl;
 
 	//================================================================================
 	// Quadratic form calculation test
@@ -839,7 +817,7 @@ int main()
 	CML::Static_Matrix<double, 3, 3> Ts_sub;
 	Ts.set_zero(); Ts_sub.set_all_coeffs(3);
 	std::cout << "T before set = " << std::endl;
-	std::cout << T << std::endl;
+	std::cout << Ts << std::endl;
 
 	CML::Static_Matrix<double, 1, 6> rvec_s;
 	CML::Vector6d cvec_s;
@@ -929,7 +907,6 @@ int main()
 	CML::Vector4d testc3_sm; testc3_sm.set_all_coeffs(2.0);
 	test_conversion3(testc3);
 	test_conversion3(testc3_sm);
-
 
 
 	//================================================================================
