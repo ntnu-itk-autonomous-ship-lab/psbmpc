@@ -271,7 +271,7 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, int Rows, int Cols>
-	template<class U, int Other_Rows, int Other_Cols>
+	template <class U, int Other_Rows, int Other_Cols>
 	__host__ __device__  Static_Matrix<T, Rows, Cols>  Static_Matrix<T, Rows, Cols>::operator*(
 		const  Static_Matrix<U, Other_Rows, Other_Cols> &other 							// In: Matrix/vector to multiply with
 		) const
@@ -657,6 +657,8 @@ namespace CML
 	using Vector2d = Static_Matrix<double, 2, 1>;
 	using Vector3d = Static_Matrix<double, 3, 1>;
 	using Vector4d = Static_Matrix<double, 4, 1>;
+	using Vector5d = Static_Matrix<double, 5, 1>;
+	using Vector6d = Static_Matrix<double, 6, 1>;
 }
 
 #endif

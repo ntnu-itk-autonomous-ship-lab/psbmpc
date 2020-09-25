@@ -61,9 +61,6 @@ private:
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 	CML::MatrixXd *xs_p;
 
-	// Mean predicted velocity for the obstacle (MROU): 
-	CML::MatrixXd v_p;
-
 	// Prediction scenario ordering, size n_ps x 1 of intentions
 	Intention *ps_ordering;
 

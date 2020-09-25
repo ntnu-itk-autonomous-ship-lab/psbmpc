@@ -49,10 +49,10 @@ class Ownship
 {
 private:
 
-	CML::MatrixXd tau;
-	CML::MatrixXd M_inv;
-	CML::MatrixXd Cvv;
-	CML::MatrixXd Dvv;
+	CML::Vector3d tau;
+	CML::Matrix3d M_inv;
+	CML::Vector3d Cvv;
+	CML::Vector3d Dvv;
 
 	// Model Parameters
 	double l_r;
@@ -106,9 +106,9 @@ private:
 	// Calculates the offsets according to the position of the GPS receiver
 	__host__ __device__ inline void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
 
-	__host__ __device__ void update_Cvv(const CML::MatrixXd &nu);
+	__host__ __device__ void update_Cvv(const CML::Vector3d &nu);
 
-	__host__ __device__ void update_Dvv(const CML::MatrixXd &nu);
+	__host__ __device__ void update_Dvv(const CML::Vector3d &nu);
 
 public:
 
@@ -116,7 +116,7 @@ public:
 
 	__host__ void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 
-	__host__ __device__ void determine_active_waypoint_segment(const CML::MatrixXd &waypoints, const CML::MatrixXd &xs);
+	__host__ __device__ void determine_active_waypoint_segment(const CML::MatrixXd &waypoints, const CML::Vector6d &xs);
 
 	__host__ __device__ void update_guidance_references(
 		double &u_d, 
@@ -134,12 +134,12 @@ public:
 		const double dt,
 		const Guidance_Method guidance_method);
 
-	__host__ __device__ void update_ctrl_input(const double u_d, const double psi_d, const CML::MatrixXd &xs);
+	__host__ __device__ void update_ctrl_input(const double u_d, const double psi_d, const CML::Vector6d &xs);
 	
 	__host__ void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
-	__host__ __device__ CML::MatrixXd predict(
-		const CML::MatrixXd &xs_old, 
+	__host__ __device__ CML::Vector6d predict(
+		const CML::Vector6d &xs_old, 
 		const double dt, 
 		const Prediction_Method prediction_method);
 
