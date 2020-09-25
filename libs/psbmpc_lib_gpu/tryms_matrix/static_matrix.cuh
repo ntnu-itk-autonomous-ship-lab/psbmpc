@@ -29,13 +29,12 @@ namespace CML
 {
 	template<class T, class Derived> class Matrix_Base;
 	template<class T> class Dynamic_Matrix;
-	template<class T, int Max_Rows, int Max_Cols> class Pseudo_Dynamic_Matrix;
+	template<class T, size_t Max_Rows, size_t Max_Cols> class Pseudo_Dynamic_Matrix;
 
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	class Static_Matrix : public Matrix_Base<T, Static_Matrix<T, Rows, Cols>> 
 	{
 	private:
-		size_t n_rows = Rows, n_cols = Cols;
 
 		T data[Rows * Cols];
 
@@ -44,7 +43,7 @@ namespace CML
 		template <class U>
 		__host__ __device__ void assign_data(const Dynamic_Matrix<U> &other);
 
-		template <class U, int Max_Rows, int Max_Cols>
+		template <class U, size_t Max_Rows, size_t Max_Cols>
 		__host__ __device__ void assign_data(const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other);
 
 	public:
@@ -61,8 +60,8 @@ namespace CML
 		template <class U, int Max_Rows, int Max_Cols>
 		__host__ __device__ Static_Matrix& operator=(const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &rhs);
 
-		template <class U, int Other_Rows, int Other_Cols>
-		__host__ __device__ Static_Matrix operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
+		template <class U, size_t Other_Rows, size_t Other_Cols>
+		__host__ __device__ Static_Matrix<T, Rows, Other_Cols> operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
 
 		template <class U>
 		__host__ __device__ inline operator Dynamic_Matrix<U>() const
@@ -111,17 +110,17 @@ namespace CML
 
 		__host__ __device__ Static_Matrix<T, Rows, 1> get_col(const size_t col) const;
 
-		__host__ __device__ inline size_t get_rows() const { return n_rows; }
+		__host__ __device__ inline size_t get_rows() const { return Rows; }
 
-		__host__ __device__ inline size_t get_cols() const { return n_cols; }
+		__host__ __device__ inline size_t get_cols() const { return Cols; }
 
 		__host__ __device__ inline T* get_data() { return data; }
 
 		__host__ __device__ inline size_t size() const 
 		{ 
-			assert(n_rows == 1 || n_cols == 1); 
-			if (n_rows > n_cols) 	{ return n_rows; } 
-			else 					{ return n_cols; } 
+			assert(Rows == 1 || Cols == 1); 
+			if (Rows > Cols) 	{ return Rows; } 
+			else 					{ return Cols; } 
 		
 		}
 	};
@@ -139,7 +138,7 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ inline Static_Matrix<T, Rows, Cols> operator+(const Static_Matrix<T, Rows, Cols> &other, const T scalar)
 	{
 		Static_Matrix<T, Rows, Cols> result = other;
@@ -152,7 +151,7 @@ namespace CML
 		}
 		return result;
 	}
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ inline Static_Matrix<T, Rows, Cols> operator+(const T scalar, const Static_Matrix<T, Rows, Cols> &other) { return other + scalar; }
 
 	/****************************************************************************************
@@ -161,7 +160,7 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ inline Static_Matrix<T, Rows, Cols> operator-(const Static_Matrix<T, Rows, Cols> &other, const T scalar)
 	{
 		Static_Matrix<T, Rows, Cols> result = other;
@@ -174,7 +173,7 @@ namespace CML
 		}
 		return result;
 	}
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ inline Static_Matrix<T, Rows, Cols> operator-(const T scalar, const Static_Matrix<T, Rows, Cols> &other) { return (T)-1 * other + scalar; }
 
 	/****************************************************************************************
@@ -183,7 +182,7 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ inline Static_Matrix<T, Rows, Cols> operator*(const Static_Matrix<T, Rows, Cols> &other, const T scalar)
 	{
 		Static_Matrix<T, Rows, Cols> result = other;
@@ -197,7 +196,7 @@ namespace CML
 		return result;
 	}
 
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ inline Static_Matrix<T, Rows, Cols> operator*(const T scalar, const Static_Matrix<T, Rows, Cols> &other) { return other * scalar; }
 
 	//*********************************************************************************************************************************************************
@@ -212,11 +211,10 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, Rows, Cols>::Static_Matrix(
 		const Static_Matrix<T, Rows, Cols> &other 								// In: Matrix/vector to copy
-		) : 
-		n_rows(other.n_rows), n_cols(other.n_cols)
+		)
 	{
 		assign_data(other);
 	}
@@ -227,7 +225,7 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator=(
 		const Static_Matrix<T, Rows, Cols> &rhs 								// In: Right hand side matrix/vector to assign
 		)
@@ -242,7 +240,7 @@ namespace CML
 		return *this;
 	}
 
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	template <class U>
 	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator=(
 		const Dynamic_Matrix<U> &rhs 								// In: Right hand side matrix/vector to assign
@@ -253,7 +251,7 @@ namespace CML
 		return *this;
 	}
 
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	template <class U, int Max_Rows, int Max_Cols>
 	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator=(
 		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &rhs 								// In: Right hand side matrix/vector to assign
@@ -270,22 +268,22 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
-	template <class U, int Other_Rows, int Other_Cols>
-	__host__ __device__  Static_Matrix<T, Rows, Cols>  Static_Matrix<T, Rows, Cols>::operator*(
+	template <class T, size_t Rows, size_t Cols>
+	template <class U, size_t Other_Rows, size_t Other_Cols>
+	__host__ __device__  Static_Matrix<T, Rows, Other_Cols>  Static_Matrix<T, Rows, Cols>::operator*(
 		const  Static_Matrix<U, Other_Rows, Other_Cols> &other 							// In: Matrix/vector to multiply with
 		) const
 	{	
 		// Verify that the matrix product is valid
-		assert(n_cols == other.n_rows);
+		assert(Cols == Other_Rows);
 
 		Static_Matrix<T, Rows, Other_Cols> result;
-		for (size_t i = 0 ; i < n_rows; i++)
+		for (size_t i = 0 ; i < Rows; i++)
 		{
-			for (size_t j = 0; j < other.n_cols; j++)
+			for (size_t j = 0; j < Other_Cols; j++)
 			{
 				result(i, j) = (T)0;
-				for (size_t k = 0; k < n_cols; k++)
+				for (size_t k = 0; k < Cols; k++)
 				{
 					result(i, j) += this->operator()(i, k) * other(k, j);
 				}
@@ -300,13 +298,13 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, Cols, Rows> Static_Matrix<T, Rows, Cols>::transposed() const
 	{
 		Static_Matrix<T, Cols, Rows> result;
-		for (size_t i = 0; i < n_cols; i++)
+		for (size_t i = 0; i < Cols; i++)
 		{
-			for (size_t j = 0; j < n_rows ; j++)
+			for (size_t j = 0; j < Rows ; j++)
 			{
 				result(i, j) = this->operator()(j, i);
 			}
@@ -320,23 +318,18 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, Rows, 1> Static_Matrix<T, Rows, Cols>::cross(
 		const Static_Matrix<T, Rows, Cols> &other 								// In: Matrix/Vector object to perform cross product with
 	) const
 	{
 		// Check that the objects are in fact correct vectors of matching dimension
-		assert((n_rows == 3 && n_cols == 1) && (n_rows == other.n_rows && n_cols == other.n_cols));
+		assert(Rows == 3 && Cols == 1);
 		
 		Static_Matrix<T, Rows, 1> result;
 		result(0) = this->operator()(1) * other(2) - this->operator()(2) * other(1);
 		result(1) = this->operator()(2) * other(0) - this->operator()(0) * other(2);
 		result(2) = this->operator()(0) * other(1) - this->operator()(1) * other(0);
-
-		if (n_rows == 1)
-		{
-			result.transpose();
-		}
 		
 		return result;
 	}
@@ -348,19 +341,15 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, 1, Cols> Static_Matrix<T, Rows, Cols>::cwise_product(
 		const Static_Matrix<T, Rows, Cols> &other 								// In: Matrix/Vector object to apply columnwise product to
 	) const
-	{
-		assert(n_cols == other.n_cols 				&&
-				((n_rows == 1 && other.n_rows > 1) 	||
-				(n_rows > 1 && other.n_rows == 1)));
-		
+	{		
 		Static_Matrix<T, 1, Cols> result;
-		for (size_t j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < Cols; j++)
 		{
-			result(0, j) = this->get_block(0, j, n_rows, 1).transpose() * other.get_block(0, j, other.n_rows, 1);	
+			result(0, j) = this->get_block<T, Rows, 1>(0, j).dot(other.get_block<T, Rows, 1>(0, j));	
 		}
 		return result;
 	}
@@ -371,18 +360,18 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, 1, Cols> Static_Matrix<T, Rows, Cols>::cwise_mean() const
 	{
 		Static_Matrix<T, 1, Cols> result;
-		for (size_t j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < Cols; j++)
 		{
 			result(j) = (T)0;
-			for (size_t i = 0; i < n_rows; i++)
+			for (size_t i = 0; i < Rows; i++)
 			{
 				result(j) += this->operator()(i, j);
 			}
-			result(j) /= (T)n_rows;
+			result(j) /= (T)Rows;
 		}
 		return result;
 	}
@@ -393,18 +382,18 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, Rows, 1> Static_Matrix<T, Rows, Cols>::rwise_mean() const
 	{
 		Static_Matrix<T, Rows, 1> result;
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < Rows; i++)
 		{
 			result(i) = (T)0;
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < Cols; j++)
 			{
 				result(i) += this->operator()(i, j);
 			}
-			result(i) /= (T)n_rows;
+			result(i) /= (T)Rows;
 		}
 	}
 
@@ -414,13 +403,13 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::identity()
 	{
 		Static_Matrix<T, Rows, Cols> result;
-		for (int i = 0; i < Rows; i++)
+		for (size_t i = 0; i < Rows; i++)
 		{
-			for (int j = 0; j < Cols; j++)
+			for (size_t j = 0; j < Cols; j++)
 			{
 				result(i, j) = (T)0;
 				if (i == j)
@@ -438,13 +427,13 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::ones()
 	{
 		Static_Matrix<T, Rows, Cols> result;
-		for (int i = 0; i < Rows; i++)
+		for (size_t i = 0; i < Rows; i++)
 		{
-			for (int j = 0; j < Cols; j++)
+			for (size_t j = 0; j < Cols; j++)
 			{
 				result(i, j) = (T)1;			
 			}
@@ -459,7 +448,7 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	template <class U, int Block_Rows, int Block_Cols>
 	__host__ __device__  void Static_Matrix<T, Rows, Cols>::set_block(
 		const size_t start_row, 									// In: Start row of matrix block
@@ -467,12 +456,12 @@ namespace CML
 		const Static_Matrix<U, Block_Rows, Block_Cols> &block 		// In: Block matrix to set
 		)
 	{
-		assert(	Block_Rows <= this->n_rows && Block_Cols <= this->n_cols && 
-				start_row < this->n_rows && start_col < this->n_cols);
+		assert(	Block_Rows <= Rows && Block_Cols <= Cols && 
+				start_row < Rows && start_col < Cols);
 
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < Rows; i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < Cols; j++)
 			{
 				this->operator()(start_row + i, start_col + j) = block(i, j);
 			}
@@ -485,14 +474,14 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ void Static_Matrix<T, Rows, Cols>::set_row(
 		const size_t row,		 											// In: Index of row to assign
 		const Static_Matrix<T, 1, Cols> &vector 							// In: Row vector to assign to the row
 		)
 	{
-		assert(vector.get_cols() == this->n_cols && row < this->n_rows);
-		for (size_t j = 0; j < this->n_cols; j++)
+		assert(row < Rows);
+		for (size_t j = 0; j < Cols; j++)
 		{
 			this->operator()(row, j) = vector(j);
 		}
@@ -504,14 +493,14 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ void Static_Matrix<T, Rows, Cols>::set_col(
 		const size_t col,		 											// In: Index of column to assign
 		const Static_Matrix<T, Rows, 1> &vector 							// In: Column vector to assign to the column
 		)
 	{
-		assert(vector.get_rows() == this->n_rows && col < this->n_cols);
-		for (size_t i = 0; i < this->n_rows; i++)
+		assert(col < Cols);
+		for (size_t i = 0; i < Rows; i++)
 		{
 			this->operator()(i, col) = vector(i);
 		}
@@ -525,20 +514,20 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	template <class U, int Block_Rows, int Block_Cols>
 	__host__ __device__ Static_Matrix<U, Block_Rows, Block_Cols> Static_Matrix<T, Rows, Cols>::get_block(
 		const size_t start_row, 									// In: Start row of matrix block
 		const size_t start_col	 									// In: Start column of matrix block
 		) const
 	{
-		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && n_rows > 0 && n_cols > 0 && 
-				start_row < n_rows && start_col < n_cols);
+		assert(	Block_Rows <= Rows && Block_Cols <= Cols && 
+				start_row < Rows && start_col < Cols);
 
 		Static_Matrix<U, Block_Rows, Block_Cols> result;
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < Block_Rows; i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < Block_Cols; j++)
 			{
 				result(i, j) = this->operator()(start_row + i, start_col + j);
 			}
@@ -552,15 +541,15 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, 1, Cols> Static_Matrix<T, Rows, Cols>::get_row(
 		const size_t row											// In: Index of row to fetch
 		) const
 	{
-		assert(row < this->n_rows);
+		assert(row < Rows);
 
 		Static_Matrix<T, 1, Cols> result;
-		for (size_t j = 0; j < n_cols; j++)
+		for (size_t j = 0; j < Cols; j++)
 		{
 			result(0, j) = this->operator()(row, j);
 		}
@@ -573,15 +562,15 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ Static_Matrix<T, Rows, 1> Static_Matrix<T, Rows, Cols>::get_col(
 		const size_t col											// In: Index of column to fetch
 		) const
 	{
-		assert(col < this->n_cols);
+		assert(col < Cols);
 
 		Static_Matrix<T, Rows, 1> result;
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < Rows; i++)
 		{
 			result(i, 0) = this->operator()(i, col);
 		}
@@ -597,50 +586,48 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	__host__ __device__ void Static_Matrix<T, Rows, Cols>::assign_data(
 		const Static_Matrix<T, Rows, Cols> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
-		assert(n_rows == other.n_rows && n_cols == other.n_cols);
-
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < Rows; i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < Cols; j++)
 			{
 				this->operator()(i, j) = other(i, j);
 			}
 		}
 	}
 
-	template <class T, int Rows, int Cols>
+	template <class T, size_t Rows, size_t Cols>
 	template <class U>
 	__host__ __device__ void Static_Matrix<T, Rows, Cols>::assign_data(
 		const Dynamic_Matrix<U> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
-		assert(n_rows == other.get_rows() && n_cols == other.get_cols());
+		assert(Rows == other.get_rows() && Cols == other.get_cols());
 
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < Rows; i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < Cols; j++)
 			{
 				this->operator()(i, j) = other(i, j);
 			}
 		}
 	}
 
-	template <class T, int Rows, int Cols>
-	template <class U, int Max_Rows, int Max_Cols>
+	template <class T, size_t Rows, size_t Cols>
+	template <class U, size_t Max_Rows, size_t Max_Cols>
 	__host__ __device__ void Static_Matrix<T, Rows, Cols>::assign_data(
 		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
-		assert(n_rows == other.get_rows() && n_cols == other.get_cols());
+		assert(Rows == other.get_rows() && Cols == other.get_cols());
 
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < Rows; i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < Cols; j++)
 			{
 				this->operator()(i, j) = other(i, j);
 			}
