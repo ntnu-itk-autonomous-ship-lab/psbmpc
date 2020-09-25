@@ -46,7 +46,7 @@ namespace CML
 
 		__host__ __device__ T calculate_determinant_recursive(const Dynamic_Matrix<T> &submatrix) const;
 
-		__host__ __device__ void fill_minor_matrix(Dynamic_Matrix<T> &minor_matrix, const Derived &original_matrix, const size_t row, const size_t col) const;
+		__host__ __device__ void fill_minor_matrix(Dynamic_Matrix<T> &minor_matrix, const Dynamic_Matrix<T> &original_matrix, const size_t row, const size_t col) const;
 		
 	public:
 
@@ -767,7 +767,7 @@ namespace CML
 	template <class T, class Derived>
 	__host__ __device__ void Matrix_Base<T, Derived>::fill_minor_matrix(
 		Dynamic_Matrix<T> &minor_matrix, 							// In/out: Matrix to fill  as the minor M_{row, col}
-		const Derived &original_matrix, 							// In: Original matrix to extract the minor from, of one order higher than the minor matrix
+		const Dynamic_Matrix<T> &original_matrix, 					// In: Original matrix to extract the minor from, of one order higher than the minor matrix
 		const size_t row,  											// In: Row index of minor
 		const size_t col 											// In: Column index of minor
 		) const

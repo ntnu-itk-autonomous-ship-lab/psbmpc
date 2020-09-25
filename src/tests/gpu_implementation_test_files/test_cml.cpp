@@ -473,38 +473,30 @@ int main()
 // Static Matrix tests
 //================================================================================
 	std::cout << "Static Matrix testing..." << std::endl;
-	//================================================================================
-	// Assignment operator + copy constructor test
-	//================================================================================
-	CML::Static_Matrix<double, 3, 2> t1;
-	CML::Static_Matrix<double, 2, 2> t2;
-	t1 = t2;
-
-	CML::Static_Matrix<double, 4, 4> t3 = t1;
 
 	//================================================================================
 	// 2x2 inverse test
 	//================================================================================
 	CML::Matrix2d M2d, M2d_inv = M2d;
-	Eigen::Matrix2d M2; 
+	Eigen::Matrix2d M2e; 
 	Eigen::Matrix2d M_diff2;
 
 	for (size_t i = 0; i < 2; i++)
 	{
 		for (size_t j = 0; j < 2; j++)
 		{
-			M2(i, j) = 2 * std_norm_pdf(gen) + 5;
+			M2e(i, j) = 2 * std_norm_pdf(gen) + 5;
 			if (i == j)
 			{
-				M2(i, j) = 2 * std_norm_pdf(gen) + 10;
+				M2e(i, j) = 2 * std_norm_pdf(gen) + 10;
 			}
-			M2d(i, j) = M2(i, j);
+			M2d(i, j) = M2e(i, j);
 		}
 	}
 	std::cout << "CML 2x2 = " << std::endl;
 	std::cout << M2d << std::endl;
 
-	std::cout << "Eigen 2x2 determinant= " << M2.determinant() << std::endl;
+	std::cout << "Eigen 2x2 determinant= " << M2e.determinant() << std::endl;
 	std::cout << "CML 2x2 determinant= " << M2d.determinant() << std::endl;
 
 	M2d_inv = M2d.inverse();
@@ -513,7 +505,7 @@ int main()
 	{
 		for (size_t j = 0; j < 2; j++)
 		{
-			M_diff2(i, j) = M2d_inv(i, j) - M2.inverse()(i, j);
+			M_diff2(i, j) = M2d_inv(i, j) - M2e.inverse()(i, j);
 		}
 	}
 	std::cout << "Difference in 2x2 inverse: " << std::endl;
@@ -567,9 +559,9 @@ int main()
 	//M2 = kf->get_covariance();
 	while (M4d.determinant() <= 0)
 	{
-		for (size_t i = 0; i < n_rows; i++)
+		for (size_t i = 0; i < 4; i++)
 		{
-			for (size_t j = 0; j < n_cols; j++)
+			for (size_t j = 0; j < 4; j++)
 			{
 				M4(i, j) = 2 * std_norm_pdf(gen) + 5;
 				if (i == j || (i + j) % 2 == 0)
@@ -617,7 +609,6 @@ int main()
 		v1s_e(i) = v1s(i); 
 		v2s(i) = 2 * std_norm_pdf(gen) + 5;
 		v2s_e(i) = v2s(i);
-		
 	}
 	std::cout << "v1' * v2 diff = " << v1s.dot(v2s) - v1s_e.dot(v2s_e) << std::endl;
 	std::cout << "v2' * v1 diff = " << v2s.dot(v1s) - v2s_e.dot(v1s_e) << std::endl;
@@ -637,8 +628,8 @@ int main()
 
 	for (size_t i = 0; i < 3; i++)
 	{
-		v_diff1s(i) = v1c.cross(v2c)(i) - v1s_e3.cross(v2_e3)(i);
-		v_diff2s(i) = v2c.cross(v1c)(i) - v2s_e3.cross(v1_e3)(i);
+		v_diff1s(i) = v1c.cross(v2c)(i) - v1s_e3.cross(v2s_e3)(i);
+		v_diff2s(i) = v2c.cross(v1c)(i) - v2s_e3.cross(v1s_e3)(i);
 	}
 	std::cout << "v1 x v2 diff = " << v_diff1s.transpose() << std::endl;
 	std::cout << "v2 x v1 diff = " << v_diff2s.transpose() << std::endl;
@@ -660,7 +651,7 @@ int main()
 			Bs_e(i, j) = Bs(i, j);
 		}
 	}
-	double scalar = 5 * std_norm_pdf(gen);
+	scalar = 5 * std_norm_pdf(gen);
 	std::cout << "A + B diff = " << std::endl; 
 	Cs = As + Bs; Cs_e = As_e + Bs_e;
 	for (size_t i = 0; i < n_rows; i++)
@@ -752,7 +743,7 @@ int main()
 	std::cout << "A - scalar = " << std::endl; 
 	std::cout << As - scalar << std::endl;
 
-	std::cout << "scalar - A= " << std::endl; 
+	std::cout << "scalar - A = " << std::endl; 
 	std::cout << scalar - As << std::endl;
 
 	CML::Vector4d a_cvec;
@@ -850,21 +841,22 @@ int main()
 	std::cout << "T before set = " << std::endl;
 	std::cout << T << std::endl;
 
-	CML::MatrixXd row_vec(1, n_cols), col_vec(n_rows, 1);
-	for (size_t i = 0; i < n_rows; i++)
-	{
-		col_vec(i) = 1;
-	}
+	CML::Static_Matrix<double, 1, 6> rvec_s;
+	CML::Vector6d cvec_s;
 	for (size_t j = 0; j < n_cols; j++)
 	{
-		row_vec(j) = 2;
+		cvec_s(j) = 1;
+	}
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		row_vec(i) = 2;
 	}
 	std::cout << "T after set col = " << std::endl;
-	Ts.set_col(0, col_vec);
+	Ts.set_col(0, cvec_s);
 	std::cout << Ts << std::endl;
 
 	std::cout << "T after set row = " << std::endl;
-	Ts.set_row(0, row_vec);
+	Ts.set_row(0, rvec_s);
 	std::cout << Ts << std::endl;
 
 	std::cout << "T after set block = " << std::endl;
