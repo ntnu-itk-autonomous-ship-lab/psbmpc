@@ -47,47 +47,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	) :
 	pars(master.pars)//, cpe(master.cpe)
 {	
-/* 	fdata.n_obst = odata.obstacles.size();
 
-	fdata.u_d = u_d;
-	fdata.chi_d = chi_d;
-
-	fdata.u_m_last = master.u_m_last;
-	fdata.chi_m_last = master.chi_m_last;
-
-	// Assign Eigen objects to CML objects
-	CML::assign_eigen_object(fdata.maneuver_times, master.maneuver_times);
-
-	CML::assign_eigen_object(fdata.control_behaviours, master.control_behaviours);
-
-	CML::assign_eigen_object(fdata.trajectory, master.trajectory);
-
-	CML::assign_eigen_object(fdata.waypoints, waypoints);
-
-	CML::assign_eigen_object(fdata.static_obstacles, static_obstacles);
-
-	fdata.n_ps.resize(fdata.n_obst, 1);
-
-	fdata.AH_0.resize(fdata.n_obst, 1); 	fdata.S_TC_0.resize(fdata.n_obst, 1); fdata.S_i_TC_0.resize(fdata.n_obst, 1);
-	fdata.O_TC_0.resize(fdata.n_obst, 1); 	fdata.Q_TC_0.resize(fdata.n_obst, 1); fdata.IP_0.resize(fdata.n_obst, 1);
-	fdata.H_TC_0.resize(fdata.n_obst, 1); 	fdata.X_TC_0.resize(fdata.n_obst, 1);
-
-	fdata.obstacles = new Cuda_Obstacle[fdata.n_obst];
-	for (int i = 0; i < fdata.n_obst; i++)
-	{
-		fdata.n_ps[i] = master.n_ps[i];
-
-		fdata.AH_0[i] = odata.AH_0[i]; 
-		fdata.S_TC_0[i] = odata.S_TC_0[i];
-		fdata.S_i_TC_0[i] = odata.S_i_TC_0[i]; 
-		fdata.O_TC_0[i] = odata.O_TC_0[i];
-		fdata.Q_TC_0[i] = odata.Q_TC_0[i]; 
-		fdata.IP_0[i] = odata.IP_0[i];
-		fdata.H_TC_0[i] = odata.H_TC_0[i]; 
-		fdata.X_TC_0[i] = odata.X_TC_0[i];
-
-		fdata.obstacles[i] = odata.obstacles[i];
-	} */
 }
 
 /****************************************************************************************

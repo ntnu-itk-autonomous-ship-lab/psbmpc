@@ -170,7 +170,7 @@ __host__ __device__ void Ownship::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
 	double &chi_d,												// In/out: Course reference 
 	const CML::MatrixXd &waypoints,								// In: Waypoints to follow.
-	const CML::MatrixXd &xs, 									// In: Ownship state	
+	const CML::Vector6d &xs, 									// In: Ownship state	
 	const double dt, 											// In: Time step
 	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
@@ -408,7 +408,7 @@ __host__ __device__ void Ownship::predict_trajectory(
 	int man_count = 0;
 	double u_m = 1, u_d_p = u_d;
 	double chi_m = 0, chi_d_p = chi_d;
-	CML::MatrixXd xs = trajectory.get_col(0);
+	CML::Vector6d xs = trajectory.get_col(0);
 
 	for (int k = 0; k < n_samples; k++)
 	{ 

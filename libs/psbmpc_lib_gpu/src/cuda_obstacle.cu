@@ -126,7 +126,7 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 	this->xs_0 = co.xs_0;
 	this->P_0 = co.P_0;
 
-	this->n_ps = co.ps_weights.size();
+	this->n_ps = co.n_ps;
 
 	this->Pr_a = co.Pr_a;
 
@@ -137,7 +137,6 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 	this->mu = co.mu;
 
 	this->P_p = co.P_p;
-	this->v_p = co.v_p;
 
 	this->ps_course_changes = co.ps_course_changes; this->ps_weights = co.ps_weights; this->ps_maneuver_times = co.ps_maneuver_times;
 
@@ -184,16 +183,15 @@ __host__ void Cuda_Obstacle::assign_data(
 	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
 	
 	CML::assign_eigen_object(this->P_p, to.P_p);
-	CML::assign_eigen_object(this->v_p, to.v_p);
 
+	CML::assign_eigen_object(this->ps_ordering, to.ps_ordering);
 	CML::assign_eigen_object(this->ps_course_changes, to.ps_course_changes); 
 	CML::assign_eigen_object(this->ps_weights, to.ps_weights); 
 	CML::assign_eigen_object(this->ps_maneuver_times, to.ps_maneuver_times);
 
 	//this->sbmpc = new Obstacle_SBMPC();
 
-	this->xs_p = new CML::MatrixXd[n_ps];
-	this->ps_ordering = new Intention[n_ps];
+	this->xs_p = new CML::Pseudo_Dynamic_Matrix<double, 4, 2000>[n_ps];
 
 	this->mu.resize(n_ps, 1);
 	for (int ps = 0; ps < n_ps; ps++)

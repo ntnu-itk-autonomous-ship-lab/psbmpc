@@ -32,7 +32,7 @@
 #include <vector>
 #include <memory>
 
-class CB_Cost_Functor;
+class CB_Functor_Data;
 
 class PSBMPC
 {
@@ -55,7 +55,7 @@ private:
 
 	Eigen::Matrix<double, 6, -1> trajectory;
 
-	friend class CB_Cost_Functor;
+	friend struct CB_Functor_Data;
 
 	void map_offset_sequences();
 

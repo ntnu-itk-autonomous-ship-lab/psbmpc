@@ -59,6 +59,8 @@ namespace CML
 
 		__host__ __device__ Dynamic_Matrix(const size_t n_rows, const size_t n_cols);
 
+		__host__ __device__ Dynamic_Matrix(const T* data, const size_t n_rows, const size_t n_cols) : data(data), n_rows(n_rows), n_cols(n_cols), is_allocated(true) {}
+
 		__host__ __device__ Dynamic_Matrix(const Dynamic_Matrix &other);
 
 		__host__ __device__ ~Dynamic_Matrix();
