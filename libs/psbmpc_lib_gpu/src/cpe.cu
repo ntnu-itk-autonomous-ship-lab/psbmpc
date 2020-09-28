@@ -576,7 +576,7 @@ __device__ double CPE::produce_MCS_estimate(
 *****************************************************************************************/
 __device__ void CPE::determine_sample_validity_4D(
     const CML::MatrixXd &p_os_cpa,                                           // In: Position of own-ship at cpa
-    const double t_cpa                                                         // In: Time to cpa
+    const double t_cpa                                                       // In: Time to cpa
     )
 {
     assert(p_os_cpa.get_rows() == 1 && p_os_cpa.get_cols() == 1);

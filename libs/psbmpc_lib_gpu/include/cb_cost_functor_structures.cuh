@@ -129,6 +129,7 @@ struct CB_Functor_Data
 
 	Cuda_Obstacle *obstacles;
 
+	__host__ __device__ CB_Functor_Data() {}
 
 	__host__ __device__ CB_Functor_Data(
 		const PSBMPC &master, 
@@ -164,7 +165,7 @@ struct CB_Functor_Data
 
 		cudaMalloc(&obstacles, n_obst * sizeof(Cuda_Obstacle));
 
-		Cuda_Obstacle* temp_obstacles = new Cuda_Obstacle[n_obst];
+		/* Cuda_Obstacle* temp_obstacles = new Cuda_Obstacle[n_obst];
 		for (int i = 0; i < this->n_obst; i++)
 		{
 			this->n_ps[i] = master.n_ps[i];
@@ -172,7 +173,7 @@ struct CB_Functor_Data
 			temp_obstacles[i] = odata.obstacles[i];
 
 			cudaMemcpy(&obstacles[i], &temp_obstacles[i], n_obst, cudaMemcpyHostToDevice);
-		}
+		} */
 	}
 
 	__host__ __device__ ~CB_Functor_Data() { cudaFree(obstacles); }

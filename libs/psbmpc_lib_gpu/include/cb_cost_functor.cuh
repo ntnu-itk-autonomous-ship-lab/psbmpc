@@ -31,7 +31,7 @@ private:
 
 	CB_Functor_Pars pars;
 
-	//CB_Functor_Data fdata;
+	CB_Functor_Data fdata;
 
 	Ownship ownship;
 
@@ -40,16 +40,16 @@ private:
 	__device__ void predict_trajectories_jointly();
 
 	__device__ bool determine_COLREGS_violation(
-		const CML::MatrixXd &v_A, 
+		const CML::Vector2d &v_A, 
 		const double psi_A, 
-		const CML::MatrixXd &v_B,
-		const CML::MatrixXd &L_AB, 
+		const CML::Vector2d &v_B,
+		const CML::Vector2d &L_AB, 
 		const double d_AB);
 
 	__device__ bool determine_transitional_cost_indicator(
 		const double psi_A, 
 		const double psi_B, 
-		const CML::MatrixXd &L_AB, 
+		const CML::Vector2d &L_AB, 
 		const double chi_m,
 		const int i);
 
@@ -57,7 +57,7 @@ private:
 
 	__device__ double calculate_dynamic_obstacle_cost(const CML::MatrixXd &P_c_i, const int i, const CML::MatrixXd &offset_sequence);
 
-	__device__ inline double calculate_collision_cost(const CML::MatrixXd &v_1, const CML::MatrixXd &v_2) { return pars.K_coll * (v_1 - v_2).norm(); };
+	__device__ inline double calculate_collision_cost(const CML::Vector2d &v_1, const CML::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); };
 
 	__device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
@@ -76,17 +76,17 @@ private:
 	// Methods dealing with geographical constraints
 	__device__ double calculate_grounding_cost();
 
-	__device__ int find_triplet_orientation(const CML::MatrixXd &p, const CML::MatrixXd &q, const CML::MatrixXd &r);                           
+	__device__ int find_triplet_orientation(const CML::Vector2d &p, const CML::Vector2d &q, const CML::Vector2d &r);                           
 
-	__device__ bool determine_if_on_segment(const CML::MatrixXd &p, const CML::MatrixXd &q, const CML::MatrixXd &r);   
+	__device__ bool determine_if_on_segment(const CML::Vector2d &p, const CML::Vector2d &q, const CML::Vector2d &r);   
 
-	__device__ bool determine_if_behind(const CML::MatrixXd &p_1, const CML::MatrixXd &v_1, const CML::MatrixXd &v_2, const double d_to_line);                         
+	__device__ bool determine_if_behind(const CML::Vector2d &p_1, const CML::Vector2d &v_1, const CML::Vector2d &v_2, const double d_to_line);                         
 
-	__device__ bool determine_if_lines_intersect(const CML::MatrixXd &p_1, const CML::MatrixXd &q_1, const CML::MatrixXd &p_2, const CML::MatrixXd &q_2);   
+	__device__ bool determine_if_lines_intersect(const CML::Vector2d &p_1, const CML::Vector2d &q_1, const CML::Vector2d &p_2, const CML::Vector2d &q_2);   
 
-	__device__ double distance_from_point_to_line(const CML::MatrixXd &p, const CML::MatrixXd &q_1, const CML::MatrixXd &q_2);                  
+	__device__ double distance_from_point_to_line(const CML::Vector2d &p, const CML::Vector2d &q_1, const CML::Vector2d &q_2);                  
 
-	__device__ double distance_to_static_obstacle(const CML::MatrixXd &p, const CML::MatrixXd &v_1, const CML::MatrixXd &v_2);
+	__device__ double distance_to_static_obstacle(const CML::Vector2d &p, const CML::Vector2d &v_1, const CML::Vector2d &v_2);
 
 public: 
 	__host__ CB_Cost_Functor() {}
@@ -101,7 +101,7 @@ public:
 
 	__host__ __device__ ~CB_Cost_Functor();
 	
-	__device__ double operator()(const unsigned int cb_index);
+	__device__ double operator()(const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> cb_tuple);
 	
 };
 	

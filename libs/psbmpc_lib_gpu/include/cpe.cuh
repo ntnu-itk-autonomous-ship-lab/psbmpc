@@ -47,7 +47,7 @@ private:
 	CPE_Method method;
 
 	// Number of obstacles to consider in estimation
-	int n_obst;
+	int n_obst; // Ad hoc max number of obstacles: 50
 
 	// Number of samples drawn
 	int n_CE, n_MCSKF;

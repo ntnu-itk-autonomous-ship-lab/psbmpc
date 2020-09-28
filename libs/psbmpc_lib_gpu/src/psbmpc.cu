@@ -167,19 +167,25 @@ void PSBMPC::calculate_optimal_offsets(
 	thrust::device_vector<double> cb_costs(pars.n_cbs);
 
 	// Allocate iterator for passing the index of the control behavior to the kernels
-	thrust::counting_iterator<unsigned int> index_iter(0);
-	//CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles, data)
+	thrust::device_vector<unsigned int> cb_index_dvec(pars.n_cbs);
+	thrust::sequence(cb_index_dvec.begin(), cb_index_dvec.end(), 0);
+
+	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), control_behavior_dvec.begin()));
+    auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), control_behavior_dvec.end()));
+	
 	std::cout << "right before gpu stuff" << std::endl;
 	// Perform the calculations on the GPU
-    thrust::transform(index_iter, index_iter + pars.n_cbs, cb_costs.begin(), CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles, data));
+    thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles, data));
 	std::cout << "right after gpu stuff" << std::endl;
 	// Extract minimum cost
 	thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
 	min_index = min_cost_iter - cb_costs.begin();
 	min_cost = cb_costs[min_index];
 
+	CML::MatrixXd opt_offset_sequence = control_behavior_dvec[min_index];
+
 	// Set the trajectory to the optimal one and assign to the output trajectory
-	ownship.predict_trajectory(trajectory, control_behaviours.col(min_index), maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+	ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 	assign_optimal_trajectory(predicted_trajectory);
 	//===============================================================================================================
 
@@ -198,13 +204,13 @@ void PSBMPC::calculate_optimal_offsets(
 	engClose(ep); */
 	//===============================================================================================================
 
-	u_opt = control_behaviours(0, min_index); 		u_m_last = u_opt;
-	chi_opt = control_behaviours(1, min_index); 	chi_m_last = chi_opt;
+	u_opt = opt_offset_sequence(0); 		u_m_last = u_opt;
+	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
 
 	std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)
 	{
-		std::cout << control_behaviours(2 * M, min_index) << ", " << control_behaviours(2 * M + 1, min_index) * RAD2DEG;
+		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
 		if (M < pars.n_M - 1) std::cout << ", ";
 	}
 	std::cout << std::endl;
@@ -227,14 +233,17 @@ void PSBMPC::map_offset_sequences()
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	control_behaviours.resize(2 * pars.n_M, pars.n_cbs);
+	control_behaviour_dvec.resize(pars.n_cbs);
+	CML::Pseudo_Dynamic_Matrix<double, 20, 1> cml_offset_sequence(2 * pars.n_M);
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
-		control_behaviours.col(cb) = offset_sequence;
+		CML::assign_eigen_object(cml_offset_sequence, offset_sequence);
+
+		control_behavior_dvec[cb] = cml_offset_sequence;
 
 		increment_control_behaviour(offset_sequence_counter, offset_sequence);
 	}
-	std::cout << "Number of control behaviours: " << control_behaviours.cols() << std::endl;
+	std::cout << "Number of control behaviours: " << pars.n_cbs << std::endl;
 }
 
 /****************************************************************************************

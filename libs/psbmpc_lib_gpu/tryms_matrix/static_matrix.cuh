@@ -93,18 +93,18 @@ namespace CML
 
 		__host__ __device__ static Static_Matrix ones();
 
-		template<class U, int Block_Rows, int Block_Cols>
+		template<size_t Block_Rows, size_t Block_Cols>
 		__host__ __device__ void set_block(
 			const size_t start_row, 
 			const size_t start_col, 
-			const Static_Matrix<U, Block_Rows, Block_Cols> &block);
+			const Static_Matrix<T, Block_Rows, Block_Cols> &block);
 
 		__host__ __device__ void set_row(const size_t row, const Static_Matrix<T, 1, Cols> &vector);
 
 		__host__ __device__ void set_col(const size_t col, const Static_Matrix<T, Rows, 1> &vector);
 
-		template<class U, int Block_Rows, int Block_Cols>
-		__host__ __device__ Static_Matrix<U, Block_Rows, Block_Cols> get_block(const size_t start_row, const size_t start_col) const;
+		template<size_t Block_Rows, size_t Block_Cols>
+		__host__ __device__ Static_Matrix<T, Block_Rows, Block_Cols> get_block(const size_t start_row, const size_t start_col) const;
 
 		__host__ __device__ Static_Matrix<T, 1, Cols> get_row(const size_t row) const;
 
@@ -449,11 +449,11 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Rows, size_t Cols>
-	template <class U, int Block_Rows, int Block_Cols>
+	template <size_t Block_Rows, size_t Block_Cols>
 	__host__ __device__  void Static_Matrix<T, Rows, Cols>::set_block(
 		const size_t start_row, 									// In: Start row of matrix block
 		const size_t start_col, 									// In: Start column of matrix block
-		const Static_Matrix<U, Block_Rows, Block_Cols> &block 		// In: Block matrix to set
+		const Static_Matrix<T, Block_Rows, Block_Cols> &block 		// In: Block matrix to set
 		)
 	{
 		assert(	Block_Rows <= Rows && Block_Cols <= Cols && 
@@ -515,8 +515,8 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Rows, size_t Cols>
-	template <class U, int Block_Rows, int Block_Cols>
-	__host__ __device__ Static_Matrix<U, Block_Rows, Block_Cols> Static_Matrix<T, Rows, Cols>::get_block(
+	template <size_t Block_Rows, size_t Block_Cols>
+	__host__ __device__ Static_Matrix<T, Block_Rows, Block_Cols> Static_Matrix<T, Rows, Cols>::get_block(
 		const size_t start_row, 									// In: Start row of matrix block
 		const size_t start_col	 									// In: Start column of matrix block
 		) const
@@ -524,7 +524,7 @@ namespace CML
 		assert(	Block_Rows <= Rows && Block_Cols <= Cols && 
 				start_row < Rows && start_col < Cols);
 
-		Static_Matrix<U, Block_Rows, Block_Cols> result;
+		Static_Matrix<T, Block_Rows, Block_Cols> result;
 		for (size_t i = 0; i < Block_Rows; i++)
 		{
 			for (size_t j = 0; j < Block_Cols; j++)

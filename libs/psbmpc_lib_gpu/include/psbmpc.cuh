@@ -41,7 +41,8 @@ private:
 	std::vector<int> n_ps;
 
 	Eigen::VectorXd maneuver_times;
-	Eigen::MatrixXd control_behaviours;
+
+	thrust::device_vector<CML::Pseudo_Dynamic_Matrix<double, 20, 1>> control_behavior_dvec;
 	
 	double u_m_last;
 	double chi_m_last;
