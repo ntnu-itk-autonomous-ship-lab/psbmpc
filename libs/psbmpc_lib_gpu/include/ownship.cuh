@@ -122,7 +122,7 @@ public:
 		double &u_d, 
 		double &chi_d, 
 		const CML::MatrixXd &waypoints, 
-		const CML::MatrixXd &xs,
+		const CML::Vector6d &xs,
 		const double dt,
 		const Guidance_Method guidance_method);
 

@@ -28,6 +28,13 @@
 #include "cuda_obstacle.cuh"
 #include "cpe.cuh"
 
+
+/****************************************************************************************
+*  Name     : CB_Functor_Pars
+*  Function : Struct containing subset of the PSB-MPC parameters for use in the GPU
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
 struct CB_Functor_Pars
 {
 	int n_M;
@@ -89,35 +96,41 @@ struct CB_Functor_Pars
 	}
 };
 
-class CB_Functor_Data
+/****************************************************************************************
+*  Name     : CB_Functor_Data
+*  Function : Struct containing data/information needed to evaluate the cost of one
+*			  PSB-MPC control behaviour. Two versions for testing..
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+struct CB_Functor_Data
 {
-public:
-
-	CML::MatrixXd maneuver_times;
-	CML::MatrixXd control_behaviours;
+	CML::Pseudo_Dynamic_Matrix<double, 30, 1> maneuver_times;
 
 	double u_d, chi_d;
 
 	double u_m_last;
 	double chi_m_last;
 
-	CML::MatrixXd waypoints;
+	CML::Pseudo_Dynamic_Matrix<double, 2, 100> waypoints;
 
-	CML::MatrixXd trajectory;
+	CML::Pseudo_Dynamic_Matrix<double, 6, 1000> trajectory;
 
-	CML::MatrixXd static_obstacles;
+	CML::Pseudo_Dynamic_Matrix<double, 4, 100> static_obstacles;
 
 	int n_obst;
 
-	CML::MatrixXi n_ps;
+	// Number of prediction scenarios for each obstacle (max nr. for n_obst set to 50 here)
+	CML::Pseudo_Dynamic_Matrix<int, 50, 1> n_ps;
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
-	CML::MatrixXb AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
+	CML::Pseudo_Dynamic_Matrix<bool, 50, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
 
 	Cuda_Obstacle *obstacles;
 
-	__host__ void assign_master_data(
+
+	__host__ __device__ CB_Functor_Data(
 		const PSBMPC &master, 
 		const double u_d, 
 		const double chi_d, 
@@ -125,12 +138,44 @@ public:
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		const Obstacle_Data &odata)
 	{
-		
+		this->n_obst = odata.obstacles.size();
+
+		this->u_d = u_d;
+		this->chi_d = chi_d;
+
+		this->u_m_last = master.u_m_last;
+		this->chi_m_last = master.chi_m_last;
+
+		// Assign Eigen objects to CML objects
+		CML::assign_eigen_object(this->maneuver_times, master.maneuver_times);
+
+		CML::assign_eigen_object(this->trajectory, master.trajectory);
+
+		CML::assign_eigen_object(this->waypoints, waypoints);
+
+		CML::assign_eigen_object(this->static_obstacles, static_obstacles);
+
+		CML::assign_eigen_object(this->AH_0, odata.AH_0); 			CML::assign_eigen_object(this->S_TC_0, odata.S_TC_0);
+		CML::assign_eigen_object(this->S_i_TC_0, odata.S_i_TC_0); 	CML::assign_eigen_object(this->O_TC_0, odata.O_TC_0);
+		CML::assign_eigen_object(this->Q_TC_0, odata.Q_TC_0); 		CML::assign_eigen_object(this->IP_0, odata.IP_0);
+		CML::assign_eigen_object(this->H_TC_0, odata.H_TC_0); 		CML::assign_eigen_object(this->X_TC_0, odata.X_TC_0);
+
+		n_ps.resize(n_obst, 1);
+
+		cudaMalloc(&obstacles, n_obst * sizeof(Cuda_Obstacle));
+
+		Cuda_Obstacle* temp_obstacles = new Cuda_Obstacle[n_obst];
+		for (int i = 0; i < this->n_obst; i++)
+		{
+			this->n_ps[i] = master.n_ps[i];
+
+			temp_obstacles[i] = odata.obstacles[i];
+
+			cudaMemcpy(&obstacles[i], &temp_obstacles[i], n_obst, cudaMemcpyHostToDevice);
+		}
 	}
 
-	__host__ __device__ CB_Functor_Data() : obstacles(nullptr) {}
-
-	__host__ __device__ ~CB_Functor_Data() { delete[] obstacles; }
+	__host__ __device__ ~CB_Functor_Data() { cudaFree(obstacles); }
 };
 	
 #endif 

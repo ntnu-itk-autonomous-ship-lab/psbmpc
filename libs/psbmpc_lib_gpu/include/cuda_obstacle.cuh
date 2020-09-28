@@ -36,13 +36,13 @@ class Cuda_Obstacle : public Obstacle
 private:
 
 	// State and covariance at the current time or predicted time
-	CML::MatrixXd xs_0;
-	CML::MatrixXd P_0;
+	CML::Vector4d xs_0;
+	CML::Matrix4d P_0;
 
-	int n_ps;
+	int n_ps; // Ad hoc max number of prediction scenarios: 1000
 
 	// Vector of intention probabilities at the current time or last time of update
-	CML::MatrixXd Pr_a;
+	CML::Pseudo_Dynamic_Matrix<double, 3, 1> Pr_a;
 
 	// A priori COLREGS compliance probability at the current time or last time of update
 	double Pr_CC;
@@ -52,20 +52,20 @@ private:
 	double duration_tracked, duration_lost;
 
 	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: n_ps x 1
-	CML::MatrixXb mu;
+	CML::Pseudo_Dynamic_Matrix<bool, 200, 1> mu;
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
 	// This is equal for all prediction scenarios including those with active COLAV (using MROU)
-	CML::MatrixXd P_p;  
+	CML::Pseudo_Dynamic_Matrix<double, 16, 2000> P_p;  
 
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
-	CML::MatrixXd *xs_p;
+	CML::Pseudo_Dynamic_Matrix<double, 4, 2000> *xs_p;
 
 	// Prediction scenario ordering, size n_ps x 1 of intentions
-	Intention *ps_ordering;
+	CML::Pseudo_Dynamic_Matrix<Intention, 200, 1> ps_ordering;
 
 	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
-	CML::MatrixXd ps_course_changes, ps_weights, ps_maneuver_times;
+	CML::Pseudo_Dynamic_Matrix<double, 200, 1> ps_course_changes, ps_weights, ps_maneuver_times;
 
 	__host__ __device__ void assign_data(const Cuda_Obstacle &co);
 	
@@ -75,7 +75,7 @@ public:
 
 	//Obstacle_SBMPC *sbmpc;
 
-	__host__ __device__ Cuda_Obstacle() : xs_p(nullptr), ps_ordering(nullptr) {};
+	__host__ __device__ Cuda_Obstacle() : xs_p(nullptr) {};
 
 	__host__ __device__ Cuda_Obstacle(const Cuda_Obstacle &co);
 
@@ -89,7 +89,7 @@ public:
 
 	__host__ __device__ void clean();
 
-	__device__ inline CML::MatrixXb get_COLREGS_violation_indicator() const { return mu; }
+	__device__ inline CML::Pseudo_Dynamic_Matrix<bool, 200, 1> get_COLREGS_violation_indicator() const { return mu; }
 
 	__device__ inline double get_a_priori_CC_probability() const { return Pr_CC; }
 
@@ -97,11 +97,11 @@ public:
 
 	__device__ inline double get_duration_tracked() const { return duration_tracked; }
 
-	__device__ inline CML::MatrixXd get_intention_probabilities() const { return Pr_a; }
+	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 3, 1> get_intention_probabilities() const { return Pr_a; }
 
-	__device__ inline CML::MatrixXd* get_trajectories() const { return xs_p; }
+	__device__ inline CML::Pseudo_Dynamic_Matrix<bool, 4, 2000>* get_trajectories() const { return xs_p; }
 
-	__device__ inline CML::MatrixXd get_trajectory_covariance() const { return P_p; }
+	__device__ inline CML::Pseudo_Dynamic_Matrix<bool, 16, 2000> get_trajectory_covariance() const { return P_p; }
 };
 
 #endif
