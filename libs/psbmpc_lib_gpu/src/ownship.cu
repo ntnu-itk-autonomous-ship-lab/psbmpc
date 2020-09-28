@@ -278,8 +278,8 @@ __host__ void Ownship::update_ctrl_input(
 {
 	assert(xs.get_rows() == 6 && xs.get_cols() == 1);
 
-	update_Cvv(xs.get_block<double, 3, 1>(3, 0));
-	update_Dvv(xs.get_block<double, 3, 1>(3, 0));
+	update_Cvv(xs.get_block<3, 1>(3, 0));
+	update_Dvv(xs.get_block<3, 1>(3, 0));
 
 	double Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
 	
@@ -327,8 +327,8 @@ __host__ __device__ CML::Vector6d Ownship::predict(
 
 	CML::Vector6d xs_new;
 	CML::Vector3d eta, nu;
-	eta = xs_old.get_block<double, 3, 1>(0, 0);
-	nu = xs_old.get_block<double, 3, 1>(3, 0);
+	eta = xs_old.get_block<3, 1>(0, 0);
+	nu = xs_old.get_block<3, 1>(3, 0);
 
 	switch (prediction_method)
 	{
@@ -338,8 +338,8 @@ __host__ __device__ CML::Vector6d Ownship::predict(
 			nu(0) = nu(0);
 			nu(1) = 0;
 			nu(2) = 0;
-			xs_new.set_block<double, 3, 1>(0, 0, eta); 
-			xs_new.set_block<double, 3, 1>(3, 0, nu);
+			xs_new.set_block<3, 1>(0, 0, eta); 
+			xs_new.set_block<3, 1>(3, 0, nu);
 			break;
 		case ERK1 : 
 			update_Cvv(nu); 
@@ -348,8 +348,8 @@ __host__ __device__ CML::Vector6d Ownship::predict(
 			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
 			nu  = nu  + dt * M_inv * (- Cvv - Dvv + tau);
 			
-			xs_new.set_block<double, 3, 1>(0, 0, eta); 
-			xs_new.set_block<double, 3, 1>(3, 0, nu);
+			xs_new.set_block<3, 1>(0, 0, eta); 
+			xs_new.set_block<3, 1>(3, 0, nu);
 			break;
 		default :
 			// Throw

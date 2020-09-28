@@ -39,7 +39,7 @@ private:
 	CML::Vector4d xs_0;
 	CML::Matrix4d P_0;
 
-	int n_ps; // Ad hoc max number of prediction scenarios: 1000
+	int n_ps; // Ad hoc max number of prediction scenarios: 200
 
 	// Vector of intention probabilities at the current time or last time of update
 	CML::Pseudo_Dynamic_Matrix<double, 3, 1> Pr_a;
@@ -55,17 +55,14 @@ private:
 	CML::Pseudo_Dynamic_Matrix<bool, 200, 1> mu;
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
-	// This is equal for all prediction scenarios including those with active COLAV (using MROU)
+	// This is equal for all prediction scenarios including those with active COLAV (using MROU). Ad hoc max nr of samples: 2000
 	CML::Pseudo_Dynamic_Matrix<double, 16, 2000> P_p;  
 
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 	CML::Pseudo_Dynamic_Matrix<double, 4, 2000> *xs_p;
 
-	// Prediction scenario ordering, size n_ps x 1 of intentions
-	CML::Pseudo_Dynamic_Matrix<Intention, 200, 1> ps_ordering;
-
 	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
-	CML::Pseudo_Dynamic_Matrix<double, 200, 1> ps_course_changes, ps_weights, ps_maneuver_times;
+	CML::Pseudo_Dynamic_Matrix<double, 200, 1> ps_weights;
 
 	__host__ __device__ void assign_data(const Cuda_Obstacle &co);
 	
@@ -99,9 +96,9 @@ public:
 
 	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 3, 1> get_intention_probabilities() const { return Pr_a; }
 
-	__device__ inline CML::Pseudo_Dynamic_Matrix<bool, 4, 2000>* get_trajectories() const { return xs_p; }
+	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 4, 2000>* get_trajectories() const { return xs_p; }
 
-	__device__ inline CML::Pseudo_Dynamic_Matrix<bool, 16, 2000> get_trajectory_covariance() const { return P_p; }
+	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 16, 2000> get_trajectory_covariance() const { return P_p; }
 };
 
 #endif

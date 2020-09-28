@@ -45,7 +45,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	const Eigen::Matrix<double, 4, -1> static_obstacles,				// In: Static obstacle information
 	const Obstacle_Data odata											// In: Dynamic obstacle information
 	) :
-	pars(master.pars)//, cpe(master.cpe)
+	pars(master.pars), fdata(master, u_d, chi_d, waypoints, static_obstacles, odata)//, cpe(master.cpe)
 {	
 
 }
@@ -65,7 +65,7 @@ __host__ __device__ CB_Cost_Functor::~CB_Cost_Functor() = default;
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::operator()(
-	const unsigned int cb_index 									// In: Index of control behaviour evaluated in this kernel
+	const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> cb_tuple		// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
 	double cost = 0;
@@ -134,10 +134,10 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 //  Modified :
 //=======================================================================================
 __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
-	const CML::MatrixXd &v_A,												// In: (NE) Velocity vector of vessel A, row vector
+	const CML::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A, row vector
 	const double psi_A, 													// In: Heading of vessel A
-	const CML::MatrixXd &v_B, 											// In: (NE) Velocity vector of vessel B, row vector
-	const CML::MatrixXd &L_AB, 											// In: LOS vector pointing from vessel A to vessel B, row vector
+	const CML::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B, row vector
+	const CML::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B, row vector
 	const double d_AB 														// In: Distance from vessel A to vessel B
 	)
 {
@@ -190,7 +190,7 @@ __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
 __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 	const double psi_A, 													// In: Heading of vessel A
 	const double psi_B, 													// In: Heading of vessel B
-	const CML::MatrixXd &L_AB, 												// In: LOS vector pointing from vessel A to vessel B
+	const CML::Vector2d &L_AB, 												// In: LOS vector pointing from vessel A to vessel B
 	const double chi_m, 													// In: Candidate course offset currently followed
 	const int i 															// In: Index of obstacle
 	)

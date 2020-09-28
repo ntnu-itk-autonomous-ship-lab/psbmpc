@@ -138,22 +138,15 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 
 	this->P_p = co.P_p;
 
-	this->ps_course_changes = co.ps_course_changes; this->ps_weights = co.ps_weights; this->ps_maneuver_times = co.ps_maneuver_times;
+	this->ps_weights = co.ps_weights;
 
 	//this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
-	
-	if (xs_p != nullptr && ps_ordering != nullptr)
-	{
-		clean();
-	}
 
-	this->xs_p = new CML::MatrixXd[n_ps];
-	this->ps_ordering = new Intention[n_ps];
+	this->xs_p = new CML::Pseudo_Dynamic_Matrix<double, 4, 2000>[n_ps];
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		this->xs_p[ps] = co.xs_p[ps];
-		this->ps_ordering[ps] = co.ps_ordering[ps];
 	}
 }
 
@@ -184,10 +177,7 @@ __host__ void Cuda_Obstacle::assign_data(
 	
 	CML::assign_eigen_object(this->P_p, to.P_p);
 
-	CML::assign_eigen_object(this->ps_ordering, to.ps_ordering);
-	CML::assign_eigen_object(this->ps_course_changes, to.ps_course_changes); 
 	CML::assign_eigen_object(this->ps_weights, to.ps_weights); 
-	CML::assign_eigen_object(this->ps_maneuver_times, to.ps_maneuver_times);
 
 	//this->sbmpc = new Obstacle_SBMPC();
 
@@ -199,7 +189,5 @@ __host__ void Cuda_Obstacle::assign_data(
 		this->mu[ps] = to.mu[ps];
 
 		CML::assign_eigen_object(this->xs_p[ps], to.xs_p[ps]);
-
-		this->ps_ordering[ps] = to.ps_ordering[ps];
 	}
 }
