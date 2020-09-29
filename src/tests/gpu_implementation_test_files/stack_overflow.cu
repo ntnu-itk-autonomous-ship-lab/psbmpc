@@ -31,12 +31,14 @@
 
 class My_Class
 {
-private:
-    int *ptr;
 public:
-    __host__ __device__ My_Class() { ptr = new int[2]; ptr[0] = 0; ptr[1] = 0; }
+    int *ptr;
 
-    __host__ __device__ ~My_Class() { delete[] ptr; }
+    __host__ __device__ My_Class() : ptr(nullptr) {}
+
+    __host__ __device__ My_Class(int *ptr) : ptr(ptr) {}
+
+    __host__ __device__ ~My_Class() { ptr = nullptr; }
 };
 
 
@@ -46,7 +48,7 @@ private:
 
     //CB_Functor_Data *fdata;
 
-    //int *obstacles;
+    Cuda_Obstacle *obstacles;
 
     Ownship ownship;
 
@@ -54,32 +56,14 @@ public:
 
     __host__ myFunctor() {} 
 
-    /* __host__ myFunctor(const CB_Functor_Data &other) 
-    {
-        cudaMalloc((void**)&fdata, sizeof(CB_Functor_Data));
+    __host__ myFunctor(Cuda_Obstacle *obstacles) : obstacles(obstacles) {}
 
-    } 
+    __host__ __device__ ~myFunctor() { ptr = nullptr; }
 
-    __host__ __device__ ~myFunctor() { cudaFree(fdata); } */
-
-   /*  __host__ myFunctor(const Obstacle_Data &odata, const int *in) 
-    {
-        cudaMalloc((void**)&obstacles, sizeof(int));
-        cudaCheckErrors("cudaMalloc1 fail");
-
-        cudaMemcpy(obstacles, in, 1, cudaMemcpyHostToDevice);
-        cudaCheckErrors("cudaMemCpy1 fail");
-
-        //cudaMalloc((void**)&obstacles, odata.obstacles.size() * sizeof(Cuda_Obstacle));
-
-    } 
-    __host__ ~myFunctor() { cudaFree(obstacles); cudaCheckErrors("cudaFree1 fail"); } */
-
-    __device__ double operator()(const thrust::tuple<unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>, My_Class> &input) 
+    __device__ double operator()(const thrust::tuple<unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> &input) 
     {
         int cb_index = thrust::get<0>(input); 
         CML::MatrixXd offset_sequence = thrust::get<1>(input);
-        My_Class my_class = thrust::get<2>(input);
 
         CPE cpe(CE, 1000, 10, 1, 0.5);
 
@@ -87,7 +71,7 @@ public:
 
         cpe.set_number_of_obstacles(3); 
 
-        double ret = offset_sequence(0) + offset_sequence(2) + ownship.get_length();
+        double ret = offset_sequence(0) + offset_sequence(2) + *ptr;
 
         return ret; 
     }
@@ -136,13 +120,23 @@ int main()
 
     thrust::fill(control_behavior_dvec.begin(), control_behavior_dvec.end(), constant_cml_cb);
 
-	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), control_behavior_dvec.begin()));
+    int val = 3;
+    int *ptr; 
+    cudaMalloc((void**)&ptr, sizeof(int));
+    cudaCheckErrors("cudaMalloc1 fail");
+
+    cudaMemcpy(ptr, &val, 1, cudaMemcpyHostToDevice);
+    cudaCheckErrors("cudaMemCpy1 fail");
+    
+    myFunctor mf(ptr);
+
+    auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), control_behavior_dvec.begin()));
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), control_behavior_dvec.end()));
 
-    int inp = 5;
-    myFunctor mf(odata, &inp);
-
     thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), mf);
+
+    cudaFree(ptr);
+    cudaCheckErrors("cudaFree1 fail");
 
     thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
     int min_index = min_cost_iter - cb_costs.begin();
