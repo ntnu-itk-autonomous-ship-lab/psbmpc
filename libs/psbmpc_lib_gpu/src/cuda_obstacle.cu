@@ -142,7 +142,8 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 
 	//this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
 
-	cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
+	//cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
+	xs_p = new CML::Pseudo_Dynamic_Matrix<double, 4, 2000>[n_ps];
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
@@ -181,14 +182,11 @@ __host__ void Cuda_Obstacle::assign_data(
 
 	//this->sbmpc = new Obstacle_SBMPC();
 
-	cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
-
-	for (int ps = 0; ps < n_ps; ps++)
-	{
-		CML::assign_eigen_object(this->xs_p[ps], to.xs_p[ps]);
-	}
-
 	this->mu.resize(n_ps, 1);
+
+	//cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
+	xs_p = new CML::Pseudo_Dynamic_Matrix<double, 4, 2000>[n_ps];
+
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		this->mu[ps] = to.mu[ps];
