@@ -145,6 +145,33 @@ psbmpc_lib_gpu/fast:
 	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build
 .PHONY : psbmpc_lib_gpu/fast
 
+src/cb_cost_functor.o: src/cb_cost_functor.cu.o
+
+.PHONY : src/cb_cost_functor.o
+
+# target to build an object file
+src/cb_cost_functor.cu.o:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.o
+.PHONY : src/cb_cost_functor.cu.o
+
+src/cb_cost_functor.i: src/cb_cost_functor.cu.i
+
+.PHONY : src/cb_cost_functor.i
+
+# target to preprocess a source file
+src/cb_cost_functor.cu.i:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.i
+.PHONY : src/cb_cost_functor.cu.i
+
+src/cb_cost_functor.s: src/cb_cost_functor.cu.s
+
+.PHONY : src/cb_cost_functor.s
+
+# target to generate assembly for a file
+src/cb_cost_functor.cu.s:
+	cd /home/trymte/Desktop/cybercolav_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.s
+.PHONY : src/cb_cost_functor.cu.s
+
 src/cpe.o: src/cpe.cu.o
 
 .PHONY : src/cpe.o
@@ -424,6 +451,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... psbmpc_lib_gpu"
+	@echo "... src/cb_cost_functor.o"
+	@echo "... src/cb_cost_functor.i"
+	@echo "... src/cb_cost_functor.s"
 	@echo "... src/cpe.o"
 	@echo "... src/cpe.i"
 	@echo "... src/cpe.s"

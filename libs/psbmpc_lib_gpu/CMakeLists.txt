@@ -5,7 +5,7 @@ find_package(CUDA COMPONENTS THRUST REQUIRED)
 add_library(psbmpc_lib_gpu STATIC 	
 	#src/psbmpc.cu 
 	src/psbmpc_parameters.cpp
-	#src/cb_cost_functor.cu
+	src/cb_cost_functor.cu
 	src/obstacle_manager.cu
 	src/obstacle.cu
 	#src/obstacle_ship.cu 
