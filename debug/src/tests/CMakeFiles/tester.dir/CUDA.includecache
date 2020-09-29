@@ -124,6 +124,12 @@ mrou.cuh
 kf.cuh
 ../libs/psbmpc_lib_gpu/include/kf.cuh
 
+../libs/psbmpc_lib_gpu/include/utilities.h
+Eigen/Dense
+../libs/psbmpc_lib_gpu/include/Eigen/Dense
+iostream
+../libs/psbmpc_lib_gpu/include/iostream
+
 ../libs/psbmpc_lib_gpu/tryms_matrix/cml.cuh
 thrust/device_vector.h
 -
@@ -1253,6 +1259,8 @@ ownship.cuh
 /home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/ownship.cuh
 cpe.cuh
 /home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/cpe.cuh
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/utilities.h
 
 /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
 complex

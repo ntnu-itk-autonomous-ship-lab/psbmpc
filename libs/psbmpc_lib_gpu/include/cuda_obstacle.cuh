@@ -86,7 +86,9 @@ public:
 
 	__host__ __device__ void clean();
 
-	__device__ inline CML::Pseudo_Dynamic_Matrix<bool, 200, 1> get_COLREGS_violation_indicator() const { return mu; }
+	__host__ __device__ inline int get_num_prediction_scenarios() const { return n_ps; }
+
+	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 3, 1> get_intention_probabilities() const { return Pr_a; }
 
 	__device__ inline double get_a_priori_CC_probability() const { return Pr_CC; }
 
@@ -94,11 +96,13 @@ public:
 
 	__device__ inline double get_duration_tracked() const { return duration_tracked; }
 
-	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 3, 1> get_intention_probabilities() const { return Pr_a; }
-
-	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 4, 2000>* get_trajectories() const { return xs_p; }
+	__device__ inline CML::Pseudo_Dynamic_Matrix<bool, 200, 1> get_COLREGS_violation_indicator() const { return mu; }	
 
 	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 16, 2000> get_trajectory_covariance() const { return P_p; }
+	
+	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 4, 2000>* get_trajectories() const { return xs_p; }
+
+	
 };
 
 #endif

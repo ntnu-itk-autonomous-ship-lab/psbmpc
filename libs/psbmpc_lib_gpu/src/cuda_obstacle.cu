@@ -95,7 +95,7 @@ __host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 *****************************************************************************************/
 __host__ __device__ void Cuda_Obstacle::clean()
 {
-	if (xs_p != nullptr) 		{ delete[] xs_p; xs_p = nullptr; }
+	xs_p = nullptr;
 
 	//if (sbmpc != nullptr) 		{ delete sbmpc; sbmpc = nullptr; }
 }
@@ -142,9 +142,6 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 
 	//this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
 
-	//cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
-	xs_p = new CML::Pseudo_Dynamic_Matrix<double, 4, 2000>[n_ps];
-
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		this->xs_p[ps] = co.xs_p[ps];
@@ -183,9 +180,6 @@ __host__ void Cuda_Obstacle::assign_data(
 	//this->sbmpc = new Obstacle_SBMPC();
 
 	this->mu.resize(n_ps, 1);
-
-	//cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
-	xs_p = new CML::Pseudo_Dynamic_Matrix<double, 4, 2000>[n_ps];
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{

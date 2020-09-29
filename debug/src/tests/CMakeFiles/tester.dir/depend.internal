@@ -14,6 +14,7 @@ src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/stack_overflow.cu.
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
  ../libs/psbmpc_lib_gpu/include/tracked_obstacle.cuh
+ ../libs/psbmpc_lib_gpu/include/utilities.h
  ../libs/psbmpc_lib_gpu/tryms_matrix/cml.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/eigen_interface.cuh

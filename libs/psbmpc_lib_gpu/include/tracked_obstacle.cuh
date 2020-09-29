@@ -113,6 +113,8 @@ public:
 
 	inline Eigen::MatrixXd get_trajectory_covariance() const { return P_p; }
 
+	inline int get_num_prediction_scenarios() const { return xs_p.size(); }
+
 	void initialize_prediction(	
 		const std::vector<Intention> &ps_ordering,
 		const Eigen::VectorXd &ps_course_changes,
