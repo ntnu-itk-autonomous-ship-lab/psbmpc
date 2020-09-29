@@ -95,7 +95,7 @@ __host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 *****************************************************************************************/
 __host__ __device__ void Cuda_Obstacle::clean()
 {
-	if (xs_p != nullptr) 		{ cudaFree(xs_p); xs_p = nullptr; }
+	if (xs_p != nullptr) 		{ delete[] xs_p; xs_p = nullptr; }
 
 	//if (sbmpc != nullptr) 		{ delete sbmpc; sbmpc = nullptr; }
 }

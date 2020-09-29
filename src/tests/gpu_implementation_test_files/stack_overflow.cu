@@ -8,23 +8,36 @@
 
 #include <assert.h>
 #include <iostream>
+#include <stdio.h>
 
-//#include "obstacle_manager.cuh"
-//#include "cb_cost_functor_structures.cuh"
+#include "obstacle_manager.cuh"
+#include "cb_cost_functor_structures.cuh"
 #include "ownship.cuh"
 #include "cpe.cuh"
 
 
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
-   if (code != cudaSuccess) 
-   {
-      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
-      if (abort) exit(code);
-   }
-}
+#define cudaCheckErrors(msg) \
+    do { \
+        cudaError_t __err = cudaGetLastError(); \
+        if (__err != cudaSuccess) { \
+            fprintf(stderr, "Fatal error: %s (%s at %s:%d)\n", \
+                msg, cudaGetErrorString(__err), \
+                __FILE__, __LINE__); \
+            fprintf(stderr, "*** FAILED - ABORTING\n"); \
+            exit(1); \
+        } \
+    } while (0)
 
+
+class My_Class
+{
+private:
+    int *ptr;
+public:
+    __host__ __device__ My_Class() { ptr = new int[2]; ptr[0] = 0; ptr[1] = 0; }
+
+    __host__ __device__ ~My_Class() { delete[] ptr; }
+};
 
 
 class myFunctor
@@ -33,7 +46,7 @@ private:
 
     //CB_Functor_Data *fdata;
 
-    //Cuda_Obstacle *obstacles;
+    //int *obstacles;
 
     Ownship ownship;
 
@@ -49,17 +62,24 @@ public:
 
     __host__ __device__ ~myFunctor() { cudaFree(fdata); } */
 
-    /* __host__ myFunctor(const Obstacle_Data &odata) 
+   /*  __host__ myFunctor(const Obstacle_Data &odata, const int *in) 
     {
+        cudaMalloc((void**)&obstacles, sizeof(int));
+        cudaCheckErrors("cudaMalloc1 fail");
+
+        cudaMemcpy(obstacles, in, 1, cudaMemcpyHostToDevice);
+        cudaCheckErrors("cudaMemCpy1 fail");
+
         //cudaMalloc((void**)&obstacles, odata.obstacles.size() * sizeof(Cuda_Obstacle));
 
-    }  */
-    //__host__ __device__ ~myFunctor() { cudaFree(obstacles); }
+    } 
+    __host__ ~myFunctor() { cudaFree(obstacles); cudaCheckErrors("cudaFree1 fail"); } */
 
-    __device__ double operator()(const thrust::tuple<unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> &input) 
+    __device__ double operator()(const thrust::tuple<unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>, My_Class> &input) 
     {
+        int cb_index = thrust::get<0>(input); 
         CML::MatrixXd offset_sequence = thrust::get<1>(input);
-        int cb_index = thrust::get<0>(input);  
+        My_Class my_class = thrust::get<2>(input);
 
         CPE cpe(CE, 1000, 10, 1, 0.5);
 
@@ -119,7 +139,10 @@ int main()
 	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), control_behavior_dvec.begin()));
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), control_behavior_dvec.end()));
 
-    thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), myFunctor());
+    int inp = 5;
+    myFunctor mf(odata, &inp);
+
+    thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), mf);
 
     thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
     int min_index = min_cost_iter - cb_costs.begin();
