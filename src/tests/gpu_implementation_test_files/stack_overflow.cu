@@ -14,6 +14,7 @@
 #include "cb_cost_functor_structures.cuh"
 #include "ownship.cuh"
 #include "cpe.cuh"
+#include "utilities.h"
 
 
 #define cudaCheckErrors(msg) \
@@ -27,19 +28,6 @@
             exit(1); \
         } \
     } while (0)
-
-
-class My_Class
-{
-public:
-    int *ptr;
-
-    __host__ __device__ My_Class() : ptr(nullptr) {}
-
-    __host__ __device__ My_Class(int *ptr) : ptr(ptr) {}
-
-    __host__ __device__ ~My_Class() { ptr = nullptr; }
-};
 
 
 class myFunctor
@@ -58,7 +46,7 @@ public:
 
     __host__ myFunctor(Cuda_Obstacle *obstacles) : obstacles(obstacles) {}
 
-    __host__ __device__ ~myFunctor() { ptr = nullptr; }
+    __host__ __device__ ~myFunctor() { obstacles = nullptr; }
 
     __device__ double operator()(const thrust::tuple<unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> &input) 
     {
@@ -71,7 +59,7 @@ public:
 
         cpe.set_number_of_obstacles(3); 
 
-        double ret = offset_sequence(0) + offset_sequence(2) + *ptr;
+        double ret = offset_sequence(0) + offset_sequence(2) + obstacles[0].get_a_priori_CC_probability();
 
         return ret; 
     }
@@ -82,29 +70,40 @@ int main()
     int n_cbs = 1;
 
     //=================================================================================
-    // CB_Functor_Data setup
+    // Cuda_Obstacle setup
     //=================================================================================
-    /* Obstacle_Data odata; odata.obstacles.resize(1); 
-    odata.ST_0.resize(1); odata.ST_i_0.resize(1);
-    odata.AH_0.resize(1); odata.S_TC_0.resize(1);
-    odata.S_i_TC_0.resize(1); odata.O_TC_0.resize(1); 
-    odata.Q_TC_0.resize(1); odata.IP_0.resize(1);
-    odata.H_TC_0.resize(1); odata.X_TC_0.resize(1); */
+    double phi_AH = 68.5 * DEG2RAD;		 	
+	double phi_OT = 68.5 * DEG2RAD;		 		 
+	double phi_HO = 22.5 * DEG2RAD;		 		
+	double phi_CR = 68.5 * DEG2RAD;
 
-    /* int n_static_obst = 1;
-	Eigen::Matrix<double, 4, -1> static_obstacles;
-	static_obstacles.resize(4, n_static_obst);
-    static_obstacles.col(0) << 500.0, 300.0, 1000.0, 50.0;
+    Eigen::VectorXd xs_aug(9), xs_os(6);
+	xs_aug << 1000, 0, -5, 0, 5, 5, 5, 5, 0;
 
-	Eigen::Matrix<double, 2, -1> waypoints;
-    int n_wps_os = 2;
-	waypoints.resize(2, n_wps_os); 
-	waypoints << 0, 1000,
-				 0, 0;
-    
-    PSBMPC psbmpc;
+	xs_os << 0, 0, 0, 9, 0, 0;
 
-    CB_Functor_Data fdata(psbmpc, 2.0, 0.0, waypoints, static_obstacles, odata); */
+	Eigen::MatrixXd P(4, 4);
+	P << 100, 0, 0, 0,
+	     0, 100, 0, 0,
+		 0, 0, 0.025, 0,
+		 0, 0, 0, 0.025;
+
+	Eigen::VectorXd Pr_a(1);
+	Pr_a << 1;
+	Pr_a = Pr_a / Pr_a.sum();
+
+	Tracked_Obstacle obstacle(xs_aug, flatten(P), Pr_a, 0.5, false, 1, 0.5);
+
+
+    std::vector<Intention> ps_ordering(1); ps_ordering[0] = KCC;
+    Eigen::VectorXd ps_course_changes(1), ps_maneuver_times(1), ps_weights(1); 
+    ps_course_changes << 0; ps_maneuver_times << 0; ps_weights << 1;
+    obstacle.initialize_prediction(ps_ordering, ps_course_changes, ps_weights, ps_maneuver_times);
+    obstacle.predict_independent_trajectories(1, 0.5, xs_os, phi_AH, phi_CR, phi_HO, phi_OT, 500, 50);
+
+    Cuda_Obstacle transfer = obstacle;
+    Cuda_Obstacle *obstacle_ptr;
+    CML::Pseudo_Dynamic_Matrix<double, 4, 2000> *xs_p;
 
     thrust::device_vector<double> cb_costs(n_cbs);
 
@@ -119,23 +118,22 @@ int main()
     constant_cml_cb(0) = 1; constant_cml_cb(1) = 0; constant_cml_cb(2) = 1; constant_cml_cb(3) = 0; 
 
     thrust::fill(control_behavior_dvec.begin(), control_behavior_dvec.end(), constant_cml_cb);
-
-    int val = 3;
-    int *ptr; 
-    cudaMalloc((void**)&ptr, sizeof(int));
+ 
+    cudaMalloc((void**)&obstacle_ptr, sizeof(Cuda_Obstacle));
     cudaCheckErrors("cudaMalloc1 fail");
+    cudaMalloc((void**)&xs_p, transfer.get_num_prediction_scenarios() * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
 
-    cudaMemcpy(ptr, &val, 1, cudaMemcpyHostToDevice);
+    cudaMemcpy(obstacle_ptr, &transfer, 1, cudaMemcpyHostToDevice);
     cudaCheckErrors("cudaMemCpy1 fail");
     
-    myFunctor mf(ptr);
+    myFunctor mf(obstacle_ptr);
 
     auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), control_behavior_dvec.begin()));
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), control_behavior_dvec.end()));
 
     thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), mf);
 
-    cudaFree(ptr);
+    cudaFree(obstacle_ptr);
     cudaCheckErrors("cudaFree1 fail");
 
     thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());

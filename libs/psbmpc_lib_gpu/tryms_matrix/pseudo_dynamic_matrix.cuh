@@ -104,7 +104,7 @@ namespace CML
 
 		__host__ __device__ inline void resize(const size_t n_rows, const size_t n_cols)
 		{
-			assert(n_rows > 0 && n_cols > 0 && n_rows <= Max_Rows && n_cols <= Max_Cols);
+			assert(n_rows <= Max_Rows && n_cols <= Max_Cols);
 
 			this->n_rows = n_rows; this->n_cols = n_cols;
 		}
