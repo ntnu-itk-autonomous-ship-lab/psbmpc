@@ -182,10 +182,12 @@ void PSBMPC::calculate_optimal_offsets(
 	min_index = min_cost_iter - cb_costs.begin();
 	min_cost = cb_costs[min_index];
 
-	CML::MatrixXd opt_offset_sequence = control_behavior_dvec[min_index];
+	CML::Pseudo_Dynamic_Matrix<double, 20, 1> opt_offset_sequence = control_behavior_dvec[min_index];
+	Eigen::VectorXd opt_offset_sequence_e;
+	CML::assign_cml_object(opt_offset_sequence_e, opt_offset_sequence);
 
 	// Set the trajectory to the optimal one and assign to the output trajectory
-	ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+	ownship.predict_trajectory(trajectory, opt_offset_sequence_e, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 	assign_optimal_trajectory(predicted_trajectory);
 	//===============================================================================================================
 
@@ -204,13 +206,13 @@ void PSBMPC::calculate_optimal_offsets(
 	engClose(ep); */
 	//===============================================================================================================
 
-	u_opt = opt_offset_sequence(0); 		u_m_last = u_opt;
-	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
+	u_opt = opt_offset_sequence_e(0); 		u_m_last = u_opt;
+	chi_opt = opt_offset_sequence_e(1); 	chi_m_last = chi_opt;
 
 	std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)
 	{
-		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
+		std::cout << opt_offset_sequence_e(2 * M) << ", " << opt_offset_sequence_e(2 * M + 1) * RAD2DEG;
 		if (M < pars.n_M - 1) std::cout << ", ";
 	}
 	std::cout << std::endl;
@@ -233,7 +235,7 @@ void PSBMPC::map_offset_sequences()
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	control_behaviour_dvec.resize(pars.n_cbs);
+	control_behavior_dvec.resize(pars.n_cbs);
 	CML::Pseudo_Dynamic_Matrix<double, 20, 1> cml_offset_sequence(2 * pars.n_M);
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{

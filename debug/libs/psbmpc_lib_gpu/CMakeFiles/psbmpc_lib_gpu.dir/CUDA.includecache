@@ -6,15 +6,35 @@
 
 #IncludeRegexTransform: 
 
-../libs/psbmpc_lib_gpu/include/ownship.cuh
+../libs/psbmpc_lib_gpu/include/kf.cuh
+Eigen/Dense
+../libs/psbmpc_lib_gpu/include/Eigen/Dense
+
+../libs/psbmpc_lib_gpu/include/mrou.cuh
+Eigen/Dense
+../libs/psbmpc_lib_gpu/include/Eigen/Dense
+
+../libs/psbmpc_lib_gpu/include/obstacle.cuh
 thrust/device_vector.h
+-
+vector
 -
 cml.cuh
 ../libs/psbmpc_lib_gpu/include/cml.cuh
 Eigen/Dense
 ../libs/psbmpc_lib_gpu/include/Eigen/Dense
+
+../libs/psbmpc_lib_gpu/include/obstacle_manager.cuh
 psbmpc_parameters.h
 ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
+tracked_obstacle.cuh
+../libs/psbmpc_lib_gpu/include/tracked_obstacle.cuh
+Eigen/Dense
+../libs/psbmpc_lib_gpu/include/Eigen/Dense
+vector
+-
+string
+-
 
 ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
 
@@ -26,11 +46,21 @@ Eigen/Dense
 vector
 -
 
-../libs/psbmpc_lib_gpu/include/utilities.cuh
-thrust/device_vector.h
+../libs/psbmpc_lib_gpu/include/tracked_obstacle.cuh
+vector
 -
-cml.cuh
-../libs/psbmpc_lib_gpu/include/cml.cuh
+Eigen/Dense
+../libs/psbmpc_lib_gpu/include/Eigen/Dense
+obstacle.cuh
+../libs/psbmpc_lib_gpu/include/obstacle.cuh
+mrou.cuh
+../libs/psbmpc_lib_gpu/include/mrou.cuh
+kf.cuh
+../libs/psbmpc_lib_gpu/include/kf.cuh
+
+../libs/psbmpc_lib_gpu/include/utilities.h
+Eigen/Dense
+../libs/psbmpc_lib_gpu/include/Eigen/Dense
 iostream
 ../libs/psbmpc_lib_gpu/include/iostream
 
@@ -1136,21 +1166,17 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/ownship.cu
-utilities.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cuh
-ownship.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/ownship.cuh
-thrust/device_vector.h
--
-vector
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle_manager.cu
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.h
+obstacle_manager.cuh
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle_manager.cuh
+string
 -
 iostream
 -
-assert.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/assert.h
-stdio.h
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/stdio.h
+iomanip
+-
 
 /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
 complex

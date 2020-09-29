@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <iostream>
 
+//#include "obstacle_manager.cuh"
+//#include "cb_cost_functor_structures.cuh"
 #include "ownship.cuh"
 #include "cpe.cuh"
 
@@ -23,39 +25,36 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
    }
 }
 
-class My_Class
-{
-private:
-    double m; 
-    CML::Vector3d mat;
-
-public:
-    
-    __host__ __device__ My_Class()
-    { 
-        m = 0;  
-        mat.set_zero();
-    }
-
-    __host__ __device__ double calc() { return m + mat(0, 0); }
-};
 
 
 class myFunctor
 {
 private: 
-    My_Class my_class;
+
+    //CB_Functor_Data *fdata;
+
+    //Cuda_Obstacle *obstacles;
 
     Ownship ownship;
 
 public: 
 
-    __host__ __device__ myFunctor() {} 
+    __host__ myFunctor() {} 
 
-    __host__ __device__ myFunctor(const My_Class &other) 
+    /* __host__ myFunctor(const CB_Functor_Data &other) 
     {
-        my_class = other;
-    }
+        cudaMalloc((void**)&fdata, sizeof(CB_Functor_Data));
+
+    } 
+
+    __host__ __device__ ~myFunctor() { cudaFree(fdata); } */
+
+    /* __host__ myFunctor(const Obstacle_Data &odata) 
+    {
+        //cudaMalloc((void**)&obstacles, odata.obstacles.size() * sizeof(Cuda_Obstacle));
+
+    }  */
+    //__host__ __device__ ~myFunctor() { cudaFree(obstacles); }
 
     __device__ double operator()(const thrust::tuple<unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> &input) 
     {
@@ -64,9 +63,9 @@ public:
 
         CPE cpe(CE, 1000, 10, 1, 0.5);
 
-        //cpe.seed_prng(cb_index);
+        cpe.seed_prng(cb_index);
 
-        //cpe.set_number_of_obstacles(3); 
+        cpe.set_number_of_obstacles(3); 
 
         double ret = offset_sequence(0) + offset_sequence(2) + ownship.get_length();
 
@@ -77,6 +76,31 @@ public:
 int main()
 {
     int n_cbs = 1;
+
+    //=================================================================================
+    // CB_Functor_Data setup
+    //=================================================================================
+    /* Obstacle_Data odata; odata.obstacles.resize(1); 
+    odata.ST_0.resize(1); odata.ST_i_0.resize(1);
+    odata.AH_0.resize(1); odata.S_TC_0.resize(1);
+    odata.S_i_TC_0.resize(1); odata.O_TC_0.resize(1); 
+    odata.Q_TC_0.resize(1); odata.IP_0.resize(1);
+    odata.H_TC_0.resize(1); odata.X_TC_0.resize(1); */
+
+    /* int n_static_obst = 1;
+	Eigen::Matrix<double, 4, -1> static_obstacles;
+	static_obstacles.resize(4, n_static_obst);
+    static_obstacles.col(0) << 500.0, 300.0, 1000.0, 50.0;
+
+	Eigen::Matrix<double, 2, -1> waypoints;
+    int n_wps_os = 2;
+	waypoints.resize(2, n_wps_os); 
+	waypoints << 0, 1000,
+				 0, 0;
+    
+    PSBMPC psbmpc;
+
+    CB_Functor_Data fdata(psbmpc, 2.0, 0.0, waypoints, static_obstacles, odata); */
 
     thrust::device_vector<double> cb_costs(n_cbs);
 

@@ -42,10 +42,8 @@ enum ST
 	F 														// Give-way in Crossing 	(ST = CR, GW)
 };	
 
-class Obstacle_Data
+struct Obstacle_Data
 {
-public:
-
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
 	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
@@ -63,9 +61,6 @@ public:
 	std::vector<Tracked_Obstacle> new_obstacles;
 
 	Eigen::MatrixXd obstacle_status;
-
-	~Obstacle_Data() = default;
-
 };
 
 class Obstacle_Manager

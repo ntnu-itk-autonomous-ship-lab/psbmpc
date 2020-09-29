@@ -6,17 +6,17 @@ add_library(psbmpc_lib_gpu STATIC
 	#src/psbmpc.cu 
 	src/psbmpc_parameters.cpp
 	#src/cb_cost_functor.cu
-	#src/obstacle_manager.cu
-	#src/obstacle.cu
+	src/obstacle_manager.cu
+	src/obstacle.cu
 	#src/obstacle_ship.cu 
 	#src/obstacle_sbmpc.cu 
-	#src/tracked_obstacle.cu
-	#src/cuda_obstacle.cu
+	src/tracked_obstacle.cu
+	src/cuda_obstacle.cu
 	#src/prediction_obstacle.cu
 	src/ownship.cu 
-	#src/cpe.cu
-	#src/kf.cu  
-	#src/mrou.cu 
+	src/cpe.cu
+	src/kf.cu  
+	src/mrou.cu 
 	src/utilities.cpp
 )
 
