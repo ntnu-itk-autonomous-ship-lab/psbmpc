@@ -105,7 +105,7 @@ struct CB_Functor_Pars
 *****************************************************************************************/
 struct CB_Functor_Data
 {
-	CML::Pseudo_Dynamic_Matrix<double, 30, 1> maneuver_times;
+	CML::Pseudo_Dynamic_Matrix<double, 10, 1> maneuver_times;
 
 	double u_d, chi_d;
 
@@ -114,7 +114,7 @@ struct CB_Functor_Data
 
 	CML::Pseudo_Dynamic_Matrix<double, 2, 100> waypoints;
 
-	CML::Pseudo_Dynamic_Matrix<double, 6, 1000> trajectory;
+	CML::Pseudo_Dynamic_Matrix<double, 6, 2000> trajectory;
 
 	CML::Pseudo_Dynamic_Matrix<double, 4, 100> static_obstacles;
 
@@ -129,9 +129,9 @@ struct CB_Functor_Data
 
 	Cuda_Obstacle *obstacles;
 
-	__host__ __device__ CB_Functor_Data() {}
+	__host__ CB_Functor_Data() {}
 
-	__host__ __device__ CB_Functor_Data(
+	__host__ CB_Functor_Data(
 		const PSBMPC &master, 
 		const double u_d, 
 		const double chi_d, 
@@ -139,41 +139,48 @@ struct CB_Functor_Data
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		const Obstacle_Data &odata)
 	{
-		this->n_obst = odata.obstacles.size();
+		CML::assign_eigen_object(this->maneuver_times, master.maneuver_times);
 
 		this->u_d = u_d;
 		this->chi_d = chi_d;
 
 		this->u_m_last = master.u_m_last;
-		this->chi_m_last = master.chi_m_last;
+		this->chi_m_last = master.chi_m_last;	
 
-		// Assign Eigen objects to CML objects
-		CML::assign_eigen_object(this->maneuver_times, master.maneuver_times);
+		CML::assign_eigen_object(this->waypoints, waypoints);	
 
 		CML::assign_eigen_object(this->trajectory, master.trajectory);
 
-		CML::assign_eigen_object(this->waypoints, waypoints);
-
 		CML::assign_eigen_object(this->static_obstacles, static_obstacles);
 
-		CML::assign_eigen_object(this->AH_0, odata.AH_0); 			CML::assign_eigen_object(this->S_TC_0, odata.S_TC_0);
-		CML::assign_eigen_object(this->S_i_TC_0, odata.S_i_TC_0); 	CML::assign_eigen_object(this->O_TC_0, odata.O_TC_0);
-		CML::assign_eigen_object(this->Q_TC_0, odata.Q_TC_0); 		CML::assign_eigen_object(this->IP_0, odata.IP_0);
-		CML::assign_eigen_object(this->H_TC_0, odata.H_TC_0); 		CML::assign_eigen_object(this->X_TC_0, odata.X_TC_0);
+		n_obst = odata.obstacles.size();
 
 		n_ps.resize(n_obst, 1);
 
+		AH_0.resize(n_obst, 1); 	S_TC_0.resize(n_obst, 1); S_i_TC_0.resize(n_obst, 1);
+		O_TC_0.resize(n_obst, 1); 	Q_TC_0.resize(n_obst, 1); IP_0.resize(n_obst, 1);
+		H_TC_0.resize(n_obst, 1); 	X_TC_0.resize(n_obst, 1);
+
 		cudaMalloc(&obstacles, n_obst * sizeof(Cuda_Obstacle));
 
-		/* Cuda_Obstacle* temp_obstacles = new Cuda_Obstacle[n_obst];
-		for (int i = 0; i < this->n_obst; i++)
+		//Cuda_Obstacle* temp_obstacles = new Cuda_Obstacle[n_obst];
+		for (int i = 0; i < n_obst; i++)
 		{
-			this->n_ps[i] = master.n_ps[i];
+			n_ps[i] = master.n_ps[i];
 
-			temp_obstacles[i] = odata.obstacles[i];
+			AH_0[i] = odata.AH_0[i]; 
+			S_TC_0[i] = odata.S_TC_0[i];
+			S_i_TC_0[i] = odata.S_i_TC_0[i]; 
+			O_TC_0[i] = odata.O_TC_0[i];
+			Q_TC_0[i] = odata.Q_TC_0[i]; 
+			IP_0[i] = odata.IP_0[i];
+			H_TC_0[i] = odata.H_TC_0[i]; 
+			X_TC_0[i] = odata.X_TC_0[i];
 
-			cudaMemcpy(&obstacles[i], &temp_obstacles[i], n_obst, cudaMemcpyHostToDevice);
-		} */
+			//Cuda_Obstacle* temp_obstacles = new Cuda_Obstacle[n_obst];
+
+			//cudaMemcpy(&obstacles[i], &temp_obstacles[i], n_obst, cudaMemcpyHostToDevice);
+		} 
 	}
 
 	__host__ __device__ ~CB_Functor_Data() { cudaFree(obstacles); }

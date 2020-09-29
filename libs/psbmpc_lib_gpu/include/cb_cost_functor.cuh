@@ -31,11 +31,9 @@ private:
 
 	CB_Functor_Pars pars;
 
-	CB_Functor_Data fdata;
+	CB_Functor_Data *fdata;
 
 	Ownship ownship;
-
-	//CPE cpe;
 
 	__device__ void predict_trajectories_jointly();
 
@@ -57,7 +55,7 @@ private:
 
 	__device__ double calculate_dynamic_obstacle_cost(const CML::MatrixXd &P_c_i, const int i, const CML::MatrixXd &offset_sequence);
 
-	__device__ inline double calculate_collision_cost(const CML::Vector2d &v_1, const CML::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); };
+/* 	__device__ inline double calculate_collision_cost(const CML::Vector2d &v_1, const CML::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); };
 
 	__device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
@@ -69,7 +67,7 @@ private:
 	__device__ inline double K_chi(const double chi) 							{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); };
 
 	__device__ inline double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
-
+ */
 	//
 	__device__ double calculate_chattering_cost(const CML::MatrixXd &offset_sequence);
 
@@ -89,7 +87,7 @@ private:
 	__device__ double distance_to_static_obstacle(const CML::Vector2d &p, const CML::Vector2d &v_1, const CML::Vector2d &v_2);
 
 public: 
-	__host__ CB_Cost_Functor() {}
+	__host__ CB_Cost_Functor() : fdata(nullptr) {}
 
 	__host__ CB_Cost_Functor(
 		const PSBMPC master, 
@@ -99,7 +97,7 @@ public:
 		const Eigen::Matrix<double, 4, -1> static_obstacles,
 		const Obstacle_Data data);
 
-	__host__ __device__ ~CB_Cost_Functor();
+	__host__ __device__ ~CB_Cost_Functor() { cudaFree(fdata); }
 	
 	__device__ double operator()(const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> cb_tuple);
 	

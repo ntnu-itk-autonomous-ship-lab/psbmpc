@@ -45,18 +45,12 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	const Eigen::Matrix<double, 4, -1> static_obstacles,				// In: Static obstacle information
 	const Obstacle_Data odata											// In: Dynamic obstacle information
 	) :
-	pars(master.pars), fdata(master, u_d, chi_d, waypoints, static_obstacles, odata)//, cpe(master.cpe)
+	pars(master.pars)
 {	
+	cudaMalloc((void**)&fdata, sizeof(CB_Functor_Data));
 
+	CB_Functor_Data fdata_cp(master, u_d, chi_d, waypoints, static_obstacles, odata); 
 }
-
-/****************************************************************************************
-*  Name     : ~CB_Cost_Functor
-*  Function : Destructor
-*  Author   : 
-*  Modified :
-****************************************************************************************/
-__host__ __device__ CB_Cost_Functor::~CB_Cost_Functor() = default;
 
 /****************************************************************************************
 *  Name     : operator()

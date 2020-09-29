@@ -33,7 +33,7 @@
 __host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
 	const Cuda_Obstacle &co 													// In: Obstacle to copy
 	) : 
-	Obstacle(co), xs_p(nullptr), ps_ordering(nullptr)
+	Obstacle(co), xs_p(nullptr)
 {
 	assign_data(co);
 }
@@ -41,7 +41,7 @@ __host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
 __host__ Cuda_Obstacle::Cuda_Obstacle(
 	const Tracked_Obstacle &to 													// In: Obstacle to copy
 	) : 
-	Obstacle(to), xs_p(nullptr), ps_ordering(nullptr)
+	Obstacle(to), xs_p(nullptr)
 {
 	assign_data(to);
 }
@@ -95,8 +95,8 @@ __host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 *****************************************************************************************/
 __host__ __device__ void Cuda_Obstacle::clean()
 {
-	if (xs_p != nullptr) 		{ delete[] xs_p; xs_p = nullptr; }
-	if (ps_ordering != nullptr) { delete[] ps_ordering; ps_ordering = nullptr; }
+	if (xs_p != nullptr) 		{ cudaFree(xs_p); xs_p = nullptr; }
+
 	//if (sbmpc != nullptr) 		{ delete sbmpc; sbmpc = nullptr; }
 }
 
@@ -142,7 +142,7 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 
 	//this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
 
-	this->xs_p = new CML::Pseudo_Dynamic_Matrix<double, 4, 2000>[n_ps];
+	cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
@@ -181,7 +181,12 @@ __host__ void Cuda_Obstacle::assign_data(
 
 	//this->sbmpc = new Obstacle_SBMPC();
 
-	this->xs_p = new CML::Pseudo_Dynamic_Matrix<double, 4, 2000>[n_ps];
+	cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
+
+	for (int ps = 0; ps < n_ps; ps++)
+	{
+		CML::assign_eigen_object(this->xs_p[ps], to.xs_p[ps]);
+	}
 
 	this->mu.resize(n_ps, 1);
 	for (int ps = 0; ps < n_ps; ps++)
