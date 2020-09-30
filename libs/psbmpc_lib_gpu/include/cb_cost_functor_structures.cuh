@@ -132,24 +132,27 @@ struct CB_Functor_Data
 	__host__ CB_Functor_Data() {}
 
 	__host__ CB_Functor_Data(
-		const PSBMPC &master, 
+		//const PSBMPC &master, 
 		const double u_d, 
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		const Obstacle_Data &odata)
 	{
-		CML::assign_eigen_object(this->maneuver_times, master.maneuver_times);
+		//CML::assign_eigen_object(this->maneuver_times, master.maneuver_times);
+		maneuver_times.resize(5, 1);
 
 		this->u_d = u_d;
 		this->chi_d = chi_d;
 
-		this->u_m_last = master.u_m_last;
-		this->chi_m_last = master.chi_m_last;	
+		//this->u_m_last = master.u_m_last;
+		//this->chi_m_last = master.chi_m_last;	
+		u_m_last = 1.0; chi_m_last = 0.0;
 
 		CML::assign_eigen_object(this->waypoints, waypoints);	
 
-		CML::assign_eigen_object(this->trajectory, master.trajectory);
+		//CML::assign_eigen_object(this->trajectory, master.trajectory);
+		trajectory.resize(6, 600);
 
 		CML::assign_eigen_object(this->static_obstacles, static_obstacles);
 
@@ -161,12 +164,15 @@ struct CB_Functor_Data
 		O_TC_0.resize(n_obst, 1); 	Q_TC_0.resize(n_obst, 1); IP_0.resize(n_obst, 1);
 		H_TC_0.resize(n_obst, 1); 	X_TC_0.resize(n_obst, 1);
 
-		cudaMalloc(&obstacles, n_obst * sizeof(Cuda_Obstacle));
+		std::cout << "size : " << sizeof(Cuda_Obstacle) << std::endl;
+		cudaMalloc((void**)&obstacles, n_obst * sizeof(Cuda_Obstacle));
+		cudaCheckErrors("Malloc of cuda obstacles inside CB_Functor_Data failed");
 
-		//Cuda_Obstacle* temp_obstacles = new Cuda_Obstacle[n_obst];
+		Cuda_Obstacle temp_obstacle;
 		for (int i = 0; i < n_obst; i++)
 		{
-			n_ps[i] = master.n_ps[i];
+			//n_ps[i] = master.n_ps[i];
+			n_ps[i] = 1;
 
 			AH_0[i] = odata.AH_0[i]; 
 			S_TC_0[i] = odata.S_TC_0[i];
@@ -177,13 +183,14 @@ struct CB_Functor_Data
 			H_TC_0[i] = odata.H_TC_0[i]; 
 			X_TC_0[i] = odata.X_TC_0[i];
 
-			//Cuda_Obstacle* temp_obstacles = new Cuda_Obstacle[n_obst];
+			temp_obstacle = odata.obstacles[i];
 
-			//cudaMemcpy(&obstacles[i], &temp_obstacles[i], n_obst, cudaMemcpyHostToDevice);
+			cudaMemcpy(&obstacles[i], &temp_obstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
+			cudaCheckErrors("Memcpy host to device of cuda obstacles inside CB_Functor_Data failed");
 		} 
 	}
 
-	__host__ __device__ ~CB_Functor_Data() { cudaFree(obstacles); }
+	//__host__ __device__ ~CB_Functor_Data() { cudaFree(obstacles); }
 };
 	
 #endif 

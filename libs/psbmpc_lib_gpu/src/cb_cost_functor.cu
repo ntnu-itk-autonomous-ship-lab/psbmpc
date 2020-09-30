@@ -47,9 +47,6 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	) :
 	pars(master.pars)
 {	
-	cudaMalloc((void**)&fdata, sizeof(CB_Functor_Data));
-
-	CB_Functor_Data fdata_cp(master, u_d, chi_d, waypoints, static_obstacles, odata); 
 }
 
 /****************************************************************************************

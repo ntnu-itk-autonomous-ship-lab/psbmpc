@@ -1251,14 +1251,10 @@ iostream
 -
 stdio.h
 -
-obstacle_manager.cuh
-/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/obstacle_manager.cuh
 cb_cost_functor_structures.cuh
 /home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/cb_cost_functor_structures.cuh
-ownship.cuh
-/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/ownship.cuh
-cpe.cuh
-/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/cpe.cuh
+psbmpc.cuh
+/home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/psbmpc.cuh
 utilities.h
 /home/trymte/Desktop/cybercolav_cxx/src/tests/gpu_implementation_test_files/utilities.h
 

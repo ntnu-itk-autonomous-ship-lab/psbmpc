@@ -3,7 +3,7 @@ find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 find_package(CUDA COMPONENTS THRUST REQUIRED)
 
 add_library(psbmpc_lib_gpu STATIC 	
-	#src/psbmpc.cu 
+	src/psbmpc.cu 
 	src/psbmpc_parameters.cpp
 	src/cb_cost_functor.cu
 	src/obstacle_manager.cu
@@ -36,7 +36,7 @@ message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
 message("CUDA_LIBARIES: ${CUDA_LIBRARIES}")
 
 target_compile_options(psbmpc_lib_gpu
-	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc -gencode arch=compute_61,code=sm_61 --expt-relaxed-constexpr -Xlinker -dlink>
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink>
 )
 
 target_link_libraries(psbmpc_lib_gpu 

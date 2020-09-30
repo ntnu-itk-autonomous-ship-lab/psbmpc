@@ -52,8 +52,6 @@ private:
 
 	Ownship ownship;
 
-	CPE cpe;
-
 	Eigen::Matrix<double, 6, -1> trajectory;
 
 	friend struct CB_Functor_Data;
