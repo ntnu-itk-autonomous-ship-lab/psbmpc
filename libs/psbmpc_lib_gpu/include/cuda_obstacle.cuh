@@ -27,6 +27,7 @@
 #include "obstacle.cuh"
 #include "tracked_obstacle.cuh"
 
+// Host only due to stderr usage
 #define cudaCheckErrors(msg) \
     do { \
         cudaError_t __err = cudaGetLastError(); \
@@ -38,6 +39,7 @@
             exit(1); \
         } \
     } while (0)
+
 
 
 class KF;
@@ -113,9 +115,18 @@ public:
 
 	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 16, 2000> get_trajectory_covariance() const { return P_p; }
 
-	__host__ __device__ inline CML::Pseudo_Dynamic_Matrix<double, 4, 2000>* get_trajectories() const { return xs_p; }
+	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 4, 2000>* get_trajectories() const{ return xs_p; }
 
-	
+	__device__ inline CML::MatrixXd get_ps_trajectory(const int ps) const { return xs_p[ps]; }
+
+	__host__ inline CML::Pseudo_Dynamic_Matrix<double, 4, 2000> get_trajectory(const int ps) const
+	{ 
+		CML::Pseudo_Dynamic_Matrix<double, 4, 2000> xs_p_ps;
+
+		cudaMemcpy(&xs_p_ps, &xs_p[ps], sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>), cudaMemcpyDeviceToHost);
+
+		return xs_p_ps; 
+	}
 };
 
 #endif

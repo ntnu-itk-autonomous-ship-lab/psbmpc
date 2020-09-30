@@ -39,9 +39,9 @@ PSBMPC::PSBMPC()
 	: 
 	ownship(Ownship()), pars(PSBMPC_Parameters())
 {
-	cpe = CPE(pars.cpe_method, 1000, 100, 0, pars.dt);
-
 	u_m_last = 1; chi_m_last = 0;
+
+	control_behavior_dvec.resize(pars.n_cbs);
 
 	map_offset_sequences();
 }
@@ -235,7 +235,6 @@ void PSBMPC::map_offset_sequences()
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	control_behavior_dvec.resize(pars.n_cbs);
 	CML::Pseudo_Dynamic_Matrix<double, 20, 1> cml_offset_sequence(2 * pars.n_M);
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
@@ -325,7 +324,6 @@ void PSBMPC::initialize_prediction(
 {
 	int n_obst = data.obstacles.size();
 
-	cpe.set_number_of_obstacles(n_obst);
 	n_ps.resize(n_obst);
 
 	int n_a = 1; // default
