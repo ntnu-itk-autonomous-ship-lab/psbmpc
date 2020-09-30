@@ -30,7 +30,7 @@
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ Cuda_Obstacle::Cuda_Obstacle(
+__host__ Cuda_Obstacle::Cuda_Obstacle(
 	const Cuda_Obstacle &co 													// In: Obstacle to copy
 	) : 
 	Obstacle(co), xs_p(nullptr)
@@ -63,13 +63,11 @@ __host__ __device__ Cuda_Obstacle::~Cuda_Obstacle()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ Cuda_Obstacle& Cuda_Obstacle::operator=(
+__host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 	const Cuda_Obstacle &rhs 										// In: Rhs to assign
 	)
 {
 	if (this == &rhs) { return *this; }
-	
-	clean();
 
 	assign_data(rhs);
 
@@ -80,8 +78,6 @@ __host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 	const Tracked_Obstacle &rhs 									// In: Rhs Tracked_Obstacle whose data to assign
 	)
 {		
-	clean();
-
 	assign_data(rhs);
 
 	return *this;
@@ -109,7 +105,7 @@ __host__ __device__ void Cuda_Obstacle::clean()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void Cuda_Obstacle::assign_data(
+__host__ void Cuda_Obstacle::assign_data(
 	const Cuda_Obstacle &co 												// In: Cuda_Obstacle whose data to assign to *this
 	)
 {
@@ -142,10 +138,13 @@ __host__ __device__ void Cuda_Obstacle::assign_data(
 
 	//this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
 
+	/* cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
+	cudaCheckErrors("cuda obstacle assign data xs_p malloc fail");
+
 	for (int ps = 0; ps < n_ps; ps++)
 	{
-		this->xs_p[ps] = co.xs_p[ps];
-	}
+		cudaMemcpy(&xs_p[ps], &co.xs_p[ps], 1, cudaMemcpyHostToDevice);
+	} */
 }
 
 __host__ void Cuda_Obstacle::assign_data(
@@ -181,10 +180,22 @@ __host__ void Cuda_Obstacle::assign_data(
 
 	this->mu.resize(n_ps, 1);
 
+	/* std::cout << "size : " << n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>) << std::endl;
+	
+	cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
+	cudaCheckErrors("cuda obstacle tracked obstacle assign data xs_p cudaMalloc fail");
+
+	CML::Pseudo_Dynamic_Matrix<double, 4, 2000> xs_p_temp; */
+
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		this->mu[ps] = to.mu[ps];
 
-		CML::assign_eigen_object(this->xs_p[ps], to.xs_p[ps]);
+		/* CML::assign_eigen_object(xs_p_temp, to.xs_p[ps]);
+
+		std::cout << *(&xs_p_temp) << std::endl;
+
+		cudaMemcpy(xs_p, &xs_p_temp, sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>), cudaMemcpyHostToDevice);
+		cudaCheckErrors("cuda obstacle tracked obstacle assign data xs_p cudaMemCpy fail"); */
 	}
 }
