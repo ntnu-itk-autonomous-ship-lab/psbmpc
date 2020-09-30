@@ -27,6 +27,19 @@
 #include "obstacle.cuh"
 #include "tracked_obstacle.cuh"
 
+#define cudaCheckErrors(msg) \
+    do { \
+        cudaError_t __err = cudaGetLastError(); \
+        if (__err != cudaSuccess) { \
+            fprintf(stderr, "Fatal error: %s (%s at %s:%d)\n", \
+                msg, cudaGetErrorString(__err), \
+                __FILE__, __LINE__); \
+            fprintf(stderr, "*** FAILED - ABORTING\n"); \
+            exit(1); \
+        } \
+    } while (0)
+
+
 class KF;
 class MROU;
 class Obstacle_SBMPC;
@@ -64,7 +77,7 @@ private:
 	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
 	CML::Pseudo_Dynamic_Matrix<double, 200, 1> ps_weights;
 
-	__host__ __device__ void assign_data(const Cuda_Obstacle &co);
+	__host__ void assign_data(const Cuda_Obstacle &co);
 	
 	__host__ void assign_data(const Tracked_Obstacle &to);
 	
@@ -72,15 +85,15 @@ public:
 
 	//Obstacle_SBMPC *sbmpc;
 
-	__host__ __device__ Cuda_Obstacle() : xs_p(nullptr) {};
+	__host__ Cuda_Obstacle() : xs_p(nullptr) {};
 
-	__host__ __device__ Cuda_Obstacle(const Cuda_Obstacle &co);
+	__host__ Cuda_Obstacle(const Cuda_Obstacle &co);
 
 	__host__ Cuda_Obstacle(const Tracked_Obstacle &to);
 
 	__host__ __device__ ~Cuda_Obstacle();
 
-	__host__ __device__ Cuda_Obstacle& operator=(const Cuda_Obstacle &rhs);
+	__host__ Cuda_Obstacle& operator=(const Cuda_Obstacle &rhs);
 
 	__host__ Cuda_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
@@ -99,8 +112,8 @@ public:
 	__device__ inline CML::Pseudo_Dynamic_Matrix<bool, 200, 1> get_COLREGS_violation_indicator() const { return mu; }	
 
 	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 16, 2000> get_trajectory_covariance() const { return P_p; }
-	
-	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 4, 2000>* get_trajectories() const { return xs_p; }
+
+	__host__ __device__ inline CML::Pseudo_Dynamic_Matrix<double, 4, 2000>* get_trajectories() const { return xs_p; }
 
 	
 };

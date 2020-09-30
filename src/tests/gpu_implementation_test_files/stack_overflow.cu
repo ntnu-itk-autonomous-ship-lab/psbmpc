@@ -17,19 +17,6 @@
 #include "utilities.h"
 
 
-#define cudaCheckErrors(msg) \
-    do { \
-        cudaError_t __err = cudaGetLastError(); \
-        if (__err != cudaSuccess) { \
-            fprintf(stderr, "Fatal error: %s (%s at %s:%d)\n", \
-                msg, cudaGetErrorString(__err), \
-                __FILE__, __LINE__); \
-            fprintf(stderr, "*** FAILED - ABORTING\n"); \
-            exit(1); \
-        } \
-    } while (0)
-
-
 class myFunctor
 {
 private: 
@@ -94,7 +81,6 @@ int main()
 
 	Tracked_Obstacle obstacle(xs_aug, flatten(P), Pr_a, 0.5, false, 1, 0.5);
 
-
     std::vector<Intention> ps_ordering(1); ps_ordering[0] = KCC;
     Eigen::VectorXd ps_course_changes(1), ps_maneuver_times(1), ps_weights(1); 
     ps_course_changes << 0; ps_maneuver_times << 0; ps_weights << 1;
@@ -103,7 +89,7 @@ int main()
 
     Cuda_Obstacle transfer = obstacle;
     Cuda_Obstacle *obstacle_ptr;
-    CML::Pseudo_Dynamic_Matrix<double, 4, 2000> *xs_p;
+    CML::Pseudo_Dynamic_Matrix<double, 4, 2000> *xs_p = transfer.get_trajectories();
 
     thrust::device_vector<double> cb_costs(n_cbs);
 
@@ -123,7 +109,7 @@ int main()
     cudaCheckErrors("cudaMalloc1 fail");
     cudaMalloc((void**)&xs_p, transfer.get_num_prediction_scenarios() * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
 
-    cudaMemcpy(obstacle_ptr, &transfer, 1, cudaMemcpyHostToDevice);
+    cudaMemcpy(obstacle_ptr, &transfer, 1 * sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
     cudaCheckErrors("cudaMemCpy1 fail");
     
     myFunctor mf(obstacle_ptr);
