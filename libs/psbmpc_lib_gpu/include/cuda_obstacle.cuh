@@ -22,6 +22,8 @@
 #ifndef _CUDA_OBSTACLE_CUH_
 #define _CUDA_OBSTACLE_CUH_
 
+#define MAX_N_PS 50
+
 #include <thrust/device_vector.h>
 #include "cml.cuh"
 #include "obstacle.cuh"
@@ -54,7 +56,7 @@ private:
 	CML::Vector4d xs_0;
 	CML::Matrix4d P_0;
 
-	int n_ps; // Ad hoc max number of prediction scenarios: 200
+	int n_ps;
 
 	// Vector of intention probabilities at the current time or last time of update
 	CML::Pseudo_Dynamic_Matrix<double, 3, 1> Pr_a;
@@ -67,17 +69,17 @@ private:
 	double duration_tracked, duration_lost;
 
 	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: n_ps x 1
-	CML::Pseudo_Dynamic_Matrix<bool, 200, 1> mu;
+	CML::Pseudo_Dynamic_Matrix<bool, MAX_N_PS, 1> mu;
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
 	// This is equal for all prediction scenarios including those with active COLAV (using MROU). Ad hoc max nr of samples: 2000
-	CML::Pseudo_Dynamic_Matrix<double, 16, 2000> P_p;  
+	CML::Pseudo_Dynamic_Matrix<double, 16, 1000> P_p;  
 
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
-	CML::Pseudo_Dynamic_Matrix<double, 4, 2000> *xs_p;
+	CML::Pseudo_Dynamic_Matrix<double, 4 * MAX_N_PS, 1000> xs_p;
 
 	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
-	CML::Pseudo_Dynamic_Matrix<double, 200, 1> ps_weights;
+	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, 1> ps_weights;
 
 	__host__ void assign_data(const Cuda_Obstacle &co);
 	
@@ -87,19 +89,19 @@ public:
 
 	//Obstacle_SBMPC *sbmpc;
 
-	__host__ Cuda_Obstacle() : xs_p(nullptr) {};
+	__host__ Cuda_Obstacle() {};
 
 	__host__ Cuda_Obstacle(const Cuda_Obstacle &co);
 
 	__host__ Cuda_Obstacle(const Tracked_Obstacle &to);
 
-	__host__ __device__ ~Cuda_Obstacle();
+	__host__ ~Cuda_Obstacle();
 
 	__host__ Cuda_Obstacle& operator=(const Cuda_Obstacle &rhs);
 
 	__host__ Cuda_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
-	__host__ __device__ void clean();
+	__host__ void clean();
 
 	__host__ __device__ inline int get_num_prediction_scenarios() const { return n_ps; }
 
@@ -111,22 +113,17 @@ public:
 
 	__device__ inline double get_duration_tracked() const { return duration_tracked; }
 
-	__device__ inline CML::Pseudo_Dynamic_Matrix<bool, 200, 1> get_COLREGS_violation_indicator() const { return mu; }	
+	__device__ inline CML::Pseudo_Dynamic_Matrix<bool, MAX_N_PS, 1> get_COLREGS_violation_indicator() const { return mu; }	
 
-	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 16, 2000> get_trajectory_covariance() const { return P_p; }
+	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 16, 1000> get_trajectory_covariance() const { return P_p; }
 
-	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 4, 2000>* get_trajectories() const{ return xs_p; }
+	template<class T>
+	__host__ __device__ inline CML::Dynamic_Matrix<T> get_ps_trajectory(const int ps) const { return xs_p.get_block(4 * ps, 0, 4, xs_p.get_cols()); }
 
-	__device__ inline CML::MatrixXd get_ps_trajectory(const int ps) const { return xs_p[ps]; }
+	template<class U, size_t Rows, size_t Cols>
+	__host__ __device__ inline CML::Static_Matrix<U, Rows, Cols> get_ps_trajectory(const int ps) const { return xs_p.get_block<Rows, Cols>(4 * ps, 0); }
 
-	__host__ inline CML::Pseudo_Dynamic_Matrix<double, 4, 2000> get_trajectory(const int ps) const
-	{ 
-		CML::Pseudo_Dynamic_Matrix<double, 4, 2000> xs_p_ps;
-
-		cudaMemcpy(&xs_p_ps, &xs_p[ps], sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>), cudaMemcpyDeviceToHost);
-
-		return xs_p_ps; 
-	}
+	__device__ inline CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, 1> get_ps_weights() const { return ps_weights; }
 };
 
 #endif

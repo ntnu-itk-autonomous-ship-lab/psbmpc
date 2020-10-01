@@ -509,8 +509,7 @@ namespace CML
 	/****************************************************************************************
 	*  Name     : get_block
 	*  Function : returns the n_rows x n_cols block of this object, with upper left reference
-	*			  index (start_row, start_col). This version for the Static Matrix has not
-	*			  yet been fully fixed. 
+	*			  index (start_row, start_col).
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/

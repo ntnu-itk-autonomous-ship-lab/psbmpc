@@ -21,13 +21,32 @@ private:
 
     CB_Functor_Data *fdata;
 
+    Cuda_Obstacle *obstacles;
+
     Ownship ownship;
 
 public: 
 
     __host__ myFunctor() {} 
 
-    __host__ myFunctor(CB_Functor_Data *fdata) : fdata(fdata) {}
+    __host__ myFunctor(CB_Functor_Data *fdata, Cuda_Obstacle *obstacles) : fdata(fdata), obstacles(obstacles) {}
+
+    template <class T>
+    __device__ void print(T container)
+    {
+        int rows = container.get_rows(); 
+        int cols = container.get_cols();
+
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                printf("%f", container(i, j));
+                if (j < cols - 1) printf(", ");
+            }
+            if (i < rows - 1) printf("\n");
+        }
+    }
 
     __device__ double operator()(const thrust::tuple<unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> &input) 
     {
@@ -40,12 +59,15 @@ public:
 
         cpe.set_number_of_obstacles(3); 
 
-        //CML::Pseudo_Dynamic_Matrix<double, 4, 2000> *xs_p = obstacles[0].get_trajectories();
-        //CML::MatrixXd xs_p = fdata->obstacles[0].get_ps_trajectory(0);
+        CML::MatrixXd xs_p = obstacles[0].get_ps_trajectory<double>(0);
 
-        //CML::Vector4d xs = xs_p.get_col(1);
+        # if __CUDA_ARCH__>=200
+            printf("xs_p size: %lu, %lu \n", xs_p.get_rows(), xs_p.get_cols());
+        #endif
 
-        double ret = offset_sequence(0) + offset_sequence(2); //+ xs(0);
+        CML::Vector4d xs = xs_p.get_block(1, 0, 4, 1);
+
+        double ret = offset_sequence(0) + offset_sequence(2) + fdata->n_obst;
 
         return ret; 
     }
@@ -53,7 +75,7 @@ public:
 
 int main()
 {
-    int n_cbs = 1;
+    int n_cbs = 2;
 
     //=================================================================================
     // Cuda_Obstacle setup
@@ -130,6 +152,16 @@ int main()
     cudaMemcpy(fdata, &fdata_obj, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
     cudaCheckErrors("cudaMemCpy1 fail");
 
+    Cuda_Obstacle *obstacles;
+    Cuda_Obstacle transfer = obstacle;
+    Cuda_Obstacle back;
+
+    cudaMalloc((void**)&obstacles, sizeof(Cuda_Obstacle));
+    cudaCheckErrors("cudaMalloc2 fail");
+
+    cudaMemcpy(obstacles, &transfer, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
+    cudaCheckErrors("cudaMemCpy2 fail");
+
     thrust::device_vector<double> cb_costs(n_cbs);
 
     thrust::device_vector<unsigned int> cb_index_dvec(n_cbs);
@@ -144,7 +176,7 @@ int main()
 
     thrust::fill(control_behavior_dvec.begin(), control_behavior_dvec.end(), constant_cml_cb);
  
-    myFunctor mf(fdata);
+    myFunctor mf(fdata, obstacles);
 
     auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), control_behavior_dvec.begin()));
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), control_behavior_dvec.end()));
@@ -159,6 +191,9 @@ int main()
 
     cudaFree(fdata); 
     cudaCheckErrors("cudaFree1 fail");
+
+    cudaFree(obstacles);
+    cudaCheckErrors("cudaFree2 fail");
 
     return 0;
 }

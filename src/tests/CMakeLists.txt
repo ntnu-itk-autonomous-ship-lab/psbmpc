@@ -10,7 +10,7 @@
 add_executable(tester gpu_implementation_test_files/stack_overflow.cu)
 #add_executable(tester test_prng.cpp)
 #add_executable(tester gpu_implementation_test_files/test_thrust.cu)
-#add_executable(tester gpu_implementation_test_files/test_cml.cpp)
+#add_executable(tester gpu_implementation_test_files/test_cml.cu)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include

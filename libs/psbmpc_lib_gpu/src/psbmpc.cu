@@ -41,8 +41,6 @@ PSBMPC::PSBMPC()
 {
 	u_m_last = 1; chi_m_last = 0;
 
-	control_behavior_dvec.resize(pars.n_cbs);
-
 	map_offset_sequences();
 }
 
@@ -236,6 +234,8 @@ void PSBMPC::map_offset_sequences()
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
 	CML::Pseudo_Dynamic_Matrix<double, 20, 1> cml_offset_sequence(2 * pars.n_M);
+
+	control_behavior_dvec.resize(pars.n_cbs);
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
 		CML::assign_eigen_object(cml_offset_sequence, offset_sequence);
