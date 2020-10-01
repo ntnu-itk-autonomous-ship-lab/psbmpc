@@ -73,21 +73,42 @@ namespace CML
 		template<class U, size_t Rows, size_t Cols>
 		__host__ __device__ Pseudo_Dynamic_Matrix& operator=(const Static_Matrix<U, Rows, Cols> &rhs);
 
-		template <class U>
-		__host__ __device__ inline operator Dynamic_Matrix<U>() const
+		__host__ __device__ inline operator Dynamic_Matrix<T>() const
 		{
-			Dynamic_Matrix<U> result;
+			Dynamic_Matrix<T> result;
 			result = *this;
 			return result;
 		}
 
-		template<class U, size_t Rows, size_t Cols>
-		__host__ __device__ operator Static_Matrix<U, Rows, Cols>() const
+		template<size_t Rows, size_t Cols>
+		__host__ __device__ operator Static_Matrix<T, Rows, Cols>() const
 		{
-			Static_Matrix<U, Rows, Cols> result;
+			Static_Matrix<T, Rows, Cols> result;
 			result = *this;
 			return result;
 		}
+
+		__host__ __device__ void set_block(
+			const size_t start_row, 
+			const size_t start_col, 
+			const size_t n_rows, 
+			const size_t n_cols, 
+			const Dynamic_Matrix<T> &block);
+
+		__host__ __device__ Dynamic_Matrix<T> get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
+
+		template<size_t Block_Rows, size_t Block_Cols>
+		__host__ __device__ Static_Matrix<T, Block_Rows, Block_Cols> get_block(const size_t start_row, const size_t start_col) const;
+
+		__host__ __device__ Dynamic_Matrix<T> get_row(const size_t row) const;
+
+		template<size_t Cols>
+		__host__ __device__ Static_Matrix<T, 1, Cols> get_row(const size_t row) const;
+
+		__host__ __device__ Dynamic_Matrix<T> get_col(const size_t col) const;
+
+		template<size_t Rows>
+		__host__ __device__ Static_Matrix<T, Rows, 1> get_col(const size_t col) const;
 
 		__host__ __device__ inline size_t get_rows() const { return n_rows; }
 
@@ -143,6 +164,165 @@ namespace CML
 		assign_data(rhs);
 		
 		return *this;
+	}
+
+	/****************************************************************************************
+	*  Name     : set_block
+	*  Function : Sets the n_rows x n_cols block of this object, starting at 
+	*			  (start_row, start_col).
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__  void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_block(
+		const size_t start_row, 									// In: Start row of matrix block
+		const size_t start_col, 									// In: Start column of matrix block
+		const size_t n_rows,  										// In: Amount of rows
+		const size_t n_cols, 										// In: Amount of columns
+		const Dynamic_Matrix<T> &block 								// In: Block matrix to set
+		)
+	{
+		assert(	n_rows <= Max_Rows && n_cols <= Max_Cols && 
+				start_row < Max_Rows && start_col < Max_Cols);
+
+		if (start_row + n_rows > this->n_rows || start_col + n_cols > this->n_cols)
+		{
+			resize(start_row + n_rows, start_col + n_cols);
+		}
+
+		assert(block.get_rows() == n_rows && block.get_cols() == n_cols);
+
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				this->operator()(start_row + i, start_col + j) = block(i, j);
+			}
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : get_block
+	*  Function : returns the n_rows x n_cols block of this object, with upper left reference
+	*			  index (start_row, start_col).
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ Dynamic_Matrix<T> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_block(
+		const size_t start_row, 									// In: Start row of matrix block
+		const size_t start_col, 									// In: Start column of matrix block
+		const size_t n_rows,  										// In: Amount of rows
+		const size_t n_cols 										// In: Amount of columns
+		) const
+	{
+		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && 
+				start_row < this->n_rows && start_col < this->n_cols);
+
+		Dynamic_Matrix<T> result(n_rows, n_cols);
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				result(i, j) = this->operator()(start_row + i, start_col + j);
+			}
+		}
+		return result;
+	}
+
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	template <size_t Block_Rows, size_t Block_Cols>
+	__host__ __device__ Static_Matrix<T, Block_Rows, Block_Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_block(
+		const size_t start_row, 									// In: Start row of matrix block
+		const size_t start_col	 									// In: Start column of matrix block
+		) const
+	{
+		assert(	Block_Rows <= Max_Rows && Block_Cols <= Max_Cols 	&& 
+				start_row < n_rows && start_col < n_cols);
+
+		Static_Matrix<T, Block_Rows, Block_Cols> result;
+		for (size_t i = 0; i < Block_Rows; i++)
+		{
+			for (size_t j = 0; j < Block_Cols; j++)
+			{
+				result(i, j) = this->operator()(start_row + i, start_col + j);
+			}
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : get_row
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ Dynamic_Matrix<T> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_row(
+		const size_t row											// In: Index of row to fetch
+		) const
+	{
+		assert(row < this->n_rows);
+
+		Dynamic_Matrix<T> result(1, n_cols);
+		for (size_t j = 0; j < n_cols; j++)
+		{
+				result(0, j) = this->operator()(row, j);
+		}
+		return result;
+	}
+
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	template <size_t Cols>
+	__host__ __device__ Static_Matrix<T, 1, Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_row(
+		const size_t row											// In: Index of row to fetch
+		) const
+	{
+		assert(row < this->n_rows);
+
+		Static_Matrix<T, 1, Cols> result;
+		for (size_t j = 0; j < Cols; j++)
+		{
+			result(0, j) = this->operator()(row, j);
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : get_col
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ Dynamic_Matrix<T> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_col(
+		const size_t col											// In: Index of column to fetch
+		) const
+	{
+		assert(col < this->n_cols);
+
+		Dynamic_Matrix<T> result(n_rows, 1);
+		for (size_t i = 0; i < n_rows; i++)
+		{
+				result(i, 0) = this->operator()(i, col);
+		}
+		return result;
+	}
+
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	template <size_t Rows>
+	__host__ __device__ Static_Matrix<T, Rows, 1> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_col(
+		const size_t col											// In: Index of column to fetch
+		) const
+	{
+		assert(col < this->n_cols);
+
+		Static_Matrix<T, Rows, 1> result;
+		for (size_t i = 0; i < Rows; i++)
+		{
+			result(i, 0) = this->operator()(i, col);
+		}
+		return result;
 	}
 
 	/****************************************************************************************

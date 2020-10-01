@@ -20,6 +20,8 @@
 #ifndef _CB_COST_FUNCTOR_STRUCTURES_H_
 #define _CB_COST_FUNCTOR_STRUCTURES_H_
 
+#define MAX_N_OBST 20
+
 #include <thrust/device_vector.h>
 #include "psbmpc.cuh"
 #include "psbmpc_parameters.h"
@@ -103,8 +105,9 @@ struct CB_Functor_Pars
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-struct CB_Functor_Data
+class CB_Functor_Data
 {
+public:
 	CML::Pseudo_Dynamic_Matrix<double, 10, 1> maneuver_times;
 
 	double u_d, chi_d;
@@ -114,20 +117,16 @@ struct CB_Functor_Data
 
 	CML::Pseudo_Dynamic_Matrix<double, 2, 100> waypoints;
 
-	CML::Pseudo_Dynamic_Matrix<double, 6, 2000> trajectory;
+	CML::Pseudo_Dynamic_Matrix<double, 4, MAX_N_OBST> static_obstacles;
 
-	CML::Pseudo_Dynamic_Matrix<double, 4, 100> static_obstacles;
+	int n_obst; 
 
-	int n_obst;
-
-	// Number of prediction scenarios for each obstacle (max nr. for n_obst set to 50 here)
-	CML::Pseudo_Dynamic_Matrix<int, 50, 1> n_ps;
+	// Number of prediction scenarios for each obstacle
+	CML::Pseudo_Dynamic_Matrix<int, MAX_N_OBST, 1> n_ps;
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
-	CML::Pseudo_Dynamic_Matrix<bool, 50, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
-
-	Cuda_Obstacle *obstacles;
+	CML::Pseudo_Dynamic_Matrix<bool, MAX_N_OBST, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
 
 	__host__ CB_Functor_Data() {}
 
@@ -147,12 +146,9 @@ struct CB_Functor_Data
 
 		//this->u_m_last = master.u_m_last;
 		//this->chi_m_last = master.chi_m_last;	
-		u_m_last = 1.0; chi_m_last = 0.0;
+		u_m_last = 1; chi_m_last = 0;
 
 		CML::assign_eigen_object(this->waypoints, waypoints);	
-
-		//CML::assign_eigen_object(this->trajectory, master.trajectory);
-		trajectory.resize(6, 600);
 
 		CML::assign_eigen_object(this->static_obstacles, static_obstacles);
 
@@ -164,11 +160,6 @@ struct CB_Functor_Data
 		O_TC_0.resize(n_obst, 1); 	Q_TC_0.resize(n_obst, 1); IP_0.resize(n_obst, 1);
 		H_TC_0.resize(n_obst, 1); 	X_TC_0.resize(n_obst, 1);
 
-		std::cout << "size : " << sizeof(Cuda_Obstacle) << std::endl;
-		cudaMalloc((void**)&obstacles, n_obst * sizeof(Cuda_Obstacle));
-		cudaCheckErrors("Malloc of cuda obstacles inside CB_Functor_Data failed");
-
-		Cuda_Obstacle temp_obstacle;
 		for (int i = 0; i < n_obst; i++)
 		{
 			//n_ps[i] = master.n_ps[i];
@@ -182,15 +173,8 @@ struct CB_Functor_Data
 			IP_0[i] = odata.IP_0[i];
 			H_TC_0[i] = odata.H_TC_0[i]; 
 			X_TC_0[i] = odata.X_TC_0[i];
-
-			temp_obstacle = odata.obstacles[i];
-
-			cudaMemcpy(&obstacles[i], &temp_obstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
-			cudaCheckErrors("Memcpy host to device of cuda obstacles inside CB_Functor_Data failed");
 		} 
 	}
-
-	//__host__ __device__ ~CB_Functor_Data() { cudaFree(obstacles); }
 };
 	
 #endif 

@@ -838,7 +838,7 @@ int main()
 	std::cout << Ts << std::endl;
 
 	std::cout << "T after set block = " << std::endl;
-	Ts.set_block<double, 3, 3>(3, 3, T_sub);
+	Ts.set_block<3, 3>(3, 3, T_sub);
 	std::cout << Ts << std::endl;
 
 	std::cout << "Row 3 of T = " << std::endl;
@@ -848,10 +848,10 @@ int main()
 	std::cout << Ts.get_col(3) << std::endl;
 
 	std::cout << "Block of T of size 4x4 starting at (2, 2) = " << std::endl;
-	std::cout << Ts.get_block<double, 4, 4>(2, 2) << std::endl;
+	std::cout << Ts.get_block<4, 4>(2, 2) << std::endl;
 
 	std::cout << "Block of T of size 3x3 starting at (0, 0) = " << std::endl;
-	std::cout << Ts.get_block<double, 3, 3>(0, 0) << std::endl;
+	std::cout << Ts.get_block<3, 3>(0, 0) << std::endl;
 
 
 	//================================================================================
@@ -908,6 +908,31 @@ int main()
 	test_conversion3(testc3);
 	test_conversion3(testc3_sm);
 
+
+	CML::Pseudo_Dynamic_Matrix<double, 8, 30> bigone(1, 1);
+
+	CML::MatrixXd assign_to(2, 30); assign_to.set_all_coeffs(3.0);
+	bigone.set_block(0, 0, assign_to.get_rows(), assign_to.get_cols(), assign_to);
+
+	std::cout << bigone << std::endl;
+
+	assign_to.set_all_coeffs(4.0);
+	bigone.set_block(2, 0, assign_to.get_rows(), assign_to.get_cols(), assign_to);
+
+	std::cout << bigone << std::endl;
+
+	assign_to.set_all_coeffs(5.0);
+	bigone.set_block(4, 0, assign_to.get_rows(), assign_to.get_cols(), assign_to);
+
+	std::cout << bigone << std::endl;
+
+	std::cout << bigone.get_block<3, 3>(0, 0) << std::endl;
+
+	std::cout << bigone.get_block<5, 2>(0, 0) << std::endl;
+
+	std::cout << bigone.get_row(2) << std::endl;
+
+	std::cout << bigone.get_col(2) << std::endl;
 
 	//================================================================================
 	// Other tests

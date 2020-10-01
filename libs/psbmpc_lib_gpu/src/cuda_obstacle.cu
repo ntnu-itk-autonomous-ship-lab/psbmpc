@@ -33,7 +33,7 @@
 __host__ Cuda_Obstacle::Cuda_Obstacle(
 	const Cuda_Obstacle &co 													// In: Obstacle to copy
 	) : 
-	Obstacle(co), xs_p(nullptr)
+	Obstacle(co)
 {
 	assign_data(co);
 }
@@ -41,7 +41,7 @@ __host__ Cuda_Obstacle::Cuda_Obstacle(
 __host__ Cuda_Obstacle::Cuda_Obstacle(
 	const Tracked_Obstacle &to 													// In: Obstacle to copy
 	) : 
-	Obstacle(to), xs_p(nullptr)
+	Obstacle(to)
 {
 	assign_data(to);
 }
@@ -52,7 +52,7 @@ __host__ Cuda_Obstacle::Cuda_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ Cuda_Obstacle::~Cuda_Obstacle()
+__host__ Cuda_Obstacle::~Cuda_Obstacle()
 {
 	clean();
 }
@@ -90,10 +90,12 @@ __host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void Cuda_Obstacle::clean()
+__host__ void Cuda_Obstacle::clean()
 {
-	cudaFree(xs_p);
-
+	/* if (xs_p != nullptr)
+	{
+		cudaFree(xs_p); cudaCheckErrors("cudaFree in Cuda_Obstacle clean failed.");
+	} */
 	//if (sbmpc != nullptr) 		{ delete sbmpc; sbmpc = nullptr; }
 }
 
@@ -139,14 +141,16 @@ __host__ void Cuda_Obstacle::assign_data(
 
 	//this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
 
-	cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
+	this->xs_p = co.xs_p;
+
+	/* cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 400, 1000>));
 	cudaCheckErrors("Malloc trajectory inside cuda-to-cuda obstacle assign data failed.");
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		cudaMemcpy(&xs_p[ps], &co.xs_p[ps], 1, cudaMemcpyHostToDevice);
 		cudaCheckErrors("Memcpy of trajectory inside cuda-to-cuda obstacle assign data failed.");
-	}
+	} */
 }
 
 __host__ void Cuda_Obstacle::assign_data(
@@ -181,19 +185,18 @@ __host__ void Cuda_Obstacle::assign_data(
 	//this->sbmpc = new Obstacle_SBMPC();
 
 	this->mu.resize(n_ps, 1);
-	
-	cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>));
-	cudaCheckErrors("Malloc trajectory inside tracked-to-cuda obstacle assign data failed.");
 
-	CML::Pseudo_Dynamic_Matrix<double, 4, 2000> xs_p_temp, xs_p_temp2;
+	CML::MatrixXd xs_p_ps;
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		this->mu[ps] = to.mu[ps];
 
-		CML::assign_eigen_object(xs_p_temp, to.xs_p[ps]);
+		CML::assign_eigen_object(xs_p_ps, to.xs_p[ps]);
 
-		cudaMemcpy(&xs_p[ps], &xs_p_temp, sizeof(CML::Pseudo_Dynamic_Matrix<double, 4, 2000>), cudaMemcpyHostToDevice);
-		cudaCheckErrors("Memcpy of trajectory inside tracked-to-cuda obstacle assign data failed.");
+		xs_p.set_block(4 * ps, 0, xs_p_ps.get_rows(), xs_p_ps.get_cols(), xs_p_ps);
+
+		std::cout << xs_p << std::endl;
+
 	}
 }
