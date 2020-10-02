@@ -24,7 +24,7 @@
 #include "psbmpc_index.h"
 #include "psbmpc_parameters.h"
 #include "obstacle_manager.cuh"
-#include "obstacle.cuh"
+//#include "cuda_obstacle.cuh"
 #include "ownship.cuh"
 #include "cpe.cuh"
 
@@ -32,7 +32,9 @@
 #include <vector>
 #include <memory>
 
+class CB_Cost_Functor;
 class CB_Functor_Data;
+class Cuda_Obstacle;
 
 class PSBMPC
 {
@@ -54,7 +56,18 @@ private:
 
 	Eigen::Matrix<double, 6, -1> trajectory;
 
+	//=====================================================
+	// Device related objects
+	//=====================================================
+	std::unique_ptr<CB_Cost_Functor> cb_cost_functor;
+
 	friend struct CB_Functor_Data;
+	CB_Functor_Data *fdata_device_ptr;
+
+	Cuda_Obstacle *obstacles_device_ptr;
+
+	Ownship *ownship_device_ptr;
+	//=====================================================
 
 	void map_offset_sequences();
 
@@ -70,7 +83,7 @@ private:
 		Eigen::VectorXd &ps_weights,
 		Eigen::VectorXd &ps_maneuver_times,
 		const int n_turns,
-		const Obstacle_Data &data,
+		const Obstacle_Data &odata,
 		const int i);
 
 	void set_up_dependent_obstacle_prediction_variables(
@@ -78,12 +91,12 @@ private:
 		Eigen::VectorXd &ps_course_changes,
 		Eigen::VectorXd &ps_weights,
 		Eigen::VectorXd &ps_maneuver_times,
-		const Obstacle_Data &data,
+		const Obstacle_Data &odata,
 		const int i);
 
-	double find_time_of_passing(const Obstacle_Data &data, const int i);
+	double find_time_of_passing(const Obstacle_Data &odata, const int i);
 
-	bool determine_colav_active(const Obstacle_Data &data, const int n_static_obst);
+	bool determine_colav_active(const Obstacle_Data &odata, const int n_static_obst);
 
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
@@ -104,7 +117,7 @@ public:
 		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::Matrix<double, 6, 1> &ownship_state,
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		Obstacle_Data &data);
+		Obstacle_Data &odata);
 
 };
 

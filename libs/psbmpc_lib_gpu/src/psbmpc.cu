@@ -37,14 +37,27 @@
 *****************************************************************************************/
 PSBMPC::PSBMPC() 
 	: 
-	ownship(Ownship()), pars(PSBMPC_Parameters())
+	ownship(Ownship()), pars(PSBMPC_Parameters()), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr)
 {
 	u_m_last = 1; chi_m_last = 0;
 
 	map_offset_sequences();
 }
 
-PSBMPC::~PSBMPC() = default;
+/****************************************************************************************
+*  Name     : ~PSBMPC
+*  Function : Class destructor
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+PSBMPC::~PSBMPC() 
+{
+	fdata_device_ptr = nullptr;
+	
+	obstacles_device_ptr = nullptr;
+
+	ownship_device_ptr = nullptr;
+};
 
 /****************************************************************************************
 *  Name     : calculate_optimal_offsets
@@ -61,7 +74,7 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
-	Obstacle_Data &data														// In/Out: Dynamic obstacle information
+	Obstacle_Data &odata														// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
@@ -71,10 +84,10 @@ void PSBMPC::calculate_optimal_offsets(
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
-	int n_obst = data.obstacles.size();
+	int n_obst = odata.obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
-	bool colav_active = determine_colav_active(data, n_static_obst);
+	bool colav_active = determine_colav_active(odata, n_static_obst);
 	if (!colav_active)
 	{
 		u_opt = 1; 		u_m_last = u_opt;
@@ -82,7 +95,7 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 	
-	initialize_prediction(data);
+	initialize_prediction(odata);
 
 	for (int i = 0; i < n_obst; i++)
 	{
@@ -90,7 +103,7 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			// PSBMPC parameters needed to determine if obstacle breaches COLREGS 
 			// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
-			data.obstacles[i].predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), pars.phi_AH, pars.phi_CR, pars.phi_HO, pars.phi_OT, pars.d_close, pars.d_safe);
+			odata.obstacles[i].predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), pars.phi_AH, pars.phi_CR, pars.phi_HO, pars.phi_OT, pars.d_close, pars.d_safe);
 		}
 	}
 
@@ -159,6 +172,57 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// Cost evaluation
 	//===============================================================================================================
+	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
+	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
+	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
+	std::cout << "CML::MatrixXd size: " << sizeof(CML::MatrixXd) << std::endl;
+	
+	size_t limit = 0;
+	cudaDeviceGetLimit(&limit, cudaLimitStackSize);
+	cudaCheckErrors("Reading cudaLimitStackSize failed.");
+	std::cout << "Device max stack size : " << limit << std::endl;
+
+	cudaDeviceSetLimit(cudaLimitStackSize, 10000);
+	cudaCheckErrors("Setting cudaLimitStackSize failed.");
+
+	cudaDeviceGetLimit(&limit, cudaLimitStackSize);
+	cudaCheckErrors("Reading cudaLimitStackSize failed.");
+	std::cout << "New device max stack size : " << limit << std::endl;
+
+	cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize);
+	cudaCheckErrors("Reading cudaLimitMallocHeapSize failed.");
+	std::cout << "Device max heap size : " << limit << std::endl;
+
+	// Allocation of device memory for control behaviour functor data and obstacles
+	// CB Functor Data
+	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
+    cudaCheckErrors("Malloc of CB_Functor_Data failed.");
+
+	CB_Functor_Data temporary_fdata(*this, u_d, chi_d, waypoints, static_obstacles, odata);
+
+	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
+    cudaCheckErrors("MemCpy of CB_Functor_Data failed.");
+	
+	// Cuda Obstacles
+	cudaMalloc((void**)&obstacles_device_ptr, n_obst * sizeof(Cuda_Obstacle));
+    cudaCheckErrors("Malloc of Cuda_Obstacle's failed.");
+
+	Cuda_Obstacle temporary_transfer_obstacle;
+	for (int i = 0; i < n_obst; i++)
+	{
+		temporary_transfer_obstacle = odata.obstacles[i];
+
+		cudaMemcpy(&obstacles_device_ptr[i], &temporary_transfer_obstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
+    	cudaCheckErrors("MemCpy of Cuda_Obstacle i failed.");
+	}
+
+	// Ownship
+	/* cudaMalloc((void**)&ownship_device_ptr, sizeof(Ownship));
+    cudaCheckErrors("Malloc of Ownship failed.");
+
+	cudaMemcpy(ownship_device_ptr, &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
+    cudaCheckErrors("MemCpy of Ownship failed."); */
+    
 	Eigen::VectorXd HL_0(n_obst); HL_0.setZero();
 	
 	// Allocate device vector for computing CB costs
@@ -171,15 +235,16 @@ void PSBMPC::calculate_optimal_offsets(
 	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), control_behavior_dvec.begin()));
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), control_behavior_dvec.end()));
 	
-	std::cout << "right before gpu stuff" << std::endl;
 	// Perform the calculations on the GPU
-    thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), CB_Cost_Functor(*this, u_d, chi_d, waypoints, static_obstacles, data));
-	std::cout << "right after gpu stuff" << std::endl;
+	cb_cost_functor.reset(new CB_Cost_Functor(pars, fdata_device_ptr, obstacles_device_ptr));
+    thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), *cb_cost_functor);
+
 	// Extract minimum cost
 	thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
 	min_index = min_cost_iter - cb_costs.begin();
 	min_cost = cb_costs[min_index];
 
+	// Assign optimal offset sequence/control behaviour
 	CML::Pseudo_Dynamic_Matrix<double, 20, 1> opt_offset_sequence = control_behavior_dvec[min_index];
 	Eigen::VectorXd opt_offset_sequence_e;
 	CML::assign_cml_object(opt_offset_sequence_e, opt_offset_sequence);
@@ -187,6 +252,16 @@ void PSBMPC::calculate_optimal_offsets(
 	// Set the trajectory to the optimal one and assign to the output trajectory
 	ownship.predict_trajectory(trajectory, opt_offset_sequence_e, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 	assign_optimal_trajectory(predicted_trajectory);
+
+	// Free device memory
+	cudaFree(fdata_device_ptr); 
+    cudaCheckErrors("cudaFree of fdata_device_ptr failed.");
+
+    cudaFree(obstacles_device_ptr);
+    cudaCheckErrors("cudaFree of obstacles_device_ptr failed.");
+
+	cudaFree(ownship_device_ptr);
+    cudaCheckErrors("cudaFree of ownship_device_ptr failed.");
 	//===============================================================================================================
 
 	//===============================================================================================================
@@ -319,17 +394,17 @@ void PSBMPC::increment_control_behaviour(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::initialize_prediction(
-	Obstacle_Data &data														// In: Dynamic obstacle information
+	Obstacle_Data &odata													// In: Dynamic obstacle information
 	)
 {
-	int n_obst = data.obstacles.size();
+	int n_obst = odata.obstacles.size();
 
 	n_ps.resize(n_obst);
 
 	int n_a = 1; // default
 	if (n_obst > 0)
 	{
-		n_a = data.obstacles[0].get_intention_probabilities().size();
+		n_a = odata.obstacles[0].get_intention_probabilities().size();
 	}
 	
 	//***********************************************************************************
@@ -348,7 +423,7 @@ void PSBMPC::initialize_prediction(
 		//Typically three intentions: KCC, SM, PM
 		//std::cout << trajectory.col(0).transpose() << std::endl;
 		//std::cout << obstacles[i]->kf.get_state() << std::endl;
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf.get_state());
+		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), odata.obstacles[i].kf.get_state());
 		//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
 		//std::cout << "t_cpa = " << t_cpa(i) << std::endl;
 		//std::cout << "d_cpa = " << d_cpa(i) << std::endl;
@@ -382,15 +457,15 @@ void PSBMPC::initialize_prediction(
 				}
 
 				n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
-				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, n_turns, data, i);
+				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, n_turns, odata, i);
 			}
 			else // Set up dependent obstacle prediction scenarios
 			{
 				n_ps[i] = 3;
-				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, data, i);
+				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, odata, i);
 			}	
 		}
-		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);		
+		odata.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);		
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -415,7 +490,7 @@ void PSBMPC::initialize_prediction(
 		t_cpa_min = 1e10; index_closest = -1;
 		for (int i = 0; i < n_obst; i++)
 		{
-			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
+			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + odata.obstacles[i].get_length());
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
 			// that the previous avoidance maneuver happened before CPA with this obstacle)
@@ -428,7 +503,7 @@ void PSBMPC::initialize_prediction(
 
 		if (index_closest != -1)
 		{
-			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[index_closest].get_length());
+			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + odata.obstacles[index_closest].get_length());
 			// If no predicted collision,  avoidance maneuver M with the closest
 			// obstacle (that is not passed) is taken at t_cpa_min
 			if (d_cpa(index_closest) > d_safe_i)
@@ -455,7 +530,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	Eigen::VectorXd &ps_weights_i, 											// In/out: Cost weights of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
 	const int n_turns, 														// In: number of predicted turns for the obstacle 
-	const Obstacle_Data &data,												// In: Dynamic obstacle information
+	const Obstacle_Data &odata,												// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
@@ -505,8 +580,8 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
 	// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
 	ps_weights_i.resize(n_ps[i]);
-	Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
-	switch(data.ST_i_0[i])
+	Pr_CC_i = odata.obstacles[i].get_a_priori_CC_probability();
+	switch(odata.ST_i_0[i])
 	{
 		case A : // Outside CC consideration zone
 			ps_weights_i(0) = 1;
@@ -549,7 +624,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 			}
 			break;
 		case F : // CR, GW
-			t_obst_passed = find_time_of_passing(data, i);
+			t_obst_passed = find_time_of_passing(odata, i);
 			ps_weights_i(0) = 1 - Pr_CC_i;
 			for (int ps = 1; ps < n_ps[i]; ps++)
 			{
@@ -585,7 +660,7 @@ void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_weights_i, 											// In/out: Cost weights of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
-	const Obstacle_Data &data,												// In: Dynamic obstacle information
+	const Obstacle_Data &odata,												// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
@@ -603,8 +678,8 @@ void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 	ps_course_changes_i.resize(0);
 
 	ps_weights_i.resize(n_ps[i]);
-	Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
-	switch(data.ST_i_0[i])
+	Pr_CC_i = odata.obstacles[i].get_a_priori_CC_probability();
+	switch(odata.ST_i_0[i])
 	{
 		case A : // Outside CC consideration zone
 			ps_weights_i(0) = 1;
@@ -673,13 +748,13 @@ void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::find_time_of_passing(
-	const Obstacle_Data &data,											// In: Dynamic obstacle information
+	const Obstacle_Data &odata,											// In: Dynamic obstacle information
 	const int i 														// In: Index of relevant obstacle
 	)
 {
 	double t_obst_passed(1e12), t, psi_A, d_AB;
 	Eigen::VectorXd xs_A = trajectory.col(0);
-	Eigen::VectorXd xs_B = data.obstacles[i].kf.get_state();
+	Eigen::VectorXd xs_B = odata.obstacles[i].kf.get_state();
 	Eigen::Vector2d p_A, p_B, v_A, v_B, L_AB;
 	p_A(0) = xs_A(0); p_A(1) = xs_A(1); psi_A = xs_A(2);
 	v_A(0) = xs_A(3); v_A(1) = xs_A(4); 
@@ -731,22 +806,22 @@ double PSBMPC::find_time_of_passing(
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_colav_active(
-	const Obstacle_Data &data,												// In: Dynamic obstacle information
+	const Obstacle_Data &odata,												// In: Dynamic obstacle information
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
 	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
-	for (size_t i = 0; i < data.obstacles.size(); i++)
+	for (size_t i = 0; i < odata.obstacles.size(); i++)
 	{
-		d_0i(0) = data.obstacles[i].kf.get_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].kf.get_state()(1) - xs(1);
+		d_0i(0) = odata.obstacles[i].kf.get_state()(0) - xs(0);
+		d_0i(1) = odata.obstacles[i].kf.get_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 
 		// If all obstacles are passed, even though inside colav range,
 		// then no need for colav
-		if (data.IP_0[i]) 	{ colav_active = false; }
+		if (odata.IP_0[i]) 	{ colav_active = false; }
 		else 				{ colav_active = true; }
 	}
 	colav_active = colav_active || n_static_obst > 0;

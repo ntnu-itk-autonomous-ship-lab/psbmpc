@@ -44,16 +44,16 @@
 *****************************************************************************************/
 __host__ __device__ CPE::CPE(
     const CPE_Method cpe_method,                                    // In: Method to be used
-    const int n_CE,                                                 // In: Number of samples for the Cross-Entropy method
-    const int n_MCSKF,                                              // In: Number of samples for the Monte Carlo Simulation + Kalman-filtering method
     const int n_obst,                                               // In: Number of obstacles
     const double dt                                                 // In: Time step of calling function simulation environment
     ) :
-    method(cpe_method), n_obst(n_obst), n_CE(n_CE), n_MCSKF(n_MCSKF), mu_CE_last(nullptr), P_CE_last(nullptr)
+    method(cpe_method), n_obst(n_obst), mu_CE_last(nullptr), P_CE_last(nullptr)
 {
     set_number_of_obstacles(n_obst);
 
     // CE pars
+
+    n_CE = 1000;
     
     sigma_inject = 1.0 / 3.0; // dependent on d_safe wrt obstacle i => set in CE-method
 
@@ -75,6 +75,9 @@ __host__ __device__ CPE::CPE(
     converged_last = false;
 
     // MCSKF4D pars
+    
+    n_MCSKF = 500;
+
     r = 0.001;
     q = 8e-4;
 

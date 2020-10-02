@@ -47,7 +47,7 @@ private:
 	CPE_Method method;
 
 	// Number of obstacles to consider in estimation
-	int n_obst; // Ad hoc max number of obstacles: 50
+	int n_obst;
 
 	// Number of samples drawn
 	int n_CE, n_MCSKF;
@@ -127,7 +127,7 @@ public:
 	
 	__host__ __device__ CPE() : mu_CE_last(nullptr), P_CE_last(nullptr) {}
 
-	__host__ __device__ CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const int n_obst, const double dt);
+	__host__ __device__ CPE(const CPE_Method cpe_method, const int n_obst, const double dt);
 
 	__host__ __device__ CPE(const CPE &cpe);
 

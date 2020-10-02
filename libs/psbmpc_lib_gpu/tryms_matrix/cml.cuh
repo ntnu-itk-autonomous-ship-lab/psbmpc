@@ -54,6 +54,8 @@ namespace CML
 
 		__host__ __device__ Derived& operator+=(const Derived &rhs);
 
+		__host__ __device__ Derived operator-() const;
+
 		__host__ __device__ Derived operator-(const Derived &other) const;
 
 		__host__ __device__ Derived& operator-=(const Derived &rhs);
@@ -197,6 +199,22 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
+	template <class T, class Derived>
+	__host__ __device__ Derived Matrix_Base<T, Derived>::operator-() const
+	{
+		Derived& self = get_this();
+		Derived result = self;
+
+		for (size_t i = 0; i < self.get_rows(); i++)
+		{
+			for (size_t j = 0; j < self.get_cols() ; j++)
+			{
+				result(i, j) = -self(i, j);
+			}
+		}
+		return result;
+	}
+
 	template <class T, class Derived>
 	__host__ __device__ Derived Matrix_Base<T, Derived>::operator-(
 		const Derived &other 									// In: Matrix/vector to subtract by

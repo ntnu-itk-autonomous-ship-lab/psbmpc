@@ -59,15 +59,15 @@ public:
 
         cpe.set_number_of_obstacles(3); 
 
-        CML::MatrixXd xs_p = obstacles[0].get_ps_trajectory<double>(0);
+        CML::MatrixXd xs_p = obstacles[0].get_ps_trajectory(0);
 
         # if __CUDA_ARCH__>=200
-            printf("xs_p size: %lu, %lu \n", xs_p.get_rows(), xs_p.get_cols());
+            //printf("xs_p size: %lu, %lu \n", xs_p.get_rows(), xs_p.get_cols());
         #endif
 
-        CML::Vector4d xs = xs_p.get_block(1, 0, 4, 1);
+        CML::Vector4d xs = xs_p.get_block(0, 1, 4, 1);
 
-        double ret = offset_sequence(0) + offset_sequence(2) + fdata->n_obst;
+        double ret = offset_sequence(0) + offset_sequence(2) + fdata->n_obst + xs(0);
 
         return ret; 
     }
@@ -111,7 +111,7 @@ int main()
     //=================================================================================
     // CB_Functor_Data setup
     //=================================================================================
-    //PSBMPC psbmpc;
+    PSBMPC psbmpc;
 
 	Eigen::Matrix<double, 2, -1> waypoints;
 
@@ -139,7 +139,7 @@ int main()
 
     odata.obstacles.resize(1); odata.obstacles[0] = obstacle;
 
-    CB_Functor_Data fdata_obj(5.0, 0.0, waypoints, static_obstacles, odata);
+    CB_Functor_Data fdata_obj(psbmpc, 5.0, 0.0, waypoints, static_obstacles, odata);
 
     //=================================================================================
     // Actual cuda n thrust stuff
