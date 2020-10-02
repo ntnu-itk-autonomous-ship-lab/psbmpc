@@ -606,7 +606,6 @@ namespace CML
 		const size_t n_cols 										// In: Amount of columns
 		) const
 	{
-
 		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && 
 				start_row < this->n_rows && start_col < this->n_cols);
 
@@ -677,6 +676,11 @@ namespace CML
 	{
 		assert(n_rows > 0 && n_cols > 0);
 
+		if (this->n_rows == n_rows && this->n_cols == n_cols)
+		{
+			return;
+		}
+
 		*this = Dynamic_Matrix<T>(n_rows, n_cols);
 	}
 
@@ -693,6 +697,11 @@ namespace CML
 		)
 	{
 		assert(n_rows > 0 && n_cols > 0);
+
+		if (this->n_rows == n_rows && this->n_cols == n_cols)
+		{
+			return;
+		}
 		
 		Dynamic_Matrix<T> resized(n_rows, n_cols);
 		for (size_t i = 0; i < n_rows; i++)

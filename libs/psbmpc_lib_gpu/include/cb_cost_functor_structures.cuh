@@ -17,12 +17,11 @@
 *
 *****************************************************************************************/
 
-#ifndef _CB_COST_FUNCTOR_STRUCTURES_H_
-#define _CB_COST_FUNCTOR_STRUCTURES_H_
-
-#define MAX_N_OBST 20
+#ifndef _CB_COST_FUNCTOR_STRUCTURES_CUH_
+#define _CB_COST_FUNCTOR_STRUCTURES_CUH_
 
 #include <thrust/device_vector.h>
+#include "psbmpc_defines.h"
 #include "psbmpc.cuh"
 #include "psbmpc_parameters.h"
 #include "cml.cuh"
@@ -101,21 +100,24 @@ struct CB_Functor_Pars
 /****************************************************************************************
 *  Name     : CB_Functor_Data
 *  Function : Struct containing data/information needed to evaluate the cost of one
-*			  PSB-MPC control behaviour. Two versions for testing..
+*			  PSB-MPC control behaviour.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 class CB_Functor_Data
 {
 public:
-	CML::Pseudo_Dynamic_Matrix<double, 10, 1> maneuver_times;
+
+	CML::Pseudo_Dynamic_Matrix<double, 6, MAX_N_SAMPLES> trajectory;
+
+	CML::Pseudo_Dynamic_Matrix<double, MAX_N_M, 1> maneuver_times;
 
 	double u_d, chi_d;
 
 	double u_m_last;
 	double chi_m_last;
 
-	CML::Pseudo_Dynamic_Matrix<double, 2, 100> waypoints;
+	CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_WPS> waypoints;
 
 	CML::Pseudo_Dynamic_Matrix<double, 4, MAX_N_OBST> static_obstacles;
 
@@ -128,25 +130,32 @@ public:
 	// and <obstacle is passed> (IP_0) indicators
 	CML::Pseudo_Dynamic_Matrix<bool, MAX_N_OBST, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
 
+
+	//=======================================================================================
+	//  Name     : CB_Functor_Data
+	//  Function : Struct constructor
+	//  Author   : 
+	//  Modified :
+	//=======================================================================================
 	__host__ CB_Functor_Data() {}
 
 	__host__ CB_Functor_Data(
-		//const PSBMPC &master, 
+		const PSBMPC &master, 
 		const double u_d, 
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		const Obstacle_Data &odata)
 	{
-		//CML::assign_eigen_object(this->maneuver_times, master.maneuver_times);
-		maneuver_times.resize(5, 1);
+		CML::assign_eigen_object(trajectory, master.trajectory);
+
+		CML::assign_eigen_object(maneuver_times, master.maneuver_times);
 
 		this->u_d = u_d;
 		this->chi_d = chi_d;
 
-		//this->u_m_last = master.u_m_last;
-		//this->chi_m_last = master.chi_m_last;	
-		u_m_last = 1; chi_m_last = 0;
+		u_m_last = master.u_m_last;
+		chi_m_last = master.chi_m_last;	
 
 		CML::assign_eigen_object(this->waypoints, waypoints);	
 

@@ -911,7 +911,7 @@ int main()
 
 	CML::Pseudo_Dynamic_Matrix<double, 8, 30> bigone(1, 1);
 
-	CML::MatrixXd assign_to(2, 30); assign_to.set_all_coeffs(3.0);
+	CML::MatrixXd assign_to(2, 20); assign_to.set_all_coeffs(3.0);
 	bigone.set_block(0, 0, assign_to.get_rows(), assign_to.get_cols(), assign_to);
 
 	std::cout << bigone << std::endl;
@@ -926,13 +926,17 @@ int main()
 
 	std::cout << bigone << std::endl;
 
-	std::cout << bigone.get_block<3, 3>(0, 0) << std::endl;
+	std::cout << bigone.get_block<3, 3>(0, 0, 3, 3) << std::endl;
 
-	std::cout << bigone.get_block<5, 2>(0, 0) << std::endl;
+	std::cout << bigone.get_block<5, 2>(0, 0, 5, 2) << std::endl;
 
-	std::cout << bigone.get_row(2) << std::endl;
+	std::cout << bigone.get_row<1, 20>(2) << std::endl;
 
-	std::cout << bigone.get_col(2) << std::endl;
+	std::cout << bigone.get_col<8, 1>(2) << std::endl;
+
+	bigone.set_block(0, 0, 3, 3, CML::Matrix3d::identity());
+
+	std::cout << bigone << std::endl;
 
 	//================================================================================
 	// Other tests

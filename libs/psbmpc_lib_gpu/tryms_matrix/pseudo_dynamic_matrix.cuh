@@ -95,20 +95,24 @@ namespace CML
 			const size_t n_cols, 
 			const Dynamic_Matrix<T> &block);
 
-		__host__ __device__ Dynamic_Matrix<T> get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
+		__host__ __device__ void set_row(const size_t row, const Dynamic_Matrix<T> &vector);
 
-		template<size_t Block_Rows, size_t Block_Cols>
-		__host__ __device__ Static_Matrix<T, Block_Rows, Block_Cols> get_block(const size_t start_row, const size_t start_col) const;
+		template <size_t Cols>
+		__host__ __device__ void set_row(const size_t row, const Static_Matrix<T, 1, Cols> &vector);
 
-		__host__ __device__ Dynamic_Matrix<T> get_row(const size_t row) const;
+		__host__ __device__ void set_col(const size_t col, const Dynamic_Matrix<T> &vector);
 
-		template<size_t Cols>
-		__host__ __device__ Static_Matrix<T, 1, Cols> get_row(const size_t row) const;
+		template <size_t Rows>
+		__host__ __device__ void set_col(const size_t col, const Static_Matrix<T, Rows, 1> &vector);
 
-		__host__ __device__ Dynamic_Matrix<T> get_col(const size_t col) const;
+		template <size_t New_Max_Rows, size_t New_Max_Cols>
+		__host__ __device__ Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
 
-		template<size_t Rows>
-		__host__ __device__ Static_Matrix<T, Rows, 1> get_col(const size_t col) const;
+		template <size_t New_Max_Rows, size_t New_Max_Cols>
+		__host__ __device__ Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> get_row(const size_t row) const;
+
+		template <size_t New_Max_Rows, size_t New_Max_Cols>
+		__host__ __device__ Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> get_col(const size_t col) const;
 
 		__host__ __device__ inline size_t get_rows() const { return n_rows; }
 
@@ -202,14 +206,81 @@ namespace CML
 	}
 
 	/****************************************************************************************
+	*  Name     : set_row
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_row(
+		const size_t row,		 											// In: Index of row to assign
+		const Dynamic_Matrix<T> &vector 									// In: Row vector to assign to the row
+		)
+	{
+		assert(vector.get_cols() == this->n_cols && row < this->n_rows);
+		for (size_t j = 0; j < this->n_cols; j++)
+		{
+			this->operator()(row, j) = vector(j);
+		}
+	}
+
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	template <size_t Cols>
+	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_row(
+		const size_t row,		 											// In: Index of row to assign
+		const Static_Matrix<T, 1, Cols> &vector 							// In: Row vector to assign to the row
+		)
+	{
+		assert(row < n_rows && Cols == n_cols);
+		for (size_t j = 0; j < Cols; j++)
+		{
+			this->operator()(row, j) = vector(j);
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : set_col
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_col(
+		const size_t col,		 											// In: Index of column to assign
+		const Dynamic_Matrix<T> &vector 									// In: Column vector to assign to the column
+		)
+	{
+		assert(vector.get_rows() == this->n_rows && col < this->n_cols);
+		for (size_t i = 0; i < this->n_rows; i++)
+		{
+			this->operator()(i, col) = vector(i);
+		}
+	}
+
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	template <size_t Rows>
+	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_col(
+		const size_t col,		 											// In: Index of column to assign
+		const Static_Matrix<T, Rows, 1> &vector 							// In: Column vector to assign to the column
+		)
+	{
+		assert(col < n_cols && Rows == n_rows);
+		for (size_t i = 0; i < Rows; i++)
+		{
+			this->operator()(i, col) = vector(i);
+		}
+	}
+
+	/****************************************************************************************
 	*  Name     : get_block
-	*  Function : returns the n_rows x n_cols block of this object, with upper left reference
+	*  Function : returns a given block of this object, with upper left reference
 	*			  index (start_row, start_col).
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ Dynamic_Matrix<T> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_block(
+	template <size_t New_Max_Rows, size_t New_Max_Cols>
+	__host__ __device__ Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_block(
 		const size_t start_row, 									// In: Start row of matrix block
 		const size_t start_col, 									// In: Start column of matrix block
 		const size_t n_rows,  										// In: Amount of rows
@@ -219,31 +290,10 @@ namespace CML
 		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && 
 				start_row < this->n_rows && start_col < this->n_cols);
 
-		Dynamic_Matrix<T> result(n_rows, n_cols);
+		Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> result(New_Max_Rows, New_Max_Cols);
 		for (size_t i = 0; i < n_rows; i++)
 		{
 			for (size_t j = 0; j < n_cols; j++)
-			{
-				result(i, j) = this->operator()(start_row + i, start_col + j);
-			}
-		}
-		return result;
-	}
-
-	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <size_t Block_Rows, size_t Block_Cols>
-	__host__ __device__ Static_Matrix<T, Block_Rows, Block_Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_block(
-		const size_t start_row, 									// In: Start row of matrix block
-		const size_t start_col	 									// In: Start column of matrix block
-		) const
-	{
-		assert(	Block_Rows <= Max_Rows && Block_Cols <= Max_Cols 	&& 
-				start_row < n_rows && start_col < n_cols);
-
-		Static_Matrix<T, Block_Rows, Block_Cols> result;
-		for (size_t i = 0; i < Block_Rows; i++)
-		{
-			for (size_t j = 0; j < Block_Cols; j++)
 			{
 				result(i, j) = this->operator()(start_row + i, start_col + j);
 			}
@@ -258,30 +308,15 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ Dynamic_Matrix<T> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_row(
+	template <size_t New_Max_Rows, size_t New_Max_Cols>
+	__host__ __device__ Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_row(
 		const size_t row											// In: Index of row to fetch
 		) const
 	{
-		assert(row < this->n_rows);
+		assert(row < this->n_rows && New_Max_Rows == 1);
 
-		Dynamic_Matrix<T> result(1, n_cols);
+		Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> result;
 		for (size_t j = 0; j < n_cols; j++)
-		{
-				result(0, j) = this->operator()(row, j);
-		}
-		return result;
-	}
-
-	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <size_t Cols>
-	__host__ __device__ Static_Matrix<T, 1, Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_row(
-		const size_t row											// In: Index of row to fetch
-		) const
-	{
-		assert(row < this->n_rows);
-
-		Static_Matrix<T, 1, Cols> result;
-		for (size_t j = 0; j < Cols; j++)
 		{
 			result(0, j) = this->operator()(row, j);
 		}
@@ -295,30 +330,15 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ Dynamic_Matrix<T> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_col(
-		const size_t col											// In: Index of column to fetch
+	template <size_t New_Max_Rows, size_t New_Max_Cols>
+	__host__ __device__ Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_col(
+		const size_t col											// In: Index of row to fetch
 		) const
 	{
-		assert(col < this->n_cols);
+		assert(col < this->n_cols && New_Max_Cols == 1);
 
-		Dynamic_Matrix<T> result(n_rows, 1);
+		Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> result;
 		for (size_t i = 0; i < n_rows; i++)
-		{
-				result(i, 0) = this->operator()(i, col);
-		}
-		return result;
-	}
-
-	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <size_t Rows>
-	__host__ __device__ Static_Matrix<T, Rows, 1> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_col(
-		const size_t col											// In: Index of column to fetch
-		) const
-	{
-		assert(col < this->n_cols);
-
-		Static_Matrix<T, Rows, 1> result;
-		for (size_t i = 0; i < Rows; i++)
 		{
 			result(i, 0) = this->operator()(i, col);
 		}
@@ -394,7 +414,6 @@ namespace CML
 	//=========================================================================================================
 	// TYPEDEFS
 	//=========================================================================================================
-
 }
 
 	

@@ -282,11 +282,6 @@ int main(){
 
 		obstacle_manager->display_obstacle_information();
 
-		Obstacle_Data& ref = obstacle_manager->get_data();
-
-		std::cout << ref.obstacles[0].get_intention_probabilities().transpose() << std::endl;
-
-
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
 		if (fmod(t, 5) == 0)

@@ -18,8 +18,8 @@
 *
 *****************************************************************************************/
 
-#ifndef _CB_COST_FUNCTOR_H_
-#define _CB_COST_FUNCTOR_H_
+#ifndef _CB_COST_FUNCTOR_CUH_
+#define _CB_COST_FUNCTOR_CUH_
 
 #include "cb_cost_functor_structures.cuh"
 
@@ -32,6 +32,8 @@ private:
 	CB_Functor_Pars pars;
 
 	CB_Functor_Data *fdata;
+
+	Cuda_Obstacle *obstacles;
 
 	Ownship ownship;
 
@@ -51,25 +53,28 @@ private:
 		const double chi_m,
 		const int i);
 
-	__device__ void calculate_collision_probabilities(CML::MatrixXd &P_c_i, const int i);
+	__device__ void calculate_collision_probabilities(CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, const int i, CPE *cpe);
 
-	__device__ double calculate_dynamic_obstacle_cost(const CML::MatrixXd &P_c_i, const int i, const CML::MatrixXd &offset_sequence);
+	__device__ double calculate_dynamic_obstacle_cost(
+		const CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, 
+		const int i, 
+		const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence);
 
-/* 	__device__ inline double calculate_collision_cost(const CML::Vector2d &v_1, const CML::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); };
+	__device__ inline double calculate_collision_cost(const CML::Vector2d &v_1, const CML::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); };
 
 	__device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
-	__device__ double calculate_control_deviation_cost(const CML::MatrixXd &offset_sequence);
+	__device__ double calculate_control_deviation_cost(const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence);
 
 	__device__ inline double Delta_u(const double u_1, const double u_2) 		{ return pars.K_du * fabs(u_1 - u_2); }
 
 	__device__ inline double K_chi(const double chi) 							{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); };
 
 	__device__ inline double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
- */
+
 	//
-	__device__ double calculate_chattering_cost(const CML::MatrixXd &offset_sequence);
+	__device__ double calculate_chattering_cost(const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence);
 
 	// Methods dealing with geographical constraints
 	__device__ double calculate_grounding_cost();
@@ -87,19 +92,11 @@ private:
 	__device__ double distance_to_static_obstacle(const CML::Vector2d &p, const CML::Vector2d &v_1, const CML::Vector2d &v_2);
 
 public: 
-	__host__ CB_Cost_Functor() : fdata(nullptr) {}
+	__host__ CB_Cost_Functor() : fdata(nullptr), obstacles(nullptr) {}
 
-	__host__ CB_Cost_Functor(
-		const PSBMPC master, 
-		const double u_d, 
-		const double chi_d, 
-		const Eigen::Matrix<double, 2, -1> waypoints, 
-		const Eigen::Matrix<double, 4, -1> static_obstacles,
-		const Obstacle_Data data);
-
-	__host__ __device__ ~CB_Cost_Functor() { cudaFree(fdata); }
+	__host__ CB_Cost_Functor(PSBMPC_Parameters &pars, CB_Functor_Data *fdata, Cuda_Obstacle *obstacles);
 	
-	__device__ double operator()(const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> cb_tuple);
+	__device__ double operator()(const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1>> &cb_tuple);
 	
 };
 	

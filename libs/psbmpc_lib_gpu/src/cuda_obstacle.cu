@@ -47,17 +47,6 @@ __host__ Cuda_Obstacle::Cuda_Obstacle(
 }
 
 /****************************************************************************************
-*  Name     : ~Cuda_Obstacle
-*  Function : Destructor
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__host__ Cuda_Obstacle::~Cuda_Obstacle()
-{
-	clean();
-}
-
-/****************************************************************************************
 *  Name     : operator=
 *  Function : Overloaded for two derived obstacle types. NOTE: Should only be used
 *			  when the lhs is uninitialized. 
@@ -82,21 +71,6 @@ __host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 	assign_data(rhs);
 
 	return *this;
-}
-
-/****************************************************************************************
-*  Name     : clean
-*  Function : 
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__host__ void Cuda_Obstacle::clean()
-{
-	/* if (xs_p != nullptr)
-	{
-		cudaFree(xs_p); cudaCheckErrors("cudaFree in Cuda_Obstacle clean failed.");
-	} */
-	//if (sbmpc != nullptr) 		{ delete sbmpc; sbmpc = nullptr; }
 }
 
 /****************************************************************************************
@@ -142,15 +116,6 @@ __host__ void Cuda_Obstacle::assign_data(
 	//this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
 
 	this->xs_p = co.xs_p;
-
-	/* cudaMalloc((void**)&xs_p, n_ps * sizeof(CML::Pseudo_Dynamic_Matrix<double, 400, 1000>));
-	cudaCheckErrors("Malloc trajectory inside cuda-to-cuda obstacle assign data failed.");
-
-	for (int ps = 0; ps < n_ps; ps++)
-	{
-		cudaMemcpy(&xs_p[ps], &co.xs_p[ps], 1, cudaMemcpyHostToDevice);
-		cudaCheckErrors("Memcpy of trajectory inside cuda-to-cuda obstacle assign data failed.");
-	} */
 }
 
 __host__ void Cuda_Obstacle::assign_data(
@@ -196,7 +161,7 @@ __host__ void Cuda_Obstacle::assign_data(
 
 		xs_p.set_block(4 * ps, 0, xs_p_ps.get_rows(), xs_p_ps.get_cols(), xs_p_ps);
 
-		std::cout << xs_p << std::endl;
+		//std::cout << xs_p << std::endl;
 
 	}
 }
