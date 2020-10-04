@@ -930,9 +930,9 @@ int main()
 
 	std::cout << bigone.get_block<5, 2>(0, 0, 5, 2) << std::endl;
 
-	std::cout << bigone.get_row<1, 20>(2) << std::endl;
+	std::cout << bigone.get_row(2) << std::endl;
 
-	std::cout << bigone.get_col<8, 1>(2) << std::endl;
+	std::cout << bigone.get_col(2) << std::endl;
 
 	bigone.set_block(0, 0, 3, 3, CML::Matrix3d::identity());
 
