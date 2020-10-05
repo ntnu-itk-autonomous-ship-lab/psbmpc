@@ -22,6 +22,7 @@
 #ifndef _CUDA_OBSTACLE_CUH_
 #define _CUDA_OBSTACLE_CUH_
 
+#include "utilities.cuh"
 #include "psbmpc_defines.h"
 #include <thrust/device_vector.h>
 #include "cml.cuh"
@@ -82,8 +83,6 @@ private:
 	
 public:
 
-	//Obstacle_SBMPC *sbmpc;
-
 	__host__ Cuda_Obstacle() {};
 
 	__host__ Cuda_Obstacle(const Cuda_Obstacle &co);
@@ -106,6 +105,8 @@ public:
 
 	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 16, MAX_N_SAMPLES> get_trajectory_covariance() const { return P_p; }
 
+	__device__ inline CML::MatrixXd get_trajectory_covariance_sample(const int k) { return xs_p.get_col(k); }
+
 	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 4 * MAX_N_PS, MAX_N_SAMPLES> get_trajectories() const { return xs_p; }
 
 	__device__ inline CML::Pseudo_Dynamic_Matrix<double, 4, MAX_N_SAMPLES> get_ps_trajectory(const int ps) const
@@ -115,6 +116,8 @@ public:
 
 	template <size_t Rows, size_t Cols>
 	__device__ inline CML::Static_Matrix<double, Rows, Cols> get_ps_trajectory(const int ps) const { return xs_p.get_block<Rows, Cols>(4 * ps, 0); }
+
+	__device__ inline CML::Vector4d get_trajectory_sample(const int ps, const int k) { return xs_p.get_block<4, 1>(4 * ps, k, 4, 1); }
 
 	__device__ inline CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, 1> get_ps_weights() const { return ps_weights; }
 };

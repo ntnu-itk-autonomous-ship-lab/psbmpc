@@ -53,19 +53,26 @@ private:
 		const double chi_m,
 		const int i);
 
-	__device__ void calculate_collision_probabilities(CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, const int i, CPE *cpe);
+	__device__ inline void calculate_collision_probabilities(CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, const int i, CPE *cpe);
 
-	__device__ double calculate_dynamic_obstacle_cost(
+	__device__ inline double calculate_dynamic_obstacle_cost(
 		const CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, 
 		const int i, 
 		const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence);
 
+	__device__ inline double calculate_dynamic_obstacle_cost(
+		const double P_c_i_ps,
+		const CML::Vector6d xs_p,
+		const CML::Vector4d xs_i_p_ps,
+		const int i,
+		const double chi_m);
+
 	__device__ inline double calculate_collision_cost(const CML::Vector2d &v_1, const CML::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); };
 
-	__device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
+	__device__ inline double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
-	__device__ double calculate_control_deviation_cost(const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence);
+	__device__ inline double calculate_control_deviation_cost(const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence);
 
 	__device__ inline double Delta_u(const double u_1, const double u_2) 		{ return pars.K_du * fabs(u_1 - u_2); }
 

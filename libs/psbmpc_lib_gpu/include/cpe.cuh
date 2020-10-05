@@ -7,7 +7,9 @@
 *			   obstacles. The module assumes that the own-ship uncertainty is negligible
 *  			   compared to that of the obstacles. If this is not the case, then a
 *			   linear transformationcan be used to "gather" both vessel's 
-*			   uncertainty in one RV
+*			   uncertainty in one RV.
+* 			   NOTE: This version only considers 1 obstacle at the time, tailor-made for
+* 			   running in a CUDA thread/kernel.
 *            ---------------------
 *
 *  Version 1.0
@@ -39,6 +41,7 @@ enum CPE_Method
 // Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
 #include "psbmpc_parameters.h"
 
+
 class CPE
 {
 private:
@@ -46,11 +49,10 @@ private:
 	// Active CPE method
 	CPE_Method method;
 
-	// Number of obstacles to consider in estimation
-	int n_obst;
-
-	// Number of samples drawn
+	// Number of samples for each method
 	int n_CE, n_MCSKF;
+
+	int n_obst;
 
 	// PRNG-related
 	curandState prng_state;
@@ -80,8 +82,6 @@ private:
 
 	// Cholesky decomposition matrix
 	CML::MatrixXd L;
-
-	__host__ __device__ void assign_data(const CPE &cpe);
 
 	__host__ __device__ void resize_matrices();
 
@@ -125,24 +125,17 @@ private:
 
 public:
 	
-	__host__ __device__ CPE() : mu_CE_last(nullptr), P_CE_last(nullptr) {}
+	__host__ __device__ CPE() {}
 
 	__host__ __device__ CPE(const CPE_Method cpe_method, const int n_obst, const double dt);
 
-	__host__ __device__ CPE(const CPE &cpe);
-
 	__host__ __device__ ~CPE();
-
-	__host__ __device__ CPE& operator=(const CPE &cpe);
 
 	__host__ __device__ void clean();
 
-	__host__ __device__ inline void set_method(const CPE_Method cpe_method) 
-	{ if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }}
+	__device__ inline double get_segment_discretization_time() const { return dt_seg; }
 
 	__host__ __device__ void set_number_of_obstacles(const int n_obst);
-
-	__device__ inline double get_segment_discretization_time() const { return dt_seg; }
 
 	__device__ inline void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
 

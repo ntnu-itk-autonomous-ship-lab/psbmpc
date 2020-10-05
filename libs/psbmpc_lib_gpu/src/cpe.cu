@@ -85,19 +85,6 @@ __host__ __device__ CPE::CPE(
 }
 
 /****************************************************************************************
-*  Name     : CPE
-*  Function : Copy constructor, prevents shallow copies and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__host__ __device__ CPE::CPE(
-    const CPE &cpe                                                   // In: CPE object to copy
-    ) : mu_CE_last(nullptr), P_CE_last(nullptr)
-{
-    assign_data(cpe);
-}
-
-/****************************************************************************************
 *  Name     : CPE~
 *  Function : Class destructor
 *  Author   : 
@@ -106,27 +93,6 @@ __host__ __device__ CPE::CPE(
 __host__ __device__ CPE::~CPE()
 {
     clean();
-}
-
-/****************************************************************************************
-*  Name     : operator=
-*  Function : Assignment operator to prevent shallow assignments and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__host__ __device__ CPE& CPE::operator=(
-    const CPE &cpe                                              // In: Rhs CPE object to assign
-    )
-{
-    if (this == &cpe)
-    {
-        return *this;
-    }
-    clean();
-
-    assign_data(cpe);
-    
-    return *this;
 }
 
 /****************************************************************************************
@@ -310,59 +276,6 @@ __device__ void CPE::estimate_over_trajectories(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
-/****************************************************************************************
-*  Name     : assign_data
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-__host__ __device__ void CPE::assign_data(
-    const CPE &cpe                                                   // In: CPE object whose data to assign to *this
-)
-{
-    this->method = cpe.method;
-
-    this->n_obst = cpe.n_obst;
-
-    this->n_CE = cpe.n_CE; this->n_MCSKF = cpe.n_MCSKF;
-
-    this->prng_state = cpe.prng_state;
-
-    this->sigma_inject = cpe.sigma_inject;
-    this->alpha_n = cpe.alpha_n;
-    this->gate = cpe.gate;
-    this->rho = cpe.rho;
-    this->max_it = cpe.max_it;
-
-    this->converged_last = cpe.converged_last;
-
-    if (n_obst > 0)
-    {
-        mu_CE_last = new CML::MatrixXd[n_obst];
-        P_CE_last = new CML::MatrixXd[n_obst];
-        for (int i = 0; i < n_obst; i++)
-        {
-            mu_CE_last[i] = cpe.mu_CE_last[i];
-            P_CE_last[i] = cpe.P_CE_last[i];
-        }
-    }
-    
-    // Not necessary to transfer internal temporary data but
-    this->N_e = cpe.N_e; this->e_count = cpe.e_count;
-    this->elite_samples = cpe.elite_samples;
-
-    this->samples = cpe.samples; this->valid = cpe.valid;
-
-    this->L = cpe.L;
-
-    this->q = cpe.q; this->r = cpe.r; this->dt_seg = cpe.dt_seg;
-
-    this->P_c_p = cpe.P_c_p; this->var_P_c_p = cpe.var_P_c_p;
-    this->P_c_upd = cpe.P_c_upd; this->var_P_c_upd = cpe.var_P_c_upd;
-
-    this->d_safe = cpe.d_safe;
-}
-
 /****************************************************************************************
 *  Name     : resize_matrices
 *  Function : 
