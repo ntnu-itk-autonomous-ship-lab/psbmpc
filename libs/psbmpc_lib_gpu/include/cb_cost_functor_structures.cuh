@@ -108,6 +108,8 @@ class CB_Functor_Data
 {
 public:
 
+	CML::Vector6d ownship_state;
+
 	CML::Pseudo_Dynamic_Matrix<double, 6, MAX_N_SAMPLES> trajectory;
 
 	CML::Pseudo_Dynamic_Matrix<double, MAX_N_M, 1> maneuver_times;
@@ -147,6 +149,8 @@ public:
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		const Obstacle_Data &odata)
 	{
+		CML::assign_eigen_object(ownship_state, master.trajectory.col(0));
+		
 		CML::assign_eigen_object(trajectory, master.trajectory);
 
 		CML::assign_eigen_object(maneuver_times, master.maneuver_times);

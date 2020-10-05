@@ -54,6 +54,87 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::operator()(
+	const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1>> &cb_tuple		// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
+	)
+{
+	double cost = 0;
+
+	unsigned int cb_index = thrust::get<0>(cb_tuple);
+	CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> offset_sequence = thrust::get<1>(cb_tuple);
+
+	int n_samples = round(pars.T / pars.dt);
+
+	double P_c_i_ps(0.0), d_safe_i(0.0);
+	CML::Pseudo_Dynamic_Matrix<double, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1);
+
+	// Allocate predicted ownship state and predicted obstacle state and
+	// covariance for their prediction scenarios (ps)
+	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
+	CML::MatrixXd xs_p = fdata->ownship_state, xs_p_prev = xs_p;
+	CML::Vector4d xs_i_p_ps, xs_i_p_ps_prev;
+	CML::Matrix4d P_i_p_ps, P_i_p_ps_prev;
+
+	// Initialize the predicted ownship waypoint counter to the correct one
+	ownship.initialize_wp_following();
+
+	// Set up collision probability estimator, and sample variables in case cpe_method = MCSKF4D
+	CPE* cpe = new CPE(pars.cpe_method, fdata->n_obst, pars.dt);
+	cpe->seed_prng(cb_index);
+	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / pars.dt) + 1, k_j_(0), k_j(0);
+
+	for (int k = 0; k < n_samples; k++)
+	{
+		for (int i = 0; i < fdata->n_obst; i++)
+		{	
+			if (pars.obstacle_colav_on) { predict_trajectories_jointly(); }
+			
+			// The covariance prediction for obstacle i is the same in all prediction scenarios
+			P_i_p_ps = obstacles[i].get_trajectory_covariance_sample(k);
+
+			for (int ps = 0; ps < fdata->n_ps[i]; ps++)
+			{	
+				// Extract obstacle state in prediction scenario ps
+				xs_i_p_ps = obstacles[i].get_trajectory_sample(ps, k);
+
+				d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
+				// Initialize Pcoll estimation
+				if (k == 0)
+				{
+					cpe->initialize(xs_p, xs_i_p_ps, P_i_p_ps, d_safe_i, i);
+				}
+				
+				// Estimate collision probability between own-ship and obstacle i in prediction scenario ps
+				P_c_i_ps = cpe->estimate(xs_p, xs_i_p_ps, P_i_p_ps, i);
+			}
+
+
+			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i_ps, i, offset_sequence);
+		}
+
+
+		//========================================
+		// Predict the own-ship state
+
+		xs_p = ownship.predict(xs_p, pars.dt, pars.prediction_method);
+
+
+		//========================================
+	}
+	
+	
+
+	cost += cost_i.max_coeff();
+
+	cost += calculate_grounding_cost();
+
+	cost += calculate_control_deviation_cost(offset_sequence);
+
+	cost += calculate_chattering_cost(offset_sequence); 
+	
+	return cost;
+}
+
+/* __device__ double CB_Cost_Functor::operator()(
 	const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> &cb_tuple		// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
@@ -90,7 +171,7 @@ __device__ double CB_Cost_Functor::operator()(
 
 	printf("here3 \n");
 	
-	/* for (int i = 0; i < fdata.n_obst; i++)
+	 for (int i = 0; i < fdata.n_obst; i++)
 	{
 		if (pars.obstacle_colav_on) { predict_trajectories_jointly(); }
 
@@ -106,12 +187,12 @@ __device__ double CB_Cost_Functor::operator()(
 
 	cost += calculate_control_deviation_cost(offset_sequence);
 
-	cost += calculate_chattering_cost(offset_sequence); */
+	cost += calculate_chattering_cost(offset_sequence); 
 	
 	
 
 	return cost;
-}
+} */
 
  
 //=======================================================================================
@@ -236,7 +317,7 @@ __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 // Author   : Trym Tengesdal
 // Modified :
 //=======================================================================================
-__device__ void CB_Cost_Functor::calculate_collision_probabilities(
+__device__ inline void CB_Cost_Functor::calculate_collision_probabilities(
 	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i,		// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const int i, 															// In: Index of obstacle
 	//Ownship *ownship,														// In: Ownship object
@@ -262,11 +343,13 @@ __device__ void CB_Cost_Functor::calculate_collision_probabilities(
 
 //=======================================================================================
 //  Name     : calculate_dynamic_obstacle_cost
-//  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i
+//  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i.
+//			   Two overloads: One considering whole trajectories, and one considering
+//			   a certain time instant for the ownship and obstacle i in pred. scen. ps.
 //  Author   : Trym Tengesdal
 //  Modified :
 //=======================================================================================
-__device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
+__device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	const CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i,	// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
 	const int i, 																// In: Index of obstacle
 	const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence 	// In: Control behaviour currently followed
@@ -282,7 +365,6 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 
 	double Pr_CC_i = obstacles[i].get_a_priori_CC_probability();
 	CML::Pseudo_Dynamic_Matrix<double, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_i_p = obstacles[i].get_trajectories();
-	CML::Pseudo_Dynamic_Matrix<double, 16, MAX_N_SAMPLES> P_i_p = obstacles[i].get_trajectory_covariance();
 	CML::Pseudo_Dynamic_Matrix<bool, MAX_N_PS, 1> mu_i = obstacles[i].get_COLREGS_violation_indicator();
 	
 	CML::Vector2d v_0_p, v_i_p, L_0i_p;
@@ -398,6 +480,63 @@ __device__ double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 
 	// Weight by the intention probabilities
 	cost = Pr_a.dot(cost_a);
+
+	return cost;
+}
+
+__device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
+	const double P_c_i_ps,														// In: Predicted obstacle collision probabilities for obstacle in prediction scenario ps
+	const CML::Vector6d xs_p, 													// In: Predicted own-ship state at time step k
+	const CML::Vector4d xs_i_p_ps, 												// In: Predicted obstacle state at time step k in prediction scenario ps
+	const int i, 																// In: Index of obstacle
+	const double chi_m														 	// In: Course offset used by the own-ship at time step k
+	//Ownship *ownship 															// In: Ownship object
+	)
+{
+	// l_i is the collision cost modifier depending on the obstacle track loss.
+	double cost(0.0), C(0.0), l_i(0.0);
+	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, 1> max_cost_ps(fdata->n_ps[i], 1); max_cost_ps.set_zero();
+
+	double Pr_CC_i = obstacles[i].get_a_priori_CC_probability();
+	
+	CML::Vector2d v_0_p, v_i_p, L_0i_p;
+	double psi_0_p, psi_i_p, d_0i_p, chi_m;
+	bool mu, trans;
+
+	psi_0_p = xs_p(2); 
+	v_0_p(0) = xs_p(3); 
+	v_0_p(1) = xs_p(4); 
+	v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
+
+	L_0i_p = xs_i_p_ps.get_block<2, 1>(0, 0) - xs_p.get_block<2, 1>(0, 0);
+	d_0i_p = L_0i_p.norm();
+
+	// Decrease the distance between the vessels by their respective max dimension
+	d_0i_p = d_0i_p - 0.5 * (ownship.get_length() + obstacles[i].get_length()); 
+	
+	L_0i_p = L_0i_p.normalized();
+
+	v_i_p(0) = xs_i_p_ps(2);
+	v_i_p(1) = xs_i_p_ps(3);
+	psi_i_p = atan2(v_i_p(1), v_i_p(0));
+
+	C = calculate_collision_cost(v_0_p, v_i_p);
+
+	mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+
+	trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, i, chi_m);
+
+	// Track loss modifier to collision cost
+	if (obstacles[i].get_duration_lost() > pars.p_step)
+	{
+		l_i = pars.dt * pars.p_step / obstacles[i].get_duration_lost();
+	} 
+	else
+	{
+		l_i = 1;
+	}
+
+	cost = l_i * C * P_c_i_ps + pars.kappa * mu  + 0 * pars.kappa_TC * trans;
 
 	return cost;
 }

@@ -139,6 +139,8 @@ public:
 	
 	__host__ void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
+	__host__ __device__ inline void initialize_wp_following() { wp_c_p = wp_c_0; }
+
 	__host__ __device__ CML::Vector6d predict(
 		const CML::Vector6d &xs_old, 
 		const double dt, 

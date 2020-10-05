@@ -402,7 +402,7 @@ __host__ __device__ void Ownship::predict_trajectory(
 
 	int n_samples = T / dt;
 
-	wp_c_p = wp_c_0;
+	initialize_wp_following();
 
 	int man_count = 0;
 	double u_m = 1, u_d_p = u_d;
