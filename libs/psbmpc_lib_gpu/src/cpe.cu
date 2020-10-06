@@ -44,10 +44,9 @@
 *****************************************************************************************/
 __host__ __device__ CPE::CPE(
     const CPE_Method cpe_method,                                    // In: Method to be used
-    const int n_obst,                                               // In: Number of obstacles
     const double dt                                                 // In: Time step of calling function simulation environment
     ) :
-    method(cpe_method), n_obst(n_obst), mu_CE_last(nullptr), P_CE_last(nullptr)
+    method(cpe_method)
 {
     // CE pars
 
@@ -81,63 +80,7 @@ __host__ __device__ CPE::CPE(
 
     dt_seg = dt;
 
-    set_number_of_obstacles(n_obst);
-}
-
-/****************************************************************************************
-*  Name     : CPE~
-*  Function : Class destructor
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-__host__ __device__ CPE::~CPE()
-{
-    clean();
-}
-
-/****************************************************************************************
-*  Name     : clean
-*  Function : 
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__host__ __device__ void CPE::clean()
-{
-    if (mu_CE_last != nullptr)
-    {
-        delete[] mu_CE_last; mu_CE_last = nullptr;
-    }
-    if (P_CE_last != nullptr)
-    {
-        delete[] P_CE_last;  P_CE_last = nullptr;  
-    }
-}
-
-/****************************************************************************************
-*  Name     : set_number_of_obstacles
-*  Function : Set number of obstacles to estimate, update data structures accordingly.
-*             This function is always called prior to estimation, so delete is in order.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__host__ __device__ void CPE::set_number_of_obstacles(
-    const int n_obst                                            // In: Number of obstacles
-    ) 
-{ 
-    this->n_obst = n_obst; 
-
-    clean();
-
-    if (n_obst > 0)
-    {
-        mu_CE_last = new CML::MatrixXd[n_obst];
-        P_CE_last = new CML::MatrixXd[n_obst];
-        
-        P_c_p.resize(n_obst, 1); P_c_upd.resize(n_obst, 1);
-        var_P_c_p.resize(n_obst, 1); var_P_c_upd.resize(n_obst, 1);
-
-        resize_matrices();
-    }
+    resize_matrices();
 }
 
 /****************************************************************************************
@@ -151,8 +94,7 @@ __device__ void CPE::initialize(
     const CML::MatrixXd &xs_os,                                                     // In: Own-ship state vector
     const CML::MatrixXd &xs_i,                                                      // In: Obstacle i state vector
     const CML::MatrixXd &P_i,                                                       // In: Obstacle i covariance flattened into n^2 x 1
-    const double d_safe_i,                                                          // In: Safety zone around own-ship when facing obstacle i
-    const int i                                                                     // In: Index of obstacle i
+    const double d_safe_i                                                           // In: Safety zone around own-ship when facing obstacle i
     )
 {
     assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 4 && P_i.get_rows() == P_i.get_cols());
@@ -165,15 +107,15 @@ __device__ void CPE::initialize(
     case CE:
         converged_last = false;
         // Heuristic initialization
-        mu_CE_last[i] = 0.5 * (xs_os.get_block(0, 0, 2, 1) + xs_i.get_block(0, 0, 2, 1)); 
+        mu_CE_last = 0.5 * (xs_os.get_block(0, 0, 2, 1) + xs_i.get_block(0, 0, 2, 1)); 
         
-        P_CE_last[i] = pow(d_safe, 2) * CML::MatrixXd::identity(2, 2) / 3.0;
+        P_CE_last = pow(d_safe, 2) * CML::Matrix2d::identity() / 3.0;
         
         break;
     case MCSKF4D :
-        P_c_p(i) = 0; P_c_upd(i) = 0;
+        P_c_p = 0; P_c_upd = 0;
         // Ad hoc variance for the probability
-        var_P_c_p(i) = 0.3; var_P_c_upd(i) = 0; 
+        var_P_c_p = 0.3; var_P_c_upd = 0; 
         break;
     default:
         // Throw
@@ -190,8 +132,7 @@ __device__ void CPE::initialize(
 __device__ double CPE::estimate(
 	const CML::MatrixXd &xs_os,                       // In: Own-ship state vector(s)
     const CML::MatrixXd &xs_i,                        // In: Obstacle i state vector(s)
-    const CML::MatrixXd &P_i,                         // In: Obstacle i covariance(s), flattened into n² x n_cols
-    const int i                                         // In: Index of obstacle i
+    const CML::MatrixXd &P_i                          // In: Obstacle i covariance(s), flattened into n² x n_cols
     )
 {
     assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16);
@@ -205,10 +146,10 @@ __device__ double CPE::estimate(
             // If CE is used, (typically when n_cols = 1)
             // The last column gives the current prediction time information
             P_i_2D = reshape(P_i, 4, 4).get_block(0, n_cols - 1, 2, 2);
-            P_c = CE_estimation(xs_os.get_block(0, n_cols - 1, 2, 1), xs_i.get_block(0, n_cols - 1, 2, 1), P_i_2D, i);
+            P_c = CE_estimation(xs_os.get_block(0, n_cols - 1, 2, 1), xs_i.get_block(0, n_cols - 1, 2, 1), P_i_2D);
             break;
         case MCSKF4D :
-            P_c = MCSKF4D_estimation(xs_os, xs_i, P_i, i);
+            P_c = MCSKF4D_estimation(xs_os, xs_i, P_i);
             break;
         default :
             P_c = -1;
@@ -232,7 +173,6 @@ __device__ void CPE::estimate_over_trajectories(
 		const CML::MatrixXd &xs_i_p,                        // In: Obstacle i predicted trajectory
 		const CML::MatrixXd &P_i_p,                         // In: Obstacle i associated predicted covariances
         const double d_safe_i,                              // In: Safety zone around own-ship when facing obstacle i,
-		const int i,                                        // In: Index of obstacle
         const double dt                                     // In: Prediction time step
     )
 {
@@ -243,14 +183,14 @@ __device__ void CPE::estimate_over_trajectories(
     int n_seg_samples = std::round(dt_seg / dt) + 1, k_j_(0), k_j(0);
 	CML::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
 
-    initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i, i);
+    initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i);
 
     for (int k = 0; k < n_samples; k++)
     {
         switch(method)
         {
             case CE :	
-                P_c_i(0, k) = estimate(xs_p.get_col(k), xs_i_p.get_col(k), P_i_p.get_col(k), i);
+                P_c_i(0, k) = estimate(xs_p.get_col(k), xs_i_p.get_col(k), P_i_p.get_col(k));
                 break;
             case MCSKF4D :                
                 if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
@@ -261,7 +201,7 @@ __device__ void CPE::estimate_over_trajectories(
 
                     P_i_seg = P_i_p.get_block(0, k_j_, 16, n_seg_samples);
 
-                    P_c_i(0, k_j_) = estimate(xs_os_seg, xs_i_seg, P_i_seg, i);
+                    P_c_i(0, k_j_) = estimate(xs_os_seg, xs_i_seg, P_i_seg);
                     // Collision probability on this active segment are all equal
                     P_c_i.set_block(0, k_j_, 1, n_seg_samples, P_c_i(0, k_j_) * CML::MatrixXd::ones(1, k_j - k_j_ + 1));
                 }	
@@ -287,11 +227,6 @@ __host__ __device__ void CPE::resize_matrices()
     switch (method)
     {
         case CE :
-            for (int i = 0; i < n_obst; i++)
-            {
-                mu_CE_last[i].resize(2, 1);
-                P_CE_last[i].resize(2, 2);
-            }
             samples.resize(2, n_CE);
             elite_samples.resize(2, n_CE);
             valid.resize(1, n_CE);
@@ -545,8 +480,7 @@ __device__ void CPE::determine_sample_validity_4D(
 __device__ double CPE::MCSKF4D_estimation(
 	const CML::MatrixXd &xs_os,                                               // In: Own-ship states for the active segment
     const CML::MatrixXd &xs_i,                                                // In: Obstacle i states for the active segment
-    const CML::MatrixXd &P_i,                                                 // In: Obstacle i covariance for the active segment
-    const int i                                                                 // In: Index of obstacle i
+    const CML::MatrixXd &P_i                                                  // In: Obstacle i covariance for the active segment
     )
 {
     assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16);
@@ -622,24 +556,24 @@ __device__ double CPE::MCSKF4D_estimation(
     * Update using measurement y_P_c
     *****************************************************/
     double K;
-    K = var_P_c_p(i) / (var_P_c_p(i) + r);
+    K = var_P_c_p / (var_P_c_p + r);
 
-    P_c_upd(i) = P_c_p(i) + K * (y_P_c_i - P_c_p(i));
+    P_c_upd = P_c_p + K * (y_P_c_i - P_c_p);
 
-    if (P_c_upd(i) > 1) P_c_upd(i) = 1;
+    if (P_c_upd > 1) P_c_upd = 1;
 
-    var_P_c_upd(i) = (1 - K) * var_P_c_p(i);
+    var_P_c_upd = (1 - K) * var_P_c_p;
 
     /*****************************************************
     * Predict
     *****************************************************/
-    P_c_p(i) = P_c_upd(i);
-    if (P_c_p(i) > 1) P_c_p(i) = 1;
+    P_c_p = P_c_upd;
+    if (P_c_p > 1) P_c_p = 1;
 
-    var_P_c_p(i) = var_P_c_upd(i) + q;
+    var_P_c_p = var_P_c_upd + q;
     //*****************************************************
     
-    return P_c_upd(i);
+    return P_c_upd;
 }
 
 /****************************************************************************************
@@ -711,8 +645,7 @@ __device__ void CPE::determine_best_performing_samples(
 __device__ double CPE::CE_estimation(
 	const CML::MatrixXd &p_os,                                                // In: Own-ship position vector
     const CML::MatrixXd &p_i,                                                 // In: Obstacle i position vector
-    const CML::MatrixXd &P_i,                                                 // In: Obstacle i positional covariance
-    const int i                                                               // In: Index of obstacle i
+    const CML::MatrixXd &P_i                                                  // In: Obstacle i positional covariance
     )
 {
     assert(p_os.get_rows() == 2 && p_os.get_cols() == 1 && p_i.get_rows() == 2 && p_i.get_cols() == 1 &&
@@ -744,15 +677,15 @@ __device__ double CPE::CE_estimation(
     sigma_inject = d_safe / 3;
     if (converged_last)
     {
-        mu_CE_prev = mu_CE_last[i]; mu_CE = mu_CE_last[i];
+        mu_CE_prev = mu_CE_last; mu_CE = mu_CE_last;
 
-        P_CE_prev = P_CE_last[i]; 
-        P_CE = P_CE_last[i] + pow(sigma_inject, 2) * CML::MatrixXd::identity(2, 2);
+        P_CE_prev = P_CE_last; 
+        P_CE = P_CE_last + pow(sigma_inject, 2) * CML::Matrix2d::identity();
     }
     else
     {
         mu_CE_prev = 0.5 * (p_i + p_os); mu_CE = mu_CE_prev;
-        P_CE_prev = pow(d_safe, 2) * CML::MatrixXd::identity(2, 2) / 3;
+        P_CE_prev = pow(d_safe, 2) * CML::Matrix2d::identity() / 3;
         P_CE = P_CE_prev;
     }
 
@@ -805,7 +738,7 @@ __device__ double CPE::CE_estimation(
             P_CE =  alpha_n * P_CE  + (1 - alpha_n) * P_CE_prev;
         }
     }
-    mu_CE_last[i] = mu_CE; P_CE_last[i] = P_CE;
+    mu_CE_last = mu_CE; P_CE_last = P_CE;
 
     /******************************************************************************
     * Estimate collision probability with samples from the final importance

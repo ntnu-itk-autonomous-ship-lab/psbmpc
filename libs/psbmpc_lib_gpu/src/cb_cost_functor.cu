@@ -60,7 +60,7 @@ __device__ double CB_Cost_Functor::operator()(
 	double cost = 0;
 
 	//======================================================================================================================
-	// 1 : Setup
+	// 1.0 : Setup
 	unsigned int cb_index = thrust::get<0>(cb_tuple);
 	CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> offset_sequence = thrust::get<1>(cb_tuple);
 
@@ -83,62 +83,76 @@ __device__ double CB_Cost_Functor::operator()(
 	CPE* cpe = new CPE(pars.cpe_method, fdata->n_obst, pars.dt);
 	cpe->seed_prng(cb_index);
 
-	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / pars.dt) + 1, k_j_(0), k_j(0);
+	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
+	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / pars.dt) + 1;
 	
-	// Allocate predicted ownship state and predicted obstacle state and
-	// covariance for their prediction scenarios (ps)
+	// Allocate predicted ownship state and predicted obstacle state and covariance for their prediction scenarios (ps)
 	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
-	CML::MatrixXd xs_p(6, n_seg_samples); xs_p.set_col(0, fdata->ownship_state);
+	// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
+	CML::MatrixXd xs_p(6, n_seg_samples); 
 	CML::MatrixXd xs_i_p_ps(4, n_seg_samples);
 	CML::MatrixXd P_i_p_ps(16, n_seg_samples);
+
+	//======================================================================================================================
+	// 1.1: Predict own-ship trajectory with the current control behaviour
+	ownship.predict_trajectory(
+		fdata->trajectory, 
+		offset_sequence, 
+		fdata->maneuver_times, 
+		fdata->u_d, fdata->chi_d, 
+		fdata->waypoints, 
+		pars.prediction_method, 
+		pars.guidance_method, 
+		pars.T, pars.dt);
+
 	//======================================================================================================================
 	// 2 : Cost calculation
 
-	for (int k = 0; k < n_samples; k++)
+	for (int i = 0; i < fdata->n_obst; i++)
 	{	
-		// Determine active course modification at sample k
-		for (int M = 0; M < pars.n_M; M++)
-		{
-			if (M < pars.n_M - 1)
-			{
-				if (k >= fdata->maneuver_times[M] && k < fdata->maneuver_times[M + 1])
-				{
-					chi_m = offset_sequence[2 * M + 1];
-				}
-			}
-			else
-			{
-				if (k >= fdata->maneuver_times[M])
-				{
-					chi_m = offset_sequence[2 * M + 1];
-				}
-			}
-		}
+		d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
 
-		for (int i = 0; i < fdata->n_obst; i++)
+		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 		{	
-			if (pars.obstacle_colav_on) { predict_trajectories_jointly(); }
-			
-			P_i_p_ps.shift_columns_right();
-			// The covariance prediction for obstacle i is the same in all prediction scenarios
-			P_i_p_ps.set_col(0, obstacles[i].get_trajectory_covariance_sample(k));
-
-			for (int ps = 0; ps < fdata->n_ps[i]; ps++)
+			for (int k = 0; k < n_samples; k++)
 			{	
+				if (k == 0)
+				{
+					cpe->initialize(xs_p, xs_i_p_ps, P_i_p_ps, d_safe_i, i);
+					xs_p.set_col(0, fdata->trajectory.get_col(k));
+				}
+
+				P_i_p_ps.shift_columns_right();
+				// The covariance prediction for obstacle i is the same in all prediction scenarios
+				P_i_p_ps.set_col(0, obstacles[i].get_trajectory_covariance_sample(k));
+
 				xs_i_p_ps.shift_columns_right();
 				// Extract obstacle state in prediction scenario ps
-				xs_i_p_ps = obstacles[i].get_trajectory_sample(ps, k);
+				xs_i_p_ps.set_col(0, obstacles[i].get_trajectory_sample(ps, k));
 
+					// Determine active course modification at sample k
+					for (int M = 0; M < pars.n_M; M++)
+					{
+						if (M < pars.n_M - 1)
+						{
+							if (k >= fdata->maneuver_times[M] && k < fdata->maneuver_times[M + 1])
+							{
+								chi_m = offset_sequence[2 * M + 1];
+							}
+						}
+						else
+						{
+							if (k >= fdata->maneuver_times[M])
+							{
+								chi_m = offset_sequence[2 * M + 1];
+							}
+						}
+					}
+
+		
 				//==========================================================================================
 				// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
 
-				d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
-				
-				if (k == 0) // Initialize Pcoll estimation
-				{
-					cpe->initialize(xs_p, xs_i_p_ps, P_i_p_ps, d_safe_i, i);
-				}
-				
 				switch(pars.cpe_method)
 				{
 					case CE :	
@@ -147,9 +161,6 @@ __device__ double CB_Cost_Functor::operator()(
 					case MCSKF4D :                
 						if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 						{
-							// Collision probability the active segment [k_j_, k_j] are all equal
-							k_j_ = k_j; k_j = k;
-
 							P_c_i_ps(ps) = cpe->estimate(xs_p, xs_i_p_ps, P_i_p_ps, i);							
 						}	
 						break;
@@ -160,7 +171,7 @@ __device__ double CB_Cost_Functor::operator()(
 
 				//==========================================================================================
 				// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
-				cost_i_ps(i) = calculate_dynamic_obstacle_cost(P_c_i_ps(ps), xs_p, xs_i_p_ps,  i, chi_m);
+				cost_i_ps(i) = calculate_dynamic_obstacle_cost(P_c_i_ps(ps), xs_p.get_col(0), xs_i_p_ps.get_col(0),  i, chi_m);
 
 				if (max_cost_i_ps(i) < cost_i_ps(i))
 				{
@@ -231,9 +242,8 @@ __device__ double CB_Cost_Functor::operator()(
 
 		//========================================
 		// Predict the own-ship state
-
-		xs_p = ownship.predict(xs_p, pars.dt, pars.prediction_method);
-
+		xs_p.shift_columns_right();
+		xs_p.set_col(0, ownship.predict(xs_p, pars.dt, pars.prediction_method));
 
 		//========================================
 	}

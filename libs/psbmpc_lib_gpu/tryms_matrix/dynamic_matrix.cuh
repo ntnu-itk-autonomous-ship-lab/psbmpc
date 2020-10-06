@@ -595,13 +595,17 @@ namespace CML
 
 	/****************************************************************************************
 	*  Name     : shift_columns_right
-	*  Function : 
+	*  Function : Has no effect for n_cols = 1.
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
 	template <class T>
 	__host__ __device__ void Dynamic_Matrix<T>::shift_columns_right()
 	{
+		if (this->n_cols == 1)
+		{
+			return;
+		}
 		for (int j = this->n_cols - 2; j > -1; j--)
 		{
 			for (size_t i = 0; i < this->n_rows; i++)

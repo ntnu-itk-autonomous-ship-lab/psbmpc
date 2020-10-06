@@ -95,10 +95,14 @@ namespace CML
 			const size_t n_cols, 
 			const Dynamic_Matrix<T> &block);
 
+		__host__ __device__ void set_row(const size_t row, const Pseudo_Dynamic_Matrix<T, 1, Max_Cols> &vector);
+
 		__host__ __device__ void set_row(const size_t row, const Dynamic_Matrix<T> &vector);
 
 		template <size_t Cols>
 		__host__ __device__ void set_row(const size_t row, const Static_Matrix<T, 1, Cols> &vector);
+
+		__host__ __device__ void set_col(const size_t col, const Pseudo_Dynamic_Matrix<T, Max_Rows, 1> &vector);
 
 		__host__ __device__ void set_col(const size_t col, const Dynamic_Matrix<T> &vector);
 
@@ -212,6 +216,19 @@ namespace CML
 	template <class T, size_t Max_Rows, size_t Max_Cols>
 	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_row(
 		const size_t row,		 											// In: Index of row to assign
+		const Pseudo_Dynamic_Matrix<T, 1, Max_Cols> &vector 				// In: Row vector to assign to the row
+		)
+	{
+		assert(vector.get_cols() == this->n_cols && row < this->n_rows);
+		for (size_t j = 0; j < this->n_cols; j++)
+		{
+			this->operator()(row, j) = vector(j);
+		}
+	}
+
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_row(
+		const size_t row,		 											// In: Index of row to assign
 		const Dynamic_Matrix<T> &vector 									// In: Row vector to assign to the row
 		)
 	{
@@ -242,6 +259,19 @@ namespace CML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_col(
+		const size_t col,		 											// In: Index of column to assign
+		const Pseudo_Dynamic_Matrix<T, Max_Rows, 1> &vector 				// In: Column vector to assign to the column
+		)
+	{
+		assert(vector.get_rows() == this->n_rows && col < this->n_cols);
+		for (size_t i = 0; i < this->n_rows; i++)
+		{
+			this->operator()(i, col) = vector(i);
+		}
+	}
+
 	template <class T, size_t Max_Rows, size_t Max_Cols>
 	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_col(
 		const size_t col,		 											// In: Index of column to assign
