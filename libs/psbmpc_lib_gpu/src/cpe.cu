@@ -49,8 +49,6 @@ __host__ __device__ CPE::CPE(
     ) :
     method(cpe_method), n_obst(n_obst), mu_CE_last(nullptr), P_CE_last(nullptr)
 {
-    set_number_of_obstacles(n_obst);
-
     // CE pars
 
     n_CE = 1000;
@@ -82,6 +80,8 @@ __host__ __device__ CPE::CPE(
     q = 8e-4;
 
     dt_seg = dt;
+
+    set_number_of_obstacles(n_obst);
 }
 
 /****************************************************************************************
@@ -419,7 +419,7 @@ __device__ inline void CPE::generate_norm_dist_samples(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::calculate_roots_2nd_order(
-    CML::MatrixXd &r,                                                   // In: vector of roots to find
+    CML::Vector2d &r,                                                   // In: vector of roots to find
     bool &is_complex,                                                   // In: Indicator of real/complex roots
     const double A,                                                     // In: Coefficient in polynomial 
     const double B,                                                     // In: Coefficient in polynomial 
@@ -500,9 +500,9 @@ __device__ void CPE::determine_sample_validity_4D(
     int n_samples = samples.get_cols();
 
     bool complex_roots;
-    CML::MatrixXd p_i_sample, v_i_sample;
+    CML::Vector2d p_i_sample, v_i_sample;
     double A, B, C;
-    CML::MatrixXd r;
+    CML::Vector2d r;
     for (int j = 0; j < n_samples; j++)
     {
         valid(j) = 0;

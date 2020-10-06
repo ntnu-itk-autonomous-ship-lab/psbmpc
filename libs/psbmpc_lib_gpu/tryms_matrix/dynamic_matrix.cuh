@@ -120,6 +120,8 @@ namespace CML
 
 		__host__ __device__ void set_col(const size_t col, const Dynamic_Matrix &vector);
 
+		__host__ __device__ void shift_columns_right();
+
 		__host__ __device__ Dynamic_Matrix get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
 
 		__host__ __device__ Dynamic_Matrix get_row(const size_t row) const;
@@ -588,6 +590,24 @@ namespace CML
 		for (size_t i = 0; i < this->n_rows; i++)
 		{
 			this->operator()(i, col) = vector(i);
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : shift_columns_right
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__ void Dynamic_Matrix<T>::shift_columns_right()
+	{
+		for (int j = this->n_cols - 2; j > -1; j--)
+		{
+			for (size_t i = 0; i < this->n_rows; i++)
+			{
+				this->operator()(i, j + 1) = this->operator()(i, j);
+			}
 		}
 	}
 

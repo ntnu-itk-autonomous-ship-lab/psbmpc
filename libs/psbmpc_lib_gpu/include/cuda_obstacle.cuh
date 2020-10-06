@@ -22,7 +22,6 @@
 #ifndef _CUDA_OBSTACLE_CUH_
 #define _CUDA_OBSTACLE_CUH_
 
-#include "utilities.cuh"
 #include "psbmpc_defines.h"
 #include <thrust/device_vector.h>
 #include "cml.cuh"

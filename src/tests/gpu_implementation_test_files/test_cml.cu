@@ -938,6 +938,18 @@ int main()
 
 	std::cout << bigone << std::endl;
 
+	CML::MatrixXd test222(6, 3), ones(6, 1), twos(6, 1), threes(6, 1);
+	ones.set_ones(); twos.set_all_coeffs(2.0); threes.set_all_coeffs(3.0);
+	test222.set_col(0, ones);
+	test222.set_col(1, twos);
+	test222.set_col(2, threes);
+
+	std::cout << test222 << std::endl;
+
+	test222.shift_columns_right();
+
+	std::cout << test222 << std::endl;
+
 	//================================================================================
 	// Other tests
 	//================================================================================

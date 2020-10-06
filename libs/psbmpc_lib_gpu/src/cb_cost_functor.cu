@@ -59,20 +59,22 @@ __device__ double CB_Cost_Functor::operator()(
 {
 	double cost = 0;
 
+	//======================================================================================================================
+	// 1 : Setup
 	unsigned int cb_index = thrust::get<0>(cb_tuple);
 	CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> offset_sequence = thrust::get<1>(cb_tuple);
 
 	int n_samples = round(pars.T / pars.dt);
 
-	double P_c_i_ps(0.0), d_safe_i(0.0);
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1);
+	double d_safe_i(0.0), chi_m(0.0), Pr_CC_i(0.0);
 
-	// Allocate predicted ownship state and predicted obstacle state and
-	// covariance for their prediction scenarios (ps)
-	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
-	CML::MatrixXd xs_p = fdata->ownship_state, xs_p_prev = xs_p;
-	CML::Vector4d xs_i_p_ps, xs_i_p_ps_prev;
-	CML::Matrix4d P_i_p_ps, P_i_p_ps_prev;
+	// Allocate vectors for keeping track of max cost wrt obstacle i in predictions scenario ps
+	CML::Pseudo_Dynamic_Matrix<double, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1), max_cost_i(fdata->n_obst, 1);
+	CML::Pseudo_Dynamic_Matrix<double, MAX_N_OBST, MAX_N_PS> P_c_i_ps(fdata->n_ps[0], 1), cost_i_ps(fdata->n_ps[0], 1), max_cost_i_ps(fdata->n_ps[0], 1), mu_i(fdata->n_ps[0], 1);
+	cost_i.set_zero(); max_cost_i.set_zero();
+
+	// Allocate vectors for the obstacle intention weighted cost, and intention probability vector
+	CML::Vector3d cost_a, Pr_a;
 
 	// Initialize the predicted ownship waypoint counter to the correct one
 	ownship.initialize_wp_following();
@@ -80,37 +82,152 @@ __device__ double CB_Cost_Functor::operator()(
 	// Set up collision probability estimator, and sample variables in case cpe_method = MCSKF4D
 	CPE* cpe = new CPE(pars.cpe_method, fdata->n_obst, pars.dt);
 	cpe->seed_prng(cb_index);
+
 	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / pars.dt) + 1, k_j_(0), k_j(0);
+	
+	// Allocate predicted ownship state and predicted obstacle state and
+	// covariance for their prediction scenarios (ps)
+	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
+	CML::MatrixXd xs_p(6, n_seg_samples); xs_p.set_col(0, fdata->ownship_state);
+	CML::MatrixXd xs_i_p_ps(4, n_seg_samples);
+	CML::MatrixXd P_i_p_ps(16, n_seg_samples);
+	//======================================================================================================================
+	// 2 : Cost calculation
 
 	for (int k = 0; k < n_samples; k++)
-	{
+	{	
+		// Determine active course modification at sample k
+		for (int M = 0; M < pars.n_M; M++)
+		{
+			if (M < pars.n_M - 1)
+			{
+				if (k >= fdata->maneuver_times[M] && k < fdata->maneuver_times[M + 1])
+				{
+					chi_m = offset_sequence[2 * M + 1];
+				}
+			}
+			else
+			{
+				if (k >= fdata->maneuver_times[M])
+				{
+					chi_m = offset_sequence[2 * M + 1];
+				}
+			}
+		}
+
 		for (int i = 0; i < fdata->n_obst; i++)
 		{	
 			if (pars.obstacle_colav_on) { predict_trajectories_jointly(); }
 			
+			P_i_p_ps.shift_columns_right();
 			// The covariance prediction for obstacle i is the same in all prediction scenarios
-			P_i_p_ps = obstacles[i].get_trajectory_covariance_sample(k);
+			P_i_p_ps.set_col(0, obstacles[i].get_trajectory_covariance_sample(k));
 
 			for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 			{	
+				xs_i_p_ps.shift_columns_right();
 				// Extract obstacle state in prediction scenario ps
 				xs_i_p_ps = obstacles[i].get_trajectory_sample(ps, k);
 
+				//==========================================================================================
+				// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
+
 				d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
-				// Initialize Pcoll estimation
-				if (k == 0)
+				
+				if (k == 0) // Initialize Pcoll estimation
 				{
 					cpe->initialize(xs_p, xs_i_p_ps, P_i_p_ps, d_safe_i, i);
 				}
 				
-				// Estimate collision probability between own-ship and obstacle i in prediction scenario ps
-				P_c_i_ps = cpe->estimate(xs_p, xs_i_p_ps, P_i_p_ps, i);
+				switch(pars.cpe_method)
+				{
+					case CE :	
+						P_c_i_ps(ps) = cpe->estimate(xs_p, xs_i_p_ps, P_i_p_ps, i);
+						break;
+					case MCSKF4D :                
+						if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
+						{
+							// Collision probability the active segment [k_j_, k_j] are all equal
+							k_j_ = k_j; k_j = k;
+
+							P_c_i_ps(ps) = cpe->estimate(xs_p, xs_i_p_ps, P_i_p_ps, i);							
+						}	
+						break;
+					default :
+						// Throw
+						break;
+				}
+
+				//==========================================================================================
+				// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
+				cost_i_ps(i) = calculate_dynamic_obstacle_cost(P_c_i_ps(ps), xs_p, xs_i_p_ps,  i, chi_m);
+
+				if (max_cost_i_ps(i) < cost_i_ps(i))
+				{
+					max_cost_i_ps(i) = cost_i_ps(i);
+				}
+				//==========================================================================================
 			}
 
+			//==============================================================================================
+			// 2.3 : Calculate weighted obstacle cost over all prediction scenarios, and maximize wrt time
 
-			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i_ps, i, offset_sequence);
+			// If only 1 prediction scenario: Original PSB-MPC formulation
+			if (fdata->n_ps[i] == 1)
+			{
+				cost_i(i) = max_cost_i_ps(0);
+			}
+			else
+			{
+				// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
+				// which means that higher cost is applied if the obstacle follows COLREGS
+				// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
+				// and the own-ship breaches COLREGS
+				for (int ps = 0; ps < fdata->n_ps[i]; ps++)
+				{
+					if (mu_i[ps])
+					{
+						max_cost_i_ps(ps) = (1 - Pr_CC_i) * max_cost_i_ps(ps);
+					}
+					else
+					{
+						max_cost_i_ps(ps) = Pr_CC_i * max_cost_i_ps(ps);
+					}
+				}
+
+				cost_a.set_zero();
+				Pr_a = obstacles[i].get_intention_probabilities();
+				cost_a(0) = max_cost_i_ps(0); 
+				for(int ps = 1; ps < fdata->n_ps[i]; ps++)
+				{
+					// Starboard maneuvers
+					if (ps < (fdata->n_ps[i] - 1) / 2 + 1)
+					{
+						cost_a(1) += max_cost_i_ps(ps);
+					}
+					// Port maneuvers
+					else
+					{
+						cost_a(2) += max_cost_i_ps(ps);
+					}
+				}
+				// Average the cost for the corresponding intention
+				cost_a(1) = cost_a(1) / ((fdata->n_ps[i] - 1) / 2);
+				cost_a(2) = cost_a(2) / ((fdata->n_ps[i] - 1) / 2);
+
+				// Weight by the intention probabilities
+				cost_i(i) = Pr_a.dot(cost_a);
+			}
+
+			// Maximize weighted cost wrt time
+			if (max_cost_i(i) < cost_i(i))
+			{
+				max_cost_i(i) = cost_i(i);
+			}
+			//==============================================================================================
+			
+			
 		}
-
 
 		//========================================
 		// Predict the own-ship state
@@ -120,12 +237,12 @@ __device__ double CB_Cost_Functor::operator()(
 
 		//========================================
 	}
-	
+	//======================================================================================================================
 	
 
-	cost += cost_i.max_coeff();
+	cost += cost_i.max_coeff(); 
 
-	cost += calculate_grounding_cost();
+	//cost += calculate_grounding_cost(); 
 
 	cost += calculate_control_deviation_cost(offset_sequence);
 
@@ -500,7 +617,7 @@ __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	double Pr_CC_i = obstacles[i].get_a_priori_CC_probability();
 	
 	CML::Vector2d v_0_p, v_i_p, L_0i_p;
-	double psi_0_p, psi_i_p, d_0i_p, chi_m;
+	double psi_0_p, psi_i_p, d_0i_p;
 	bool mu, trans;
 
 	psi_0_p = xs_p(2); 

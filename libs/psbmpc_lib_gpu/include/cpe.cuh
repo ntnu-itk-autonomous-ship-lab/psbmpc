@@ -91,7 +91,7 @@ private:
 
 	__device__ inline void generate_norm_dist_samples(const CML::MatrixXd &mu, const CML::MatrixXd &Sigma);
 
-	__device__ void calculate_roots_2nd_order(CML::MatrixXd &r, bool &is_complex, const double A, const double B, const double C);
+	__device__ void calculate_roots_2nd_order(CML::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
 
 	__device__ double produce_MCS_estimate(
 		const CML::MatrixXd &xs_i, 
