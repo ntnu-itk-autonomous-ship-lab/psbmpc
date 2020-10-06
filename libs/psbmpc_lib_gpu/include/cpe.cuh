@@ -62,26 +62,26 @@ private:
 	
 	bool converged_last;
 
-	CML::MatrixXd *mu_CE_last;
-	CML::MatrixXd *P_CE_last;
+	CML::Matrix2d mu_CE_last;
+	CML::Matrix2d P_CE_last;
 
 	int N_e, e_count;
-	CML::MatrixXd elite_samples;
+	CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_CPE_SAMPLES> elite_samples;
 
 	// MCSKF4D-method parameters and internal states
 	double q, r, dt_seg; 
 	
-	CML::MatrixXd P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
+	double P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
 	// Common internal sample variables
-	CML::MatrixXd samples;
-	CML::MatrixXd valid;
+	CML::Pseudo_Dynamic_Matrix<double, 4, MAX_N_CPE_SAMPLES> samples;
+	CML::Pseudo_Dynamic_Matrix<double, 1, MAX_N_CPE_SAMPLES> valid;
 	
 	// Safety zone parameters
 	double d_safe;
 
 	// Cholesky decomposition matrix
-	CML::MatrixXd L;
+	CML::Pseudo_Dynamic_Matrix<double, 4, 4> L;
 
 	__host__ __device__ void resize_matrices();
 
@@ -106,8 +106,7 @@ private:
 	__device__ double MCSKF4D_estimation(
 		const CML::MatrixXd &xs_os,  
 		const CML::MatrixXd &xs_i, 
-		const CML::MatrixXd &P_i,
-		const int i);	
+		const CML::MatrixXd &P_i);	
 
 	__device__ void determine_sample_validity_2D(
 		const CML::MatrixXd &p_os);
@@ -120,14 +119,13 @@ private:
 	__device__ double CE_estimation(
 		const CML::MatrixXd &p_os, 
 		const CML::MatrixXd &p_i, 
-		const CML::MatrixXd &P_i,
-		const int i);
+		const CML::MatrixXd &P_i);
 
 public:
 	
 	__host__ __device__ CPE() {}
 
-	__host__ __device__ CPE(const CPE_Method cpe_method, const int n_obst, const double dt);
+	__host__ __device__ CPE(const CPE_Method cpe_method, const double dt);
 
 	__host__ __device__ ~CPE();
 
@@ -135,22 +133,18 @@ public:
 
 	__device__ inline double get_segment_discretization_time() const { return dt_seg; }
 
-	__host__ __device__ void set_number_of_obstacles(const int n_obst);
-
 	__device__ inline void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
 
 	__device__ void initialize(
 		const CML::MatrixXd &xs_os, 
 		const CML::MatrixXd &xs_i, 
 		const CML::MatrixXd &P_i,
-		const double d_safe_i, 
-		const int i);
+		const double d_safe_i);
 	
 	__device__ double estimate(
 		const CML::MatrixXd &xs_os,
 		const CML::MatrixXd &xs_i,
-		const CML::MatrixXd &P_i,
-		const int i);
+		const CML::MatrixXd &P_i);
 
 	__device__ void estimate_over_trajectories(
 		CML::MatrixXd &P_c_i,
@@ -158,7 +152,6 @@ public:
 		const CML::MatrixXd &xs_i_p,
 		const CML::MatrixXd &P_i_p,
 		const double d_safe_i,
-		const int i,
 		const double dt);
 };
 

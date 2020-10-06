@@ -30,6 +30,9 @@
 #define MAX_N_OBST 20                   // Max number of obstacles allowable on the device
 #define MAX_N_PS 50                     // Max number of prediction scenarios allowable for obstacle trajectory matrices on the device
 
+#define MAX_N_SEG_SAMPLES 10            // Max number of samples in segment considered in the CPE method MCSKF4D
+#define MAX_N_CPE_SAMPLES 2000          // Max number of samples allowable to draw in the CPE. 
+
 
 
 #endif
