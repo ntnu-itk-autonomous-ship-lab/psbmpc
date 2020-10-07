@@ -982,6 +982,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.o
  /usr/local/cuda-11.0/include/vector_types.h
 libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cpe.cu.o
  ../libs/psbmpc_lib_gpu/include/cpe.cuh
+ ../libs/psbmpc_lib_gpu/include/psbmpc_defines.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
  ../libs/psbmpc_lib_gpu/include/utilities.cuh

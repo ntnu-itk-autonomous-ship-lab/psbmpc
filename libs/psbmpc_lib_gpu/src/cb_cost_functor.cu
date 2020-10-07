@@ -54,7 +54,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::operator()(
-	const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1>> &cb_tuple		// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
+	const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
 	double cost = 0;
@@ -66,11 +66,11 @@ __device__ double CB_Cost_Functor::operator()(
 
 	int n_samples = round(pars.T / pars.dt);
 
-	double d_safe_i(0.0), chi_m(0.0), Pr_CC_i(0.0);
+	double d_safe_i(0.0), chi_m(0.0), Pr_CC_i(0.0), cost_ps(0.0);
 
 	// Allocate vectors for keeping track of max cost wrt obstacle i in predictions scenario ps
 	CML::Pseudo_Dynamic_Matrix<double, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1); cost_i.set_zero();
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, 1> P_c_i, cost_ps, max_cost_ps;
+	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, 1> P_c_i, max_cost_ps;
 	CML::Pseudo_Dynamic_Matrix<bool, MAX_N_PS, 1> mu_i;
 	
 	// Allocate vectors for the obstacle intention weighted cost, and intention probability vector
@@ -80,7 +80,7 @@ __device__ double CB_Cost_Functor::operator()(
 	ownship.initialize_wp_following();
 
 	// Set up collision probability estimator, and sample variables in case cpe_method = MCSKF4D
-	CPE* cpe = new CPE(pars.cpe_method, pars.dt);
+	CPE *cpe = new CPE(pars.cpe_method, pars.dt);
 	cpe->seed_prng(cb_index);
 
 	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
@@ -108,51 +108,59 @@ __device__ double CB_Cost_Functor::operator()(
 	//======================================================================================================================
 	// 2 : Cost calculation
 
+	// Not entirely optimal for loop configuration, but the alternative requires alot of memory, so test this first.
 	for (int i = 0; i < fdata->n_obst; i++)
 	{	
 		d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
 
 		P_c_i.resize(fdata->n_ps[i], 1); P_c_i.set_zero();
+		max_cost_ps.resize(fdata->n_ps[i], 1); max_cost_ps.set_zero();
+
 		mu_i = obstacles[i].get_COLREGS_violation_indicator();
 
-		
+		cost_a.set_zero();
+		Pr_a = obstacles[i].get_intention_probabilities();
+
 		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 		{	
+			cost_ps = 0;
 			for (int k = 0; k < n_samples; k++)
 			{	
-				if (k == 0)
-				{
-					cpe->initialize(xs_p, xs_i_p, P_i_p, d_safe_i);
-					xs_p.set_col(0, fdata->trajectory.get_col(k));
-				}
+				//==========================================================================================
+				// 2.0 : Extract states and information relevant for cost evaluation at sample k. 
+
+				xs_p.shift_columns_right();
+				xs_p.set_col(0, fdata->trajectory.get_col(k));
 
 				P_i_p.shift_columns_right();
-				// The covariance prediction for obstacle i is the same in all prediction scenarios
 				P_i_p.set_col(0, obstacles[i].get_trajectory_covariance_sample(k));
 
 				xs_i_p.shift_columns_right();
-				// Extract obstacle state in prediction scenario ps
 				xs_i_p.set_col(0, obstacles[i].get_trajectory_sample(ps, k));
 
-					// Determine active course modification at sample k
-					for (int M = 0; M < pars.n_M; M++)
+				if (k == 0)
+				{
+					cpe->initialize(xs_p, xs_i_p, P_i_p, d_safe_i);
+				}
+
+				// Determine active course modification at sample k
+				for (int M = 0; M < pars.n_M; M++)
+				{
+					if (M < pars.n_M - 1)
 					{
-						if (M < pars.n_M - 1)
+						if (k >= fdata->maneuver_times[M] && k < fdata->maneuver_times[M + 1])
 						{
-							if (k >= fdata->maneuver_times[M] && k < fdata->maneuver_times[M + 1])
-							{
-								chi_m = offset_sequence[2 * M + 1];
-							}
-						}
-						else
-						{
-							if (k >= fdata->maneuver_times[M])
-							{
-								chi_m = offset_sequence[2 * M + 1];
-							}
+							chi_m = offset_sequence[2 * M + 1];
 						}
 					}
-
+					else
+					{
+						if (k >= fdata->maneuver_times[M])
+						{
+							chi_m = offset_sequence[2 * M + 1];
+						}
+					}
+				}
 		
 				//==========================================================================================
 				// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
@@ -175,87 +183,86 @@ __device__ double CB_Cost_Functor::operator()(
 
 				//==========================================================================================
 				// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
-				cost_i_ps(i) = calculate_dynamic_obstacle_cost(P_c_i(ps), xs_p.get_col(0), xs_i_p.get_col(0),  i, chi_m);
+				cost_ps = calculate_dynamic_obstacle_cost(P_c_i(ps), xs_p.get_col(0), xs_i_p.get_col(0),  i, chi_m);
 
-				if (max_cost_i_ps(i) < cost_i_ps(i))
+				if (max_cost_ps(ps) < cost_ps)
 				{
-					max_cost_i_ps(i) = cost_i_ps(i);
+					max_cost_ps(ps) = cost_ps;
 				}
 				//==========================================================================================
 			}
 
-			//==============================================================================================
-			// 2.3 : Calculate weighted obstacle cost over all prediction scenarios, and maximize wrt time
-
-			// If only 1 prediction scenario: Original PSB-MPC formulation
-			if (fdata->n_ps[i] == 1)
-			{
-				cost_i(i) = max_cost_i_ps(0);
-			}
-			else
-			{
-				// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-				// which means that higher cost is applied if the obstacle follows COLREGS
-				// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-				// and the own-ship breaches COLREGS
-				for (int ps = 0; ps < fdata->n_ps[i]; ps++)
-				{
-					if (mu_i[ps])
-					{
-						max_cost_i_ps(ps) = (1 - Pr_CC_i) * max_cost_i_ps(ps);
-					}
-					else
-					{
-						max_cost_i_ps(ps) = Pr_CC_i * max_cost_i_ps(ps);
-					}
-				}
-
-				cost_a.set_zero();
-				Pr_a = obstacles[i].get_intention_probabilities();
-				cost_a(0) = max_cost_i_ps(0); 
-				for(int ps = 1; ps < fdata->n_ps[i]; ps++)
-				{
-					// Starboard maneuvers
-					if (ps < (fdata->n_ps[i] - 1) / 2 + 1)
-					{
-						cost_a(1) += max_cost_i_ps(ps);
-					}
-					// Port maneuvers
-					else
-					{
-						cost_a(2) += max_cost_i_ps(ps);
-					}
-				}
-				// Average the cost for the corresponding intention
-				cost_a(1) = cost_a(1) / ((fdata->n_ps[i] - 1) / 2);
-				cost_a(2) = cost_a(2) / ((fdata->n_ps[i] - 1) / 2);
-
-				// Weight by the intention probabilities
-				cost_i(i) = Pr_a.dot(cost_a);
-			}
-			//==============================================================================================
-			
-			
 		}
 
-		//========================================
-		// Predict the own-ship state
-		xs_p.shift_columns_right();
-		xs_p.set_col(0, ownship.predict(xs_p, pars.dt, pars.prediction_method));
+		//==============================================================================================
+		// 2.3 : Calculate a weighted obstacle cost over all prediction scenarios
 
-		//========================================
+		// If only 1 prediction scenario: Original PSB-MPC formulation
+		if (fdata->n_ps[i] == 1)
+		{
+			cost_i(i) = max_cost_ps(0);
+		}
+		else // Three intentions to consider: KCC, SM and PM
+		{
+			// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
+			// which means that higher cost is applied if the obstacle follows COLREGS
+			// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
+			// and the own-ship breaches COLREGS
+			for (int ps = 0; ps < fdata->n_ps[i]; ps++)
+			{
+				if (mu_i[ps])
+				{
+					max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
+				}
+				else
+				{
+					max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
+				}
+			}
+			
+			cost_a(0) = max_cost_ps(0); 
+			for(int ps = 1; ps < fdata->n_ps[i]; ps++)
+			{
+				// Starboard maneuvers
+				if (ps < (fdata->n_ps[i] - 1) / 2 + 1)
+				{
+					cost_a(1) += max_cost_ps(ps);
+				}
+				// Port maneuvers
+				else
+				{
+					cost_a(2) += max_cost_ps(ps);
+				}
+			}
+			// Average the cost for the corresponding intention
+			cost_a(1) = cost_a(1) / ((fdata->n_ps[i] - 1) / 2);
+			cost_a(2) = cost_a(2) / ((fdata->n_ps[i] - 1) / 2);
+
+			// Weight by the intention probabilities
+			cost_i(i) = Pr_a.dot(cost_a);
+		}
+		//==============================================================================================
 	}
-	//======================================================================================================================
 	
-
+	//==================================================================================================
+	// 2.4 : Extract maximum cost wrt all obstacles
 	cost += cost_i.max_coeff(); 
 
+	//==================================================================================================
+	// 2.5 : Calculate grounding cost
 	//cost += calculate_grounding_cost(); 
 
+	//==================================================================================================
+	// 2.6 : Calculate cost due to deviating from the nominal path
 	cost += calculate_control_deviation_cost(offset_sequence);
 
+	//==================================================================================================
+	// 2.7 : Calculate cost due to having a wobbly offset_sequence
 	cost += calculate_chattering_cost(offset_sequence); 
-	
+	//==================================================================================================
+
+	delete cpe;
+
 	return cost;
 }
 
@@ -610,9 +617,9 @@ __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 }
 
 __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
-	const double P_c_i_ps,														// In: Predicted obstacle collision probabilities for obstacle in prediction scenario ps
+	const double P_c_i,															// In: Predicted obstacle collision probabilities for obstacle in prediction scenario ps
 	const CML::Vector6d xs_p, 													// In: Predicted own-ship state at time step k
-	const CML::Vector4d xs_i_p_ps, 												// In: Predicted obstacle state at time step k in prediction scenario ps
+	const CML::Vector4d xs_i_p, 												// In: Predicted obstacle state at time step k in prediction scenario ps
 	const int i, 																// In: Index of obstacle
 	const double chi_m														 	// In: Course offset used by the own-ship at time step k
 	//Ownship *ownship 															// In: Ownship object
@@ -620,7 +627,6 @@ __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 {
 	// l_i is the collision cost modifier depending on the obstacle track loss.
 	double cost(0.0), C(0.0), l_i(0.0);
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, 1> max_cost_ps(fdata->n_ps[i], 1); max_cost_ps.set_zero();
 
 	double Pr_CC_i = obstacles[i].get_a_priori_CC_probability();
 	
@@ -633,16 +639,16 @@ __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	v_0_p(1) = xs_p(4); 
 	v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
 
-	L_0i_p = xs_i_p_ps.get_block<2, 1>(0, 0) - xs_p.get_block<2, 1>(0, 0);
+	L_0i_p = xs_i_p.get_block<2, 1>(0, 0) - xs_p.get_block<2, 1>(0, 0);
 	d_0i_p = L_0i_p.norm();
 
 	// Decrease the distance between the vessels by their respective max dimension
-	d_0i_p = d_0i_p - 0.5 * (ownship.get_length() + obstacles[i].get_length()); 
+	d_0i_p = d_0i_p - 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length()); 
 	
 	L_0i_p = L_0i_p.normalized();
 
-	v_i_p(0) = xs_i_p_ps(2);
-	v_i_p(1) = xs_i_p_ps(3);
+	v_i_p(0) = xs_i_p(2);
+	v_i_p(1) = xs_i_p(3);
 	psi_i_p = atan2(v_i_p(1), v_i_p(0));
 
 	C = calculate_collision_cost(v_0_p, v_i_p);
@@ -661,7 +667,7 @@ __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 		l_i = 1;
 	}
 
-	cost = l_i * C * P_c_i_ps + pars.kappa * mu  + 0 * pars.kappa_TC * trans;
+	cost = l_i * C * P_c_i + pars.kappa * mu  + 0 * pars.kappa_TC * trans;
 
 	return cost;
 }
