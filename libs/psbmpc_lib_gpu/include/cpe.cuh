@@ -26,6 +26,7 @@
 #ifndef _CPE_CUH_
 #define _CPE_CUH_
 
+#include "psbmpc_defines.h"
 #include "curand_kernel.h"
 #include <thrust/device_vector.h>
 #include "cml.cuh"
@@ -62,11 +63,11 @@ private:
 	
 	bool converged_last;
 
-	CML::Matrix2d mu_CE_last;
+	CML::Vector2d mu_CE_last;
 	CML::Matrix2d P_CE_last;
 
 	int N_e, e_count;
-	CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_CPE_SAMPLES> elite_samples;
+	CML::MatrixXd elite_samples;
 
 	// MCSKF4D-method parameters and internal states
 	double q, r, dt_seg; 
@@ -74,14 +75,14 @@ private:
 	double P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
 	// Common internal sample variables
-	CML::Pseudo_Dynamic_Matrix<double, 4, MAX_N_CPE_SAMPLES> samples;
-	CML::Pseudo_Dynamic_Matrix<double, 1, MAX_N_CPE_SAMPLES> valid;
+	CML::MatrixXd samples;
+	CML::MatrixXd valid;
 	
 	// Safety zone parameters
 	double d_safe;
 
 	// Cholesky decomposition matrix
-	CML::Pseudo_Dynamic_Matrix<double, 4, 4> L;
+	CML::MatrixXd L;
 
 	__host__ __device__ void resize_matrices();
 

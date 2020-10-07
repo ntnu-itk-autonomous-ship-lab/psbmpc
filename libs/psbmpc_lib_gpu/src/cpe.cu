@@ -672,8 +672,8 @@ __device__ double CPE::CE_estimation(
     /******************************************************************************
     * Convergence depedent initialization prior to the run at time t_k
     ******************************************************************************/
-    CML::MatrixXd mu_CE_prev, mu_CE;
-    CML::MatrixXd P_CE_prev, P_CE;
+    CML::Vector2d mu_CE_prev, mu_CE;
+    CML::Matrix2d P_CE_prev, P_CE;
     sigma_inject = d_safe / 3;
     if (converged_last)
     {
