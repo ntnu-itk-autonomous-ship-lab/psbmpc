@@ -3,9 +3,8 @@
 *  File name : pseudo_dynamic_matrix.cuh
 *
 *  Function  : Header file for the "dynamic" matrix class used in the Cuda Matrix Library,
-*			   which has a compile-time set max number of rows and columns. Used in the
-*			   data transfer part from the CPU to the GPU for PSB-MPC. Thus, it only acts
-*              as a bridge between the CPU and GPU. Not meant to use for math operations.
+*			   which has a compile-time set max number of rows and columns.
+*			   Abbreviated as PDMatrix
 *  
 *	           ---------------------
 *
@@ -34,14 +33,14 @@ namespace CML
 	template <class T> class Dynamic_Matrix;
 
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	class Pseudo_Dynamic_Matrix : public Matrix_Base<T, Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>> 
+	class PDMatrix : public Matrix_Base<T, PDMatrix<T, Max_Rows, Max_Cols>> 
 	{
 	private:
 		size_t n_rows, n_cols; // should be less than MaxRows and MaxCols, respectively
 
 		T data[Max_Rows * Max_Cols];
-
-		__host__ __device__ void assign_data(const Pseudo_Dynamic_Matrix &other);
+		
+		__host__ __device__ void assign_data(const PDMatrix &other);
 
 		template <class U>
 		__host__ __device__ void assign_data(const Dynamic_Matrix<U> &other);
@@ -51,70 +50,86 @@ namespace CML
 
 	public:
 		
-		__host__ __device__ Pseudo_Dynamic_Matrix() : n_rows(0), n_cols(0) {}
+		__host__ __device__ PDMatrix() : n_rows(0), n_cols(0) {}
 
-		__host__ __device__ Pseudo_Dynamic_Matrix(const size_t n_rows) : n_rows(n_rows), n_cols(n_rows) {}
+		__host__ __device__ PDMatrix(const size_t n_rows) : n_rows(n_rows), n_cols(n_rows) {}
 
-		__host__ __device__ Pseudo_Dynamic_Matrix(const size_t n_rows, const size_t n_cols) : n_rows(n_rows), n_cols(n_cols) {}
+		__host__ __device__ PDMatrix(const size_t n_rows, const size_t n_cols) : n_rows(n_rows), n_cols(n_cols) {}
 
-		__host__ __device__ Pseudo_Dynamic_Matrix(const Pseudo_Dynamic_Matrix &other) { assign_data(other); }
+		__host__ __device__ PDMatrix(const PDMatrix &other) { assign_data(other); }
 
 		template <class U>
-		__host__ __device__ Pseudo_Dynamic_Matrix(const Dynamic_Matrix<U> &other) { assign_data(other); }
+		__host__ __device__ PDMatrix(const Dynamic_Matrix<U> &other) { assign_data(other); }
 
 		template <class U, size_t Rows, size_t Cols>
-		__host__ __device__ Pseudo_Dynamic_Matrix(const Static_Matrix<U, Rows, Cols> &other) { assign_data(other); }
+		__host__ __device__ PDMatrix(const Static_Matrix<U, Rows, Cols> &other) { assign_data(other); }
 
-		__host__ __device__ Pseudo_Dynamic_Matrix& operator=(const Pseudo_Dynamic_Matrix &rhs);
+		__host__ __device__ PDMatrix& operator=(const PDMatrix &rhs){ if (this == &rhs) { return *this; }	assign_data(rhs); return *this; }
 
 		template<class U>
-		__host__ __device__ Pseudo_Dynamic_Matrix& operator=(const Dynamic_Matrix<U> &rhs);
+		__host__ __device__ PDMatrix& operator=(const Dynamic_Matrix<U> &rhs) { assign_data(rhs); return *this; }
 
 		template<class U, size_t Rows, size_t Cols>
-		__host__ __device__ Pseudo_Dynamic_Matrix& operator=(const Static_Matrix<U, Rows, Cols> &rhs);
+		__host__ __device__ PDMatrix& operator=(const Static_Matrix<U, Rows, Cols> &rhs) { assign_data(rhs); return *this; }
 
-		__host__ __device__ inline operator Dynamic_Matrix<T>() const
+		template <class U>
+		__host__ __device__ inline operator Dynamic_Matrix<U>() const
 		{
-			Dynamic_Matrix<T> result;
+			Dynamic_Matrix<U> result;
 			result = *this;
 			return result;
 		}
 
-		template<size_t Rows, size_t Cols>
-		__host__ __device__ operator Static_Matrix<T, Rows, Cols>() const
+		template<class U, size_t Rows, size_t Cols>
+		__host__ __device__ inline operator Static_Matrix<U, Rows, Cols>() const
 		{
-			Static_Matrix<T, Rows, Cols> result;
+			Static_Matrix<U, Rows, Cols> result;
 			result = *this;
 			return result;
 		}
 
+		__host__ __device__ PDMatrix operator*(const PDMatrix &other) const;
+
+		__host__ __device__ void transpose();
+
+		__host__ __device__ PDMatrix transposed() const;
+
+		template <class Matrix_Type>
+		__host__ __device__ Matrix_Type cross(const Matrix_Type &other) const;
+
+		template <class Matrix_Type>
+		__host__ __device__ PDMatrix cwise_product(const Matrix_Type &other) const;
+		
+		__host__ __device__ PDMatrix cwise_mean() const;
+
+		__host__ __device__ PDMatrix rwise_mean() const;
+
+		__host__ __device__ static PDMatrix identity(const size_t n_rows, const size_t n_cols);
+
+		__host__ __device__ static PDMatrix ones(const size_t n_rows, const size_t n_cols);
+
+		template <class Matrix_Type>
 		__host__ __device__ void set_block(
 			const size_t start_row, 
 			const size_t start_col, 
 			const size_t n_rows, 
 			const size_t n_cols, 
-			const Dynamic_Matrix<T> &block);
+			const Matrix_Type &block);
 
-		__host__ __device__ void set_row(const size_t row, const Pseudo_Dynamic_Matrix<T, 1, Max_Cols> &vector);
+		template <class Matrix_Type>
+		__host__ __device__ void set_row(const size_t row, const Matrix_Type &vector);
 
-		__host__ __device__ void set_row(const size_t row, const Dynamic_Matrix<T> &vector);
+		template <class Matrix_Type>
+		__host__ __device__ void set_col(const size_t col, const Matrix_Type &vector);
 
-		template <size_t Cols>
-		__host__ __device__ void set_row(const size_t row, const Static_Matrix<T, 1, Cols> &vector);
-
-		__host__ __device__ void set_col(const size_t col, const Pseudo_Dynamic_Matrix<T, Max_Rows, 1> &vector);
-
-		__host__ __device__ void set_col(const size_t col, const Dynamic_Matrix<T> &vector);
-
-		template <size_t Rows>
-		__host__ __device__ void set_col(const size_t col, const Static_Matrix<T, Rows, 1> &vector);
+		__host__ __device__ void shift_columns_right();
 
 		template <size_t New_Max_Rows, size_t New_Max_Cols>
-		__host__ __device__ Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
+		__host__ __device__ PDMatrix<T, New_Max_Rows, New_Max_Cols> get_block(const size_t start_row, const size_t start_col, const size_t n_rows, const size_t n_cols) const;
 
-		__host__ __device__ Pseudo_Dynamic_Matrix<T, 1, Max_Cols> get_row(const size_t row) const;
+		__host__ __device__ PDMatrix<T, 1, Max_Cols> get_row(const size_t row) const;
 
-		__host__ __device__ Pseudo_Dynamic_Matrix<T, Max_Rows, 1> get_col(const size_t col) const;
+		__host__ __device__ PDMatrix<T, Max_Rows, 1> get_col(const size_t col) const;
 
 		__host__ __device__ inline size_t get_rows() const { return n_rows; }
 
@@ -135,41 +150,289 @@ namespace CML
 
 			this->n_rows = n_rows; this->n_cols = n_cols;
 		}
-		
 	};
 
 	/****************************************************************************************
-	*  Class member functions
+	*  Global operator functions, to allow for commutativeness
 	*****************************************************************************************/
 	/****************************************************************************************
-	*  Name     : operator=
+	*  Name     : operator+ (by scalar)
 	*  Function : 
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>& Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::operator=(
-		const Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> &rhs 				// In: Right hand side matrix/vector to assign
-		)
+	__host__ __device__ inline PDMatrix<T, Max_Rows, Max_Cols> operator+(const PDMatrix<T, Max_Rows, Max_Cols> &other, const T scalar)
 	{
-		if (this == &rhs)
+		PDMatrix<T, Max_Rows, Max_Cols> result = other;
+		for (size_t i = 0; i < other.get_rows(); i++)
 		{
-			return *this;
+			for (size_t j = 0; j < other.get_cols() ; j++)
+			{
+				result(i, j) += scalar;
+			}
 		}
-		assign_data(rhs);
-		
-		return *this;
+		return result;
+	}
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ inline PDMatrix<T, Max_Rows, Max_Cols> operator+(const T scalar, const PDMatrix<T, Max_Rows, Max_Cols> &other)	{ return other + scalar; }
+
+	/****************************************************************************************
+	*  Name     : operator- (by scalar)
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ inline PDMatrix<T, Max_Rows, Max_Cols> operator-(const PDMatrix<T, Max_Rows, Max_Cols> &other, const T scalar)
+	{
+		PDMatrix<T, Max_Rows, Max_Cols> result = other;
+		for (size_t i = 0; i < other.get_rows(); i++)
+		{
+			for (size_t j = 0; j < other.get_cols() ; j++)
+			{
+				result(i, j) -= scalar;
+			}
+		}
+		return result;
+	}
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ inline PDMatrix<T, Max_Rows, Max_Cols> operator-(const T scalar, const PDMatrix<T, Max_Rows, Max_Cols> &other)	{ return -1 * other + scalar; }
+
+	/****************************************************************************************
+	*  Name     : operator* (by scalar)
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ inline PDMatrix<T, Max_Rows, Max_Cols> operator*(const PDMatrix<T, Max_Rows, Max_Cols> &other, const T scalar)
+	{
+		PDMatrix<T, Max_Rows, Max_Cols> result = other;
+		for (size_t i = 0; i < other.get_rows(); i++)
+		{
+			for (size_t j = 0; j < other.get_cols(); j++)
+			{
+				result(i, j) *= scalar;
+			}
+		}
+		return result;
+	}
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ inline PDMatrix<T, Max_Rows, Max_Cols> operator*(const T scalar, const PDMatrix<T, Max_Rows, Max_Cols> &other)	{ return other * scalar; }
+
+	/****************************************************************************************
+	*  Class member functions
+	*****************************************************************************************/
+	/****************************************************************************************
+	*  Name     : operator*
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::operator*(
+		const PDMatrix<T, Max_Rows, Max_Cols> &other 									// In: Matrix/vector to multiply with
+		) const
+	{	
+		// Verify that the matrix product is valid
+		assert(n_cols == other.n_rows);
+
+		PDMatrix<T, Max_Rows, Max_Cols> result(n_rows, other.n_cols);
+		for (size_t i = 0 ; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < other.n_cols; j++)
+			{
+				result(i, j) = (T)0;
+				for (size_t k = 0; k < n_cols; k++)
+				{
+					result(i, j) += this->operator()(i, k) * other(k, j);
+				}
+			}
+		}
+		return result;
 	}
 
+	/****************************************************************************************
+	*  Name     : transpose
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template<class U>
-	__host__ __device__ Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>& Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::operator=(
-		const Dynamic_Matrix<U> &rhs 											// In: Right hand side matrix/vector to assign
+	__host__ __device__ void PDMatrix<T, Max_Rows, Max_Cols>::transpose()
+	{
+		PDMatrix<T, Max_Rows, Max_Cols> result(n_cols, n_rows);
+		for (size_t i = 0; i < n_cols; i++)
+		{
+			for (size_t j = 0; j < n_rows ; j++)
+			{
+				result(i, j) = this->operator()(j, i);
+			}
+		}
+		*this = result;
+	}
+
+	/****************************************************************************************
+	*  Name     : transposed
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::transposed() const
+	{
+		PDMatrix<T, Max_Rows, Max_Cols> result(n_cols, n_rows);
+		for (size_t i = 0; i < n_cols; i++)
+		{
+			for (size_t j = 0; j < n_rows ; j++)
+			{
+				result(i, j) = this->operator()(j, i);
+			}
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : cross
+	*  Function : 3D row vectors only. Calculates the cross product this x other
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	template <class Matrix_Type>
+	__host__ __device__ Matrix_Type PDMatrix<T, Max_Rows, Max_Cols>::cross(
+		const Matrix_Type &other 								// In: Matrix/Vector object to perform cross product with
+	) const
+	{
+		// Check that the objects are in fact correct vectors of matching dimension
+		assert((n_rows == 3 && n_cols == 1) && (n_rows == other.get_rows() && n_cols == other.get_cols()));
+		
+		Matrix_Type result(n_rows, 1);
+		result(0) = this->operator()(1) * other(2) - this->operator()(2) * other(1);
+		result(1) = this->operator()(2) * other(0) - this->operator()(0) * other(2);
+		result(2) = this->operator()(0) * other(1) - this->operator()(1) * other(0);
+		
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : cwise_product
+	*  Function : Basically the dot product between matching column vectors/scalars in each
+	*			  matrix/vector object.
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	template <class Matrix_Type>
+	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::cwise_product(
+		const Matrix_Type &other 									// In: Matrix/Vector object to apply columnwise product to
+	) const
+	{
+		assert(n_cols == other.n_cols 				&&
+				((n_rows == 1 && other.n_rows > 1) 	||
+				(n_rows > 1 && other.n_rows == 1)));
+		
+		PDMatrix<T, Max_Rows, Max_Cols> result(1, n_cols);
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			result(0, j) = this->get_block(0, j, n_rows, 1).transposed() * other.get_block(0, j, other.n_rows, 1);	
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : cwise_mean
+	*  Function : Calculates the mean columnwise.
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::cwise_mean() const
+	{
+		PDMatrix<T, Max_Rows, Max_Cols> result(1, n_cols);
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			result(j) = (T)0;
+			for (size_t i = 0; i < n_rows; i++)
+			{
+				result(j) += this->operator()(i, j);
+			}
+			result(j) /= (T)n_rows;
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : rwise_mean
+	*  Function : Calculates the mean rowwise.
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::rwise_mean() const
+	{
+		PDMatrix<T, Max_Rows, Max_Cols> result(n_rows, 1);
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			result(i) = (T)0;
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				result(i) += this->operator()(i, j);
+			}
+			result(i) /= (T)n_rows;
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : identity
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::identity(
+		const size_t n_rows,  										// In: Amount of matrix rows
+		const size_t n_cols 										// In: Amount of matrix columns
 		)
 	{
-		assign_data(rhs);
-		
-		return *this;
+		PDMatrix<T, Max_Rows, Max_Cols> result(n_rows, n_cols);
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				result(i, j) = (T)0;
+				if (i == j)
+				{
+					result(i, j) = (T)1;
+				}
+			}
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : ones
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::ones(
+		const size_t n_rows,  										// In: Amount of matrix rows
+		const size_t n_cols 										// In: Amount of matrix columns
+		)
+	{
+		PDMatrix<T, Max_Rows, Max_Cols> result(n_rows, n_cols);
+		for (size_t i = 0; i < n_rows; i++)
+		{
+			for (size_t j = 0; j < n_cols; j++)
+			{
+				result(i, j) = (T)1;			
+			}
+		}
+		return result;
 	}
 
 	/****************************************************************************************
@@ -180,12 +443,13 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__  void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_block(
+	template <class Matrix_Type>
+	__host__ __device__  void PDMatrix<T, Max_Rows, Max_Cols>::set_block(
 		const size_t start_row, 									// In: Start row of matrix block
 		const size_t start_col, 									// In: Start column of matrix block
 		const size_t n_rows,  										// In: Amount of rows
 		const size_t n_cols, 										// In: Amount of columns
-		const Dynamic_Matrix<T> &block 								// In: Block matrix to set
+		const Matrix_Type &block 									// In: Block matrix to set
 		)
 	{
 		assert(	n_rows <= Max_Rows && n_cols <= Max_Cols && 
@@ -214,40 +478,14 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_row(
+	template <class Matrix_Type>
+	__host__ __device__ void PDMatrix<T, Max_Rows, Max_Cols>::set_row(
 		const size_t row,		 											// In: Index of row to assign
-		const Pseudo_Dynamic_Matrix<T, 1, Max_Cols> &vector 				// In: Row vector to assign to the row
+		const Matrix_Type &vector 											// In: Row vector to assign to the row
 		)
 	{
 		assert(vector.get_cols() == this->n_cols && row < this->n_rows);
 		for (size_t j = 0; j < this->n_cols; j++)
-		{
-			this->operator()(row, j) = vector(j);
-		}
-	}
-
-	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_row(
-		const size_t row,		 											// In: Index of row to assign
-		const Dynamic_Matrix<T> &vector 									// In: Row vector to assign to the row
-		)
-	{
-		assert(vector.get_cols() == this->n_cols && row < this->n_rows);
-		for (size_t j = 0; j < this->n_cols; j++)
-		{
-			this->operator()(row, j) = vector(j);
-		}
-	}
-
-	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <size_t Cols>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_row(
-		const size_t row,		 											// In: Index of row to assign
-		const Static_Matrix<T, 1, Cols> &vector 							// In: Row vector to assign to the row
-		)
-	{
-		assert(row < n_rows && Cols == n_cols);
-		for (size_t j = 0; j < Cols; j++)
 		{
 			this->operator()(row, j) = vector(j);
 		}
@@ -260,40 +498,14 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_col(
+	template <class Matrix_Type>
+	__host__ __device__ void PDMatrix<T, Max_Rows, Max_Cols>::set_col(
 		const size_t col,		 											// In: Index of column to assign
-		const Pseudo_Dynamic_Matrix<T, Max_Rows, 1> &vector 				// In: Column vector to assign to the column
+		const Matrix_Type &vector 											// In: Column vector to assign to the column
 		)
 	{
 		assert(vector.get_rows() == this->n_rows && col < this->n_cols);
 		for (size_t i = 0; i < this->n_rows; i++)
-		{
-			this->operator()(i, col) = vector(i);
-		}
-	}
-
-	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_col(
-		const size_t col,		 											// In: Index of column to assign
-		const Dynamic_Matrix<T> &vector 									// In: Column vector to assign to the column
-		)
-	{
-		assert(vector.get_rows() == this->n_rows && col < this->n_cols);
-		for (size_t i = 0; i < this->n_rows; i++)
-		{
-			this->operator()(i, col) = vector(i);
-		}
-	}
-
-	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <size_t Rows>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::set_col(
-		const size_t col,		 											// In: Index of column to assign
-		const Static_Matrix<T, Rows, 1> &vector 							// In: Column vector to assign to the column
-		)
-	{
-		assert(col < n_cols && Rows == n_rows);
-		for (size_t i = 0; i < Rows; i++)
 		{
 			this->operator()(i, col) = vector(i);
 		}
@@ -309,7 +521,7 @@ namespace CML
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
 	template <size_t New_Max_Rows, size_t New_Max_Cols>
-	__host__ __device__ Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_block(
+	__host__ __device__ PDMatrix<T, New_Max_Rows, New_Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::get_block(
 		const size_t start_row, 									// In: Start row of matrix block
 		const size_t start_col, 									// In: Start column of matrix block
 		const size_t n_rows,  										// In: Amount of rows
@@ -319,7 +531,7 @@ namespace CML
 		assert(	n_rows <= this->n_rows && n_cols <= this->n_cols && 
 				start_row < this->n_rows && start_col < this->n_cols);
 
-		Pseudo_Dynamic_Matrix<T, New_Max_Rows, New_Max_Cols> result(n_rows, n_cols);
+		PDMatrix<T, New_Max_Rows, New_Max_Cols> result(n_rows, n_cols);
 		for (size_t i = 0; i < n_rows; i++)
 		{
 			for (size_t j = 0; j < n_cols; j++)
@@ -337,13 +549,13 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ Pseudo_Dynamic_Matrix<T, 1, Max_Cols> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_row(
+	__host__ __device__ PDMatrix<T, 1, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::get_row(
 		const size_t row											// In: Index of row to fetch
 		) const
 	{
 		assert(row < this->n_rows);
 
-		Pseudo_Dynamic_Matrix<T, 1, Max_Cols> result(1, n_cols);
+		PDMatrix<T, 1, Max_Cols> result(1, n_cols);
 		for (size_t j = 0; j < n_cols; j++)
 		{
 			result(0, j) = this->operator()(row, j);
@@ -358,13 +570,13 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ Pseudo_Dynamic_Matrix<T, Max_Rows, 1> Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::get_col(
+	__host__ __device__ PDMatrix<T, Max_Rows, 1> PDMatrix<T, Max_Rows, Max_Cols>::get_col(
 		const size_t col											// In: Index of row to fetch
 		) const
 	{
 		assert(col < this->n_cols);
 
-		Pseudo_Dynamic_Matrix<T, Max_Rows, 1> result(n_rows, 1);
+		PDMatrix<T, Max_Rows, 1> result(n_rows, 1);
 		for (size_t i = 0; i < n_rows; i++)
 		{
 			result(i, 0) = this->operator()(i, col);
@@ -382,8 +594,8 @@ namespace CML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::assign_data(
-		const Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> &other 				// In: Matrix whose data to assign to *this;
+	__host__ __device__ void PDMatrix<T, Max_Rows, Max_Cols>::assign_data(
+		const PDMatrix<T, Max_Rows, Max_Cols> &other 				// In: Matrix whose data to assign to *this;
 		)
 	{
 		assert(other.n_rows <= Max_Rows && other.n_cols <= Max_Cols);
@@ -401,7 +613,7 @@ namespace CML
 
 	template <class T, size_t Max_Rows, size_t Max_Cols>
 	template <class U>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::assign_data(
+	__host__ __device__ void PDMatrix<T, Max_Rows, Max_Cols>::assign_data(
 		const Dynamic_Matrix<U> &other 																// In: Matrix whose data to assign to *this;
 		)
 	{
@@ -420,7 +632,7 @@ namespace CML
 
 	template <class T, size_t Max_Rows, size_t Max_Cols>
 	template <class U, size_t Rows, size_t Cols>
-	__host__ __device__ void Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>::assign_data(
+	__host__ __device__ void PDMatrix<T, Max_Rows, Max_Cols>::assign_data(
 		const Static_Matrix<U, Rows, Cols> &other 													// In: Matrix whose data to assign to *this;
 		)
 	{
@@ -441,6 +653,12 @@ namespace CML
 	//=========================================================================================================
 	// TYPEDEFS
 	//=========================================================================================================
+	using PDMatrix2d = PDMatrix<double, 2, 2>;
+	using PDMatrix4d = PDMatrix<double, 4, 4>;
+
+	using PDVector2d = PDMatrix<double, 2, 1>;
+	using PDVector4d = PDMatrix<double, 4, 1>;
+	using PDVector6d = PDMatrix<double, 6, 1>;
 }
 
 	

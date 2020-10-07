@@ -2,7 +2,7 @@
 *
 *  File name : dynamic_matrix.cuh
 *
-*  Function  : Header file for the dynamic matrix class used in the Cuda Matrix Library
+*  Function  : Header file for the dynamic matrix class in the Cuda Matrix Library
 *  
 *	           ---------------------
 *
@@ -28,7 +28,7 @@ namespace CML
 {
 	template <class T, class Derived> class Matrix_Base;
 	template <class T, size_t Rows, size_t Cols> class Static_Matrix;
-	template <class T, size_t Max_Rows, size_t Max_Cols> class Pseudo_Dynamic_Matrix;
+	template <class T, size_t Max_Rows, size_t Max_Cols> class PDMatrix;
 	template <class T>
 	class Dynamic_Matrix : public Matrix_Base<T, Dynamic_Matrix<T>> 
 	{
@@ -46,7 +46,7 @@ namespace CML
 		__host__ __device__ void assign_data(const Dynamic_Matrix &other);
 
 		template<class U, size_t Max_Rows, size_t Max_Cols>
-		__host__ __device__ void assign_data(const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other);
+		__host__ __device__ void assign_data(const PDMatrix<U, Max_Rows, Max_Cols> &other);
 
 		template<class U, size_t Rows, size_t Cols>
 		__host__ __device__ void assign_data(const Static_Matrix<U, Rows, Cols> &other);
@@ -68,7 +68,7 @@ namespace CML
 		__host__ __device__ Dynamic_Matrix& operator=(const Dynamic_Matrix &rhs);
 
 		template<class U, size_t Max_Rows, size_t Max_Cols>
-		__host__ __device__ Dynamic_Matrix& operator=(const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &rhs);
+		__host__ __device__ Dynamic_Matrix& operator=(const PDMatrix<U, Max_Rows, Max_Cols> &rhs);
 
 		template<class U, size_t Rows, size_t Cols>
 		__host__ __device__ Dynamic_Matrix& operator=(const Static_Matrix<U, Rows, Cols> &rhs);
@@ -81,17 +81,15 @@ namespace CML
 			return result;
 		}
 		
-		template<size_t Max_Rows, size_t Max_Cols>
-		__host__ __device__ inline operator Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols>() const
+		/* template<size_t Max_Rows, size_t Max_Cols>
+		__host__ __device__ inline operator PDMatrix<T, Max_Rows, Max_Cols>() const
 		{
-			Pseudo_Dynamic_Matrix<T, Max_Rows, Max_Cols> result;
+			PDMatrix<T, Max_Rows, Max_Cols> result;
 			result = *this;
 			return result;
-		}
+		} */
 
 		__host__ __device__ Dynamic_Matrix operator*(const Dynamic_Matrix &other) const;
-
-		//__host__ __device__ Static_Matrix<T, Rows, Cols>() const { }
 
 		__host__ __device__ void transpose();
 
@@ -293,7 +291,7 @@ namespace CML
 	template <class T>
 	template <class U, size_t Max_Rows, size_t Max_Cols>
 	__host__ __device__ Dynamic_Matrix<T>& Dynamic_Matrix<T>::operator=(
-		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &rhs 									// In: Right hand side matrix/vector to assign
+		const PDMatrix<U, Max_Rows, Max_Cols> &rhs 									// In: Right hand side matrix/vector to assign
 		)
 	{
 		deallocate_data(); 
@@ -815,7 +813,7 @@ namespace CML
 	template <class T>
 	template <class U, size_t Max_Rows, size_t Max_Cols>
 	__host__ __device__ void Dynamic_Matrix<T>::assign_data(
-		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other 									// In: Matrix whose data to assign to *this;
+		const PDMatrix<U, Max_Rows, Max_Cols> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
 		n_rows = other.get_rows();

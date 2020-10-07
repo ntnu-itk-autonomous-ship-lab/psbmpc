@@ -29,7 +29,7 @@ namespace CML
 {
 	template<class T, class Derived> class Matrix_Base;
 	template<class T> class Dynamic_Matrix;
-	template<class T, size_t Max_Rows, size_t Max_Cols> class Pseudo_Dynamic_Matrix;
+	template<class T, size_t Max_Rows, size_t Max_Cols> class PDMatrix;
 
 	template <class T, size_t Rows, size_t Cols>
 	class Static_Matrix : public Matrix_Base<T, Static_Matrix<T, Rows, Cols>> 
@@ -44,7 +44,7 @@ namespace CML
 		__host__ __device__ void assign_data(const Dynamic_Matrix<U> &other);
 
 		template <class U, size_t Max_Rows, size_t Max_Cols>
-		__host__ __device__ void assign_data(const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other);
+		__host__ __device__ void assign_data(const PDMatrix<U, Max_Rows, Max_Cols> &other);
 
 	public:
 
@@ -58,7 +58,7 @@ namespace CML
 		__host__ __device__ Static_Matrix& operator=(const Dynamic_Matrix<U> &rhs);
 
 		template <class U, size_t Max_Rows, size_t Max_Cols>
-		__host__ __device__ Static_Matrix& operator=(const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &rhs);
+		__host__ __device__ Static_Matrix& operator=(const PDMatrix<U, Max_Rows, Max_Cols> &rhs);
 
 		template <class U, size_t Other_Rows, size_t Other_Cols>
 		__host__ __device__ Static_Matrix<T, Rows, Other_Cols> operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
@@ -71,13 +71,13 @@ namespace CML
 			return result;
 		}
 		
-		template <class U, size_t Max_Rows, size_t Max_Cols>
-		__host__ __device__ inline operator Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols>() const
+		/* template <class U, size_t Max_Rows, size_t Max_Cols>
+		__host__ __device__ inline operator PDMatrix<U, Max_Rows, Max_Cols>() const
 		{
-			Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> result;
+			PDMatrix<U, Max_Rows, Max_Cols> result;
 			result = *this;
 			return result;
-		}
+		} */
 
 		__host__ __device__ Static_Matrix<T, Cols, Rows> transposed() const;
 
@@ -254,7 +254,7 @@ namespace CML
 	template <class T, size_t Rows, size_t Cols>
 	template <class U, size_t Max_Rows, size_t Max_Cols>
 	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator=(
-		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &rhs 								// In: Right hand side matrix/vector to assign
+		const PDMatrix<U, Max_Rows, Max_Cols> &rhs 								// In: Right hand side matrix/vector to assign
 		)
 	{
 		assign_data(rhs);
@@ -619,7 +619,7 @@ namespace CML
 	template <class T, size_t Rows, size_t Cols>
 	template <class U, size_t Max_Rows, size_t Max_Cols>
 	__host__ __device__ void Static_Matrix<T, Rows, Cols>::assign_data(
-		const Pseudo_Dynamic_Matrix<U, Max_Rows, Max_Cols> &other 									// In: Matrix whose data to assign to *this;
+		const PDMatrix<U, Max_Rows, Max_Cols> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
 		assert(Rows == other.get_rows() && Cols == other.get_cols());

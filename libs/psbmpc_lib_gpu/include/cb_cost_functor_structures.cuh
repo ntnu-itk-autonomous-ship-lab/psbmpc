@@ -112,27 +112,27 @@ public:
 
 	CML::Vector6d ownship_state;
 
-	CML::Pseudo_Dynamic_Matrix<double, 6, MAX_N_SAMPLES> trajectory;
+	CML::PDMatrix<double, 6, MAX_N_SAMPLES> trajectory;
 
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_M, 1> maneuver_times;
+	CML::PDMatrix<double, MAX_N_M, 1> maneuver_times;
 
 	double u_d, chi_d;
 
 	double u_m_last;
 	double chi_m_last;
 
-	CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_WPS> waypoints;
+	CML::PDMatrix<double, 2, MAX_N_WPS> waypoints;
 
-	CML::Pseudo_Dynamic_Matrix<double, 4, MAX_N_OBST> static_obstacles;
+	CML::PDMatrix<double, 4, MAX_N_OBST> static_obstacles;
 
 	int n_obst; 
 
 	// Number of prediction scenarios for each obstacle
-	CML::Pseudo_Dynamic_Matrix<int, MAX_N_OBST, 1> n_ps;
+	CML::PDMatrix<int, MAX_N_OBST, 1> n_ps;
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
-	CML::Pseudo_Dynamic_Matrix<bool, MAX_N_OBST, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
+	CML::PDMatrix<bool, MAX_N_OBST, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
 
 
 	//=======================================================================================

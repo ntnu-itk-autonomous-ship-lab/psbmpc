@@ -54,7 +54,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 *  Modified :
 *****************************************************************************************/
 __device__ double CB_Cost_Functor::operator()(
-	const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
+	const thrust::tuple<const unsigned int, CML::PDMatrix<double, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
 	double cost = 0;
@@ -62,16 +62,16 @@ __device__ double CB_Cost_Functor::operator()(
 	//======================================================================================================================
 	// 1.0 : Setup
 	unsigned int cb_index = thrust::get<0>(cb_tuple);
-	CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> offset_sequence = thrust::get<1>(cb_tuple);
+	CML::PDMatrix<double, 2 * MAX_N_M, 1> offset_sequence = thrust::get<1>(cb_tuple);
 
 	int n_samples = round(pars.T / pars.dt);
 
 	double d_safe_i(0.0), chi_m(0.0), Pr_CC_i(0.0), cost_ps(0.0);
 
 	// Allocate vectors for keeping track of max cost wrt obstacle i in predictions scenario ps
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1); cost_i.set_zero();
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, 1> P_c_i, max_cost_ps;
-	CML::Pseudo_Dynamic_Matrix<bool, MAX_N_PS, 1> mu_i;
+	CML::PDMatrix<double, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1); cost_i.set_zero();
+	CML::PDMatrix<double, MAX_N_PS, 1> P_c_i, max_cost_ps;
+	CML::PDMatrix<bool, MAX_N_PS, 1> mu_i;
 	
 	// Allocate vectors for the obstacle intention weighted cost, and intention probability vector
 	CML::Vector3d cost_a, Pr_a;
@@ -267,18 +267,18 @@ __device__ double CB_Cost_Functor::operator()(
 }
 
 /* __device__ double CB_Cost_Functor::operator()(
-	const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> &cb_tuple		// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
+	const thrust::tuple<const unsigned int, CML::PDMatrix<double, 20, 1>> &cb_tuple		// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
 	double cost = 0;
 
 	unsigned int cb_index = thrust::get<0>(cb_tuple);
-	CML::Pseudo_Dynamic_Matrix<double, 20, 1> offset_sequence = thrust::get<1>(cb_tuple);
+	CML::PDMatrix<double, 20, 1> offset_sequence = thrust::get<1>(cb_tuple);
 
 	int n_samples = round(pars.T / pars.dt);
 
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> P_c_i;
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1);
+	CML::PDMatrix<double, MAX_N_PS, MAX_N_SAMPLES> P_c_i;
+	CML::PDMatrix<double, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1);
 
 	printf("here1 \n");
  	ownship.predict_trajectory(
@@ -450,7 +450,7 @@ __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 // Modified :
 //=======================================================================================
 __device__ inline void CB_Cost_Functor::calculate_collision_probabilities(
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i,		// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
+	CML::PDMatrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i,		// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const int i, 															// In: Index of obstacle
 	//Ownship *ownship,														// In: Ownship object
 	CPE *cpe 																// In: Collision probability estimator
@@ -460,11 +460,11 @@ __device__ inline void CB_Cost_Functor::calculate_collision_probabilities(
 	
 	double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
 
-	CML::Pseudo_Dynamic_Matrix<double, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_i_p = obstacles[i].get_trajectories();
-	CML::Pseudo_Dynamic_Matrix<double, 16, MAX_N_SAMPLES> P_i_p = obstacles[i].get_trajectory_covariance();
+	CML::PDMatrix<double, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_i_p = obstacles[i].get_trajectories();
+	CML::PDMatrix<double, 16, MAX_N_SAMPLES> P_i_p = obstacles[i].get_trajectory_covariance();
 
 	// Non-optimal temporary row-vector storage solution
-	CML::Pseudo_Dynamic_Matrix<double, 1, MAX_N_SAMPLES> P_c_i_row(1, n_samples);
+	CML::PDMatrix<double, 1, MAX_N_SAMPLES> P_c_i_row(1, n_samples);
 	for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 	{
 		//cpe->estimate_over_trajectories(P_c_i_row, fdata->trajectory, xs_i_p.get_block<4, MAX_N_SAMPLES>(4 * ps, 0, 4, n_samples), P_i_p, d_safe_i, i, pars.dt);
@@ -482,22 +482,22 @@ __device__ inline void CB_Cost_Functor::calculate_collision_probabilities(
 //  Modified :
 //=======================================================================================
 __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
-	const CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i,	// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
+	const CML::PDMatrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i,	// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
 	const int i, 																// In: Index of obstacle
-	const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence 	// In: Control behaviour currently followed
+	const CML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence 	// In: Control behaviour currently followed
 	//Ownship *ownship 															// In: Ownship object
 	)
 {
 	// l_i is the collision cost modifier depending on the obstacle track loss.
 	double cost(0.0), cost_ps(0.0), C(0.0), l_i(0.0);
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, 1> max_cost_ps(fdata->n_ps[i], 1); max_cost_ps.set_zero();
+	CML::PDMatrix<double, MAX_N_PS, 1> max_cost_ps(fdata->n_ps[i], 1); max_cost_ps.set_zero();
 
 	int n_samples = round(pars.T / pars.dt);
 	
 
 	double Pr_CC_i = obstacles[i].get_a_priori_CC_probability();
-	CML::Pseudo_Dynamic_Matrix<double, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_i_p = obstacles[i].get_trajectories();
-	CML::Pseudo_Dynamic_Matrix<bool, MAX_N_PS, 1> mu_i = obstacles[i].get_COLREGS_violation_indicator();
+	CML::PDMatrix<double, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_i_p = obstacles[i].get_trajectories();
+	CML::PDMatrix<bool, MAX_N_PS, 1> mu_i = obstacles[i].get_COLREGS_violation_indicator();
 	
 	CML::Vector2d v_0_p, v_i_p, L_0i_p;
 	double psi_0_p, psi_i_p, d_0i_p, chi_m;
@@ -700,7 +700,7 @@ __device__ double CB_Cost_Functor::calculate_ad_hoc_collision_risk(
 //  Modified :
 //=======================================================================================
 __device__ double CB_Cost_Functor::calculate_control_deviation_cost(
-	const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence 			// In: Control behaviour currently followed
+	const CML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence 			// In: Control behaviour currently followed
 	)
 {
 	double cost = 0;
@@ -728,7 +728,7 @@ __device__ double CB_Cost_Functor::calculate_control_deviation_cost(
 //  Modified :
 //=======================================================================================
 __device__ double CB_Cost_Functor::calculate_chattering_cost(
-	const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence 			// In: Control behaviour currently followed
+	const CML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence 			// In: Control behaviour currently followed
 )
 {
 	double cost = 0;

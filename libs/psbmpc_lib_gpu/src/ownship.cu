@@ -117,8 +117,8 @@ __host__ __device__ Ownship::Ownship()
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::determine_active_waypoint_segment(
-	const CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_WPS> &waypoints,  			// In: Waypoints to follow
-	const CML::Vector6d &xs 														// In: Ownship state
+	const CML::PDMatrix<double, 2, MAX_N_WPS> &waypoints,  			// In: Waypoints to follow
+	const CML::Vector6d &xs 										// In: Ownship state
 	)	
 {
 	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
@@ -167,12 +167,12 @@ __host__ void Ownship::determine_active_waypoint_segment(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::update_guidance_references(
-	double &u_d,																			// In/out: Surge reference
-	double &chi_d,																			// In/out: Course reference 
-	const CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_WPS> &waypoints,						// In: Waypoints to follow.
-	const CML::Vector6d &xs, 																// In: Ownship state	
-	const double dt, 																		// In: Time step
-	const Guidance_Method guidance_method													// In: Type of guidance used	
+	double &u_d,																// In/out: Surge reference
+	double &chi_d,																// In/out: Course reference 
+	const CML::PDMatrix<double, 2, MAX_N_WPS> &waypoints,						// In: Waypoints to follow.
+	const CML::Vector6d &xs, 													// In: Ownship state	
+	const double dt, 															// In: Time step
+	const Guidance_Method guidance_method										// In: Type of guidance used	
 	)
 {
 	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
@@ -258,7 +258,7 @@ __host__ void Ownship::update_guidance_references(
 	)
 {
 	CML::Vector6d xs_copy;
-	CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_WPS> waypoints_copy;
+	CML::PDMatrix<double, 2, MAX_N_WPS> waypoints_copy;
 	CML::assign_eigen_object(waypoints_copy, waypoints); 
 	CML::assign_eigen_object(xs_copy, xs); 
 
@@ -384,16 +384,16 @@ __host__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::predict_trajectory(
-	CML::Pseudo_Dynamic_Matrix<double, 6, MAX_N_SAMPLES> &trajectory, 						// In/out: Own-ship trajectory
-	const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence,	 			// In: Sequence of offsets in the candidate control behavior
-	const CML::Pseudo_Dynamic_Matrix<double, MAX_N_M, 1> &maneuver_times,					// In: Time indices for each ownship avoidance maneuver
-	const double u_d, 																		// In: Surge reference
-	const double chi_d, 																	// In: Course reference
-	const CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_WPS> &waypoints, 						// In: Ownship waypoints
-	const Prediction_Method prediction_method,												// In: Type of prediction method to be used, typically an explicit method
-	const Guidance_Method guidance_method, 													// In: Type of guidance to be used
-	const double T,																			// In: Prediction horizon
-	const double dt 																		// In: Prediction time step
+	CML::PDMatrix<double, 6, MAX_N_SAMPLES> &trajectory, 						// In/out: Own-ship trajectory
+	const CML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence,	 			// In: Sequence of offsets in the candidate control behavior
+	const CML::PDMatrix<double, MAX_N_M, 1> &maneuver_times,					// In: Time indices for each ownship avoidance maneuver
+	const double u_d, 															// In: Surge reference
+	const double chi_d, 														// In: Course reference
+	const CML::PDMatrix<double, 2, MAX_N_WPS> &waypoints, 						// In: Ownship waypoints
+	const Prediction_Method prediction_method,									// In: Type of prediction method to be used, typically an explicit method
+	const Guidance_Method guidance_method, 										// In: Type of guidance to be used
+	const double T,																// In: Prediction horizon
+	const double dt 															// In: Prediction time step
 	)
 {
 	/* assert((offset_sequence.get_rows() == 1 || offset_sequence.get_cols() == 1) && 
@@ -445,10 +445,10 @@ __host__ void Ownship::predict_trajectory(
 	const double dt 												// In: Prediction time step
 	)
 {
-	CML::Pseudo_Dynamic_Matrix<double, 6, MAX_N_SAMPLES> trajectory_copy;
-	CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> offset_sequence_copy;
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_M, 1> maneuver_times_copy;
-	CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_WPS> waypoints_copy;
+	CML::PDMatrix<double, 6, MAX_N_SAMPLES> trajectory_copy;
+	CML::PDMatrix<double, 2 * MAX_N_M, 1> offset_sequence_copy;
+	CML::PDMatrix<double, MAX_N_M, 1> maneuver_times_copy;
+	CML::PDMatrix<double, 2, MAX_N_WPS> waypoints_copy;
 	
 	CML::assign_eigen_object(trajectory_copy, trajectory); 
 	CML::assign_eigen_object(offset_sequence_copy, offset_sequence); 
