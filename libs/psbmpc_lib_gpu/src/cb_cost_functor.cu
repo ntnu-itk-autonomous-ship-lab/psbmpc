@@ -69,10 +69,10 @@ __device__ double CB_Cost_Functor::operator()(
 	double d_safe_i(0.0), chi_m(0.0), Pr_CC_i(0.0);
 
 	// Allocate vectors for keeping track of max cost wrt obstacle i in predictions scenario ps
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1), max_cost_i(fdata->n_obst, 1);
-	CML::Pseudo_Dynamic_Matrix<double, MAX_N_OBST, MAX_N_PS> P_c_i_ps(fdata->n_ps[0], 1), cost_i_ps(fdata->n_ps[0], 1), max_cost_i_ps(fdata->n_ps[0], 1), mu_i(fdata->n_ps[0], 1);
-	cost_i.set_zero(); max_cost_i.set_zero();
-
+	CML::Pseudo_Dynamic_Matrix<double, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1); cost_i.set_zero();
+	CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, 1> P_c_i, cost_ps, max_cost_ps;
+	CML::Pseudo_Dynamic_Matrix<bool, MAX_N_PS, 1> mu_i;
+	
 	// Allocate vectors for the obstacle intention weighted cost, and intention probability vector
 	CML::Vector3d cost_a, Pr_a;
 
@@ -80,18 +80,18 @@ __device__ double CB_Cost_Functor::operator()(
 	ownship.initialize_wp_following();
 
 	// Set up collision probability estimator, and sample variables in case cpe_method = MCSKF4D
-	CPE* cpe = new CPE(pars.cpe_method, fdata->n_obst, pars.dt);
+	CPE* cpe = new CPE(pars.cpe_method, pars.dt);
 	cpe->seed_prng(cb_index);
 
 	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
 	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / pars.dt) + 1;
 	
-	// Allocate predicted ownship state and predicted obstacle state and covariance for their prediction scenarios (ps)
+	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
 	// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
 	CML::MatrixXd xs_p(6, n_seg_samples); 
-	CML::MatrixXd xs_i_p_ps(4, n_seg_samples);
-	CML::MatrixXd P_i_p_ps(16, n_seg_samples);
+	CML::MatrixXd xs_i_p(4, n_seg_samples);
+	CML::MatrixXd P_i_p(16, n_seg_samples);
 
 	//======================================================================================================================
 	// 1.1: Predict own-ship trajectory with the current control behaviour
@@ -112,23 +112,27 @@ __device__ double CB_Cost_Functor::operator()(
 	{	
 		d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
 
+		P_c_i.resize(fdata->n_ps[i], 1); P_c_i.set_zero();
+		mu_i = obstacles[i].get_COLREGS_violation_indicator();
+
+		
 		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 		{	
 			for (int k = 0; k < n_samples; k++)
 			{	
 				if (k == 0)
 				{
-					cpe->initialize(xs_p, xs_i_p_ps, P_i_p_ps, d_safe_i, i);
+					cpe->initialize(xs_p, xs_i_p, P_i_p, d_safe_i);
 					xs_p.set_col(0, fdata->trajectory.get_col(k));
 				}
 
-				P_i_p_ps.shift_columns_right();
+				P_i_p.shift_columns_right();
 				// The covariance prediction for obstacle i is the same in all prediction scenarios
-				P_i_p_ps.set_col(0, obstacles[i].get_trajectory_covariance_sample(k));
+				P_i_p.set_col(0, obstacles[i].get_trajectory_covariance_sample(k));
 
-				xs_i_p_ps.shift_columns_right();
+				xs_i_p.shift_columns_right();
 				// Extract obstacle state in prediction scenario ps
-				xs_i_p_ps.set_col(0, obstacles[i].get_trajectory_sample(ps, k));
+				xs_i_p.set_col(0, obstacles[i].get_trajectory_sample(ps, k));
 
 					// Determine active course modification at sample k
 					for (int M = 0; M < pars.n_M; M++)
@@ -156,12 +160,12 @@ __device__ double CB_Cost_Functor::operator()(
 				switch(pars.cpe_method)
 				{
 					case CE :	
-						P_c_i_ps(ps) = cpe->estimate(xs_p, xs_i_p_ps, P_i_p_ps, i);
+						P_c_i(ps) = cpe->estimate(xs_p, xs_i_p, P_i_p);
 						break;
 					case MCSKF4D :                
 						if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 						{
-							P_c_i_ps(ps) = cpe->estimate(xs_p, xs_i_p_ps, P_i_p_ps, i);							
+							P_c_i(ps) = cpe->estimate(xs_p, xs_i_p, P_i_p);							
 						}	
 						break;
 					default :
@@ -171,7 +175,7 @@ __device__ double CB_Cost_Functor::operator()(
 
 				//==========================================================================================
 				// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
-				cost_i_ps(i) = calculate_dynamic_obstacle_cost(P_c_i_ps(ps), xs_p.get_col(0), xs_i_p_ps.get_col(0),  i, chi_m);
+				cost_i_ps(i) = calculate_dynamic_obstacle_cost(P_c_i(ps), xs_p.get_col(0), xs_i_p.get_col(0),  i, chi_m);
 
 				if (max_cost_i_ps(i) < cost_i_ps(i))
 				{
@@ -228,12 +232,6 @@ __device__ double CB_Cost_Functor::operator()(
 
 				// Weight by the intention probabilities
 				cost_i(i) = Pr_a.dot(cost_a);
-			}
-
-			// Maximize weighted cost wrt time
-			if (max_cost_i(i) < cost_i(i))
-			{
-				max_cost_i(i) = cost_i(i);
 			}
 			//==============================================================================================
 			
