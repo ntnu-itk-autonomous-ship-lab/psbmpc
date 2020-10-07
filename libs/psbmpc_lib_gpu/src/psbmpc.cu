@@ -182,8 +182,8 @@ void PSBMPC::calculate_optimal_offsets(
 	cudaCheckErrors("Reading cudaLimitStackSize failed.");
 	std::cout << "Device max stack size : " << limit << std::endl;
 
-	/* cudaDeviceSetLimit(cudaLimitStackSize, 10000);
-	cudaCheckErrors("Setting cudaLimitStackSize failed."); */
+	cudaDeviceSetLimit(cudaLimitStackSize, 20000);
+	cudaCheckErrors("Setting cudaLimitStackSize failed.");
 
 	cudaDeviceGetLimit(&limit, cudaLimitStackSize);
 	cudaCheckErrors("Reading cudaLimitStackSize failed.");

@@ -128,10 +128,6 @@ public:
 
 	__host__ __device__ CPE(const CPE_Method cpe_method, const double dt);
 
-	__host__ __device__ ~CPE();
-
-	__host__ __device__ void clean();
-
 	__device__ inline double get_segment_discretization_time() const { return dt_seg; }
 
 	__device__ inline void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
