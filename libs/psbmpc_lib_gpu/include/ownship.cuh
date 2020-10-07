@@ -117,12 +117,12 @@ public:
 
 	__host__ void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 
-	__host__ __device__ void determine_active_waypoint_segment(const CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_WPS> &waypoints, const CML::Vector6d &xs);
+	__host__ __device__ void determine_active_waypoint_segment(const CML::PDMatrix<double, 2, MAX_N_WPS> &waypoints, const CML::Vector6d &xs);
 
 	__host__ __device__ void update_guidance_references(
 		double &u_d, 
 		double &chi_d, 
-		const CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_WPS> &waypoints, 
+		const CML::PDMatrix<double, 2, MAX_N_WPS> &waypoints, 
 		const CML::Vector6d &xs,
 		const double dt,
 		const Guidance_Method guidance_method);
@@ -149,12 +149,12 @@ public:
 	__host__ Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
 	__host__ __device__ void predict_trajectory(
-		CML::Pseudo_Dynamic_Matrix<double, 6, MAX_N_SAMPLES> &trajectory,
-		const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence,
-		const CML::Pseudo_Dynamic_Matrix<double, MAX_N_M, 1> &maneuver_times,
+		CML::PDMatrix<double, 6, MAX_N_SAMPLES> &trajectory,
+		const CML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence,
+		const CML::PDMatrix<double, MAX_N_M, 1> &maneuver_times,
 		const double u_d,
 		const double chi_d,
-		const CML::Pseudo_Dynamic_Matrix<double, 2, MAX_N_WPS> &waypoints,
+		const CML::PDMatrix<double, 2, MAX_N_WPS> &waypoints,
 		const Prediction_Method prediction_method,
 		const Guidance_Method guidance_method,
 		const double T,

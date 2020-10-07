@@ -245,7 +245,7 @@ void PSBMPC::calculate_optimal_offsets(
 	min_cost = cb_costs[min_index];
 
 	// Assign optimal offset sequence/control behaviour
-	CML::Pseudo_Dynamic_Matrix<double, 20, 1> opt_offset_sequence = control_behavior_dvec[min_index];
+	CML::PDMatrix<double, 2 * MAX_N_M, 1> opt_offset_sequence = control_behavior_dvec[min_index];
 	Eigen::VectorXd opt_offset_sequence_e;
 	CML::assign_cml_object(opt_offset_sequence_e, opt_offset_sequence);
 
@@ -308,7 +308,7 @@ void PSBMPC::map_offset_sequences()
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	CML::Pseudo_Dynamic_Matrix<double, 20, 1> cml_offset_sequence(2 * pars.n_M);
+	CML::PDMatrix<double, 2 * MAX_N_M, 1> cml_offset_sequence(2 * pars.n_M, 1);
 
 	control_behavior_dvec.resize(pars.n_cbs);
 	for (int cb = 0; cb < pars.n_cbs; cb++)

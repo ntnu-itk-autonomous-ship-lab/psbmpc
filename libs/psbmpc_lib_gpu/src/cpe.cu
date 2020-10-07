@@ -97,7 +97,7 @@ __device__ void CPE::initialize(
     const double d_safe_i                                                           // In: Safety zone around own-ship when facing obstacle i
     )
 {
-    assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 4 && P_i.get_rows() == P_i.get_cols());
+    assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16 && P_i.get_rows() == 1);
 
     // The estimation is done considering one obstacle at the time, so the d_safe parameter
     // is initialized accordingly

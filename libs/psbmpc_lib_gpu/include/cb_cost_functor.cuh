@@ -53,12 +53,12 @@ private:
 		const double chi_m,
 		const int i);
 
-	__device__ inline void calculate_collision_probabilities(CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, const int i, CPE *cpe);
+	__device__ inline void calculate_collision_probabilities(CML::PDMatrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, const int i, CPE *cpe);
 
 	__device__ inline double calculate_dynamic_obstacle_cost(
-		const CML::Pseudo_Dynamic_Matrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, 
+		const CML::PDMatrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, 
 		const int i, 
-		const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence);
+		const CML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence);
 
 	__device__ inline double calculate_dynamic_obstacle_cost(
 		const double P_c_i_ps,
@@ -72,7 +72,7 @@ private:
 	__device__ inline double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
-	__device__ inline double calculate_control_deviation_cost(const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence);
+	__device__ inline double calculate_control_deviation_cost(const CML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence);
 
 	__device__ inline double Delta_u(const double u_1, const double u_2) 		{ return pars.K_du * fabs(u_1 - u_2); }
 
@@ -81,7 +81,7 @@ private:
 	__device__ inline double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
-	__device__ double calculate_chattering_cost(const CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1> &offset_sequence);
+	__device__ double calculate_chattering_cost(const CML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence);
 
 	// Methods dealing with geographical constraints
 	__device__ double calculate_grounding_cost();
@@ -103,7 +103,7 @@ public:
 
 	__host__ CB_Cost_Functor(PSBMPC_Parameters &pars, CB_Functor_Data *fdata, Cuda_Obstacle *obstacles);
 	
-	__device__ double operator()(const thrust::tuple<const unsigned int, CML::Pseudo_Dynamic_Matrix<double, 2 * MAX_N_M, 1>> &cb_tuple);
+	__device__ double operator()(const thrust::tuple<const unsigned int, CML::PDMatrix<double, 2 * MAX_N_M, 1>> &cb_tuple);
 	
 };
 	
