@@ -45,7 +45,7 @@ __host__ __device__ Obstacle::Obstacle(
 }
 
 __host__ __device__ Obstacle::Obstacle(
-	const CML::MatrixXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const TML::MatrixXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const bool colav_on											// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	) : 
 	ID(xs_aug(8)), colav_on(colav_on),

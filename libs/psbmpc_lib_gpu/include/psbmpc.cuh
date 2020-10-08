@@ -44,7 +44,7 @@ private:
 
 	Eigen::VectorXd maneuver_times;
 
-	thrust::device_vector<CML::PDMatrix<double, 2 * MAX_N_M, 1>> control_behavior_dvec;
+	thrust::device_vector<TML::PDMatrix<double, 2 * MAX_N_M, 1>> control_behavior_dvec;
 	
 	double u_m_last;
 	double chi_m_last;

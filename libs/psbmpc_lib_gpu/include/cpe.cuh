@@ -29,7 +29,7 @@
 #include "psbmpc_defines.h"
 #include "curand_kernel.h"
 #include <thrust/device_vector.h>
-#include "cml.cuh"
+#include "tml.cuh"
 
 // NOTE: If you want standalone use of this module, define the enum CPE_Method below
 /* // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
@@ -63,11 +63,11 @@ private:
 	
 	bool converged_last;
 
-	CML::Vector2d mu_CE_last;
-	CML::Matrix2d P_CE_last;
+	TML::Vector2d mu_CE_last;
+	TML::Matrix2d P_CE_last;
 
 	int N_e, e_count;
-	CML::MatrixXd elite_samples;
+	TML::MatrixXd elite_samples;
 
 	// MCSKF4D-method parameters and internal states
 	double q, r, dt_seg; 
@@ -75,52 +75,52 @@ private:
 	double P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
 	// Common internal sample variables
-	CML::MatrixXd samples;
-	CML::MatrixXd valid;
+	TML::MatrixXd samples;
+	TML::MatrixXd valid;
 	
 	// Safety zone parameters
 	double d_safe;
 
 	// Cholesky decomposition matrix
-	CML::MatrixXd L;
+	TML::MatrixXd L;
 
 	__host__ __device__ void resize_matrices();
 
-	__device__ inline void update_L(const CML::MatrixXd &in);
+	__device__ inline void update_L(const TML::MatrixXd &in);
 
-	__device__ inline void norm_pdf_log(CML::MatrixXd &result, const CML::MatrixXd &mu, const CML::MatrixXd &Sigma);
+	__device__ inline void norm_pdf_log(TML::MatrixXd &result, const TML::MatrixXd &mu, const TML::MatrixXd &Sigma);
 
-	__device__ inline void generate_norm_dist_samples(const CML::MatrixXd &mu, const CML::MatrixXd &Sigma);
+	__device__ inline void generate_norm_dist_samples(const TML::MatrixXd &mu, const TML::MatrixXd &Sigma);
 
-	__device__ void calculate_roots_2nd_order(CML::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
+	__device__ void calculate_roots_2nd_order(TML::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
 
 	__device__ double produce_MCS_estimate(
-		const CML::MatrixXd &xs_i, 
-		const CML::MatrixXd &P_i, 
-		const CML::MatrixXd &p_os_cpa,
+		const TML::MatrixXd &xs_i, 
+		const TML::MatrixXd &P_i, 
+		const TML::MatrixXd &p_os_cpa,
 		const double t_cpa);
 
 	__device__ void determine_sample_validity_4D(
-		const CML::MatrixXd &p_os_cpa, 
+		const TML::MatrixXd &p_os_cpa, 
 		const double t_cpa);
 
 	__device__ double MCSKF4D_estimation(
-		const CML::MatrixXd &xs_os,  
-		const CML::MatrixXd &xs_i, 
-		const CML::MatrixXd &P_i);	
+		const TML::MatrixXd &xs_os,  
+		const TML::MatrixXd &xs_i, 
+		const TML::MatrixXd &P_i);	
 
 	__device__ void determine_sample_validity_2D(
-		const CML::MatrixXd &p_os);
+		const TML::MatrixXd &p_os);
 
 	__device__ void determine_best_performing_samples(
-		const CML::MatrixXd &p_os, 
-		const CML::MatrixXd &p_i, 
-		const CML::MatrixXd &P_i);
+		const TML::MatrixXd &p_os, 
+		const TML::MatrixXd &p_i, 
+		const TML::MatrixXd &P_i);
 
 	__device__ double CE_estimation(
-		const CML::MatrixXd &p_os, 
-		const CML::MatrixXd &p_i, 
-		const CML::MatrixXd &P_i);
+		const TML::MatrixXd &p_os, 
+		const TML::MatrixXd &p_i, 
+		const TML::MatrixXd &P_i);
 
 public:
 	
@@ -133,21 +133,21 @@ public:
 	__device__ inline void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
 
 	__device__ void initialize(
-		const CML::MatrixXd &xs_os, 
-		const CML::MatrixXd &xs_i, 
-		const CML::MatrixXd &P_i,
+		const TML::MatrixXd &xs_os, 
+		const TML::MatrixXd &xs_i, 
+		const TML::MatrixXd &P_i,
 		const double d_safe_i);
 	
 	__device__ double estimate(
-		const CML::MatrixXd &xs_os,
-		const CML::MatrixXd &xs_i,
-		const CML::MatrixXd &P_i);
+		const TML::MatrixXd &xs_os,
+		const TML::MatrixXd &xs_i,
+		const TML::MatrixXd &P_i);
 
 	__device__ void estimate_over_trajectories(
-		CML::MatrixXd &P_c_i,
-		const CML::MatrixXd &xs_p,
-		const CML::MatrixXd &xs_i_p,
-		const CML::MatrixXd &P_i_p,
+		TML::MatrixXd &P_c_i,
+		const TML::MatrixXd &xs_p,
+		const TML::MatrixXd &xs_i_p,
+		const TML::MatrixXd &P_i_p,
 		const double d_safe_i,
 		const double dt);
 };

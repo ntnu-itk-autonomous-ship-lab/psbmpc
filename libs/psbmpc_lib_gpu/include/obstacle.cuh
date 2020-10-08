@@ -25,7 +25,7 @@
 #include <thrust/device_vector.h>
 #include <vector>
 
-#include "cml.cuh"
+#include "tml.cuh"
 #include "Eigen/Dense"
 
 enum Intention 
@@ -55,7 +55,7 @@ public:
 
 	__host__ __device__ Obstacle(const Eigen::VectorXd &xs_aug, const bool colav_on);
 
-	__host__ __device__ Obstacle(const CML::MatrixXd &xs_aug, const bool colav_on);
+	__host__ __device__ Obstacle(const TML::MatrixXd &xs_aug, const bool colav_on);
 
 	//__host__ __device__ Obstacle(const Obstacle &o);
 

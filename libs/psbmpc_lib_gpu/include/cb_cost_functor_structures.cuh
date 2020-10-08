@@ -24,7 +24,7 @@
 #include "psbmpc_defines.h"
 #include "psbmpc.cuh"
 #include "psbmpc_parameters.h"
-#include "cml.cuh"
+#include "tml.cuh"
 #include "ownship.cuh"
 #include "cuda_obstacle.cuh"
 #include "cpe.cuh"
@@ -110,29 +110,29 @@ public:
 
 	Ownship ownship;
 
-	CML::Vector6d ownship_state;
+	TML::Vector6d ownship_state;
 
-	CML::PDMatrix<double, 6, MAX_N_SAMPLES> trajectory;
+	TML::PDMatrix<double, 6, MAX_N_SAMPLES> trajectory;
 
-	CML::PDMatrix<double, MAX_N_M, 1> maneuver_times;
+	TML::PDMatrix<double, MAX_N_M, 1> maneuver_times;
 
 	double u_d, chi_d;
 
 	double u_m_last;
 	double chi_m_last;
 
-	CML::PDMatrix<double, 2, MAX_N_WPS> waypoints;
+	TML::PDMatrix<double, 2, MAX_N_WPS> waypoints;
 
-	CML::PDMatrix<double, 4, MAX_N_OBST> static_obstacles;
+	TML::PDMatrix<double, 4, MAX_N_OBST> static_obstacles;
 
 	int n_obst; 
 
 	// Number of prediction scenarios for each obstacle
-	CML::PDMatrix<int, MAX_N_OBST, 1> n_ps;
+	TML::PDMatrix<int, MAX_N_OBST, 1> n_ps;
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
-	CML::PDMatrix<bool, MAX_N_OBST, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
+	TML::PDMatrix<bool, MAX_N_OBST, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
 
 
 	//=======================================================================================
@@ -153,11 +153,11 @@ public:
 	{
 		ownship = master.ownship;
 
-		CML::assign_eigen_object(ownship_state, master.trajectory.col(0));
+		TML::assign_eigen_object(ownship_state, master.trajectory.col(0));
 		
-		CML::assign_eigen_object(trajectory, master.trajectory);
+		TML::assign_eigen_object(trajectory, master.trajectory);
 
-		CML::assign_eigen_object(maneuver_times, master.maneuver_times);
+		TML::assign_eigen_object(maneuver_times, master.maneuver_times);
 
 		this->u_d = u_d;
 		this->chi_d = chi_d;
@@ -165,9 +165,9 @@ public:
 		u_m_last = master.u_m_last;
 		chi_m_last = master.chi_m_last;	
 
-		CML::assign_eigen_object(this->waypoints, waypoints);	
+		TML::assign_eigen_object(this->waypoints, waypoints);	
 
-		CML::assign_eigen_object(this->static_obstacles, static_obstacles);
+		TML::assign_eigen_object(this->static_obstacles, static_obstacles);
 
 		n_obst = odata.obstacles.size();
 

@@ -26,7 +26,7 @@
 #include <assert.h>
 #include <math.h>
 
-namespace CML
+namespace TML
 {
 	template <class T, class Derived> class Matrix_Base;
 	template <class T, size_t Rows, size_t Cols> class Static_Matrix;
@@ -328,7 +328,7 @@ namespace CML
 	{
 		if (n_rows < other.get_rows() || n_cols < other.get_cols())
 		{
-			return other - self;
+			return other - *this;
 		}
 
 		assert((n_rows == other.get_rows() && n_cols == other.get_cols()) 	|| 

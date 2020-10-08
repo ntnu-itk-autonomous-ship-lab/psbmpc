@@ -26,7 +26,7 @@
 
 #include "psbmpc_defines.h"
 #include <thrust/device_vector.h>
-#include "cml.cuh"
+#include "tml.cuh"
 #include "Eigen/Dense"
 
 // NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below
@@ -50,10 +50,10 @@ class Ownship
 {
 private:
 
-	CML::Vector3d tau;
-	CML::Matrix3d M_inv;
-	CML::Vector3d Cvv;
-	CML::Vector3d Dvv;
+	TML::Vector3d tau;
+	TML::Matrix3d M_inv;
+	TML::Vector3d Cvv;
+	TML::Vector3d Dvv;
 
 	// Model Parameters
 	double l_r;
@@ -107,9 +107,9 @@ private:
 	// Calculates the offsets according to the position of the GPS receiver
 	__host__ __device__ inline void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
 
-	__host__ __device__ void update_Cvv(const CML::Vector3d &nu);
+	__host__ __device__ void update_Cvv(const TML::Vector3d &nu);
 
-	__host__ __device__ void update_Dvv(const CML::Vector3d &nu);
+	__host__ __device__ void update_Dvv(const TML::Vector3d &nu);
 
 public:
 
@@ -117,13 +117,13 @@ public:
 
 	__host__ void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 
-	__host__ __device__ void determine_active_waypoint_segment(const CML::PDMatrix<double, 2, MAX_N_WPS> &waypoints, const CML::Vector6d &xs);
+	__host__ __device__ void determine_active_waypoint_segment(const TML::PDMatrix<double, 2, MAX_N_WPS> &waypoints, const TML::Vector6d &xs);
 
 	__host__ __device__ void update_guidance_references(
 		double &u_d, 
 		double &chi_d, 
-		const CML::PDMatrix<double, 2, MAX_N_WPS> &waypoints, 
-		const CML::Vector6d &xs,
+		const TML::PDMatrix<double, 2, MAX_N_WPS> &waypoints, 
+		const TML::Vector6d &xs,
 		const double dt,
 		const Guidance_Method guidance_method);
 
@@ -135,26 +135,26 @@ public:
 		const double dt,
 		const Guidance_Method guidance_method);
 
-	__host__ __device__ void update_ctrl_input(const double u_d, const double psi_d, const CML::Vector6d &xs);
+	__host__ __device__ void update_ctrl_input(const double u_d, const double psi_d, const TML::Vector6d &xs);
 	
 	__host__ void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
 	__host__ __device__ inline void initialize_wp_following() { wp_c_p = wp_c_0; }
 
-	__host__ __device__ CML::Vector6d predict(
-		const CML::Vector6d &xs_old, 
+	__host__ __device__ TML::Vector6d predict(
+		const TML::Vector6d &xs_old, 
 		const double dt, 
 		const Prediction_Method prediction_method);
 
 	__host__ Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
 	__host__ __device__ void predict_trajectory(
-		CML::PDMatrix<double, 6, MAX_N_SAMPLES> &trajectory,
-		const CML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence,
-		const CML::PDMatrix<double, MAX_N_M, 1> &maneuver_times,
+		TML::PDMatrix<double, 6, MAX_N_SAMPLES> &trajectory,
+		const TML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence,
+		const TML::PDMatrix<double, MAX_N_M, 1> &maneuver_times,
 		const double u_d,
 		const double chi_d,
-		const CML::PDMatrix<double, 2, MAX_N_WPS> &waypoints,
+		const TML::PDMatrix<double, 2, MAX_N_WPS> &waypoints,
 		const Prediction_Method prediction_method,
 		const Guidance_Method guidance_method,
 		const double T,

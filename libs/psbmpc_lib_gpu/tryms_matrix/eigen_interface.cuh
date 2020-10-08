@@ -3,7 +3,7 @@
 *  File name : eigen_interface.cuh
 *
 *  Function  : Header file for functions used to transfer data from Eigen objects to 
-*			   CML objects.
+*			   TML objects.
 *  
 *	           ---------------------
 *
@@ -28,16 +28,16 @@
 
 #include "dynamic_matrix.cuh"
 #include "static_matrix.cuh"
-#include "cml.cuh"
+#include "tml.cuh"
 
 
-namespace CML
+namespace TML
 {
 
 	/****************************************************************************************
 	*  Name     : assign_eigen_object
-	*  Function : Assigns rhs eigen object of any type, to the CML matrix on the lhs.
-	*		      Overloaded for dynamic and static cml objects.
+	*  Function : Assigns rhs eigen object of any type, to the tml matrix on the lhs.
+	*		      Overloaded for dynamic and static tml objects.
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
@@ -87,14 +87,14 @@ namespace CML
 
 	/****************************************************************************************
 	*  Name     : assign_eigen_object
-	*  Function : Assigns rhs cml object, to the (dynamic) eigen object on the lhs. 
-				  Overloaded for dynamic and static cml objects. Should be used with care
-				  such that e.g. Eigen::VectorXd is not assigned to a CML::Matrix2d..
+	*  Function : Assigns rhs TML object, to the (dynamic) eigen object on the lhs. 
+				  Overloaded for dynamic and static TML objects. Should be used with care
+				  such that e.g. Eigen::VectorXd is not assigned to a TML::Matrix2d..
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
 	template<class T, typename Eigen_Type_T>
-	__host__ __device__ void assign_cml_object(Eigen_Type_T &lhs, const Dynamic_Matrix<T> &rhs)
+	__host__ __device__ void assign_tml_object(Eigen_Type_T &lhs, const Dynamic_Matrix<T> &rhs)
 	{
 		size_t n_rows = rhs.get_rows(), n_cols = rhs.get_cols();
 		lhs.resize(n_rows, n_cols);
@@ -108,7 +108,7 @@ namespace CML
 	}
 
 	template<class T, size_t Max_Rows, size_t Max_Cols, typename Eigen_Type_T>
-	__host__ __device__ void assign_cml_object(Eigen_Type_T &lhs, const PDMatrix<T, Max_Rows, Max_Cols> &rhs)
+	__host__ __device__ void assign_tml_object(Eigen_Type_T &lhs, const PDMatrix<T, Max_Rows, Max_Cols> &rhs)
 	{
 		size_t n_rows = rhs.get_rows(), n_cols = rhs.get_cols();
 		lhs.resize(n_rows, n_cols);
@@ -122,7 +122,7 @@ namespace CML
 	}
 
 	template<class T, size_t Rows, size_t Cols, typename Eigen_Type_T>
-	__host__ __device__ void assign_cml_object(Eigen_Type_T &lhs, const Static_Matrix<T, Rows, Cols> &rhs)
+	__host__ __device__ void assign_tml_object(Eigen_Type_T &lhs, const Static_Matrix<T, Rows, Cols> &rhs)
 	{
 		lhs.resize(Rows, Cols);
 		for (size_t i = 0; i < Rows; i++)
