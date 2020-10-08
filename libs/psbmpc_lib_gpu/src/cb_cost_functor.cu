@@ -375,11 +375,11 @@ __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
 
 	B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
 
-	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+	/* is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
 				!A_is_overtaken) 											||
 				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
 				!B_is_overtaken)) 											&&
-				d_AB > pars.d_safe;
+				d_AB > pars.d_safe; */
 
 	is_head_on = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
 				 v_A.norm() > 0.25												&&

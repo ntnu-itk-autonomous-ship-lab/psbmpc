@@ -50,7 +50,7 @@ namespace TML
 
 		__host__ __device__ inline Static_Matrix() {}
 
-		__host__ __device__ Static_Matrix(const Static_Matrix &other) {	assign_data(other);	}
+		__host__ __device__ inline Static_Matrix(const Static_Matrix &other) {	assign_data(other);	}
 
 		__host__ __device__ Static_Matrix& operator=(const Static_Matrix &rhs);
 
@@ -127,14 +127,6 @@ namespace TML
 		__host__ __device__ inline size_t get_cols() const { return Cols; }
 
 		__host__ __device__ inline T* get_data() { return data; }
-
-		__host__ __device__ inline size_t size() const 
-		{ 
-			assert(Rows == 1 || Cols == 1); 
-			if (Rows > Cols) 	{ return Rows; } 
-			else 					{ return Cols; } 
-		
-		}
 	};
 
 	/****************************************************************************************

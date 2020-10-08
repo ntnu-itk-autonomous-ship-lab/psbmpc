@@ -132,36 +132,33 @@ __host__ void Cuda_Obstacle::assign_data(
 
 	this->x_offset = to.x_offset; this->y_offset = to.y_offset;
 
-	CML::assign_eigen_object(this->xs_0, to.xs_0);
-	CML::assign_eigen_object(this->P_0, to.P_0);
+	TML::assign_eigen_object(this->xs_0, to.xs_0);
+	TML::assign_eigen_object(this->P_0, to.P_0);
 
 	this->n_ps = to.ps_weights.size();
 
-	CML::assign_eigen_object(this->Pr_a, to.Pr_a);
+	TML::assign_eigen_object(this->Pr_a, to.Pr_a);
 
 	this->Pr_CC = to.Pr_CC;
 
 	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
 	
-	CML::assign_eigen_object(this->P_p, to.P_p);
+	TML::assign_eigen_object(this->P_p, to.P_p);
 
-	CML::assign_eigen_object(this->ps_weights, to.ps_weights); 
+	TML::assign_eigen_object(this->ps_weights, to.ps_weights); 
 
 	//this->sbmpc = new Obstacle_SBMPC();
 
 	this->mu.resize(n_ps, 1);
 
-	CML::MatrixXd xs_p_ps;
+	TML::MatrixXd xs_p_ps;
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		this->mu[ps] = to.mu[ps];
 
-		CML::assign_eigen_object(xs_p_ps, to.xs_p[ps]);
+		TML::assign_eigen_object(xs_p_ps, to.xs_p[ps]);
 
 		xs_p.set_block(4 * ps, 0, xs_p_ps.get_rows(), xs_p_ps.get_cols(), xs_p_ps);
-
-		//std::cout << xs_p << std::endl;
-
 	}
 }

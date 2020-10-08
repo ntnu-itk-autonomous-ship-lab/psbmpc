@@ -4,7 +4,7 @@
 *
 *  Function  : Header file for the dynamic matrix class in the Cuda Matrix Library. This
 *			   class is not used as of now on the GPU because dynamic memory allocation
-*			   is expensive. 
+*			   is expensive there. 
 *  
 *	           ---------------------
 *

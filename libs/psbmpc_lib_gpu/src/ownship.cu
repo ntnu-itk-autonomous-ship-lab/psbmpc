@@ -371,7 +371,7 @@ __host__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 
 	TML::Vector6d result = predict(xs_old_copy, dt, prediction_method);
 	Eigen::Matrix<double, 6, 1> xs_new;
-	TML::assign_TML_object(xs_new, result);
+	TML::assign_tml_object(xs_new, result);
 
 	return xs_new;
 }
@@ -457,7 +457,7 @@ __host__ void Ownship::predict_trajectory(
 
 	predict_trajectory(trajectory_copy, offset_sequence_copy, maneuver_times_copy, u_d, chi_d, waypoints_copy, prediction_method, guidance_method, T, dt);
 
-	TML::assign_TML_object(trajectory, trajectory_copy);
+	TML::assign_tml_object(trajectory, trajectory_copy);
 }
 
 
