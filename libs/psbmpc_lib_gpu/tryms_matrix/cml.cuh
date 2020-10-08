@@ -44,9 +44,9 @@ namespace CML
 	{
 	private:
 
-		__host__ __device__ T calculate_determinant_recursive(const PDMatrix<T, 4, 4> &submatrix) const;
+		__host__ __device__ T calculate_determinant_recursive(const PDMatrix4d &submatrix) const;
 
-		__host__ __device__ void fill_minor_matrix(PDMatrix<T, 4, 4> &minor_matrix, const PDMatrix<T, 4, 4> &original_matrix, const size_t row, const size_t col) const;
+		__host__ __device__ void fill_minor_matrix(PDMatrix4d &minor_matrix, const PDMatrix4d &original_matrix, const size_t row, const size_t col) const;
 		
 	public:
 
@@ -65,8 +65,6 @@ namespace CML
 		__host__ __device__ Derived operator/(const T scalar) const;
 
 		__host__ __device__ Derived& operator/=(const T scalar);
-
-		__host__ __device__ bool operator==(const Derived &rhs) const;
 
 		__host__ __device__ T& operator()(const size_t index) const;
 
@@ -346,34 +344,6 @@ namespace CML
 	}
 
 	/****************************************************************************************
-	*  Name     : operator==
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__ bool Matrix_Base<T, Derived>::operator==(
-		const Derived &rhs 										// In: Right hand side matrix/vector to compare with
-		) const
-	{
-		Derived& self = get_this();
-		assert(self.get_rows() == rhs.get_rows() && self.get_cols() == rhs.get_cols());
-
-		bool result = true;
-		for (size_t i = 0; i < self.get_rows(); i++)
-		{
-			for (size_t j = 0; j < self.get_cols() ; j++)
-			{
-				if (self(i, j) != rhs(i, j))
-				{
-					result = false;
-				}
-			}
-		}
-		return result;
-	}
-
-	/****************************************************************************************
 	*  Name     : operator() with one parameter
 	*  Function : Fetches vector element reference
 	*  Author   : 
@@ -421,7 +391,7 @@ namespace CML
 		T det = 0;
 	
 		// allocate the cofactor matrix
-		PDMatrix<T, 4, 4> temp_minor(self.get_rows() - 1);
+		PDMatrix4d temp_minor(self.get_rows() - 1);
 
 		for(size_t i = 0; i < self.get_rows(); i++)
 		{
@@ -438,7 +408,7 @@ namespace CML
 	/****************************************************************************************
 	*  Name     : inverse
 	*  Function : Calculates the matrix inverse using the cofactor/minor method
-	*			  A_inv = C^T / det(A)
+	*			  A_inv = C^T / det(A). Should only be used for dimensions up to n = 4.
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
@@ -467,7 +437,7 @@ namespace CML
 			return result;
 		}    
 	
-		PDMatrix<T, 4, 4> temp_minor(self.get_rows() - 1);
+		PDMatrix4d temp_minor(self.get_rows() - 1);
 	
 		for(size_t i = 0; i < self.get_rows(); i++)
 		{
@@ -747,7 +717,7 @@ namespace CML
 	*****************************************************************************************/
 	template <class T, class Derived>
 	__host__ __device__ T Matrix_Base<T, Derived>::calculate_determinant_recursive(
-		const PDMatrix<T, 4, 4> &submatrix 									// In: Matrix to calculate determinant of
+		const PDMatrix4d &submatrix 									// In: Matrix to calculate determinant of
 		) const
 	{
 		T det = (T)0;
@@ -762,7 +732,7 @@ namespace CML
 			return det;
 		}
 
-		PDMatrix<T, 4, 4> temp_minor(submatrix.get_rows() - 1);
+		PDMatrix4d temp_minor(submatrix.get_rows() - 1);
 
 		for (size_t i = 0; i < submatrix.get_rows(); i++)
 		{
@@ -784,8 +754,8 @@ namespace CML
 	*****************************************************************************************/
 	template <class T, class Derived>
 	__host__ __device__ void Matrix_Base<T, Derived>::fill_minor_matrix(
-		PDMatrix<T, 4, 4> &minor_matrix, 							// In/out: Matrix to fill  as the minor M_{row, col}
-		const PDMatrix<T, 4, 4> &original_matrix, 					// In: Original matrix to extract the minor from, of one order higher than the minor matrix
+		PDMatrix4d &minor_matrix, 							// In/out: Matrix to fill  as the minor M_{row, col}
+		const PDMatrix4d &original_matrix, 					// In: Original matrix to extract the minor from, of one order higher than the minor matrix
 		const size_t row,  											// In: Row index of minor
 		const size_t col 											// In: Column index of minor
 		) const

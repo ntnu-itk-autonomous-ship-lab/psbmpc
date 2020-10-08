@@ -3,7 +3,6 @@
 *  File name : test_cmatrix.cpp
 *
 *  Function  : Test file for the Cuda Matrix Library (CML) meant for use in CUDA kernels.
-*			   NOTE! It is until now mainly the dynamic matrix that is tested for use. 
 *			   
 *	           ---------------------
 *
