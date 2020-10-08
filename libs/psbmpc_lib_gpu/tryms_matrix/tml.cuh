@@ -1,14 +1,12 @@
 /****************************************************************************************
 *
-*  File name : cml.cuh
+*  File name : TML.cuh
 *
-*  Function  : Header file for a simple Cuda Matrix Library (CML)
+*  Function  : Header file for a simple Tryms Matrix Library (TML)
 *			   used inside the Cuda kernels for the PSB-MPC GPU calculations. Can contain 
 *			   any normal data type such as double, float, int, bool etc. 
 *			   The implementation is based on CRTP. Storage is row-major.
 *
-*  			   A Matrix_Base is here defined which is commonly used by the dynamic and 
-*			   static matrix classes. 
 *	           ---------------------
 *
 *  Version 1.0
@@ -22,8 +20,8 @@
 *
 *****************************************************************************************/
 
-#ifndef _CML_CUH_
-#define _CML_CUH_
+#ifndef _TML_CUH_
+#define _TML_CUH_
 
 #include <thrust/device_vector.h>
 #include <assert.h>
@@ -34,7 +32,7 @@
 #include "static_matrix.cuh"
 #include "eigen_interface.cuh"
 
-namespace CML
+namespace TML
 {
 	//=========================================================================================================================
 	// Matrix base that defines common matrix/vector functionality

@@ -19,8 +19,8 @@ psbmpc.cuh
 ../libs/psbmpc_lib_gpu/include/psbmpc.cuh
 psbmpc_parameters.h
 ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
-cml.cuh
-../libs/psbmpc_lib_gpu/include/cml.cuh
+tml.cuh
+../libs/psbmpc_lib_gpu/include/tml.cuh
 ownship.cuh
 ../libs/psbmpc_lib_gpu/include/ownship.cuh
 cuda_obstacle.cuh
@@ -35,8 +35,8 @@ curand_kernel.h
 ../libs/psbmpc_lib_gpu/include/curand_kernel.h
 thrust/device_vector.h
 -
-cml.cuh
-../libs/psbmpc_lib_gpu/include/cml.cuh
+tml.cuh
+../libs/psbmpc_lib_gpu/include/tml.cuh
 psbmpc_parameters.h
 ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
 
@@ -45,8 +45,8 @@ psbmpc_defines.h
 ../libs/psbmpc_lib_gpu/include/psbmpc_defines.h
 thrust/device_vector.h
 -
-cml.cuh
-../libs/psbmpc_lib_gpu/include/cml.cuh
+tml.cuh
+../libs/psbmpc_lib_gpu/include/tml.cuh
 obstacle.cuh
 ../libs/psbmpc_lib_gpu/include/obstacle.cuh
 tracked_obstacle.cuh
@@ -65,8 +65,8 @@ thrust/device_vector.h
 -
 vector
 -
-cml.cuh
-../libs/psbmpc_lib_gpu/include/cml.cuh
+tml.cuh
+../libs/psbmpc_lib_gpu/include/tml.cuh
 Eigen/Dense
 ../libs/psbmpc_lib_gpu/include/Eigen/Dense
 
@@ -87,8 +87,8 @@ psbmpc_defines.h
 ../libs/psbmpc_lib_gpu/include/psbmpc_defines.h
 thrust/device_vector.h
 -
-cml.cuh
-../libs/psbmpc_lib_gpu/include/cml.cuh
+tml.cuh
+../libs/psbmpc_lib_gpu/include/tml.cuh
 Eigen/Dense
 ../libs/psbmpc_lib_gpu/include/Eigen/Dense
 psbmpc_parameters.h
@@ -139,8 +139,8 @@ kf.cuh
 ../libs/psbmpc_lib_gpu/include/utilities.cuh
 thrust/device_vector.h
 -
-cml.cuh
-../libs/psbmpc_lib_gpu/include/cml.cuh
+tml.cuh
+../libs/psbmpc_lib_gpu/include/tml.cuh
 iostream
 ../libs/psbmpc_lib_gpu/include/iostream
 
@@ -149,22 +149,6 @@ Eigen/Dense
 ../libs/psbmpc_lib_gpu/include/Eigen/Dense
 iostream
 ../libs/psbmpc_lib_gpu/include/iostream
-
-../libs/psbmpc_lib_gpu/tryms_matrix/cml.cuh
-thrust/device_vector.h
--
-assert.h
--
-cmath
--
-dynamic_matrix.cuh
-../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
-pseudo_dynamic_matrix.cuh
-../libs/psbmpc_lib_gpu/tryms_matrix/pseudo_dynamic_matrix.cuh
-static_matrix.cuh
-../libs/psbmpc_lib_gpu/tryms_matrix/static_matrix.cuh
-eigen_interface.cuh
-../libs/psbmpc_lib_gpu/tryms_matrix/eigen_interface.cuh
 
 ../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
 thrust/device_vector.h
@@ -187,8 +171,8 @@ dynamic_matrix.cuh
 ../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
 static_matrix.cuh
 ../libs/psbmpc_lib_gpu/tryms_matrix/static_matrix.cuh
-cml.cuh
-../libs/psbmpc_lib_gpu/tryms_matrix/cml.cuh
+tml.cuh
+../libs/psbmpc_lib_gpu/tryms_matrix/tml.cuh
 
 ../libs/psbmpc_lib_gpu/tryms_matrix/pseudo_dynamic_matrix.cuh
 thrust/device_vector.h
@@ -205,6 +189,22 @@ assert.h
 -
 math.h
 -
+
+../libs/psbmpc_lib_gpu/tryms_matrix/tml.cuh
+thrust/device_vector.h
+-
+assert.h
+-
+cmath
+-
+dynamic_matrix.cuh
+../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
+pseudo_dynamic_matrix.cuh
+../libs/psbmpc_lib_gpu/tryms_matrix/pseudo_dynamic_matrix.cuh
+static_matrix.cuh
+../libs/psbmpc_lib_gpu/tryms_matrix/static_matrix.cuh
+eigen_interface.cuh
+../libs/psbmpc_lib_gpu/tryms_matrix/eigen_interface.cuh
 
 ../libs/third_party_libs/Eigen/Cholesky
 Core

@@ -11,7 +11,7 @@ To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_
 
 ## Overall Structure
 The library for the GPU-implementation has the following structure
-<img src="psbmpc_lib_structure.png" width="400"> 
+<img src="psbmpc_gpu_lib_structure.png" width="400"> 
 
 with an explanation of the modules (classes) below: 
 
@@ -89,12 +89,14 @@ This is the Mean-reverting Ornstein-Uhlenbeck process used for the prediction of
 
 ### CPE
 
-This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based, and is basically among others the main reason for trying to implement the PSB-MPC on the GPU. Estimates the probability with pairs of trajectories (of the own-ship and a nearby obstacle) as inputs. 
+This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based, and is basically among others the main reason for trying to implement the PSB-MPC on the GPU. Changed to facilitate only static data allocation, and only considers one obstacle at the time.
 
 ### Utilities
 
 <p> Inlined functions commonly used across multiple modules, gathered in one file. </p>
 
+
+## Tryms library
 
 ## References
 

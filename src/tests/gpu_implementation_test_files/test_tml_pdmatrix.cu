@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : test_cmatrix.cpp
+*  File name : test_tml_pdmatrix.cu
 *
-*  Function  : Test file for the Cuda Matrix Library (CML) PDMatrix meant for use in 
+*  Function  : Test file for the PDMatrix class in TML meant for use in 
 *			   CUDA kernels.
 *			   
 *	           ---------------------
@@ -23,17 +23,17 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "cml.cuh"
+#include "tml.cuh"
 #include <iostream>
 #include <random>
 #include "Eigen/Dense"
 
 // Conversion does not work with non-const parameters, because the implicit conversion is temporary.
-void test_conversion(const CML::MatrixXd &m) { std::cout << m << std::endl; }
+void test_conversion(const TML::MatrixXd &m) { std::cout << m << std::endl; }
 
-void test_conversion2(const CML::Vector3d &v3d) { std::cout << v3d << std::endl; }
+void test_conversion2(const TML::Vector3d &v3d) { std::cout << v3d << std::endl; }
 
-void test_conversion3(const CML::PDMatrix<double, 100, 100> &pdm) { std::cout << pdm << std::endl; }
+void test_conversion3(const TML::PDMatrix<double, 100, 100> &pdm) { std::cout << pdm << std::endl; }
 
 
 int main()
@@ -51,17 +51,17 @@ int main()
 	//================================================================================
 	// Assignment operator + copy constructor test
 	//================================================================================
-	CML::PDMatrix<double, 4, 4> t1(3);
-	CML::PDMatrix<double, 4, 4> t2(2);
+	TML::PDMatrix<double, 4, 4> t1(3);
+	TML::PDMatrix<double, 4, 4> t2(2);
 	t1 = t2;
 
-	CML::PDMatrix<double, 4, 4> t3 = t1;
+	TML::PDMatrix<double, 4, 4> t3 = t1;
 
 	//================================================================================
 	// 2x2 inverse test
 	//================================================================================
 	size_t n_rows = 2, n_cols = 2;
-	CML::PDMatrix<double, 4, 4> M1(n_rows, n_cols), M1_inv = M1;
+	TML::PDMatrix<double, 4, 4> M1(n_rows, n_cols), M1_inv = M1;
 	Eigen::MatrixXd M2(n_rows, n_cols); 
 	Eigen::MatrixXd M_diff(n_rows, n_cols);
 
@@ -77,11 +77,11 @@ int main()
 			M1(i, j) = M2(i, j);
 		}
 	}
-	std::cout << "CML 2x2 = " << std::endl;
+	std::cout << "TML 2x2 = " << std::endl;
 	std::cout << M1 << std::endl;
 
 	std::cout << "Eigen 2x2 determinant= " << M2.determinant() << std::endl;
-	std::cout << "CML 2x2 determinant= " << M1.determinant() << std::endl;
+	std::cout << "TML 2x2 determinant= " << M1.determinant() << std::endl;
 
 	M1_inv = M1.inverse();
 
@@ -118,11 +118,11 @@ int main()
 		}
 	}
 	
-	std::cout << "CML 3x3 = " << std::endl;
+	std::cout << "TML 3x3 = " << std::endl;
 	std::cout << M1 << std::endl;
 
 	std::cout << "Eigen 3x3 determinant= " << M2.determinant() << std::endl;
-	std::cout << "CML 3x3 determinant= " << M1.determinant() << std::endl;
+	std::cout << "TML 3x3 determinant= " << M1.determinant() << std::endl;
 
 	M1_inv = M1.inverse();
 	for (size_t i = 0; i < n_rows; i++)
@@ -158,11 +158,11 @@ int main()
 			}
 		}
 	}
-	std::cout << "CML 4x4 = " << std::endl;
+	std::cout << "TML 4x4 = " << std::endl;
 	std::cout << M1 << std::endl;
 
 	std::cout << "Eigen 4x4 determinant= " << M2.determinant() << std::endl;
-	std::cout << "CML 4x4 determinant= " << M1.determinant() << std::endl;
+	std::cout << "TML 4x4 determinant= " << M1.determinant() << std::endl;
 
 	M1_inv = M1.inverse();
 
@@ -179,7 +179,7 @@ int main()
 	// Transpose test
 	//================================================================================
 	n_rows = 4; n_cols = 2;
-	CML::PDMatrix<double, 4, 2> O = CML::PDMatrix<double, 4, 2>::ones(n_rows, n_cols);
+	TML::PDMatrix<double, 4, 2> O = TML::PDMatrix<double, 4, 2>::ones(n_rows, n_cols);
 	std::cout << "Original = " << std::endl;
 	std::cout << O << std::endl;
 
@@ -189,7 +189,7 @@ int main()
 	// Dot product test
 	//================================================================================
 	n_rows = 4; n_cols = 1;
-	CML::PDVector4d v1(n_rows, n_cols), v2(n_rows, n_cols);
+	TML::PDVector4d v1(n_rows, n_cols), v2(n_rows, n_cols);
 	Eigen::VectorXd v1_e(n_rows), v2_e(n_rows);
 	for (size_t i = 0; i < n_rows; i++)
 	{
@@ -227,7 +227,7 @@ int main()
 	// Operator tests
 	//================================================================================
 	n_rows = 4; n_cols = 4;
-	CML::PDMatrix<double, 16, 16> A(n_rows, n_cols), B(n_rows, n_cols), C;
+	TML::PDMatrix<double, 16, 16> A(n_rows, n_cols), B(n_rows, n_cols), C;
 	Eigen::MatrixXd A_e(n_rows, n_cols), B_e(n_rows, n_cols), C_e(n_rows, n_cols);
 	M_diff.resize(n_rows, n_cols);
 
@@ -337,7 +337,7 @@ int main()
 	std::cout << "scalar - A= " << std::endl; 
 	std::cout << scalar - A << std::endl;
 
-	CML::PDVector4d a_vec(A.get_rows(), 1);
+	TML::PDVector4d a_vec(A.get_rows(), 1);
 	for (size_t i = 0; i < A.get_rows(); i++)
 	{
 		a_vec(i) = i + 1;
@@ -365,7 +365,7 @@ int main()
 	// Quadratic form calculation test
 	//================================================================================
 	n_rows = 4; n_cols = 4;
-	CML::PDVector4d x(n_rows, 1);
+	TML::PDVector4d x(n_rows, 1);
 	A.resize(n_rows, n_cols); A.set_zero();
 	A_e.resize(n_rows, n_cols);
 	Eigen::VectorXd x_e(n_rows);
@@ -402,7 +402,7 @@ int main()
 	Eigen::VectorXd r_e1(n_rows);
 
 	A.resize(n_rows, n_cols); A_e.resize(n_rows, n_cols);
-	CML::PDMatrix3d r2(n_rows, n_cols);
+	TML::PDMatrix3d r2(n_rows, n_cols);
 	Eigen::MatrixXd r2_e(n_rows, n_cols);
 
 	for (size_t i = 0; i < n_rows; i++)
@@ -431,11 +431,11 @@ int main()
 	// Set function tests
 	//================================================================================
 	n_rows = 6; n_cols = 6;
-	CML::PDMatrix6d T(n_rows, n_cols), T_sub(n_rows - 3, n_cols - 3);
+	TML::PDMatrix6d T(n_rows, n_cols), T_sub(n_rows - 3, n_cols - 3);
 	T.set_zero(); T_sub.set_all_coeffs(3);
 	std::cout << "T before set = " << std::endl;
 	std::cout << T << std::endl;
-	CML::PDMatrix<double, 6, 6> row_vec(1, n_cols), col_vec(n_rows, 1);
+	TML::PDMatrix<double, 6, 6> row_vec(1, n_cols), col_vec(n_rows, 1);
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		col_vec(i) = 1;
@@ -472,33 +472,33 @@ int main()
 	//================================================================================
 	// Further tests
 	//================================================================================
-	CML::MatrixXd samples_d(4, 10); samples_d.set_ones();
+	TML::MatrixXd samples_d(4, 10); samples_d.set_ones();
 	Eigen::MatrixXd transfer(4, 10); transfer.setZero();
-	CML::PDMatrix<double, 4, 100> samples = samples_d, samples_2;
+	TML::PDMatrix<double, 4, 100> samples = samples_d, samples_2;
 	std::cout << samples << std::endl;
-	CML::assign_eigen_object(samples_2, transfer);
+	TML::assign_eigen_object(samples_2, transfer);
 	std::cout << samples_2 << std::endl;
 	
-	CML::Static_Matrix<double, 4, 4> testc1; testc1.set_ones();
-	CML::PDMatrix<double, 200, 1000> testc1_pdm(2, 2); testc1_pdm.set_all_coeffs(2.0);
+	TML::Static_Matrix<double, 4, 4> testc1; testc1.set_ones();
+	TML::PDMatrix<double, 200, 1000> testc1_pdm(2, 2); testc1_pdm.set_all_coeffs(2.0);
 	test_conversion(testc1);
 	test_conversion(testc1_pdm);
 
 
-	CML::MatrixXd testc2(3, 1); testc2.set_ones();
-	CML::PDMatrix<double, 100, 1000> testc2_pdm(3, 1); testc2_pdm.set_all_coeffs(2.0);
+	TML::MatrixXd testc2(3, 1); testc2.set_ones();
+	TML::PDMatrix<double, 100, 1000> testc2_pdm(3, 1); testc2_pdm.set_all_coeffs(2.0);
 	test_conversion2(testc2);
 	test_conversion2(testc2_pdm);
 
-	CML::MatrixXd testc3(3, 3); testc3.set_ones();
-	CML::Vector4d testc3_sm; testc3_sm.set_all_coeffs(2.0);
+	TML::MatrixXd testc3(3, 3); testc3.set_ones();
+	TML::Vector4d testc3_sm; testc3_sm.set_all_coeffs(2.0);
 	test_conversion3(testc3);
 	test_conversion3(testc3_sm);
 
 
-	CML::PDMatrix<double, 8, 30> bigone(1, 1);
+	TML::PDMatrix<double, 8, 30> bigone(1, 1);
 
-	CML::MatrixXd assign_to(2, 20); assign_to.set_all_coeffs(3.0);
+	TML::MatrixXd assign_to(2, 20); assign_to.set_all_coeffs(3.0);
 	bigone.set_block(0, 0, assign_to.get_rows(), assign_to.get_cols(), assign_to);
 
 	std::cout << bigone << std::endl;
@@ -521,11 +521,11 @@ int main()
 
 	std::cout << bigone.get_col(2) << std::endl;
 
-	bigone.set_block(0, 0, 3, 3, CML::Matrix3d::identity());
+	bigone.set_block(0, 0, 3, 3, TML::Matrix3d::identity());
 
 	std::cout << bigone << std::endl;
 
-	CML::PDMatrix<double, 6, 4> test222(6, 3), ones(6, 1), twos(6, 1), threes(6, 1);
+	TML::PDMatrix<double, 6, 4> test222(6, 3), ones(6, 1), twos(6, 1), threes(6, 1);
 	ones.set_ones(); twos.set_all_coeffs(2.0); threes.set_all_coeffs(3.0);
 	test222.set_col(0, ones);
 	test222.set_col(1, twos);
@@ -540,8 +540,8 @@ int main()
 	//================================================================================
 	// Other tests
 	//================================================================================
-	//std::cout << CML::Dynamic_Matrix<double>::identity(3, 3) << std::endl;
-	//std::cout << CML::Dynamic_Matrix<double>::ones(3, 3) << std::endl;
+	//std::cout << TML::Dynamic_Matrix<double>::identity(3, 3) << std::endl;
+	//std::cout << TML::Dynamic_Matrix<double>::ones(3, 3) << std::endl;
 
 	//Eigen::Matrix<double, 4, 2> m42; m42.transpose();
 	return 0;

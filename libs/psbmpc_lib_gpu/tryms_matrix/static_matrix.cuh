@@ -25,7 +25,7 @@
 #include <assert.h>
 #include <math.h>
 
-namespace CML
+namespace TML
 {
 	template<class T, class Derived> class Matrix_Base;
 	template<class T> class Dynamic_Matrix;
@@ -136,10 +136,6 @@ namespace CML
 		
 		}
 	};
-
-	/****************************************************************************************
-	*  Assign general eigen matrix to the CML object
-	*****************************************************************************************/
 
 	/****************************************************************************************
 	*  Global operator functions, to allow for commutativeness
@@ -272,7 +268,7 @@ namespace CML
 		const Matrix_Type &other 									// In: Matrix/vector to add by
 		) const
 	{
-		if (n_rows < other.get_rows() || Cols < other.get_cols())
+		if (Rows < other.get_rows() || Cols < other.get_cols())
 		{
 			return other + *this;
 		}
@@ -342,7 +338,7 @@ namespace CML
 	{
 		if (Rows < other.get_rows() || Cols < other.get_cols())
 		{
-			return other - self;
+			return other - *this;
 		}
 
 		assert((Rows == other.get_rows() && Cols == other.get_cols()) 	|| 
@@ -405,7 +401,7 @@ namespace CML
 	*****************************************************************************************/
 	template <class T, size_t Rows, size_t Cols>
 	template <class U, size_t Other_Rows, size_t Other_Cols>
-	__host__ __device__  Static_Matrix<T, Rows, Other_Cols>  Static_Matrix<T, Rows, Cols>::operator*(
+	__host__ __device__  Static_Matrix<T, Rows, Cols>  Static_Matrix<T, Rows, Cols>::operator*(
 		const  Static_Matrix<U, Other_Rows, Other_Cols> &other 							// In: Matrix/vector to multiply with
 		) const
 	{	

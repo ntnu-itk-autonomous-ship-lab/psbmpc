@@ -175,7 +175,7 @@ void PSBMPC::calculate_optimal_offsets(
 	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
 	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
 	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
-	std::cout << "CML::MatrixXd size: " << sizeof(CML::MatrixXd) << std::endl;
+	std::cout << "TML::MatrixXd size: " << sizeof(TML::MatrixXd) << std::endl;
 	
 	size_t limit = 0;
 	cudaDeviceGetLimit(&limit, cudaLimitStackSize);
@@ -245,9 +245,9 @@ void PSBMPC::calculate_optimal_offsets(
 	min_cost = cb_costs[min_index];
 
 	// Assign optimal offset sequence/control behaviour
-	CML::PDMatrix<double, 2 * MAX_N_M, 1> opt_offset_sequence = control_behavior_dvec[min_index];
+	TML::PDMatrix<double, 2 * MAX_N_M, 1> opt_offset_sequence = control_behavior_dvec[min_index];
 	Eigen::VectorXd opt_offset_sequence_e;
-	CML::assign_cml_object(opt_offset_sequence_e, opt_offset_sequence);
+	TML::assign_tml_object(opt_offset_sequence_e, opt_offset_sequence);
 
 	// Set the trajectory to the optimal one and assign to the output trajectory
 	ownship.predict_trajectory(trajectory, opt_offset_sequence_e, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
@@ -308,14 +308,14 @@ void PSBMPC::map_offset_sequences()
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	CML::PDMatrix<double, 2 * MAX_N_M, 1> cml_offset_sequence(2 * pars.n_M, 1);
+	TML::PDMatrix<double, 2 * MAX_N_M, 1> tml_offset_sequence(2 * pars.n_M, 1);
 
 	control_behavior_dvec.resize(pars.n_cbs);
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
-		CML::assign_eigen_object(cml_offset_sequence, offset_sequence);
+		TML::assign_eigen_object(tml_offset_sequence, offset_sequence);
 
-		control_behavior_dvec[cb] = cml_offset_sequence;
+		control_behavior_dvec[cb] = tml_offset_sequence;
 
 		increment_control_behaviour(offset_sequence_counter, offset_sequence);
 	}

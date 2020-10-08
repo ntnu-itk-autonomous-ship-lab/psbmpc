@@ -26,7 +26,7 @@
 #include <assert.h>
 #include <math.h>
 
-namespace CML
+namespace TML
 {
 	template <class T, class Derived> class Matrix_Base;
 	template <class T, size_t Rows, size_t Cols> class Static_Matrix;
