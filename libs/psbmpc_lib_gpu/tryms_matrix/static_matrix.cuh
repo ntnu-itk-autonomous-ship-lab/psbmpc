@@ -63,8 +63,14 @@ namespace TML
 		template <class U>
 		__host__ __device__ inline operator Dynamic_Matrix<U>() const
 		{
-			Dynamic_Matrix<U> result;
-			result = *this;
+			Dynamic_Matrix<U> result(Rows, Cols);
+			for (size_t i = 0; i < Rows; i++)
+			{
+				for (size_t j = 0; j < Cols; j++)
+				{
+					result(i, j) = this->operator()(i, j);
+				}
+			}
 			return result;
 		}
 		
@@ -76,20 +82,21 @@ namespace TML
 			return result;
 		} */
 
-		template <class Matrix_Type>
-		__host__ __device__ Static_Matrix operator+(const Matrix_Type &other) const;
+		/*
+		template <class U, size_t Max_Rows, size_t Max_Cols>
+		__host__ __device__ Static_Matrix operator+(const PDMatrix<U, Max_Rows, Max_Cols> &other) const;
 
-		template <class Matrix_Type>
+		 template <class Matrix_Type>
 		__host__ __device__ Static_Matrix& operator+=(const Matrix_Type &rhs);
 
 		template <class Matrix_Type>
 		__host__ __device__ Static_Matrix operator-(const Matrix_Type &other) const;
 
 		template <class Matrix_Type>
-		__host__ __device__ Static_Matrix& operator-=(const Matrix_Type &rhs);
+		__host__ __device__ Static_Matrix& operator-=(const Matrix_Type &rhs);  */
 
 		template <class U, size_t Other_Rows, size_t Other_Cols>
-		__host__ __device__ Static_Matrix operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
+		__host__ __device__ Static_Matrix<T, Rows, Other_Cols> operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
 
 		__host__ __device__ Static_Matrix<T, Cols, Rows> transposed() const;
 
@@ -254,10 +261,10 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, size_t Rows, size_t Cols>
-	template <class Matrix_Type>
+	/* template <class T, size_t Rows, size_t Cols>
+	template <class U, size_t Max_Rows, size_t Max_Cols>
 	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::operator+(
-		const Matrix_Type &other 									// In: Matrix/vector to add by
+		const PDMatrix<U, Max_Rows, Max_Cols> &other 							// In: Matrix/vector to add by
 		) const
 	{
 		if (Rows < other.get_rows() || Cols < other.get_cols())
@@ -290,7 +297,7 @@ namespace TML
 			}
 		}
 		return result;
-	}
+	} */
 
 	/****************************************************************************************
 	*  Name     : operator+=
@@ -298,7 +305,7 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, size_t Rows, size_t Cols>
+	/* template <class T, size_t Rows, size_t Cols>
 	template <class Matrix_Type>
 	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator+=(
 		const Matrix_Type &rhs 										// In: Right hand side matrix/vector to add by
@@ -314,7 +321,7 @@ namespace TML
 			}
 		}
 		return *this;
-	}
+	} */
 
 	/****************************************************************************************
 	*  Name     : operator-
@@ -322,7 +329,7 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, size_t Rows, size_t Cols>
+	/* template <class T, size_t Rows, size_t Cols>
 	template <class Matrix_Type>
 	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::operator-(
 		const Matrix_Type &other 									// In: Matrix/vector to subtract by
@@ -358,7 +365,7 @@ namespace TML
 			}
 		}
 		return result;
-	}
+	} */
 
 	/****************************************************************************************
 	*  Name     : operator-=
@@ -366,7 +373,7 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, size_t Rows, size_t Cols>
+	/* template <class T, size_t Rows, size_t Cols>
 	template <class Matrix_Type>
 	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator-=(
 		const Matrix_Type &rhs 										// In: Right hand side matrix/vector to subtract by
@@ -383,7 +390,7 @@ namespace TML
 			}
 		}
 		return *this;
-	}
+	} */
 
 	/****************************************************************************************
 	*  Name     : operator*
@@ -393,7 +400,7 @@ namespace TML
 	*****************************************************************************************/
 	template <class T, size_t Rows, size_t Cols>
 	template <class U, size_t Other_Rows, size_t Other_Cols>
-	__host__ __device__  Static_Matrix<T, Rows, Cols>  Static_Matrix<T, Rows, Cols>::operator*(
+	__host__ __device__  Static_Matrix<T, Rows, Other_Cols>  Static_Matrix<T, Rows, Cols>::operator*(
 		const  Static_Matrix<U, Other_Rows, Other_Cols> &other 							// In: Matrix/vector to multiply with
 		) const
 	{	
@@ -762,6 +769,8 @@ namespace TML
 	using Matrix2d = Static_Matrix<double, 2, 2>;
 	using Matrix3d = Static_Matrix<double, 3, 3>;
 	using Matrix4d = Static_Matrix<double, 4, 4>;
+	using Matrix5d = Static_Matrix<double, 5, 5>;
+	using Matrix6d = Static_Matrix<double, 6, 6>;
 
 	using Vector2d = Static_Matrix<double, 2, 1>;
 	using Vector3d = Static_Matrix<double, 3, 1>;

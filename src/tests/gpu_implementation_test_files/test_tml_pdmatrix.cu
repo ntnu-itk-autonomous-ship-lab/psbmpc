@@ -227,7 +227,7 @@ int main()
 	// Operator tests
 	//================================================================================
 	n_rows = 4; n_cols = 4;
-	TML::PDMatrix<double, 16, 16> A(n_rows, n_cols), B(n_rows, n_cols), C;
+	TML::PDMatrix<double, 16, 16> A(n_rows, n_cols), B(n_rows, n_cols), C(n_rows, n_cols);
 	Eigen::MatrixXd A_e(n_rows, n_cols), B_e(n_rows, n_cols), C_e(n_rows, n_cols);
 	M_diff.resize(n_rows, n_cols);
 
@@ -334,7 +334,7 @@ int main()
 	std::cout << "A - scalar = " << std::endl; 
 	std::cout << A - scalar << std::endl;
 
-	std::cout << "scalar - A= " << std::endl; 
+	std::cout << "scalar - A = " << std::endl; 
 	std::cout << scalar - A << std::endl;
 
 	TML::PDVector4d a_vec(A.get_rows(), 1);
@@ -342,6 +342,7 @@ int main()
 	{
 		a_vec(i) = i + 1;
 	}
+	A.set_zero();
 	std::cout << "Cwise add of vector : " << std::endl;
 	std::cout << A + a_vec << std::endl;
 	A.set_zero();
@@ -540,9 +541,10 @@ int main()
 	//================================================================================
 	// Other tests
 	//================================================================================
-	//std::cout << TML::Dynamic_Matrix<double>::identity(3, 3) << std::endl;
-	//std::cout << TML::Dynamic_Matrix<double>::ones(3, 3) << std::endl;
+	TML::PDMatrix<double, 5, 10> adder(5, 5);
+	TML::Matrix5d add_by;
 
-	//Eigen::Matrix<double, 4, 2> m42; m42.transpose();
+	TML::PDMatrix<double, 6, 6> add_res;
+	add_res = adder + add_by;
 	return 0;
 }

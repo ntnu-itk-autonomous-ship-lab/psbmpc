@@ -419,14 +419,39 @@ namespace TML
 		const Dynamic_Matrix<T> &other 								// In: Matrix/Vector object to apply columnwise product to
 	) const
 	{
-		assert(n_cols == other.n_cols 				&&
-				((n_rows == 1 && other.n_rows > 1) 	||
-				(n_rows > 1 && other.n_rows == 1)));
+		assert(n_cols == other.get_cols() 				&&
+				((n_rows == 1 && other.get_rows() > 1) 	||
+				(n_rows > 1 && other.get_rows() == 1)));
+
+		size_t mrows(0);
+		if (n_rows > other.get_rows())
+		{
+			mrows = n_rows;
+		}
+		else
+		{
+			mrows = other.get_rows();
+		}
 		
 		Dynamic_Matrix<T> result(1, n_cols);
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			result(0, j) = this->get_block(0, j, n_rows, 1).transposed() * other.get_block(0, j, other.n_rows, 1);	
+			result(0, j) = (T)0;
+			for (size_t i = 0; i < mrows; i++)
+			{
+				if (n_rows == 1)
+				{
+					result(0, j) += this->operator()(0, j) * other(i, j);
+				}
+				else if(other.get_rows() == 1)
+				{	
+					result(0, j) += this->operator()(i, j) * other(0, j);
+				}
+				else
+				{
+					result(0, j) += this->operator()(i, j) * other(i, j);
+				}
+			}
 		}
 		return result;
 	}

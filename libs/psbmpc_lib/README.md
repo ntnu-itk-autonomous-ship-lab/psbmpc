@@ -1,15 +1,14 @@
-# PSB-MPC
-<p> This repository implements the Probabilistic Scenario-based MPC in C/C++. The algorithm is an extended and improved version of the original one posed in [[1]](#1). A version is implemented using the CPU and another using the GPU (not finished yet!). There are also some experimental setup for allowing obstacles to have their own collision avoidance setup, but this is not complete yet.<br>
+# PSB-MPC on the CPU
+<p> This repository implements the Probabilistic Scenario-based MPC in C/C++. The algorithm is an extended and improved version of the original one posed in [[1]](#1). This library runs purely on the CPU.<br>
 
-Several test functions exist under src/tests to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test.<br>
+Several test functions exist under cybercolav_cxx/src/tests to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test.<br>
 
-To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib)" command, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build. The libraries are located under /libs/. </p>
+To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib)" command, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build. </p>
 
 ## Dependencies
 
-- Matlab C API is used for the debugging and plotting functionality.
-- Eigen >= 3.3.7 release is used for the CPU and GPU version.
-- CUDA and Thrust are necessary for the GPU version. I have used CUDA 10.2 and Thrust 1.9.7
+- Matlab C API for the debugging and plotting functionality.
+- Eigen >= 3.3.7
 
 ## Overall Structure
 The library for the CPU-implementation has the following structure (and similar for the GPU-version)
@@ -39,7 +38,7 @@ and has the following **outputs**:
 ### PSBMPC_Parameters
 <p> contains all PSB-MPC parameters in a class, which should be modified according to tuning changes. The class has get/set functionality for each parameter according to an index file "psbmpc_index.h", and uses limits on double and integer type parameters to assure that the setting of these parameters makes sense. Work could although be done to make the get/set functionality even better. </p>
 
-## Obstacle Manager
+### Obstacle Manager
 
 <p> Is the class responsible for updating dynamic obstacle information, taking the following inputs in its main update functionality: </p>
 
@@ -84,7 +83,7 @@ This module implements a 3DOF surface vessel model with guidance and control as 
 
 ### KF
 
-This is a linear Kalman-filter module used when obstacle states are received from a tracker node, to enable more robustness for the PSB-MPC against track loss. 
+This is a linear Kalman-filter module used when obstacle states are received from a tracker node, to enable more robustness for the PSB-MPC against track loss. [[3]](#3) 
 
 ### MROU
 
@@ -92,7 +91,7 @@ This is the Mean-reverting Ornstein-Uhlenbeck process used for the prediction of
 
 ### CPE
 
-This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based, and is basically among others the main reason for trying to implement the PSB-MPC on the GPU. Estimates the probability with pairs of trajectories (of the own-ship and a nearby obstacle) as inputs. 
+This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based. Estimates the probability with pairs of trajectories (of the own-ship and a nearby obstacle) as inputs. 
 
 ### Utilities
 
@@ -104,8 +103,9 @@ This is the Collision Probability Estimator used in the PSB-MPC predictions. Has
 <a id="1">[1]</a>  Johansen, T. A., Perez, T., and Cristofaro, A., "Ship collision avoidance and COLREGS compliance using simulation-based control behavior selection with predictive hazard assessment" IEEE
 Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-3422, Dec. 2016.
 
-<a id="2">[2]</a>  Tengesdal, T., Johansen, T. A., and Brekke, E. (2020). "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions." in 2020 23rd International Conference on Information Fusion (FUSION), South Africa, in press.
+<a id="2">[2]</a>  Tengesdal, T., Johansen, T. A., and Brekke, E. (2020). "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions." 2020 23rd International Conference on Information Fusion (FUSION), South Africa.
+
+<a id="3">[3]</a> Kufoalor, D. K. M., Wilthil, E., Hagen, I. B., Brekke E. F. and Johansen, T. A. (2019). "Autonomous COLREGSs-Compliant Decision Making using Maritime Radar Tracking and Model Predictive Control" 2019 18th European Control Conference (ECC).
 
 
-
-<p> Trym Tengesdal, 1. september 2020.  </p>
+<p> Trym Tengesdal, 8. October 2020.  </p>

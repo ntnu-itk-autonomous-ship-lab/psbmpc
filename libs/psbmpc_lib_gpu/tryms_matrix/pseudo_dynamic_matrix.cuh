@@ -75,16 +75,29 @@ namespace TML
 		template<class U, size_t New_Max_Rows, size_t New_Max_Cols>
 		__host__ __device__ inline operator PDMatrix<U, New_Max_Rows, New_Max_Cols>() const
 		{
-			PDMatrix<U, New_Max_Rows, New_Max_Cols> result;
-			result = *this;
+			// Recursion eternally in result = *this due to conversion needed. FIX!
+			PDMatrix<U, New_Max_Rows, New_Max_Cols> result(n_rows, n_cols);
+			for (size_t i = 0; i < n_rows; i++)
+			{
+				for (size_t j = 0; j < n_cols; j++)
+				{
+					result(i, j) = this->operator()(i, j);
+				}
+			}
 			return result;
 		}
 
 		template <class U>
 		__host__ __device__ inline operator Dynamic_Matrix<U>() const
 		{
-			Dynamic_Matrix<U> result;
-			result = *this;
+			Dynamic_Matrix<U> result(n_rows, n_cols);
+			for (size_t i = 0; i < n_rows; i++)
+			{
+				for (size_t j = 0; j < n_cols; j++)
+				{
+					result(i, j) = this->operator()(i, j);
+				}
+			}
 			return result;
 		}
 
@@ -92,34 +105,40 @@ namespace TML
 		__host__ __device__ inline operator Static_Matrix<U, Rows, Cols>() const
 		{
 			Static_Matrix<U, Rows, Cols> result;
-			result = *this;
+			for (size_t i = 0; i < n_rows; i++)
+			{
+				for (size_t j = 0; j < n_cols; j++)
+				{
+					result(i, j) = this->operator()(i, j);
+				}
+			}
 			return result;
 		}
 
-		template <class Matrix_Type>
-		__host__ __device__ PDMatrix operator+(const Matrix_Type &other) const;
+		/* template<class U, size_t Rows, size_t Cols>
+		__host__ __device__ PDMatrix operator+(const Static_Matrix<U, Rows, Cols> &other) const;
 
-		template <class Matrix_Type>
+		 template <class Matrix_Type>
 		__host__ __device__ PDMatrix& operator+=(const Matrix_Type &rhs);
 
 		template <class Matrix_Type>
 		__host__ __device__ PDMatrix operator-(const Matrix_Type &other) const;
 
 		template <class Matrix_Type>
-		__host__ __device__ PDMatrix& operator-=(const Matrix_Type &rhs);
+		__host__ __device__ PDMatrix& operator-=(const Matrix_Type &rhs); */
 
-		template <class Matrix_Type>
-		__host__ __device__ PDMatrix operator*(const Matrix_Type &other) const;
+		template <class U, size_t Other_Max_Rows, size_t Other_Max_Cols>
+		__host__ __device__ PDMatrix operator*(const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other) const;
 
 		__host__ __device__ void transpose();
 
 		__host__ __device__ PDMatrix<T, Max_Cols, Max_Rows> transposed() const;
 
-		template <class Matrix_Type>
-		__host__ __device__ Matrix_Type cross(const Matrix_Type &other) const;
+		template <class U, size_t Other_Max_Rows, size_t Other_Max_Cols>
+		__host__ __device__ PDMatrix<T, 3, 1> cross(const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other) const;
 
-		template <class Matrix_Type>
-		__host__ __device__ PDMatrix cwise_product(const Matrix_Type &other) const;
+		template <class U, size_t Other_Max_Rows, size_t Other_Max_Cols>
+		__host__ __device__ PDMatrix<T, 1, Max_Cols> cwise_product(const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other) const;
 		
 		__host__ __device__ PDMatrix cwise_mean() const;
 
@@ -252,10 +271,10 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <class Matrix_Type>
+	/* template <class T, size_t Max_Rows, size_t Max_Cols>
+	template <class U, size_t Rows, size_t Cols>
 	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::operator+(
-		const Matrix_Type &other 									// In: Matrix/vector to add by
+		const Static_Matrix<U, Rows, Cols> &other 								// In: Matrix/vector to add by
 		) const
 	{
 		if (n_rows < other.get_rows() || n_cols < other.get_cols())
@@ -288,7 +307,7 @@ namespace TML
 			}
 		}
 		return result;
-	}
+	} */
 
 	/****************************************************************************************
 	*  Name     : operator+=
@@ -296,7 +315,7 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, size_t Max_Rows, size_t Max_Cols>
+	/* template <class T, size_t Max_Rows, size_t Max_Cols>
 	template <class Matrix_Type>
 	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols>& PDMatrix<T, Max_Rows, Max_Cols>::operator+=(
 		const Matrix_Type &rhs 										// In: Right hand side matrix/vector to add by
@@ -312,7 +331,7 @@ namespace TML
 			}
 		}
 		return *this;
-	}
+	} */
 
 	/****************************************************************************************
 	*  Name     : operator-
@@ -320,7 +339,7 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, size_t Max_Rows, size_t Max_Cols>
+	/* template <class T, size_t Max_Rows, size_t Max_Cols>
 	template <class Matrix_Type>
 	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::operator-(
 		const Matrix_Type &other 									// In: Matrix/vector to subtract by
@@ -356,7 +375,7 @@ namespace TML
 			}
 		}
 		return result;
-	}
+	} */
 
 	/****************************************************************************************
 	*  Name     : operator-=
@@ -364,7 +383,7 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, size_t Max_Rows, size_t Max_Cols>
+	/* template <class T, size_t Max_Rows, size_t Max_Cols>
 	template <class Matrix_Type>
 	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols>& PDMatrix<T, Max_Rows, Max_Cols>::operator-=(
 		const Matrix_Type &rhs 										// In: Right hand side matrix/vector to subtract by
@@ -381,7 +400,7 @@ namespace TML
 			}
 		}
 		return *this;
-	}
+	} */
 
 	/****************************************************************************************
 	*  Name     : operator*
@@ -390,9 +409,9 @@ namespace TML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <class Matrix_Type>
+	template <class U, size_t Other_Max_Rows, size_t Other_Max_Cols>
 	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::operator*(
-		const Matrix_Type &other 									// In: Matrix/vector to multiply with
+		const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other 									// In: Matrix/vector to multiply with
 		) const
 	{	
 		// Verify that the matrix product is valid
@@ -460,15 +479,15 @@ namespace TML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <class Matrix_Type>
-	__host__ __device__ Matrix_Type PDMatrix<T, Max_Rows, Max_Cols>::cross(
-		const Matrix_Type &other 								// In: Matrix/Vector object to perform cross product with
+	template <class U, size_t Other_Max_Rows, size_t Other_Max_Cols>
+	__host__ __device__ PDMatrix<T, 3, 1> PDMatrix<T, Max_Rows, Max_Cols>::cross(
+		const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other 								// In: Matrix/Vector object to perform cross product with
 	) const
 	{
 		// Check that the objects are in fact correct vectors of matching dimension
 		assert((n_rows == 3 && n_cols == 1) && (n_rows == other.get_rows() && n_cols == other.get_cols()));
 		
-		Matrix_Type result(n_rows, 1);
+		PDMatrix<T, 3, 1> result(n_rows, 1);
 		result(0) = this->operator()(1) * other(2) - this->operator()(2) * other(1);
 		result(1) = this->operator()(2) * other(0) - this->operator()(0) * other(2);
 		result(2) = this->operator()(0) * other(1) - this->operator()(1) * other(0);
@@ -484,19 +503,44 @@ namespace TML
 	*  Modified :
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <class Matrix_Type>
-	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::cwise_product(
-		const Matrix_Type &other 									// In: Matrix/Vector object to apply columnwise product to
+	template <class U, size_t Other_Max_Rows, size_t Other_Max_Cols>
+	__host__ __device__ PDMatrix<T, 1, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::cwise_product(
+		const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other 								// In: Matrix/Vector object to apply columnwise product to
 	) const
 	{
-		assert(n_cols == other.n_cols 				&&
-				((n_rows == 1 && other.n_rows > 1) 	||
-				(n_rows > 1 && other.n_rows == 1)));
+		assert(n_cols == other.get_cols() 				&&
+				((n_rows == 1 && other.get_rows() > 1) 	||
+				(n_rows > 1 && other.get_rows() == 1)));
+
+		size_t mrows(0);
+		if (n_rows > other.get_rows())
+		{
+			mrows = n_rows;
+		}
+		else
+		{
+			mrows = other.get_rows();
+		}
 		
-		PDMatrix<T, Max_Rows, Max_Cols> result(1, n_cols);
+		PDMatrix<T, 1, Max_Cols> result(1, n_cols);
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			result(0, j) = this->get_block(0, j, n_rows, 1).transposed() * other.get_block(0, j, other.n_rows, 1);	
+			result(0, j) = (T)0;
+			for (size_t i = 0; i < mrows; i++)
+			{
+				if (n_rows == 1)
+				{
+					result(0, j) += this->operator()(0, j) * other(i, j);
+				}
+				else if(other.get_rows() == 1)
+				{	
+					result(0, j) += this->operator()(i, j) * other(0, j);
+				}
+				else
+				{
+					result(0, j) += this->operator()(i, j) * other(i, j);
+				}
+			}
 		}
 		return result;
 	}
