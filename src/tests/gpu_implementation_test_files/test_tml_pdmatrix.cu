@@ -337,7 +337,7 @@ int main()
 	std::cout << "scalar - A = " << std::endl; 
 	std::cout << scalar - A << std::endl;
 
-	TML::PDVector4d a_vec(A.get_rows(), 1);
+	TML::PDMatrix4d a_vec(A.get_rows(), 1);
 	for (size_t i = 0; i < A.get_rows(); i++)
 	{
 		a_vec(i) = i + 1;

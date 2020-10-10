@@ -2,7 +2,7 @@
 *
 *  File name : static_matrix.cuh
 *
-*  Function  : Header file for the fixed-matrices in the Cuda Matrix Library.
+*  Function  : Header file for the fixed-matrices in Tryms (shitty) Matrix Library.
 *
 *  
 *	           ---------------------
@@ -81,19 +81,6 @@ namespace TML
 			result = *this;
 			return result;
 		} */
-
-		/*
-		template <class U, size_t Max_Rows, size_t Max_Cols>
-		__host__ __device__ Static_Matrix operator+(const PDMatrix<U, Max_Rows, Max_Cols> &other) const;
-
-		 template <class Matrix_Type>
-		__host__ __device__ Static_Matrix& operator+=(const Matrix_Type &rhs);
-
-		template <class Matrix_Type>
-		__host__ __device__ Static_Matrix operator-(const Matrix_Type &other) const;
-
-		template <class Matrix_Type>
-		__host__ __device__ Static_Matrix& operator-=(const Matrix_Type &rhs);  */
 
 		template <class U, size_t Other_Rows, size_t Other_Cols>
 		__host__ __device__ Static_Matrix<T, Rows, Other_Cols> operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
@@ -253,144 +240,6 @@ namespace TML
 		
 		return *this;
 	}
-
-	/****************************************************************************************
-	*  Name     : operator+
-	*  Function : Can add matrices of equal dimension, or row/column vectorts to the lhs, 
-	*			  given that the dimension matches
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	/* template <class T, size_t Rows, size_t Cols>
-	template <class U, size_t Max_Rows, size_t Max_Cols>
-	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::operator+(
-		const PDMatrix<U, Max_Rows, Max_Cols> &other 							// In: Matrix/vector to add by
-		) const
-	{
-		if (Rows < other.get_rows() || Cols < other.get_cols())
-		{
-			return other + *this;
-		}
-
-		assert((Rows == other.get_rows() && Cols == other.get_cols()) 	|| 
-				(Rows == other.get_rows() && other.get_cols() == 1) 		||
-				(Cols == other.get_cols() && other.get_rows() == 1));
-
-		Static_Matrix<T, Rows, Cols> result = *this;
-		
-		for (size_t i = 0; i < Rows; i++)
-		{
-			for (size_t j = 0; j < Cols ; j++)
-			{
-				if (other.get_rows() == 1)
-				{
-					result(i, j) += other(0, j);
-				} 
-				else if(other.get_cols() == 1)
-				{
-					result(i, j) += other(i, 0);
-				} 
-				else
-				{
-					result(i, j) += other(i, j);
-				}
-			}
-		}
-		return result;
-	} */
-
-	/****************************************************************************************
-	*  Name     : operator+=
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	/* template <class T, size_t Rows, size_t Cols>
-	template <class Matrix_Type>
-	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator+=(
-		const Matrix_Type &rhs 										// In: Right hand side matrix/vector to add by
-		)
-	{
-		assert(Rows == rhs.get_rows() && Cols == rhs.get_cols());
-		
-		for (size_t i = 0; i < Rows; i++)
-		{
-			for (size_t j = 0; j < Cols; j++)
-			{
-				this->operator()(i, j) += rhs(i, j);
-			}
-		}
-		return *this;
-	} */
-
-	/****************************************************************************************
-	*  Name     : operator-
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	/* template <class T, size_t Rows, size_t Cols>
-	template <class Matrix_Type>
-	__host__ __device__ Static_Matrix<T, Rows, Cols> Static_Matrix<T, Rows, Cols>::operator-(
-		const Matrix_Type &other 									// In: Matrix/vector to subtract by
-		) const
-	{
-		if (Rows < other.get_rows() || Cols < other.get_cols())
-		{
-			return other - *this;
-		}
-
-		assert((Rows == other.get_rows() && Cols == other.get_cols()) 	|| 
-				(Rows == other.get_rows() && other.get_cols() == 1) 					||
-				(Cols == other.get_cols() && other.get_rows() == 1));
-
-		Static_Matrix<T, Rows, Cols> result = *this;
-
-		for (size_t i = 0; i < Rows; i++)
-		{
-			for (size_t j = 0; j < Cols ; j++)
-			{
-				if (other.get_rows() == 1)
-				{
-					result(i, j) -= other(0, j);
-				} 
-				else if(other.get_cols() == 1)
-				{
-					result(i, j) -= other(i, 0);
-				} 
-				else
-				{
-					result(i, j) -= other(i, j);
-				}
-			}
-		}
-		return result;
-	} */
-
-	/****************************************************************************************
-	*  Name     : operator-=
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	/* template <class T, size_t Rows, size_t Cols>
-	template <class Matrix_Type>
-	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator-=(
-		const Matrix_Type &rhs 										// In: Right hand side matrix/vector to subtract by
-		)
-	{
-		assert(Rows == rhs.get_rows());
-		assert(Cols == rhs.get_cols());
-
-		for (size_t i = 0; i < Rows; i++)
-		{
-			for (size_t j = 0; j < Cols ; j++)
-			{
-				this->operator()(i, j) -= rhs(i, j);
-			}
-		}
-		return *this;
-	} */
 
 	/****************************************************************************************
 	*  Name     : operator*
@@ -777,6 +626,7 @@ namespace TML
 	using Vector4d = Static_Matrix<double, 4, 1>;
 	using Vector5d = Static_Matrix<double, 5, 1>;
 	using Vector6d = Static_Matrix<double, 6, 1>;
+	using Vector16d = Static_Matrix<double, 16, 1>;
 }
 
 #endif
