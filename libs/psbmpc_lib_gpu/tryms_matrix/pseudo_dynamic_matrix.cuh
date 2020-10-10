@@ -2,9 +2,9 @@
 *
 *  File name : pseudo_dynamic_matrix.cuh
 *
-*  Function  : Header file for the "dynamic" matrix class used in the Cuda Matrix Library,
-*			   which has a compile-time set max number of rows and columns.
-*			   Abbreviated as PDMatrix
+*  Function  : Header file for the "dynamic" matrix class used in Tryms (shitty) Matrix 
+*			   Library, which has a compile-time set max number of rows and columns.
+*			   Abbreviated as PDMatrix.
 *  
 *	           ---------------------
 *
@@ -114,18 +114,6 @@ namespace TML
 			}
 			return result;
 		}
-
-		/* template<class U, size_t Rows, size_t Cols>
-		__host__ __device__ PDMatrix operator+(const Static_Matrix<U, Rows, Cols> &other) const;
-
-		 template <class Matrix_Type>
-		__host__ __device__ PDMatrix& operator+=(const Matrix_Type &rhs);
-
-		template <class Matrix_Type>
-		__host__ __device__ PDMatrix operator-(const Matrix_Type &other) const;
-
-		template <class Matrix_Type>
-		__host__ __device__ PDMatrix& operator-=(const Matrix_Type &rhs); */
 
 		template <class U, size_t Other_Max_Rows, size_t Other_Max_Cols>
 		__host__ __device__ PDMatrix operator*(const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other) const;
@@ -264,144 +252,6 @@ namespace TML
 	/****************************************************************************************
 	*  Class member functions
 	*****************************************************************************************/
-	/****************************************************************************************
-	*  Name     : operator+
-	*  Function : Can add matrices of equal dimension, or row/column vectorts to the lhs, 
-	*			  given that the dimension matches
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	/* template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <class U, size_t Rows, size_t Cols>
-	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::operator+(
-		const Static_Matrix<U, Rows, Cols> &other 								// In: Matrix/vector to add by
-		) const
-	{
-		if (n_rows < other.get_rows() || n_cols < other.get_cols())
-		{
-			return other + *this;
-		}
-
-		assert((n_rows == other.get_rows() && n_cols == other.get_cols()) 	|| 
-				(n_rows == other.get_rows() && other.get_cols() == 1) 		||
-				(n_cols == other.get_cols() && other.get_rows() == 1));
-
-		PDMatrix<T, Max_Rows, Max_Cols> result = *this;
-		
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols ; j++)
-			{
-				if (other.get_rows() == 1)
-				{
-					result(i, j) += other(0, j);
-				} 
-				else if(other.get_cols() == 1)
-				{
-					result(i, j) += other(i, 0);
-				} 
-				else
-				{
-					result(i, j) += other(i, j);
-				}
-			}
-		}
-		return result;
-	} */
-
-	/****************************************************************************************
-	*  Name     : operator+=
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	/* template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <class Matrix_Type>
-	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols>& PDMatrix<T, Max_Rows, Max_Cols>::operator+=(
-		const Matrix_Type &rhs 										// In: Right hand side matrix/vector to add by
-		)
-	{
-		assert(n_rows == rhs.get_rows() && n_cols == rhs.get_cols());
-		
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols; j++)
-			{
-				this->operator()(i, j) += rhs(i, j);
-			}
-		}
-		return *this;
-	} */
-
-	/****************************************************************************************
-	*  Name     : operator-
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	/* template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <class Matrix_Type>
-	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::operator-(
-		const Matrix_Type &other 									// In: Matrix/vector to subtract by
-		) const
-	{
-		if (n_rows < other.get_rows() || n_cols < other.get_cols())
-		{
-			return other - *this;
-		}
-
-		assert((n_rows == other.get_rows() && n_cols == other.get_cols()) 	|| 
-				(n_rows == other.get_rows() && other.get_cols() == 1) 					||
-				(n_cols == other.get_cols() && other.get_rows() == 1));
-
-		PDMatrix<T, Max_Rows, Max_Cols> result = *this;
-
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols ; j++)
-			{
-				if (other.get_rows() == 1)
-				{
-					result(i, j) -= other(0, j);
-				} 
-				else if(other.get_cols() == 1)
-				{
-					result(i, j) -= other(i, 0);
-				} 
-				else
-				{
-					result(i, j) -= other(i, j);
-				}
-			}
-		}
-		return result;
-	} */
-
-	/****************************************************************************************
-	*  Name     : operator-=
-	*  Function : 
-	*  Author   : 
-	*  Modified :
-	*****************************************************************************************/
-	/* template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <class Matrix_Type>
-	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols>& PDMatrix<T, Max_Rows, Max_Cols>::operator-=(
-		const Matrix_Type &rhs 										// In: Right hand side matrix/vector to subtract by
-		)
-	{
-		assert(n_rows == rhs.get_rows());
-		assert(n_cols == rhs.get_cols());
-
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols ; j++)
-			{
-				this->operator()(i, j) -= rhs(i, j);
-			}
-		}
-		return *this;
-	} */
-
 	/****************************************************************************************
 	*  Name     : operator*
 	*  Function : 
@@ -888,6 +738,7 @@ namespace TML
 	using PDVector3d = PDMatrix<double, 3, 1>;
 	using PDVector4d = PDMatrix<double, 4, 1>;
 	using PDVector6d = PDMatrix<double, 6, 1>;
+	using PDVector16d = PDMatrix<double, 16, 1>;
 }
 
 	

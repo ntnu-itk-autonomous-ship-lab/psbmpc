@@ -29,7 +29,7 @@
 #include "tracked_obstacle.cuh"
 
 // Host only due to stderr usage
-#define cudaCheckErrors(msg) \
+#define cuda_check_errors(msg) \
     do { \
         cudaError_t __err = cudaGetLastError(); \
         if (__err != cudaSuccess) { \
@@ -54,7 +54,7 @@ private:
 	int n_ps;
 
 	// Vector of intention probabilities at the current time or last time of update
-	TML::PDMatrix<double, 3, 1> Pr_a;
+	TML::PDVector3d Pr_a;
 
 	// A priori COLREGS compliance probability at the current time or last time of update
 	double Pr_CC;
@@ -92,7 +92,7 @@ public:
 
 	__host__ Cuda_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
-	__device__ inline TML::MatrixXd get_intention_probabilities() const { return Pr_a; }
+	__device__ inline TML::PDVector3d get_intention_probabilities() const { return Pr_a; }
 
 	__device__ inline double get_a_priori_CC_probability() const { return Pr_CC; }
 
@@ -104,7 +104,7 @@ public:
 
 	__device__ inline TML::PDMatrix<double, 16, MAX_N_SAMPLES> get_trajectory_covariance() const { return P_p; }
 
-	__device__ inline TML::MatrixXd get_trajectory_covariance_sample(const int k) { return P_p.get_col(k); }
+	__device__ inline TML::PDMatrix<double, 16, 1> get_trajectory_covariance_sample(const int k) { return P_p.get_col(k); }
 
 	__device__ inline TML::PDMatrix<double, 4 * MAX_N_PS, MAX_N_SAMPLES> get_trajectories() const { return xs_p; }
 
@@ -113,10 +113,7 @@ public:
 		return xs_p.get_block<4, MAX_N_SAMPLES>(4 * ps, 0, 4, xs_p.get_cols()); 
 	}
 
-	template <size_t Rows, size_t Cols>
-	__device__ inline TML::Static_Matrix<double, Rows, Cols> get_ps_trajectory(const int ps) const { return xs_p.get_block<Rows, Cols>(4 * ps, 0); }
-
-	__device__ inline TML::Vector4d get_trajectory_sample(const int ps, const int k) { return xs_p.get_block<4, 1>(4 * ps, k, 4, 1); }
+	__device__ inline TML::PDVector4d get_trajectory_sample(const int ps, const int k) { return xs_p.get_block<4, 1>(4 * ps, k, 4, 1); }
 
 	__device__ inline TML::PDMatrix<double, MAX_N_PS, 1> get_ps_weights() const { return ps_weights; }
 };

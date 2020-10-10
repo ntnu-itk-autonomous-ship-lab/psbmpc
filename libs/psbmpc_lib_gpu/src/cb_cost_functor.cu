@@ -80,18 +80,18 @@ __device__ double CB_Cost_Functor::operator()(
 	ownship.initialize_wp_following();
 
 	// Set up collision probability estimator, and sample variables in case cpe_method = MCSKF4D
-	CPE *cpe = new CPE(pars.cpe_method, pars.dt);
-	cpe->seed_prng(cb_index);
+	CPE cpe(pars.cpe_method, pars.dt);
+	cpe.seed_prng(cb_index);
 
 	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
-	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / pars.dt) + 1;
+	int n_seg_samples = std::round(cpe.get_segment_discretization_time() / pars.dt) + 1;
 	
 	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
 	// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
-	TML::MatrixXd xs_p(6, n_seg_samples); 
-	TML::MatrixXd xs_i_p(4, n_seg_samples);
-	TML::MatrixXd P_i_p(16, n_seg_samples);
+	TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> xs_p(6, n_seg_samples); 
+	TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> xs_i_p(4, n_seg_samples);
+	TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> P_i_p(16, n_seg_samples);
 
 	//======================================================================================================================
 	// 1.1: Predict own-ship trajectory with the current control behaviour
@@ -140,7 +140,7 @@ __device__ double CB_Cost_Functor::operator()(
 
 				if (k == 0)
 				{
-					cpe->initialize(xs_p, xs_i_p, P_i_p, d_safe_i);
+					cpe.initialize(xs_p, xs_i_p, P_i_p, d_safe_i);
 				}
 
 				// Determine active course modification at sample k
@@ -168,12 +168,12 @@ __device__ double CB_Cost_Functor::operator()(
 				switch(pars.cpe_method)
 				{
 					case CE :	
-						P_c_i(ps) = cpe->estimate(xs_p, xs_i_p, P_i_p);
+						P_c_i(ps) = cpe.estimate(xs_p, xs_i_p, P_i_p);
 						break;
 					case MCSKF4D :                
 						if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 						{
-							P_c_i(ps) = cpe->estimate(xs_p, xs_i_p, P_i_p);							
+							P_c_i(ps) = cpe.estimate(xs_p, xs_i_p, P_i_p);							
 						}	
 						break;
 					default :

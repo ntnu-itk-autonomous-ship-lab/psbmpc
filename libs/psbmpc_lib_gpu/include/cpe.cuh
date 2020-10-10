@@ -53,8 +53,6 @@ private:
 	// Number of samples for each method
 	int n_CE, n_MCSKF;
 
-	int n_obst;
-
 	// PRNG-related
 	curandState prng_state;
 
@@ -67,7 +65,7 @@ private:
 	TML::Matrix2d P_CE_last;
 
 	int N_e, e_count;
-	TML::MatrixXd elite_samples;
+	TML::PDMatrix<double, 2, MAX_N_CPE_SAMPLES> elite_samples;
 
 	// MCSKF4D-method parameters and internal states
 	double q, r, dt_seg; 
@@ -75,52 +73,52 @@ private:
 	double P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
 	// Common internal sample variables
-	TML::MatrixXd samples;
-	TML::MatrixXd valid;
+	TML::PDMatrix<double, 4, MAX_N_CPE_SAMPLES> samples;
+	TML::PDMatrix<double, 1, MAX_N_CPE_SAMPLES> valid;
 	
 	// Safety zone parameters
 	double d_safe;
 
 	// Cholesky decomposition matrix
-	TML::MatrixXd L;
+	TML::PDMatrix4d L;
 
 	__host__ __device__ void resize_matrices();
 
-	__device__ inline void update_L(const TML::MatrixXd &in);
+	__device__ inline void update_L(const TML::PDMatrix4d &in);
 
-	__device__ inline void norm_pdf_log(TML::MatrixXd &result, const TML::MatrixXd &mu, const TML::MatrixXd &Sigma);
+	__device__ inline void norm_pdf_log(TML::PDMatrix<double, 1, MAX_N_CPE_SAMPLES> &result, const TML::PDVector4d &mu, const TML::PDMatrix4d &Sigma);
 
-	__device__ inline void generate_norm_dist_samples(const TML::MatrixXd &mu, const TML::MatrixXd &Sigma);
+	__device__ inline void generate_norm_dist_samples(const TML::PDVector4d &mu, const TML::PDMatrix4d &Sigma);
 
 	__device__ void calculate_roots_2nd_order(TML::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
 
 	__device__ double produce_MCS_estimate(
-		const TML::MatrixXd &xs_i, 
-		const TML::MatrixXd &P_i, 
-		const TML::MatrixXd &p_os_cpa,
+		const TML::Vector4d &xs_i, 
+		const TML::Matrix4d &P_i, 
+		const TML::Vector2d &p_os_cpa,
 		const double t_cpa);
 
 	__device__ void determine_sample_validity_4D(
-		const TML::MatrixXd &p_os_cpa, 
+		const TML::Vector2d &p_os_cpa, 
 		const double t_cpa);
 
 	__device__ double MCSKF4D_estimation(
-		const TML::MatrixXd &xs_os,  
-		const TML::MatrixXd &xs_i, 
-		const TML::MatrixXd &P_i);	
+		const TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> &xs_os,  
+		const TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> &xs_i, 
+		const TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> &P_i);	
 
 	__device__ void determine_sample_validity_2D(
-		const TML::MatrixXd &p_os);
+		const TML::Vector2d &p_os);
 
 	__device__ void determine_best_performing_samples(
-		const TML::MatrixXd &p_os, 
-		const TML::MatrixXd &p_i, 
-		const TML::MatrixXd &P_i);
+		const TML::Vector2d &p_os, 
+		const TML::Vector2d &p_i, 
+		const TML::Matrix2d &P_i);
 
 	__device__ double CE_estimation(
-		const TML::MatrixXd &p_os, 
-		const TML::MatrixXd &p_i, 
-		const TML::MatrixXd &P_i);
+		const TML::Vector2d &p_os, 
+		const TML::Vector2d &p_i, 
+		const TML::Matrix2d &P_i);
 
 public:
 	
@@ -133,21 +131,21 @@ public:
 	__device__ inline void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
 
 	__device__ void initialize(
-		const TML::MatrixXd &xs_os, 
-		const TML::MatrixXd &xs_i, 
-		const TML::MatrixXd &P_i,
+		const TML::PDVector6d &xs_os, 
+		const TML::PDVector4d &xs_i, 
+		const TML::PDVector16d &P_i,
 		const double d_safe_i);
 	
 	__device__ double estimate(
-		const TML::MatrixXd &xs_os,
-		const TML::MatrixXd &xs_i,
-		const TML::MatrixXd &P_i);
+		const TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> &xs_os,
+		const TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> &xs_i,
+		const TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> &P_i);
 
 	__device__ void estimate_over_trajectories(
-		TML::MatrixXd &P_c_i,
-		const TML::MatrixXd &xs_p,
-		const TML::MatrixXd &xs_i_p,
-		const TML::MatrixXd &P_i_p,
+		TML::PDMatrix<double, 1, MAX_N_SAMPLES> &P_c_i,
+		const TML::PDMatrix<double, 6, MAX_N_SAMPLES> &xs_p,
+		const TML::PDMatrix<double, 4, MAX_N_SAMPLES> &xs_i_p,
+		const TML::PDMatrix<double, 16, MAX_N_SAMPLES> &P_i_p,
 		const double d_safe_i,
 		const double dt);
 };
