@@ -99,8 +99,8 @@ struct CB_Functor_Pars
 
 /****************************************************************************************
 *  Name     : CB_Functor_Data
-*  Function : Struct containing data/information needed to evaluate the cost of one
-*			  PSB-MPC control behaviour.
+*  Function : Struct containing data/classes/information needed to evaluate the cost of 
+*			  one PSB-MPC control behaviour.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -133,7 +133,6 @@ public:
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
 	TML::PDMatrix<bool, MAX_N_OBST, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0; 
-
 
 	//=======================================================================================
 	//  Name     : CB_Functor_Data

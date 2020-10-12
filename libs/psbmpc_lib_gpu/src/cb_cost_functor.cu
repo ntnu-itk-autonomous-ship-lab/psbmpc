@@ -39,10 +39,10 @@
 __host__ CB_Cost_Functor::CB_Cost_Functor(
 	PSBMPC_Parameters &pars,  										// In: Parameter object of master PSB-MPC
 	CB_Functor_Data *fdata,  										// In: Device pointer to functor data, malloc-ed in PSB-MPC
-	Cuda_Obstacle *obstacles  										// In: Device pointer to obstacles, malloc-ed in PSB-MPC
-	//Ownship *ownship 												// In: Device pointer to the ownship, malloc-ed in PSB-MPC
+	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, malloc-ed in PSB-MPC
+	CPE *cpe 		 												// In: Device pointer to the collision probability estimator, malloc-ed in PSB-MPC constructor
 	) :
-	pars(pars), fdata(fdata), obstacles(obstacles)//, ownship(ownship)
+	pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe)
 {
 
 }
@@ -76,15 +76,11 @@ __device__ double CB_Cost_Functor::operator()(
 	// Allocate vectors for the obstacle intention weighted cost, and intention probability vector
 	TML::Vector3d cost_a, Pr_a;
 
-	// Initialize the predicted ownship waypoint counter to the correct one
-	ownship.initialize_wp_following();
-
-	// Set up collision probability estimator, and sample variables in case cpe_method = MCSKF4D
-	CPE cpe(pars.cpe_method, pars.dt);
-	cpe.seed_prng(cb_index);
+	// Seed collision probability estimator using the cb index
+	cpe->seed_prng(cb_index);
 
 	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
-	int n_seg_samples = std::round(cpe.get_segment_discretization_time() / pars.dt) + 1;
+	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / pars.dt) + 1;
 	
 	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
@@ -93,9 +89,13 @@ __device__ double CB_Cost_Functor::operator()(
 	TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> xs_i_p(4, n_seg_samples);
 	TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> P_i_p(16, n_seg_samples);
 
+	// For the CE-method:
+	TML::Vector2d p_os, p_i;
+    TML::Matrix2d P_i_2D;
+
 	//======================================================================================================================
 	// 1.1: Predict own-ship trajectory with the current control behaviour
-	ownship.predict_trajectory(
+	fdata->ownship.predict_trajectory(
 		fdata->trajectory, 
 		offset_sequence, 
 		fdata->maneuver_times, 
@@ -111,7 +111,7 @@ __device__ double CB_Cost_Functor::operator()(
 	// Not entirely optimal for loop configuration, but the alternative requires alot of memory, so test this first.
 	for (int i = 0; i < fdata->n_obst; i++)
 	{	
-		d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
+		d_safe_i = pars.d_safe + 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length());
 
 		P_c_i.resize(fdata->n_ps[i], 1); P_c_i.set_zero();
 		max_cost_ps.resize(fdata->n_ps[i], 1); max_cost_ps.set_zero();
@@ -140,7 +140,19 @@ __device__ double CB_Cost_Functor::operator()(
 
 				if (k == 0)
 				{
-					cpe.initialize(xs_p, xs_i_p, P_i_p, d_safe_i);
+					/* printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", xs_p(0, 0), xs_p(1, 0), xs_p(2, 0), xs_p(3, 0), xs_p(4, 0), xs_p(5, 0));
+					printf("xs_i_p = %.1f, %.1f, %.1f, %.1f\n", xs_i_p(0, 0), xs_i_p(1, 0), xs_i_p(2, 0), xs_i_p(3, 0));
+
+					printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_p(0, 0), P_i_p(1, 0), P_i_p(2, 0), P_i_p(3, 0));
+					printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(4, 0), P_i_p(5, 0), P_i_p(6, 0), P_i_p(7, 0));
+					printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(8, 0), P_i_p(9, 0), P_i_p(10, 0), P_i_p(11, 0));
+					printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(12, 0), P_i_p(13, 0), P_i_p(14, 0), P_i_p(15, 0));
+
+					printf("xs_p rows, cols: (%ld, %ld)\n", xs_p.get_rows(), xs_p.get_cols());
+					printf("xs_i_p rows, cols: (%ld, %ld)\n", xs_i_p.get_rows(), xs_i_p.get_cols());
+					printf("P_i_p rows, cols: (%ld, %ld)\n", P_i_p.get_rows(), P_i_p.get_cols()); */
+
+					cpe->initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i);
 				}
 
 				// Determine active course modification at sample k
@@ -164,16 +176,21 @@ __device__ double CB_Cost_Functor::operator()(
 		
 				//==========================================================================================
 				// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
-
+				printf("i = %d | ps = %d | k = %d\n", i, ps, k);
 				switch(pars.cpe_method)
 				{
 					case CE :	
-						P_c_i(ps) = cpe.estimate(xs_p, xs_i_p, P_i_p);
+						p_os = xs_p.get_block<2, 1>(0, 0, 2, 1);
+						p_i = xs_i_p.get_block<2, 1>(0, 0, 2, 1);
+
+						P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(0), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+
+						P_c_i(ps) = cpe->CE_estimate(p_os, p_i, P_i_2D);
 						break;
 					case MCSKF4D :                
 						if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 						{
-							P_c_i(ps) = cpe.estimate(xs_p, xs_i_p, P_i_p);							
+							P_c_i(ps) = cpe->MCSKF4D_estimate(xs_p, xs_i_p, P_i_p);							
 						}	
 						break;
 					default :
@@ -190,8 +207,8 @@ __device__ double CB_Cost_Functor::operator()(
 					max_cost_ps(ps) = cost_ps;
 				}
 				//==========================================================================================
+				printf("P_c_i = %.1f | cost_ps = %.1f\n", P_c_i(ps), cost_ps);
 			}
-
 		}
 
 		//==============================================================================================
@@ -260,8 +277,6 @@ __device__ double CB_Cost_Functor::operator()(
 	// 2.7 : Calculate cost due to having a wobbly offset_sequence
 	cost += calculate_chattering_cost(offset_sequence); 
 	//==================================================================================================
-
-	delete cpe;
 
 	return cost;
 }
@@ -451,14 +466,12 @@ __device__ bool CB_Cost_Functor::determine_transitional_cost_indicator(
 //=======================================================================================
 __device__ inline void CB_Cost_Functor::calculate_collision_probabilities(
 	TML::PDMatrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i,		// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
-	const int i, 															// In: Index of obstacle
-	//Ownship *ownship,														// In: Ownship object
-	CPE *cpe 																// In: Collision probability estimator
+	const int i 															// In: Index of obstacle
 	)
 {
 	int n_samples = round(pars.T / pars.dt);
 	
-	double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
+	double d_safe_i = pars.d_safe + 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length());
 
 	TML::PDMatrix<double, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_i_p = obstacles[i].get_trajectories();
 	TML::PDMatrix<double, 16, MAX_N_SAMPLES> P_i_p = obstacles[i].get_trajectory_covariance();
@@ -483,9 +496,8 @@ __device__ inline void CB_Cost_Functor::calculate_collision_probabilities(
 //=======================================================================================
 __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	const TML::PDMatrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i,	// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
-	const int i, 																// In: Index of obstacle
+	const int i, 													// In: Index of obstacle
 	const TML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence 	// In: Control behaviour currently followed
-	//Ownship *ownship 															// In: Ownship object
 	)
 {
 	// l_i is the collision cost modifier depending on the obstacle track loss.
@@ -534,7 +546,7 @@ __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 			d_0i_p = L_0i_p.norm();
 
 			// Decrease the distance between the vessels by their respective max dimension
-			d_0i_p = d_0i_p - 0.5 * (ownship.get_length() + obstacles[i].get_length()); 
+			d_0i_p = d_0i_p - 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length()); 
 			
 			L_0i_p = L_0i_p.normalized();
 
@@ -618,8 +630,8 @@ __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 
 __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	const double P_c_i,															// In: Predicted obstacle collision probabilities for obstacle in prediction scenario ps
-	const TML::Vector6d xs_p, 													// In: Predicted own-ship state at time step k
-	const TML::Vector4d xs_i_p, 												// In: Predicted obstacle state at time step k in prediction scenario ps
+	const TML::PDVector6d xs_p, 												// In: Predicted own-ship state at time step k
+	const TML::PDVector4d xs_i_p, 												// In: Predicted obstacle state at time step k in prediction scenario ps
 	const int i, 																// In: Index of obstacle
 	const double chi_m														 	// In: Course offset used by the own-ship at time step k
 	//Ownship *ownship 															// In: Ownship object
@@ -639,7 +651,7 @@ __device__ inline double CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	v_0_p(1) = xs_p(4); 
 	v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
 
-	L_0i_p = xs_i_p.get_block<2, 1>(0, 0) - xs_p.get_block<2, 1>(0, 0);
+	L_0i_p = xs_i_p.get_block<2, 1>(0, 0, 2, 1) - xs_p.get_block<2, 1>(0, 0, 2, 1);
 	d_0i_p = L_0i_p.norm();
 
 	// Decrease the distance between the vessels by their respective max dimension

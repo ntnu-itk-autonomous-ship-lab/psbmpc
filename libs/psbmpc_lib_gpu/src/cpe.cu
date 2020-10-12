@@ -97,7 +97,7 @@ __device__ void CPE::initialize(
     const double d_safe_i                                                             // In: Safety zone around own-ship when facing obstacle i
     )
 {
-    assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16 && P_i.get_rows() == 1);
+    assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16 && P_i.get_cols() == 1);
 
     // The estimation is done considering one obstacle at the time, so the d_safe parameter
     // is initialized accordingly
@@ -139,27 +139,28 @@ __device__ double CPE::estimate(
 
     TML::Vector2d p_os, p_i;
     TML::Matrix2d P_i_2D;
-    int n_cols = xs_os.get_cols();
+
     double P_c;
     switch (method)
     {
         case CE :
-            // If CE is used, (typically when n_cols = 1)
-            // The last column gives the current prediction time information
-            p_os = xs_os.get_block<2, 1>(0, n_cols - 1, 2, 1);
-            p_i = xs_i.get_block<2, 1>(0, n_cols - 1, 2, 1);
-            P_i_2D = reshape(P_i, 4, 4).get_block(0, n_cols - 1, 2, 2);
+            // The first column gives the current prediction time information
+            p_os = xs_os.get_block<2, 1>(0, 0, 2, 1);
+            p_i = xs_i.get_block<2, 1>(0, 0, 2, 1);
 
-            P_c = CE_estimation(p_os, p_i, P_i_2D);
+            P_i_2D = reshape<16, 1, 4, 4>(P_i.get_col(0), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+
+            P_c = CE_estimate(p_os, p_i, P_i_2D);
             break;
         case MCSKF4D :
-            P_c = MCSKF4D_estimation(xs_os, xs_i, P_i);
+            P_c = MCSKF4D_estimate(xs_os, xs_i, P_i);
             break;
         default :
             P_c = -1;
             // Throw
             break;
     }
+    
     return P_c;
 }
 
@@ -189,6 +190,9 @@ __device__ void CPE::estimate_over_trajectories(
     TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> xs_i_seg(4, n_seg_samples);
     TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> P_i_seg(16, n_seg_samples);
 
+    TML::Vector2d p_os, p_i;
+    TML::Matrix2d P_i_2D;
+    
     initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i);
 
     for (int k = 0; k < n_samples; k++)
@@ -196,7 +200,12 @@ __device__ void CPE::estimate_over_trajectories(
         switch(method)
         {
             case CE :	
-                P_c_i(0, k) = estimate(xs_p.get_col(k), xs_i_p.get_col(k), P_i_p.get_col(k));
+                p_os = xs_p.get_block<2, 1>(0, 0, 2, 1);
+                p_i = xs_i_p.get_block<2, 1>(0, 0, 2, 1);
+
+                P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(0), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+
+                P_c_i(0, k) = CE_estimate(xs_p.get_col(k), xs_i_p.get_col(k), P_i_p.get_col(k));
                 break;
             case MCSKF4D :                
                 if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
@@ -207,9 +216,9 @@ __device__ void CPE::estimate_over_trajectories(
 
                     P_i_seg = P_i_p.get_block<16, MAX_N_SEG_SAMPLES>(0, k_j_, 16, n_seg_samples);
 
-                    P_c_i(0, k_j_) = estimate(xs_os_seg, xs_i_seg, P_i_seg);
+                    P_c_i(0, k_j_) = MCSKF4D_estimate(xs_os_seg, xs_i_seg, P_i_seg);
                     // Collision probability on this active segment are all equal
-                    P_c_i.set_block(0, k_j_, 1, n_seg_samples, P_c_i(0, k_j_) * TML::MatrixXd::ones(1, k_j - k_j_ + 1));
+                    P_c_i.set_block(0, k_j_, 1, n_seg_samples, P_c_i(0, k_j_) * TML::PDMatrix<double, 1, MAX_N_SEG_SAMPLES>::ones(1, k_j - k_j_ + 1));
                 }	
                 break;
             default :
@@ -401,9 +410,9 @@ __device__ void CPE::calculate_roots_2nd_order(
 *  Modified :
 *****************************************************************************************/
 __device__ double CPE::produce_MCS_estimate(
-	const TML::MatrixXd &xs_i,                                                // In: Obstacle state vector
-	const TML::MatrixXd &P_i,                                                 // In: Obstacle covariance
-	const TML::MatrixXd &p_os_cpa,                                            // In: Position of own-ship at cpa
+	const TML::Vector4d &xs_i,                                                // In: Obstacle state vector
+	const TML::Matrix4d &P_i,                                                 // In: Obstacle covariance
+	const TML::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
 	const double t_cpa                                                         // In: Time to cpa
     )
 {
@@ -432,7 +441,7 @@ __device__ double CPE::produce_MCS_estimate(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_sample_validity_4D(
-    const TML::MatrixXd &p_os_cpa,                                           // In: Position of own-ship at cpa
+    const TML::Vector2d &p_os_cpa,                                           // In: Position of own-ship at cpa
     const double t_cpa                                                       // In: Time to cpa
     )
 {
@@ -448,8 +457,8 @@ __device__ void CPE::determine_sample_validity_4D(
     {
         valid(j) = 0;
 
-        p_i_sample = samples.get_block(0, j, 2, 1);
-        v_i_sample = samples.get_block(2, j, 2, 1);
+        p_i_sample = samples.get_block<2, 1>(0, j, 2, 1);
+        v_i_sample = samples.get_block<2, 1>(2, j, 2, 1);
 
         A = v_i_sample.dot(v_i_sample);
         B = 2 * (p_i_sample - p_os_cpa).transposed() * v_i_sample;
@@ -483,7 +492,7 @@ __device__ void CPE::determine_sample_validity_4D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double CPE::MCSKF4D_estimation(
+__device__ double CPE::MCSKF4D_estimate(
 	const TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> &xs_os,                                               // In: Own-ship states for the active segment
     const TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> &xs_i,                                                // In: Obstacle i states for the active segment
     const TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> &P_i                                                 // In: Obstacle i covariance for the active segment
@@ -510,7 +519,7 @@ __device__ double CPE::MCSKF4D_estimation(
     
         // Own-ship segment
         // Find average velocity along segment
-        U_os_sl = xs_os.get_block(3, 0, 2, n_seg_samples).rwise_mean().norm();
+        U_os_sl = xs_os.get_block<2, MAX_N_SEG_SAMPLES>(3, 0, 2, n_seg_samples).rwise_mean().norm();
         // Find angle of the segment
         psi_os_sl = atan2(xs_os(1, n_seg_samples - 1) - xs_os(1, 0), xs_os(0, n_seg_samples - 1) - xs_os(0, 0));
         // Set initial position to be that of the own-ship at the start of the segment
@@ -522,7 +531,7 @@ __device__ double CPE::MCSKF4D_estimation(
 
         // Obstacle segment
         // Same procedure as every year James
-        U_i_sl = xs_i.get_block(2, 0, 2, n_seg_samples).rwise_mean().norm();
+        U_i_sl = xs_i.get_block<2, MAX_N_SEG_SAMPLES>(2, 0, 2, n_seg_samples).rwise_mean().norm();
         psi_i_sl = atan2(xs_i(1, n_seg_samples - 1) - xs_i(1, 0), xs_i(0, n_seg_samples - 1) - xs_i(0, 0));
 
         xs_i_sl(0) = xs_i(0, 0); 
@@ -531,7 +540,7 @@ __device__ double CPE::MCSKF4D_estimation(
         xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
     }
     TML::Matrix4d P_i_sl;
-    P_i_sl = reshape(P_i.get_col(0), 4, 4);
+    P_i_sl = reshape<16, MAX_N_SEG_SAMPLES, 4, 4>(P_i.get_col(0), 4, 4);
 
     TML::Vector2d p_os_cpa;
     double t_cpa, d_cpa;
@@ -546,7 +555,7 @@ __device__ double CPE::MCSKF4D_estimation(
     // their discretized trajectories, and not beyond that. 
     if (t_cpa > dt_seg)
     {
-        y_P_c_i = produce_MCS_estimate(xs_i_sl, P_i_sl, xs_os.get_block(0, n_seg_samples - 1, 2, 1), dt_seg);
+        y_P_c_i = produce_MCS_estimate(xs_i_sl, P_i_sl, xs_os.get_block<2, 1>(0, n_seg_samples - 1, 2, 1), dt_seg);
     }
     else
     {
@@ -647,15 +656,12 @@ __device__ void CPE::determine_best_performing_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double CPE::CE_estimation(
+__device__ double CPE::CE_estimate(
 	const TML::Vector2d &p_os,                                                // In: Own-ship position vector
     const TML::Vector2d &p_i,                                                 // In: Obstacle i position vector
     const TML::Matrix2d &P_i                                                  // In: Obstacle i positional covariance
     )
-{
-    /* assert(p_os.get_rows() == 2 && p_os.get_cols() == 1 && p_i.get_rows() == 2 && p_i.get_cols() == 1 &&
-            P_i.get_rows() == 2 && P_i.get_rows() == P_i.get_cols()); */
-            
+{            
     double P_c(0.0);
     /******************************************************************************
     * Check if it is necessary to perform estimation
@@ -699,11 +705,7 @@ __device__ double CPE::CE_estimation(
     ******************************************************************************/
     for (int it = 0; it < max_it; it++)
     {
-        /* if (it == max_it - 1)
-        {
-            std::cout << "CE: Maximum number of iterations used!" << std::endl;
-        } */
-
+        printf("hereinCEopt\n");
         generate_norm_dist_samples(mu_CE, P_CE);
 
         determine_best_performing_samples(p_os, p_i, P_i);
@@ -749,6 +751,7 @@ __device__ double CPE::CE_estimation(
     * Estimate collision probability with samples from the final importance
     * density from the optimization
     ******************************************************************************/
+    printf("hereafterCEopt\n");
     generate_norm_dist_samples(mu_CE, P_CE);
 
     determine_sample_validity_2D(p_os);

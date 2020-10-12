@@ -541,10 +541,11 @@ int main()
 	//================================================================================
 	// Other tests
 	//================================================================================
-	TML::PDMatrix<double, 5, 10> adder(5, 5);
-	TML::Matrix5d add_by;
+	TML::PDMatrix<double, 5, 10> adder(5, 5); adder.set_all_coeffs(1.5);
+	TML::Matrix5d add_by; add_by.set_all_coeffs(1.5);
 
 	TML::PDMatrix<double, 6, 6> add_res;
 	add_res = adder + add_by;
+	std::cout << add_res << std::endl;
 	return 0;
 }

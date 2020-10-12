@@ -102,20 +102,10 @@ private:
 		const TML::Vector2d &p_os_cpa, 
 		const double t_cpa);
 
-	__device__ double MCSKF4D_estimation(
-		const TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> &xs_os,  
-		const TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> &xs_i, 
-		const TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> &P_i);	
-
 	__device__ void determine_sample_validity_2D(
 		const TML::Vector2d &p_os);
 
 	__device__ void determine_best_performing_samples(
-		const TML::Vector2d &p_os, 
-		const TML::Vector2d &p_i, 
-		const TML::Matrix2d &P_i);
-
-	__device__ double CE_estimation(
 		const TML::Vector2d &p_os, 
 		const TML::Vector2d &p_i, 
 		const TML::Matrix2d &P_i);
@@ -135,6 +125,16 @@ public:
 		const TML::PDVector4d &xs_i, 
 		const TML::PDVector16d &P_i,
 		const double d_safe_i);
+
+	__device__ double MCSKF4D_estimate(
+		const TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> &xs_os,  
+		const TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> &xs_i, 
+		const TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> &P_i);	
+
+	__device__ double CE_estimate(
+		const TML::Vector2d &p_os, 
+		const TML::Vector2d &p_i, 
+		const TML::Matrix2d &P_i);
 	
 	__device__ double estimate(
 		const TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> &xs_os,
