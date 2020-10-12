@@ -42,6 +42,15 @@ PSBMPC::PSBMPC()
 	u_m_last = 1; chi_m_last = 0;
 
 	map_offset_sequences();
+
+	// Only allocate CPE device memory once, thus changing dt will not be allowed. 
+	cudaMalloc((void**)&cpe_device_ptr, sizeof(CPE));
+    cuda_check_errors("Malloc of CPE failed.");
+
+	CPE temporary_cpe(pars.cpe_method, pars.dt);
+
+	cudaMemcpy(cpe_device_ptr, &temporary_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+    cuda_check_errors("MemCpy of CPE failed.");
 }
 
 /****************************************************************************************
@@ -56,7 +65,8 @@ PSBMPC::~PSBMPC()
 	
 	obstacles_device_ptr = nullptr;
 
-	ownship_device_ptr = nullptr;
+	cudaFree(cpe_device_ptr);
+	cuda_check_errors("cudaFree of CPE failed.");
 };
 
 /****************************************************************************************
@@ -74,7 +84,7 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
-	Obstacle_Data &odata														// In/Out: Dynamic obstacle information
+	Obstacle_Data &odata													// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
@@ -172,56 +182,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// Cost evaluation
 	//===============================================================================================================
-	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
-	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
-	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
-	std::cout << "TML::MatrixXd size: " << sizeof(TML::MatrixXd) << std::endl;
-	
-	size_t limit = 0;
-	cudaDeviceGetLimit(&limit, cudaLimitStackSize);
-	cudaCheckErrors("Reading cudaLimitStackSize failed.");
-	std::cout << "Device max stack size : " << limit << std::endl;
-
-	cudaDeviceSetLimit(cudaLimitStackSize, 20000);
-	cudaCheckErrors("Setting cudaLimitStackSize failed.");
-
-	cudaDeviceGetLimit(&limit, cudaLimitStackSize);
-	cudaCheckErrors("Reading cudaLimitStackSize failed.");
-	std::cout << "New device max stack size : " << limit << std::endl;
-
-	cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize);
-	cudaCheckErrors("Reading cudaLimitMallocHeapSize failed.");
-	std::cout << "Device max heap size : " << limit << std::endl;
-
-	// Allocation of device memory for control behaviour functor data and obstacles
-	// CB Functor Data
-	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
-    cudaCheckErrors("Malloc of CB_Functor_Data failed.");
-
-	CB_Functor_Data temporary_fdata(*this, u_d, chi_d, waypoints, static_obstacles, odata);
-
-	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
-    cudaCheckErrors("MemCpy of CB_Functor_Data failed.");
-	
-	// Cuda Obstacles
-	cudaMalloc((void**)&obstacles_device_ptr, n_obst * sizeof(Cuda_Obstacle));
-    cudaCheckErrors("Malloc of Cuda_Obstacle's failed.");
-
-	Cuda_Obstacle temporary_transfer_obstacle;
-	for (int i = 0; i < n_obst; i++)
-	{
-		temporary_transfer_obstacle = odata.obstacles[i];
-
-		cudaMemcpy(&obstacles_device_ptr[i], &temporary_transfer_obstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
-    	cudaCheckErrors("MemCpy of Cuda_Obstacle i failed.");
-	}
-
-	// Ownship
-	/* cudaMalloc((void**)&ownship_device_ptr, sizeof(Ownship));
-    cudaCheckErrors("Malloc of Ownship failed.");
-
-	cudaMemcpy(ownship_device_ptr, &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
-    cudaCheckErrors("MemCpy of Ownship failed."); */
+	set_up_temporary_device_memory(u_d, chi_d, waypoints, static_obstacles, odata);
     
 	Eigen::VectorXd HL_0(n_obst); HL_0.setZero();
 	
@@ -236,7 +197,7 @@ void PSBMPC::calculate_optimal_offsets(
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), control_behavior_dvec.end()));
 	
 	// Perform the calculations on the GPU
-	cb_cost_functor.reset(new CB_Cost_Functor(pars, fdata_device_ptr, obstacles_device_ptr));
+	cb_cost_functor.reset(new CB_Cost_Functor(pars, fdata_device_ptr, obstacles_device_ptr, cpe_device_ptr));
     thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), *cb_cost_functor);
 
 	// Extract minimum cost
@@ -253,15 +214,7 @@ void PSBMPC::calculate_optimal_offsets(
 	ownship.predict_trajectory(trajectory, opt_offset_sequence_e, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 	assign_optimal_trajectory(predicted_trajectory);
 
-	// Free device memory
-	cudaFree(fdata_device_ptr); 
-    cudaCheckErrors("cudaFree of fdata_device_ptr failed.");
-
-    cudaFree(obstacles_device_ptr);
-    cudaCheckErrors("cudaFree of obstacles_device_ptr failed.");
-
-	cudaFree(ownship_device_ptr);
-    cudaCheckErrors("cudaFree of ownship_device_ptr failed.");
+	clear_temporary_device_memory();
 	//===============================================================================================================
 
 	//===============================================================================================================
@@ -739,7 +692,6 @@ void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 	ps_weights_i = ps_weights_i / ps_weights_i.sum();
 }
 
-
 /****************************************************************************************
 *  Name     : find_time_of_passing
 *  Function : Finds the time when an obstacle is passed by the own-ship, assuming both 
@@ -856,4 +808,79 @@ void PSBMPC::assign_optimal_trajectory(
 		optimal_trajectory.resize(2, n_samples);
 		optimal_trajectory = trajectory.block(0, 0, 2, n_samples);
 	}
+}
+
+/****************************************************************************************
+*  Name     : set_up_cuda_memory_transfer
+*  Function : Allocates device memory for data that is required on the GPU for the
+*			  PSB-MPC calculations. 
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::set_up_temporary_device_memory(
+	const double u_d,												// In: Own-ship surge reference
+	const double chi_d, 											// In: Own-ship course reference
+	const Eigen::Matrix<double, 2, -1> &waypoints,					// In: Own-ship waypoints to follow
+	const Eigen::Matrix<double, 4, -1> &static_obstacles,			// In: Static obstacle information
+	const Obstacle_Data &odata 										// In: Dynamic obstacle information
+	)
+{
+	int n_obst = odata.obstacles.size();
+
+	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
+	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
+	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
+	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
+	
+	size_t limit = 0;
+
+	cudaDeviceSetLimit(cudaLimitStackSize, 100000);
+	cuda_check_errors("Setting cudaLimitStackSize failed.");
+
+	cudaDeviceGetLimit(&limit, cudaLimitStackSize);
+	cuda_check_errors("Reading cudaLimitStackSize failed.");
+	std::cout << "Set device max stack size : " << limit << std::endl;
+
+	/* cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize);
+	cuda_check_errors("Reading cudaLimitMallocHeapSize failed.");
+	std::cout << "Device max heap size : " << limit << std::endl; */
+
+	// Allocation of device memory for control behaviour functor data and obstacles
+	// CB Functor Data
+	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
+    cuda_check_errors("Malloc of CB_Functor_Data failed.");
+
+	CB_Functor_Data temporary_fdata(*this, u_d, chi_d, waypoints, static_obstacles, odata);
+
+	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
+    cuda_check_errors("MemCpy of CB_Functor_Data failed.");
+	
+	// Cuda Obstacles
+	cudaMalloc((void**)&obstacles_device_ptr, n_obst * sizeof(Cuda_Obstacle));
+    cuda_check_errors("Malloc of Cuda_Obstacle's failed.");
+
+	Cuda_Obstacle temporary_transfer_obstacle;
+	for (int i = 0; i < n_obst; i++)
+	{
+		temporary_transfer_obstacle = odata.obstacles[i];
+
+		cudaMemcpy(&obstacles_device_ptr[i], &temporary_transfer_obstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
+    	cuda_check_errors("MemCpy of Cuda_Obstacle i failed.");
+	}
+}
+
+/****************************************************************************************
+*  Name     : clear_temporary_device_memory
+*  Function : Clears/frees CB Functor and obstacle device memory used in one iteration 
+*			  in the PSB-MPC. 
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::clear_temporary_device_memory()
+{
+	cudaFree(fdata_device_ptr); 
+	cuda_check_errors("cudaFree of fdata_device_ptr failed.");
+    
+	cudaFree(obstacles_device_ptr);
+    cuda_check_errors("cudaFree of obstacles_device_ptr failed.");
 }

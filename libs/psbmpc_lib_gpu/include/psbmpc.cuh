@@ -66,7 +66,7 @@ private:
 
 	Cuda_Obstacle *obstacles_device_ptr;
 
-	Ownship *ownship_device_ptr;
+	CPE *cpe_device_ptr;
 	//=====================================================
 
 	void map_offset_sequences();
@@ -99,6 +99,15 @@ private:
 	bool determine_colav_active(const Obstacle_Data &odata, const int n_static_obst);
 
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
+
+	void set_up_temporary_device_memory(
+		const double u_d,
+		const double chi_d, 
+		const Eigen::Matrix<double, 2, -1> &waypoints,
+		const Eigen::Matrix<double, 4, -1> &static_obstacles,
+		const Obstacle_Data &odata);
+
+	void clear_temporary_device_memory();
 
 public:
 

@@ -47,41 +47,6 @@ void save_matrix_to_file(const TML::MatrixXd &in);
 /****************************************************************************************
 *  Place inline functions here	
 ****************************************************************************************/
-
-/****************************************************************************************
-*  Name     : print_matrix
-*  Function : 
-*  Author   :
-*  Modified :
-*****************************************************************************************/
-inline void print_matrix(const TML::MatrixXd &in)
-{
-	int n_rows = in.get_rows();
-	int n_cols = in.get_cols();
-
-	std::cout << "[";
-	for (int i = 0; i < n_rows; i++)
-	{
-		for (int j = 0; j < n_cols; j++)
-		{
-			if (j < n_cols - 1)
-			{
-				std::cout << in(i, j) << ", ";
-			}
-			else
-			{
-				std::cout << in(i, j);
-			}
-		}
-
-		if (i < n_cols - 1)
-		{
-			std::cout << std::endl;
-		}			
-	}
-	std::cout << "]" << std::endl;
-}
-
 /****************************************************************************************
 *  Name     : wrap_angle_to_pmpi
 *  Function : Shifts angle into [-pi, pi] interval
@@ -129,9 +94,9 @@ __host__ __device__ inline double angle_difference_pmpi(const double a_1, const 
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline TML::MatrixXd rotate_vector_2D(const TML::MatrixXd &v, const double angle)
+__host__ __device__ inline TML::Vector2d rotate_vector_2D(const TML::Vector2d &v, const double angle)
 {
-	TML::MatrixXd v_temp(2, 1);
+	TML::Vector2d v_temp;
 	v_temp(0) = v(0) * cos(angle) - v(1) * sin(angle);
 	v_temp(1) = v(0) * sin(angle) - v(1) * cos(angle);
 	return v_temp;
@@ -143,10 +108,10 @@ __host__ __device__ inline TML::MatrixXd rotate_vector_2D(const TML::MatrixXd &v
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ inline TML::MatrixXd rotate_vector_3D(const TML::MatrixXd &v, const double angle, const Axis axis)
+__host__ __device__ inline TML::Vector3d rotate_vector_3D(const TML::Vector3d &v, const double angle, const Axis axis)
 {
 	assert(v.get_rows() == 3 && v.get_cols() == 1);
-	TML::MatrixXd v_temp(3, 1);
+	TML::Vector3d v_temp;
 	switch (axis) 
 	{
 		case Roll : 
@@ -199,6 +164,41 @@ __host__ __device__ inline TML::MatrixXd flatten(const TML::MatrixXd &in)
 	return out;
 }
 
+template <size_t Rows, size_t Cols>
+__host__ __device__ inline TML::Static_Matrix<double, Rows * Cols, 1> flatten(const TML::Static_Matrix<double, Rows, Cols> &in)
+{
+	TML::Static_Matrix<double, Rows * Cols, 1> out;
+	int count = 0;
+	for(int i = 0; i < Rows; i++)
+	{
+		for(int j = 0; j < Cols; j++)
+		{
+			out(count) = in(i, j);
+			count += 1;
+		}
+	}
+	return out;
+}
+
+template <size_t Max_Rows, size_t Max_Cols>
+__host__ __device__ inline TML::PDMatrix<double, Max_Rows * Max_Cols, 1> flatten(const TML::PDMatrix<double, Max_Rows, Max_Cols> &in)
+{
+	int n_rows = in.get_rows();
+	int n_cols = in.get_cols();
+
+	TML::PDMatrix<double, Max_Rows * Max_Cols, 1> out(n_rows, n_cols);
+	int count = 0;
+	for(int i = 0; i < n_rows; i++)
+	{
+		for(int j = 0; j < n_cols; j++)
+		{
+			out(count) = in(i, j);
+			count += 1;
+		}
+	}
+	return out;
+}
+
 /****************************************************************************************
 *  Name     : reshape
 *  Function : Reshapes a vector of size n_rows * n_cols x 1 to  a matrix of 
@@ -222,6 +222,41 @@ __host__ __device__ inline TML::MatrixXd reshape(const TML::MatrixXd &in, const 
 	return out;
 }
 
+template <size_t Rows, size_t Cols, size_t New_Rows, size_t New_Cols>
+__host__ __device__ inline TML::Static_Matrix<double, New_Rows, New_Cols> reshape(const TML::Static_Matrix<double, Rows, Cols> &in)
+{
+	TML::Static_Matrix<double, New_Rows, New_Cols> out;
+
+	int count = 0;
+	for(int i = 0; i < New_Rows; i++)
+	{
+		for(int j = 0; j < New_Cols; j++)
+		{
+			out(i, j) = in(count);
+			count += 1;
+		}
+	}
+	return out;
+}
+
+template <size_t Max_Rows, size_t Max_Cols, size_t New_Max_Rows, size_t New_Max_Cols>
+__host__ __device__ inline TML::PDMatrix<double, New_Max_Rows, New_Max_Cols> reshape(const TML::PDMatrix<double, Max_Rows, Max_Cols> &in, const int n_rows, const int n_cols)
+{
+	assert(n_rows <= New_Max_Rows && n_cols <= New_Max_Cols);
+	TML::PDMatrix<double, New_Max_Rows, New_Max_Cols> out(n_rows, n_cols);
+
+	int count = 0;
+	for(int i = 0; i < n_rows; i++)
+	{
+		for(int j = 0; j < n_cols; j++)
+		{
+			out(i, j) = in(count);
+			count += 1;
+		}
+	}
+	return out;
+}
+
 /****************************************************************************************
 *  Name     : calculate_cpa
 *  Function : Calculates time, distance (vector) and position (vector) at the Closest 
@@ -230,18 +265,18 @@ __host__ __device__ inline TML::MatrixXd reshape(const TML::MatrixXd &in, const 
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ inline void calculate_cpa(
-	TML::MatrixXd &p_cpa, 													// In/out: Position of vessel A at CPA
+	TML::Vector2d &p_cpa, 													// In/out: Position of vessel A at CPA
 	double &t_cpa, 															// In/out: Time to CPA
 	double &d_cpa, 															// In/out: Distance at CPA
-	const TML::MatrixXd &xs_A, 												// In: State of vessel A 
-	const TML::MatrixXd &xs_B 												// In: State of vessel B
+	const TML::PDVector6d &xs_A, 											// In: State of vessel A 
+	const TML::PDVector6d &xs_B 											// In: State of vessel B
 	)
 {
 	assert(p_cpa.get_rows() == 2 && p_cpa.get_cols() == 1 && xs_A.get_cols() == 1 && xs_B.get_cols());
 
 	double epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
 	double psi_A, psi_B;
-	TML::MatrixXd v_A, v_B, p_A, p_B, L_AB;
+	TML::Vector2d v_A, v_B, p_A, p_B, L_AB;
 	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); p_A(0) = xs_A(0); p_A(1) = xs_A(1); }
 	
@@ -272,8 +307,8 @@ __host__ __device__ inline void calculate_cpa(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ inline bool determine_COLREGS_violation(
-	const TML::MatrixXd &xs_A,											// In: State vector of vessel A (most often the ownship)
-	const TML::MatrixXd &xs_B, 											// In: State vector of vessel B (most often an obstacle)
+	const TML::PDVector6d &xs_A,											// In: State vector of vessel A (most often the ownship)
+	const TML::PDVector6d &xs_B, 											// In: State vector of vessel B (most often an obstacle)
 	const double phi_AH,
 	const double phi_OT, 
 	const double phi_HO,
@@ -287,7 +322,7 @@ __host__ __device__ inline bool determine_COLREGS_violation(
 	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
 	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
 
-	TML::MatrixXd v_A, v_B, L_AB;
+	TML::Vector2d v_A, v_B, L_AB;
 	double psi_A, psi_B;
 	if (xs_A.size() == 6) { psi_A = xs_A(2); v_A(0) = xs_A(3); v_A(1) = xs_A(4); v_A = rotate_vector_2D(v_A, psi_A); }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }

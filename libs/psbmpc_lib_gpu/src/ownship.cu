@@ -153,7 +153,8 @@ __host__ void Ownship::determine_active_waypoint_segment(
 	const Eigen::Matrix<double, 6, 1> &xs 						// In: Ownship state
 	)	
 {
-	TML::MatrixXd waypoints_copy, xs_copy;
+	TML::PDMatrix<double, 2, MAX_N_WPS> waypoints_copy;
+	TML::Vector6d xs_copy;
 	TML::assign_eigen_object(waypoints_copy, waypoints);
 	TML::assign_eigen_object(xs_copy, xs);
 

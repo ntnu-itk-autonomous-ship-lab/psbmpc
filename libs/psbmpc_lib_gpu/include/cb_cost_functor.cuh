@@ -35,7 +35,7 @@ private:
 
 	Cuda_Obstacle *obstacles;
 
-	Ownship ownship;
+	CPE *cpe;
 
 	__device__ void predict_trajectories_jointly();
 
@@ -53,7 +53,7 @@ private:
 		const double chi_m,
 		const int i);
 
-	__device__ inline void calculate_collision_probabilities(TML::PDMatrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, const int i, CPE *cpe);
+	__device__ inline void calculate_collision_probabilities(TML::PDMatrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, const int i);
 
 	__device__ inline double calculate_dynamic_obstacle_cost(
 		const TML::PDMatrix<double, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, 
@@ -62,8 +62,8 @@ private:
 
 	__device__ inline double calculate_dynamic_obstacle_cost(
 		const double P_c_i_ps,
-		const TML::Vector6d xs_p,
-		const TML::Vector4d xs_i_p_ps,
+		const TML::PDVector6d xs_p,
+		const TML::PDVector4d xs_i_p_ps,
 		const int i,
 		const double chi_m);
 
@@ -99,9 +99,9 @@ private:
 	__device__ double distance_to_static_obstacle(const TML::Vector2d &p, const TML::Vector2d &v_1, const TML::Vector2d &v_2);
 
 public: 
-	__host__ CB_Cost_Functor() : fdata(nullptr), obstacles(nullptr) {}
+	__host__ CB_Cost_Functor() : fdata(nullptr), obstacles(nullptr), cpe(nullptr) {}
 
-	__host__ CB_Cost_Functor(PSBMPC_Parameters &pars, CB_Functor_Data *fdata, Cuda_Obstacle *obstacles);
+	__host__ CB_Cost_Functor(PSBMPC_Parameters &pars, CB_Functor_Data *fdata, Cuda_Obstacle *obstacles, CPE *cpe);
 	
 	__device__ double operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<double, 2 * MAX_N_M, 1>> &cb_tuple);
 	
