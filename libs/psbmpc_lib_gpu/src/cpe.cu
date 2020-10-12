@@ -27,9 +27,6 @@
 #include <curand_kernel.h>
 #include "assert.h"
 
-//#define CUDA_CALL(x) do { if((x)!=cudaSuccess) { \printf("Error at %s:%d\n",__FILE__,__LINE__);\return EXIT_FAILURE;}} while(0)
-//#define CURAND_CALL(x) do { if((x)!=CURAND_STATUS_SUCCESS) { \printf("Error at %s:%d\n",__FILE__,__LINE__);\return EXIT_FAILURE;}} while(0)
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -703,12 +700,48 @@ __device__ double CPE::CE_estimate(
     /******************************************************************************
     * Iterative optimization to find the near-optimal importance density
     ******************************************************************************/
+    int n = 2;
+    bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
     for (int it = 0; it < max_it; it++)
     {
         printf("hereinCEopt\n");
-        generate_norm_dist_samples(mu_CE, P_CE);
 
-        determine_best_performing_samples(p_os, p_i, P_i);
+        //inline======================================
+        //generate_norm_dist_samples(mu_CE, P_CE);
+        update_L(P_CE);
+        
+        for (int c = 0; c < n; c++)
+        {
+            for(int i = 0; i < n_CE; i++)
+            {
+                samples(c, i) = curand_normal_double(&prng_state);
+            }
+        }
+        // Box-muller transform
+        samples = L * samples + mu_CE;
+
+        //=========================================
+
+        //inline======================================
+        //determine_best_performing_samples(p_os, p_i, P_i);
+        
+        N_e = 0;
+        for (int j = 0; j < n_CE; j++)
+        {
+            valid(j) = 0;
+            inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= pow(d_safe, 2);
+
+            inside_alpha_p_confidence_ellipse = 
+                (samples.get_col(j) - p_i).transposed() * P_i.inverse() * (samples.get_col(j) - p_i) <= gate;
+
+
+            if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
+            {
+                valid(j) = 1;
+                N_e++;
+            }
+        }
+        //=========================================
 
         elite_samples.resize(2, N_e);
         e_count = 0;
@@ -752,14 +785,66 @@ __device__ double CPE::CE_estimate(
     * density from the optimization
     ******************************************************************************/
     printf("hereafterCEopt\n");
-    generate_norm_dist_samples(mu_CE, P_CE);
 
-    determine_sample_validity_2D(p_os);
+    //inline===================================
+    //generate_norm_dist_samples(mu_CE, P_CE);
+    update_L(P_CE);
+    
+    for (int c = 0; c < n; c++)
+    {
+        for(int i = 0; i < n_CE; i++)
+        {
+            samples(c, i) = curand_normal_double(&prng_state);
+        }
+    }
+    // Box-muller transform
+    samples = L * samples + mu_CE;
+    //=========================================
+
+    // inline==================================
+    //determine_sample_validity_2D(p_os);
+    for (int j = 0; j < n_CE; j++)
+    {
+        valid(j) = 0;
+        inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= pow(d_safe, 2);
+        if (inside_safety_zone)
+        {
+            valid(j) = 1;
+        }
+    }
+    //=========================================
 
     TML::PDMatrix<double, 1, MAX_N_CPE_SAMPLES> weights(1, n_CE), integrand(1, n_CE), importance(1, n_CE);
-    norm_pdf_log(integrand, p_i, P_i);
-    norm_pdf_log(importance, mu_CE, P_CE);
-    
+
+    // inline==================================
+    //norm_pdf_log(integrand, p_i, P_i);
+    double exp_val = 0;
+    double log_val = - (n / 2.0) * log(2 * M_PI) - log(P_i.determinant()) / 2.0;
+    for (int i = 0; i < n_CE; i++)
+    {
+        exp_val = (samples.get_col(i) - p_i).transposed() * P_i.inverse() * (samples.get_col(i) - p_i);
+
+        exp_val = - exp_val / 2.0;
+
+        integrand(i) = log_val + exp_val;
+    }
+
+    //=========================================
+
+    // inline==================================
+    //norm_pdf_log(importance, mu_CE, P_CE);
+    exp_val = 0;
+    log_val = - (n / 2.0) * log(2 * M_PI) - log(P_CE.determinant()) / 2.0;
+    for (int i = 0; i < n_CE; i++)
+    {
+        exp_val = (samples.get_col(i) - mu_CE).transposed() * P_CE.inverse() * (samples.get_col(i) - mu_CE);
+
+        exp_val = - exp_val / 2.0;
+
+        importance(i) = log_val + exp_val;
+    }
+    //=========================================
+
     // Calculate importance weights for estimating the integral \Int_S_2 {p^i(x, y, t_k) dx dy}
     // where p^i = Norm_distr(p_i, P_i; t_k) is the obstacle positional uncertainty (or combined uncertainty
     // if the own-ship uncertainty is also considered). 

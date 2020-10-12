@@ -102,6 +102,8 @@ public:
 	__host__ CB_Cost_Functor() : fdata(nullptr), obstacles(nullptr), cpe(nullptr) {}
 
 	__host__ CB_Cost_Functor(PSBMPC_Parameters &pars, CB_Functor_Data *fdata, Cuda_Obstacle *obstacles, CPE *cpe);
+
+	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; cpe = nullptr; }
 	
 	__device__ double operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<double, 2 * MAX_N_M, 1>> &cb_tuple);
 	
