@@ -834,7 +834,7 @@ void PSBMPC::set_up_temporary_device_memory(
 	
 	size_t limit = 0;
 
-	cudaDeviceSetLimit(cudaLimitStackSize, 100000);
+	cudaDeviceSetLimit(cudaLimitStackSize, 110000);
 	cuda_check_errors("Setting cudaLimitStackSize failed.");
 
 	cudaDeviceGetLimit(&limit, cudaLimitStackSize);

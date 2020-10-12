@@ -91,6 +91,14 @@ namespace TML
 			return result;
 		} */
 
+		__host__ __device__ inline T& operator[](const size_t index) const;
+
+		__host__ __device__ inline T& operator()(const size_t index) const;
+
+		__host__ __device__ inline T& operator()(const size_t row, const size_t col) const { assert(row < n_rows && col < n_cols); return data[n_cols * row + col]; }
+
+		__host__ __device__ inline operator T() const { return data[0]; }
+
 		__host__ __device__ Dynamic_Matrix operator*(const Dynamic_Matrix &other) const;
 
 		__host__ __device__ void transpose();
@@ -317,6 +325,52 @@ namespace TML
 	}
 
 	/****************************************************************************************
+	*  Name     : operator[](size_t index)
+	*  Function : Fetches vector element reference
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__ inline T& Dynamic_Matrix<T>::operator[](
+		const size_t index 										// In: Index of element to fetch
+		) const
+	{
+		assert((n_rows == 1 || n_cols == 1) && (index < n_cols || index < n_rows));
+
+		if (n_rows == 1)
+		{
+			return data[n_cols * 0 + index];
+		} 
+		else
+		{
+			return data[n_cols * index + 0];
+		}
+	}
+	
+	/****************************************************************************************
+	*  Name     : operator()(size_t index)
+	*  Function : Fetches vector element reference
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T>
+	__host__ __device__ inline T& Dynamic_Matrix<T>::operator()(
+		const size_t index 										// In: Index of element to fetch
+		) const
+	{
+		assert((n_rows == 1 || n_cols == 1) && (index < n_cols || index < n_rows));
+
+		if (n_rows == 1)
+		{
+			return data[n_cols * 0 + index];
+		} 
+		else
+		{
+			return data[n_cols * index + 0];
+		}
+	}
+
+	/****************************************************************************************
 	*  Name     : operator*
 	*  Function : 
 	*  Author   : 
@@ -338,7 +392,7 @@ namespace TML
 				result(i, j) = (T)0;
 				for (size_t k = 0; k < n_cols; k++)
 				{
-					result(i, j) += this->operator()(i, k) * other(k, j);
+					result(i, j) += this->data[n_cols * i + k]; * other(k, j);
 				}
 			}
 		}
@@ -359,7 +413,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < n_rows ; j++)
 			{
-				result(i, j) = this->operator()(j, i);
+				result(i, j) = this->data[n_cols * j + i];
 			}
 		}
 		*this = result;
@@ -379,7 +433,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < n_rows ; j++)
 			{
-				result(i, j) = this->operator()(j, i);
+				result(i, j) = this->data[n_cols * j + i];
 			}
 		}
 		return result;
@@ -400,9 +454,9 @@ namespace TML
 		assert((n_rows == 3 && n_cols == 1) && (n_rows == other.n_rows && n_cols == other.n_cols));
 		
 		Dynamic_Matrix<T> result(n_rows, 1);
-		result(0) = this->operator()(1) * other(2) - this->operator()(2) * other(1);
-		result(1) = this->operator()(2) * other(0) - this->operator()(0) * other(2);
-		result(2) = this->operator()(0) * other(1) - this->operator()(1) * other(0);
+		result(0) = this->data[1] * other.data[2] - this->data[2] * other.data[1];
+		result(1) = this->data[2] * other.data[0] - this->data[0] * other.data[2];
+		result(2) = this->data[0] * other.data[1] - this->data[1] * other.data[0];
 		
 		return result;
 	}
@@ -441,15 +495,15 @@ namespace TML
 			{
 				if (n_rows == 1)
 				{
-					result(0, j) += this->operator()(0, j) * other(i, j);
+					result(0, j) += this->data[n_cols * 0 + j] * other(i, j);
 				}
 				else if(other.get_rows() == 1)
 				{	
-					result(0, j) += this->operator()(i, j) * other(0, j);
+					result(0, j) += this->data[n_cols * i + j] * other(0, j);
 				}
 				else
 				{
-					result(0, j) += this->operator()(i, j) * other(i, j);
+					result(0, j) += this->data[n_cols * i + j] * other(i, j);
 				}
 			}
 		}
@@ -471,7 +525,7 @@ namespace TML
 			result(j) = (T)0;
 			for (size_t i = 0; i < n_rows; i++)
 			{
-				result(j) += this->operator()(i, j);
+				result(j) += this->data[n_cols * i + j];
 			}
 			result(j) /= (T)n_rows;
 		}
@@ -493,7 +547,7 @@ namespace TML
 			result(i) = (T)0;
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				result(i) += this->operator()(i, j);
+				result(i) += this->data[n_cols * i + j];
 			}
 			result(i) /= (T)n_rows;
 		}
@@ -575,7 +629,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				this->operator()(start_row + i, start_col + j) = block(i, j);
+				this->data[this->n_cols * (start_row + i) + start_col + j] = block(i, j);
 			}
 		}
 	}
@@ -595,7 +649,7 @@ namespace TML
 		assert(vector.get_cols() == this->n_cols && row < this->n_rows);
 		for (size_t j = 0; j < this->n_cols; j++)
 		{
-			this->operator()(row, j) = vector(j);
+			this->data[this->n_cols * row + j] = vector(j);
 		}
 	}
 
@@ -614,7 +668,7 @@ namespace TML
 		assert(vector.get_rows() == this->n_rows && col < this->n_cols);
 		for (size_t i = 0; i < this->n_rows; i++)
 		{
-			this->operator()(i, col) = vector(i);
+			this->data[this->n_cols * i + col] = vector(i);
 		}
 	}
 
@@ -635,7 +689,7 @@ namespace TML
 		{
 			for (size_t i = 0; i < this->n_rows; i++)
 			{
-				this->operator()(i, j + 1) = this->operator()(i, j);
+				this->data[this->n_cols * i + j + 1] = this->data[this->n_cols * i + j];
 			}
 		}
 	}
@@ -663,7 +717,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				result(i, j) = this->operator()(start_row + i, start_col + j);
+				result(i, j) = this->data[this->n_cols * (start_row + i) + start_col + j];
 			}
 		}
 		return result;
@@ -685,7 +739,7 @@ namespace TML
 		Dynamic_Matrix<T> result(1, n_cols);
 		for (size_t j = 0; j < n_cols; j++)
 		{
-				result(0, j) = this->operator()(row, j);
+				result(0, j) = this->data[this->n_cols * row + j];
 		}
 		return result;
 	}
@@ -706,7 +760,7 @@ namespace TML
 		Dynamic_Matrix<T> result(n_rows, 1);
 		for (size_t i = 0; i < n_rows; i++)
 		{
-				result(i, 0) = this->operator()(i, col);
+				result(i, 0) = this->data[this->n_cols * i + col];
 		}
 		return result;
 	}
@@ -757,7 +811,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				resized(i, j) = this->operator()(i, j);
+				resized(i, j) = this->data[n_cols * i + j];
 			}
 		}
 		
@@ -832,7 +886,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				this->operator()(i, j) = other(i, j);
+				this->data[n_cols * i + j] = other(i, j);
 			}
 		}
 	}
@@ -855,7 +909,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				this->operator()(i, j) = other(i, j);
+				this->data[n_cols * i + j] = other(i, j);
 			}
 		}
 	}
@@ -879,11 +933,10 @@ namespace TML
 		{
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				this->operator()(i, j) = other(i, j);
+				this->data[n_cols * i + j] = other(i, j);
 			}
 		}
 	}
-
 
 	//=========================================================================================================
 	// TYPEDEFS

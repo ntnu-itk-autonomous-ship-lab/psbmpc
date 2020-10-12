@@ -64,7 +64,7 @@ namespace TML
 
 		__host__ __device__ Derived& operator/=(const T scalar);
 
-		__host__ __device__ T& operator()(const size_t index) const;
+		/* __host__ __device__ inline T& operator()(const size_t index) const;
 
 		__host__ __device__ inline T& operator()(const size_t row, const size_t col) const
 		{
@@ -76,7 +76,7 @@ namespace TML
 
 		__host__ __device__ inline T& operator[](const size_t index) const { Derived& self = get_this(); return self(index); }
 
-		__host__ __device__ inline operator T() const { Derived& self = get_this(); return self(0, 0); }
+		__host__ __device__ inline operator T() const { Derived& self = get_this(); return self(0, 0); } */
 
 		__host__ __device__ T determinant() const;
 
@@ -347,8 +347,8 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template <class T, class Derived>
-	__host__ __device__ T& Matrix_Base<T, Derived>::operator()(
+	/* template <class T, class Derived>
+	__host__ __device__ inline T& Matrix_Base<T, Derived>::operator()(
 		const size_t index 										// In: Index of element to fetch
 		) const
 	{
@@ -357,13 +357,13 @@ namespace TML
 
 		if (self.get_rows() == 1)
 		{
-			return self(0, index);
+			return self.get_data()[self.get_cols() * 0 + index];
 		} 
 		else
 		{
-			return self(index, 0);
+			return self.get_data()[self.get_cols() * index + 0];
 		}
-	}
+	} */
 
 	/****************************************************************************************
 	*  Name     : determinant

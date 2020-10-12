@@ -68,7 +68,7 @@ namespace TML
 			{
 				for (size_t j = 0; j < Cols; j++)
 				{
-					result(i, j) = this->operator()(i, j);
+					result(i, j) = data[Cols * i + j];
 				}
 			}
 			return result;
@@ -81,6 +81,17 @@ namespace TML
 			result = *this;
 			return result;
 		} */
+
+		__host__ __device__ inline T& operator[](const size_t index);
+		__host__ __device__ inline const T& operator[](const size_t index) const;
+
+		__host__ __device__ inline T& operator()(const size_t index);
+		__host__ __device__ inline const T& operator()(const size_t index) const;
+
+		__host__ __device__ inline T& operator()(const size_t row, const size_t col) { assert(row < Rows && col < Cols); return data[Cols * row + col]; }
+		__host__ __device__ inline const T& operator()(const size_t row, const size_t col) const { assert(row < Rows && col < Cols); return data[Cols * row + col]; }
+
+		__host__ __device__ inline operator T() const { return data[0]; }
 
 		template <class U, size_t Other_Rows, size_t Other_Cols>
 		__host__ __device__ Static_Matrix<T, Rows, Other_Cols> operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;
@@ -242,6 +253,86 @@ namespace TML
 	}
 
 	/****************************************************************************************
+	*  Name     : operator[](size_t index)
+	*  Function : Fetches vector element reference
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Rows, size_t Cols>
+	__host__ __device__ inline T& Static_Matrix<T, Rows, Cols>::operator[](
+		const size_t index 										// In: Index of element to fetch
+		)
+	{
+		assert((Rows == 1 || Cols == 1) && (index < Cols || index < Rows));
+
+		if (Rows == 1)
+		{
+			return data[Cols * 0 + index];
+		} 
+		else
+		{
+			return data[Cols * index + 0];
+		}
+	}
+
+	template <class T, size_t Rows, size_t Cols>
+	__host__ __device__ inline const T& Static_Matrix<T, Rows, Cols>::operator[](
+		const size_t index 										// In: Index of element to fetch
+		) const
+	{
+		assert((Rows == 1 || Cols == 1) && (index < Cols || index < Rows));
+
+		if (Rows == 1)
+		{
+			return data[Cols * 0 + index];
+		} 
+		else
+		{
+			return data[Cols * index + 0];
+		}
+	}
+	
+	/****************************************************************************************
+	*  Name     : operator()(size_t index)
+	*  Function : Fetches vector element reference
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Rows, size_t Cols>
+	__host__ __device__ inline T& Static_Matrix<T, Rows, Cols>::operator()(
+		const size_t index 										// In: Index of element to fetch
+		)
+	{
+		assert((Rows == 1 || Cols == 1) && (index < Cols || index < Rows));
+
+		if (Rows == 1)
+		{
+			return data[Cols * 0 + index];
+		} 
+		else
+		{
+			return data[Cols * index + 0];
+		}
+	}
+
+	template <class T, size_t Rows, size_t Cols>
+	__host__ __device__ inline const T& Static_Matrix<T, Rows, Cols>::operator()(
+		const size_t index 										// In: Index of element to fetch
+		) const
+	{
+		assert((Rows == 1 || Cols == 1) && (index < Cols || index < Rows));
+
+		if (Rows == 1)
+		{
+			return data[Cols * 0 + index];
+		} 
+		else
+		{
+			return data[Cols * index + 0];
+		}
+	}
+
+	/****************************************************************************************
 	*  Name     : operator*
 	*  Function : 
 	*  Author   : 
@@ -264,7 +355,7 @@ namespace TML
 				result(i, j) = (T)0;
 				for (size_t k = 0; k < Cols; k++)
 				{
-					result(i, j) += this->operator()(i, k) * other(k, j);
+					result(i, j) += data[Cols * i + k] * other(k, j);
 				}
 			}
 		}
@@ -285,7 +376,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < Rows ; j++)
 			{
-				result(i, j) = this->operator()(j, i);
+				result(i, j) = data[Cols * j + i];
 			}
 		}
 		return result;
@@ -306,9 +397,9 @@ namespace TML
 		assert(Rows == 3 && Cols == 1);
 		
 		Static_Matrix<T, Rows, 1> result;
-		result(0) = this->operator()(1) * other(2) - this->operator()(2) * other(1);
-		result(1) = this->operator()(2) * other(0) - this->operator()(0) * other(2);
-		result(2) = this->operator()(0) * other(1) - this->operator()(1) * other(0);
+		result(0) = this->data[1] * other.data[2] - this->data[2] * other.data[1];
+		result(1) = this->data[2] * other.data[0] - this->data[0] * other.data[2];
+		result(2) = this->data[0] * other.data[1] - this->data[1] * other.data[0];
 		
 		return result;
 	}
@@ -324,11 +415,15 @@ namespace TML
 	__host__ __device__ Static_Matrix<T, 1, Cols> Static_Matrix<T, Rows, Cols>::cwise_product(
 		const Static_Matrix<T, Rows, Cols> &other 								// In: Matrix/Vector object to apply columnwise product to
 	) const
-	{		
+	{				
 		Static_Matrix<T, 1, Cols> result;
 		for (size_t j = 0; j < Cols; j++)
 		{
-			result(0, j) = this->get_block<T, Rows, 1>(0, j).dot(other.get_block<T, Rows, 1>(0, j));	
+			result(0, j) = (T)0;
+			for (size_t i = 0; i < Rows; i++)
+			{
+				result(0, j) += data[Cols * i + j] * other(i, j);
+			}
 		}
 		return result;
 	}
@@ -348,7 +443,7 @@ namespace TML
 			result(j) = (T)0;
 			for (size_t i = 0; i < Rows; i++)
 			{
-				result(j) += this->operator()(i, j);
+				result(j) += data[Cols * i + j];
 			}
 			result(j) /= (T)Rows;
 		}
@@ -370,7 +465,7 @@ namespace TML
 			result(i) = (T)0;
 			for (size_t j = 0; j < Cols; j++)
 			{
-				result(i) += this->operator()(i, j);
+				result(i) += data[Cols * i + j];
 			}
 			result(i) /= (T)Rows;
 		}
@@ -442,7 +537,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < Block_Cols; j++)
 			{
-				this->operator()(start_row + i, start_col + j) = block(i, j);
+				this->data[Block_Cols * (start_row + i) + start_col + j] = block(i, j);
 			}
 		}
 	}
@@ -462,7 +557,7 @@ namespace TML
 		assert(row < Rows);
 		for (size_t j = 0; j < Cols; j++)
 		{
-			this->operator()(row, j) = vector(j);
+			this->data[Cols * row + j] = vector(j);
 		}
 	}
 
@@ -481,7 +576,7 @@ namespace TML
 		assert(col < Cols);
 		for (size_t i = 0; i < Rows; i++)
 		{
-			this->operator()(i, col) = vector(i);
+			this->data[Cols * i + col] = vector(i);
 		}
 	}
 
@@ -507,7 +602,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < Block_Cols; j++)
 			{
-				result(i, j) = this->operator()(start_row + i, start_col + j);
+				result(i, j) = this->data[Cols * (start_row + i) + start_col + j];
 			}
 		}
 		return result;
@@ -529,7 +624,7 @@ namespace TML
 		Static_Matrix<T, 1, Cols> result;
 		for (size_t j = 0; j < Cols; j++)
 		{
-			result(0, j) = this->operator()(row, j);
+			result(0, j) = this->data[Cols * row + j];
 		}
 		return result;
 	}
@@ -550,7 +645,7 @@ namespace TML
 		Static_Matrix<T, Rows, 1> result;
 		for (size_t i = 0; i < Rows; i++)
 		{
-			result(i, 0) = this->operator()(i, col);
+			result(i, 0) = this->data[Cols * i + col];
 		}
 		return result;
 	}
@@ -573,7 +668,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < Cols; j++)
 			{
-				this->operator()(i, j) = other(i, j);
+				this->data[Cols * i + j] = other(i, j);
 			}
 		}
 	}
@@ -590,7 +685,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < Cols; j++)
 			{
-				this->operator()(i, j) = other(i, j);
+				this->data[Cols * i + j] = other(i, j);
 			}
 		}
 	}
@@ -607,7 +702,7 @@ namespace TML
 		{
 			for (size_t j = 0; j < Cols; j++)
 			{
-				this->operator()(i, j) = other(i, j);
+				this->data[Cols * i + j] = other(i, j);
 			}
 		}
 	}

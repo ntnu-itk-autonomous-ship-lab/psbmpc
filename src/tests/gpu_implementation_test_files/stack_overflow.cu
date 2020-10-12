@@ -48,24 +48,22 @@ public:
         }
     }
 
-    __device__ double operator()(const thrust::tuple<unsigned int, CML::Pseudo_Dynamic_Matrix<double, 20, 1>> &input) 
+    __device__ double operator()(const thrust::tuple<unsigned int, TML::PDMatrix<double, 20, 1>> &input) 
     {
         int cb_index = thrust::get<0>(input); 
-        CML::MatrixXd offset_sequence = thrust::get<1>(input);
+        TML::MatrixXd offset_sequence = thrust::get<1>(input);
 
-        CPE cpe(CE, 1000, 10, 1, 0.5);
+        CPE cpe(CE, 0.5);
 
         cpe.seed_prng(cb_index);
 
-        cpe.set_number_of_obstacles(3); 
-
-        CML::MatrixXd xs_p = obstacles[0].get_ps_trajectory(0);
+        TML::MatrixXd xs_p = obstacles[0].get_ps_trajectory(0);
 
         # if __CUDA_ARCH__>=200
             //printf("xs_p size: %lu, %lu \n", xs_p.get_rows(), xs_p.get_cols());
         #endif
 
-        CML::Vector4d xs = xs_p.get_block(0, 1, 4, 1);
+        TML::Vector4d xs = xs_p.get_block(0, 1, 4, 1);
 
         double ret = offset_sequence(0) + offset_sequence(2) + fdata->n_obst + xs(0);
 
@@ -147,34 +145,34 @@ int main()
     CB_Functor_Data *fdata;
 
     cudaMalloc((void**)&fdata, sizeof(CB_Functor_Data)); 
-    cudaCheckErrors("cudaMalloc1 fail");
+    cuda_check_errors("cudaMalloc1 fail");
 
     cudaMemcpy(fdata, &fdata_obj, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
-    cudaCheckErrors("cudaMemCpy1 fail");
+    cuda_check_errors("cudaMemCpy1 fail");
 
     Cuda_Obstacle *obstacles;
     Cuda_Obstacle transfer = obstacle;
     Cuda_Obstacle back;
 
     cudaMalloc((void**)&obstacles, sizeof(Cuda_Obstacle));
-    cudaCheckErrors("cudaMalloc2 fail");
+    cuda_check_errors("cudaMalloc2 fail");
 
     cudaMemcpy(obstacles, &transfer, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
-    cudaCheckErrors("cudaMemCpy2 fail");
+    cuda_check_errors("cudaMemCpy2 fail");
 
     thrust::device_vector<double> cb_costs(n_cbs);
 
     thrust::device_vector<unsigned int> cb_index_dvec(n_cbs);
 	thrust::sequence(cb_index_dvec.begin(), cb_index_dvec.end(), 0);
 
-    thrust::device_vector<CML::Pseudo_Dynamic_Matrix<double, 20, 1>> control_behavior_dvec(n_cbs);
+    thrust::device_vector<TML::PDMatrix<double, 20, 1>> control_behavior_dvec(n_cbs);
     Eigen::VectorXd constant_cb(4);
     constant_cb << 1, 0, 1, 0;
 
-    CML::Pseudo_Dynamic_Matrix<double, 20, 1> constant_cml_cb(4, 1);
-    constant_cml_cb(0) = 1; constant_cml_cb(1) = 0; constant_cml_cb(2) = 1; constant_cml_cb(3) = 0; 
+    TML::PDMatrix<double, 20, 1> constant_TML_cb(4, 1);
+    constant_TML_cb(0) = 1; constant_TML_cb(1) = 0; constant_TML_cb(2) = 1; constant_TML_cb(3) = 0; 
 
-    thrust::fill(control_behavior_dvec.begin(), control_behavior_dvec.end(), constant_cml_cb);
+    thrust::fill(control_behavior_dvec.begin(), control_behavior_dvec.end(), constant_TML_cb);
  
     myFunctor mf(fdata, obstacles);
 
@@ -190,10 +188,10 @@ int main()
     std::cout << "min_index = " << min_index << "   |   min_cost = " << min_cost << std::endl;
 
     cudaFree(fdata); 
-    cudaCheckErrors("cudaFree1 fail");
+    cuda_check_errors("cudaFree1 fail");
 
     cudaFree(obstacles);
-    cudaCheckErrors("cudaFree2 fail");
+    cuda_check_errors("cudaFree2 fail");
 
     return 0;
 }
