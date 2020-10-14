@@ -726,6 +726,19 @@ namespace TML
 	using Vector5d = Static_Matrix<double, 5, 1>;
 	using Vector6d = Static_Matrix<double, 6, 1>;
 	using Vector16d = Static_Matrix<double, 16, 1>;
+
+	using Matrix2f = Static_Matrix<float, 2, 2>;
+	using Matrix3f = Static_Matrix<float, 3, 3>;
+	using Matrix4f = Static_Matrix<float, 4, 4>;
+	using Matrix5f = Static_Matrix<float, 5, 5>;
+	using Matrix6f = Static_Matrix<float, 6, 6>;
+
+	using Vector2f = Static_Matrix<float, 2, 1>;
+	using Vector3f = Static_Matrix<float, 3, 1>;
+	using Vector4f = Static_Matrix<float, 4, 1>;
+	using Vector5f = Static_Matrix<float, 5, 1>;
+	using Vector6f = Static_Matrix<float, 6, 1>;
+	using Vector16f = Static_Matrix<float, 16, 1>;
 }
 
 #endif

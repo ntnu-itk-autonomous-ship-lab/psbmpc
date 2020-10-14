@@ -200,7 +200,7 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::VectorXd HL_0(n_obst); HL_0.setZero();
 	
 	// Allocate device vector for computing CB costs
-	thrust::device_vector<double> cb_costs(pars.n_cbs);
+	thrust::device_vector<float> cb_costs(pars.n_cbs);
 
 	// Allocate iterator for passing the index of the control behavior to the kernels
 	thrust::device_vector<unsigned int> cb_index_dvec(pars.n_cbs);
@@ -214,12 +214,12 @@ void PSBMPC::calculate_optimal_offsets(
     thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), *cb_cost_functor);
 
 	// Extract minimum cost
-	thrust::device_vector<double>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
+	thrust::device_vector<float>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
 	min_index = min_cost_iter - cb_costs.begin();
 	min_cost = cb_costs[min_index];
 
 	// Assign optimal offset sequence/control behaviour
-	TML::PDMatrix<double, 2 * MAX_N_M, 1> opt_offset_sequence = control_behavior_dvec[min_index];
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> opt_offset_sequence = control_behavior_dvec[min_index];
 	Eigen::VectorXd opt_offset_sequence_e;
 	TML::assign_tml_object(opt_offset_sequence_e, opt_offset_sequence);
 
@@ -274,7 +274,7 @@ void PSBMPC::map_offset_sequences()
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	TML::PDMatrix<double, 2 * MAX_N_M, 1> tml_offset_sequence(2 * pars.n_M, 1);
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> tml_offset_sequence(2 * pars.n_M, 1);
 
 	control_behavior_dvec.resize(pars.n_cbs);
 	for (int cb = 0; cb < pars.n_cbs; cb++)

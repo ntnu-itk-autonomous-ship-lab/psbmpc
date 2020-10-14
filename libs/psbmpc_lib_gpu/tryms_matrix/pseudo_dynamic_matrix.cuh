@@ -449,7 +449,8 @@ namespace TML
 	) const
 	{
 		assert(n_cols == other.get_cols() 				&&
-				((n_rows == 1 && other.get_rows() > 1) 	||
+				((n_rows == other.get_rows()) 			||
+				(n_rows == 1 && other.get_rows() > 1) 	||
 				(n_rows > 1 && other.get_rows() == 1)));
 
 		size_t mrows(0);
@@ -829,6 +830,17 @@ namespace TML
 	using PDVector4d = PDMatrix<double, 4, 1>;
 	using PDVector6d = PDMatrix<double, 6, 1>;
 	using PDVector16d = PDMatrix<double, 16, 1>;
+
+	using PDMatrix2f = PDMatrix<float, 2, 2>;
+	using PDMatrix3f = PDMatrix<float, 3, 3>;
+	using PDMatrix4f = PDMatrix<float, 4, 4>;
+	using PDMatrix6f = PDMatrix<float, 6, 6>;
+
+	using PDVector2f = PDMatrix<float, 2, 1>;
+	using PDVector3f = PDMatrix<float, 3, 1>;
+	using PDVector4f = PDMatrix<float, 4, 1>;
+	using PDVector6f = PDMatrix<float, 6, 1>;
+	using PDVector16f = PDMatrix<float, 16, 1>;
 }
 
 	
