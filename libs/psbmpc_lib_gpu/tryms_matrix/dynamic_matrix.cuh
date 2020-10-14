@@ -2,7 +2,7 @@
 *
 *  File name : dynamic_matrix.cuh
 *
-*  Function  : Header file for the dynamic matrix class in the Cuda Matrix Library. This
+*  Function  : Header file for the dynamic matrix class in the Trym Matrix Library. This
 *			   class is not used as of now on the GPU because dynamic memory allocation
 *			   is expensive there. 
 *  

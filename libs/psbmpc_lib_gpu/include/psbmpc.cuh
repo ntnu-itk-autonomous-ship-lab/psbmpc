@@ -33,6 +33,7 @@
 #include <memory>
 
 class CB_Cost_Functor;
+class CB_Functor_Pars;
 class CB_Functor_Data;
 class Cuda_Obstacle;
 
@@ -60,6 +61,8 @@ private:
 	// Device related objects
 	//=====================================================
 	std::unique_ptr<CB_Cost_Functor> cb_cost_functor;
+
+	CB_Functor_Pars *pars_device_ptr;
 
 	friend struct CB_Functor_Data;
 	CB_Functor_Data *fdata_device_ptr;

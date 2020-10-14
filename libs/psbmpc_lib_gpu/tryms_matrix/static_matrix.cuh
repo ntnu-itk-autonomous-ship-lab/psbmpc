@@ -50,6 +50,10 @@ namespace TML
 
 		__host__ __device__ inline Static_Matrix() {}
 
+		__host__ __device__ inline Static_Matrix(const size_t n_rows) {}
+
+		__host__ __device__ inline Static_Matrix(const size_t n_rows, const size_t n_cols) {}
+
 		__host__ __device__ inline Static_Matrix(const Static_Matrix &other) {	assign_data(other);	}
 
 		__host__ __device__ Static_Matrix& operator=(const Static_Matrix &rhs);

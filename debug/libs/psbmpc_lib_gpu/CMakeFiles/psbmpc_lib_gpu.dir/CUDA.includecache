@@ -1286,6 +1286,20 @@ utilities.cuh
 iostream
 -
 
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/kf.cu
+kf.cuh
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/kf.cuh
+stdexcept
+-
+
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/mrou.cu
+mrou.cuh
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/mrou.cuh
+cmath
+-
+iostream
+-
+
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle.cu
 thrust/device_vector.h
 -

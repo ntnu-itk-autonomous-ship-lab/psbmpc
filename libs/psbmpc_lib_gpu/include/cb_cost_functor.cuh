@@ -29,7 +29,7 @@ class CB_Cost_Functor
 {
 private: 
 
-	CB_Functor_Pars pars;
+	CB_Functor_Pars *pars;
 
 	CB_Functor_Data *fdata;
 
@@ -67,18 +67,18 @@ private:
 		const int i,
 		const double chi_m);
 
-	__device__ inline double calculate_collision_cost(const TML::Vector2d &v_1, const TML::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); };
+	__device__ inline double calculate_collision_cost(const TML::Vector2d &v_1, const TML::Vector2d &v_2) { return pars->K_coll * (v_1 - v_2).norm(); };
 
 	__device__ inline double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	__device__ inline double calculate_control_deviation_cost(const TML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence);
 
-	__device__ inline double Delta_u(const double u_1, const double u_2) 		{ return pars.K_du * fabs(u_1 - u_2); }
+	__device__ inline double Delta_u(const double u_1, const double u_2) 		{ return pars->K_du * fabs(u_1 - u_2); }
 
-	__device__ inline double K_chi(const double chi) 							{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); };
+	__device__ inline double K_chi(const double chi) 							{ if (chi > 0) return pars->K_chi_strb * pow(chi, 2); else return pars->K_chi_port * pow(chi, 2); };
 
-	__device__ inline double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
+	__device__ inline double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return pars->K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars->K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
 	__device__ double calculate_chattering_cost(const TML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence);
@@ -101,7 +101,7 @@ private:
 public: 
 	__host__ CB_Cost_Functor() : fdata(nullptr), obstacles(nullptr), cpe(nullptr) {}
 
-	__host__ CB_Cost_Functor(PSBMPC_Parameters &pars, CB_Functor_Data *fdata, Cuda_Obstacle *obstacles, CPE *cpe);
+	__host__ CB_Cost_Functor(CB_Functor_Pars *pars, CB_Functor_Data *fdata, Cuda_Obstacle *obstacles, CPE *cpe);
 
 	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; cpe = nullptr; }
 	

@@ -43,11 +43,18 @@ PSBMPC::PSBMPC()
 
 	map_offset_sequences();
 
-	// Only allocate CPE device memory once, thus changing dt will not be allowed. 
+	// Only allocate CB_Functor_Pars and CPE device memory once, thus changing dt will not be allowed. 
+	CB_Functor_Pars temporary_pars(pars); 
+	CPE temporary_cpe(pars.cpe_method, pars.dt);
+
+	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
+	cuda_check_errors("Malloc of CB_Functor_Pars failed.");
+
+	cudaMemcpy(pars_device_ptr, &temporary_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
+    cuda_check_errors("MemCpy of CB_Functor_Pars failed.");
+
 	cudaMalloc((void**)&cpe_device_ptr, sizeof(CPE));
     cuda_check_errors("Malloc of CPE failed.");
-
-	CPE temporary_cpe(pars.cpe_method, pars.dt);
 
 	cudaMemcpy(cpe_device_ptr, &temporary_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
     cuda_check_errors("MemCpy of CPE failed.");
@@ -61,6 +68,9 @@ PSBMPC::PSBMPC()
 *****************************************************************************************/
 PSBMPC::~PSBMPC() 
 {
+	cudaFree(pars_device_ptr);
+	cuda_check_errors("cudaFree of CB_Functor_Pars failed.");
+
 	fdata_device_ptr = nullptr;
 	
 	obstacles_device_ptr = nullptr;
@@ -197,7 +207,7 @@ void PSBMPC::calculate_optimal_offsets(
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), control_behavior_dvec.end()));
 	
 	// Perform the calculations on the GPU
-	cb_cost_functor.reset(new CB_Cost_Functor(pars, fdata_device_ptr, obstacles_device_ptr, cpe_device_ptr));
+	cb_cost_functor.reset(new CB_Cost_Functor(pars_device_ptr, fdata_device_ptr, obstacles_device_ptr, cpe_device_ptr));
     thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), *cb_cost_functor);
 
 	// Extract minimum cost
@@ -834,7 +844,7 @@ void PSBMPC::set_up_temporary_device_memory(
 	
 	size_t limit = 0;
 
-	cudaDeviceSetLimit(cudaLimitStackSize, 110000);
+	cudaDeviceSetLimit(cudaLimitStackSize, 200000);
 	cuda_check_errors("Setting cudaLimitStackSize failed.");
 
 	cudaDeviceGetLimit(&limit, cudaLimitStackSize);

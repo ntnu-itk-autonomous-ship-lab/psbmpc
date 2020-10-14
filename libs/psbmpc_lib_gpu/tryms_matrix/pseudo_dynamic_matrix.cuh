@@ -75,7 +75,6 @@ namespace TML
 		template<class U, size_t New_Max_Rows, size_t New_Max_Cols>
 		__host__ __device__ inline operator PDMatrix<U, New_Max_Rows, New_Max_Cols>() const
 		{
-			// Recursion eternally in result = *this due to conversion needed. FIX!
 			PDMatrix<U, New_Max_Rows, New_Max_Cols> result(n_rows, n_cols);
 			for (size_t i = 0; i < n_rows; i++)
 			{
@@ -127,7 +126,7 @@ namespace TML
 		__host__ __device__ inline operator T() const { return data[0]; }
 
 		template <class U, size_t Other_Max_Rows, size_t Other_Max_Cols>
-		__host__ __device__ PDMatrix operator*(const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other) const;
+		__host__ __device__ PDMatrix<T, Max_Rows, Other_Max_Cols> operator*(const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other) const;
 
 		__host__ __device__ void transpose();
 
@@ -351,14 +350,14 @@ namespace TML
 	*****************************************************************************************/
 	template <class T, size_t Max_Rows, size_t Max_Cols>
 	template <class U, size_t Other_Max_Rows, size_t Other_Max_Cols>
-	__host__ __device__ PDMatrix<T, Max_Rows, Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::operator*(
+	__host__ __device__ PDMatrix<T, Max_Rows, Other_Max_Cols> PDMatrix<T, Max_Rows, Max_Cols>::operator*(
 		const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other 									// In: Matrix/vector to multiply with
 		) const
 	{	
 		// Verify that the matrix product is valid
-		assert(n_cols == other.get_rows() && Max_Cols >= other.get_cols());
+		assert(n_cols == other.get_rows());
 
-		PDMatrix<T, Max_Rows, Max_Cols> result(n_rows, other.get_cols());
+		PDMatrix<T, Max_Rows, Other_Max_Cols> result(n_rows, other.get_cols());
 		for (size_t i = 0 ; i < n_rows; i++)
 		{
 			for (size_t j = 0; j < other.get_cols(); j++)
