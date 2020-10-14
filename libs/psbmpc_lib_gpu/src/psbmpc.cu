@@ -53,11 +53,14 @@ PSBMPC::PSBMPC()
 	cudaMemcpy(pars_device_ptr, &temporary_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
     cuda_check_errors("MemCpy of CB_Functor_Pars failed.");
 
-	cudaMalloc((void**)&cpe_device_ptr, sizeof(CPE));
+	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * sizeof(CPE));
     cuda_check_errors("Malloc of CPE failed.");
 
-	cudaMemcpy(cpe_device_ptr, &temporary_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
-    cuda_check_errors("MemCpy of CPE failed.");
+	for (int cb = 0; cb < pars.n_cbs; cb++)
+	{
+		cudaMemcpy(&cpe_device_ptr[cb], &temporary_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+    	cuda_check_errors("MemCpy of CPE failed.");
+	}
 }
 
 /****************************************************************************************
@@ -844,7 +847,7 @@ void PSBMPC::set_up_temporary_device_memory(
 	
 	size_t limit = 0;
 
-	cudaDeviceSetLimit(cudaLimitStackSize, 200000);
+	cudaDeviceSetLimit(cudaLimitStackSize, 100000);
 	cuda_check_errors("Setting cudaLimitStackSize failed.");
 
 	cudaDeviceGetLimit(&limit, cudaLimitStackSize);
@@ -856,16 +859,19 @@ void PSBMPC::set_up_temporary_device_memory(
 	std::cout << "Device max heap size : " << limit << std::endl; */
 
 	// Allocation of device memory for control behaviour functor data and obstacles
-	// CB Functor Data
-	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
+	// CB Functor Data: Read and write, so need to have one for each thread.
+	cudaMalloc((void**)&fdata_device_ptr, pars.n_cbs * sizeof(CB_Functor_Data));
     cuda_check_errors("Malloc of CB_Functor_Data failed.");
 
 	CB_Functor_Data temporary_fdata(*this, u_d, chi_d, waypoints, static_obstacles, odata);
 
-	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
-    cuda_check_errors("MemCpy of CB_Functor_Data failed.");
+	for (int cb = 0; cb < pars.n_cbs; cb++)
+	{
+		cudaMemcpy(&fdata_device_ptr[cb], &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
+    	cuda_check_errors("MemCpy of CB_Functor_Data failed.");
+	}
 	
-	// Cuda Obstacles
+	// Cuda Obstacles: Read-only, so only need one
 	cudaMalloc((void**)&obstacles_device_ptr, n_obst * sizeof(Cuda_Obstacle));
     cuda_check_errors("Malloc of Cuda_Obstacle's failed.");
 
