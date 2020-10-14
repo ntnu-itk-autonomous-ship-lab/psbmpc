@@ -50,66 +50,66 @@ class Ownship
 {
 private:
 
-	TML::Vector3d tau;
-	TML::Matrix3d M_inv;
-	TML::Vector3d Cvv;
-	TML::Vector3d Dvv;
+	TML::Vector3f tau;
+	TML::Matrix3f M_inv;
+	TML::Vector3f Cvv;
+	TML::Vector3f Dvv;
 
 	// Model Parameters
-	double l_r;
-	double m; 	// [kg]
-	double I_z; // [kg/m2]
+	float l_r;
+	float m; 	// [kg]
+	float I_z; // [kg/m2]
 
 	// Added mass terms
-	double X_udot;
-	double Y_vdot, Y_rdot;
-	double N_vdot, N_rdot;
+	float X_udot;
+	float Y_vdot, Y_rdot;
+	float N_vdot, N_rdot;
 
 	// Linear damping terms [X_u, Y_v, Y_r, N_v, N_r]
-	double X_u;
-	double Y_v, Y_r;
-	double N_v, N_r;
+	float X_u;
+	float Y_v, Y_r;
+	float N_v, N_r;
 
 	// Nonlinear damping terms [X_|u|u, Y_|v|v, N_|r|r, X_uuu, Y_vvv, N_rrr]
-	double X_uu;
-	double Y_vv;
-	double N_rr;
-	double X_uuu;
-	double Y_vvv;
-	double N_rrr;
+	float X_uu;
+	float Y_vv;
+	float N_rr;
+	float X_uuu;
+	float Y_vvv;
+	float N_rrr;
 
 	//Force limits
-	double Fx_min;
-	double Fx_max;
-	double Fy_min;
-	double Fy_max; 
+	float Fx_min;
+	float Fx_max;
+	float Fy_min;
+	float Fy_max; 
 
 	// Guidance parameters
-	double e_int, e_int_max; 
-	double R_a;
-	double LOS_LD, LOS_K_i;
+	float e_int, e_int_max; 
+	float R_a;
+	float LOS_LD, LOS_K_i;
 
 	// Counter variables to keep track of the active WP segment at the current 
 	// time and predicted time
 	int wp_c_0, wp_c_p;
 
 	// Controller parameters
-	double Kp_u;
-	double Kp_psi;
-	double Kd_psi;
-	double Kp_r;
+	float Kp_u;
+	float Kp_psi;
+	float Kd_psi;
+	float Kp_r;
 	
-	double r_max; 
+	float r_max; 
 
-	double A, B, C, D, l, w;
-	double x_offset, y_offset;
+	float A, B, C, D, l, w;
+	float x_offset, y_offset;
 
 	// Calculates the offsets according to the position of the GPS receiver
 	__host__ __device__ inline void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
 
-	__host__ __device__ void update_Cvv(const TML::Vector3d &nu);
+	__host__ __device__ void update_Cvv(const TML::Vector3f &nu);
 
-	__host__ __device__ void update_Dvv(const TML::Vector3d &nu);
+	__host__ __device__ void update_Dvv(const TML::Vector3f &nu);
 
 public:
 
@@ -117,14 +117,14 @@ public:
 
 	__host__ void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 
-	__host__ __device__ void determine_active_waypoint_segment(const TML::PDMatrix<double, 2, MAX_N_WPS> &waypoints, const TML::Vector6d &xs);
+	__host__ __device__ void determine_active_waypoint_segment(const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, const TML::Vector6f &xs);
 
 	__host__ __device__ void update_guidance_references(
-		double &u_d, 
-		double &chi_d, 
-		const TML::PDMatrix<double, 2, MAX_N_WPS> &waypoints, 
-		const TML::Vector6d &xs,
-		const double dt,
+		float &u_d, 
+		float &chi_d, 
+		const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 
+		const TML::Vector6f &xs,
+		const float dt,
 		const Guidance_Method guidance_method);
 
 	__host__ void update_guidance_references(
@@ -135,30 +135,27 @@ public:
 		const double dt,
 		const Guidance_Method guidance_method);
 
-	__host__ __device__ void update_ctrl_input(const double u_d, const double psi_d, const TML::Vector6d &xs);
+	__host__ __device__ void update_ctrl_input(const float u_d, const float psi_d, const TML::Vector6f &xs);
 	
 	__host__ void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
 	__host__ __device__ inline void initialize_wp_following() { wp_c_p = wp_c_0; }
 
-	__host__ __device__ TML::Vector6d predict(
-		const TML::Vector6d &xs_old, 
-		const double dt, 
-		const Prediction_Method prediction_method);
+	__host__ __device__ TML::Vector6f predict(const TML::Vector6f &xs_old, const float dt, const Prediction_Method prediction_method);
 
 	__host__ Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
 	__host__ __device__ void predict_trajectory(
-		TML::PDMatrix<double, 6, MAX_N_SAMPLES> &trajectory,
-		const TML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence,
-		const TML::PDMatrix<double, MAX_N_M, 1> &maneuver_times,
-		const double u_d,
-		const double chi_d,
-		const TML::PDMatrix<double, 2, MAX_N_WPS> &waypoints,
+		TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory,
+		const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
+		const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
+		const float u_d,
+		const float chi_d,
+		const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
 		const Prediction_Method prediction_method,
 		const Guidance_Method guidance_method,
-		const double T,
-		const double dt
+		const float T,
+		const float dt
 	);
 
 	__host__ void predict_trajectory(
@@ -178,9 +175,9 @@ public:
 
 	__host__ __device__ inline int get_wp_counter() const { return wp_c_0; }
 
-	__host__ __device__ inline double get_length() const { return l; }
+	__host__ __device__ inline float get_length() const { return l; }
 
-	__host__ __device__ inline double get_width() const { return w; }
+	__host__ __device__ inline float get_width() const { return w; }
 
 };
 

@@ -151,7 +151,7 @@ __host__ void Cuda_Obstacle::assign_data(
 
 	this->mu.resize(n_ps, 1);
 
-	TML::MatrixXd xs_p_ps;
+	TML::MatrixXf xs_p_ps;
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{

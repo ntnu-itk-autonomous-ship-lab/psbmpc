@@ -46,17 +46,17 @@ struct CB_Functor_Pars
 
 	Guidance_Method guidance_method;
 
-	double T, T_static, dt, p_step;
-	double d_safe, d_close, d_init;
-	double K_coll;
-	double phi_AH, phi_OT, phi_HO, phi_CR;
-	double kappa, kappa_TC;
-	double K_u, K_du;
-	double K_chi_strb, K_dchi_strb;
-	double K_chi_port, K_dchi_port; 
-	double K_sgn, T_sgn;
-	double G;
-	double q, p;
+	float T, T_static, dt, p_step;
+	float d_safe, d_close, d_init;
+	float K_coll;
+	float phi_AH, phi_OT, phi_HO, phi_CR;
+	float kappa, kappa_TC;
+	float K_u, K_du;
+	float K_chi_strb, K_dchi_strb;
+	float K_chi_port, K_dchi_port; 
+	float K_sgn, T_sgn;
+	float G;
+	float q, p;
 	
 	bool obstacle_colav_on;
 
@@ -112,18 +112,18 @@ public:
 
 	TML::Vector6d ownship_state;
 
-	TML::PDMatrix<double, 6, MAX_N_SAMPLES> trajectory;
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> trajectory;
 
-	TML::PDMatrix<double, MAX_N_M, 1> maneuver_times;
+	TML::PDMatrix<float, MAX_N_M, 1> maneuver_times;
 
-	double u_d, chi_d;
+	float u_d, chi_d;
 
-	double u_m_last;
-	double chi_m_last;
+	float u_m_last;
+	float chi_m_last;
 
-	TML::PDMatrix<double, 2, MAX_N_WPS> waypoints;
+	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints;
 
-	TML::PDMatrix<double, 4, MAX_N_OBST> static_obstacles;
+	TML::PDMatrix<float, 4, MAX_N_OBST> static_obstacles;
 
 	int n_obst; 
 

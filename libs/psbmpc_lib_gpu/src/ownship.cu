@@ -78,7 +78,7 @@ __host__ __device__ Ownship::Ownship()
 	Y_vvv = 0.0;
 	N_rrr = -3224.0;
 
-	TML::Matrix3d M_tot;
+	TML::Matrix3f M_tot;
 	M_tot(0, 0) =  m - X_udot; M_tot(0, 1) = 0; M_tot(0, 2) = 0;
 	M_tot(1, 0) = 0; M_tot(1, 1) = m - Y_vdot; M_tot(1, 2) = -Y_rdot;
 	M_tot(2, 0) = 0; M_tot(2, 1) = -Y_rdot; M_tot(2, 2) = I_z - N_rdot;
@@ -117,14 +117,14 @@ __host__ __device__ Ownship::Ownship()
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::determine_active_waypoint_segment(
-	const TML::PDMatrix<double, 2, MAX_N_WPS> &waypoints,  			// In: Waypoints to follow
-	const TML::Vector6d &xs 										// In: Ownship state
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,  			// In: Waypoints to follow
+	const TML::Vector6f &xs 										// In: Ownship state
 	)	
 {
 	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
 
 	int n_wps = waypoints.get_cols();
-	TML::Vector2d d_0_wp, L_wp_segment, L_0wp;
+	TML::Vector2f d_0_wp, L_wp_segment, L_0wp;
 	bool segment_passed = false;
 
 	if (n_wps <= 2) { wp_c_0 = 0; wp_c_p = 0; return; }
@@ -153,8 +153,8 @@ __host__ void Ownship::determine_active_waypoint_segment(
 	const Eigen::Matrix<double, 6, 1> &xs 						// In: Ownship state
 	)	
 {
-	TML::PDMatrix<double, 2, MAX_N_WPS> waypoints_copy;
-	TML::Vector6d xs_copy;
+	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints_copy;
+	TML::Vector6f xs_copy;
 	TML::assign_eigen_object(waypoints_copy, waypoints);
 	TML::assign_eigen_object(xs_copy, xs);
 
@@ -168,18 +168,18 @@ __host__ void Ownship::determine_active_waypoint_segment(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::update_guidance_references(
-	double &u_d,																// In/out: Surge reference
-	double &chi_d,																// In/out: Course reference 
-	const TML::PDMatrix<double, 2, MAX_N_WPS> &waypoints,						// In: Waypoints to follow.
-	const TML::Vector6d &xs, 													// In: Ownship state	
-	const double dt, 															// In: Time step
+	float &u_d,																// In/out: Surge reference
+	float &chi_d,																// In/out: Course reference 
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,						// In: Waypoints to follow.
+	const TML::Vector6f &xs, 													// In: Ownship state	
+	const float dt, 															// In: Time step
 	const Guidance_Method guidance_method										// In: Type of guidance used	
 	)
 {
 	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
 
 	int n_wps = waypoints.get_cols();
-	double alpha, e;
+	float alpha, e;
 	TML::Vector2d d_next_wp, L_wp_segment;
 	bool segment_passed = false;
 	
@@ -258,12 +258,12 @@ __host__ void Ownship::update_guidance_references(
 	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
 {
-	TML::Vector6d xs_copy;
-	TML::PDMatrix<double, 2, MAX_N_WPS> waypoints_copy;
+	TML::Vector6f xs_copy;
+	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints_copy;
 	TML::assign_eigen_object(waypoints_copy, waypoints); 
 	TML::assign_eigen_object(xs_copy, xs); 
 
-	update_guidance_references(u_d, chi_d, waypoints_copy, xs_copy, dt, guidance_method);
+	update_guidance_references((float&)u_d, (float&)chi_d, waypoints_copy, xs_copy, (float)dt, guidance_method);
 }
 
 /****************************************************************************************
@@ -273,9 +273,9 @@ __host__ void Ownship::update_guidance_references(
 *  Modified :
 *****************************************************************************************/
 __host__ void Ownship::update_ctrl_input(
-	const double u_d,										// In: Surge reference
-	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
-	const TML::Vector6d &xs 								// In: State
+	const float u_d,										// In: Surge reference
+	const float psi_d, 										// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
+	const TML::Vector6f &xs 								// In: State
 	)
 {
 	assert(xs.get_rows() == 6 && xs.get_cols() == 1);
@@ -283,10 +283,10 @@ __host__ void Ownship::update_ctrl_input(
 	update_Cvv(xs.get_block<3, 1>(3, 0));
 	update_Dvv(xs.get_block<3, 1>(3, 0));
 
-	double Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
+	float Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
 	
-	double psi_diff = angle_difference_pmpi(psi_d, xs(2));
-	double Fy = (Kp_psi * I_z ) * (psi_diff - Kd_psi * xs(5));
+	float psi_diff = angle_difference_pmpi(psi_d, xs(2));
+	float Fy = (Kp_psi * I_z ) * (psi_diff - Kd_psi * xs(5));
     Fy *= 1.0 / l_r;
 
 	// Saturate
@@ -306,7 +306,7 @@ __host__ void Ownship::update_ctrl_input(
 	const Eigen::Matrix<double, 6, 1> &xs 					// In: State
 	)
 {
-	TML::Vector6d xs_copy;
+	TML::Vector6f xs_copy;
 	TML::assign_eigen_object(xs_copy, xs);
 
 	update_ctrl_input(u_d, psi_d, xs_copy);
@@ -319,16 +319,16 @@ __host__ void Ownship::update_ctrl_input(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ TML::Vector6d Ownship::predict(
-	const TML::Vector6d &xs_old, 									// In: State to predict forward
-	const double dt, 												// In: Time step
+__host__ __device__ TML::Vector6f Ownship::predict(
+	const TML::Vector6f &xs_old, 									// In: State to predict forward
+	const float dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
 	)
 {
 	assert(xs_old.get_rows() == 6 && xs_old.get_cols() == 1);
 
-	TML::Vector6d xs_new;
-	TML::Vector3d eta, nu;
+	TML::Vector6f xs_new;
+	TML::Vector3f eta, nu;
 	eta = xs_old.get_block<3, 1>(0, 0);
 	nu = xs_old.get_block<3, 1>(3, 0);
 
@@ -367,10 +367,10 @@ __host__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 	const Prediction_Method prediction_method 						// In: Method used for prediction
 	)
 {
-	TML::Vector6d xs_old_copy;
+	TML::Vector6f xs_old_copy;
 	TML::assign_eigen_object(xs_old_copy, xs_old);
 
-	TML::Vector6d result = predict(xs_old_copy, dt, prediction_method);
+	TML::Vector6f result = predict(xs_old_copy, dt, prediction_method);
 	Eigen::Matrix<double, 6, 1> xs_new;
 	TML::assign_tml_object(xs_new, result);
 
@@ -385,16 +385,16 @@ __host__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::predict_trajectory(
-	TML::PDMatrix<double, 6, MAX_N_SAMPLES> &trajectory, 						// In/out: Own-ship trajectory
-	const TML::PDMatrix<double, 2 * MAX_N_M, 1> &offset_sequence,	 			// In: Sequence of offsets in the candidate control behavior
-	const TML::PDMatrix<double, MAX_N_M, 1> &maneuver_times,					// In: Time indices for each ownship avoidance maneuver
-	const double u_d, 															// In: Surge reference
-	const double chi_d, 														// In: Course reference
-	const TML::PDMatrix<double, 2, MAX_N_WPS> &waypoints, 						// In: Ownship waypoints
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory, 						// In/out: Own-ship trajectory
+	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,	 			// In: Sequence of offsets in the candidate control behavior
+	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,					// In: Time indices for each ownship avoidance maneuver
+	const float u_d, 															// In: Surge reference
+	const float chi_d, 														// In: Course reference
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 						// In: Ownship waypoints
 	const Prediction_Method prediction_method,									// In: Type of prediction method to be used, typically an explicit method
 	const Guidance_Method guidance_method, 										// In: Type of guidance to be used
-	const double T,																// In: Prediction horizon
-	const double dt 															// In: Prediction time step
+	const float T,																// In: Prediction horizon
+	const float dt 															// In: Prediction time step
 	)
 {
 	/* assert((offset_sequence.get_rows() == 1 || offset_sequence.get_cols() == 1) && 
@@ -406,9 +406,9 @@ __host__ __device__ void Ownship::predict_trajectory(
 	initialize_wp_following();
 
 	int man_count = 0;
-	double u_m = 1, u_d_p = u_d;
-	double chi_m = 0, chi_d_p = chi_d;
-	TML::Vector6d xs = trajectory.get_col(0);
+	float u_m = 1, u_d_p = u_d;
+	float chi_m = 0, chi_d_p = chi_d;
+	TML::Vector6f xs = trajectory.get_col(0);
 
 	for (int k = 0; k < n_samples; k++)
 	{ 
@@ -446,10 +446,10 @@ __host__ void Ownship::predict_trajectory(
 	const double dt 												// In: Prediction time step
 	)
 {
-	TML::PDMatrix<double, 6, MAX_N_SAMPLES> trajectory_copy;
-	TML::PDMatrix<double, 2 * MAX_N_M, 1> offset_sequence_copy;
-	TML::PDMatrix<double, MAX_N_M, 1> maneuver_times_copy;
-	TML::PDMatrix<double, 2, MAX_N_WPS> waypoints_copy;
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> trajectory_copy;
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_copy;
+	TML::PDMatrix<float, MAX_N_M, 1> maneuver_times_copy;
+	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints_copy;
 	
 	TML::assign_eigen_object(trajectory_copy, trajectory); 
 	TML::assign_eigen_object(offset_sequence_copy, offset_sequence); 
@@ -474,7 +474,7 @@ __host__ void Ownship::predict_trajectory(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::update_Cvv(
-	const TML::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
+	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
 	)
 {
 	assert(nu.get_rows() == 3 && nu.get_cols() == 1);
@@ -492,7 +492,7 @@ __host__ __device__ void Ownship::update_Cvv(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::update_Dvv(
-	const TML::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T
+	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T
 	)
 {
 	assert(nu.get_rows() == 3 && nu.get_cols() == 1);

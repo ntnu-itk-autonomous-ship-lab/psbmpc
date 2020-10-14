@@ -57,97 +57,97 @@ private:
 	curandState prng_state;
 
 	// CE-method parameters and internal states
-	double sigma_inject, alpha_n, gate, rho, max_it;
+	float sigma_inject, alpha_n, gate, rho, max_it;
 	
 	bool converged_last;
 
-	TML::Vector2d mu_CE_last;
-	TML::Matrix2d P_CE_last;
+	TML::Vector2f mu_CE_last;
+	TML::Matrix2f P_CE_last;
 
 	int N_e, e_count;
-	TML::PDMatrix<double, 2, MAX_N_CPE_SAMPLES> elite_samples;
+	TML::PDMatrix<float, 2, MAX_N_CPE_SAMPLES> elite_samples;
 
 	// MCSKF4D-method parameters and internal states
-	double q, r, dt_seg; 
+	float q, r, dt_seg; 
 	
-	double P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
+	float P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
 	// Common internal sample variables
-	TML::PDMatrix<double, 4, MAX_N_CPE_SAMPLES> samples;
-	TML::PDMatrix<double, 1, MAX_N_CPE_SAMPLES> valid;
+	TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> samples;
+	TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> valid;
 	
 	// Safety zone parameters
-	double d_safe;
+	float d_safe;
 
 	// Cholesky decomposition matrix
-	TML::PDMatrix4d L;
+	TML::PDMatrix4f L;
 
 	__host__ __device__ void resize_matrices();
 
-	__device__ inline void update_L(const TML::PDMatrix4d &in);
+	__device__ inline void update_L(const TML::PDMatrix4f &in);
 
-	__device__ inline void norm_pdf_log(TML::PDMatrix<double, 1, MAX_N_CPE_SAMPLES> &result, const TML::PDVector4d &mu, const TML::PDMatrix4d &Sigma);
+	__device__ inline void norm_pdf_log(TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result, const TML::PDVector4f &mu, const TML::PDMatrix4f &Sigma);
 
-	__device__ inline void generate_norm_dist_samples(const TML::PDVector4d &mu, const TML::PDMatrix4d &Sigma);
+	__device__ inline void generate_norm_dist_samples(const TML::PDVector4f &mu, const TML::PDMatrix4f &Sigma);
 
-	__device__ void calculate_roots_2nd_order(TML::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
+	__device__ void calculate_roots_2nd_order(TML::Vector2f &r, bool &is_complex, const float A, const float B, const float C);
 
-	__device__ double produce_MCS_estimate(
-		const TML::Vector4d &xs_i, 
-		const TML::Matrix4d &P_i, 
-		const TML::Vector2d &p_os_cpa,
-		const double t_cpa);
+	__device__ float produce_MCS_estimate(
+		const TML::Vector4f &xs_i, 
+		const TML::Matrix4f &P_i, 
+		const TML::Vector2f &p_os_cpa,
+		const float t_cpa);
 
 	__device__ void determine_sample_validity_4D(
-		const TML::Vector2d &p_os_cpa, 
-		const double t_cpa);
+		const TML::Vector2f &p_os_cpa, 
+		const float t_cpa);
 
 	__device__ void determine_sample_validity_2D(
-		const TML::Vector2d &p_os);
+		const TML::Vector2f &p_os);
 
 	__device__ void determine_best_performing_samples(
-		const TML::Vector2d &p_os, 
-		const TML::Vector2d &p_i, 
-		const TML::Matrix2d &P_i);
+		const TML::Vector2f &p_os, 
+		const TML::Vector2f &p_i, 
+		const TML::Matrix2f &P_i);
 
 public:
 	
 	__host__ __device__ CPE() {}
 
-	__host__ __device__ CPE(const CPE_Method cpe_method, const double dt);
+	__host__ __device__ CPE(const CPE_Method cpe_method, const float dt);
 
-	__device__ inline double get_segment_discretization_time() const { return dt_seg; }
+	__device__ inline float get_segment_discretization_time() const { return dt_seg; }
 
 	__device__ inline void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
 
 	__device__ void initialize(
-		const TML::PDVector6d &xs_os, 
-		const TML::PDVector4d &xs_i, 
-		const TML::PDVector16d &P_i,
-		const double d_safe_i);
+		const TML::PDVector6f &xs_os, 
+		const TML::PDVector4f &xs_i, 
+		const TML::PDVector16f &P_i,
+		const float d_safe_i);
 
-	__device__ double MCSKF4D_estimate(
-		const TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> &xs_os,  
-		const TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> &xs_i, 
-		const TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> &P_i);	
+	__device__ float MCSKF4D_estimate(
+		const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,  
+		const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_i, 
+		const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i);	
 
-	__device__ double CE_estimate(
-		const TML::Vector2d &p_os, 
-		const TML::Vector2d &p_i, 
-		const TML::Matrix2d &P_i);
+	__device__ float CE_estimate(
+		const TML::Vector2f &p_os, 
+		const TML::Vector2f &p_i, 
+		const TML::Matrix2f &P_i);
 	
-	__device__ double estimate(
-		const TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> &xs_os,
-		const TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> &xs_i,
-		const TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> &P_i);
+	__device__ float estimate(
+		const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,
+		const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_i,
+		const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i);
 
 	__device__ void estimate_over_trajectories(
-		TML::PDMatrix<double, 1, MAX_N_SAMPLES> &P_c_i,
-		const TML::PDMatrix<double, 6, MAX_N_SAMPLES> &xs_p,
-		const TML::PDMatrix<double, 4, MAX_N_SAMPLES> &xs_i_p,
-		const TML::PDMatrix<double, 16, MAX_N_SAMPLES> &P_i_p,
-		const double d_safe_i,
-		const double dt);
+		TML::PDMatrix<float, 1, MAX_N_SAMPLES> &P_c_i,
+		const TML::PDMatrix<float, 6, MAX_N_SAMPLES> &xs_p,
+		const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &xs_i_p,
+		const TML::PDMatrix<float, 16, MAX_N_SAMPLES> &P_i_p,
+		const float d_safe_i,
+		const float dt);
 };
 
 #endif

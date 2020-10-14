@@ -41,7 +41,7 @@
 *****************************************************************************************/
 __host__ __device__ CPE::CPE(
     const CPE_Method cpe_method,                                    // In: Method to be used
-    const double dt                                                 // In: Time step of calling function simulation environment
+    const float dt                                                 // In: Time step of calling function simulation environment
     ) :
     method(cpe_method)
 {
@@ -88,14 +88,12 @@ __host__ __device__ CPE::CPE(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::initialize(
-    const TML::PDVector6d &xs_os,                                                     // In: Own-ship state vector
-    const TML::PDVector4d &xs_i,                                                      // In: Obstacle i state vector
-    const TML::PDVector16d &P_i,                                                      // In: Obstacle i covariance flattened into n^2 x 1
-    const double d_safe_i                                                             // In: Safety zone around own-ship when facing obstacle i
+    const TML::PDVector6f &xs_os,                                                     // In: Own-ship state vector
+    const TML::PDVector4f &xs_i,                                                      // In: Obstacle i state vector
+    const TML::PDVector16f &P_i,                                                      // In: Obstacle i covariance flattened into n^2 x 1
+    const float d_safe_i                                                             // In: Safety zone around own-ship when facing obstacle i
     )
 {
-    assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16 && P_i.get_cols() == 1);
-
     // The estimation is done considering one obstacle at the time, so the d_safe parameter
     // is initialized accordingly
     d_safe = d_safe_i;
@@ -106,7 +104,7 @@ __device__ void CPE::initialize(
         // Heuristic initialization
         mu_CE_last = 0.5 * (xs_os.get_block<2, 1>(0, 0, 2, 1) + xs_i.get_block<2, 1>(0, 0, 2, 1)); 
         
-        P_CE_last = pow(d_safe, 2) * TML::Matrix2d::identity() / 3.0;
+        P_CE_last = powf(d_safe, 2) * TML::Matrix2f::identity() / 3.0;
         
         break;
     case MCSKF4D :
@@ -126,18 +124,16 @@ __device__ void CPE::initialize(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double CPE::estimate(
-	const TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> &xs_os,                       // In: Own-ship state vector(s)
-    const TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> &xs_i,                        // In: Obstacle i state vector(s)
-    const TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> &P_i                          // In: Obstacle i covariance(s), flattened into n² x n_cols
+__device__ float CPE::estimate(
+	const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,                       // In: Own-ship state vector(s)
+    const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_i,                        // In: Obstacle i state vector(s)
+    const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i                          // In: Obstacle i covariance(s), flattened into n² x n_cols
     )
 {
-    assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16);
+    TML::Vector2f p_os, p_i;
+    TML::Matrix2f P_i_2D;
 
-    TML::Vector2d p_os, p_i;
-    TML::Matrix2d P_i_2D;
-
-    double P_c;
+    float P_c;
     switch (method)
     {
         case CE :
@@ -170,25 +166,23 @@ __device__ double CPE::estimate(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::estimate_over_trajectories(
-		TML::PDMatrix<double, 1, MAX_N_SAMPLES> &P_c_i,                              // In/out: Collision probability row vector: 1 x n_samples
-		const TML::PDMatrix<double, 6, MAX_N_SAMPLES> &xs_p,                         // In: Ownship predicted trajectory
-		const TML::PDMatrix<double, 4, MAX_N_SAMPLES> &xs_i_p,                       // In: Obstacle i predicted trajectory
-		const TML::PDMatrix<double, 16, MAX_N_SAMPLES> &P_i_p,                       // In: Obstacle i associated predicted covariances
-        const double d_safe_i,                                                       // In: Safety zone around own-ship when facing obstacle i,
-        const double dt                                                              // In: Prediction time step
+		TML::PDMatrix<float, 1, MAX_N_SAMPLES> &P_c_i,                              // In/out: Collision probability row vector: 1 x n_samples
+		const TML::PDMatrix<float, 6, MAX_N_SAMPLES> &xs_p,                         // In: Ownship predicted trajectory
+		const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &xs_i_p,                       // In: Obstacle i predicted trajectory
+		const TML::PDMatrix<float, 16, MAX_N_SAMPLES> &P_i_p,                       // In: Obstacle i associated predicted covariances
+        const float d_safe_i,                                                       // In: Safety zone around own-ship when facing obstacle i,
+        const float dt                                                              // In: Prediction time step
     )
 {
-    assert(xs_p.get_rows() >= 4 && xs_p.get_rows() <= 6 && xs_i_p.get_rows() == 4 && P_i_p.get_rows() == 16);
-
     int n_samples = xs_p.get_cols();
 
     int n_seg_samples = std::round(dt_seg / dt) + 1, k_j_(0), k_j(0);
-	TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> xs_os_seg(6, n_seg_samples);
-    TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> xs_i_seg(4, n_seg_samples);
-    TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> P_i_seg(16, n_seg_samples);
+	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_os_seg(6, n_seg_samples);
+    TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_seg(4, n_seg_samples);
+    TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_seg(16, n_seg_samples);
 
-    TML::Vector2d p_os, p_i;
-    TML::Matrix2d P_i_2D;
+    TML::Vector2f p_os, p_i;
+    TML::Matrix2f P_i_2D;
     
     initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i);
 
@@ -215,7 +209,7 @@ __device__ void CPE::estimate_over_trajectories(
 
                     P_c_i(0, k_j_) = MCSKF4D_estimate(xs_os_seg, xs_i_seg, P_i_seg);
                     // Collision probability on this active segment are all equal
-                    P_c_i.set_block(0, k_j_, 1, n_seg_samples, P_c_i(0, k_j_) * TML::PDMatrix<double, 1, MAX_N_SEG_SAMPLES>::ones(1, k_j - k_j_ + 1));
+                    P_c_i.set_block(0, k_j_, 1, n_seg_samples, P_c_i(0, k_j_) * TML::PDMatrix<float, 1, MAX_N_SEG_SAMPLES>::ones(1, k_j - k_j_ + 1));
                 }	
                 break;
             default :
@@ -267,14 +261,12 @@ __host__ __device__ void CPE::resize_matrices()
 *  Modified :
 *****************************************************************************************/
 __device__ inline void CPE::update_L(
-    const TML::PDMatrix4d &in                                                     // In: Matrix in consideration
+    const TML::PDMatrix4f &in                                                     // In: Matrix in consideration
     )
 {
-    assert(in.get_rows() == in.get_cols());
-
     int n = in.get_rows();
     L.set_zero();
-    double sum;
+    float sum;
     for (int i = 0; i < n; i++) { 
         for (int j = 0; j <= i; j++) 
         { 
@@ -283,7 +275,7 @@ __device__ inline void CPE::update_L(
             { 
                 for (int k = 0; k < j; k++) 
                 {
-                    sum += pow(L(j, k), 2); 
+                    sum += powf(L(j, k), 2); 
                 }
                 L(j, j) = sqrt(in(j, j) - sum); 
             } 
@@ -310,17 +302,15 @@ __device__ inline void CPE::update_L(
 *  Modified :
 *****************************************************************************************/
 __device__ inline void CPE::norm_pdf_log(
-    TML::PDMatrix<double, 1, MAX_N_CPE_SAMPLES> &result,                        // In/out: Resulting vector of pdf values
-    const TML::PDVector4d &mu,                                                  // In: Expectation of the MVN
-    const TML::PDMatrix4d &Sigma                                                // In: Covariance of the MVN
+    TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result,                        // In/out: Resulting vector of pdf values
+    const TML::PDVector4f &mu,                                                  // In: Expectation of the MVN
+    const TML::PDMatrix4f &Sigma                                                // In: Covariance of the MVN
     )
 {
-    assert(mu.get_rows() <=4 && mu.get_cols() == 1 && Sigma.get_rows() <= 4 && Sigma.get_rows() == Sigma.get_cols() && result.get_rows() == mu.get_rows());
-
     int n = samples.get_rows(), n_samples = samples.get_cols();
 
-    double exp_val = 0;
-    double log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
+    float exp_val = 0;
+    float log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
     for (int i = 0; i < n_samples; i++)
     {
         exp_val = (samples.get_col(i) - mu).transposed() * Sigma.inverse() * (samples.get_col(i) - mu);
@@ -338,12 +328,10 @@ __device__ inline void CPE::norm_pdf_log(
 *  Modified :
 *****************************************************************************************/
 __device__ inline void CPE::generate_norm_dist_samples(
-    const TML::PDVector4d &mu,                                                  // In: Expectation of the MVN
-    const TML::PDMatrix4d &Sigma                                                // In: Covariance of the MVN
+    const TML::PDVector4f &mu,                                                  // In: Expectation of the MVN
+    const TML::PDMatrix4f &Sigma                                                // In: Covariance of the MVN
     )
 {
-    assert(mu.get_rows() <= 4 && mu.get_cols() == 1 && Sigma.get_rows() == Sigma.get_cols() && Sigma.get_rows() <= 4);
-
     int n = samples.get_rows(), n_samples = samples.get_cols();
 
     update_L(Sigma);
@@ -352,7 +340,7 @@ __device__ inline void CPE::generate_norm_dist_samples(
     {
         for(int i = 0; i < n_samples; i++)
         {
-            samples(c, i) = curand_normal_double(&prng_state);
+            samples(c, i) = curand_normal(&prng_state);
         }
     }
     // Box-muller transform
@@ -366,18 +354,16 @@ __device__ inline void CPE::generate_norm_dist_samples(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::calculate_roots_2nd_order(
-    TML::Vector2d &r,                                                   // In: vector of roots to find
+    TML::Vector2f &r,                                                   // In: vector of roots to find
     bool &is_complex,                                                   // In: Indicator of real/complex roots
-    const double A,                                                     // In: Coefficient in polynomial 
-    const double B,                                                     // In: Coefficient in polynomial 
-    const double C                                                      // In: Coefficient in polynomial 
+    const float A,                                                     // In: Coefficient in polynomial 
+    const float B,                                                     // In: Coefficient in polynomial 
+    const float C                                                      // In: Coefficient in polynomial 
     )
 {
-    assert(r.get_rows() == 2 && r.get_cols() == 1); 
-
     is_complex = 0;
 
-    double d = pow(B, 2) - 4 * A * C;
+    float d = powf(B, 2) - 4 * A * C;
     // Distinct real roots
     if (d > 0)          
     {
@@ -406,17 +392,14 @@ __device__ void CPE::calculate_roots_2nd_order(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double CPE::produce_MCS_estimate(
-	const TML::Vector4d &xs_i,                                                // In: Obstacle state vector
-	const TML::Matrix4d &P_i,                                                 // In: Obstacle covariance
-	const TML::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
-	const double t_cpa                                                         // In: Time to cpa
+__device__ float CPE::produce_MCS_estimate(
+	const TML::Vector4f &xs_i,                                                // In: Obstacle state vector
+	const TML::Matrix4f &P_i,                                                 // In: Obstacle covariance
+	const TML::Vector2f &p_os_cpa,                                            // In: Position of own-ship at cpa
+	const float t_cpa                                                         // In: Time to cpa
     )
 {
-    assert(xs_i.get_rows() == 4 && xs_i.get_cols() == 1 && P_i.get_rows() == P_i.get_cols() && P_i.get_rows() == 4 && 
-            p_os_cpa.get_rows() == 2 && p_os_cpa.get_cols() == 1);
-
-    double P_c;
+    float P_c;
 
     generate_norm_dist_samples(xs_i, P_i);
     
@@ -438,18 +421,16 @@ __device__ double CPE::produce_MCS_estimate(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_sample_validity_4D(
-    const TML::Vector2d &p_os_cpa,                                           // In: Position of own-ship at cpa
-    const double t_cpa                                                       // In: Time to cpa
+    const TML::Vector2f &p_os_cpa,                                           // In: Position of own-ship at cpa
+    const float t_cpa                                                       // In: Time to cpa
     )
 {
-    assert(p_os_cpa.get_rows() == 1 && p_os_cpa.get_cols() == 1);
-
     int n_samples = samples.get_cols();
 
     bool complex_roots;
-    TML::Vector2d p_i_sample, v_i_sample;
-    double A, B, C;
-    TML::Vector2d r;
+    TML::Vector2f p_i_sample, v_i_sample;
+    float A, B, C;
+    TML::Vector2f r;
     for (int j = 0; j < n_samples; j++)
     {
         valid(j) = 0;
@@ -459,7 +440,7 @@ __device__ void CPE::determine_sample_validity_4D(
 
         A = v_i_sample.dot(v_i_sample);
         B = 2 * (p_i_sample - p_os_cpa).transposed() * v_i_sample;
-        C = p_i_sample.dot(p_i_sample) - 2 * p_os_cpa.dot(p_i_sample) + p_os_cpa.dot(p_os_cpa) - pow(d_safe, 2);
+        C = p_i_sample.dot(p_i_sample) - 2 * p_os_cpa.dot(p_i_sample) + p_os_cpa.dot(p_os_cpa) - powf(d_safe, 2);
 
         calculate_roots_2nd_order(r, complex_roots, A, B, C);
 
@@ -489,30 +470,30 @@ __device__ void CPE::determine_sample_validity_4D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double CPE::MCSKF4D_estimate(
-	const TML::PDMatrix<double, 6, MAX_N_SEG_SAMPLES> &xs_os,                                               // In: Own-ship states for the active segment
-    const TML::PDMatrix<double, 4, MAX_N_SEG_SAMPLES> &xs_i,                                                // In: Obstacle i states for the active segment
-    const TML::PDMatrix<double, 16, MAX_N_SEG_SAMPLES> &P_i                                                 // In: Obstacle i covariance for the active segment
+__device__ float CPE::MCSKF4D_estimate(
+	const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,                                               // In: Own-ship states for the active segment
+    const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_i,                                                // In: Obstacle i states for the active segment
+    const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i                                                 // In: Obstacle i covariance for the active segment
     )
 {
     assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16);
 
     // Collision probability "measurement" from MCS
-    double y_P_c_i;
+    float y_P_c_i;
 
     /*****************************************************
     * Find linear segment representative state vectors
     *****************************************************/
    int n_seg_samples = xs_os.get_cols();
     // Vectors representing the linear segments
-    TML::Vector4d xs_os_sl, xs_i_sl;
+    TML::Vector4f xs_os_sl, xs_i_sl;
     xs_os_sl = xs_os.get_col(0);
     xs_i_sl = xs_i.get_col(0);
 
     if (n_seg_samples > 1)
     {
         // Define speed and course for the vessels along their linear segments
-        double U_os_sl, U_i_sl, psi_os_sl, psi_i_sl;
+        float U_os_sl, U_i_sl, psi_os_sl, psi_i_sl;
     
         // Own-ship segment
         // Find average velocity along segment
@@ -536,11 +517,11 @@ __device__ double CPE::MCSKF4D_estimate(
         xs_i_sl(2) = U_i_sl * cos(psi_i_sl);
         xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
     }
-    TML::Matrix4d P_i_sl;
+    TML::Matrix4f P_i_sl;
     P_i_sl = reshape<16, MAX_N_SEG_SAMPLES, 4, 4>(P_i.get_col(0), 4, 4);
 
-    TML::Vector2d p_os_cpa;
-    double t_cpa, d_cpa;
+    TML::Vector2f p_os_cpa;
+    float t_cpa, d_cpa;
     calculate_cpa(p_os_cpa, t_cpa, d_cpa, xs_os_sl, xs_i_sl);
 
     /*****************************************************
@@ -566,7 +547,7 @@ __device__ double CPE::MCSKF4D_estimate(
     ******************************************************
     * Update using measurement y_P_c
     *****************************************************/
-    double K;
+    float K;
     K = var_P_c_p / (var_P_c_p + r);
 
     P_c_upd = P_c_p + K * (y_P_c_i - P_c_p);
@@ -595,7 +576,7 @@ __device__ double CPE::MCSKF4D_estimate(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_sample_validity_2D(
-	const TML::Vector2d &p_os                                                // In: Own-ship position vector
+	const TML::Vector2f &p_os                                                // In: Own-ship position vector
     )
 {
     assert(p_os.get_rows() == 2 && p_os.get_cols() == 1);
@@ -605,7 +586,7 @@ __device__ void CPE::determine_sample_validity_2D(
     for (int j = 0; j < n_samples; j++)
     {
         valid(j) = 0;
-        inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= pow(d_safe, 2);
+        inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= powf(d_safe, 2);
         if (inside_safety_zone)
         {
             valid(j) = 1;
@@ -620,9 +601,9 @@ __device__ void CPE::determine_sample_validity_2D(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_best_performing_samples(
-    const TML::Vector2d &p_os,                                                    // In: Own-ship position vector
-    const TML::Vector2d &p_i,                                                     // In: Obstacle i position vector
-    const TML::Matrix2d &P_i                                                      // In: Obstacle i positional covariance
+    const TML::Vector2f &p_os,                                                    // In: Own-ship position vector
+    const TML::Vector2f &p_i,                                                     // In: Obstacle i position vector
+    const TML::Matrix2f &P_i                                                      // In: Obstacle i positional covariance
     )
 {
     assert(p_os.get_rows() == 2 && p_os.get_cols() == 1 && p_i.get_rows() == 2 && p_i.get_cols() == 1 &&
@@ -633,7 +614,7 @@ __device__ void CPE::determine_best_performing_samples(
     for (int j = 0; j < n_CE; j++)
     {
         valid(j) = 0;
-        inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= pow(d_safe, 2);
+        inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= powf(d_safe, 2);
 
         inside_alpha_p_confidence_ellipse = 
             (samples.get_col(j) - p_i).transposed() * P_i.inverse() * (samples.get_col(j) - p_i) <= gate;
@@ -653,18 +634,18 @@ __device__ void CPE::determine_best_performing_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ double CPE::CE_estimate(
-	const TML::Vector2d &p_os,                                                // In: Own-ship position vector
-    const TML::Vector2d &p_i,                                                 // In: Obstacle i position vector
-    const TML::Matrix2d &P_i                                                  // In: Obstacle i positional covariance
+__device__ float CPE::CE_estimate(
+	const TML::Vector2f &p_os,                                                // In: Own-ship position vector
+    const TML::Vector2f &p_i,                                                 // In: Obstacle i position vector
+    const TML::Matrix2f &P_i                                                  // In: Obstacle i positional covariance
     )
 {            
-    double P_c(0.0);
+    float P_c(0.0);
     /******************************************************************************
     * Check if it is necessary to perform estimation
     ******************************************************************************/
-    double d_0i = (p_i - p_os).norm();
-    double var_P_i_largest(0.0);
+    float d_0i = (p_i - p_os).norm();
+    float var_P_i_largest(0.0);
     
     if (P_i(0, 0) > P_i(1, 1)) { var_P_i_largest = P_i(0, 0); }
     else                       { var_P_i_largest = P_i(1, 1); }
@@ -680,20 +661,20 @@ __device__ double CPE::CE_estimate(
     /******************************************************************************
     * Convergence depedent initialization prior to the run at time t_k
     ******************************************************************************/
-    TML::Vector2d mu_CE_prev, mu_CE;
-    TML::Matrix2d P_CE_prev, P_CE;
+    TML::Vector2f mu_CE_prev, mu_CE;
+    TML::Matrix2f P_CE_prev, P_CE;
     sigma_inject = d_safe / 3;
     if (converged_last)
     {
         mu_CE_prev = mu_CE_last; mu_CE = mu_CE_last;
 
         P_CE_prev = P_CE_last; 
-        P_CE = P_CE_last + pow(sigma_inject, 2) * TML::Matrix2d::identity();
+        P_CE = P_CE_last + powf(sigma_inject, 2) * TML::Matrix2f::identity();
     }
     else
     {
         mu_CE_prev = 0.5 * (p_i + p_os); mu_CE = mu_CE_prev;
-        P_CE_prev = pow(d_safe, 2) * TML::Matrix2d::identity() / 3;
+        P_CE_prev = powf(d_safe, 2) * TML::Matrix2f::identity() / 3;
         P_CE = P_CE_prev;
     }
 
@@ -702,7 +683,7 @@ __device__ double CPE::CE_estimate(
     ******************************************************************************/
     int n = 2;
     bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
-    for (int it = 0; it < max_it; it++)
+    /* for (int it = 0; it < max_it; it++)
     {
         printf("hereinCEopt\n");
 
@@ -714,7 +695,7 @@ __device__ double CPE::CE_estimate(
         {
             for(int i = 0; i < n_CE; i++)
             {
-                samples(c, i) = curand_normal_double(&prng_state);
+                samples(c, i) = curand_normal(&prng_state);
             }
         }
         // Box-muller transform
@@ -729,7 +710,7 @@ __device__ double CPE::CE_estimate(
         for (int j = 0; j < n_CE; j++)
         {
             valid(j) = 0;
-            inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= pow(d_safe, 2);
+            inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= powf(d_safe, 2);
 
             inside_alpha_p_confidence_ellipse = 
                 (samples.get_col(j) - p_i).transposed() * P_i.inverse() * (samples.get_col(j) - p_i) <= gate;
@@ -771,13 +752,13 @@ __device__ double CPE::CE_estimate(
             {
                 P_CE += (elite_samples.get_col(j) - mu_CE) * (elite_samples.get_col(j) - mu_CE).transposed();
             }
-            P_CE = P_CE / (double)N_e;
+            P_CE = P_CE / (float)N_e;
 
             // Smoothing to aid in preventing degeneration
             mu_CE = alpha_n * mu_CE + (1 - alpha_n) * mu_CE_prev;
             P_CE =  alpha_n * P_CE  + (1 - alpha_n) * P_CE_prev;
         }
-    }
+    } */
     mu_CE_last = mu_CE; P_CE_last = P_CE;
 
     /******************************************************************************
@@ -794,7 +775,7 @@ __device__ double CPE::CE_estimate(
     {
         for(int i = 0; i < n_CE; i++)
         {
-            samples(c, i) = curand_normal_double(&prng_state);
+            samples(c, i) = curand_normal(&prng_state);
         }
     }
     // Box-muller transform
@@ -806,7 +787,7 @@ __device__ double CPE::CE_estimate(
     for (int j = 0; j < n_CE; j++)
     {
         valid(j) = 0;
-        inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= pow(d_safe, 2);
+        inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= powf(d_safe, 2);
         if (inside_safety_zone)
         {
             valid(j) = 1;
@@ -814,12 +795,12 @@ __device__ double CPE::CE_estimate(
     }
     //=========================================
 
-    TML::PDMatrix<double, 1, MAX_N_CPE_SAMPLES> weights(1, n_CE), integrand(1, n_CE), importance(1, n_CE);
+    TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> weights(1, n_CE), integrand(1, n_CE), importance(1, n_CE);
 
     // inline==================================
     //norm_pdf_log(integrand, p_i, P_i);
-    double exp_val = 0;
-    double log_val = - (n / 2.0) * log(2 * M_PI) - log(P_i.determinant()) / 2.0;
+    float exp_val = 0;
+    float log_val = - (n / 2.0) * log(2 * M_PI) - log(P_i.determinant()) / 2.0;
     for (int i = 0; i < n_CE; i++)
     {
         exp_val = (samples.get_col(i) - p_i).transposed() * P_i.inverse() * (samples.get_col(i) - p_i);
@@ -855,4 +836,6 @@ __device__ double CPE::CE_estimate(
     P_c = weights.rwise_mean();
     if (P_c > 1) return 1;
     else return P_c;
+
+    return 0;
 }
