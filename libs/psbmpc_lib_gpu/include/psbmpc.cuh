@@ -32,6 +32,19 @@
 #include <vector>
 #include <memory>
 
+// Host only due to stderr usage
+#define cuda_check_errors(msg) \
+    do { \
+        cudaError_t __err = cudaGetLastError(); \
+        if (__err != cudaSuccess) { \
+            fprintf(stderr, "Fatal error: %s (%s at %s:%d)\n", \
+                msg, cudaGetErrorString(__err), \
+                __FILE__, __LINE__); \
+            fprintf(stderr, "*** FAILED - ABORTING\n"); \
+            exit(1); \
+        } \
+    } while (0)
+
 class CB_Cost_Functor;
 class CB_Functor_Pars;
 class CB_Functor_Data;
