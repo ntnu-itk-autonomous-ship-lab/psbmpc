@@ -539,7 +539,8 @@ int main()
 	std::cout << test222 << std::endl;
 
 	//================================================================================
-	// Other tests
+	// Testing CPE math operations such as sample expectation and sample covariance
+	// calculation
 	//================================================================================
 	TML::PDMatrix<double, 4, 100> sres(2, 20); sres.set_all_coeffs(1);
 	TML::PDMatrix4d mult_by = TML::PDMatrix4d::identity(2, 2);
@@ -547,5 +548,86 @@ int main()
 	TML::Vector2d vec2d; vec2d.set_all_coeffs(3.5);
 	sres = mult_by * sres + vec2d;
 	std::cout << sres << std::endl;
+
+	n_rows = 2; n_cols = 100;
+	TML::PDMatrix<float, 2, 1000> es(n_rows, n_cols);
+	Eigen::MatrixXf es_e(n_rows, n_cols);
+
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			es(i, j) = 2 * std_norm_pdf(gen) + 100;
+			es_e(i, j) = es(i, j);
+		}
+	}
+	
+	Eigen::Vector2f mu_e = es_e.rowwise().mean();
+
+	TML::Vector2f mu, mu_diff;
+	mu = es.rwise_mean();
+	std::cout << "TML rwise mean = " << mu << std::endl;
+	std::cout << "Eigen rwise mean = " << mu_e << std::endl;
+
+	Eigen::Matrix2f P_e = Eigen::Matrix2f::Zero();
+	TML::Matrix2f P, P_diff;
+	P.set_zero();
+	for (size_t i = 0; i < n_cols; i++)
+	{	
+		P_e += (es_e.col(i) - mu_e) * (es_e.col(i) - mu_e).transpose();
+		P += (es.get_col(i) - mu) * (es.get_col(i) - mu).transposed();
+	}
+	P_e /= (float)n_cols;
+	P /= (float)n_cols;
+	std::cout << "TML sample covariance = " << std::endl;
+	std::cout << P << std::endl;
+	std::cout << "Eigen sample covariance = " << std::endl;
+	std::cout << P_e << std::endl;
+
+	for (size_t i = 0; i < 2; i++)
+	{
+		mu_diff(i) = mu(i) - mu_e(i);
+		for (size_t j = 0; j < 2; j++)
+		{
+			P_diff(i, j) = P(i, j) - P_e(i, j);
+		}
+	}
+	std::cout << "Sample mean diff : " << mu_diff.transposed() << std::endl;
+	std::cout << "Sample covariance diff: " << std::endl;
+	std::cout << P_diff << std::endl;
+
+	float alpha_n = 0.9;
+	TML::Vector2f mu_prev;
+	Eigen::Vector2f mu_e_prev;
+	TML::Matrix2f P_prev; 
+	Eigen::Matrix2f P_e_prev;
+	for (int i = 0; i < 2; i++)
+	{
+		mu_prev(i) = 2 * std_norm_pdf(gen) + 100;
+		mu_e_prev(i) = mu_prev(i);
+		for (int j = 0; j < 2; j++)
+		{
+			P_prev(i, j) = 2 * std_norm_pdf(gen) + 100;
+			P_e_prev(i, j) = P_prev(i, j);
+		}
+	}
+	mu = alpha_n * mu + (1 - alpha_n) * mu_prev;
+    P =  alpha_n * P  + (1 - alpha_n) * P_prev;
+
+	mu_e = alpha_n * mu_e + (1 - alpha_n) * mu_e_prev;
+    P_e =  alpha_n * P_e  + (1 - alpha_n) * P_e_prev;
+
+	for (size_t i = 0; i < 2; i++)
+	{
+		mu_diff(i) = mu(i) - mu_e(i);
+		for (size_t j = 0; j < 2; j++)
+		{
+			P_diff(i, j) = P(i, j) - P_e(i, j);
+		}
+	}
+	std::cout << "Smoothing sample mean diff : " << mu_diff.transposed() << std::endl;
+	std::cout << "Smoothing sample covariance diff: " << std::endl;
+	std::cout << P_diff << std::endl;
+
 	return 0;
 }

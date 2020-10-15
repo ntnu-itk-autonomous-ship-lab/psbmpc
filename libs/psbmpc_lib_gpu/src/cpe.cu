@@ -121,6 +121,7 @@ __device__ void CPE::initialize(
 /****************************************************************************************
 *  Name     : estimate
 *  Function : Input parameters have different size depending on if CE or MCSKF4D are used.
+*             NOT USED CURRENTLY.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -133,7 +134,7 @@ __device__ float CPE::estimate(
     TML::Vector2f p_os, p_i;
     TML::Matrix2f P_i_2D;
 
-    float P_c;
+    float P_c_est;
     switch (method)
     {
         case CE :
@@ -143,18 +144,18 @@ __device__ float CPE::estimate(
 
             P_i_2D = reshape<16, 1, 4, 4>(P_i.get_col(0), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-            P_c = CE_estimate(p_os, p_i, P_i_2D);
+            P_c_est = CE_estimate(p_os, p_i, P_i_2D);
             break;
         case MCSKF4D :
-            P_c = MCSKF4D_estimate(xs_os, xs_i, P_i);
+            P_c_est = MCSKF4D_estimate(xs_os, xs_i, P_i);
             break;
         default :
-            P_c = -1;
+            P_c_est = -1;
             // Throw
             break;
     }
     
-    return P_c;
+    return P_c_est;
 }
 
 /****************************************************************************************
@@ -174,19 +175,19 @@ __device__ void CPE::estimate_over_trajectories(
         const float dt                                                              // In: Prediction time step
     )
 {
-    int n_samples = xs_p.get_cols();
+    int n_traj_samples = xs_p.get_cols();
 
-    int n_seg_samples = std::round(dt_seg / dt) + 1, k_j_(0), k_j(0);
-	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_os_seg(6, n_seg_samples);
-    TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_seg(4, n_seg_samples);
-    TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_seg(16, n_seg_samples);
+    int n_seg_samples_temp = std::round(dt_seg / dt) + 1, k_j_(0), k_j(0);
+	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_os_seg(6, n_seg_samples_temp);
+    TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_seg(4, n_seg_samples_temp);
+    TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_seg(16, n_seg_samples_temp);
 
     TML::Vector2f p_os, p_i;
     TML::Matrix2f P_i_2D;
     
     initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i);
 
-    for (int k = 0; k < n_samples; k++)
+    for (int k = 0; k < n_traj_samples; k++)
     {
         switch(method)
         {
@@ -199,17 +200,17 @@ __device__ void CPE::estimate_over_trajectories(
                 P_c_i(0, k) = CE_estimate(xs_p.get_col(k), xs_i_p.get_col(k), P_i_p.get_col(k));
                 break;
             case MCSKF4D :                
-                if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
+                if (fmod(k, n_seg_samples_temp - 1) == 0 && k > 0)
                 {
                     k_j_ = k_j; k_j = k;
-                    xs_os_seg = xs_p.get_block<6, MAX_N_SEG_SAMPLES>(0, k_j_, 6, n_seg_samples);
-                    xs_i_seg = xs_i_p.get_block<4, MAX_N_SEG_SAMPLES>(0, k_j_, 4, n_seg_samples);
+                    xs_os_seg = xs_p.get_block<6, MAX_N_SEG_SAMPLES>(0, k_j_, 6, n_seg_samples_temp);
+                    xs_i_seg = xs_i_p.get_block<4, MAX_N_SEG_SAMPLES>(0, k_j_, 4, n_seg_samples_temp);
 
-                    P_i_seg = P_i_p.get_block<16, MAX_N_SEG_SAMPLES>(0, k_j_, 16, n_seg_samples);
+                    P_i_seg = P_i_p.get_block<16, MAX_N_SEG_SAMPLES>(0, k_j_, 16, n_seg_samples_temp);
 
                     P_c_i(0, k_j_) = MCSKF4D_estimate(xs_os_seg, xs_i_seg, P_i_seg);
                     // Collision probability on this active segment are all equal
-                    P_c_i.set_block(0, k_j_, 1, n_seg_samples, P_c_i(0, k_j_) * TML::PDMatrix<float, 1, MAX_N_SEG_SAMPLES>::ones(1, k_j - k_j_ + 1));
+                    P_c_i.set_block(0, k_j_, 1, n_seg_samples_temp, P_c_i(0, k_j_) * TML::PDMatrix<float, 1, MAX_N_SEG_SAMPLES>::ones(1, k_j - k_j_ + 1));
                 }	
                 break;
             default :
@@ -264,9 +265,8 @@ __device__ inline void CPE::update_L(
     const TML::PDMatrix4f &in                                                     // In: Matrix in consideration
     )
 {
-    int n = in.get_rows();
+    n = in.get_rows();
     L.set_zero();
-    float sum;
     for (int i = 0; i < n; i++) { 
         for (int j = 0; j <= i; j++) 
         { 
@@ -307,10 +307,11 @@ __device__ inline void CPE::norm_pdf_log(
     const TML::PDMatrix4f &Sigma                                                // In: Covariance of the MVN
     )
 {
-    int n = samples.get_rows(), n_samples = samples.get_cols();
-
-    float exp_val = 0;
-    float log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
+    n = samples.get_rows();
+    n_samples = samples.get_cols();
+    
+    exp_val = 0;
+    log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
     for (int i = 0; i < n_samples; i++)
     {
         exp_val = (samples.get_col(i) - mu).transposed() * Sigma.inverse() * (samples.get_col(i) - mu);
@@ -332,7 +333,8 @@ __device__ inline void CPE::generate_norm_dist_samples(
     const TML::PDMatrix4f &Sigma                                                // In: Covariance of the MVN
     )
 {
-    int n = samples.get_rows(), n_samples = samples.get_cols();
+    n = samples.get_rows();
+    n_samples = samples.get_cols();
 
     update_L(Sigma);
     
@@ -353,35 +355,29 @@ __device__ inline void CPE::generate_norm_dist_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void CPE::calculate_roots_2nd_order(
-    TML::Vector2f &r,                                                   // In: vector of roots to find
-    bool &is_complex,                                                   // In: Indicator of real/complex roots
-    const float A,                                                     // In: Coefficient in polynomial 
-    const float B,                                                     // In: Coefficient in polynomial 
-    const float C                                                      // In: Coefficient in polynomial 
-    )
+__device__ void CPE::calculate_roots_2nd_order()
 {
-    is_complex = 0;
+    complex_roots = false;
 
-    float d = powf(B, 2) - 4 * A * C;
+    d = powf(B, 2) - 4 * A * C;
     // Distinct real roots
     if (d > 0)          
     {
-        r(0) = - (B + sqrt(fabs(d))) / (2 * A);
-        r(1) = - (B - sqrt(fabs(d))) / (2 * A);
+        roots(0) = - (B + sqrt(fabs(d))) / (2 * A);
+        roots(1) = - (B - sqrt(fabs(d))) / (2 * A);
     }
     // Repeated real roots
     else if (d == 0)
     {
-        r(0) = - B / (2 * A);
-        r(1) = r(0);
+        roots(0) = - B / (2 * A);
+        roots(1) = roots(0);
     }
     // Complex conjugated roots, dont care solution
     else
     {
-        is_complex = 1;
-        r(0) = - 1e10;
-        r(1) = 1e10;
+        complex_roots = true;
+        roots(0) = - 1e10;
+        roots(1) = 1e10;
     }
 }
 
@@ -399,7 +395,7 @@ __device__ float CPE::produce_MCS_estimate(
 	const float t_cpa                                                         // In: Time to cpa
     )
 {
-    float P_c;
+    y_P_c = 0.0;
 
     generate_norm_dist_samples(xs_i, P_i);
     
@@ -407,9 +403,9 @@ __device__ float CPE::produce_MCS_estimate(
 
     // The estimate is taken as the ratio of samples inside the integration domain, 
     // to the total number of samples, i.e. the mean of the validity vector
-    P_c = valid.rwise_mean()(0);
-    if (P_c > 1) { return 1; }
-    else         { return P_c; }      
+    y_P_c = valid.rwise_mean()(0);
+    if (y_P_c > 1) { return 1; }
+    else         { return y_P_c; }      
 }
 
 /****************************************************************************************
@@ -425,12 +421,8 @@ __device__ void CPE::determine_sample_validity_4D(
     const float t_cpa                                                       // In: Time to cpa
     )
 {
-    int n_samples = samples.get_cols();
+    n_samples = samples.get_cols();
 
-    bool complex_roots;
-    TML::Vector2f p_i_sample, v_i_sample;
-    float A, B, C;
-    TML::Vector2f r;
     for (int j = 0; j < n_samples; j++)
     {
         valid(j) = 0;
@@ -442,18 +434,18 @@ __device__ void CPE::determine_sample_validity_4D(
         B = 2 * (p_i_sample - p_os_cpa).transposed() * v_i_sample;
         C = p_i_sample.dot(p_i_sample) - 2 * p_os_cpa.dot(p_i_sample) + p_os_cpa.dot(p_os_cpa) - powf(d_safe, 2);
 
-        calculate_roots_2nd_order(r, complex_roots, A, B, C);
+        calculate_roots_2nd_order();
 
         // Distinct real positive or pos+negative roots: 2 crossings, possibly only one in
         // t >= t0, checks if t_cpa occurs inside this root interval <=> inside safety zone
-        if (!complex_roots && r(0) != r(1) && t_cpa >= 0 && (r(0) <= t_cpa && t_cpa <= r(1)))
+        if (!complex_roots && roots(0) != roots(1) && t_cpa >= 0 && (roots(0) <= t_cpa && t_cpa <= roots(1)))
         {
             valid(j) = 1;
         }
         // Repetitive real positive roots: 1 crossing, this is only possible if the sampled
         // trajectory is tangent to the safety zone at t_cpa, checks if t_cpa = cross time
         // in this case
-        else if(!complex_roots && r(0) == r(1) && t_cpa >= 0 && t_cpa == r(0))
+        else if(!complex_roots && roots(0) == roots(1) && t_cpa >= 0 && t_cpa == roots(0))
         {
             valid(j) = 1;
         }
@@ -476,25 +468,17 @@ __device__ float CPE::MCSKF4D_estimate(
     const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i                                                 // In: Obstacle i covariance for the active segment
     )
 {
-    assert(xs_os.get_rows() >= 4 && xs_os.get_rows() <= 6 && xs_i.get_rows() == 4 && P_i.get_rows() == 16);
-
-    // Collision probability "measurement" from MCS
-    float y_P_c_i;
-
     /*****************************************************
     * Find linear segment representative state vectors
     *****************************************************/
-   int n_seg_samples = xs_os.get_cols();
+    n_seg_samples = xs_os.get_cols();
     // Vectors representing the linear segments
-    TML::Vector4f xs_os_sl, xs_i_sl;
-    xs_os_sl = xs_os.get_col(0);
+    
+    xs_os_sl = xs_os.get_block<4, 1>(0, 0, 4, 1);
     xs_i_sl = xs_i.get_col(0);
 
     if (n_seg_samples > 1)
-    {
-        // Define speed and course for the vessels along their linear segments
-        float U_os_sl, U_i_sl, psi_os_sl, psi_i_sl;
-    
+    {    
         // Own-ship segment
         // Find average velocity along segment
         U_os_sl = xs_os.get_block<2, MAX_N_SEG_SAMPLES>(3, 0, 2, n_seg_samples).rwise_mean().norm();
@@ -517,11 +501,8 @@ __device__ float CPE::MCSKF4D_estimate(
         xs_i_sl(2) = U_i_sl * cos(psi_i_sl);
         xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
     }
-    TML::Matrix4f P_i_sl;
     P_i_sl = reshape<16, MAX_N_SEG_SAMPLES, 4, 4>(P_i.get_col(0), 4, 4);
 
-    TML::Vector2f p_os_cpa;
-    float t_cpa, d_cpa;
     calculate_cpa(p_os_cpa, t_cpa, d_cpa, xs_os_sl, xs_i_sl);
 
     /*****************************************************
@@ -547,7 +528,6 @@ __device__ float CPE::MCSKF4D_estimate(
     ******************************************************
     * Update using measurement y_P_c
     *****************************************************/
-    float K;
     K = var_P_c_p / (var_P_c_p + r);
 
     P_c_upd = P_c_p + K * (y_P_c_i - P_c_p);
@@ -564,7 +544,7 @@ __device__ float CPE::MCSKF4D_estimate(
 
     var_P_c_p = var_P_c_upd + q;
     //*****************************************************
-    
+    printf("P_c_upd = %.6f\n", P_c_upd);
     return P_c_upd;
 }
 
@@ -579,10 +559,7 @@ __device__ void CPE::determine_sample_validity_2D(
 	const TML::Vector2f &p_os                                                // In: Own-ship position vector
     )
 {
-    assert(p_os.get_rows() == 2 && p_os.get_cols() == 1);
-
-    int n_samples = samples.get_cols();
-    bool inside_safety_zone;
+    n_samples = samples.get_cols();
     for (int j = 0; j < n_samples; j++)
     {
         valid(j) = 0;
@@ -606,11 +583,7 @@ __device__ void CPE::determine_best_performing_samples(
     const TML::Matrix2f &P_i                                                      // In: Obstacle i positional covariance
     )
 {
-    assert(p_os.get_rows() == 2 && p_os.get_cols() == 1 && p_i.get_rows() == 2 && p_i.get_cols() == 1 &&
-            P_i.get_rows() == 2 && P_i.get_rows() == P_i.get_cols());
-
     N_e = 0;
-    bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
     for (int j = 0; j < n_CE; j++)
     {
         valid(j) = 0;
@@ -619,13 +592,45 @@ __device__ void CPE::determine_best_performing_samples(
         inside_alpha_p_confidence_ellipse = 
             (samples.get_col(j) - p_i).transposed() * P_i.inverse() * (samples.get_col(j) - p_i) <= gate;
 
-
         if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
         {
             valid(j) = 1;
             N_e++;
         }
     }
+}
+
+/****************************************************************************************
+*  Name     : update_importance_density
+*  Function : Improves the current importance density in the Cross-Entropy iterative
+*             optimization.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+__device__ void CPE::update_importance_density(
+    TML::Vector2f &mu_CE,                                                   // In/out: Expectation of the current importance density
+    TML::Matrix2f &P_CE,                                                    // In/out: Covariance of the current importance density
+    TML::Vector2f &mu_CE_prev,                                              // In/out: Expectation of the previous importance density
+    TML::Matrix2f &P_CE_prev                                                // In/out: Covariance of the previous importance density
+    )
+{
+    // Set previous importance density parameters to the old current ones
+    mu_CE_prev = mu_CE;
+    P_CE_prev = P_CE;
+
+    // Update the current parameters using the elite samples
+    mu_CE = elite_samples.rwise_mean();
+
+    P_CE.set_zero();
+    for (int j = 0; j < N_e; j++)
+    {
+        P_CE += (elite_samples.get_col(j) - mu_CE) * (elite_samples.get_col(j) - mu_CE).transposed();
+    }
+    P_CE /= (float)N_e;
+
+    // Smoothing to aid in preventing degeneration
+    mu_CE = alpha_n * mu_CE + (1 - alpha_n) * mu_CE_prev;
+    P_CE =  alpha_n * P_CE  + (1 - alpha_n) * P_CE_prev;
 }
 
 /****************************************************************************************
@@ -640,12 +645,11 @@ __device__ float CPE::CE_estimate(
     const TML::Matrix2f &P_i                                                  // In: Obstacle i positional covariance
     )
 {            
-    float P_c(0.0);
+    P_c = 0.0;
     /******************************************************************************
     * Check if it is necessary to perform estimation
     ******************************************************************************/
-    float d_0i = (p_i - p_os).norm();
-    float var_P_i_largest(0.0);
+    d_0i = (p_i - p_os).norm();
     
     if (P_i(0, 0) > P_i(1, 1)) { var_P_i_largest = P_i(0, 0); }
     else                       { var_P_i_largest = P_i(1, 1); }
@@ -661,8 +665,6 @@ __device__ float CPE::CE_estimate(
     /******************************************************************************
     * Convergence depedent initialization prior to the run at time t_k
     ******************************************************************************/
-    TML::Vector2f mu_CE_prev, mu_CE;
-    TML::Matrix2f P_CE_prev, P_CE;
     sigma_inject = d_safe / 3;
     if (converged_last)
     {
@@ -673,56 +675,25 @@ __device__ float CPE::CE_estimate(
     }
     else
     {
-        mu_CE_prev = 0.5 * (p_i + p_os); mu_CE = mu_CE_prev;
-        P_CE_prev = powf(d_safe, 2) * TML::Matrix2f::identity() / 3;
+        mu_CE_prev = p_i + p_os; mu_CE_prev *= 0.5; 
+        mu_CE = mu_CE_prev;
+
+        P_CE_prev = powf(d_safe, 2) * TML::Matrix2f::identity(); P_CE_prev /= (float)3;
         P_CE = P_CE_prev;
     }
+    /* printf("mu_CE = %.1f, %.1f\n", mu_CE(0), mu_CE(1));
+
+    printf("P_CE = %.1f, %.1f\n", P_CE(0, 0), P_CE(0, 1));
+	printf("	   %.1f, %.1f\n", P_CE(1, 0), P_CE(1, 1)); */
 
     /******************************************************************************
     * Iterative optimization to find the near-optimal importance density
     ******************************************************************************/
-    int n = 2;
-    bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
-    /* for (int it = 0; it < max_it; it++)
+    for (int it = 0; it < max_it; it++)
     {
-        printf("hereinCEopt\n");
+        generate_norm_dist_samples(mu_CE, P_CE);
 
-        //inline======================================
-        //generate_norm_dist_samples(mu_CE, P_CE);
-        update_L(P_CE);
-        
-        for (int c = 0; c < n; c++)
-        {
-            for(int i = 0; i < n_CE; i++)
-            {
-                samples(c, i) = curand_normal(&prng_state);
-            }
-        }
-        // Box-muller transform
-        samples = L * samples + mu_CE;
-
-        //=========================================
-
-        //inline======================================
-        //determine_best_performing_samples(p_os, p_i, P_i);
-        
-        N_e = 0;
-        for (int j = 0; j < n_CE; j++)
-        {
-            valid(j) = 0;
-            inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= powf(d_safe, 2);
-
-            inside_alpha_p_confidence_ellipse = 
-                (samples.get_col(j) - p_i).transposed() * P_i.inverse() * (samples.get_col(j) - p_i) <= gate;
-
-
-            if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
-            {
-                valid(j) = 1;
-                N_e++;
-            }
-        }
-        //=========================================
+        determine_best_performing_samples(p_os, p_i, P_i);
 
         elite_samples.resize(2, N_e);
         e_count = 0;
@@ -736,95 +707,29 @@ __device__ float CPE::CE_estimate(
         }
 
         // Terminate iterative optimization if enough elite samples are collected
-        if (N_e >= n_CE * rho) { converged_last = true; break;}
+        if (N_e >= n_CE * rho) { converged_last = true; break; }
         // Otherwise, improve importance density parameters (given N_e > 3 to prevent zero-matrix 
         // in P_CE and/or negative definite matrix if no smoothing is used, and Pcoll spikes due
         // to insufficient sample amounts)
         else if (N_e > 3)
         {
-            mu_CE_prev = mu_CE;
-            P_CE_prev = P_CE;
-
-            mu_CE = elite_samples.rwise_mean();
-
-            P_CE.set_zero();
-            for (int j = 0; j < N_e; j++)
-            {
-                P_CE += (elite_samples.get_col(j) - mu_CE) * (elite_samples.get_col(j) - mu_CE).transposed();
-            }
-            P_CE = P_CE / (float)N_e;
-
-            // Smoothing to aid in preventing degeneration
-            mu_CE = alpha_n * mu_CE + (1 - alpha_n) * mu_CE_prev;
-            P_CE =  alpha_n * P_CE  + (1 - alpha_n) * P_CE_prev;
+            update_importance_density(mu_CE, P_CE, mu_CE_prev, P_CE_prev);
         }
-    } */
+    }
     mu_CE_last = mu_CE; P_CE_last = P_CE;
 
     /******************************************************************************
     * Estimate collision probability with samples from the final importance
     * density from the optimization
     ******************************************************************************/
-    printf("hereafterCEopt\n");
-
-    //inline===================================
-    //generate_norm_dist_samples(mu_CE, P_CE);
-    update_L(P_CE);
+    generate_norm_dist_samples(mu_CE, P_CE);
     
-    for (int c = 0; c < n; c++)
-    {
-        for(int i = 0; i < n_CE; i++)
-        {
-            samples(c, i) = curand_normal(&prng_state);
-        }
-    }
-    // Box-muller transform
-    samples = L * samples + mu_CE;
-    //=========================================
-
-    // inline==================================
-    //determine_sample_validity_2D(p_os);
-    for (int j = 0; j < n_CE; j++)
-    {
-        valid(j) = 0;
-        inside_safety_zone = (samples.get_col(j) - p_os).dot(samples.get_col(j) - p_os) <= powf(d_safe, 2);
-        if (inside_safety_zone)
-        {
-            valid(j) = 1;
-        }
-    }
-    //=========================================
+    determine_sample_validity_2D(p_os);
 
     TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> weights(1, n_CE), integrand(1, n_CE), importance(1, n_CE);
 
-    // inline==================================
-    //norm_pdf_log(integrand, p_i, P_i);
-    float exp_val = 0;
-    float log_val = - (n / 2.0) * log(2 * M_PI) - log(P_i.determinant()) / 2.0;
-    for (int i = 0; i < n_CE; i++)
-    {
-        exp_val = (samples.get_col(i) - p_i).transposed() * P_i.inverse() * (samples.get_col(i) - p_i);
-
-        exp_val = - exp_val / 2.0;
-
-        integrand(i) = log_val + exp_val;
-    }
-
-    //=========================================
-
-    // inline==================================
-    //norm_pdf_log(importance, mu_CE, P_CE);
-    exp_val = 0;
-    log_val = - (n / 2.0) * log(2 * M_PI) - log(P_CE.determinant()) / 2.0;
-    for (int i = 0; i < n_CE; i++)
-    {
-        exp_val = (samples.get_col(i) - mu_CE).transposed() * P_CE.inverse() * (samples.get_col(i) - mu_CE);
-
-        exp_val = - exp_val / 2.0;
-
-        importance(i) = log_val + exp_val;
-    }
-    //=========================================
+    norm_pdf_log(integrand, p_i, P_i);
+    norm_pdf_log(importance, mu_CE, P_CE);
 
     // Calculate importance weights for estimating the integral \Int_S_2 {p^i(x, y, t_k) dx dy}
     // where p^i = Norm_distr(p_i, P_i; t_k) is the obstacle positional uncertainty (or combined uncertainty

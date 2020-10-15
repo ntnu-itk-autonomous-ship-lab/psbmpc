@@ -498,12 +498,12 @@ namespace TML
 		PDMatrix<T, Max_Rows, Max_Cols> result(1, n_cols);
 		for (size_t j = 0; j < n_cols; j++)
 		{
-			result(j) = (T)0;
+			result(0, j) = (T)0;
 			for (size_t i = 0; i < n_rows; i++)
 			{
-				result(j) += this->data[n_cols * i + j];
+				result(0, j) += this->data[n_cols * i + j];
 			}
-			result(j) /= (T)n_rows;
+			result(0, j) /= (T)n_rows;
 		}
 		return result;
 	}
@@ -520,12 +520,12 @@ namespace TML
 		PDMatrix<T, Max_Rows, Max_Cols> result(n_rows, 1);
 		for (size_t i = 0; i < n_rows; i++)
 		{
-			result(i) = (T)0;
+			result(i, 0) = (T)0;
 			for (size_t j = 0; j < n_cols; j++)
 			{
-				result(i) += this->data[n_cols * i + j];
+				result(i, 0) += this->data[n_cols * i + j];
 			}
-			result(i) /= (T)n_rows;
+			result(i, 0) /= (T)n_cols;
 		}
 		return result;
 	}

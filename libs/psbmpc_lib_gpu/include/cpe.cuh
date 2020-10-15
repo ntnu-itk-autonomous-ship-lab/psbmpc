@@ -56,7 +56,8 @@ private:
 	// PRNG-related
 	curandState prng_state;
 
-	// CE-method parameters and internal states
+	//====================================
+	// CE-method parameters, internal states and temporaries
 	float sigma_inject, alpha_n, gate, rho, max_it;
 	
 	bool converged_last;
@@ -64,24 +65,61 @@ private:
 	TML::Vector2f mu_CE_last;
 	TML::Matrix2f P_CE_last;
 
+	// Temporaries:
 	int N_e, e_count;
 	TML::PDMatrix<float, 2, MAX_N_CPE_SAMPLES> elite_samples;
 
-	// MCSKF4D-method parameters and internal states
+	TML::Vector2f mu_CE_prev, mu_CE;
+	TML::Matrix2f P_CE_prev, P_CE;
+
+	float d_0i, var_P_i_largest;
+	bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
+	//====================================
+
+	//====================================
+	// MCSKF4D-method parameters, internal states and temporaries
 	float q, r, dt_seg; 
 	
 	float P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
+
+	// Temporaries
+	float y_P_c_i; // Collision probability "measurement" from MCS, temporary var.
+
+	float t_cpa, d_cpa, K;
+	TML::Vector2f p_os_cpa;
+
+	int n_seg_samples;
+
+	// Speed and course/heading for the vessels along their linear segments
+    float U_os_sl, U_i_sl, psi_os_sl, psi_i_sl;
+
+	TML::Vector4f xs_os_sl, xs_i_sl;
+	TML::Matrix4f P_i_sl;
+
+	bool complex_roots;
+    TML::Vector2f roots, p_i_sample, v_i_sample;
+    float d, A, B, C;
+	//====================================
 
 	// Common internal sample variables
 	TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> samples;
 	TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> valid;
 	
-	// Safety zone parameters
+	// Safety zone parameter
 	float d_safe;
 
 	// Cholesky decomposition matrix
-	TML::PDMatrix4f L;
+	TML::PDMatrix4f L; 
+	
+	//====================================
+	// Other pre-allocated temporaries:
+	float P_c, y_P_c;
+	float exp_val, log_val;
+	int n, n_samples;	
+	float sum;
+	//====================================
 
+	// Methods
 	__host__ __device__ void resize_matrices();
 
 	__device__ inline void update_L(const TML::PDMatrix4f &in);
@@ -90,7 +128,7 @@ private:
 
 	__device__ inline void generate_norm_dist_samples(const TML::PDVector4f &mu, const TML::PDMatrix4f &Sigma);
 
-	__device__ void calculate_roots_2nd_order(TML::Vector2f &r, bool &is_complex, const float A, const float B, const float C);
+	__device__ void calculate_roots_2nd_order();
 
 	__device__ float produce_MCS_estimate(
 		const TML::Vector4f &xs_i, 
@@ -109,6 +147,12 @@ private:
 		const TML::Vector2f &p_os, 
 		const TML::Vector2f &p_i, 
 		const TML::Matrix2f &P_i);
+
+	__device__ void update_importance_density(
+		TML::Vector2f &mu_CE,
+		TML::Matrix2f &P_CE, 
+		TML::Vector2f &mu_CE_prev, 
+		TML::Matrix2f &P_CE_prev);
 
 public:
 	
