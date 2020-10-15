@@ -471,7 +471,7 @@ namespace TML
 			{
 				result(i) += data[Cols * i + j];
 			}
-			result(i) /= (T)Rows;
+			result(i) /= (T)Cols;
 		}
 	}
 

@@ -549,7 +549,7 @@ namespace TML
 			{
 				result(i) += this->data[n_cols * i + j];
 			}
-			result(i) /= (T)n_rows;
+			result(i) /= (T)n_cols;
 		}
 		return result;
 	}
