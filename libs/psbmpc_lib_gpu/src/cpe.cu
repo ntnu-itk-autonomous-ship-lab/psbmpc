@@ -121,7 +121,7 @@ __device__ void CPE::initialize(
 /****************************************************************************************
 *  Name     : estimate
 *  Function : Input parameters have different size depending on if CE or MCSKF4D are used.
-*             NOT USED CURRENTLY.
+*             NOT USED CURRENTLY IN THIS .CU IMPLEMENTATION.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -177,6 +177,8 @@ __device__ void CPE::estimate_over_trajectories(
     )
 {
     int n_traj_samples = xs_p.get_cols();
+    TML::Vector2f p_os, p_i;
+    TML::Matrix2f P_i_2D;
 
     int n_seg_samples_temp = std::round(dt_seg / dt) + 1, k_j_(0), k_j(0);
 	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_os_seg(6, n_seg_samples_temp);
@@ -471,11 +473,6 @@ __device__ float CPE::MCSKF4D_estimate(
     * Find linear segment representative state vectors
     *****************************************************/
     n_seg_samples = xs_os.get_cols();
-    // Vectors representing the linear segments
-    
-    // First column is the start of the segment
-    xs_os_sl = xs_os.get_block<4, 1>(0, 0, 4, 1);
-    xs_i_sl = xs_i.get_col(0);
 
     if (n_seg_samples > 1)
     {    
@@ -501,15 +498,21 @@ __device__ float CPE::MCSKF4D_estimate(
         xs_i_sl(2) = U_i_sl * cos(psi_i_sl);
         xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
     }
+    else 
+    {
+        // Throw, this should not happen
+        return 0;
+    }
+    
     P_i_sl = reshape<16, MAX_N_SEG_SAMPLES, 4, 4>(P_i.get_col(0), 4, 4);
 
-    printf("xs_os_sl = %.1f, %.1f, %.1f, %.1f\n", xs_os_sl(0, 0), xs_os_sl(1, 0), xs_os_sl(2, 0), xs_os_sl(3, 0));
-    printf("xs_i_sl = %.1f, %.1f, %.1f, %.1f\n", xs_i_sl(0, 0), xs_i_sl(1, 0), xs_i_sl(2, 0), xs_i_sl(3, 0));
+    /* printf("xs_os_sl = %.1f, %.1f, %.1f, %.1f\n", xs_os_sl(0), xs_os_sl(1), xs_os_sl(2), xs_os_sl(3));
+    printf("xs_i_sl = %.1f, %.1f, %.1f, %.1f\n", xs_i_sl(0), xs_i_sl(1), xs_i_sl(2), xs_i_sl(3)); */
 
     calculate_cpa(p_os_cpa, t_cpa, d_cpa, xs_os_sl, xs_i_sl);
 
-    printf("p_os_cpa = %.1f, %.1f\n", p_os_cpa(0), p_os_cpa(1));
-    printf("t_cpa = %.1f\n", t_cpa);
+    /* printf("p_os_cpa = %.1f, %.1f\n", p_os_cpa(0), p_os_cpa(1));
+    printf("t_cpa = %.1f\n", t_cpa); */
 
     /*****************************************************
     * Generate Monte Carlo Simulation estimate of P_c
@@ -526,7 +529,7 @@ __device__ float CPE::MCSKF4D_estimate(
     {
         y_P_c_i = produce_MCS_estimate(xs_i_sl, P_i_sl, p_os_cpa, t_cpa);
     }
-    printf("y_P_c_i = %.1f\n", y_P_c_i);
+    /* printf("y_P_c_i = %.6f\n", y_P_c_i); */
 
     /*****************************************************
     * Kalman-filtering for simple markov chain model

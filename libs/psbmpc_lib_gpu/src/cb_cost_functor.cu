@@ -80,7 +80,7 @@ __device__ float CB_Cost_Functor::operator()(
 	cpe[cb_index].seed_prng(cb_index);
 
 	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
-	int n_seg_samples = std::round(cpe->get_segment_discretization_time() / pars->dt) + 1;
+	int n_seg_samples = std::round(cpe[cb_index].get_segment_discretization_time() / pars->dt) + 1;
 	
 	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
@@ -105,6 +105,7 @@ __device__ float CB_Cost_Functor::operator()(
 		pars->guidance_method, 
 		pars->T, pars->dt);
 
+	printf("Offset_sequence = %.1f, %.1f, %.1f, %.1f\n", offset_sequence[0], offset_sequence[1], offset_sequence[2], offset_sequence[3]);
 	//======================================================================================================================
 	// 2 : Cost calculation
 	// Not entirely optimal for loop configuration, but the alternative requires alot of memory, so test this first.
@@ -186,7 +187,7 @@ __device__ float CB_Cost_Functor::operator()(
 					case MCSKF4D :                
 						if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 						{
-							P_c_i(ps) = cpe[cb_index].MCSKF4D_estimate(xs_p, xs_i_p, P_i_p);							
+							P_c_i(ps) = cpe[cb_index].MCSKF4D_estimate(xs_p, xs_i_p, P_i_p);						
 						}	
 						break;
 					default :
@@ -203,7 +204,7 @@ __device__ float CB_Cost_Functor::operator()(
 					max_cost_ps(ps) = cost_ps;
 				}
 				//==========================================================================================
-				printf("P_c_i = %.6f | cost_ps = %.4f\n", P_c_i(ps), cost_ps);
+				printf("P_c_i = %.6f | max_cost_ps = %.4f\n", P_c_i(ps), max_cost_ps(ps));
 			}
 		}
 
@@ -273,7 +274,7 @@ __device__ float CB_Cost_Functor::operator()(
 	// 2.7 : Calculate cost due to having a wobbly offset_sequence
 	cost += calculate_chattering_cost(offset_sequence, cb_index); 
 	//==================================================================================================
-
+	printf("Cost of cb_index %d : %.2f\n", cb_index, cost);
 	return cost;
 }
 

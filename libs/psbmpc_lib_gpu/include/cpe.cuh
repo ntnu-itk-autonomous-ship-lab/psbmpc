@@ -74,9 +74,6 @@ private:
 
 	float d_0i, var_P_i_largest;
 	bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
-
-	TML::Vector2f p_os, p_i;
-    TML::Matrix2f P_i_2D;
 	//====================================
 
 	//====================================
