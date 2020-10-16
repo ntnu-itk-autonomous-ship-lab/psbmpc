@@ -23,7 +23,7 @@
 
 #define MAX_N_M 10                      // Max number of avoidance maneuvers allowable
 
-#define MAX_N_SAMPLES 1000              // Max number of samples for trajectories and such allowable on the device
+#define MAX_N_SAMPLES 500               // Max number of samples for trajectories and such allowable on the device
 
 #define MAX_N_WPS 10                    // Max number of waypoints for the waypoint matrix allowable on the device
 
@@ -32,7 +32,5 @@
 
 #define MAX_N_SEG_SAMPLES 4             // Max number of samples in segment considered in the CPE method MCSKF4D
 #define MAX_N_CPE_SAMPLES 1000          // Max number of samples allowable to draw in the CPE. 
-
-
 
 #endif

@@ -37,6 +37,58 @@ private:
 
 	CPE *cpe;
 
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory;
+
+	//==============================================
+	// Pre-allocated temporaries
+	//==============================================
+	Ownship ownship;
+
+	unsigned int cb_index;
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
+
+	int n_samples, n_seg_samples;
+
+	float cost_cb, cost_ps, cost_cd, cost_ch, delta_t, cost_g, ahcr;
+
+	float d_safe_i, chi_m, Pr_CC_i;
+
+	// Allocate vectors for keeping track of max cost wrt obstacle i in prediction scenario ps, 
+	// collision probabilities and obstacle COLREGS violation indicator
+	TML::PDMatrix<float, MAX_N_OBST, 1> cost_i;
+	TML::PDMatrix<float, MAX_N_PS, 1> P_c_i, max_cost_ps;
+	TML::PDMatrix<bool, MAX_N_PS, 1> mu_i;
+
+	// Allocate vectors for the obstacle intention weighted cost, and intention probability vector
+	TML::Vector3f cost_a, Pr_a;
+
+	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
+	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
+	// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
+	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_p; 
+	TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_p;
+	TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_p;
+
+	// Dynamic obstacle cost related (do cost)
+	float cost_do, C, l_i;
+
+	TML::Vector2f v_0_p, v_i_p, L_0i_p;
+	float psi_0_p, psi_i_p, d_0i_p;
+	bool mu, trans;
+
+	// COLREGS violation related
+	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
+	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
+
+	// Transitional cost related
+	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
+
+	// For the CE-method:
+	TML::Vector2f p_os, p_i;
+    TML::Matrix2f P_i_2D;
+	//==============================================
+	//==============================================
+
 	__device__ void predict_trajectories_jointly();
 
 	__device__ bool determine_COLREGS_violation(
@@ -50,8 +102,8 @@ private:
 		const float psi_A, 
 		const float psi_B, 
 		const TML::Vector2f &L_AB, 
-		const float chi_m,
 		const int i,
+		const float chi_m,
 		const unsigned int cb_index);
 
 	__device__ inline void calculate_collision_probabilities(TML::PDMatrix<float, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, const int i, const unsigned int cb_index);
@@ -104,9 +156,14 @@ private:
 public: 
 	__host__ CB_Cost_Functor() : fdata(nullptr), obstacles(nullptr), cpe(nullptr) {}
 
-	__host__ CB_Cost_Functor(CB_Functor_Pars *pars, CB_Functor_Data *fdata, Cuda_Obstacle *obstacles, CPE *cpe);
+	__host__ CB_Cost_Functor(
+		CB_Functor_Pars *pars, 
+		CB_Functor_Data *fdata, 
+		Cuda_Obstacle *obstacles, 
+		CPE *cpe,
+		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory);
 
-	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; cpe = nullptr; }
+	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; cpe = nullptr; trajectory = nullptr; }
 	
 	__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 	

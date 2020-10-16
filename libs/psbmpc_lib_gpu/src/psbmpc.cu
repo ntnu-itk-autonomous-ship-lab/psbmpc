@@ -43,23 +43,28 @@ PSBMPC::PSBMPC()
 
 	map_offset_sequences();
 
-	// Only allocate CB_Functor_Pars and CPE device memory once, thus changing dt will not be allowed. 
+	// Only need to allocate trajectory, CB_Functor_Pars and CPE device memory once 
+	// One trajectory and CPE for each thread, as these are both read and write objects.
+
+	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
+	cuda_check_errors("CudaMalloc of trajectory failed.");
+
 	CB_Functor_Pars temporary_pars(pars); 
 	CPE temporary_cpe(pars.cpe_method, pars.dt);
 
 	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
-	cuda_check_errors("Malloc of CB_Functor_Pars failed.");
+	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
 
 	cudaMemcpy(pars_device_ptr, &temporary_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
-    cuda_check_errors("MemCpy of CB_Functor_Pars failed.");
+    cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
 
 	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * sizeof(CPE));
-    cuda_check_errors("Malloc of CPE failed.");
+    cuda_check_errors("CudaMalloc of CPE failed.");
 
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
 		cudaMemcpy(&cpe_device_ptr[cb], &temporary_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
-    	cuda_check_errors("MemCpy of CPE failed.");
+    	cuda_check_errors("CudaMemCpy of CPE failed.");
 	}
 }
 
@@ -71,15 +76,18 @@ PSBMPC::PSBMPC()
 *****************************************************************************************/
 PSBMPC::~PSBMPC() 
 {
+	cudaFree(trajectory_device_ptr);
+	cuda_check_errors("CudaFree of trajectory failed.");
+
 	cudaFree(pars_device_ptr);
-	cuda_check_errors("cudaFree of CB_Functor_Pars failed.");
+	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
 
 	fdata_device_ptr = nullptr;
 	
 	obstacles_device_ptr = nullptr;
 
 	cudaFree(cpe_device_ptr);
-	cuda_check_errors("cudaFree of CPE failed.");
+	cuda_check_errors("CudaFree of CPE failed.");
 };
 
 /****************************************************************************************
@@ -208,9 +216,9 @@ void PSBMPC::calculate_optimal_offsets(
 
 	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), control_behavior_dvec.begin()));
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), control_behavior_dvec.end()));
-	
+
 	// Perform the calculations on the GPU
-	cb_cost_functor.reset(new CB_Cost_Functor(pars_device_ptr, fdata_device_ptr, obstacles_device_ptr, cpe_device_ptr));
+	cb_cost_functor.reset(new CB_Cost_Functor(pars_device_ptr, fdata_device_ptr, obstacles_device_ptr, cpe_device_ptr, trajectory_device_ptr));
     thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), *cb_cost_functor);
 
 	// Extract minimum cost
@@ -859,21 +867,17 @@ void PSBMPC::set_up_temporary_device_memory(
 	std::cout << "Device max heap size : " << limit << std::endl; */
 
 	// Allocation of device memory for control behaviour functor data and obstacles
-	// CB Functor Data: Read and write, so need to have one for each thread.
-	cudaMalloc((void**)&fdata_device_ptr, pars.n_cbs * sizeof(CB_Functor_Data));
-    cuda_check_errors("Malloc of CB_Functor_Data failed.");
+	// Both are read-only, so only need one on the device
+	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
+    cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
 
 	CB_Functor_Data temporary_fdata(*this, u_d, chi_d, waypoints, static_obstacles, odata);
 
-	for (int cb = 0; cb < pars.n_cbs; cb++)
-	{
-		cudaMemcpy(&fdata_device_ptr[cb], &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
-    	cuda_check_errors("MemCpy of CB_Functor_Data failed.");
-	}
+	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
+    cuda_check_errors("CudaMemCpy of CB_Functor_Data failed.");
 	
-	// Cuda Obstacles: Read-only, so only need one
 	cudaMalloc((void**)&obstacles_device_ptr, n_obst * sizeof(Cuda_Obstacle));
-    cuda_check_errors("Malloc of Cuda_Obstacle's failed.");
+    cuda_check_errors("CudaMalloc of Cuda_Obstacle's failed.");
 
 	Cuda_Obstacle temporary_transfer_obstacle;
 	for (int i = 0; i < n_obst; i++)
@@ -881,7 +885,7 @@ void PSBMPC::set_up_temporary_device_memory(
 		temporary_transfer_obstacle = odata.obstacles[i];
 
 		cudaMemcpy(&obstacles_device_ptr[i], &temporary_transfer_obstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
-    	cuda_check_errors("MemCpy of Cuda_Obstacle i failed.");
+    	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
 	}
 }
 
