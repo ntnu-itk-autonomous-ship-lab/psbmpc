@@ -32,7 +32,8 @@
 
 /****************************************************************************************
 *  Name     : CB_Functor_Pars
-*  Function : Struct containing subset of the PSB-MPC parameters for use in the GPU
+*  Function : Struct containing a subset of the PSB-MPC parameters for use in the GPU.
+*			  Read-only data.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -99,20 +100,17 @@ struct CB_Functor_Pars
 
 /****************************************************************************************
 *  Name     : CB_Functor_Data
-*  Function : Struct containing data/classes/information needed to evaluate the cost of 
-*			  one PSB-MPC control behaviour.
+*  Function : Struct containing read-only data/classes/information needed to evaluate 
+*			  the cost of one PSB-MPC control behaviour.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 class CB_Functor_Data
 {
 public:
+	int wp_c_0; 
 
-	Ownship ownship;
-
-	TML::Vector6d ownship_state;
-
-	TML::PDMatrix<float, 6, MAX_N_SAMPLES> trajectory;
+	TML::Vector6f ownship_state;
 
 	TML::PDMatrix<float, MAX_N_M, 1> maneuver_times;
 
@@ -150,11 +148,9 @@ public:
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		const Obstacle_Data &odata)
 	{
-		ownship = master.ownship;
+		wp_c_0 = master.ownship.get_wp_counter();
 
 		TML::assign_eigen_object(ownship_state, master.trajectory.col(0));
-		
-		TML::assign_eigen_object(trajectory, master.trajectory);
 
 		TML::assign_eigen_object(maneuver_times, master.maneuver_times);
 

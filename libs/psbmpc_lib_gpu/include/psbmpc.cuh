@@ -71,9 +71,12 @@ private:
 	Eigen::Matrix<double, 6, -1> trajectory;
 
 	//=====================================================
-	// Device related objects
+	// Device related objects read/write-ed upon by each
+	// GPU thread.
 	//=====================================================
 	std::unique_ptr<CB_Cost_Functor> cb_cost_functor;
+
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory_device_ptr;
 
 	CB_Functor_Pars *pars_device_ptr;
 

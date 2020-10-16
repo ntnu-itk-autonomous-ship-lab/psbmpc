@@ -136,11 +136,9 @@ mrou.cuh
 kf.cuh
 ../libs/psbmpc_lib_gpu/include/kf.cuh
 
-../libs/psbmpc_lib_gpu/include/utilities.cuh
-thrust/device_vector.h
--
-tml.cuh
-../libs/psbmpc_lib_gpu/include/tml.cuh
+../libs/psbmpc_lib_gpu/include/utilities.h
+Eigen/Dense
+../libs/psbmpc_lib_gpu/include/Eigen/Dense
 iostream
 ../libs/psbmpc_lib_gpu/include/iostream
 
@@ -1246,15 +1244,27 @@ lapacke_mangling.h
 
 ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
 
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/cb_cost_functor.cu
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/psbmpc.cu
+thrust/device_vector.h
+-
+thrust/host_vector.h
+-
+thrust/iterator/counting_iterator.h
+-
+utilities.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.h
+psbmpc.cuh
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/psbmpc.cuh
 cb_cost_functor.cuh
 /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/cb_cost_functor.cuh
-utilities.cuh
-/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cuh
-cmath
--
 iostream
 -
+engine.h
+/home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/engine.h
+
+/usr/local/MATLAB/R2019a/extern/include/engine.h
+matrix.h
+/usr/local/MATLAB/R2019a/extern/include/matrix.h
 
 /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
 complex
@@ -1266,6 +1276,30 @@ stddef.h
 complex.h
 -
 complex.h
+-
+
+/usr/local/MATLAB/R2019a/extern/include/matrix.h
+stdlib.h
+-
+stddef.h
+-
+tmwtypes.h
+/usr/local/MATLAB/R2019a/extern/include/tmwtypes.h
+stddef.h
+-
+tmwtypes.h
+-
+assert.h
+-
+
+/usr/local/MATLAB/R2019a/extern/include/tmwtypes.h
+limits.h
+-
+stdbool.h
+-
+float.h
+-
+stddef.h
 -
 
 /usr/local/cuda-11.0/include/builtin_types.h
