@@ -409,16 +409,11 @@ inline void CPE::norm_pdf_log(
 
     double exp_val = 0;
     double log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
+    Eigen::MatrixXd Sigma_inverse = Sigma.inverse();
     for (int i = 0; i < n_samples; i++)
     {
-        if (n == 2)
-        {
-            exp_val = calculate_2x2_quadratic_form(samples.col(i) - mu, Sigma);
-        }
-        else
-        {
-            exp_val = (samples.col(i) - mu).transpose() * Sigma.inverse() * (samples.col(i) - mu);
-        }
+        exp_val = (samples.col(i) - mu).transpose() * Sigma_inverse * (samples.col(i) - mu);
+
         exp_val = - exp_val / 2.0;
 
         result(i) = log_val + exp_val;
@@ -710,6 +705,7 @@ void CPE::determine_best_performing_samples(
 {
     N_e = 0;
     bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
+    Eigen::Matrix2d P_i_inverse = P_i.inverse();
     for (int j = 0; j < n_CE; j++)
     {
         valid(j) = 0;
@@ -719,7 +715,7 @@ void CPE::determine_best_performing_samples(
         // though the opposite is the case in the norm_pdf_log function. Test this further if
         // interested to see if this is actually the case.
         inside_alpha_p_confidence_ellipse = 
-            (samples.col(j) - p_i).transpose() * P_i.inverse() * (samples.col(j) - p_i) <= gate;
+            (samples.col(j) - p_i).transpose() * P_i_inverse * (samples.col(j) - p_i) <= gate;
  
         //inside_alpha_p_confidence_ellipse = calculate_2x2_quadratic_form(samples.col(j) - p_i, P_i) <= gate;
 

@@ -74,6 +74,9 @@ private:
 
 	float d_0i, var_P_i_largest;
 	bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
+
+	TML::Vector2f p_os, p_i;
+    TML::Matrix2f P_i_2D;
 	//====================================
 
 	//====================================
@@ -113,10 +116,12 @@ private:
 	
 	//====================================
 	// Other pre-allocated temporaries:
-	float P_c, y_P_c;
+	float P_c_est, P_c_CE, y_P_c;
 	float exp_val, log_val;
+	TML::PDMatrix4f Sigma_inverse;
 	int n, n_samples;	
 	float sum;
+	
 	//====================================
 
 	// Methods

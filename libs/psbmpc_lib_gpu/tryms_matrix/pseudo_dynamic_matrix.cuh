@@ -160,6 +160,8 @@ namespace TML
 		template <class Matrix_Type>
 		__host__ __device__ void set_col(const size_t col, const Matrix_Type &vector);
 
+		__host__ __device__ void shift_columns_left();
+
 		__host__ __device__ void shift_columns_right();
 
 		template <size_t New_Max_Rows, size_t New_Max_Cols>
@@ -653,6 +655,28 @@ namespace TML
 		for (size_t i = 0; i < this->n_rows; i++)
 		{
 			this->data[this->n_cols * i + col] = vector(i);
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : shift_columns_left
+	*  Function : Has no effect for n_cols = 1.
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, size_t Max_Rows, size_t Max_Cols>
+	__host__ __device__ void PDMatrix<T, Max_Rows, Max_Cols>::shift_columns_left()
+	{
+		if (this->n_cols == 1)
+		{
+			return;
+		}
+		for (int j = 1; j < this->n_cols; j++)
+		{
+			for (size_t i = 0; i < this->n_rows; i++)
+			{
+				this->data[this->n_cols * i + j - 1] = this->data[this->n_cols * i + j];
+			}
 		}
 	}
 
