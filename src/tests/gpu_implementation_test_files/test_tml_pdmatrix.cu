@@ -534,7 +534,7 @@ int main()
 
 	std::cout << test222 << std::endl;
 
-	test222.shift_columns_right();
+	test222.shift_columns_left();
 
 	std::cout << test222 << std::endl;
 
@@ -566,8 +566,8 @@ int main()
 
 	TML::Vector2f mu, mu_diff;
 	mu = es.rwise_mean();
-	std::cout << "TML rwise mean = " << mu << std::endl;
-	std::cout << "Eigen rwise mean = " << mu_e << std::endl;
+	std::cout << "TML rwise mean = " << mu.transposed() << std::endl;
+	std::cout << "Eigen rwise mean = " << mu_e.transpose() << std::endl;
 
 	Eigen::Matrix2f P_e = Eigen::Matrix2f::Zero();
 	TML::Matrix2f P, P_diff;

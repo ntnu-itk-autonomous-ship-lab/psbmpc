@@ -131,18 +131,19 @@ __device__ float CPE::estimate(
     const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i                          // In: Obstacle i covariance(s), flattened into n² x n_cols
     )
 {
+    n_seg_samples = xs_os.get_cols();
     TML::Vector2f p_os, p_i;
     TML::Matrix2f P_i_2D;
 
-    float P_c_est;
+    P_c_est = 0.0;
     switch (method)
     {
         case CE :
-            // The first column gives the current prediction time information
-            p_os = xs_os.get_block<2, 1>(0, 0, 2, 1);
-            p_i = xs_i.get_block<2, 1>(0, 0, 2, 1);
+            // The last column gives the current prediction time information
+            p_os = xs_os.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+            p_i = xs_i.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 
-            P_i_2D = reshape<16, 1, 4, 4>(P_i.get_col(0), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+            P_i_2D = reshape<16, 1, 4, 4>(P_i.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
             P_c_est = CE_estimate(p_os, p_i, P_i_2D);
             break;
@@ -181,9 +182,6 @@ __device__ void CPE::estimate_over_trajectories(
 	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_os_seg(6, n_seg_samples_temp);
     TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_seg(4, n_seg_samples_temp);
     TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_seg(16, n_seg_samples_temp);
-
-    TML::Vector2f p_os, p_i;
-    TML::Matrix2f P_i_2D;
     
     initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i);
 
@@ -192,12 +190,12 @@ __device__ void CPE::estimate_over_trajectories(
         switch(method)
         {
             case CE :	
-                p_os = xs_p.get_block<2, 1>(0, 0, 2, 1);
-                p_i = xs_i_p.get_block<2, 1>(0, 0, 2, 1);
+                p_os = xs_p.get_block<2, 1>(0, k, 2, 1);
+                p_i = xs_i_p.get_block<2, 1>(0, k, 2, 1);
 
-                P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(0), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+                P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(k), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-                P_c_i(0, k) = CE_estimate(xs_p.get_col(k), xs_i_p.get_col(k), P_i_p.get_col(k));
+                P_c_i(0, k) = CE_estimate(p_os, p_i, P_i_2D);
                 break;
             case MCSKF4D :                
                 if (fmod(k, n_seg_samples_temp - 1) == 0 && k > 0)
@@ -312,9 +310,10 @@ __device__ inline void CPE::norm_pdf_log(
     
     exp_val = 0;
     log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
+    Sigma_inverse = Sigma.inverse();
     for (int i = 0; i < n_samples; i++)
     {
-        exp_val = (samples.get_col(i) - mu).transposed() * Sigma.inverse() * (samples.get_col(i) - mu);
+        exp_val = (samples.get_col(i) - mu).transposed() * Sigma_inverse * (samples.get_col(i) - mu);
 
         exp_val = - exp_val / 2.0;
 
@@ -403,7 +402,7 @@ __device__ float CPE::produce_MCS_estimate(
 
     // The estimate is taken as the ratio of samples inside the integration domain, 
     // to the total number of samples, i.e. the mean of the validity vector
-    y_P_c = valid.rwise_mean()(0);
+    y_P_c = valid.rwise_mean();
     if (y_P_c > 1) { return 1; }
     else         { return y_P_c; }      
 }
@@ -474,6 +473,7 @@ __device__ float CPE::MCSKF4D_estimate(
     n_seg_samples = xs_os.get_cols();
     // Vectors representing the linear segments
     
+    // First column is the start of the segment
     xs_os_sl = xs_os.get_block<4, 1>(0, 0, 4, 1);
     xs_i_sl = xs_i.get_col(0);
 
@@ -503,7 +503,13 @@ __device__ float CPE::MCSKF4D_estimate(
     }
     P_i_sl = reshape<16, MAX_N_SEG_SAMPLES, 4, 4>(P_i.get_col(0), 4, 4);
 
+    printf("xs_os_sl = %.1f, %.1f, %.1f, %.1f\n", xs_os_sl(0, 0), xs_os_sl(1, 0), xs_os_sl(2, 0), xs_os_sl(3, 0));
+    printf("xs_i_sl = %.1f, %.1f, %.1f, %.1f\n", xs_i_sl(0, 0), xs_i_sl(1, 0), xs_i_sl(2, 0), xs_i_sl(3, 0));
+
     calculate_cpa(p_os_cpa, t_cpa, d_cpa, xs_os_sl, xs_i_sl);
+
+    printf("p_os_cpa = %.1f, %.1f\n", p_os_cpa(0), p_os_cpa(1));
+    printf("t_cpa = %.1f\n", t_cpa);
 
     /*****************************************************
     * Generate Monte Carlo Simulation estimate of P_c
@@ -520,6 +526,7 @@ __device__ float CPE::MCSKF4D_estimate(
     {
         y_P_c_i = produce_MCS_estimate(xs_i_sl, P_i_sl, p_os_cpa, t_cpa);
     }
+    printf("y_P_c_i = %.1f\n", y_P_c_i);
 
     /*****************************************************
     * Kalman-filtering for simple markov chain model
@@ -544,7 +551,6 @@ __device__ float CPE::MCSKF4D_estimate(
 
     var_P_c_p = var_P_c_upd + q;
     //*****************************************************
-    printf("P_c_upd = %.6f\n", P_c_upd);
     return P_c_upd;
 }
 
@@ -645,7 +651,7 @@ __device__ float CPE::CE_estimate(
     const TML::Matrix2f &P_i                                                  // In: Obstacle i positional covariance
     )
 {            
-    P_c = 0.0;
+    P_c_CE = 0.0;
     /******************************************************************************
     * Check if it is necessary to perform estimation
     ******************************************************************************/
@@ -659,7 +665,7 @@ __device__ float CPE::CE_estimate(
     // (assuming equal std dev in x, y (assumption))
     if (d_0i > d_safe + 3.5 * sqrt(var_P_i_largest)) 
     { 
-        return P_c; 
+        return P_c_CE; 
     }
 
     /******************************************************************************
@@ -738,9 +744,9 @@ __device__ float CPE::CE_estimate(
     weights = (integrand - importance).exp();
     weights = weights.cwise_product(valid);
 
-    P_c = weights.rwise_mean();
-    if (P_c > 1) return 1;
-    else return P_c;
+    P_c_CE = weights.rwise_mean();
+    if (P_c_CE > 1) return 1;
+    else return P_c_CE;
 
     return 0;
 }

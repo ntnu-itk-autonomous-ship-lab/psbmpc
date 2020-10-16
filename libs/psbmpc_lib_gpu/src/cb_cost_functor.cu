@@ -128,18 +128,18 @@ __device__ float CB_Cost_Functor::operator()(
 				//==========================================================================================
 				// 2.0 : Extract states and information relevant for cost evaluation at sample k. 
 
-				xs_p.shift_columns_right();
-				xs_p.set_col(0, fdata[cb_index].trajectory.get_col(k));
+				xs_p.shift_columns_left();
+				xs_p.set_col(n_seg_samples - 1, fdata[cb_index].trajectory.get_col(k));
 
-				P_i_p.shift_columns_right();
-				P_i_p.set_col(0, obstacles[i].get_trajectory_covariance_sample(k));
+				P_i_p.shift_columns_left();
+				P_i_p.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_covariance_sample(k));
 
-				xs_i_p.shift_columns_right();
-				xs_i_p.set_col(0, obstacles[i].get_trajectory_sample(ps, k));
+				xs_i_p.shift_columns_left();
+				xs_i_p.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
 
 				if (k == 0)
 				{
-					cpe[cb_index].initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i);
+					cpe[cb_index].initialize(xs_p.get_col(n_seg_samples - 1), xs_i_p.get_col(n_seg_samples - 1), P_i_p.get_col(n_seg_samples - 1), d_safe_i);
 				}
 
 				// Determine active course modification at sample k
@@ -176,17 +176,16 @@ __device__ float CB_Cost_Functor::operator()(
 				switch(pars->cpe_method)
 				{
 					case CE :	
-						p_os = xs_p.get_block<2, 1>(0, 0, 2, 1);
-						p_i = xs_i_p.get_block<2, 1>(0, 0, 2, 1);
+						p_os = xs_p.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+						p_i = xs_i_p.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 
-						P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(0), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+						P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
 						P_c_i(ps) = cpe[cb_index].CE_estimate(p_os, p_i, P_i_2D);
 						break;
 					case MCSKF4D :                
 						if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 						{
-							printf("here\n");
 							P_c_i(ps) = cpe[cb_index].MCSKF4D_estimate(xs_p, xs_i_p, P_i_p);							
 						}	
 						break;
@@ -197,7 +196,7 @@ __device__ float CB_Cost_Functor::operator()(
 
 				//==========================================================================================
 				// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
-				cost_ps = calculate_dynamic_obstacle_cost(P_c_i(ps), xs_p.get_col(0), xs_i_p.get_col(0),  i, chi_m, cb_index);
+				cost_ps = calculate_dynamic_obstacle_cost(P_c_i(ps), xs_p.get_col(n_seg_samples - 1), xs_i_p.get_col(n_seg_samples - 1),  i, chi_m, cb_index);
 
 				if (max_cost_ps(ps) < cost_ps)
 				{
