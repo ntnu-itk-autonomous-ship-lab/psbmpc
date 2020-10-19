@@ -108,7 +108,8 @@ struct CB_Functor_Pars
 class CB_Functor_Data
 {
 public:
-	int wp_c_0; 
+	
+	Ownship ownship;
 
 	TML::Vector6f ownship_state;
 
@@ -148,7 +149,7 @@ public:
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		const Obstacle_Data &odata)
 	{
-		wp_c_0 = master.ownship.get_wp_counter();
+		ownship = master.ownship;
 
 		TML::assign_eigen_object(ownship_state, master.trajectory.col(0));
 
@@ -174,8 +175,7 @@ public:
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			//n_ps[i] = master.n_ps[i];
-			n_ps[i] = 1;
+			n_ps[i] = master.n_ps[i];
 
 			AH_0[i] = odata.AH_0[i]; 
 			S_TC_0[i] = odata.S_TC_0[i];

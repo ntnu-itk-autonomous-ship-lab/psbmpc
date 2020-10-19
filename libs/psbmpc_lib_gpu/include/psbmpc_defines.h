@@ -21,6 +21,11 @@
 #ifndef _PSBMPC_DEFINES_H_
 #define _PSBMPC_DEFINES_H_
 
+#define M_PI 3.14159265358979323846
+
+#define DEG2RAD M_PI / 180.0f
+#define RAD2DEG 180.0f / M_PI
+
 #define MAX_N_M 10                      // Max number of avoidance maneuvers allowable
 
 #define MAX_N_SAMPLES 500               // Max number of samples for trajectories and such allowable on the device
