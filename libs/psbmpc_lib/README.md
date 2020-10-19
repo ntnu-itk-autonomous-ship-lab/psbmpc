@@ -1,9 +1,7 @@
 # PSB-MPC on the CPU
 <p> This repository implements the Probabilistic Scenario-based MPC in C/C++. The algorithm is an extended and improved version of the original one posed in [[1]](#1). This library runs purely on the CPU.<br>
 
-Several test functions exist under cybercolav_cxx/src/tests to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test.<br>
-
-To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib)" command, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build. </p>
+To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib)" command in your project, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build. </p>
 
 ## Dependencies
 
@@ -11,7 +9,7 @@ To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_
 - Eigen >= 3.3.7
 
 ## Overall Structure
-The library for the CPU-implementation has the following structure (and similar for the GPU-version)
+The library for the CPU-implementation has the following structure
 
 <img src="psbmpc_lib_structure.png" width="400"> 
 
@@ -19,12 +17,12 @@ with an explanation of the modules (classes) below:
 
 ### PSBMPC
 
-<p> Main class of the library, implements the collision avoidance algorithm. Tuning is until now done in its constructor, but one can implement a read function to easily upload tuning changes via other files.<br>
+<p> Main class of the library, implements the collision avoidance algorithm. <br>
 
 The main function to use is the **calculate_optimal_offsets(..)** function, which requires the following **inputs**: </p>
 
 - Planned guidance references for surge and course
-- The waypoints that the own-ship is supposed to follow (curved/continuous path following is not implemented yet)
+- The waypoints that the own-ship is supposed to follow (curved/continuous path following is not implemented)
 - The current time own-ship state (3DOF) <img src="https://render.githubusercontent.com/render/math?math={[x, y, \psi, u, v, r]}^T">
 - Nearby static obstacles, parameterized as for instance polygons, lines or similar. Not fully specified yet.
 - A data structure Obstacle_Data containing dynamic obstacle information.
@@ -53,12 +51,11 @@ and also updates the current situation type that the own-ship is in, wrt to each
 
 ### Obstacle
 
-The obstacle class maintains information about the obstacle, in addition to its predicted trajectories and PSB-MPC cost function related parameters. Organized into a inheritance hierarchy with
+The obstacle class maintains information about the dynamic obstacle, in addition to its predicted trajectories and PSB-MPC cost function related parameters. Organized into a inheritance hierarchy with
 
 - Obstacle : Base class holding general information
-	- Tracked_Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the PSB-MPC to keep track of the nearby obstacles. 
+	- Tracked_Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the Obstacle Manager and used by the PSB-MPC to keep track of the nearby obstacles. 
 	- Prediction_Obstacle: **Not to be used yet**. More minimalistic derived class than the Tracked_Obstacle, intended for use by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system
-	- (Cuda_Obstacle: For the GPU version we also have a tailor made derived class for use in the CUDA kernels, which needs special care. **Not complete yet**)
 
 ### Obstacle_Ship 
 
@@ -108,4 +105,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 <a id="3">[3]</a> Kufoalor, D. K. M., Wilthil, E., Hagen, I. B., Brekke E. F. and Johansen, T. A. (2019). "Autonomous COLREGSs-Compliant Decision Making using Maritime Radar Tracking and Model Predictive Control" 2019 18th European Control Conference (ECC).
 
 
-<p> Trym Tengesdal, 8. October 2020.  </p>
+<p> Trym Tengesdal, 19. October 2020.  </p>

@@ -18,17 +18,13 @@
 *
 *****************************************************************************************/
 
+#include "psbmpc_defines.h"
 #include "cb_cost_functor.cuh"
 #include "utilities.cuh"
 
 #include <cmath>
 #include <iostream>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-#define DEG2RAD M_PI / 180.0f
-#define RAD2DEG 180.0f / M_PI
 
 /****************************************************************************************
 *  Name     : CB_Cost_Functor
@@ -50,7 +46,8 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 
 /****************************************************************************************
 *  Name     : operator()
-*  Function : This is where the fun begins
+*  Function : This is where the fun begins. Evaluates the cost of following the control
+*			  behaviour (a particular avoidance maneuver) given by the input tuple.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -102,7 +99,7 @@ __device__ float CB_Cost_Functor::operator()(
 	// Not entirely optimal for loop configuration, but the alternative requires alot of memory, so test this first.
 	for (int i = 0; i < fdata->n_obst; i++)
 	{	
-		d_safe_i = pars->d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
+		d_safe_i = pars->d_safe + 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length());
 
 		P_c_i.resize(fdata->n_ps[i], 1); P_c_i.set_zero();
 		max_cost_ps.resize(fdata->n_ps[i], 1); max_cost_ps.set_zero();
@@ -195,7 +192,7 @@ __device__ float CB_Cost_Functor::operator()(
 					max_cost_ps(ps) = cost_ps;
 				}
 				//==========================================================================================
-				printf("P_c_i = %.6f | max_cost_ps = %.4f\n", P_c_i(ps), max_cost_ps(ps));
+				//printf("P_c_i = %.6f | max_cost_ps = %.4f\n", P_c_i(ps), max_cost_ps(ps));
 			}
 		}
 
@@ -254,7 +251,7 @@ __device__ float CB_Cost_Functor::operator()(
 	cost_cb += cost_i.max_coeff(); 
 
 	//==================================================================================================
-	// 2.5 : Calculate grounding cost
+	// 2.5 : Calculate cost due to driving the boat on land or static objects
 	//cost += calculate_grounding_cost(); 
 
 	//==================================================================================================
@@ -457,7 +454,7 @@ __device__ inline void CB_Cost_Functor::calculate_collision_probabilities(
 {
 	n_samples = round(pars->T / pars->dt);
 	
-	float d_safe_i = pars->d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
+	float d_safe_i = pars->d_safe + 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length());
 
 	TML::PDMatrix<float, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_i_p = obstacles[i].get_trajectories();
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> P_i_p = obstacles[i].get_trajectory_covariance();
@@ -533,7 +530,7 @@ __device__ inline float CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 			d_0i_p = L_0i_p.norm();
 
 			// Decrease the distance between the vessels by their respective max dimension
-			d_0i_p = d_0i_p - 0.5 * (ownship.get_length() + obstacles[i].get_length()); 
+			d_0i_p = d_0i_p - 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length()); 
 			
 			L_0i_p = L_0i_p.normalized();
 
@@ -638,7 +635,7 @@ __device__ inline float CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	d_0i_p = L_0i_p.norm();
 
 	// Decrease the distance between the vessels by their respective max dimension
-	d_0i_p = d_0i_p - 0.5 * (ownship.get_length() + obstacles[i].get_length()); 
+	d_0i_p = d_0i_p - 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length()); 
 	
 	L_0i_p = L_0i_p.normalized();
 

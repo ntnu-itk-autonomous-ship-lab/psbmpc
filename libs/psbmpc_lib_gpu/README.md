@@ -13,7 +13,7 @@ To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_
 The library for the GPU-implementation has the following structure
 <img src="psbmpc_gpu_lib_structure.png" width="400"> 
 
-with an explanation of the modules (classes) below: 
+with an explanation of the main modules (classes/structs) below: 
 
 ### PSBMPC
 
@@ -34,7 +34,16 @@ and has the following **outputs**:
 - Obstacle_Data: Some parts of the Obstacle_Data is modified by the PSB-MPC (predicted relative hazard levels for each obstacle)
 
 ### PSBMPC_Parameters
-<p> TUNING SHOULD BE DONE HERE. Contains all PSB-MPC parameters in a class, which should be modified according to tuning changes. The class has get/set functionality for each parameter according to an index file "psbmpc_index.h", and uses limits on double and integer type parameters to assure that the setting of these parameters makes sense. Work could although be done to make the get/set functionality even better. </p>
+<p> TUNING SHOULD BE DONE HERE. Contains all PSB-MPC parameters in a class, which should be modified according to tuning changes. The class has get/set functionality for each parameter according to an index file "psbmpc_index.h", and uses limits on double and integer type parameters to assure that the setting of these parameters makes sense. Work could although be done to make the get/set functionality even better.<br>
+
+Note that the amount of control behaviours (function of the amount of maneuvers and different maneuver types considered) that can be considered on the GPU, is highly limited by the amount of memory available on the GPU, as some data structures (for instance the CPE class) need to be allocated and transferred to each thread (host to device transfer). 
+ </p>
+
+## CB Cost Functor
+<p> Special case C++ class/struct which has overloaded the **operator()**. This functor is used to evaluate the cost of following one particular control behaviour. The functor is ported to the gpu, where each thread will run the **operator()** to evaluate the cost of a certain control behaviour. The **operator()** function takes as input the index of the control behaviour considered, and the avoidance maneuver vector (offset sequence) considered in this control behaviour, and returns the cost associated with this control behaviour. </p>
+
+### CB Cost Functor Structures 
+<p> Defines the data that is needed in the **CB_Cost_Functor**, which needs to be sent from the host to the device. A subset of the PSB-MPC parameters are defined in a struct here, and also a struct which gathers diverse types of data for use on the GPU. </p>
 
 ## Obstacle Manager
 
@@ -95,7 +104,15 @@ This is the Collision Probability Estimator used in the PSB-MPC predictions. Has
 <p> Inlined functions commonly used across multiple modules, gathered in one file. </p>
 
 
-## Tryms library
+## Tryms_matrix (Tryms shitty matrix library)
+Custom matrix library made specifically for usage of matrices in CUDA kernels, as I did not find another satisfactory third-party solution for this. HOpefully, Eigen will have better CUDA support in the future, which is unfortunately very limited today. **NOTE:** This library should be used with care, as it is only tested for a subset of all "typical matrix functionality", i.e. only the operations currently used in the PSB-MPC GPU run code. 
+
+The library implements three matrix type containers:
+- Static_Matrix: Fixed sized matrices
+- Pseudo_Dynamic_Matrix (PDMatrix): (Fixed size) Matrix used to store larger amounts of data, with a compile-time known max number of rows and columns
+- Dynamic_Matrix: Matrix container for data with  varying size
+
+Only the fixed size matrices are used currently, because dynamic memory allocation on the gpu sucks. Thus, the "dynamic_matrix.cuh" file is **NOT USED**. 
 
 ## References
 
@@ -108,4 +125,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 
 
-<p> Trym Tengesdal, 1. september 2020.  </p>
+<p> Trym Tengesdal, 19. oktober 2020.  </p>

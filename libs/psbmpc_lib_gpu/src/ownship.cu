@@ -19,6 +19,7 @@
 *
 *****************************************************************************************/
 
+#include "psbmpc_defines.h"
 #include "utilities.cuh"
 #include "ownship.cuh"
 
@@ -28,11 +29,11 @@
 #include "assert.h"
 #include "stdio.h"
 
-#ifndef M_PI
+/* #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 #define DEG2RAD M_PI / 180.0f
-#define RAD2DEG 180.0f / M_PI
+#define RAD2DEG 180.0f / M_PI */
 
 /****************************************************************************************
 *  Name     : Ownship
@@ -121,8 +122,6 @@ __host__ __device__ void Ownship::determine_active_waypoint_segment(
 	const TML::Vector6f &xs 										// In: Ownship state
 	)	
 {
-	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
-
 	int n_wps = waypoints.get_cols();
 	TML::Vector2f d_0_wp, L_wp_segment, L_0wp;
 	bool segment_passed = false;
@@ -176,8 +175,6 @@ __host__ __device__ void Ownship::update_guidance_references(
 	const Guidance_Method guidance_method										// In: Type of guidance used	
 	)
 {
-	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
-
 	int n_wps = waypoints.get_cols();
 	float alpha, e;
 	TML::Vector2d d_next_wp, L_wp_segment;
@@ -278,8 +275,6 @@ __host__ void Ownship::update_ctrl_input(
 	const TML::Vector6f &xs 								// In: State
 	)
 {
-	assert(xs.get_rows() == 6 && xs.get_cols() == 1);
-
 	update_Cvv(xs.get_block<3, 1>(3, 0));
 	update_Dvv(xs.get_block<3, 1>(3, 0));
 
@@ -325,8 +320,6 @@ __host__ __device__ TML::Vector6f Ownship::predict(
 	const Prediction_Method prediction_method 						// In: Method used for prediction
 	)
 {
-	assert(xs_old.get_rows() == 6 && xs_old.get_cols() == 1);
-
 	TML::Vector6f xs_new;
 	TML::Vector3f eta, nu;
 	eta = xs_old.get_block<3, 1>(0, 0);
@@ -387,21 +380,17 @@ __host__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 __host__ __device__ void Ownship::predict_trajectory(
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory, 						// In/out: Own-ship trajectory
 	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,	 			// In: Sequence of offsets in the candidate control behavior
-	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,					// In: Time indices for each ownship avoidance maneuver
+	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,						// In: Time indices for each ownship avoidance maneuver
 	const float u_d, 															// In: Surge reference
-	const float chi_d, 														// In: Course reference
+	const float chi_d, 															// In: Course reference
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 						// In: Ownship waypoints
 	const Prediction_Method prediction_method,									// In: Type of prediction method to be used, typically an explicit method
 	const Guidance_Method guidance_method, 										// In: Type of guidance to be used
 	const float T,																// In: Prediction horizon
-	const float dt 															// In: Prediction time step
+	const float dt 																// In: Prediction time step
 	)
 {
-	/* assert((offset_sequence.get_rows() == 1 || offset_sequence.get_cols() == 1) && 
-			(maneuver_times.get_rows() == 1 || maneuver_times.get_cols() == 1) &&
-			waypoints.get_rows() == 2); */
-
-	int n_samples = T / dt;
+	int n_samples = round(T / dt);
 
 	initialize_wp_following();
 
@@ -477,8 +466,6 @@ __host__ __device__ void Ownship::update_Cvv(
 	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
 	)
 {
-	assert(nu.get_rows() == 3 && nu.get_cols() == 1);
-
 	Cvv(0) = ((Y_vdot - m) * nu(1) + Y_rdot * nu(2)) * nu(2);
 	Cvv(1) = (m      - X_udot) * nu(0) * nu(2);
 	Cvv(2) = (X_udot - Y_vdot) * nu(0) * nu(1) - Y_rdot * nu(0) * nu(2);
@@ -495,8 +482,6 @@ __host__ __device__ void Ownship::update_Dvv(
 	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T
 	)
 {
-	assert(nu.get_rows() == 3 && nu.get_cols() == 1);
-
 	Dvv(0) = - (X_u + 						+  X_uu * fabs(nu(0))  		  + X_uuu * nu(0) * nu(0)) * nu(0);
 	Dvv(1) = - ((Y_v * nu(1) + Y_r * nu(2)) + (Y_vv * fabs(nu(1)) * nu(1) + Y_vvv * nu(1) * nu(1) * nu(1)));
 	Dvv(2) = - ((N_v * nu(1) + N_r * nu(2)) + (N_rr * fabs(nu(2)) * nu(2) + N_rrr * nu(2) * nu(2) * nu(2)));

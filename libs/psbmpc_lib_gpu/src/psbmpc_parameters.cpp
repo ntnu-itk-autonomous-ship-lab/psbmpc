@@ -18,20 +18,10 @@
 *
 *****************************************************************************************/
 
+#include "psbmpc_defines.h"
 #include "psbmpc_parameters.h"
 #include "Eigen/Dense"
 #include <vector>
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-#ifndef DEG2RAD
-#define DEG2RAD M_PI / 180.0f
-#endif
-#ifndef RAD2DEG
-#define RAD2DEG 180.0f / M_PI
-#endif
-
 
 /****************************************************************************************
 	Public functions
@@ -340,7 +330,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 3;
+	n_M = 2;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -361,16 +351,16 @@ void PSBMPC_Parameters::initialize_pars()
 		} 
 		else
 		{
-			u_offsets[M].resize(3);
+			u_offsets[M].resize(2);
 			//u_offsets[M] << 1.0;
-			//u_offsets[M] << 1.0, 0.5;
-			u_offsets[M] << 1.0, 0.5, 0.0;
+			u_offsets[M] << 1.0, 0.5;
+			//u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(13);
+			chi_offsets[M].resize(7);
 			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
-			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();

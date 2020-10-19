@@ -1,3 +1,18 @@
+#======================================================================
+# This CMakeLists.txt creates the GPU-version PSB-MPC target. 
+
+# ---------------------------------------------------------------------
+
+# Version 1.0
+
+# Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+# All rights reserved.
+
+# Author 	: Trym Tengesdal
+
+# Modified 	: 
+#======================================================================
+
 find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 
 find_package(CUDA COMPONENTS THRUST REQUIRED)

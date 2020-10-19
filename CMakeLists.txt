@@ -1,3 +1,27 @@
+#======================================================================
+# This CMakeLists.txt sets up CMake build-file generation for the
+# usage of the psb-mpc library. 
+# Eigen and Matlab is required for both the CPU- and GPU version, and
+# CUDA and Thrust is required for the GPU-version.
+
+# This file connects the PSBMPC library target, and the test file
+# target (both objects in CMake sense).
+
+# Uncomment the add_subdirectory and target_link_libraries commands 
+# that correspond to the library version you want to use.
+
+# ---------------------------------------------------------------------
+
+# Version 1.0
+
+# Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+# All rights reserved.
+
+# Author 	: Trym Tengesdal
+
+# Modified 	: 
+#======================================================================
+
 cmake_minimum_required(VERSION 3.17.3)
 project(psbmpc_test LANGUAGES CUDA CXX)
 

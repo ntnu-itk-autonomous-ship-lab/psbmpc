@@ -26,4 +26,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 
 
-<p> Trym Tengesdal, 8. October 2020.  </p>
+<p> Trym Tengesdal, 19. October 2020.  </p>
