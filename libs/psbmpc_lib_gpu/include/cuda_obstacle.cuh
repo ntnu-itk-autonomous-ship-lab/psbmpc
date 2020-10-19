@@ -2,8 +2,8 @@
 *
 *  File name : cuda_obstacle.cuh
 *
-*  Function  : Header file for the obstacle class used by the PSB-MPC especially in the
-*			   CUDA kernels, where raw pointers or custom containers must be used.
+*  Function  : Header file for the obstacle class used by the PSB-MPC in the
+*			   CUDA kernels / GPU threads.
 *  
 *	           ---------------------
 *

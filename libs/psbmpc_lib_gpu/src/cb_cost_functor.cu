@@ -93,7 +93,6 @@ __device__ float CB_Cost_Functor::operator()(
 		pars->guidance_method, 
 		pars->T, pars->dt);
 
-	
 	//======================================================================================================================
 	// 2 : Cost calculation
 	// Not entirely optimal for loop configuration, but the alternative requires alot of memory, so test this first.
