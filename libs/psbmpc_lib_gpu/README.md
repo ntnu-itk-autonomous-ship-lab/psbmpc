@@ -10,10 +10,11 @@ To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_
 - CUDA and Thrust are necessary for the GPU version. I have used CUDA 11 and Thrust >= 1.9.9
 
 ## Overall Structure
-The library for the GPU-implementation has the following structure
-<img src="psbmpc_gpu_lib_structure.png" width="400"> 
+<p>The library for the GPU-implementation has the following structure <br>
 
-with an explanation of the main modules (classes/structs) below: 
+<img src="psbmp_lib_gpu_structure.png" width="400"> 
+
+with an explanation of the main modules (classes/structs) below: </p>
 
 ### PSBMPC
 
