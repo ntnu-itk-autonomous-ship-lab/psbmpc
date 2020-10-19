@@ -55,6 +55,13 @@ private:
 	TML::Vector3f Cvv;
 	TML::Vector3f Dvv;
 
+	// Own-ship state at the predicted time
+	TML::Vector6f xs_p;
+	
+	// Counter variables to keep track of the active WP segment at the current 
+	// time and predicted time
+	int wp_c_0, wp_c_p;
+
 	// Model Parameters
 	float l_r;
 	float m; 	// [kg]
@@ -89,10 +96,6 @@ private:
 	float R_a;
 	float LOS_LD, LOS_K_i;
 
-	// Counter variables to keep track of the active WP segment at the current 
-	// time and predicted time
-	int wp_c_0, wp_c_p;
-
 	// Controller parameters
 	float Kp_u;
 	float Kp_psi;
@@ -103,6 +106,20 @@ private:
 
 	float A, B, C, D, l, w;
 	float x_offset, y_offset;
+
+	//===================================
+	// Pre-allocated temporaries
+	int n_samples, n_wps, man_count;
+	float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
+
+	TML::Vector2d d_next_wp, L_wp_segment;
+	bool segment_passed;
+
+	TML::Vector6f xs_new;
+	TML::Vector3f eta, nu;
+
+	float Fx, Fy, psi_diff;
+	//===================================
 
 	// Calculates the offsets according to the position of the GPS receiver
 	__host__ __device__ inline void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
@@ -144,7 +161,8 @@ public:
 	__host__ __device__ TML::Vector6f predict(const TML::Vector6f &xs_old, const float dt, const Prediction_Method prediction_method);
 
 	__host__ Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
-
+	
+	// Used when memory is not an issue
 	__host__ __device__ void predict_trajectory(
 		TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory,
 		const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,

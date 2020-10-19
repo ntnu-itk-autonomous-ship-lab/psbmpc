@@ -41,10 +41,10 @@ Note that the amount of control behaviours (function of the amount of maneuvers 
  </p>
 
 ## CB Cost Functor
-<p> Special case C++ class/struct which has overloaded the **operator()**. This functor is used to evaluate the cost of following one particular control behaviour. The functor is ported to the gpu, where each thread will run the **operator()** to evaluate the cost of a certain control behaviour. The **operator()** function takes as input the index of the control behaviour considered, and the avoidance maneuver vector (offset sequence) considered in this control behaviour, and returns the cost associated with this control behaviour. </p>
+<p> Special case C++ class/struct which has overloaded the **operator(..)**. This functor is used to evaluate the cost of following one particular control behaviour. The functor is ported to the gpu, where each thread will run the **operator(..)** to evaluate the cost of a certain control behaviour. The **operator(..)** function takes as input the index of the control behaviour considered, and the avoidance maneuver vector (offset sequence) considered in this control behaviour, and returns the cost associated with this control behaviour. </p>
 
 ### CB Cost Functor Structures 
-<p> Defines the data that is needed in the **CB_Cost_Functor**, which needs to be sent from the host to the device. A subset of the PSB-MPC parameters are defined in a struct here, and also a struct which gathers diverse types of data for use on the GPU. </p>
+<p> Defines read-only data for GPU threads that is needed in the **CB_Cost_Functor**, which needs to be sent from the host to the device. A subset of the PSB-MPC parameters are defined in a struct here, and also a struct which gathers diverse types of data for use on the GPU. </p>
 
 ## Obstacle Manager
 
@@ -66,7 +66,7 @@ The obstacle class maintains information about the obstacle, in addition to its 
 - Obstacle : Base class holding general information
 	- Tracked_Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the PSB-MPC to keep track of the nearby obstacles. 
 	- Prediction_Obstacle: **Not to be used yet**. More minimalistic derived class than the Tracked_Obstacle, intended for use by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system
-	- (Cuda_Obstacle: For the GPU version we also have a tailor made derived class for use in the CUDA kernels, which needs special care. **Not complete yet**)
+	- Cuda_Obstacle: Used as a GPU-friendly data container of relevant Tracked_Obstacle data needed on the GPU. Read-only when processing on the GPU
 
 ### Obstacle_Ship 
 
@@ -86,7 +86,7 @@ A simple SB-MPC meant for use by obstacles in the PSB-MPC prediction when consid
 
 ### Ownship
 
-This module implements a 3DOF surface vessel model with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. Should naturally match the underlying vessel.
+This module implements a 3DOF surface vessel model with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. Should naturally match the underlying vessel. **NOTE**: Differs from the CPU-version`s Ownship class, this one is designed to minimize memory usage on the GPU. 
 
 ### KF
 
@@ -98,7 +98,7 @@ This is the Mean-reverting Ornstein-Uhlenbeck process used for the prediction of
 
 ### CPE
 
-This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based, and is basically among others the main reason for trying to implement the PSB-MPC on the GPU. Changed to facilitate only static data allocation, and only considers one obstacle at the time.
+This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based, and is basically among others the main reason for trying to implement the PSB-MPC on the GPU. **NOTE** Changed to facilitate only static data allocation, and only considers one obstacle at the time. A grid of CPEs is allocated prior to running GPU code, where each thread will read/write to their own CPE object. "Optimized" for running on the GPU. 
 
 ### Utilities
 

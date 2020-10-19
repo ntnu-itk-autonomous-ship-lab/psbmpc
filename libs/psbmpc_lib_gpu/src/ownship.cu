@@ -19,7 +19,6 @@
 *
 *****************************************************************************************/
 
-#include "psbmpc_defines.h"
 #include "utilities.cuh"
 #include "ownship.cuh"
 
@@ -45,11 +44,11 @@ __host__ __device__ Ownship::Ownship()
 {
 
 	// Model parameters
-	l_r = 4.0; // distance from rudder to CG
-	A = 5; // [m]  in reality the length is 14,5 m.
-	B = 5; // [m]
-	C = 1.5; // [m]
-	D = 1.5; // [m]
+	l_r = 4.0f; // distance from rudder to CG
+	A = 5.0f; // [m]  in reality the length is 14,5 m.
+	B = 5.0f; // [m]
+	C = 1.5f; // [m]
+	D = 1.5f; // [m]
 	l = (A + B);
 	w = (C + D);
 	calculate_position_offsets();
@@ -58,57 +57,57 @@ __host__ __device__ Ownship::Ownship()
 	I_z = 19703.0; // [kg m2]
 
 	// Added M terms
-	X_udot = 0.0;
-	Y_vdot = 0.0;
-	Y_rdot = 0.0;
-	N_vdot = 0.0;
-	N_rdot = 0.0;
+	X_udot = 0.0f;
+	Y_vdot = 0.0f;
+	Y_rdot = 0.0f;
+	N_vdot = 0.0f;
+	N_rdot = 0.0f;
 
 	// Linear damping terms [X_u, Y_v, Y_r, N_v, N_r]
-	X_u	= -50.0;
-	Y_v = -200.0;
-	Y_r = 0.0;
-	N_v = 0.0;
-	N_r = -1281.0;//-3224.0;
+	X_u	= -50.0f;
+	Y_v = -200.0f;
+	Y_r = 0.0f;
+	N_v = 0.0f;
+	N_r = -1281.0f;//-3224.0;
 
 	// Nonlinear damping terms [X_|u|u, Y_|v|v, N_|r|r, X_uuu, Y_vvv, N_rrr]
-	X_uu = -135.0;
-	Y_vv = -2000.0;
-	N_rr = 0.0;
-	X_uuu = 0.0;
-	Y_vvv = 0.0;
-	N_rrr = -3224.0;
+	X_uu = -135.0f;
+	Y_vv = -2000.0f;
+	N_rr = 0.0f;
+	X_uuu = 0.0f;
+	Y_vvv = 0.0f;
+	N_rrr = -3224.0f;
 
 	TML::Matrix3f M_tot;
-	M_tot(0, 0) =  m - X_udot; M_tot(0, 1) = 0; M_tot(0, 2) = 0;
-	M_tot(1, 0) = 0; M_tot(1, 1) = m - Y_vdot; M_tot(1, 2) = -Y_rdot;
-	M_tot(2, 0) = 0; M_tot(2, 1) = -Y_rdot; M_tot(2, 2) = I_z - N_rdot;
+	M_tot(0, 0) =  m - X_udot; M_tot(0, 1) = 0.0f; M_tot(0, 2) = 0.0f;
+	M_tot(1, 0) = 0.0f; M_tot(1, 1) = m - Y_vdot; M_tot(1, 2) = -Y_rdot;
+	M_tot(2, 0) = 0.0f; M_tot(2, 1) = -Y_rdot; M_tot(2, 2) = I_z - N_rdot;
 
 	M_inv = M_tot.inverse();
 
 	//Force limits
-	Fx_min = -6550.0;
-	Fx_max = 13100.0;
-	Fy_min = -645.0;
-	Fy_max = 645.0;
+	Fx_min = -6550.0f;
+	Fx_max = 13100.0f;
+	Fy_min = -645.0f;
+	Fy_max = 645.0f;
 
 	// Guidance parameters
-	e_int = 0;
-	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
-	R_a = 20.0; 			    // WP acceptance radius (20.0)
-	LOS_LD = 150.0; 			// LOS lookahead distance (100.0) 
-	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
+	e_int = 0.0f;
+	e_int_max = 20 * M_PI / 180.0f; // Maximum integral correction in LOS guidance
+	R_a = 20.0f; 			    // WP acceptance radius (20.0)
+	LOS_LD = 150.0f; 			// LOS lookahead distance (100.0) 
+	LOS_K_i = 0.0f; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
 
 	// Controller parameters
-	Kp_u = 1.0;
-	Kp_psi = 5.0;
-	Kd_psi = 1.0;
-	Kp_r = 8.0;
+	Kp_u = 1.0f;
+	Kp_psi = 5.0f;
+	Kd_psi = 1.0f;
+	Kp_r = 8.0f;
 		
 	//Motion limits
-	r_max = 0.34 * DEG2RAD; // [rad/s] default max yaw rate
+	r_max = 0.34f * DEG2RAD; // [rad/s] default max yaw rate
 }
 
 /****************************************************************************************
@@ -122,27 +121,25 @@ __host__ __device__ void Ownship::determine_active_waypoint_segment(
 	const TML::Vector6f &xs 										// In: Ownship state
 	)	
 {
-	int n_wps = waypoints.get_cols();
-	TML::Vector2f d_0_wp, L_wp_segment, L_0wp;
-	bool segment_passed = false;
+	n_wps = waypoints.get_cols();
+	segment_passed = false;
 
 	if (n_wps <= 2) { wp_c_0 = 0; wp_c_p = 0; return; }
 
 	for (int i = wp_c_0; i < n_wps - 1; i++)
 	{
-		d_0_wp(0) = waypoints(0, i + 1) - xs(0);
-		d_0_wp(1) = waypoints(1, i + 1) - xs(1);
+		d_next_wp(0) = waypoints(0, i + 1) - xs(0);
+		d_next_wp(1) = waypoints(1, i + 1) - xs(1);
 
 		L_wp_segment(0) = waypoints(0, i + 1) - waypoints(0, i);
 		L_wp_segment(1) = waypoints(1, i + 1) - waypoints(1, i);
 		L_wp_segment = L_wp_segment.normalized();
 
-		segment_passed = L_wp_segment.dot(d_0_wp.normalized()) < cos(90 * DEG2RAD);
+		segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
 
 		//(s > R_a && fabs(e) <= R_a))) 	
-		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
+		if (d_next_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
 		else										{ break; }		
-		
 	}
 	wp_c_p = wp_c_0;
 }
@@ -175,10 +172,9 @@ __host__ __device__ void Ownship::update_guidance_references(
 	const Guidance_Method guidance_method										// In: Type of guidance used	
 	)
 {
-	int n_wps = waypoints.get_cols();
-	float alpha, e;
-	TML::Vector2d d_next_wp, L_wp_segment;
-	bool segment_passed = false;
+	n_wps = waypoints.get_cols();
+	alpha = 0.0f; e = 0.0f;
+	segment_passed = false;
 	
 	if (wp_c_p < n_wps - 1 && (guidance_method == LOS || guidance_method == WPP))
 	{
@@ -194,7 +190,7 @@ __host__ __device__ void Ownship::update_guidance_references(
 
 		if (d_next_wp.norm() <= R_a || segment_passed) //(s > 0 && e <= R_a))
 		{
-			e_int = 0;
+			e_int = 0.0f;
 			wp_c_p ++;
 		} 
 	}
@@ -278,10 +274,10 @@ __host__ void Ownship::update_ctrl_input(
 	update_Cvv(xs.get_block<3, 1>(3, 0));
 	update_Dvv(xs.get_block<3, 1>(3, 0));
 
-	float Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
+	Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
 	
-	float psi_diff = angle_difference_pmpi(psi_d, xs(2));
-	float Fy = (Kp_psi * I_z ) * (psi_diff - Kd_psi * xs(5));
+	psi_diff = angle_difference_pmpi(psi_d, xs(2));
+	Fy = (Kp_psi * I_z ) * (psi_diff - Kd_psi * xs(5));
     Fy *= 1.0 / l_r;
 
 	// Saturate
@@ -320,8 +316,6 @@ __host__ __device__ TML::Vector6f Ownship::predict(
 	const Prediction_Method prediction_method 						// In: Method used for prediction
 	)
 {
-	TML::Vector6f xs_new;
-	TML::Vector3f eta, nu;
 	eta = xs_old.get_block<3, 1>(0, 0);
 	nu = xs_old.get_block<3, 1>(3, 0);
 
@@ -331,8 +325,8 @@ __host__ __device__ TML::Vector6f Ownship::predict(
 			// Straight line trajectory with the current heading and surge speed
 			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
 			nu(0) = nu(0);
-			nu(1) = 0;
-			nu(2) = 0;
+			nu(1) = 0.0f;
+			nu(2) = 0.0f;
 			xs_new.set_block<3, 1>(0, 0, eta); 
 			xs_new.set_block<3, 1>(3, 0, nu);
 			break;
@@ -390,14 +384,14 @@ __host__ __device__ void Ownship::predict_trajectory(
 	const float dt 																// In: Prediction time step
 	)
 {
-	int n_samples = round(T / dt);
+	n_samples = round(T / dt);
 
 	initialize_wp_following();
 
-	int man_count = 0;
-	float u_m = 1, u_d_p = u_d;
-	float chi_m = 0, chi_d_p = chi_d;
-	TML::Vector6f xs = trajectory.get_col(0);
+	man_count = 0;
+	u_m = 1, u_d_p = u_d;
+	chi_m = 0, chi_d_p = chi_d;
+	xs_p = trajectory.get_col(0);
 
 	for (int k = 0; k < n_samples; k++)
 	{ 
@@ -407,17 +401,17 @@ __host__ __device__ void Ownship::predict_trajectory(
 			if (man_count < (int)maneuver_times.size() - 1) man_count += 1;
 		}  
 
-		update_guidance_references(u_d_p, chi_d_p, waypoints, xs, dt, guidance_method);
+		update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
 
-		update_ctrl_input(u_m * u_d_p, chi_m + chi_d_p, xs);
+		update_ctrl_input(u_m * u_d_p, chi_m + chi_d_p, xs_p);
 
-		xs = predict(xs, dt, prediction_method);
+		xs_p = predict(xs_p, dt, prediction_method);
 
 		//printf("xs = %f %f %f %f %f %f \n", xs(0), xs(1), xs(2), xs(3), xs(4), xs(5));
 		
 		if (k < n_samples - 1) 
 		{
-			trajectory.set_col(k + 1, xs);
+			trajectory.set_col(k + 1, xs_p);
 		}
 	}
 }
