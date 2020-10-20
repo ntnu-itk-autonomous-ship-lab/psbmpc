@@ -146,7 +146,6 @@ void PSBMPC::calculate_optimal_offsets(
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[1000000 + 1]; 
  	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
@@ -156,13 +155,23 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
 	map_wps = waypoints;
 
-	mxArray *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx;
-	T_sim = mxCreateDoubleScalar(T);
+	mxArray *static_obst_mx = mxCreateDoubleMatrix(4, n_static_obst, mxREAL);
+	double *p_static_obst_mx = mxGetPr(static_obst_mx); 
+	Eigen::Map<Eigen::MatrixXd> map_static_obst(p_static_obst_mx, 4, n_static_obst);
+	map_static_obst = static_obstacles;
+
+	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx, *n_static_obst_mx;
+	dt_sim = mxCreateDoubleScalar(pars.dt);
+	T_sim = mxCreateDoubleScalar(pars.T);
 	n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
+	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
 
+	engPutVariable(ep, "X_static", static_obst_mx);
 	engPutVariable(ep, "n_ps", n_ps_mx);
+	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
+	engPutVariable(ep, "dt_sim", dt_sim);
 	engPutVariable(ep, "T_sim", T_sim);
 	engPutVariable(ep, "WPs", wps_os);
 	engEvalString(ep, "inside_psbmpc_init_plot");
@@ -172,14 +181,19 @@ void PSBMPC::calculate_optimal_offsets(
 
 	double *ptraj_i = mxGetPr(traj_i);
 	double *p_P_traj_i = mxGetPr(P_traj_i);
+	double *p_P_c_i;
 
 	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 
+	std::vector<mxArray*> P_c_i_mx(n_obst);
+
  	for(int i = 0; i < n_obst; i++)
 	{
-		Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
-		std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
+		P_c_i_mx[i] = mxCreateDoubleMatrix(n_ps[i], n_samples, mxREAL);
+
+		Eigen::MatrixXd P_i_p = odata.obstacles[i].get_trajectory_covariance();
+		std::vector<Eigen::MatrixXd> xs_i_p = odata.obstacles[i].get_trajectories();
 
 		i_mx = mxCreateDoubleScalar(i + 1);
 		engPutVariable(ep, "i", i_mx);
@@ -194,7 +208,7 @@ void PSBMPC::calculate_optimal_offsets(
 			map_traj_i = xs_i_p[ps];
 			
 			engPutVariable(ep, "X_i", traj_i);
-			//engEvalString(ep, "inside_psbmpc_obstacle_plot");
+			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
 	} */
 	
@@ -218,7 +232,7 @@ void PSBMPC::calculate_optimal_offsets(
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), control_behavior_dvec.end()));
 
 	// Perform the calculations on the GPU
-	cb_cost_functor.reset(new CB_Cost_Functor(pars_device_ptr, fdata_device_ptr, obstacles_device_ptr, cpe_device_ptr, trajectory_device_ptr));
+	cb_cost_functor.reset(new CB_Cost_Functor(pars_device_ptr, fdata_device_ptr, obstacles_device_ptr, cpe_device_ptr, trajectory_device_ptr, ownship.get_wp_counter()));
     thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), *cb_cost_functor);
 
 	// Extract minimum cost
@@ -248,9 +262,9 @@ void PSBMPC::calculate_optimal_offsets(
 	engPutVariable(ep, "k", k_s);
 
 	engPutVariable(ep, "X", traj_os);
-	engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); 
+	engEvalString(ep, "inside_psbmpc_upd_ownship_plot");  
 
-	engClose(ep); */
+	engClose(ep);*/
 	//===============================================================================================================
 
 	u_opt = opt_offset_sequence_e(0); 		u_m_last = u_opt;
@@ -852,6 +866,7 @@ void PSBMPC::set_up_temporary_device_memory(
 	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
 	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
 	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
+	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl;
 	
 	size_t limit = 0;
 
