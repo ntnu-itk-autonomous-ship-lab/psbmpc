@@ -200,7 +200,7 @@ void Tracked_Obstacle::predict_independent_trajectories(
 					}
 					break;
 				default :
-					std::cout << "This intention is not valid!" << std::endl;
+					// Throw invalid value
 					break;
 			}
 
@@ -249,7 +249,6 @@ void Tracked_Obstacle::update(
 	{ 
 		kf.reset(xs_0, P_0, 0.0); 
 	}
-	std::cout << "Inside obstacle update 1: xs_0 = " << xs_0.transpose() << std::endl;
 }
 
 void Tracked_Obstacle::update(
@@ -286,7 +285,6 @@ void Tracked_Obstacle::update(
 	{ 
 		kf.reset(xs_0, P_0, 0.0); 
 	}
-	std::cout << "Inside obstacle update 2: xs_0 = " << xs_0.transpose() << std::endl;
 	
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	

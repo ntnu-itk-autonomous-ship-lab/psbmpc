@@ -161,7 +161,8 @@ public:
 		CB_Functor_Data *fdata, 
 		Cuda_Obstacle *obstacles, 
 		CPE *cpe,
-		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory);
+		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,
+		const int wp_c_0);
 
 	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; cpe = nullptr; trajectory = nullptr; }
 	

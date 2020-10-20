@@ -37,11 +37,12 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	CB_Functor_Data *fdata,  										// In: Device pointer to functor data, one for all threads
 	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, one for all threads
 	CPE *cpe, 		 												// In: Device pointer to the collision probability estimator, one for each thread
-	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory				// In: Device pointer to the own-ship trajectory, malloc, one for each thread
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
+	const int wp_c_0												// In: Waypoint counter for PSB-MPC Ownship object, to initialize the waypoint following in the thread own-ship objects properly
 	) :
 	pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe), trajectory(trajectory)
 {
-
+	ownship.set_wp_counter(wp_c_0);
 }
 
 /****************************************************************************************
@@ -151,7 +152,7 @@ __device__ float CB_Cost_Functor::operator()(
 		
 				//==========================================================================================
 				// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
-				printf("i = %d | ps = %d | k = %d\n", i, ps, k);
+				//printf("i = %d | ps = %d | k = %d\n", i, ps, k);
 
 				/* printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", xs_p(0, 0), xs_p(1, 0), xs_p(2, 0), xs_p(3, 0), xs_p(4, 0), xs_p(5, 0));
 				printf("xs_i_p = %.1f, %.1f, %.1f, %.1f\n", xs_i_p(0, 0), xs_i_p(1, 0), xs_i_p(2, 0), xs_i_p(3, 0)); */
@@ -161,26 +162,30 @@ __device__ float CB_Cost_Functor::operator()(
 				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(8, 0), P_i_p(9, 0), P_i_p(10, 0), P_i_p(11, 0));
 				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(12, 0), P_i_p(13, 0), P_i_p(14, 0), P_i_p(15, 0)); */
  				
-				switch(pars->cpe_method)
+				if (true)//fmod(k, 2) == 0)
 				{
-					case CE :	
-						p_os = xs_p.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
-						p_i = xs_i_p.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+					switch(pars->cpe_method)
+					{
+						case CE :	
+							p_os = xs_p.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+							p_i = xs_i_p.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 
-						P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+							P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-						P_c_i(ps) = cpe[cb_index].CE_estimate(p_os, p_i, P_i_2D);
-						break;
-					case MCSKF4D :                
-						if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
-						{
-							P_c_i(ps) = cpe[cb_index].MCSKF4D_estimate(xs_p, xs_i_p, P_i_p);						
-						}	
-						break;
-					default :
-						// Throw
-						break;
+							P_c_i(ps) = cpe[cb_index].CE_estimate(p_os, p_i, P_i_2D);
+							break;
+						case MCSKF4D :                
+							if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
+							{
+								P_c_i(ps) = cpe[cb_index].MCSKF4D_estimate(xs_p, xs_i_p, P_i_p);						
+							}	
+							break;
+						default :
+							// Throw
+							break;
+					}
 				}
+				
 
 				//==========================================================================================
 				// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
@@ -194,7 +199,7 @@ __device__ float CB_Cost_Functor::operator()(
 				//printf("P_c_i = %.6f | max_cost_ps = %.4f\n", P_c_i(ps), max_cost_ps(ps));
 			}
 		}
-
+		printf("max_cost_ps = %.4f, %.4f, %.4f\n", max_cost_ps(0), max_cost_ps(1), max_cost_ps(2));
 		//==============================================================================================
 		// 2.3 : Calculate a weighted obstacle cost over all prediction scenarios
 
@@ -213,6 +218,7 @@ __device__ float CB_Cost_Functor::operator()(
 			{
 				if (mu_i[ps])
 				{
+					printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
 					max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
 				}
 				else
@@ -239,6 +245,8 @@ __device__ float CB_Cost_Functor::operator()(
 			cost_a(1) = cost_a(1) / ((fdata->n_ps[i] - 1) / 2);
 			cost_a(2) = cost_a(2) / ((fdata->n_ps[i] - 1) / 2);
 
+			printf("cost_a = %.4f, %.4f, %.4f\n", cost_a(0), cost_a(1), cost_a(2));
+			printf("Pr_a = %.4f, %.4f, %.4f\n", Pr_a(0), Pr_a(1), Pr_a(2));
 			// Weight by the intention probabilities
 			cost_i(i) = Pr_a.dot(cost_a);
 		}
@@ -261,7 +269,7 @@ __device__ float CB_Cost_Functor::operator()(
 	// 2.7 : Calculate cost due to having a wobbly offset_sequence
 	cost_cb += calculate_chattering_cost(offset_sequence, cb_index); 
 	//==================================================================================================
-	printf("Cost of cb_index %d : %.2f\n", cb_index, cost_cb);
+	printf("Cost of cb_index %d : %.2f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	return cost_cb;
 }
 
