@@ -1,0 +1,8 @@
+prefix=/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/devel
+
+Name: asv_simulator
+Description: Description of asv_simulator
+Version: 1.1.0
+Cflags: -I/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/src/ros_asv_system/asv_simulator/include
+Libs: -L/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/devel/lib 
+Requires: rospy tf roscpp

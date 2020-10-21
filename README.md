@@ -1,18 +1,9 @@
-# Cybercolav C++
-<p> This repository implements libraries for the Probabilistic Scenario-based MPC [[2]](#2) in C/C++, one version for the CPU and another experimental for the GPU. The algorithm is an extended and improved version of the original one posed in [[1]](#1), which was implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3). The libraries are located under libs/. </p>
+# thecolavrepo
+<p> This repository contains branches of different Collision Avoidance (COLAV) algorithms, mainly based on the Scenario-based Model Predictive Control Algorithm [[1]](#1). 
 
-## Dependencies
+The **sbmpc_catkin_ws** contains the ROS-based colav implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3)), where the original SB-MPC is implemented, in addition to a velocity obstacle algorithm. "Insert more information here.."
 
-- Matlab C API for the debugging and plotting functionality.
-- Eigen >= 3.3.7
-- CUDA 11.0 and Thrust >= 1.9.9 for the GPU stuff.
-- xoshiro256+ random number generator used in the Collision Probability Estimator implemented for use in the CPU version <http://prng.di.unimi.it/>
-
-## PSB-MPC library usage
-<p>To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib)" command, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build. </p>
-
-## Testing out the library functionality
-<p> Several test functions exist under src/tests to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test. NOTE: The .cpp test files are the best for use to make yourself familiar, whereas the .cu CUDA-based test files are experimental and cannot be guaranteed bug free at the moment. </p>
+The **psbmpc_cxx** implements the Probabilistic Scenario-based MPC [[2]](#2) in C/C++, which is an extended and improved version of the original SB-MPC, with more focus on probabilistic risk assessment, and which allows any given number of avoidance maneuvers in the prediction horizon. Here, one version is implemented for the CPU and another experimental for the GPU. </p>
 
 
 ## References

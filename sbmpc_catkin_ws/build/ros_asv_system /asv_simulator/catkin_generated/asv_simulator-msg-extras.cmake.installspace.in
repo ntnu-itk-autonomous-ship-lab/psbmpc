@@ -1,0 +1,2 @@
+set(asv_simulator_MESSAGE_FILES "")
+set(asv_simulator_SERVICE_FILES "")
