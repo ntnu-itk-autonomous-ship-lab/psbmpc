@@ -1,0 +1,8 @@
+prefix=/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/install
+
+Name: asv_obstacle_tracker
+Description: Description of asv_obstacle_tracker
+Version: 1.1.0
+Cflags: 
+Libs: -L/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/install/lib 
+Requires: 

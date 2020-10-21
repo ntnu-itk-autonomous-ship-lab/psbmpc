@@ -1,0 +1,21 @@
+
+(cl:in-package :asdf)
+
+(defsystem "asv_msgs-msg"
+  :depends-on (:roslisp-msg-protocol :roslisp-utils )
+  :components ((:file "_package")
+    (:file "Offset" :depends-on ("_package_Offset"))
+    (:file "_package_Offset" :depends-on ("_package"))
+    (:file "Prediction" :depends-on ("_package_Prediction"))
+    (:file "_package_Prediction" :depends-on ("_package"))
+    (:file "ShipMetaData" :depends-on ("_package_ShipMetaData"))
+    (:file "_package_ShipMetaData" :depends-on ("_package"))
+    (:file "State" :depends-on ("_package_State"))
+    (:file "_package_State" :depends-on ("_package"))
+    (:file "StateArray" :depends-on ("_package_StateArray"))
+    (:file "_package_StateArray" :depends-on ("_package"))
+    (:file "WP" :depends-on ("_package_WP"))
+    (:file "_package_WP" :depends-on ("_package"))
+    (:file "WPArray" :depends-on ("_package_WPArray"))
+    (:file "_package_WPArray" :depends-on ("_package"))
+  ))

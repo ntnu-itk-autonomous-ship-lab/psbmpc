@@ -1,0 +1,8 @@
+prefix=/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/install
+
+Name: asv_state_estimator
+Description: Description of asv_state_estimator
+Version: 1.0.0
+Cflags: 
+Libs: -L/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/install/lib 
+Requires: 
