@@ -1,13 +1,17 @@
 # PSB-MPC on the GPU
-<p> This repository implements the Probabilistic Scenario-based MPC in C/C++, but where the most time-critical part of the MPC implemented in CUDA to allow for performance gains through parallelization. The algorithm is an extended and improved version of the original one posed in [[1]](#1). <br>
+<p> This is the Probabilistic Scenario-based MPC in C/C++, where the most time-critical part of the MPC is implemented in CUDA to allow for performance gains through parallelization. <br>
 
-To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib_gpu)" command, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build. </p>
+To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib_gpu)" command, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build.<br>
+
+Note that the amount of memory you need on your GPU to run the algorithm will increase alot with the number of maneuvers (and the set of different maneuver types) you consider in the prediction horizon. Around 4 GB is sufficient for using 3 or less maneuvers.
+
+ </p>
 
 ## Dependencies
 
 - Matlab C API is used for the debugging and plotting functionality.
 - Eigen >= 3.3.7 release is used for the CPU and GPU version.
-- CUDA and Thrust are necessary for the GPU version. I have used CUDA 11 and Thrust >= 1.9.9
+- CUDA and Thrust are necessary for the GPU version. I have used CUDA 11 and Thrust >= 1.9.9, other versions are not tested with.
 
 ## Overall Structure
 <p>The library for the GPU-implementation has the following structure <br>

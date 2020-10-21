@@ -1,5 +1,5 @@
 # PSB-MPC on the CPU
-<p> This repository implements the Probabilistic Scenario-based MPC in C/C++. The algorithm is an extended and improved version of the original one posed in [[1]](#1). This library runs purely on the CPU.<br>
+<p> This library implements the Probabilistic Scenario-based MPC in C/C++, purely on the CPU.<br>
 
 To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib)" command in your project, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build. </p>
 
