@@ -152,10 +152,10 @@ __device__ float CB_Cost_Functor::operator()(
 		
 				//==========================================================================================
 				// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
-				//printf("i = %d | ps = %d | k = %d\n", i, ps, k);
+				printf("i = %d | ps = %d | k = %d\n", i, ps, k);
 
-				/* printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", xs_p(0, 0), xs_p(1, 0), xs_p(2, 0), xs_p(3, 0), xs_p(4, 0), xs_p(5, 0));
-				printf("xs_i_p = %.1f, %.1f, %.1f, %.1f\n", xs_i_p(0, 0), xs_i_p(1, 0), xs_i_p(2, 0), xs_i_p(3, 0)); */
+				printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", xs_p(0, 0), xs_p(1, 0), xs_p(2, 0), xs_p(3, 0), xs_p(4, 0), xs_p(5, 0));
+				printf("xs_i_p = %.1f, %.1f, %.1f, %.1f\n", xs_i_p(0, 0), xs_i_p(1, 0), xs_i_p(2, 0), xs_i_p(3, 0));
 
 				/* printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_p(0, 0), P_i_p(1, 0), P_i_p(2, 0), P_i_p(3, 0));
 				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(4, 0), P_i_p(5, 0), P_i_p(6, 0), P_i_p(7, 0));
@@ -196,7 +196,7 @@ __device__ float CB_Cost_Functor::operator()(
 					max_cost_ps(ps) = cost_ps;
 				}
 				//==========================================================================================
-				//printf("P_c_i = %.6f | max_cost_ps = %.4f\n", P_c_i(ps), max_cost_ps(ps));
+				printf("P_c_i = %.6f | cost_ps = %.4f\n", P_c_i(ps), cost_ps);
 			}
 		}
 		printf("max_cost_ps = %.4f, %.4f, %.4f\n", max_cost_ps(0), max_cost_ps(1), max_cost_ps(2));
