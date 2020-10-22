@@ -228,7 +228,9 @@ inline void calculate_cpa(
 /****************************************************************************************
 *  Name     : determine_COLREGS_violation
 *  Function : Determine if vessel A violates COLREGS with respect to vessel B.
-*			  Temporary solution until SBMPC class is implemented for the obstacles
+*			  Temporary solution until SBMPC class is implemented for the obstacles.
+*			  Extra functionality to avoid obstacle being penalized for keeping stand-on
+*			  duty in certain situations, in the PSB-MPC predictions.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -291,7 +293,12 @@ inline bool determine_COLREGS_violation(
 				!is_head_on 												&&
 				!is_passed;
 
-	bool mu = (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
+	// Extra condition that the COLREGS violation is only considered in an annulus; i.e. within d_close but outside d_safe.
+	// The logic behind having to be outside d_safe is that typically a collision happens here, and thus COLREGS should be disregarded
+	// in order to make a safe reactive avoidance maneuver, if possible. 
+	// NOTE that this extra condition is only applied for "dumb"
+	// obstacle predictions where one assumes neither the own-ship nor the obstacle makes avoidance maneuvers. 
+	bool mu = is_close && (( B_is_starboard && is_head_on) || (B_is_starboard && is_crossing && !A_is_overtaken)) && (d_AB > d_safe);
 
 	return mu;
 }

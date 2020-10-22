@@ -70,7 +70,7 @@ void Obstacle_Manager::update_obstacle_status(
 	const Eigen::Matrix<double, 6, 1> &ownship_state						// In: Current time own-ship state
 	)
 {
-	int n_obst = data.new_obstacles.size();
+	int n_obst = data.obstacles.size();
 	data.obstacle_status.resize(13, n_obst);
 	double ID_0, RB_0, COG_0, SOG_0; 
 	Eigen::Vector2d d_0i;
@@ -79,9 +79,9 @@ void Obstacle_Manager::update_obstacle_status(
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	for(int i = 0; i < n_obst; i++)
 	{
-		xs_i = data.new_obstacles[i].kf->get_state();
+		xs_i = data.obstacles[i].kf->get_state();
 
-		ID_0 = data.new_obstacles[i].get_ID();
+		ID_0 = data.obstacles[i].get_ID();
 		
 		d_0i = (xs_i.block<2, 1>(0, 0) - ownship_state.block<2, 1>(0, 0));
 
@@ -124,13 +124,13 @@ void Obstacle_Manager::display_obstacle_information()
 	}
 	std::cout << "\n";
 
-	for (size_t i = 0; i < data.new_obstacles.size(); i++)
+	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
 		for (int j = 0; j < data.obstacle_status.rows(); j++)
 		{
 			std::cout << std::setw(width_arr[i] + 4) << std::setprecision(status_precision[i]) << data.obstacle_status(j, i) << std::fixed;
 		}
-		if (i < data.new_obstacles.size() - 1)
+		if (i < data.obstacles.size() - 1)
 		{
 			std::cout << "\n";
 		}
@@ -271,10 +271,7 @@ void Obstacle_Manager::update_obstacles(
 	const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
 	) 			
 {
-	// Clear "old" new obstacles before the update
-	data.new_obstacles.clear();
-	
-	int n_obst_old = data.old_obstacles.size();
+	int n_obst_old = data.obstacles.size();
 	int n_obst_new = obstacle_states.cols();
 
 	bool obstacle_exist;
@@ -283,11 +280,11 @@ void Obstacle_Manager::update_obstacles(
 		obstacle_exist = false;
 		for (int j = 0; j < n_obst_old; j++)
 		{
-			if ((double)data.old_obstacles[j].get_ID() == obstacle_states(8, i))
+			if ((double)data.obstacles[j].get_ID() == obstacle_states(8, i))
 			{
-				data.old_obstacles[j].reset_duration_lost();
+				data.obstacles[j].reset_duration_lost();
 
-				data.old_obstacles[j].update(
+				data.obstacles[j].update(
 					obstacle_states.col(i), 
 					obstacle_covariances.col(i), 
 					obstacle_intention_probabilities.col(i),
@@ -295,7 +292,7 @@ void Obstacle_Manager::update_obstacles(
 					obstacle_filter_on,
 					psbmpc_pars.dt);
 
-				data.new_obstacles.push_back(std::move(data.old_obstacles[j]));
+				data.new_obstacles.push_back(std::move(data.obstacles[j]));
 
 				obstacle_exist = true;
 
@@ -320,26 +317,22 @@ void Obstacle_Manager::update_obstacles(
 	// whereas an obstacle that is out of COLAV-target range may re-enter range with the same id.
 	if (obstacle_filter_on)
 	{
-		for (size_t j = 0; j < data.old_obstacles.size(); j++)
+		for (size_t j = 0; j < data.obstacles.size(); j++)
 		{
-			data.old_obstacles[j].increment_duration_lost(psbmpc_pars.dt * psbmpc_pars.p_step);
+			data.obstacles[j].increment_duration_lost(psbmpc_pars.dt * psbmpc_pars.p_step);
 
-			if (data.old_obstacles[j].get_duration_tracked() >= T_tracked_limit 	&&
-				(data.old_obstacles[j].get_duration_lost() < T_lost_limit || data.old_obstacles[j].kf->get_covariance()(0,0) <= 5.0))
+			if (data.obstacles[j].get_duration_tracked() >= T_tracked_limit 	&&
+				(data.obstacles[j].get_duration_lost() < T_lost_limit || data.obstacles[j].kf->get_covariance()(0,0) <= 5.0))
 			{
-				data.old_obstacles[j].update(obstacle_filter_on, psbmpc_pars.dt);
+				data.obstacles[j].update(obstacle_filter_on, psbmpc_pars.dt);
 
-				data.new_obstacles.push_back(std::move(data.old_obstacles[j]));
+				data.new_obstacles.push_back(std::move(data.obstacles[j]));
 			}
 		}
 	}
-	// Clear old obstacle vector, which consist of transferred (nullptr) and terminated obstacles
-	// Then set equal to the new obstacle vector
-	data.old_obstacles.resize(data.new_obstacles.size());
-	for (size_t i = 0; i < data.new_obstacles.size(); i++)
-	{
-		data.old_obstacles[i] = Tracked_Obstacle(data.new_obstacles[i]);
-	}
+	// Then, after having all relevant obstacles (includes transferred ones from the old vector, and newly detected ones)
+	// in "new_obstacles", transfer all of these to the "obstacle" vector to be used by other classes.
+	data.obstacles = std::move(data.new_obstacles);	
 }
 
 /****************************************************************************************
@@ -366,7 +359,7 @@ void Obstacle_Manager::update_situation_type_and_transitional_variables(
 	psi_A = wrap_angle_to_pmpi(ownship_state(2));
 	v_A = rotate_vector_2D(v_A, psi_A);
 
-	int n_obst = data.new_obstacles.size();
+	int n_obst = data.obstacles.size();
 	data.ST_0.resize(n_obst);   data.ST_i_0.resize(n_obst);
 	
 	data.AH_0.resize(n_obst);   data.S_TC_0.resize(n_obst); data.S_i_TC_0.resize(n_obst); 
@@ -377,16 +370,16 @@ void Obstacle_Manager::update_situation_type_and_transitional_variables(
 	//std::cout << A << std::endl;
 	for (int i = 0; i < n_obst; i++)
 	{
-		v_B(0) = data.new_obstacles[i].kf->get_state()(2);
-		v_B(1) = data.new_obstacles[i].kf->get_state()(3);
+		v_B(0) = data.obstacles[i].kf->get_state()(2);
+		v_B(1) = data.obstacles[i].kf->get_state()(3);
 		psi_B = atan2(v_B(1), v_B(0));
 
-		L_AB(0) = data.new_obstacles[i].kf->get_state()(0) - ownship_state(0);
-		L_AB(1) = data.new_obstacles[i].kf->get_state()(1) - ownship_state(1);
+		L_AB(0) = data.obstacles[i].kf->get_state()(0) - ownship_state(0);
+		L_AB(1) = data.obstacles[i].kf->get_state()(1) - ownship_state(1);
 		d_AB = L_AB.norm();
 
 		// Decrease the distance between the vessels by their respective max dimension
-		d_AB = d_AB - 0.5 * (ownship_length + data.new_obstacles[i].get_length()); 
+		d_AB = d_AB - 0.5 * (ownship_length + data.obstacles[i].get_length()); 
 		
 		L_AB = L_AB.normalized();
 

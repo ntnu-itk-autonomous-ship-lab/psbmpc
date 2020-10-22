@@ -22,7 +22,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 
-#include "utilities.h"
+#include "utilities.cuh"
 #include "psbmpc.cuh"
 #include "cb_cost_functor.cuh"
 
@@ -862,11 +862,11 @@ void PSBMPC::set_up_temporary_device_memory(
 {
 	int n_obst = odata.obstacles.size();
 
-	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
+	/* std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
 	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
 	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
 	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
-	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl;
+	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; */
 	
 	size_t limit = 0;
 

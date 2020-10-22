@@ -25,12 +25,8 @@
 cmake_minimum_required(VERSION 3.17.3)
 project(psbmpc_test LANGUAGES CUDA CXX)
 
-if (MSVC)
-	add_compile_options(/W4)
-else()
-	# for debug compilation
-	#add_compile_options(-Wall -Wextra -fno-omit-frame-pointer -g )
-endif()
+# for debug compilation and profiling
+add_compile_options(-Wall -Wextra -fno-omit-frame-pointer -g )
 
 add_subdirectory(libs/psbmpc_lib_gpu)
 #add_subdirectory(libs/psbmpc_lib)

@@ -21,7 +21,7 @@
 *****************************************************************************************/
 
 #include "tracked_obstacle.cuh"
-#include "utilities.h"
+#include "utilities.cuh"
 
 #include "assert.h"
 #include <iostream> 

@@ -375,25 +375,6 @@ inline void CPE::update_L(
 }
 
 /****************************************************************************************
-*  Name     : calculate_2x2_quadratic_form
-*  Function : Calculates val = x' A^-1 x for 2x2 system, basically hard-coded.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-inline double CPE::calculate_2x2_quadratic_form(
-    const Eigen::Vector2d &x,                                                   // In: Vector in the quadratic form
-    const Eigen::Matrix2d &A                                                    // In: Matrix to invert in the quadratic form
-    )
-{
-    Eigen::Matrix2d inv_A;
-    inv_A << A(1, 1), -A(0, 1),
-             -A(1, 0), A(0, 0);
-    inv_A = inv_A / (A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0));
-
-    return x.transpose() * inv_A * x;
-}
-
-/****************************************************************************************
 *  Name     : norm_pdf_log
 *  Function : Calculates the logarithmic value of the multivariate normal distribution
 *  Author   : Trym Tengesdal
@@ -804,7 +785,7 @@ double CPE::CE_estimation(
         }
 
         // Terminate iterative optimization if enough elite samples are collected
-        if (N_e >= n_CE * rho) { converged_last = true; break;}
+        if (N_e >= n_CE * rho) { converged_last = true; break; }
         // Otherwise, improve importance density parameters (given N_e > 3 to prevent zero-matrix 
         // in P_CE and/or negative definite matrix if no smoothing is used, and Pcoll spikes due
         // to insufficient sample amounts)

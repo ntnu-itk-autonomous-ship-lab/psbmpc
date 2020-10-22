@@ -56,7 +56,7 @@ public:
 	// Obstacle hazard levels, on a scale from 0 to 1 (output from PSBMPC)
 	Eigen::VectorXd HL_0;
 
-	std::vector<Tracked_Obstacle> old_obstacles;
+	std::vector<Tracked_Obstacle> obstacles;
 	std::vector<Tracked_Obstacle> new_obstacles;
 
 	Eigen::MatrixXd obstacle_status;

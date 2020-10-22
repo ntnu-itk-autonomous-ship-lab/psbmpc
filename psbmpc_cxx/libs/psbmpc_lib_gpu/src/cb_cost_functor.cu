@@ -152,10 +152,10 @@ __device__ float CB_Cost_Functor::operator()(
 		
 				//==========================================================================================
 				// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
-				printf("i = %d | ps = %d | k = %d\n", i, ps, k);
+				
 
-				printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", xs_p(0, 0), xs_p(1, 0), xs_p(2, 0), xs_p(3, 0), xs_p(4, 0), xs_p(5, 0));
-				printf("xs_i_p = %.1f, %.1f, %.1f, %.1f\n", xs_i_p(0, 0), xs_i_p(1, 0), xs_i_p(2, 0), xs_i_p(3, 0));
+				/* printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", xs_p(0, 0), xs_p(1, 0), xs_p(2, 0), xs_p(3, 0), xs_p(4, 0), xs_p(5, 0));
+				printf("xs_i_p = %.1f, %.1f, %.1f, %.1f\n", xs_i_p(0, 0), xs_i_p(1, 0), xs_i_p(2, 0), xs_i_p(3, 0)); */
 
 				/* printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_p(0, 0), P_i_p(1, 0), P_i_p(2, 0), P_i_p(3, 0));
 				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(4, 0), P_i_p(5, 0), P_i_p(6, 0), P_i_p(7, 0));
@@ -196,10 +196,11 @@ __device__ float CB_Cost_Functor::operator()(
 					max_cost_ps(ps) = cost_ps;
 				}
 				//==========================================================================================
-				printf("P_c_i = %.6f | cost_ps = %.4f\n", P_c_i(ps), cost_ps);
+				//printf("i = %d | ps = %d | k = %d\n", i, ps, k);
+				//printf("P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", P_c_i(ps), cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 			}
 		}
-		printf("max_cost_ps = %.4f, %.4f, %.4f\n", max_cost_ps(0), max_cost_ps(1), max_cost_ps(2));
+		//printf("max_cost_ps = %.4f, %.4f, %.4f\n", max_cost_ps(0), max_cost_ps(1), max_cost_ps(2));
 		//==============================================================================================
 		// 2.3 : Calculate a weighted obstacle cost over all prediction scenarios
 
@@ -245,8 +246,8 @@ __device__ float CB_Cost_Functor::operator()(
 			cost_a(1) = cost_a(1) / ((fdata->n_ps[i] - 1) / 2);
 			cost_a(2) = cost_a(2) / ((fdata->n_ps[i] - 1) / 2);
 
-			printf("cost_a = %.4f, %.4f, %.4f\n", cost_a(0), cost_a(1), cost_a(2));
-			printf("Pr_a = %.4f, %.4f, %.4f\n", Pr_a(0), Pr_a(1), Pr_a(2));
+			/* printf("cost_a = %.4f, %.4f, %.4f\n", cost_a(0), cost_a(1), cost_a(2));
+			printf("Pr_a = %.4f, %.4f, %.4f\n", Pr_a(0), Pr_a(1), Pr_a(2)); */
 			// Weight by the intention probabilities
 			cost_i(i) = Pr_a.dot(cost_a);
 		}
@@ -396,7 +397,7 @@ __device__ bool CB_Cost_Functor::determine_COLREGS_violation(
 				  !is_head_on 													&&
 				  !is_passed;
 
-	return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
+	return is_close && (( B_is_starboard && is_head_on) || (B_is_starboard && is_crossing && !A_is_overtaken));
 }
 
 //=======================================================================================
@@ -717,6 +718,9 @@ __device__ float CB_Cost_Functor::calculate_control_deviation_cost(
 				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 		}
 	}
+	
+	/* printf("K_u (1 - u_m_0) = %.4f | Delta_u(u_m_0, u_m_last) = %.4f | K_chi(chi_0) = %.4f | Delta_chi(chi_0, chi_last) = %.4f\n", 
+		pars->K_u * (1 - offset_sequence[0]), Delta_u(offset_sequence[0], fdata->u_m_last), K_chi(offset_sequence[1]), Delta_chi(offset_sequence[1], fdata->chi_m_last)); */
 	return cost_cd / (float)pars->n_M;
 }
 

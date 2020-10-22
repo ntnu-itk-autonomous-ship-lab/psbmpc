@@ -162,6 +162,8 @@ public:
 
 	__host__ __device__ CPE(const CPE_Method cpe_method, const float dt);
 
+	__host__ __device__ void set_method(const CPE_Method cpe_method) { method = cpe_method; }
+
 	__device__ inline float get_segment_discretization_time() const { return dt_seg; }
 
 	__device__ inline void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }

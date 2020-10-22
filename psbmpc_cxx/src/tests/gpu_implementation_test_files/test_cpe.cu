@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : test_cpe.cpp
+*  File name : test_cpe.cu
 *
-*  Function  : Test file for the CPE class for PSB-MPC, using Matlab for 
+*  Function  : Test file for the CUDA-tailored CPE class for PSB-MPC, using Matlab for 
 *			   visualization 
 *			   
 *	           ---------------------
@@ -19,15 +19,14 @@
 *****************************************************************************************/
 
 
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 
 #include "cpe.cuh"
-#include "utilities.h"
-#include "mrou.h"
+#include "utilities.cuh"
+#include "mrou.cuh"
 #include "ownship.cuh"
 #include <iostream>
 #include <vector>
@@ -38,7 +37,136 @@
 
 #define BUFSIZE 1000000
 
-__host__ __device__ int main(){
+// Host only due to stderr usage
+#define cuda_check_errors(msg) \
+    do { \
+        cudaError_t __err = cudaGetLastError(); \
+        if (__err != cudaSuccess) { \
+            fprintf(stderr, "Fatal error: %s (%s at %s:%d)\n", \
+                msg, cudaGetErrorString(__err), \
+                __FILE__, __LINE__); \
+            fprintf(stderr, "*** FAILED - ABORTING\n"); \
+            exit(1); \
+        } \
+    } while (0)
+
+
+class CPE_functor
+{
+private:
+	CPE *cpe;
+	CPE_Method cpe_method;
+	float dt;
+
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *xs_p; 
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p;
+	TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p;
+
+	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
+	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
+	// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
+	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_seg; 
+	TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_seg;
+	TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_seg;
+
+public:
+
+	__host__ CPE_functor(
+		CPE *cpe, 
+		CPE_Method cpe_method, 
+		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *xs_p,
+		TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p,
+		TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p, 
+		const float dt) : cpe(cpe), cpe_method(cpe_method), xs_p(xs_p), xs_i_p(xs_i_p), P_i_p(P_i_p), dt(dt) {}
+
+	__host__ __device__ ~CPE_functor() { cpe = nullptr; xs_p = nullptr; xs_i_p = nullptr; P_i_p = nullptr; }
+
+	__device__ float operator()(const thrust::tuple<const int> &tuple)
+	{
+		float P_c_i = 0.0f;
+
+		const int sample = thrust::get<0>(tuple);
+		printf("sample = %d\n", sample);
+		cpe[sample].seed_prng(0);
+
+		float d_safe_i = 60;
+
+		int n_seg_samples = round(cpe[sample].get_segment_discretization_time() / dt) + 1;
+
+		xs_seg.resize(6, n_seg_samples);
+		xs_i_seg.resize(4, n_seg_samples);
+		P_i_seg.resize(16, n_seg_samples);
+
+		// For the CE-method:
+		TML::Vector2f p_os, p_i;
+		TML::Matrix2f P_i_2D;
+
+		for (int k = 0; k < sample; k++)
+		{
+			printf("sample = %d| k = %d\n", sample, k);
+
+			xs_seg.shift_columns_left();
+			xs_seg.set_col(n_seg_samples - 1, xs_p->get_col(k));
+
+			P_i_seg.shift_columns_left();
+			P_i_seg.set_col(n_seg_samples - 1, P_i_p->get_col(k));
+
+			xs_i_seg.shift_columns_left();
+			xs_i_seg.set_col(n_seg_samples - 1, xs_i_p->get_col(k));
+
+			if (k == 0)
+			{
+				cpe[sample].initialize(xs_seg.get_col(n_seg_samples - 1), xs_i_seg.get_col(n_seg_samples - 1), P_i_seg.get_col(n_seg_samples - 1), d_safe_i);
+			}
+
+			printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", 
+				xs_seg(0, n_seg_samples - 1), 
+				xs_seg(1, n_seg_samples - 1), 
+				xs_seg(2, n_seg_samples - 1), 
+				xs_seg(3, n_seg_samples - 1), 
+				xs_seg(4, n_seg_samples - 1), 
+				xs_seg(5, n_seg_samples - 1));
+			printf("xs_i_p = %.1f, %.1f, %.1f, %.1f\n", 
+				xs_i_seg(0, n_seg_samples - 1), 
+				xs_i_seg(1, n_seg_samples - 1), 
+				xs_i_seg(2, n_seg_samples - 1), 
+				xs_i_seg(3, n_seg_samples - 1));
+
+			printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_seg(0, n_seg_samples - 1), P_i_seg(1, n_seg_samples - 1), P_i_seg(2, n_seg_samples - 1), P_i_seg(3, n_seg_samples - 1));
+			printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_seg(4, n_seg_samples - 1), P_i_seg(5, n_seg_samples - 1), P_i_seg(6, n_seg_samples - 1), P_i_seg(7, n_seg_samples - 1));
+			printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_seg(8, n_seg_samples - 1), P_i_seg(9, n_seg_samples - 1), P_i_seg(10, n_seg_samples - 1), P_i_seg(11, n_seg_samples - 1));
+			printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_seg(12, n_seg_samples - 1), P_i_seg(13, n_seg_samples - 1), P_i_seg(14, n_seg_samples - 1), P_i_seg(15, n_seg_samples - 1));
+
+			switch(cpe_method)
+			{
+				case CE :	
+					p_os = xs_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+					p_i = xs_i_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+
+					P_i_2D = reshape<16, 1, 4, 4>(P_i_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+
+					printf("here1\n");
+					P_c_i = cpe[sample].CE_estimate(p_os, p_i, P_i_2D);
+					printf("here2\n");
+					break;
+				case MCSKF4D :                
+					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
+					{
+						P_c_i = cpe[sample].MCSKF4D_estimate(xs_seg, xs_i_seg, P_i_seg);						
+					}	
+					break;
+				default :
+					// Throw
+					break;
+			}
+		}
+		return P_c_i;
+	}
+
+	
+};
+
+int main(){
 	// Matlab engine setup
 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
@@ -54,7 +182,7 @@ __host__ __device__ int main(){
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 6, 0, 0;
 
-	double T = 100; double dt = 0.5;
+	double T = 1; double dt = 0.5;
 
 	double u_d = 6.0; double chi_d = 0.0;
 
@@ -97,25 +225,25 @@ __host__ __device__ int main(){
 			0, 0, 0, 0.025;
 
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
-	std::vector<Eigen::MatrixXd> xs_p;
+	std::vector<Eigen::MatrixXd> xs_i_p;
 
 	// Mean predicted velocity for the obstacle (MROU): n_ps x n x n_samples, where n = 4
 	std::vector<Eigen::MatrixXd> v_p;
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step
-	Eigen::MatrixXd P_p; 
+	Eigen::MatrixXd P_i_p; 
 
 	std::unique_ptr<MROU> mrou(new MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
 
 	// n_ps = 1
-	xs_p.resize(1); xs_p[0].resize(4, n_samples);
-	xs_p[0].col(0) = xs_0;
-	P_p.resize(16, n_samples);
-	P_p.col(0) = flatten(P_0);
+	xs_i_p.resize(1); xs_i_p[0].resize(4, n_samples);
+	xs_i_p[0].col(0) = xs_0;
+	P_i_p.resize(16, n_samples);
+	P_i_p.col(0) = flatten(P_0);
 
 	v_p.resize(1); v_p[0].resize(2, n_samples);
 	
-	int n_ps = xs_p.size();
+	int n_ps = xs_i_p.size();
 
 	Eigen::Vector2d v_0, v;
 	v_0 << -2, 0;
@@ -143,30 +271,69 @@ __host__ __device__ int main(){
 	//*****************************************************************************************************************
 	// Collision Probability Estimator setup
 	//*****************************************************************************************************************
-	double d_safe = 50, dt_seg = 0.5;
-	int n_CE = 1000, n_MCSKF = 1000;
-	std::cout << "n_CE = " << n_CE << std::endl;
-	std::cout << "n_MCSKF = " << n_MCSKF << std::endl;
+	double dt_seg = 0.5;
 
 	Eigen::MatrixXd P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
 	Eigen::Matrix<double, 1, -1> P_c_i_temp(1, n_samples);
 
-	std::unique_ptr<CPE> cpe(new CPE(CE, n_CE, n_MCSKF, d_safe, dt));
+	CPE cpe(CE, dt);
 
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
-	cpe->set_number_of_obstacles(1);
 
 	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
 
 	double t = 0;
 	int n_seg_samples = std::round(dt_seg / dt) + 1;
 
-	CML::MatrixXd P_c_i_CE_copy(1, n_samples), P_c_i_MCSKF_copy(1, n_samples), trajectory_copy(6, n_samples), xs_p_copy(4, n_samples), P_p_copy(16, n_samples);
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> xs_p_copy(6, n_samples);
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_i_p_copy(4, n_samples);
+	TML::PDMatrix<float, 16, MAX_N_SAMPLES> P_i_p_copy(16, n_samples);
+	TML::assign_eigen_object(xs_p_copy, trajectory);
 
-	Eigen::MatrixXd xs_os_seg(6, n_seg_samples), xs_i_seg(4, n_seg_samples), P_i_seg(16, n_seg_samples);
-	Eigen::Matrix4d P_i_ps_k;
+	//===========================================================================================
+	// Allocate and copy data for use on the device
+	//===========================================================================================
+	thrust::device_vector<float> P_c_i_dvec(n_samples);
+
+	CPE *cpe_device_ptr;
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *xs_p_device_ptr;
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p_device_ptr;
+	TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p_device_ptr;
+
+
+	cudaMalloc((void**)&xs_p_device_ptr, sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
+	cuda_check_errors("CudaMalloc of xs_p failed.");
+
+	cudaMemcpy(xs_p_device_ptr, &xs_p_copy, sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>), cudaMemcpyHostToDevice);
+	cuda_check_errors("CudaMemCpy of xs_p failed.");
+
+	cudaMalloc((void**)&xs_i_p_device_ptr, sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>));
+	cuda_check_errors("CudaMalloc of xs_i_p failed.");
+
+	cudaMalloc((void**)&P_i_p_device_ptr, sizeof(TML::PDMatrix<float, 16, MAX_N_SAMPLES>));
+	cuda_check_errors("CudaMalloc of trajectory failed.");
+
+	cudaMalloc((void**)&cpe_device_ptr, n_samples * sizeof(CPE));
+    cuda_check_errors("CudaMalloc of CPE failed.");
+
+	for (int s = 0; s < n_samples; s++)
+	{
+		cudaMemcpy(&cpe_device_ptr[s], &cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of CPE failed.");
+	}
+
+	CPE_functor cpe_functor_CE(cpe_device_ptr, CE, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, (float)dt);
+	
+
+	thrust::device_vector<unsigned int> sample_dvec(n_samples);
+	thrust::sequence(sample_dvec.begin(), sample_dvec.end(), 0);
+
+	auto cpe_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(sample_dvec.begin()));
+	auto cpe_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(sample_dvec.end()));
+
+	//===========================================================================================
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		//=======================================================================================
@@ -177,46 +344,67 @@ __host__ __device__ int main(){
 			t = (k + 1) * dt;
 			if (k < n_samples - 1)
 			{
-				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p[ps].col(k), dt);
-				P_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
+				xs_i_p[ps].col(k + 1) = mrou->predict_state(xs_i_p[ps].col(k), v_p[ps].col(k), dt);
+				P_i_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
 			}
 		}
-		
-		CML::assign_eigen_object(xs_p_copy, xs_p[ps]);
-		CML::assign_eigen_object(P_p_copy, P_p);
-		CML::assign_eigen_object(trajectory_copy, trajectory);
+		TML::assign_eigen_object(xs_i_p_copy, xs_i_p[ps]);
+		TML::assign_eigen_object(P_i_p_copy, P_i_p);
+
+		cudaMemcpy(xs_i_p_device_ptr, &xs_i_p_copy, sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>), cudaMemcpyHostToDevice);
+		cuda_check_errors("CudaMemCpy of xs_i_p failed.");
+
+		cudaMemcpy(P_i_p_device_ptr, &P_i_p_copy, sizeof(TML::PDMatrix<float, 16, MAX_N_SAMPLES>), cudaMemcpyHostToDevice);
+		cuda_check_errors("CudaMemCpy of P_i_p failed.");
+
 		//=======================================================================================
-		// CE Estimation
+		// Estimate with CE
 		//=======================================================================================
-		
-		cpe->set_method(CE);
+		thrust::transform(cpe_tuple_begin, cpe_tuple_end, P_c_i_dvec.begin(), cpe_functor_CE);
 
-		auto start = std::chrono::system_clock::now();
-
-		cpe->estimate_over_trajectories(P_c_i_CE_copy, trajectory_copy, xs_p_copy, P_p_copy, d_safe, 0, dt);
-
-		auto end = std::chrono::system_clock::now();
-    	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-		std::cout << "CE time usage one trajectory pair : " << elapsed.count() << " milliseconds" << std::endl;
-		//=======================================================================================
-		// MCSKF4D Estimation
-		//=======================================================================================
-		cpe->set_method(MCSKF4D);
-
-		start = std::chrono::system_clock::now();
-		
-		cpe->estimate_over_trajectories(P_c_i_MCSKF_copy, trajectory_copy, xs_p_copy, P_p_copy, d_safe, 0, dt);
-		
-		end = std::chrono::system_clock::now();
-    	elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-		std::cout << "MCSKF4D time usage one trajectory pair : " << elapsed.count() << " milliseconds" << std::endl;
-
-		// n_ps = 1
-		CML::assign_cml_object(P_c_i_MCSKF, P_c_i_MCSKF_copy);
-		CML::assign_cml_object(P_c_i_CE, P_c_i_CE_copy);
+		for (int k = 0; k < n_samples; k++)
+		{
+			P_c_i_CE(ps, k) = P_c_i_dvec[k];
+		}
 	}
+
+	CPE_functor cpe_functor_MCSKF(cpe_device_ptr, MCSKF4D, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, (float)dt);
+	cpe.set_method(MCSKF4D);
+
+	for (int s = 0; s < n_samples; s++)
+	{
+		cudaMemcpy(&cpe_device_ptr[s], &cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of CPE failed.");
+	}
+
+	//=======================================================================================
+	// Estimate with MCSKF
+	//=======================================================================================
+	for (int ps = 0; ps < n_ps; ps++)
+	{
+		thrust::transform(cpe_tuple_begin, cpe_tuple_end, P_c_i_dvec.begin(), cpe_functor_MCSKF);
+
+		for (int k = 0; k < n_samples; k++)
+		{
+			P_c_i_MCSKF(ps, k) = P_c_i_dvec[k];
+		}
+	}
+
+	//=======================================================================================
+	// Free device memoery
+	//=======================================================================================
+	cudaFree(xs_p_device_ptr);
+	cuda_check_errors("CudaFree of xs_p failed.");
+
+	cudaFree(xs_i_p_device_ptr);
+	cuda_check_errors("CudaFree of xs_i_p failed.");
+
+	cudaFree(P_i_p_device_ptr);
+	cuda_check_errors("CudaFree of P_i_p failed.");
+
+	cudaFree(cpe_device_ptr);
+	cuda_check_errors("CudaFree of CPE failed.");
+
 
 	//*****************************************************************************************************************
 	// Send data to matlab
@@ -248,13 +436,13 @@ __host__ __device__ int main(){
 	map_wps = waypoints;
 
 	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
-	map_traj_i = xs_p[0];
+	map_traj_i = xs_i_p[0];
 
 	Eigen::Map<Eigen::MatrixXd> map_vtraj_i(pvtraj_i, 2, n_samples);
 	map_vtraj_i = v_p[0];
 
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
-	map_P_traj_i = P_p;
+	map_P_traj_i = P_i_p;
 
 	Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, 1, n_samples);
 	map_Pcoll_CE = P_c_i_CE;
