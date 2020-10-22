@@ -340,7 +340,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
+	n_M = 1;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -348,23 +348,27 @@ void PSBMPC_Parameters::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(3);
-			//u_offsets[M] << 1.0;
-			u_offsets[M] << 1.0, 0.5, 0.0;
+			u_offsets[M].resize(1);
+			u_offsets[M] << 1.0;
+			//u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(13);
-			//chi_offsets[M] << 0.0;
+			chi_offsets[M].resize(3);
+			//chi_offsets[M] << 30.0;
+			chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
 		{
 			u_offsets[M].resize(2);
+			//u_offsets[M] << 1.0;
 			u_offsets[M] << 1.0, 0.5;
+			//u_offsets[M] << 1.0, 0.5, 0.0;
 
 			chi_offsets[M].resize(7);
 			//chi_offsets[M] << 0.0;
+			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
 			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
@@ -380,7 +384,7 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 240.0; 	      // 400.0, 300.0, 240 (sim/Euler)
+	T = 100.0; 	      // 400.0, 300.0, 240 (sim/Euler)
 	dt = 5.0;		      // 5.0, 0.5 (sim/Euler)
   	T_static = 60.0;		  // (50.0)
 
@@ -393,7 +397,7 @@ void PSBMPC_Parameters::initialize_pars()
 	t_ts = 50;
 
 	d_init = 1500;								 
-	d_close = 500;
+	d_close = 200;
 	d_safe = 50; 							
 	K_coll = 1.0;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	

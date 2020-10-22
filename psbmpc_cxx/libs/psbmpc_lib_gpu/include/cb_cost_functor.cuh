@@ -131,9 +131,9 @@ private:
 
 	__device__ inline float Delta_u(const float u_1, const float u_2) 		{ return pars->K_du * fabs(u_1 - u_2); }
 
-	__device__ inline float K_chi(const float chi) 							{ if (chi > 0) return pars->K_chi_strb * pow(chi, 2); else return pars->K_chi_port * pow(chi, 2); };
+	__device__ inline float K_chi(const float chi) 							{ if (chi > 0) return pars->K_chi_strb * powf(chi, 2); else return pars->K_chi_port * powf(chi, 2); };
 
-	__device__ inline float Delta_chi(const float chi_1, const float chi_2) 	{ if (chi_1 > 0) return pars->K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars->K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
+	__device__ inline float Delta_chi(const float chi_1, const float chi_2) 	{ if (chi_1 > 0) return pars->K_dchi_strb * powf(fabs(chi_1 - chi_2), 2); else return pars->K_dchi_port * powf(fabs(chi_1 - chi_2), 2); };
 
 	//
 	__device__ float calculate_chattering_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const unsigned int cb_index);

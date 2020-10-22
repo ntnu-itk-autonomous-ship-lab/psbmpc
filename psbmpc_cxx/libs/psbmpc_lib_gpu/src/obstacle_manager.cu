@@ -17,7 +17,7 @@
 *
 *****************************************************************************************/
 
-#include "utilities.h"
+#include "utilities.cuh"
 #include "obstacle_manager.cuh"
 #include <string>
 #include <iostream>
@@ -332,7 +332,7 @@ void Obstacle_Manager::update_obstacles(
 			}
 		}
 	}
-	// Then, after having all relevant obstacles (transferred from the old vector, and newly detected ones)
+	// Then, after having all relevant obstacles (includes transferred ones from the old vector, and newly detected ones)
 	// in "new_obstacles", transfer all of these to the "obstacle" vector to be used by other classes.
 	data.obstacles = std::move(data.new_obstacles);	
 }

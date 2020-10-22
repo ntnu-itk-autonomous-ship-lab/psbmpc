@@ -61,6 +61,8 @@ struct Obstacle_Data
 	std::vector<Tracked_Obstacle> new_obstacles;
 
 	Eigen::MatrixXd obstacle_status;
+
+	Obstacle_Data() {}
 };
 
 class Obstacle_Manager

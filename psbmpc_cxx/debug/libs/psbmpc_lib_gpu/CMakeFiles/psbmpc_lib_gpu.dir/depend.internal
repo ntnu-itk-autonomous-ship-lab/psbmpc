@@ -229,7 +229,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cb_cost_functor.cu.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/cb_cost_functor.cu
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/cb_cost_functor.cu
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
@@ -1198,7 +1198,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cpe.cu.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/cpe.cu
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/cpe.cu
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
@@ -2169,7 +2169,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/cuda_obstacle.cu.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/cuda_obstacle.cu
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/cuda_obstacle.cu
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
@@ -3113,7 +3113,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/kf.cu.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/kf.cu
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/kf.cu
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
@@ -3381,7 +3381,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/mrou.cu.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/mrou.cu
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/mrou.cu
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
@@ -3442,6 +3442,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/mrou.cu.o
  /usr/local/cuda-11.0/include/vector_types.h
 libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle.cu.o
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
+ ../libs/psbmpc_lib_gpu/include/psbmpc_defines.h
  ../libs/psbmpc_lib_gpu/include/utilities.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/eigen_interface.cuh
@@ -3655,7 +3656,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle.cu.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle.cu
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/obstacle.cu
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
@@ -4395,10 +4396,11 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_manager.cu.o
  ../libs/psbmpc_lib_gpu/include/mrou.cuh
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
  ../libs/psbmpc_lib_gpu/include/obstacle_manager.cuh
+ ../libs/psbmpc_lib_gpu/include/psbmpc_defines.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
  ../libs/psbmpc_lib_gpu/include/tracked_obstacle.cuh
- ../libs/psbmpc_lib_gpu/include/utilities.h
+ ../libs/psbmpc_lib_gpu/include/utilities.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/eigen_interface.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/pseudo_dynamic_matrix.cuh
@@ -4611,7 +4613,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/obstacle_manager.cu.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/obstacle_manager.cu
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/obstacle_manager.cu
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
@@ -5564,7 +5566,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/ownship.cu.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/ownship.cu
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/ownship.cu
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
@@ -6314,7 +6316,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cu.o
  ../libs/psbmpc_lib_gpu/include/psbmpc_index.h
  ../libs/psbmpc_lib_gpu/include/psbmpc_parameters.h
  ../libs/psbmpc_lib_gpu/include/tracked_obstacle.cuh
- ../libs/psbmpc_lib_gpu/include/utilities.h
+ ../libs/psbmpc_lib_gpu/include/utilities.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/eigen_interface.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/pseudo_dynamic_matrix.cuh
@@ -6527,7 +6529,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc.cu.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/psbmpc.cu
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/psbmpc.cu
  /usr/local/MATLAB/R2019a/extern/include/engine.h
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/MATLAB/R2019a/extern/include/matrix.h
@@ -7285,8 +7287,9 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cu.o
  ../libs/psbmpc_lib_gpu/include/kf.cuh
  ../libs/psbmpc_lib_gpu/include/mrou.cuh
  ../libs/psbmpc_lib_gpu/include/obstacle.cuh
+ ../libs/psbmpc_lib_gpu/include/psbmpc_defines.h
  ../libs/psbmpc_lib_gpu/include/tracked_obstacle.cuh
- ../libs/psbmpc_lib_gpu/include/utilities.h
+ ../libs/psbmpc_lib_gpu/include/utilities.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/eigen_interface.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/pseudo_dynamic_matrix.cuh
@@ -7499,7 +7502,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cu.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/tracked_obstacle.cu
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/tracked_obstacle.cu
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
@@ -8445,7 +8448,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc_parameters.cpp.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/psbmpc_parameters.cpp
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/psbmpc_parameters.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
@@ -8505,6 +8508,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/psbmpc_parameters.cpp.o
  /usr/local/cuda-11.0/include/vector_functions.hpp
  /usr/local/cuda-11.0/include/vector_types.h
 libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/utilities.cpp.o
+ ../libs/psbmpc_lib_gpu/include/psbmpc_defines.h
  ../libs/psbmpc_lib_gpu/include/utilities.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
  ../libs/psbmpc_lib_gpu/tryms_matrix/eigen_interface.cuh
@@ -8718,7 +8722,7 @@ libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/utilities.cpp.o
  ../libs/third_party_libs/Eigen/src/plugins/CommonCwiseUnaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  ../libs/third_party_libs/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/trymte/Desktop/cybercolav_cxx/libs/psbmpc_lib_gpu/src/utilities.cpp
+ /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib_gpu/src/utilities.cpp
  /usr/local/MATLAB/R2019a/extern/include/lapacke_config.h
  /usr/local/cuda-11.0/include/builtin_types.h
  /usr/local/cuda-11.0/include/channel_descriptor.h
