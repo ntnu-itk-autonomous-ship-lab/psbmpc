@@ -81,15 +81,14 @@ public:
 
 	__host__ __device__ ~CPE_functor() { cpe = nullptr; xs_p = nullptr; xs_i_p = nullptr; P_i_p = nullptr; }
 
-	__device__ float operator()(const thrust::tuple<const int> &tuple)
+	__device__ float operator()(const thrust::tuple<unsigned int> &tuple)
 	{
 		float P_c_i = 0.0f;
 
-		const int sample = thrust::get<0>(tuple);
-		printf("sample = %d\n", sample);
+		unsigned int sample = thrust::get<0>(tuple);
 		cpe[sample].seed_prng(0);
 
-		float d_safe_i = 60;
+		float d_safe_i = 50;
 
 		int n_seg_samples = round(cpe[sample].get_segment_discretization_time() / dt) + 1;
 
@@ -103,8 +102,6 @@ public:
 
 		for (int k = 0; k < sample; k++)
 		{
-			printf("sample = %d| k = %d\n", sample, k);
-
 			xs_seg.shift_columns_left();
 			xs_seg.set_col(n_seg_samples - 1, xs_p->get_col(k));
 
@@ -119,7 +116,7 @@ public:
 				cpe[sample].initialize(xs_seg.get_col(n_seg_samples - 1), xs_i_seg.get_col(n_seg_samples - 1), P_i_seg.get_col(n_seg_samples - 1), d_safe_i);
 			}
 
-			printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", 
+			/* printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", 
 				xs_seg(0, n_seg_samples - 1), 
 				xs_seg(1, n_seg_samples - 1), 
 				xs_seg(2, n_seg_samples - 1), 
@@ -135,7 +132,7 @@ public:
 			printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_seg(0, n_seg_samples - 1), P_i_seg(1, n_seg_samples - 1), P_i_seg(2, n_seg_samples - 1), P_i_seg(3, n_seg_samples - 1));
 			printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_seg(4, n_seg_samples - 1), P_i_seg(5, n_seg_samples - 1), P_i_seg(6, n_seg_samples - 1), P_i_seg(7, n_seg_samples - 1));
 			printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_seg(8, n_seg_samples - 1), P_i_seg(9, n_seg_samples - 1), P_i_seg(10, n_seg_samples - 1), P_i_seg(11, n_seg_samples - 1));
-			printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_seg(12, n_seg_samples - 1), P_i_seg(13, n_seg_samples - 1), P_i_seg(14, n_seg_samples - 1), P_i_seg(15, n_seg_samples - 1));
+			printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_seg(12, n_seg_samples - 1), P_i_seg(13, n_seg_samples - 1), P_i_seg(14, n_seg_samples - 1), P_i_seg(15, n_seg_samples - 1)); */
 
 			switch(cpe_method)
 			{
@@ -145,9 +142,8 @@ public:
 
 					P_i_2D = reshape<16, 1, 4, 4>(P_i_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-					printf("here1\n");
 					P_c_i = cpe[sample].CE_estimate(p_os, p_i, P_i_2D);
-					printf("here2\n");
+					
 					break;
 				case MCSKF4D :                
 					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
@@ -182,7 +178,7 @@ int main(){
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 6, 0, 0;
 
-	double T = 1; double dt = 0.5;
+	double T = 100; double dt = 0.5;
 
 	double u_d = 6.0; double chi_d = 0.0;
 
@@ -273,10 +269,9 @@ int main(){
 	//*****************************************************************************************************************
 	double dt_seg = 0.5;
 
-	Eigen::MatrixXd P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
-	Eigen::Matrix<double, 1, -1> P_c_i_temp(1, n_samples);
+	Eigen::MatrixXf P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
 
-	CPE cpe(CE, dt);
+	
 
 	//*****************************************************************************************************************
 	// Prediction
@@ -302,6 +297,14 @@ int main(){
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p_device_ptr;
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p_device_ptr;
 
+	size_t limit = 0;
+
+	cudaDeviceSetLimit(cudaLimitStackSize, 100000);
+	cuda_check_errors("Setting cudaLimitStackSize failed.");
+
+	cudaDeviceGetLimit(&limit, cudaLimitStackSize);
+	cuda_check_errors("Reading cudaLimitStackSize failed.");
+	std::cout << "Set device max stack size : " << limit << std::endl;
 
 	cudaMalloc((void**)&xs_p_device_ptr, sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
 	cuda_check_errors("CudaMalloc of xs_p failed.");
@@ -313,11 +316,13 @@ int main(){
 	cuda_check_errors("CudaMalloc of xs_i_p failed.");
 
 	cudaMalloc((void**)&P_i_p_device_ptr, sizeof(TML::PDMatrix<float, 16, MAX_N_SAMPLES>));
-	cuda_check_errors("CudaMalloc of trajectory failed.");
+	cuda_check_errors("CudaMalloc of P_ failed.");
 
 	cudaMalloc((void**)&cpe_device_ptr, n_samples * sizeof(CPE));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
+	std::cout << "sizeof(CPE) = " << sizeof(CPE) << std::endl;
+	CPE cpe(CE, dt);
 	for (int s = 0; s < n_samples; s++)
 	{
 		cudaMemcpy(&cpe_device_ptr[s], &cpe, sizeof(CPE), cudaMemcpyHostToDevice);
@@ -326,7 +331,6 @@ int main(){
 
 	CPE_functor cpe_functor_CE(cpe_device_ptr, CE, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, (float)dt);
 	
-
 	thrust::device_vector<unsigned int> sample_dvec(n_samples);
 	thrust::sequence(sample_dvec.begin(), sample_dvec.end(), 0);
 
@@ -423,9 +427,14 @@ int main(){
 	double *pvtraj_i = mxGetPr(vtraj_i);
 	double *p_P_traj_i = mxGetPr(P_traj_i);
 
+	mwSize dims[1] = {n_samples};
+	mxArray *fPcoll_CE = mxCreateNumericArray(1, dims, mxSINGLE_CLASS, mxREAL);
+	mxArray *fPcoll_MCSKF = mxCreateNumericArray(1, dims, mxSINGLE_CLASS, mxREAL);
 	mxArray *Pcoll_CE = mxCreateDoubleMatrix(1, n_samples, mxREAL);
 	mxArray *Pcoll_MCSKF = mxCreateDoubleMatrix(1, n_samples, mxREAL);
-
+	
+	float *fp_CE = mxGetSingles(fPcoll_CE);
+	float *fp_MCSKF = mxGetSingles(fPcoll_MCSKF);
 	double *p_CE = mxGetPr(Pcoll_CE);
 	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
@@ -444,10 +453,10 @@ int main(){
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 	map_P_traj_i = P_i_p;
 
-	Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, 1, n_samples);
+	Eigen::Map<Eigen::MatrixXf> map_Pcoll_CE(fp_CE, 1, n_samples);
 	map_Pcoll_CE = P_c_i_CE;
 
-	Eigen::Map<Eigen::MatrixXd> map_Pcoll_MCSKF(p_MCSKF, 1, n_samples);
+	Eigen::Map<Eigen::MatrixXf> map_Pcoll_MCSKF(fp_MCSKF, 1, n_samples);
 	map_Pcoll_MCSKF = P_c_i_MCSKF;
 
 	buffer[BUFSIZE] = '\0';
@@ -460,8 +469,8 @@ int main(){
 	engPutVariable(ep, "v", vtraj_i);
 	engPutVariable(ep, "P_flat", P_traj_i);
 
-	engPutVariable(ep, "P_c_CE", Pcoll_CE);
-	engPutVariable(ep, "P_c_MCSKF", Pcoll_MCSKF);
+	engPutVariable(ep, "P_c_CE", fPcoll_CE);
+	engPutVariable(ep, "P_c_MCSKF", fPcoll_MCSKF);
 	engEvalString(ep, "test_cpe_plot");
 	
 	//save_matrix_to_file(P_c_i_CE[0]);
@@ -475,6 +484,8 @@ int main(){
 	mxDestroyArray(vtraj_i);
 	mxDestroyArray(P_traj_i);
 
+	mxDestroyArray(fPcoll_CE);
+	mxDestroyArray(fPcoll_MCSKF);
 	mxDestroyArray(Pcoll_CE);
 	mxDestroyArray(Pcoll_MCSKF);
 	engClose(ep);

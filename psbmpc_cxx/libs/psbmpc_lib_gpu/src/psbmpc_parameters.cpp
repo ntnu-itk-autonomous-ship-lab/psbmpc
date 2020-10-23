@@ -370,7 +370,7 @@ void PSBMPC_Parameters::initialize_pars()
 	obstacle_course_changes.resize(1);
 	obstacle_course_changes << 30 * DEG2RAD; //60 * DEG2RAD, 90 * DEG2RAD;
 
-	cpe_method = MCSKF4D;
+	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
 

@@ -28,15 +28,15 @@ project(psbmpc_test LANGUAGES CUDA CXX)
 # for debug compilation and profiling
 add_compile_options(-Wall -Wextra -fno-omit-frame-pointer -g )
 
-add_subdirectory(libs/psbmpc_lib_gpu)
-#add_subdirectory(libs/psbmpc_lib)
+#add_subdirectory(libs/psbmpc_lib_gpu)
+add_subdirectory(libs/psbmpc_lib)
 
 add_subdirectory(src/tests)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-target_link_libraries(tester PRIVATE psbmpc_lib_gpu)
-#target_link_libraries(tester psbmpc_lib)
+#target_link_libraries(tester PRIVATE psbmpc_lib_gpu)
+target_link_libraries(tester psbmpc_lib)
 
 
 #message("Your C++ compiler supports these C++ features:")

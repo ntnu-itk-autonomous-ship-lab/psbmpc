@@ -22,7 +22,7 @@
 #add_executable(tester test_ownship.cpp)
 #add_executable(tester test_obstacle_ship.cpp)
 #add_executable(tester test_obstacle.cpp)
-#add_executable(tester test_cpe.cpp)
+add_executable(tester test_cpe.cpp)
 #add_executable(tester test_mrou.cpp)
 #add_executable(tester test_kf.cpp)
 #add_executable(tester test_psbmpc.cpp)
@@ -31,7 +31,7 @@
 # Test files for use with GPU-version of PSBMPC
 #add_executable(tester gpu_implementation_test_files/test_psbmpc.cu)
 #add_executable(tester gpu_implementation_test_files/test_obstacle.cu)
-add_executable(tester gpu_implementation_test_files/test_cpe.cu)
+#add_executable(tester gpu_implementation_test_files/test_cpe.cu)
 #add_executable(tester gpu_implementation_test_files/stack_overflow.cu)
 #add_executable(tester gpu_implementation_test_files/test_thrust.cu)
 #add_executable(tester gpu_implementation_test_files/test_tml.cu)
