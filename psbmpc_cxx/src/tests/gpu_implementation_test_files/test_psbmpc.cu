@@ -24,7 +24,7 @@
 #endif
 
 #include "psbmpc.cuh"
-#include "utilities.h"
+#include "utilities.cuh"
 #include <iostream>
 #include <vector>
 #include <chrono>

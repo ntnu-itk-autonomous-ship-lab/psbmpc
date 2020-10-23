@@ -74,6 +74,8 @@ private:
 
 	float d_0i, var_P_i_largest;
 	bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
+
+	TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> weights, integrand, importance;
 	//====================================
 
 	//====================================
@@ -118,6 +120,8 @@ private:
 	TML::PDMatrix4f Sigma_inverse;
 	int n, n_samples;	
 	float sum;
+
+
 	
 	//====================================
 
@@ -162,7 +166,7 @@ public:
 
 	__host__ __device__ CPE(const CPE_Method cpe_method, const float dt);
 
-	__host__ __device__ void set_method(const CPE_Method cpe_method) { method = cpe_method; }
+	__host__ __device__ void set_method(const CPE_Method cpe_method) { method = cpe_method; resize_matrices(); }
 
 	__device__ inline float get_segment_discretization_time() const { return dt_seg; }
 

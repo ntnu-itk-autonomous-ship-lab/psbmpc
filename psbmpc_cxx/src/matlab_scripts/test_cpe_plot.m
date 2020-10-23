@@ -35,3 +35,5 @@ hold on; grid on;
 plot(P_c_CE, 'r');
 plot(P_c_MCSKF, 'b');
 legend('CE', 'MCSKF4D', 'Interpreter', 'latex');
+
+save("pcoll", "P_c_CE", "P_c_MCSKF");

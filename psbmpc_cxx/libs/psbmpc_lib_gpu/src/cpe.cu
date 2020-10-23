@@ -70,7 +70,7 @@ __host__ __device__ CPE::CPE(
 
     // MCSKF4D pars
     
-    n_MCSKF = 500;
+    n_MCSKF = 1000;
 
     r = 0.001;
     q = 8e-4;
@@ -735,7 +735,7 @@ __device__ float CPE::CE_estimate(
     
     determine_sample_validity_2D(p_os);
 
-    TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> weights(1, n_CE), integrand(1, n_CE), importance(1, n_CE);
+    weights.resize(1, n_CE); integrand.resize(1, n_CE); importance.resize(1, n_CE);
 
     norm_pdf_log(integrand, p_i, P_i);
     norm_pdf_log(importance, mu_CE, P_CE);
