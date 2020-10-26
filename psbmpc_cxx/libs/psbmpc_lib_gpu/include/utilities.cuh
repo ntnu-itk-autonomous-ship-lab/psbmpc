@@ -414,7 +414,7 @@ __host__ __device__ inline void calculate_cpa(
 	}
 	else
 	{
-		t_cpa = - (p_A - p_B).dot(v_A - v_B) / pow((v_A - v_B).norm(), 2);
+		t_cpa = - (p_A - p_B).dot(v_A - v_B) / powf((v_A - v_B).norm(), 2);
 		p_cpa = p_A + v_A * t_cpa;
 		d_cpa = (p_cpa - (p_B + v_B * t_cpa)).norm();
 	}

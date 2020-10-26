@@ -32,6 +32,8 @@
 #include <vector>
 #include <memory>
 #include <chrono>
+#include <random>
+#include "xoshiro.hpp"
 #include "Eigen/Dense"
 #include "engine.h"
 
@@ -62,6 +64,8 @@ private:
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p;
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p;
 
+	TML::PDMatrix<float, 1, MAX_N_SAMPLES> *P_c_i;
+
 	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
 	// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
@@ -77,30 +81,32 @@ public:
 		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *xs_p,
 		TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p,
 		TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p, 
-		const float dt) : cpe(cpe), cpe_method(cpe_method), xs_p(xs_p), xs_i_p(xs_i_p), P_i_p(P_i_p), dt(dt) {}
+		TML::PDMatrix<float, 1, MAX_N_SAMPLES> *P_c_i,
+		const float dt) : cpe(cpe), cpe_method(cpe_method), xs_p(xs_p), xs_i_p(xs_i_p), P_i_p(P_i_p), P_c_i(P_c_i), dt(dt) {}
 
-	__host__ __device__ ~CPE_functor() { cpe = nullptr; xs_p = nullptr; xs_i_p = nullptr; P_i_p = nullptr; }
+	__host__ __device__ ~CPE_functor() { cpe = nullptr; xs_p = nullptr; xs_i_p = nullptr; P_i_p = nullptr; P_c_i = nullptr; }
 
-	__device__ float operator()(const thrust::tuple<unsigned int> &tuple)
+	__device__ TML::PDMatrix<float, 1, MAX_N_SAMPLES>* operator()(const thrust::tuple<unsigned int> &tuple)
 	{
-		float P_c_i = 0.0f;
-
-		unsigned int sample = thrust::get<0>(tuple);
-		cpe[sample].seed_prng(0);
+		unsigned int seed = thrust::get<0>(tuple);
+		cpe->seed_prng(seed);
 
 		float d_safe_i = 50;
 
-		int n_seg_samples = round(cpe[sample].get_segment_discretization_time() / dt) + 1;
+		int n_samples = xs_p->get_cols();
+		int n_seg_samples = round(cpe->get_segment_discretization_time() / dt) + 1;
 
 		xs_seg.resize(6, n_seg_samples);
 		xs_i_seg.resize(4, n_seg_samples);
 		P_i_seg.resize(16, n_seg_samples);
 
+		P_c_i->resize(1, n_samples);
+
 		// For the CE-method:
 		TML::Vector2f p_os, p_i;
 		TML::Matrix2f P_i_2D;
 
-		for (int k = 0; k < sample; k++)
+		for (int k = 0; k < n_samples; k++)
 		{
 			xs_seg.shift_columns_left();
 			xs_seg.set_col(n_seg_samples - 1, xs_p->get_col(k));
@@ -113,7 +119,7 @@ public:
 
 			if (k == 0)
 			{
-				cpe[sample].initialize(xs_seg.get_col(n_seg_samples - 1), xs_i_seg.get_col(n_seg_samples - 1), P_i_seg.get_col(n_seg_samples - 1), d_safe_i);
+				cpe->initialize(xs_seg.get_col(n_seg_samples - 1), xs_i_seg.get_col(n_seg_samples - 1), P_i_seg.get_col(n_seg_samples - 1), d_safe_i);
 			}
 
 			/* printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", 
@@ -142,14 +148,15 @@ public:
 
 					P_i_2D = reshape<16, 1, 4, 4>(P_i_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-					P_c_i = cpe[sample].CE_estimate(p_os, p_i, P_i_2D);
+					P_c_i->operator()(k) = cpe->CE_estimate(p_os, p_i, P_i_2D);
 					
 					break;
 				case MCSKF4D :                
 					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 					{
-						P_c_i = cpe[sample].MCSKF4D_estimate(xs_seg, xs_i_seg, P_i_seg);						
-					}	
+						P_c_i->operator()(k) = cpe->MCSKF4D_estimate(xs_seg, xs_i_seg, P_i_seg);						
+						printf("k = %d | P_c_i = %.6f\n", k, P_c_i->operator()(k));
+					}
 					break;
 				default :
 					// Throw
@@ -170,6 +177,46 @@ int main(){
 		std::cout << "engine start failed!" << std::endl;
 	}
 	char buffer[BUFSIZE+1];
+
+	std::random_device seed;
+
+	xoshiro256plus64 eng1(seed());
+
+	// test div cpe functions
+	CPE cpe1(MCSKF4D, 0.5);
+	TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> samples(4, 1);
+	samples(0, 0) = 40.7975f;
+	samples(1, 0) = 48.9423f;
+	samples(2, 0) = -4.1309f;
+	samples(3, 0) = -2.6943f;
+
+	TML::Vector2f p_cpa; p_cpa(0) = 24.0f; p_cpa(1) = 0.0f; 
+	float t_cpa = 0.5;
+	
+	cpe1.set_samples(samples);
+	cpe1.determine_sample_validity_4D(p_cpa, t_cpa);
+
+	std::uniform_int_distribution<int> distribution(0, 1000);
+	std::normal_distribution<double> std_norm_pdf(0, 1);
+
+	Eigen::Matrix4f sigma_e;
+	TML::PDMatrix<float, 4, 4> sigma(4, 4);
+
+	while (sigma.determinant() <= 0)
+	{
+		for (size_t i = 0; i < 4; i++)
+		{
+			for (size_t j = 0; j < 4; j++)
+			{
+				sigma(i, j) = 2 * std_norm_pdf(eng1) + 5;
+				if (i == j || (i + j) % 2 == 0)
+				{
+					sigma(i, j) = 2 * std_norm_pdf(eng1) + 20;
+				}
+				sigma_e(i, j) = sigma(i, j);
+			}
+		}
+	}
 	
 	//*****************************************************************************************************************
 	// Own-ship prediction setup
@@ -178,7 +225,7 @@ int main(){
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 6, 0, 0;
 
-	double T = 100; double dt = 0.5;
+	double T = 50; double dt = 0.5;
 
 	double u_d = 6.0; double chi_d = 0.0;
 
@@ -269,8 +316,8 @@ int main(){
 	//*****************************************************************************************************************
 	double dt_seg = 0.5;
 
-	Eigen::MatrixXf P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
-
+	//Eigen::MatrixXf P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
+	Eigen::MatrixXd P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
 	
 
 	//*****************************************************************************************************************
@@ -290,12 +337,15 @@ int main(){
 	//===========================================================================================
 	// Allocate and copy data for use on the device
 	//===========================================================================================
-	thrust::device_vector<float> P_c_i_dvec(n_samples);
+	//thrust::device_vector<float> P_c_i_dvec(n_samples);
+	thrust::device_vector<TML::PDMatrix<float, 1, MAX_N_SAMPLES>*> P_c_i_dvec(1);
 
+	CPE cpe(CE, dt);
 	CPE *cpe_device_ptr;
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *xs_p_device_ptr;
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p_device_ptr;
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p_device_ptr;
+	TML::PDMatrix<float, 1, MAX_N_SAMPLES> *P_c_i_device_ptr, P_c_i_host_CE, P_c_i_host_MCSKF, *P_c_i_temp;
 
 	size_t limit = 0;
 
@@ -305,6 +355,14 @@ int main(){
 	cudaDeviceGetLimit(&limit, cudaLimitStackSize);
 	cuda_check_errors("Reading cudaLimitStackSize failed.");
 	std::cout << "Set device max stack size : " << limit << std::endl;
+
+	cudaMalloc((void**)&cpe_device_ptr, sizeof(CPE));
+    cuda_check_errors("CudaMalloc of CPE failed.");
+
+	std::cout << "sizeof(CPE) = " << sizeof(CPE) << std::endl;
+	
+	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+    cuda_check_errors("CudaMemCpy of CPE failed.");
 
 	cudaMalloc((void**)&xs_p_device_ptr, sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
 	cuda_check_errors("CudaMalloc of xs_p failed.");
@@ -316,23 +374,17 @@ int main(){
 	cuda_check_errors("CudaMalloc of xs_i_p failed.");
 
 	cudaMalloc((void**)&P_i_p_device_ptr, sizeof(TML::PDMatrix<float, 16, MAX_N_SAMPLES>));
-	cuda_check_errors("CudaMalloc of P_ failed.");
+	cuda_check_errors("CudaMalloc of P_i_p failed.");
 
-	cudaMalloc((void**)&cpe_device_ptr, n_samples * sizeof(CPE));
-    cuda_check_errors("CudaMalloc of CPE failed.");
+	cudaMalloc((void**)&P_c_i_device_ptr, sizeof(TML::PDMatrix<float, 1, MAX_N_SAMPLES>));
+	cuda_check_errors("CudaMalloc of P_c_i failed.");
 
-	std::cout << "sizeof(CPE) = " << sizeof(CPE) << std::endl;
-	CPE cpe(CE, dt);
-	for (int s = 0; s < n_samples; s++)
-	{
-		cudaMemcpy(&cpe_device_ptr[s], &cpe, sizeof(CPE), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of CPE failed.");
-	}
 
-	CPE_functor cpe_functor_CE(cpe_device_ptr, CE, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, (float)dt);
-	
-	thrust::device_vector<unsigned int> sample_dvec(n_samples);
-	thrust::sequence(sample_dvec.begin(), sample_dvec.end(), 0);
+	CPE_functor cpe_functor_CE(cpe_device_ptr, CE, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, P_c_i_device_ptr, (float)dt);
+
+	thrust::device_vector<unsigned int> sample_dvec(1);
+	thrust::sequence(sample_dvec.begin(), sample_dvec.end(), distribution(eng1));
+	//thrust::sequence(sample_dvec.begin(), sample_dvec.end(), 3);
 
 	auto cpe_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(sample_dvec.begin()));
 	auto cpe_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(sample_dvec.end()));
@@ -364,22 +416,25 @@ int main(){
 		//=======================================================================================
 		// Estimate with CE
 		//=======================================================================================
-		thrust::transform(cpe_tuple_begin, cpe_tuple_end, P_c_i_dvec.begin(), cpe_functor_CE);
+		/* thrust::transform(cpe_tuple_begin, cpe_tuple_end, P_c_i_dvec.begin(), cpe_functor_CE);
+
+		P_c_i_temp = P_c_i_dvec[0];
+		cudaMemcpy(&P_c_i_host_CE, P_c_i_temp, sizeof(TML::PDMatrix<float, 1, MAX_N_SAMPLES>), cudaMemcpyDeviceToHost);
+		cuda_check_errors("CudaMemCpy of P_c_i_CE failed.");
 
 		for (int k = 0; k < n_samples; k++)
 		{
-			P_c_i_CE(ps, k) = P_c_i_dvec[k];
+			P_c_i_CE(ps, k) = P_c_i_host_CE(k);
 		}
+		*/
+
 	}
 
-	CPE_functor cpe_functor_MCSKF(cpe_device_ptr, MCSKF4D, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, (float)dt);
+	CPE_functor cpe_functor_MCSKF(cpe_device_ptr, MCSKF4D, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, P_c_i_device_ptr, (float)dt);
 	cpe.set_method(MCSKF4D);
 
-	for (int s = 0; s < n_samples; s++)
-	{
-		cudaMemcpy(&cpe_device_ptr[s], &cpe, sizeof(CPE), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of CPE failed.");
-	}
+	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+	cuda_check_errors("CudaMemCpy of CPE failed.");
 
 	//=======================================================================================
 	// Estimate with MCSKF
@@ -388,15 +443,22 @@ int main(){
 	{
 		thrust::transform(cpe_tuple_begin, cpe_tuple_end, P_c_i_dvec.begin(), cpe_functor_MCSKF);
 
+		P_c_i_temp = P_c_i_dvec[0];
+		cudaMemcpy(&P_c_i_host_MCSKF, P_c_i_temp, sizeof(TML::PDMatrix<float, 1, MAX_N_SAMPLES>), cudaMemcpyDeviceToHost);
+		cuda_check_errors("CudaMemCpy of P_c_i_MCSKF failed.");
+
 		for (int k = 0; k < n_samples; k++)
 		{
-			P_c_i_MCSKF(ps, k) = P_c_i_dvec[k];
+			P_c_i_MCSKF(ps, k) = P_c_i_host_MCSKF(k);
 		}
 	}
 
 	//=======================================================================================
 	// Free device memoery
 	//=======================================================================================
+	cudaFree(cpe_device_ptr);
+	cuda_check_errors("CudaFree of CPE failed.");
+
 	cudaFree(xs_p_device_ptr);
 	cuda_check_errors("CudaFree of xs_p failed.");
 
@@ -406,8 +468,10 @@ int main(){
 	cudaFree(P_i_p_device_ptr);
 	cuda_check_errors("CudaFree of P_i_p failed.");
 
-	cudaFree(cpe_device_ptr);
-	cuda_check_errors("CudaFree of CPE failed.");
+	cudaFree(P_c_i_device_ptr);
+	cuda_check_errors("CudaFree of P_c_i failed.");
+
+	
 
 
 	//*****************************************************************************************************************
@@ -453,10 +517,14 @@ int main(){
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 	map_P_traj_i = P_i_p;
 
-	Eigen::Map<Eigen::MatrixXf> map_Pcoll_CE(fp_CE, 1, n_samples);
+	/* Eigen::Map<Eigen::MatrixXf> map_Pcoll_CE(fp_CE, 1, n_samples);
+	map_Pcoll_CE = P_c_i_CE; */
+	Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, 1, n_samples);
 	map_Pcoll_CE = P_c_i_CE;
 
-	Eigen::Map<Eigen::MatrixXf> map_Pcoll_MCSKF(fp_MCSKF, 1, n_samples);
+	/* Eigen::Map<Eigen::MatrixXf> map_Pcoll_MCSKF(fp_MCSKF, 1, n_samples);
+	map_Pcoll_MCSKF = P_c_i_MCSKF; */
+	Eigen::Map<Eigen::MatrixXd> map_Pcoll_MCSKF(p_MCSKF, 1, n_samples);
 	map_Pcoll_MCSKF = P_c_i_MCSKF;
 
 	buffer[BUFSIZE] = '\0';
@@ -469,8 +537,8 @@ int main(){
 	engPutVariable(ep, "v", vtraj_i);
 	engPutVariable(ep, "P_flat", P_traj_i);
 
-	engPutVariable(ep, "P_c_CE", fPcoll_CE);
-	engPutVariable(ep, "P_c_MCSKF", fPcoll_MCSKF);
+	engPutVariable(ep, "P_c_CE", Pcoll_CE);
+	engPutVariable(ep, "P_c_MCSKF", Pcoll_MCSKF);
 	engEvalString(ep, "test_cpe_plot");
 	
 	//save_matrix_to_file(P_c_i_CE[0]);
