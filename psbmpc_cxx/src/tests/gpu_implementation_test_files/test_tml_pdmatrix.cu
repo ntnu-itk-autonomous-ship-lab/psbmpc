@@ -3,7 +3,7 @@
 *  File name : test_tml_pdmatrix.cu
 *
 *  Function  : Test file for the PDMatrix class in TML meant for use in 
-*			   CUDA kernels.
+*			   CUDA kernels, and other miscellaneous tests.
 *			   
 *	           ---------------------
 *
@@ -542,12 +542,43 @@ int main()
 	// Testing CPE math operations such as sample expectation and sample covariance
 	// calculation
 	//================================================================================
-	TML::PDMatrix<double, 4, 100> sres(2, 20); sres.set_all_coeffs(1);
-	TML::PDMatrix4d mult_by = TML::PDMatrix4d::identity(2, 2);
 
-	TML::Vector2d vec2d; vec2d.set_all_coeffs(3.5);
+	n_rows = 2; n_cols = 1000;
+	Eigen::MatrixXf sres_e(n_rows, n_cols); Eigen::MatrixXf mult_by_e(n_rows, n_rows);
+	Eigen::Vector2f vec2d_e;
+
+	TML::PDMatrix<float, 4, 1000> sres(n_rows, n_cols);
+	TML::PDMatrix4f mult_by = TML::PDMatrix4f::identity(n_rows, n_rows);
+	TML::Vector2f vec2d; vec2d.set_all_coeffs(3.5);
+	TML::PDMatrix<float, 4, 1000> sres_diff(n_rows, n_cols);
+
+	for (size_t i = 0; i < n_rows; i++)
+	{
+		vec2d(i) = std_norm_pdf(gen) * 3 + 10;
+		vec2d_e(i) = vec2d(i);
+		
+		for (size_t j = 0; j < n_cols; j++)
+		{
+			if (j < n_rows)
+			{
+				mult_by(i, j) = std_norm_pdf(gen) * 5 + 1;
+				mult_by_e(i, j) = mult_by(i, j);
+			}
+			sres(i, j) = 2 * std_norm_pdf(gen) + 100;
+			sres_e(i, j) = sres(i, j);
+		}
+	}
 	sres = mult_by * sres + vec2d;
-	std::cout << sres << std::endl;
+	sres_e = (mult_by_e * sres_e).colwise() + vec2d_e;
+	for (size_t i = 0; i < 2; i++)
+	{
+		for (size_t j = 0; j < 2; j++)
+		{
+			sres_diff(i, j) = sres(i, j) - sres_e(i, j);
+		}
+	}
+	std::cout << "Box muller transformation diff : " << std::endl;
+	std::cout << sres_diff << std::endl;
 
 	n_rows = 2; n_cols = 100;
 	TML::PDMatrix<float, 2, 1000> es(n_rows, n_cols);

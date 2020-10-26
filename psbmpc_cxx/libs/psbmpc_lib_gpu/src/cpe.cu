@@ -77,6 +77,8 @@ __host__ __device__ CPE::CPE(
 
     dt_seg = dt;
 
+    d_safe = 50.0f;
+
     resize_matrices();
 }
 
@@ -267,7 +269,8 @@ __device__ inline void CPE::update_L(
 {
     n = in.get_rows();
     L.set_zero();
-    for (int i = 0; i < n; i++) { 
+    for (int i = 0; i < n; i++) 
+    { 
         for (int j = 0; j <= i; j++) 
         { 
             sum = 0.0; 
@@ -277,7 +280,7 @@ __device__ inline void CPE::update_L(
                 {
                     sum += powf(L(j, k), 2); 
                 }
-                L(j, j) = sqrt(in(j, j) - sum); 
+                L(j, j) = sqrtf(in(j, j) - sum); 
             } 
             else if (i > j)
             { 
@@ -356,7 +359,7 @@ __device__ inline void CPE::generate_norm_dist_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void CPE::calculate_roots_2nd_order()
+__host__ __device__ void CPE::calculate_roots_2nd_order()
 {
     complex_roots = false;
 
@@ -364,8 +367,8 @@ __device__ void CPE::calculate_roots_2nd_order()
     // Distinct real roots
     if (d > 0)          
     {
-        roots(0) = - (B + sqrt(fabs(d))) / (2 * A);
-        roots(1) = - (B - sqrt(fabs(d))) / (2 * A);
+        roots(0) = - (B + sqrtf(fabs(d))) / (2 * A);
+        roots(1) = - (B - sqrtf(fabs(d))) / (2 * A);
     }
     // Repeated real roots
     else if (d == 0)
@@ -417,7 +420,7 @@ __device__ float CPE::produce_MCS_estimate(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void CPE::determine_sample_validity_4D(
+__host__ __device__ void CPE::determine_sample_validity_4D(
     const TML::Vector2f &p_os_cpa,                                           // In: Position of own-ship at cpa
     const float t_cpa                                                       // In: Time to cpa
     )
@@ -432,7 +435,8 @@ __device__ void CPE::determine_sample_validity_4D(
         v_i_sample = samples.get_block<2, 1>(2, j, 2, 1);
 
         A = v_i_sample.dot(v_i_sample);
-        B = 2 * (p_i_sample - p_os_cpa).transposed() * v_i_sample;
+        B = (p_i_sample - p_os_cpa).transposed() * v_i_sample;
+        B *= 2;
         C = p_i_sample.dot(p_i_sample) - 2 * p_os_cpa.dot(p_i_sample) + p_os_cpa.dot(p_os_cpa) - powf(d_safe, 2);
 
         calculate_roots_2nd_order();
@@ -506,13 +510,13 @@ __device__ float CPE::MCSKF4D_estimate(
     
     P_i_sl = reshape<16, MAX_N_SEG_SAMPLES, 4, 4>(P_i.get_col(0), 4, 4);
 
-    /* printf("xs_os_sl = %.1f, %.1f, %.1f, %.1f\n", xs_os_sl(0), xs_os_sl(1), xs_os_sl(2), xs_os_sl(3));
-    printf("xs_i_sl = %.1f, %.1f, %.1f, %.1f\n", xs_i_sl(0), xs_i_sl(1), xs_i_sl(2), xs_i_sl(3)); */
+    printf("xs_os_sl = %.1f, %.1f, %.1f, %.1f\n", xs_os_sl(0), xs_os_sl(1), xs_os_sl(2), xs_os_sl(3));
+    printf("xs_i_sl = %.1f, %.1f, %.1f, %.1f\n", xs_i_sl(0), xs_i_sl(1), xs_i_sl(2), xs_i_sl(3));
 
     calculate_cpa(p_os_cpa, t_cpa, d_cpa, xs_os_sl, xs_i_sl);
 
-    /* printf("p_os_cpa = %.1f, %.1f\n", p_os_cpa(0), p_os_cpa(1));
-    printf("t_cpa = %.1f\n", t_cpa); */
+    printf("p_os_cpa = %.2f, %.2f\n", p_os_cpa(0), p_os_cpa(1));
+    printf("t_cpa = %.4f\n", t_cpa);
 
     /*****************************************************
     * Generate Monte Carlo Simulation estimate of P_c
@@ -529,7 +533,7 @@ __device__ float CPE::MCSKF4D_estimate(
     {
         y_P_c_i = produce_MCS_estimate(xs_i_sl, P_i_sl, p_os_cpa, t_cpa);
     }
-    /* printf("y_P_c_i = %.6f\n", y_P_c_i); */
+    printf("y_P_c_i = %.6f\n", y_P_c_i);
 
     /*****************************************************
     * Kalman-filtering for simple markov chain model
@@ -554,6 +558,8 @@ __device__ float CPE::MCSKF4D_estimate(
 
     var_P_c_p = var_P_c_upd + q;
     //*****************************************************
+    printf("P_c_p = %.6f | P_c_upd = %.6f\n", P_c_p, P_c_upd);
+    printf("var_P_c_p = %.6f | var_P_c_upd = %.6f\n", var_P_c_p, var_P_c_upd);
     return P_c_upd;
 }
 

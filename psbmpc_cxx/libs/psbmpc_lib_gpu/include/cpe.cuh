@@ -121,10 +121,10 @@ private:
 	int n, n_samples;	
 	float sum;
 
-
-	
 	//====================================
-
+public:
+	// Temporary
+	__host__ __device__ void set_samples(const TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> &samples) { this->samples = samples; }
 	// Methods
 	__host__ __device__ void resize_matrices();
 
@@ -134,7 +134,7 @@ private:
 
 	__device__ inline void generate_norm_dist_samples(const TML::PDVector4f &mu, const TML::PDMatrix4f &Sigma);
 
-	__device__ void calculate_roots_2nd_order();
+	__host__ __device__ void calculate_roots_2nd_order();
 
 	__device__ float produce_MCS_estimate(
 		const TML::Vector4f &xs_i, 
@@ -142,14 +142,14 @@ private:
 		const TML::Vector2f &p_os_cpa,
 		const float t_cpa);
 
-	__device__ void determine_sample_validity_4D(
+	__host__ __device__ void determine_sample_validity_4D(
 		const TML::Vector2f &p_os_cpa, 
 		const float t_cpa);
 
-	__device__ void determine_sample_validity_2D(
+	__host__ __device__ void determine_sample_validity_2D(
 		const TML::Vector2f &p_os);
 
-	__device__ void determine_best_performing_samples(
+	__host__ __device__ void determine_best_performing_samples(
 		const TML::Vector2f &p_os, 
 		const TML::Vector2f &p_i, 
 		const TML::Matrix2f &P_i);
@@ -160,7 +160,7 @@ private:
 		TML::Vector2f &mu_CE_prev, 
 		TML::Matrix2f &P_CE_prev);
 
-public:
+
 	
 	__host__ __device__ CPE() {}
 

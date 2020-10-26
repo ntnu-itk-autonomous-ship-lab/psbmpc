@@ -22,7 +22,7 @@
 #add_executable(tester test_ownship.cpp)
 #add_executable(tester test_obstacle_ship.cpp)
 #add_executable(tester test_obstacle.cpp)
-add_executable(tester test_cpe.cpp)
+#add_executable(tester test_cpe.cpp)
 #add_executable(tester test_mrou.cpp)
 #add_executable(tester test_kf.cpp)
 #add_executable(tester test_psbmpc.cpp)
@@ -35,7 +35,7 @@ add_executable(tester test_cpe.cpp)
 #add_executable(tester gpu_implementation_test_files/stack_overflow.cu)
 #add_executable(tester gpu_implementation_test_files/test_thrust.cu)
 #add_executable(tester gpu_implementation_test_files/test_tml.cu)
-#add_executable(tester gpu_implementation_test_files/test_tml_pdmatrix.cu)
+add_executable(tester gpu_implementation_test_files/test_tml_pdmatrix.cu)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include
