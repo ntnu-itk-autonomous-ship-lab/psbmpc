@@ -27,6 +27,8 @@
 #include "Eigen/Dense"
 #include "tml.cuh"
 #include <iostream>
+#include <fstream>
+#include <cstdlib>
 
 enum Axis 
 	{
@@ -38,6 +40,89 @@ enum Axis
 /****************************************************************************************
 *  Place inline functions here	
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : save_matrix_to_file
+*  Function : Two overloads
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+inline void save_matrix_to_file(const Eigen::MatrixXd &in)
+{
+    std::ofstream outdata("/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv", std::ofstream::trunc);
+    int n_rows = in.rows();
+    int n_cols = in.cols();
+
+    if(!outdata) 
+    {
+        std::cerr << "Error: file could not be opened" << std::endl;
+        exit(1);
+    }
+    //outdata << n_rows << " " << n_cols << std::endl;
+    for (int i = 0; i < n_rows; i++)
+    {
+        for (int j = 0; j < n_cols; j++)
+        {
+            outdata << in(i, j);
+            if (j != n_cols - 1) { outdata << ","; }
+        }
+        if (i != n_rows - 1) { outdata << std::endl; }
+    }
+}
+
+template <class T, size_t Max_Rows, size_t Max_Cols>
+inline void save_matrix_to_file(const TML::PDMatrix<T, Max_Rows, Max_Cols> &in)
+{
+    std::ofstream outdata("/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv", std::ofstream::trunc);
+    int n_rows = in.get_rows();
+    int n_cols = in.get_cols();
+
+    if(!outdata) 
+    {
+        std::cerr << "Error: file could not be opened" << std::endl;
+        exit(1);
+    }
+    //outdata << n_rows << " " << n_cols << std::endl;
+    for (int i = 0; i < n_rows; i++)
+    {
+        for (int j = 0; j < n_cols; j++)
+        {
+            outdata << in(i, j);
+            if (j != n_cols - 1) { outdata << ","; }
+        }
+        if (i != n_rows - 1) { outdata << std::endl; }
+    }
+}
+
+/****************************************************************************************
+*  Name     : read_matrix_from_file
+*  Function : 
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+template <class T, size_t Max_Rows, size_t Max_Cols>
+inline TML::PDMatrix<T, Max_Rows, Max_Cols> read_matrix_from_file(const size_t n_rows, const size_t n_cols)
+{
+    TML::PDMatrix<T, Max_Rows, Max_Cols> out(n_rows, n_cols);
+    std::ifstream indata("/home/trymte/Desktop/cybercolav_cxx/src/matlab_scripts/matrix.csv");
+
+    if(!indata) 
+    {
+        std::cerr << "Error: file could not be opened" << std::endl;
+        exit(1);
+    }
+
+    //indata >> n_rows >> n_cols;
+    for (int i = 0; i < n_rows; i++)
+    {
+         for (int j = 0; j < n_cols; j++)
+         {
+             indata >> out(i, j);
+         }
+    }
+    return out;
+}
+
+
 /****************************************************************************************
 *  Name     : wrap_angle_to_pmpi
 *  Function : Shifts angle into [-pi, pi] interval

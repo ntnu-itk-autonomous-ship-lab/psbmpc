@@ -182,13 +182,35 @@ int main(){
 
 	xoshiro256plus64 eng1(seed());
 
+	std::normal_distribution<float> std_norm_pdf(0, 1);
+	std::uniform_int_distribution<int> distribution(0, 1000);
+
 	// test div cpe functions
 	CPE cpe1(MCSKF4D, 0.5);
-	TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> samples(4, 1);
-	samples(0, 0) = 40.7975f;
-	samples(1, 0) = 48.9423f;
-	samples(2, 0) = -4.1309f;
-	samples(3, 0) = -2.6943f;
+	TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> samples(4, 1000);
+
+	TML::PDVector4f mu(4, 1);
+	mu(0) = 68.0f; mu(1) = 75.0f; mu(2) = -2.0f; mu(3) = 0.0f;
+
+	TML::PDMatrix4f sigma(4, 4);
+	sigma(0, 0) = 108.6589f; 	sigma(0, 1) = 0.0f; 		sigma(0, 2) = 3.1344f; 		sigma(0, 3) = 0.0f;
+	sigma(1, 0) = 0.0f; 		sigma(1, 1) = 108.6589f; 	sigma(1, 2) = 0.0f; 		sigma(1, 3) = 3.1344f;
+	sigma(2, 0) = 3.1344f; 		sigma(2, 1) = 0.0f; 		sigma(2, 2) = 1.9365f;	 	sigma(2, 3) = 0.0f;
+	sigma(3, 0) = 0.0f; 		sigma(3, 1) = 3.1344f; 		sigma(3, 2) = 0.0f; 		sigma(3, 3) = 1.9365f;
+
+	save_matrix_to_file<float, 4, 4>(sigma);
+
+	cpe1.update_L(sigma);
+	for (size_t i = 0; i < 4; i++)
+	{
+		for (size_t j = 0; j < 1000; j++)
+		{
+			samples(i, j) = std_norm_pdf(eng1);
+		}
+	}
+	samples = cpe1.L * samples + mu;
+
+	save_matrix_to_file<float, 4, 1000>(samples);
 
 	TML::Vector2f p_cpa; p_cpa(0) = 24.0f; p_cpa(1) = 0.0f; 
 	float t_cpa = 0.5;
@@ -196,28 +218,7 @@ int main(){
 	cpe1.set_samples(samples);
 	cpe1.determine_sample_validity_4D(p_cpa, t_cpa);
 
-	std::uniform_int_distribution<int> distribution(0, 1000);
-	std::normal_distribution<double> std_norm_pdf(0, 1);
-
-	Eigen::Matrix4f sigma_e;
-	TML::PDMatrix<float, 4, 4> sigma(4, 4);
-
-	while (sigma.determinant() <= 0)
-	{
-		for (size_t i = 0; i < 4; i++)
-		{
-			for (size_t j = 0; j < 4; j++)
-			{
-				sigma(i, j) = 2 * std_norm_pdf(eng1) + 5;
-				if (i == j || (i + j) % 2 == 0)
-				{
-					sigma(i, j) = 2 * std_norm_pdf(eng1) + 20;
-				}
-				sigma_e(i, j) = sigma(i, j);
-			}
-		}
-	}
-	
+	save_matrix_to_file<float, 1, 1000>(cpe1.valid);
 	//*****************************************************************************************************************
 	// Own-ship prediction setup
 	//*****************************************************************************************************************

@@ -49,9 +49,9 @@ __host__ __device__ CPE::CPE(
 
     n_CE = 1000;
     
-    sigma_inject = 1.0 / 3.0; // dependent on d_safe wrt obstacle i => set in CE-method
+    sigma_inject = 1.0f / 3.0f; // dependent on d_safe wrt obstacle i => set in CE-method
 
-    alpha_n = 0.9;
+    alpha_n = 0.9f;
 
     // The gate is the CE parameter for the 1 - alpha_p confidense ellipse
     // Predefined inverse chi squared values (chi2inv(p, v) in Matlab) are used here, to
@@ -60,9 +60,9 @@ __host__ __device__ CPE::CPE(
     // gate = 3.794239969771763;    // for 1 - alpha_p = 0.85
     // gate = 4.605170185988092;    // for 1 - alpha_p = 0.9
     // gate = 5.991464547107981;    // for 1 - alpha_p = 0.95
-    gate = 11.618285980628054;      // for 1 - alpha_p = 0.997
+    gate = 11.618285980628054f;      // for 1 - alpha_p = 0.997
 
-    rho = 0.9;
+    rho = 0.9f;
 
     max_it = 10;
 
@@ -72,7 +72,7 @@ __host__ __device__ CPE::CPE(
     
     n_MCSKF = 1000;
 
-    r = 0.001;
+    r = 0.001f;
     q = 8e-4;
 
     dt_seg = dt;
@@ -104,9 +104,10 @@ __device__ void CPE::initialize(
     case CE:
         converged_last = false;
         // Heuristic initialization
-        mu_CE_last = 0.5 * (xs_os.get_block<2, 1>(0, 0, 2, 1) + xs_i.get_block<2, 1>(0, 0, 2, 1)); 
+        mu_CE_last = xs_os.get_block<2, 1>(0, 0, 2, 1) + xs_i.get_block<2, 1>(0, 0, 2, 1);
+        mu_CE_last *= 0.5f; 
         
-        P_CE_last = powf(d_safe, 2) * TML::Matrix2f::identity() / 3.0;
+        P_CE_last = powf(d_safe, 2) * TML::Matrix2f::identity() / 3.0f;
         
         break;
     case MCSKF4D :
@@ -263,7 +264,7 @@ __host__ __device__ void CPE::resize_matrices()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ inline void CPE::update_L(
+__host__ __device__ void CPE::update_L(
     const TML::PDMatrix4f &in                                                     // In: Matrix in consideration
     )
 {
@@ -273,7 +274,7 @@ __device__ inline void CPE::update_L(
     { 
         for (int j = 0; j <= i; j++) 
         { 
-            sum = 0.0; 
+            sum = 0.0f; 
             if (j == i)
             { 
                 for (int k = 0; k < j; k++) 
@@ -292,7 +293,7 @@ __device__ inline void CPE::update_L(
             } 
             else
             {
-                L(i, j) = 0;
+                L(i, j) = 0.0f;
             }
         } 
     } 
@@ -349,8 +350,30 @@ __device__ inline void CPE::generate_norm_dist_samples(
             samples(c, i) = curand_normal(&prng_state);
         }
     }
+
     // Box-muller transform
     samples = L * samples + mu;
+
+    /* printf("pdf mean = %.6f, %.6f, %.6f, %.6f\n", mu(0), mu(1), mu(2), mu(3));
+
+    TML::PDVector4f mean(4, 1); mean = samples.rwise_mean();
+    printf("samples mean = %.6f, %.6f, %.6f, %.6f\n", mean(0), mean(1), mean(2), mean(3));
+    TML::PDMatrix4f cov(4, 4); cov.set_zero();
+    for (size_t i = 0; i < n_samples; i++)
+	{	
+		cov += (samples.get_col(i) - mean) * (samples.get_col(i) - mean).transposed();
+	}
+	cov /= (float)n_samples;
+
+    printf("pdf cov =     %.4f, %.4f, %.4f, %.4f\n", Sigma(0, 0), Sigma(0, 1), Sigma(0, 2), Sigma(0, 3));
+    printf("              %.4f, %.4f, %.4f, %.4f\n", Sigma(1, 0), Sigma(1, 1), Sigma(1, 2), Sigma(1, 3));
+    printf("              %.4f, %.4f, %.4f, %.4f\n", Sigma(2, 0), Sigma(2, 1), Sigma(2, 2), Sigma(2, 3));
+    printf("              %.4f, %.4f, %.4f, %.4f\n", Sigma(3, 0), Sigma(3, 1), Sigma(3, 2), Sigma(3, 3)); 
+
+    printf("cov samples = %.4f, %.4f, %.4f, %.4f\n", cov(0, 0), cov(0, 1), cov(0, 2), cov(0, 3));
+    printf("              %.4f, %.4f, %.4f, %.4f\n", cov(1, 0), cov(1, 1), cov(1, 2), cov(1, 3));
+    printf("              %.4f, %.4f, %.4f, %.4f\n", cov(2, 0), cov(2, 1), cov(2, 2), cov(2, 3));
+    printf("              %.4f, %.4f, %.4f, %.4f\n", cov(3, 0), cov(3, 1), cov(3, 2), cov(3, 3));  */
 }
 
 /****************************************************************************************
@@ -363,12 +386,12 @@ __host__ __device__ void CPE::calculate_roots_2nd_order()
 {
     complex_roots = false;
 
-    d = powf(B, 2) - 4 * A * C;
+    d = pow(B, 2) - 4 * A * C;
     // Distinct real roots
     if (d > 0)          
     {
-        roots(0) = - (B + sqrtf(fabs(d))) / (2 * A);
-        roots(1) = - (B - sqrtf(fabs(d))) / (2 * A);
+        roots(0) = - (B + sqrt(fabs(d))) / (2 * A);
+        roots(1) = - (B - sqrt(fabs(d))) / (2 * A);
     }
     // Repeated real roots
     else if (d == 0)
@@ -399,7 +422,7 @@ __device__ float CPE::produce_MCS_estimate(
 	const float t_cpa                                                         // In: Time to cpa
     )
 {
-    y_P_c = 0.0;
+    y_P_c = 0.0f;
 
     generate_norm_dist_samples(xs_i, P_i);
     
@@ -426,35 +449,47 @@ __host__ __device__ void CPE::determine_sample_validity_4D(
     )
 {
     n_samples = samples.get_cols();
-
+    TML::Vector2d p_cpa; p_cpa(0) = p_os_cpa(0); p_cpa(1) = p_os_cpa(1);
     for (int j = 0; j < n_samples; j++)
     {
-        valid(j) = 0;
+        valid(j) = 0.0f;
 
         p_i_sample = samples.get_block<2, 1>(0, j, 2, 1);
         v_i_sample = samples.get_block<2, 1>(2, j, 2, 1);
 
         A = v_i_sample.dot(v_i_sample);
-        B = (p_i_sample - p_os_cpa).transposed() * v_i_sample;
+        B = (p_i_sample - p_cpa).transposed() * v_i_sample;
         B *= 2;
-        C = p_i_sample.dot(p_i_sample) - 2 * p_os_cpa.dot(p_i_sample) + p_os_cpa.dot(p_os_cpa) - powf(d_safe, 2);
+        C = p_i_sample.dot(p_i_sample) - 2 * p_cpa.dot(p_i_sample) + p_os_cpa.dot(p_os_cpa) - pow(50.0, 2);
+
+        
 
         calculate_roots_2nd_order();
+
+        /* printf("p_i_sample = %.6f, %.6f\n", p_i_sample(0), p_i_sample(1));
+        printf("v_i_sample = %.6f, %.6f\n", v_i_sample(0), v_i_sample(1));
+        printf("A = %.4f | B = %.4f | C = %.4f\n", A, B, C);
+        printf("roots = %.6f, %.6f\n", roots(0), roots(1)); */
 
         // Distinct real positive or pos+negative roots: 2 crossings, possibly only one in
         // t >= t0, checks if t_cpa occurs inside this root interval <=> inside safety zone
         if (!complex_roots && roots(0) != roots(1) && t_cpa >= 0 && (roots(0) <= t_cpa && t_cpa <= roots(1)))
         {
-            valid(j) = 1;
+            valid(j) = 1.0f;
         }
         // Repetitive real positive roots: 1 crossing, this is only possible if the sampled
         // trajectory is tangent to the safety zone at t_cpa, checks if t_cpa = cross time
         // in this case
         else if(!complex_roots && roots(0) == roots(1) && t_cpa >= 0 && t_cpa == roots(0))
         {
-            valid(j) = 1;
+            valid(j) = 1.0f;
         }
         // Negative roots are not considered, as that implies going backwards in time..
+        else
+        {
+            // ...
+        }
+        
     }
 }
 

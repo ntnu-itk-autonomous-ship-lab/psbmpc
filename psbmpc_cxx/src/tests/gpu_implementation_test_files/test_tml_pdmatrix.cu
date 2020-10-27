@@ -580,6 +580,13 @@ int main()
 	std::cout << "Box muller transformation diff : " << std::endl;
 	std::cout << sres_diff << std::endl;
 
+	// Test produce_MCS_estimate:
+	TML::PDMatrix<float, 1, 1000> valid(1, n_cols);
+	Eigen::MatrixXd valid_e(1, n_cols);
+	
+
+	//
+
 	n_rows = 2; n_cols = 100;
 	TML::PDMatrix<float, 2, 1000> es(n_rows, n_cols);
 	Eigen::MatrixXf es_e(n_rows, n_cols);

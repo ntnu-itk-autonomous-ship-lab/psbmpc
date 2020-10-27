@@ -47,6 +47,8 @@ class CPE
 {
 private:
 
+public:
+
 	// Active CPE method
 	CPE_Method method;
 
@@ -99,8 +101,8 @@ private:
 	TML::Matrix4f P_i_sl;
 
 	bool complex_roots;
-    TML::Vector2f roots, p_i_sample, v_i_sample;
-    float d, A, B, C;
+    TML::Vector2d roots, p_i_sample, v_i_sample;
+    double d, A, B, C;
 	//====================================
 
 	// Common internal sample variables
@@ -122,13 +124,15 @@ private:
 	float sum;
 
 	//====================================
-public:
+
 	// Temporary
 	__host__ __device__ void set_samples(const TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> &samples) { this->samples = samples; }
+
+	TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> get_valid() { return valid; }
 	// Methods
 	__host__ __device__ void resize_matrices();
 
-	__device__ inline void update_L(const TML::PDMatrix4f &in);
+	__host__ __device__ void update_L(const TML::PDMatrix4f &in);
 
 	__device__ inline void norm_pdf_log(TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result, const TML::PDVector4f &mu, const TML::PDMatrix4f &Sigma);
 

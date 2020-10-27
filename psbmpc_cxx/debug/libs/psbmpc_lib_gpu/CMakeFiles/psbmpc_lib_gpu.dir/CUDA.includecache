@@ -41,6 +41,10 @@ tml.cuh
 ../libs/psbmpc_lib_gpu/include/tml.cuh
 iostream
 -
+fstream
+-
+cstdlib
+-
 
 ../libs/psbmpc_lib_gpu/tryms_matrix/dynamic_matrix.cuh
 thrust/device_vector.h

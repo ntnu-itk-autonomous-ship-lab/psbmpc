@@ -442,32 +442,32 @@ src/tracked_obstacle.cu.s:
 	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/tracked_obstacle.cu.s
 .PHONY : src/tracked_obstacle.cu.s
 
-src/utilities.o: src/utilities.cpp.o
+src/utilities.o: src/utilities.cu.o
 
 .PHONY : src/utilities.o
 
 # target to build an object file
-src/utilities.cpp.o:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/utilities.cpp.o
-.PHONY : src/utilities.cpp.o
+src/utilities.cu.o:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/utilities.cu.o
+.PHONY : src/utilities.cu.o
 
-src/utilities.i: src/utilities.cpp.i
+src/utilities.i: src/utilities.cu.i
 
 .PHONY : src/utilities.i
 
 # target to preprocess a source file
-src/utilities.cpp.i:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/utilities.cpp.i
-.PHONY : src/utilities.cpp.i
+src/utilities.cu.i:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/utilities.cu.i
+.PHONY : src/utilities.cu.i
 
-src/utilities.s: src/utilities.cpp.s
+src/utilities.s: src/utilities.cu.s
 
 .PHONY : src/utilities.s
 
 # target to generate assembly for a file
-src/utilities.cpp.s:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/utilities.cpp.s
-.PHONY : src/utilities.cpp.s
+src/utilities.cu.s:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/src/utilities.cu.s
+.PHONY : src/utilities.cu.s
 
 # Help Target
 help:
