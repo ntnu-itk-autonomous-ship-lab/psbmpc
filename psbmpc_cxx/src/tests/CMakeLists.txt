@@ -31,11 +31,11 @@
 # Test files for use with GPU-version of PSBMPC
 #add_executable(tester gpu_implementation_test_files/test_psbmpc.cu)
 #add_executable(tester gpu_implementation_test_files/test_obstacle.cu)
-#add_executable(tester gpu_implementation_test_files/test_cpe.cu)
+add_executable(tester gpu_implementation_test_files/test_cpe.cu)
 #add_executable(tester gpu_implementation_test_files/stack_overflow.cu)
 #add_executable(tester gpu_implementation_test_files/test_thrust.cu)
 #add_executable(tester gpu_implementation_test_files/test_tml.cu)
-add_executable(tester gpu_implementation_test_files/test_tml_pdmatrix.cu)
+#add_executable(tester gpu_implementation_test_files/test_tml_pdmatrix.cu)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include

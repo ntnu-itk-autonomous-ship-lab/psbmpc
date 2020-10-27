@@ -32,7 +32,7 @@ add_library(psbmpc_lib_gpu STATIC
 	src/cpe.cu
 	src/kf.cu  
 	src/mrou.cu 
-	src/utilities.cpp
+	src/utilities.cu
 )
 
 set_target_properties(psbmpc_lib_gpu PROPERTIES
@@ -52,10 +52,10 @@ message("CUDA_LIBARIES: ${CUDA_LIBRARIES}")
 
 target_compile_options(psbmpc_lib_gpu
 	# debug compilation
-	#PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc -gencode arch=compute_61,code=sm_61 --expt-relaxed-constexpr -Xlinker -dlink> 
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc -gencode arch=compute_61,code=sm_61 --expt-relaxed-constexpr -Xlinker -dlink> 
 
 	# release compilation
-	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -Wall -Wno-pedantic -dc -gencode arch=compute_61,code=sm_61 --expt-relaxed-constexpr -Xlinker -dlink> 
+	#PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -Wall -Wno-pedantic -dc -gencode arch=compute_61,code=sm_61 --expt-relaxed-constexpr -Xlinker -dlink> 
 )
 
 target_link_libraries(psbmpc_lib_gpu 
