@@ -64,6 +64,20 @@ namespace TML
 		template <class U, size_t Max_Rows, size_t Max_Cols>
 		__host__ __device__ Static_Matrix& operator=(const PDMatrix<U, Max_Rows, Max_Cols> &rhs);
 
+		template <class U, size_t New_Rows, size_t New_Cols>
+		__host__ __device__ inline operator Static_Matrix<U, New_Rows, New_Cols>() const
+		{
+			Static_Matrix<U, New_Rows, New_Cols> result;
+			for (size_t i = 0; i < New_Rows; i++)
+			{
+				for (size_t j = 0; j < New_Cols; j++)
+				{
+					result(i, j) = data[Cols * i + j];
+				}
+			}
+			return result;
+		}
+
 		template <class U>
 		__host__ __device__ inline operator Dynamic_Matrix<U>() const
 		{

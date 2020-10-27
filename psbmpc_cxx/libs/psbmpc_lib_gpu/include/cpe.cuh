@@ -60,19 +60,22 @@ public:
 
 	//====================================
 	// CE-method parameters, internal states and temporaries
-	float sigma_inject, alpha_n, gate, rho, max_it;
+	int max_it;
+	float sigma_inject, rho;
+	double alpha_n, gate;
 	
 	bool converged_last;
 
-	TML::Vector2f mu_CE_last;
-	TML::Matrix2f P_CE_last;
+	TML::Vector2d mu_CE_last;
+	TML::Matrix2d P_CE_last;
 
 	// Temporaries:
 	int N_e, e_count;
+	TML::Vector2d elite_sample;
 	TML::PDMatrix<float, 2, MAX_N_CPE_SAMPLES> elite_samples;
 
-	TML::Vector2f mu_CE_prev, mu_CE;
-	TML::Matrix2f P_CE_prev, P_CE;
+	TML::Vector2d mu_CE_prev, mu_CE;
+	TML::Matrix2d P_CE_prev, P_CE;
 
 	float d_0i, var_P_i_largest;
 	bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
@@ -101,8 +104,12 @@ public:
 	TML::Matrix4f P_i_sl;
 
 	bool complex_roots;
+
+	// These parameters are double because the calculations
+	// involved in "determine_sample_validity_4D" were found to be
+	// very sensitive to change in floating point number precision
     TML::Vector2d roots, p_i_sample, v_i_sample;
-    double d, A, B, C;
+    double d, A, B, C, constant;
 	//====================================
 
 	// Common internal sample variables
@@ -112,16 +119,20 @@ public:
 	// Safety zone parameter
 	float d_safe;
 
-	// Cholesky decomposition matrix
-	TML::PDMatrix4f L; 
+	// Cholesky decomposition matrix, double for precision sake
+	TML::PDMatrix4d L; 
 	
 	//====================================
 	// Other pre-allocated temporaries:
 	float P_c_est, P_c_CE, y_P_c;
-	float exp_val, log_val;
-	TML::PDMatrix4f Sigma_inverse;
 	int n, n_samples;	
-	float sum;
+
+	// These temps are also double due to being
+	// involved in number precision requiring calculations
+	TML::PDVector4d sample;
+	double exp_val, log_val;
+	TML::PDMatrix4d Sigma_inv;
+	double sum;
 
 	//====================================
 
@@ -132,40 +143,38 @@ public:
 	// Methods
 	__host__ __device__ void resize_matrices();
 
-	__host__ __device__ void update_L(const TML::PDMatrix4f &in);
+	__host__ __device__ void update_L(const TML::PDMatrix4d &in);
 
-	__device__ inline void norm_pdf_log(TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result, const TML::PDVector4f &mu, const TML::PDMatrix4f &Sigma);
+	__device__ inline void norm_pdf_log(TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result, const TML::PDVector4d &mu, const TML::PDMatrix4d &Sigma);
 
-	__device__ inline void generate_norm_dist_samples(const TML::PDVector4f &mu, const TML::PDMatrix4f &Sigma);
+	__device__ inline void generate_norm_dist_samples(const TML::PDVector4d &mu, const TML::PDMatrix4d &Sigma);
 
 	__host__ __device__ void calculate_roots_2nd_order();
 
 	__device__ float produce_MCS_estimate(
-		const TML::Vector4f &xs_i, 
-		const TML::Matrix4f &P_i, 
-		const TML::Vector2f &p_os_cpa,
+		const TML::Vector4d &xs_i, 
+		const TML::Matrix4d &P_i, 
+		const TML::Vector2d &p_os_cpa,
 		const float t_cpa);
 
 	__host__ __device__ void determine_sample_validity_4D(
-		const TML::Vector2f &p_os_cpa, 
+		const TML::Vector2d &p_os_cpa, 
 		const float t_cpa);
 
 	__host__ __device__ void determine_sample_validity_2D(
-		const TML::Vector2f &p_os);
+		const TML::Vector2d &p_os);
 
 	__host__ __device__ void determine_best_performing_samples(
-		const TML::Vector2f &p_os, 
-		const TML::Vector2f &p_i, 
-		const TML::Matrix2f &P_i);
+		const TML::Vector2d &p_os, 
+		const TML::Vector2d &p_i, 
+		const TML::Matrix2d &P_i_inv);
 
 	__device__ void update_importance_density(
-		TML::Vector2f &mu_CE,
-		TML::Matrix2f &P_CE, 
-		TML::Vector2f &mu_CE_prev, 
-		TML::Matrix2f &P_CE_prev);
+		TML::Vector2d &mu_CE,
+		TML::Matrix2d &P_CE, 
+		TML::Vector2d &mu_CE_prev, 
+		TML::Matrix2d &P_CE_prev);
 
-
-	
 	__host__ __device__ CPE() {}
 
 	__host__ __device__ CPE(const CPE_Method cpe_method, const float dt);
@@ -188,9 +197,9 @@ public:
 		const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i);	
 
 	__device__ float CE_estimate(
-		const TML::Vector2f &p_os, 
-		const TML::Vector2f &p_i, 
-		const TML::Matrix2f &P_i);
+		const TML::Vector2d &p_os, 
+		const TML::Vector2d &p_i, 
+		const TML::Matrix2d &P_i);
 	
 	__device__ float estimate(
 		const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,
