@@ -241,6 +241,7 @@ __host__ __device__ void CPE::resize_matrices()
             elite_samples.resize(2, n_CE);
             valid.resize(1, n_CE);
             L.resize(2, 2);
+            weights.resize(1, n_CE); integrand.resize(1, n_CE); importance.resize(1, n_CE);
             break;
         case MCSKF4D :
             samples.resize(4, n_MCSKF);
@@ -257,7 +258,7 @@ __host__ __device__ void CPE::resize_matrices()
 *  Name     : update_L
 *  Function : Updates the lower triangular matrix L based on cholesky decomposition 
 *             formulas for the input matrix. For 2x2 and 4x4 matrices only, hence 
-*             why eigen is not used.
+*             why eigen is not used. Two overloads for CE and MCSKF4D, respectively.
 *             Formulas: 
 *             L_jj = sqrt(A_jj - sum_k=0^j-1 (L_jk)^2)
 *             L_ij = (1 / L_jj) * (A_jj) - sum_k=0^j-1 L_ik * L_jk)
@@ -265,10 +266,44 @@ __host__ __device__ void CPE::resize_matrices()
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void CPE::update_L(
-    const TML::PDMatrix4f &in                                                     // In: Matrix in consideration
+    const TML::Matrix2f &in                                                     // In: Matrix in consideration
     )
 {
-    n = in.get_rows();
+    n = 2;
+    L.set_zero();
+    for (int i = 0; i < n; i++) 
+    { 
+        for (int j = 0; j <= i; j++) 
+        { 
+            sum = 0.0f; 
+            if (j == i)
+            { 
+                for (int k = 0; k < j; k++) 
+                {
+                    sum += powf(L(j, k), 2); 
+                }
+                L(j, j) = sqrtf(in(j, j) - sum); 
+            } 
+            else if (i > j)
+            { 
+                for (int k = 0; k < j; k++) 
+                {
+                    sum += (L(i, k) * L(j, k)); 
+                }
+                L(i, j) = (in(i, j) - sum) / L(j, j); 
+            } 
+            else
+            {
+                L(i, j) = 0.0f;
+            }
+        } 
+    } 
+}
+__host__ __device__ void CPE::update_L(
+    const TML::Matrix4f &in                                                     // In: Matrix in consideration
+    )
+{
+    n = 4;
     L.set_zero();
     for (int i = 0; i < n; i++) 
     { 
@@ -301,27 +336,28 @@ __host__ __device__ void CPE::update_L(
 
 /****************************************************************************************
 *  Name     : norm_pdf_log
-*  Function : Calculates the logarithmic value of the multivariate normal distribution
+*  Function : Calculates the logarithmic value of the multivariate normal distribution.
+*             Only used by CE-method so-far.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 __device__ inline void CPE::norm_pdf_log(
-    TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result,                        // In/out: Resulting vector of pdf values
-    const TML::PDVector4d &mu,                                                 // In: Expectation of the MVN
-    const TML::PDMatrix4d &Sigma                                               // In: Covariance of the MVN
+    TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result,                       // In/out: Resulting vector of pdf values
+    const TML::Vector2d &mu,                                                  // In: Expectation of the MVN
+    const TML::Matrix2d &Sigma                                                // In: Covariance of the MVN
     )
 {
     n = samples.get_rows();
     n_samples = samples.get_cols();
     
-    exp_val = 0;
-    log_val = - (n / 2.0) * log(2 * M_PI) - log(Sigma.determinant()) / 2.0;
-    Sigma_inv = Sigma.inverse();
+    exp_val = 0.0;
+    log_val = - ((double)n / 2.0) * log(2.0 * M_PI) - log(Sigma.determinant()) / 2.0;
+    Sigma_2D_inv = Sigma.inverse();
     for (int i = 0; i < n_samples; i++)
     {
-        sample = samples.get_col(i);
+        sample_innovation = samples.get_col(i) - mu;
 
-        exp_val = (sample - mu).transposed() * Sigma_inv * (sample - mu);
+        exp_val = sample_innovation.transposed() * Sigma_2D_inv * sample_innovation;
         exp_val = - exp_val / 2.0;
 
         result(i) = log_val + exp_val;
@@ -330,16 +366,17 @@ __device__ inline void CPE::norm_pdf_log(
 
 /****************************************************************************************
 *  Name     : generate_norm_dist_samples
-*  Function : Generates samples from the MVN distribution with given mean and covariance
+*  Function : Generates samples from the MVN distribution with given mean and covariance.
+*             Two overloads for CE and MCSKF4D, respectively.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 __device__ inline void CPE::generate_norm_dist_samples(
-    const TML::PDVector4f &mu,                                                  // In: Expectation of the MVN
-    const TML::PDMatrix4f &Sigma                                                // In: Covariance of the MVN
+    const TML::Vector2f &mu,                                                  // In: Expectation of the MVN
+    const TML::Matrix2f &Sigma                                                // In: Covariance of the MVN
     )
 {
-    n = samples.get_rows();
+    n = 2;
     n_samples = samples.get_cols();
 
     update_L(Sigma);
@@ -351,7 +388,27 @@ __device__ inline void CPE::generate_norm_dist_samples(
             samples(c, i) = curand_normal(&prng_state);
         }
     }
+    // Box-muller transform
+    samples = L * samples + mu;
+}
 
+__device__ inline void CPE::generate_norm_dist_samples(
+    const TML::Vector4f &mu,                                                  // In: Expectation of the MVN
+    const TML::Matrix4f &Sigma                                                // In: Covariance of the MVN
+    )
+{
+    n = 4;
+    n_samples = samples.get_cols();
+
+    update_L(Sigma);
+    
+    for (int c = 0; c < n; c++)
+    {
+        for(int i = 0; i < n_samples; i++)
+        {
+            samples(c, i) = curand_normal(&prng_state);
+        }
+    }
     // Box-muller transform
     samples = L * samples + mu;
 }
@@ -398,7 +455,7 @@ __host__ __device__ void CPE::calculate_roots_2nd_order()
 __device__ float CPE::produce_MCS_estimate(
 	const TML::Vector4f &xs_i,                                                // In: Obstacle state vector
 	const TML::Matrix4f &P_i,                                                 // In: Obstacle covariance
-	const TML::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
+	const TML::Vector2f &p_os_cpa,                                            // In: Position of own-ship at cpa
 	const float t_cpa                                                         // In: Time to cpa
     )
 {
@@ -406,13 +463,13 @@ __device__ float CPE::produce_MCS_estimate(
 
     generate_norm_dist_samples(xs_i, P_i);
     
-    determine_sample_validity_4D(p_os_cpa, t_cpa);
+    determine_sample_validity_4D(p_os_cpa, (double)t_cpa);
 
     // The estimate is taken as the ratio of samples inside the integration domain, 
     // to the total number of samples, i.e. the mean of the validity vector
     y_P_c = valid.rwise_mean();
-    if (y_P_c > 1) { return 1; }
-    else         { return y_P_c; }      
+    if (y_P_c > 1.0f)   { return 1.0f; }
+    else                { return y_P_c; }      
 }
 
 /****************************************************************************************
@@ -425,7 +482,7 @@ __device__ float CPE::produce_MCS_estimate(
 *****************************************************************************************/
 __host__ __device__ void CPE::determine_sample_validity_4D(
     const TML::Vector2d &p_os_cpa,                                           // In: Position of own-ship at cpa
-    const float t_cpa                                                       // In: Time to cpa
+    const double t_cpa                                                       // In: Time to cpa
     )
 {
     n_samples = samples.get_cols();
@@ -439,8 +496,8 @@ __host__ __device__ void CPE::determine_sample_validity_4D(
 
         A = v_i_sample.dot(v_i_sample);
         B = (p_i_sample - p_os_cpa).transposed() * v_i_sample;
-        B *= 2;
-        C = p_i_sample.dot(p_i_sample) - 2 * p_os_cpa.dot(p_i_sample) + constant;
+        B *= 2.0;
+        C = p_i_sample.dot(p_i_sample) - 2.0 * p_os_cpa.dot(p_i_sample) + constant;
 
         calculate_roots_2nd_order();
 
@@ -536,7 +593,7 @@ __device__ float CPE::MCSKF4D_estimate(
     {
         y_P_c_i = produce_MCS_estimate(xs_i_sl, P_i_sl, p_os_cpa, t_cpa);
     }
-    printf("y_P_c_i = %.6f\n", y_P_c_i);
+    //printf("y_P_c_i = %.6f\n", y_P_c_i);
 
     /*****************************************************
     * Kalman-filtering for simple markov chain model
@@ -574,7 +631,7 @@ __device__ float CPE::MCSKF4D_estimate(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::determine_sample_validity_2D(
-	const TML::Vector2f &p_os                                                // In: Own-ship position vector
+	const TML::Vector2d &p_os                                                // In: Own-ship position vector
     )
 {
     n_samples = samples.get_cols();
@@ -584,9 +641,9 @@ __device__ void CPE::determine_sample_validity_2D(
     {
         valid(j) = 0.0f;
 
-        sample = samples.get_col(j);
+        sample_innovation = samples.get_col(j) - p_os;
 
-        inside_safety_zone = (sample - p_os).dot(sample - p_os) <= constant;
+        inside_safety_zone = sample_innovation.dot(sample_innovation) <= constant;
         if (inside_safety_zone)
         {
             valid(j) = 1.0f;
@@ -613,17 +670,19 @@ __device__ void CPE::determine_best_performing_samples(
     {
         valid(j) = 0.0f;
 
-        sample = samples.get_col(j);
+        sample_innovation = samples.get_col(j) - p_os;
 
-        inside_safety_zone = (sample - p_os).dot(sample - p_os) <= constant;
+        inside_safety_zone = (sample_innovation).dot(sample_innovation) <= constant;
+
+        sample_innovation = samples.get_col(j) - p_i;
 
         inside_alpha_p_confidence_ellipse = 
-            (sample - p_i).transposed() * P_i_inv * (sample - p_i) <= gate;
+            sample_innovation.transposed() * P_i_inv * sample_innovation <= gate;
 
         if (inside_safety_zone && inside_alpha_p_confidence_ellipse)
         {
             valid(j) = 1.0f;
-            N_e++;
+            N_e += 1;
         }
     }
 }
@@ -636,10 +695,10 @@ __device__ void CPE::determine_best_performing_samples(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE::update_importance_density(
-    TML::Vector2d &mu_CE,                                                   // In/out: Expectation of the current importance density
-    TML::Matrix2d &P_CE,                                                    // In/out: Covariance of the current importance density
-    TML::Vector2d &mu_CE_prev,                                              // In/out: Expectation of the previous importance density
-    TML::Matrix2d &P_CE_prev                                                // In/out: Covariance of the previous importance density
+    TML::Vector2f &mu_CE,                                                   // In/out: Expectation of the current importance density
+    TML::Matrix2f &P_CE,                                                    // In/out: Covariance of the current importance density
+    TML::Vector2f &mu_CE_prev,                                              // In/out: Expectation of the previous importance density
+    TML::Matrix2f &P_CE_prev                                                // In/out: Covariance of the previous importance density
     )
 {
     // Set previous importance density parameters to the old current ones
@@ -652,14 +711,14 @@ __device__ void CPE::update_importance_density(
     P_CE.set_zero();
     for (int j = 0; j < N_e; j++)
     {
-        elite_sample = elite_samples.get_col(j);
-        P_CE += (elite_sample - mu_CE) * (elite_sample - mu_CE).transposed();
+        elite_sample_innovation = elite_samples.get_col(j) - mu_CE;
+        P_CE += elite_sample_innovation * elite_sample_innovation.transposed();
     }
-    P_CE /= (double)N_e;
+    P_CE /= (float)N_e;
 
     // Smoothing to aid in preventing degeneration
-    mu_CE = alpha_n * mu_CE + (1.0 - alpha_n) * mu_CE_prev;
-    P_CE =  alpha_n * P_CE  + (1.0 - alpha_n) * P_CE_prev;
+    mu_CE = alpha_n * mu_CE + (1.0f - alpha_n) * mu_CE_prev;
+    P_CE =  alpha_n * P_CE  + (1.0f - alpha_n) * P_CE_prev;
 }
 
 /****************************************************************************************
@@ -669,12 +728,12 @@ __device__ void CPE::update_importance_density(
 *  Modified :
 *****************************************************************************************/
 __device__ float CPE::CE_estimate(
-	const TML::Vector2d &p_os,                                                // In: Own-ship position vector
-    const TML::Vector2d &p_i,                                                 // In: Obstacle i position vector
-    const TML::Matrix2d &P_i                                                  // In: Obstacle i positional covariance
+	const TML::Vector2f &p_os,                                                // In: Own-ship position vector
+    const TML::Vector2f &p_i,                                                 // In: Obstacle i position vector
+    const TML::Matrix2f &P_i                                                  // In: Obstacle i positional covariance
     )
 {            
-    P_c_CE = 0.0;
+    P_c_CE = 0.0f;
     /******************************************************************************
     * Check if it is necessary to perform estimation
     ******************************************************************************/
@@ -692,22 +751,22 @@ __device__ float CPE::CE_estimate(
     }
 
     /******************************************************************************
-    * Convergence depedent initialization prior to the run at time t_k
+    * Convergence dependent initialization prior to the run at time t_k
     ******************************************************************************/
-    sigma_inject = d_safe / 3;
+    sigma_inject = d_safe / 3.0f;
     if (converged_last)
     {
         mu_CE_prev = mu_CE_last; mu_CE = mu_CE_last;
 
         P_CE_prev = P_CE_last; 
-        P_CE = P_CE_last + powf(sigma_inject, 2) * TML::Matrix2d::identity();
+        P_CE = P_CE_last + powf(sigma_inject, 2) * TML::Matrix2f::identity();
     }
     else
     {
-        mu_CE_prev = p_i + p_os; mu_CE_prev *= 0.5; 
+        mu_CE_prev = p_i + p_os; mu_CE_prev *= 0.5f; 
         mu_CE = mu_CE_prev;
 
-        P_CE_prev = powf(d_safe, 2) * TML::Matrix2d::identity(); P_CE_prev /= 3.0;
+        P_CE_prev = powf(d_safe, 2) * TML::Matrix2f::identity(); P_CE_prev /= 3.0f;
         P_CE = P_CE_prev;
     }
     /* printf("mu_CE = %.1f, %.1f\n", mu_CE(0), mu_CE(1));
@@ -718,17 +777,19 @@ __device__ float CPE::CE_estimate(
     /******************************************************************************
     * Iterative optimization to find the near-optimal importance density
     ******************************************************************************/
+    P_i_inv = P_i; 
+    P_i_inv = P_i_inv.inverse();
     for (int it = 0; it < max_it; it++)
     {
         generate_norm_dist_samples(mu_CE, P_CE);
 
-        determine_best_performing_samples(p_os, p_i, P_i);
+        determine_best_performing_samples(p_os, p_i, P_i_inv);
 
         elite_samples.resize(2, N_e);
         e_count = 0;
         for (int j = 0; j < n_CE; j++)
         {
-            if (valid(j) == 1)
+            if (valid(j) > 0.99f)
             {
                 elite_samples.set_col(e_count, samples.get_col(j));
                 e_count++;
@@ -754,8 +815,6 @@ __device__ float CPE::CE_estimate(
     generate_norm_dist_samples(mu_CE, P_CE);
     
     determine_sample_validity_2D(p_os);
-
-    weights.resize(1, n_CE); integrand.resize(1, n_CE); importance.resize(1, n_CE);
 
     norm_pdf_log(integrand, p_i, P_i);
     norm_pdf_log(importance, mu_CE, P_CE);

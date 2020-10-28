@@ -149,6 +149,7 @@ public:
 					P_i_2D = reshape<16, 1, 4, 4>(P_i_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
 					P_c_i->operator()(k) = cpe->CE_estimate(p_os, p_i, P_i_2D);
+					printf("k = %d | P_c_i = %.6f\n", k, P_c_i->operator()(k));
 					
 					break;
 				case MCSKF4D :                
@@ -185,7 +186,7 @@ int main(){
 	std::normal_distribution<float> std_norm_pdf(0, 1);
 	std::uniform_int_distribution<int> distribution(0, 1000);
 
-	// test div cpe functions
+	/* // test div cpe functions
 	CPE cpe1(MCSKF4D, 0.5);
 	TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> samples(4, 1000);
 
@@ -218,7 +219,7 @@ int main(){
 	cpe1.set_samples(samples);
 	cpe1.determine_sample_validity_4D(p_cpa, t_cpa);
 
-	save_matrix_to_file<float, 1, 1000>(cpe1.valid);
+	save_matrix_to_file<float, 1, 1000>(cpe1.valid); */
 	//*****************************************************************************************************************
 	// Own-ship prediction setup
 	//*****************************************************************************************************************
@@ -417,7 +418,7 @@ int main(){
 		//=======================================================================================
 		// Estimate with CE
 		//=======================================================================================
-		/* thrust::transform(cpe_tuple_begin, cpe_tuple_end, P_c_i_dvec.begin(), cpe_functor_CE);
+		thrust::transform(cpe_tuple_begin, cpe_tuple_end, P_c_i_dvec.begin(), cpe_functor_CE);
 
 		P_c_i_temp = P_c_i_dvec[0];
 		cudaMemcpy(&P_c_i_host_CE, P_c_i_temp, sizeof(TML::PDMatrix<float, 1, MAX_N_SAMPLES>), cudaMemcpyDeviceToHost);
@@ -427,8 +428,6 @@ int main(){
 		{
 			P_c_i_CE(ps, k) = P_c_i_host_CE(k);
 		}
-		*/
-
 	}
 
 	CPE_functor cpe_functor_MCSKF(cpe_device_ptr, MCSKF4D, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, P_c_i_device_ptr, (float)dt);

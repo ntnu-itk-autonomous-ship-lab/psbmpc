@@ -505,6 +505,41 @@ __host__ __device__ inline void calculate_cpa(
 	}
 }
 
+__host__ __device__ inline void calculate_cpa(
+	TML::Vector2d &p_cpa, 													// In/out: Position of vessel A at CPA
+	double &t_cpa, 															// In/out: Time to CPA
+	double &d_cpa, 															// In/out: Distance at CPA
+	const TML::PDVector6f &xs_A, 											// In: State of vessel A 
+	const TML::PDVector6f &xs_B 											// In: State of vessel B
+	)
+{
+	assert(p_cpa.get_rows() == 2 && p_cpa.get_cols() == 1 && xs_A.get_cols() == 1 && xs_B.get_cols());
+
+	float epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
+	float psi_A, psi_B;
+	TML::Vector2d v_A, v_B, p_A, p_B, L_AB;
+	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
+	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); p_A(0) = xs_A(0); p_A(1) = xs_A(1); }
+	
+	if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); rotate_vector_2D(v_B, psi_B); }
+	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); p_B(0) = xs_B(0); p_B(1) = xs_B(1);}
+
+	// Check if the relative speed is too low, or if the vessels are moving away from each other with the current velocity vectors
+	float dt_incr = 0.1;
+	if ((v_A - v_B).norm() < epsilon || (p_A - p_B).norm() < ((p_A + v_A * dt_incr) - (p_B + v_B * dt_incr)).norm())
+	{
+		t_cpa = 0;
+		p_cpa = p_A;
+		d_cpa = (p_A - p_B).norm();
+	}
+	else
+	{
+		t_cpa = - (p_A - p_B).dot(v_A - v_B) / powf((v_A - v_B).norm(), 2);
+		p_cpa = p_A + v_A * t_cpa;
+		d_cpa = (p_cpa - (p_B + v_B * t_cpa)).norm();
+	}
+}
+
 /****************************************************************************************
 *  Name     : determine_COLREGS_violation
 *  Function : Determine if vessel A violates COLREGS with respect to vessel B.

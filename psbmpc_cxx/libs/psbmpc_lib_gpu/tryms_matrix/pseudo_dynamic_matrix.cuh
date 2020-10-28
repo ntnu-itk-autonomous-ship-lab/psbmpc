@@ -80,7 +80,7 @@ namespace TML
 			{
 				for (size_t j = 0; j < n_cols; j++)
 				{
-					result(i, j) = this->data[n_cols * i + j];
+					result(i, j) = (U)this->data[n_cols * i + j];
 				}
 			}
 			return result;
@@ -94,7 +94,7 @@ namespace TML
 			{
 				for (size_t j = 0; j < n_cols; j++)
 				{
-					result(i, j) = this->data[n_cols * i + j];
+					result(i, j) = (U)this->data[n_cols * i + j];
 				}
 			}
 			return result;
@@ -108,7 +108,7 @@ namespace TML
 			{
 				for (size_t j = 0; j < n_cols; j++)
 				{
-					result(i, j) = this->data[n_cols * i + j];
+					result(i, j) = (U)this->data[n_cols * i + j];
 				}
 			}
 			return result;
@@ -123,7 +123,7 @@ namespace TML
 		__host__ __device__ inline T& operator()(const size_t row, const size_t col) { assert(row < n_rows && col < n_cols); return data[n_cols * row + col]; }
 		__host__ __device__ inline const T& operator()(const size_t row, const size_t col) const { assert(row < n_rows && col < n_cols); return data[n_cols * row + col]; }
 
-		__host__ __device__ inline operator T() const { return data[0]; }
+		__host__ __device__ inline operator T() const { return (T)data[0]; }
 
 		template <class U, size_t Other_Max_Rows, size_t Other_Max_Cols>
 		__host__ __device__ PDMatrix<T, Max_Rows, Other_Max_Cols> operator*(const PDMatrix<U, Other_Max_Rows, Other_Max_Cols> &other) const;

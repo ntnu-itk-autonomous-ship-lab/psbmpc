@@ -47,8 +47,6 @@ class CPE
 {
 private:
 
-public:
-
 	// Active CPE method
 	CPE_Method method;
 
@@ -61,21 +59,22 @@ public:
 	//====================================
 	// CE-method parameters, internal states and temporaries
 	int max_it;
-	float sigma_inject, rho;
-	double alpha_n, gate;
+	float rho, sigma_inject, alpha_n;
+	double gate;
 	
 	bool converged_last;
 
-	TML::Vector2d mu_CE_last;
-	TML::Matrix2d P_CE_last;
+	TML::Vector2f mu_CE_last;
+	TML::Matrix2f P_CE_last;
 
 	// Temporaries:
 	int N_e, e_count;
-	TML::Vector2d elite_sample;
+	TML::Vector2d elite_sample_innovation;
 	TML::PDMatrix<float, 2, MAX_N_CPE_SAMPLES> elite_samples;
 
-	TML::Vector2d mu_CE_prev, mu_CE;
-	TML::Matrix2d P_CE_prev, P_CE;
+	TML::Vector2f mu_CE_prev, mu_CE;
+	TML::Matrix2f P_CE_prev, P_CE;
+	TML::Matrix2d P_i_inv;
 
 	float d_0i, var_P_i_largest;
 	bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
@@ -85,13 +84,12 @@ public:
 
 	//====================================
 	// MCSKF4D-method parameters, internal states and temporaries
-	float q, r, dt_seg; 
-	
+	float dt_seg, q, r; 
 	float P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
 	// Temporaries
 	float y_P_c_i; // Collision probability "measurement" from MCS, temporary var.
-
+	
 	float t_cpa, d_cpa, K;
 	TML::Vector2f p_os_cpa;
 
@@ -117,10 +115,11 @@ public:
 	TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> valid;
 	
 	// Safety zone parameter
-	float d_safe;
+	double d_safe;
 
-	// Cholesky decomposition matrix, double for precision sake
-	TML::PDMatrix4d L; 
+	// Cholesky decomposition matrix
+	float sum;
+	TML::PDMatrix4f L; 
 	
 	//====================================
 	// Other pre-allocated temporaries:
@@ -129,37 +128,32 @@ public:
 
 	// These temps are also double due to being
 	// involved in number precision requiring calculations
-	TML::PDVector4d sample;
+	TML::Vector2d sample_innovation;
 	double exp_val, log_val;
-	TML::PDMatrix4d Sigma_inv;
-	double sum;
-
+	TML::Matrix2d Sigma_2D_inv;
+	TML::Matrix4d Sigma_4D_inv;
 	//====================================
-
-	// Temporary
-	__host__ __device__ void set_samples(const TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> &samples) { this->samples = samples; }
-
-	TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> get_valid() { return valid; }
-	// Methods
 	__host__ __device__ void resize_matrices();
 
-	__host__ __device__ void update_L(const TML::PDMatrix4d &in);
+	__host__ __device__ void update_L(const TML::Matrix2f &in);
+	__host__ __device__ void update_L(const TML::Matrix4f &in);
 
-	__device__ inline void norm_pdf_log(TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result, const TML::PDVector4d &mu, const TML::PDMatrix4d &Sigma);
+	__device__ inline void norm_pdf_log(TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result, const TML::Vector2d &mu, const TML::Matrix2d &Sigma);
 
-	__device__ inline void generate_norm_dist_samples(const TML::PDVector4d &mu, const TML::PDMatrix4d &Sigma);
+	__device__ inline void generate_norm_dist_samples(const TML::Vector2f &mu, const TML::Matrix2f &Sigma);
+	__device__ inline void generate_norm_dist_samples(const TML::Vector4f &mu, const TML::Matrix4f &Sigma);
 
 	__host__ __device__ void calculate_roots_2nd_order();
 
 	__device__ float produce_MCS_estimate(
-		const TML::Vector4d &xs_i, 
-		const TML::Matrix4d &P_i, 
-		const TML::Vector2d &p_os_cpa,
+		const TML::Vector4f &xs_i, 
+		const TML::Matrix4f &P_i, 
+		const TML::Vector2f &p_os_cpa,
 		const float t_cpa);
 
 	__host__ __device__ void determine_sample_validity_4D(
 		const TML::Vector2d &p_os_cpa, 
-		const float t_cpa);
+		const double t_cpa);
 
 	__host__ __device__ void determine_sample_validity_2D(
 		const TML::Vector2d &p_os);
@@ -170,10 +164,16 @@ public:
 		const TML::Matrix2d &P_i_inv);
 
 	__device__ void update_importance_density(
-		TML::Vector2d &mu_CE,
-		TML::Matrix2d &P_CE, 
-		TML::Vector2d &mu_CE_prev, 
-		TML::Matrix2d &P_CE_prev);
+		TML::Vector2f &mu_CE,
+		TML::Matrix2f &P_CE, 
+		TML::Vector2f &mu_CE_prev, 
+		TML::Matrix2f &P_CE_prev);
+
+public:
+
+	// Temporary
+	__host__ __device__ void set_samples(const TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> &samples) { this->samples = samples; }
+
 
 	__host__ __device__ CPE() {}
 
@@ -197,9 +197,9 @@ public:
 		const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i);	
 
 	__device__ float CE_estimate(
-		const TML::Vector2d &p_os, 
-		const TML::Vector2d &p_i, 
-		const TML::Matrix2d &P_i);
+		const TML::Vector2f &p_os, 
+		const TML::Vector2f &p_i, 
+		const TML::Matrix2f &P_i);
 	
 	__device__ float estimate(
 		const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,
