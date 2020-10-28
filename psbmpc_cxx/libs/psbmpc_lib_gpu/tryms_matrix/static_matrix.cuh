@@ -72,7 +72,7 @@ namespace TML
 			{
 				for (size_t j = 0; j < New_Cols; j++)
 				{
-					result(i, j) = data[Cols * i + j];
+					result(i, j) = (U)data[Cols * i + j];
 				}
 			}
 			return result;
@@ -86,19 +86,11 @@ namespace TML
 			{
 				for (size_t j = 0; j < Cols; j++)
 				{
-					result(i, j) = data[Cols * i + j];
+					result(i, j) = (U)data[Cols * i + j];
 				}
 			}
 			return result;
 		}
-		
-		/* template <class U, size_t Max_Rows, size_t Max_Cols>
-		__host__ __device__ inline operator PDMatrix<U, Max_Rows, Max_Cols>() const
-		{
-			PDMatrix<U, Max_Rows, Max_Cols> result;
-			result = *this;
-			return result;
-		} */
 
 		__host__ __device__ inline T& operator[](const size_t index);
 		__host__ __device__ inline const T& operator[](const size_t index) const;
@@ -109,7 +101,7 @@ namespace TML
 		__host__ __device__ inline T& operator()(const size_t row, const size_t col) { assert(row < Rows && col < Cols); return data[Cols * row + col]; }
 		__host__ __device__ inline const T& operator()(const size_t row, const size_t col) const { assert(row < Rows && col < Cols); return data[Cols * row + col]; }
 
-		__host__ __device__ inline operator T() const { return data[0]; }
+		__host__ __device__ inline operator T() const { return (T)data[0]; }
 
 		template <class U, size_t Other_Rows, size_t Other_Cols>
 		__host__ __device__ Static_Matrix<T, Rows, Other_Cols> operator*(const Static_Matrix<U, Other_Rows, Other_Cols> &other) const;

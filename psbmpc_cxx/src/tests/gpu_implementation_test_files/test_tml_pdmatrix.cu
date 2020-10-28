@@ -35,6 +35,16 @@ void test_conversion2(const TML::Vector3d &v3d) { std::cout << v3d << std::endl;
 
 void test_conversion3(const TML::PDMatrix<double, 100, 100> &pdm) { std::cout << pdm << std::endl; }
 
+void test_conversion4(const TML::Vector4d &v_4d) { std::cout << v_4d << std::endl; }
+void test_conversion5(const TML::Vector4f &v_4f) { std::cout << v_4f << std::endl; }
+
+void test_conversion6(const TML::Matrix4d &m_4d) { std::cout << m_4d << std::endl; }
+void test_conversion7(const TML::Matrix4f &m_4f) { std::cout << m_4f << std::endl; }
+
+
+
+
+
 
 int main()
 {
@@ -666,6 +676,18 @@ int main()
 	std::cout << "Smoothing sample mean diff : " << mu_diff.transposed() << std::endl;
 	std::cout << "Smoothing sample covariance diff: " << std::endl;
 	std::cout << P_diff << std::endl;
+
+	TML::Vector4f v_4f; v_4f.set_ones();
+	test_conversion4(v_4f);
+
+	TML::Vector4d v_4d; v_4d.set_all_coeffs(1.5);
+	test_conversion5(v_4d);
+
+	TML::Matrix4f m_4f; m_4f.set_ones();
+	test_conversion6(m_4f);
+
+	TML::Matrix4d m_4d; m_4d.set_all_coeffs(1.5); 
+	test_conversion7(m_4d);
 
 	return 0;
 }
