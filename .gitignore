@@ -3,6 +3,8 @@
 
 *.make
 *.cmake
+*.dir
+*.includecache
 
 # Prerequisites
 *.d

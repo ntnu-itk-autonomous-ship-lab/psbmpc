@@ -1,12 +1,12 @@
-# Cybercolav C++
+# PSB-MPC C++
 <p> This repository implements libraries for the Probabilistic Scenario-based MPC [[2]](#2) in C/C++, one version for the CPU and another experimental for the GPU. The algorithm is an extended and improved version of the original one posed in [[1]](#1), which was implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3). The libraries are located under libs/. </p>
 
 ## Dependencies
 
-- Matlab C API for the debugging and plotting functionality.
-- Eigen >= 3.3.7
+- Matlab C API for the debugging and plotting functionality. (Follow instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
+- Eigen >= 3.3.7 (already included in repo under libs/third_party_libs/)
 - CUDA 11.0 and Thrust >= 1.9.9 for the GPU stuff.
-- xoshiro256+ random number generator used in the Collision Probability Estimator implemented for use in the CPU version <http://prng.di.unimi.it/>
+- xoshiro256+ random number generator used in the Collision Probability Estimator implemented for use in the CPU version (already included in repo under libs/third_party_libs/, implementation taken from <https://gist.github.com/imneme/3eb1bcc5418c4ae83c4c6a86d9cbb1cd#comments>). See <http://prng.di.unimi.it/> for more information. 
 
 ## PSB-MPC library usage
 <p>To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib)" command, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build. </p>

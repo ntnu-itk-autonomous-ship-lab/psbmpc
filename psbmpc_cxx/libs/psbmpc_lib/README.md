@@ -5,8 +5,9 @@ To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_
 
 ## Dependencies
 
-- Matlab C API for the debugging and plotting functionality.
-- Eigen >= 3.3.7
+- Matlab C API for the debugging and plotting functionality (follow setup instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>).
+- Eigen >= 3.3.7 (already included in repo under libs/third_party_libs/)
+- xoshiro256+ random number generator used in the Collision Probability Estimator implemented for use in the CPU version (already included in repo under libs/third_party_libs/, implementation taken from <https://gist.github.com/imneme/3eb1bcc5418c4ae83c4c6a86d9cbb1cd#comments>). See <http://prng.di.unimi.it/> for more information. 
 
 ## Overall Structure
 The library for the CPU-implementation has the following structure
