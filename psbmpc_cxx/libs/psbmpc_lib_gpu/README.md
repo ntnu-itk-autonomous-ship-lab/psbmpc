@@ -9,9 +9,10 @@ Note that the amount of memory you need on your GPU to run the algorithm will in
 
 ## Dependencies
 
-- Matlab C API is used for the debugging and plotting functionality.
-- Eigen >= 3.3.7 release is used for the CPU and GPU version.
+- Matlab C API for the debugging and plotting functionality. (Follow instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
+- Eigen >= 3.3.7 (already included in repo under libs/third_party_libs/). Eigen is still experimental regarding CUDA compatibility. I have not suppressed the warnings from eigen regarding CUDA-stuff, but hope that one day Eigen will be fully functionable on the GPU.
 - CUDA and Thrust are necessary for the GPU version. I have used CUDA 11 and Thrust >= 1.9.9, other versions are not tested with.
+- cuRAND <https://docs.nvidia.com/cuda/curand/index.html> is used for the Collision Probability Estimator compatible on the device. 
 
 ## Overall Structure
 <p>The library for the GPU-implementation has the following structure <br>
@@ -114,10 +115,10 @@ Custom matrix library made specifically for usage of matrices in CUDA kernels, a
 
 The library implements three matrix type containers:
 - Static_Matrix: Fixed sized matrices
-- Pseudo_Dynamic_Matrix (PDMatrix): (Fixed size) Matrix used to store larger amounts of data, with a compile-time known max number of rows and columns
+- Pseudo_Dynamic_Matrix (PDMatrix): (Fixed size) Matrix used to store larger amounts of data, with a compile-time known max number of rows and columns. However, the effective size used during run-time can vary.
 - Dynamic_Matrix: Matrix container for data with  varying size
 
-Only the fixed size matrices are used currently, because dynamic memory allocation on the gpu sucks. Thus, the "dynamic_matrix.cuh" file is **NOT USED**. 
+Only the fixed size matrices are used currently, because dynamic memory allocation on the gpu is costly, slow and should therefore in general not be done. Thus, the "dynamic_matrix.cuh" file is **NOT USED**. 
 
 ## References
 
