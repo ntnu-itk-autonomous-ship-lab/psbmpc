@@ -142,18 +142,14 @@ int main(){
 	// Collision Probability Estimator setup
 	//*****************************************************************************************************************
 	double d_safe = 50;
-	int n_CE = 1000, n_MCSKF = 1000;
-	std::cout << "n_CE = " << n_CE << std::endl;
-	std::cout << "n_MCSKF = " << n_MCSKF << std::endl;
 
 	Eigen::MatrixXd P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
 	Eigen::Matrix<double, 1, -1> P_c_i_temp(1, n_samples);
-	std::unique_ptr<CPE> cpe(new CPE(CE, n_CE, n_MCSKF, d_safe, dt));
+	std::unique_ptr<CPE> cpe(new CPE(CE, dt));
 
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
-	cpe->set_number_of_obstacles(1);
 
 	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
 
@@ -181,7 +177,7 @@ int main(){
 
 		auto start = std::chrono::system_clock::now();
 
-		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, 0, dt);
+		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, dt);
 		P_c_i_CE.row(ps) = P_c_i_temp;
 
 		auto end = std::chrono::system_clock::now();
@@ -196,7 +192,7 @@ int main(){
 
 		start = std::chrono::system_clock::now();
 		
-		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, 0, dt);
+		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, dt);
 		P_c_i_MCSKF.row(ps) = P_c_i_temp;
 
 		end = std::chrono::system_clock::now();
