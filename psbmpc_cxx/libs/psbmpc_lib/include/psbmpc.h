@@ -36,7 +36,7 @@
 class PSBMPC
 {
 private:
-
+public:
 	// Amount of prediction scenarios for each obstacle
 	std::vector<int> n_ps;
 
@@ -56,6 +56,15 @@ private:
 	Ownship ownship;
 
 	CPE cpe;
+
+	//==========================================================
+	// Selected pre-allocated temporaries in time-critical part of code
+	/* Eigen::MatrixXd P_i_p;
+	std::vector<Eigen::MatrixXd> xs_i_p;
+
+	Eigen::Matrix<double, 1, -1> P_c_i_row; */
+
+	//==========================================================
 
 	void reset_control_behaviour();
 
@@ -139,7 +148,7 @@ private:
 	//
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
-public:
+
 
 	PSBMPC_Parameters pars;
 

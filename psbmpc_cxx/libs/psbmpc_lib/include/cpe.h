@@ -47,9 +47,6 @@ private:
 	// Active CPE method
 	CPE_Method method;
 
-	// Number of obstacles to consider in estimation
-	int n_obst;
-
 	// Number of samples drawn
 	int n_CE, n_MCSKF;
 
@@ -64,21 +61,59 @@ private:
 
 	std::normal_distribution<double> std_norm_pdf;
 
-	// CE-method parameters and internal states
-	double sigma_inject, alpha_n, gate, rho, max_it;
+	//====================================
+	// CE-method parameters, internal states and temporaries
+	int max_it;
+	double sigma_inject, alpha_n, gate, rho;
 	
 	bool converged_last;
 
-	std::vector<Eigen::Vector2d> mu_CE_last;
-	std::vector<Eigen::Matrix2d> P_CE_last;
+	Eigen::Vector2d mu_CE_last;
+	Eigen::Matrix2d P_CE_last;
 
 	int N_e, e_count;
 	Eigen::MatrixXd elite_samples;
 
-	// MCSKF4D-method parameters and internal states
+	// Temporaries between dashed lines
+	//--------------------------------------------
+	Eigen::Vector2d mu_CE_prev, mu_CE;
+	Eigen::Matrix2d P_CE_prev, P_CE;
+	Eigen::Matrix2d P_i_inv;
+
+	double d_0i, var_P_i_largest;
+	bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
+
+	Eigen::VectorXd weights, integrand, importance;
+	//-------------------------------------------
+	//====================================
+
+	//====================================
+	// MCSKF4D-method parameters, internal states and temporaries
 	double q, r, dt_seg; 
+	double P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
+
+	// Temporaries
+	double y_P_c_i; // Collision probability "measurement" from MCS, temporary var.
 	
-	Eigen::VectorXd P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
+	double t_cpa, d_cpa, K;
+	Eigen::Vector2d p_os_cpa;
+
+	int n_seg_samples;
+
+	// Speed and course/heading for the vessels along their linear segments
+    double U_os_sl, U_i_sl, psi_os_sl, psi_i_sl;
+
+	Eigen::Vector4d xs_os_sl, xs_i_sl;
+	Eigen::Matrix4d P_i_sl;
+
+	bool complex_roots;
+
+	// These parameters are double because the calculations
+	// involved in "determine_sample_validity_4D" were found to be
+	// very sensitive to change in floating point number precision
+    Eigen::Vector2d roots, p_i_sample, v_i_sample;
+    double d, A, B, C, constant;
+	//====================================
 
 	// Common internal sample variables
 	Eigen::MatrixXd samples;
@@ -90,6 +125,17 @@ private:
 	// Cholesky decomposition matrix
 	Eigen::MatrixXd L;
 
+	//====================================
+	// Other pre-allocated temporaries:
+	double P_c_est, P_c_CE, y_P_c, sum;
+	int n, n_samples, n_samples_traj, n_cols, k_j, k_j_;	
+	Eigen::MatrixXd Sigma_inv;
+
+	double exp_val, log_val;
+
+	Eigen::MatrixXd xs_os_seg, xs_i_seg, P_i_seg;
+	Eigen::Matrix2d P_i_2D;
+	//====================================
 	void assign_data(const CPE &cpe);
 
 	void resize_matrices();
@@ -100,7 +146,7 @@ private:
 
 	inline void generate_norm_dist_samples(const Eigen::VectorXd &mu, const Eigen::MatrixXd &Sigma);
 
-	void calculate_roots_2nd_order(Eigen::Vector2d &r, bool &is_complex, const double A, const double B, const double C);
+	void calculate_roots_2nd_order();
 
 	double produce_MCS_estimate(
 		const Eigen::Vector4d &xs_i, 
@@ -115,8 +161,7 @@ private:
 	double MCSKF4D_estimation(
 		const Eigen::MatrixXd &xs_os,  
 		const Eigen::MatrixXd &xs_i, 
-		const Eigen::MatrixXd &P_i,
-		const int i);	
+		const Eigen::MatrixXd &P_i);	
 
 	void determine_sample_validity_2D(
 		const Eigen::Vector2d &p_os);
@@ -126,25 +171,24 @@ private:
 		const Eigen::Vector2d &p_i, 
 		const Eigen::Matrix2d &P_i);
 
+	void update_importance_density();
+
 	double CE_estimation(
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
-		const Eigen::Matrix2d &P_i,
-		const int i);
+		const Eigen::Matrix2d &P_i);
 
 public:
 
 	CPE() {}
 
-	CPE(const CPE_Method cpe_method, const int n_CE, const int n_MCSKF, const int n_obst, const double dt);
+	CPE(const CPE_Method cpe_method, const double dt);
 
-	CPE(const CPE &cpe);
+	CPE(const CPE &other);
 
-	CPE& operator=(const CPE &cpe);
+	CPE& operator=(const CPE &rhs);
 
 	void set_method(const CPE_Method cpe_method) { if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
-
-	void set_number_of_obstacles(const int n_obst);
 
 	double get_segment_discretization_time() const { return dt_seg; };
 
@@ -152,14 +196,12 @@ public:
 		const Eigen::Matrix<double, 6, 1> &xs_os, 
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::VectorXd &P_i,
-		const double d_safe_i, 
-		const int i);
+		const double d_safe_i);
 	
 	double estimate(
 		const Eigen::MatrixXd &xs_os,
 		const Eigen::MatrixXd &xs_i,
-		const Eigen::MatrixXd &P_i,
-		const int i);
+		const Eigen::MatrixXd &P_i);
 
 	void estimate_over_trajectories(
 		Eigen::Matrix<double, 1, -1> &P_c_i,
@@ -167,7 +209,6 @@ public:
 		const Eigen::Matrix<double, 4, -1> &xs_i_p,
 		const Eigen::Matrix<double, 16, -1> &P_i_p,
 		const double d_safe_i,
-		const int i,
 		const double dt);
 };
 
