@@ -68,10 +68,10 @@ RM = /usr/local/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/trymte/Desktop/cybercolav_cxx
+CMAKE_SOURCE_DIR = /home/trymte/Desktop/thecolavrepo/psbmpc_cxx
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/trymte/Desktop/cybercolav_cxx/release
+CMAKE_BINARY_DIR = /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -100,14 +100,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles /home/trymte/Desktop/cybercolav_cxx/release/src/tests/CMakeFiles/progress.marks
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles 0
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/src/tests/CMakeFiles/progress.marks
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/clean
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/clean
 .PHONY : clean
 
 # The main clean target
@@ -117,22 +117,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/preinstall
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/preinstall
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/tests/CMakeFiles/tester.dir/rule:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/CMakeFiles/tester.dir/rule
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/tests/CMakeFiles/tester.dir/rule
 .PHONY : src/tests/CMakeFiles/tester.dir/rule
 
 # Convenience name for target.
@@ -142,35 +142,35 @@ tester: src/tests/CMakeFiles/tester.dir/rule
 
 # fast build rule for target.
 tester/fast:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-gpu_implementation_test_files/test_psbmpc.o: gpu_implementation_test_files/test_psbmpc.cu.o
+test_psbmpc.o: test_psbmpc.cpp.o
 
-.PHONY : gpu_implementation_test_files/test_psbmpc.o
+.PHONY : test_psbmpc.o
 
 # target to build an object file
-gpu_implementation_test_files/test_psbmpc.cu.o:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_psbmpc.cu.o
-.PHONY : gpu_implementation_test_files/test_psbmpc.cu.o
+test_psbmpc.cpp.o:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.o
+.PHONY : test_psbmpc.cpp.o
 
-gpu_implementation_test_files/test_psbmpc.i: gpu_implementation_test_files/test_psbmpc.cu.i
+test_psbmpc.i: test_psbmpc.cpp.i
 
-.PHONY : gpu_implementation_test_files/test_psbmpc.i
+.PHONY : test_psbmpc.i
 
 # target to preprocess a source file
-gpu_implementation_test_files/test_psbmpc.cu.i:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_psbmpc.cu.i
-.PHONY : gpu_implementation_test_files/test_psbmpc.cu.i
+test_psbmpc.cpp.i:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.i
+.PHONY : test_psbmpc.cpp.i
 
-gpu_implementation_test_files/test_psbmpc.s: gpu_implementation_test_files/test_psbmpc.cu.s
+test_psbmpc.s: test_psbmpc.cpp.s
 
-.PHONY : gpu_implementation_test_files/test_psbmpc.s
+.PHONY : test_psbmpc.s
 
 # target to generate assembly for a file
-gpu_implementation_test_files/test_psbmpc.cu.s:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_psbmpc.cu.s
-.PHONY : gpu_implementation_test_files/test_psbmpc.cu.s
+test_psbmpc.cpp.s:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.s
+.PHONY : test_psbmpc.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... gpu_implementation_test_files/test_psbmpc.o"
-	@echo "... gpu_implementation_test_files/test_psbmpc.i"
-	@echo "... gpu_implementation_test_files/test_psbmpc.s"
+	@echo "... test_psbmpc.o"
+	@echo "... test_psbmpc.i"
+	@echo "... test_psbmpc.s"
 .PHONY : help
 
 
@@ -195,6 +195,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/trymte/Desktop/cybercolav_cxx/release && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

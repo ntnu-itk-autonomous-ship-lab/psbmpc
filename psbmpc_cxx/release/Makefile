@@ -71,10 +71,10 @@ RM = /usr/local/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/trymte/Desktop/cybercolav_cxx
+CMAKE_SOURCE_DIR = /home/trymte/Desktop/thecolavrepo/psbmpc_cxx
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/trymte/Desktop/cybercolav_cxx/release
+CMAKE_BINARY_DIR = /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -103,9 +103,9 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -134,17 +134,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named psbmpc_lib_gpu
+# Target rules for targets named psbmpc_lib
 
 # Build rule for target.
-psbmpc_lib_gpu: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 psbmpc_lib_gpu
-.PHONY : psbmpc_lib_gpu
+psbmpc_lib: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 psbmpc_lib
+.PHONY : psbmpc_lib
 
 # fast build rule for target.
-psbmpc_lib_gpu/fast:
-	$(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build
-.PHONY : psbmpc_lib_gpu/fast
+psbmpc_lib/fast:
+	$(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build
+.PHONY : psbmpc_lib/fast
 
 #=============================================================================
 # Target rules for targets named tester
@@ -167,7 +167,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... psbmpc_lib_gpu"
+	@echo "... psbmpc_lib"
 	@echo "... tester"
 .PHONY : help
 

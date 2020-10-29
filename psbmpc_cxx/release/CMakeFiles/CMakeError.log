@@ -1,25 +1,25 @@
 Performing C++ SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
-Change Dir: /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles/CMakeTmp
+Change Dir: /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make cmTC_82ec7/fast && /usr/bin/make  -f CMakeFiles/cmTC_82ec7.dir/build.make CMakeFiles/cmTC_82ec7.dir/build
-make[1]: Entering directory '/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_82ec7.dir/src.cxx.o
-/usr/bin/c++    -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_82ec7.dir/src.cxx.o -c /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles/CMakeTmp/src.cxx
-Linking CXX executable cmTC_82ec7
-/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_82ec7.dir/link.txt --verbose=1
-/usr/bin/c++   -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_82ec7.dir/src.cxx.o  -o cmTC_82ec7 
-CMakeFiles/cmTC_82ec7.dir/src.cxx.o: In function `main':
+Run Build Command(s):/usr/bin/make cmTC_154c5/fast && /usr/bin/make  -f CMakeFiles/cmTC_154c5.dir/build.make CMakeFiles/cmTC_154c5.dir/build
+make[1]: Entering directory '/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_154c5.dir/src.cxx.o
+/usr/bin/c++    -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_154c5.dir/src.cxx.o -c /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_154c5
+/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_154c5.dir/link.txt --verbose=1
+/usr/bin/c++   -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_154c5.dir/src.cxx.o  -o cmTC_154c5 
+CMakeFiles/cmTC_154c5.dir/src.cxx.o: In function `main':
 src.cxx:(.text+0x3e): undefined reference to `pthread_create'
 src.cxx:(.text+0x4a): undefined reference to `pthread_detach'
 src.cxx:(.text+0x56): undefined reference to `pthread_cancel'
 src.cxx:(.text+0x67): undefined reference to `pthread_join'
 src.cxx:(.text+0x7b): undefined reference to `pthread_atfork'
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_82ec7.dir/build.make:106: recipe for target 'cmTC_82ec7' failed
-make[1]: *** [cmTC_82ec7] Error 1
-make[1]: Leaving directory '/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles/CMakeTmp'
-Makefile:141: recipe for target 'cmTC_82ec7/fast' failed
-make: *** [cmTC_82ec7/fast] Error 2
+CMakeFiles/cmTC_154c5.dir/build.make:106: recipe for target 'cmTC_154c5' failed
+make[1]: *** [cmTC_154c5] Error 1
+make[1]: Leaving directory '/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles/CMakeTmp'
+Makefile:141: recipe for target 'cmTC_154c5/fast' failed
+make: *** [cmTC_154c5/fast] Error 2
 
 
 Source file was:
@@ -44,22 +44,22 @@ int main(void)
 }
 
 Determining if the function pthread_create exists in the pthreads failed with the following output:
-Change Dir: /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles/CMakeTmp
+Change Dir: /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make cmTC_77883/fast && /usr/bin/make  -f CMakeFiles/cmTC_77883.dir/build.make CMakeFiles/cmTC_77883.dir/build
-make[1]: Entering directory '/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_77883.dir/CheckFunctionExists.cxx.o
-/usr/bin/c++    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_77883.dir/CheckFunctionExists.cxx.o -c /home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
-Linking CXX executable cmTC_77883
-/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_77883.dir/link.txt --verbose=1
-/usr/bin/c++   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_77883.dir/CheckFunctionExists.cxx.o  -o cmTC_77883  -lpthreads 
+Run Build Command(s):/usr/bin/make cmTC_644d9/fast && /usr/bin/make  -f CMakeFiles/cmTC_644d9.dir/build.make CMakeFiles/cmTC_644d9.dir/build
+make[1]: Entering directory '/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_644d9.dir/CheckFunctionExists.cxx.o
+/usr/bin/c++    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_644d9.dir/CheckFunctionExists.cxx.o -c /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
+Linking CXX executable cmTC_644d9
+/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_644d9.dir/link.txt --verbose=1
+/usr/bin/c++   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_644d9.dir/CheckFunctionExists.cxx.o  -o cmTC_644d9  -lpthreads 
 /usr/bin/ld: cannot find -lpthreads
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_77883.dir/build.make:106: recipe for target 'cmTC_77883' failed
-make[1]: *** [cmTC_77883] Error 1
-make[1]: Leaving directory '/home/trymte/Desktop/cybercolav_cxx/release/CMakeFiles/CMakeTmp'
-Makefile:141: recipe for target 'cmTC_77883/fast' failed
-make: *** [cmTC_77883/fast] Error 2
+CMakeFiles/cmTC_644d9.dir/build.make:106: recipe for target 'cmTC_644d9' failed
+make[1]: *** [cmTC_644d9] Error 1
+make[1]: Leaving directory '/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release/CMakeFiles/CMakeTmp'
+Makefile:141: recipe for target 'cmTC_644d9/fast' failed
+make: *** [cmTC_644d9/fast] Error 2
 
 
 

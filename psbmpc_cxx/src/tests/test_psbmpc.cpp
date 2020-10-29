@@ -129,6 +129,8 @@ int main(){
 	double* ptraj_i; 
 	double* p_P_traj_i; 
 	double* p_wps_i;
+
+
 	int n_wps_i;
 
 	for (int i = 0; i < n_obst; i++)
@@ -155,8 +157,7 @@ int main(){
 		waypoints_i[i].resize(2, n_wps_i); 
 		waypoints_i[i] << 500, 500,
 					300, -300;
-		wps_i[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
-
+		
 		offset_sequence_i[i].resize(6);
 		offset_sequence_i[i] << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 
@@ -166,6 +167,7 @@ int main(){
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], ERK1, LOS, T_sim, dt);
 
+		wps_i[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
 		traj_i[i] = mxCreateDoubleMatrix(6, N, mxREAL);
 		P_traj_i[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
