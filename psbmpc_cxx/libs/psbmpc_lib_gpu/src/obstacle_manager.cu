@@ -130,7 +130,7 @@ void Obstacle_Manager::display_obstacle_information() const
 		for (int j = 0; j < data.obstacle_status.rows(); j++)
 		{
 			std::cout.width(width_arr[j] + 4);
-			std::cout << (int)data.obstacle_status(j, i); // int conversion ok due to variables displayed.
+			std::cout << (int)round(data.obstacle_status(j, i)); // int conversion ok due to variables displayed.
 		}
 		if (i < data.obstacles.size() - 1)
 		{

@@ -109,6 +109,8 @@ __device__ float CB_Cost_Functor::operator()(
 		cost_a.set_zero();
 		Pr_a = obstacles[i].get_intention_probabilities();
 
+		Pr_CC_i = obstacles[i].get_a_priori_CC_probability();
+
 		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 		{	
 			cost_ps = 0;
@@ -189,18 +191,18 @@ __device__ float CB_Cost_Functor::operator()(
 
 				//==========================================================================================
 				// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
-				cost_ps = calculate_dynamic_obstacle_cost(P_c_i(ps), xs_p.get_col(n_seg_samples - 1), xs_i_p.get_col(n_seg_samples - 1),  i, chi_m, cb_index);
+				cost_ps = calculate_dynamic_obstacle_cost(P_c_i(ps), xs_p.get_col(n_seg_samples - 1), xs_i_p.get_col(n_seg_samples - 1), i, chi_m, cb_index);
 
 				if (max_cost_ps(ps) < cost_ps)
 				{
 					max_cost_ps(ps) = cost_ps;
 				}
 				//==========================================================================================
-				//printf("i = %d | ps = %d | k = %d\n", i, ps, k);
-				//printf("P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", P_c_i(ps), cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
+				//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i(ps), cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 			}
 		}
 		//printf("max_cost_ps = %.4f, %.4f, %.4f\n", max_cost_ps(0), max_cost_ps(1), max_cost_ps(2));
+		//printf("Pr_CC = %.4f\n", Pr_CC_i);
 		//==============================================================================================
 		// 2.3 : Calculate a weighted obstacle cost over all prediction scenarios
 
@@ -219,7 +221,7 @@ __device__ float CB_Cost_Functor::operator()(
 			{
 				if (mu_i[ps])
 				{
-					printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
+					//printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
 					max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
 				}
 				else
@@ -243,13 +245,16 @@ __device__ float CB_Cost_Functor::operator()(
 				}
 			}
 			// Average the cost for the corresponding intention
-			cost_a(1) = cost_a(1) / ((fdata->n_ps[i] - 1) / 2);
-			cost_a(2) = cost_a(2) / ((fdata->n_ps[i] - 1) / 2);
+			cost_a(1) /= (((float)fdata->n_ps[i] - 1.0f) / 2.0f);
+			cost_a(2) /= (((float)fdata->n_ps[i] - 1.0f) / 2.0f);
 
-			/* printf("cost_a = %.4f, %.4f, %.4f\n", cost_a(0), cost_a(1), cost_a(2));
-			printf("Pr_a = %.4f, %.4f, %.4f\n", Pr_a(0), Pr_a(1), Pr_a(2)); */
 			// Weight by the intention probabilities
 			cost_i(i) = Pr_a.dot(cost_a);
+
+			//printf("Pr_a = %.4f, %.4f, %.4f\n", Pr_a(0), Pr_a(1), Pr_a(2));
+
+			/* printf("cost_a = %.4f, %.4f, %.4f | cb : %.1f, %.1f\n", cost_a(0), cost_a(1), cost_a(2), offset_sequence(0), RAD2DEG * offset_sequence(1));
+			printf("cost_i(i) = %.6f | cb : %.1f, %.1f\n", cost_i(i), offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 		}
 		//==============================================================================================
 	}
@@ -265,12 +270,14 @@ __device__ float CB_Cost_Functor::operator()(
 	//==================================================================================================
 	// 2.6 : Calculate cost due to deviating from the nominal path
 	cost_cb += calculate_control_deviation_cost(offset_sequence, cb_index);
+	//printf("dev cost = %.4f\n", calculate_control_deviation_cost(offset_sequence, cb_index));
 
 	//==================================================================================================
 	// 2.7 : Calculate cost due to having a wobbly offset_sequence
 	cost_cb += calculate_chattering_cost(offset_sequence, cb_index); 
+	//printf("chat cost = %.4f\n", calculate_chattering_cost(offset_sequence, cb_index));
 	//==================================================================================================
-	printf("Cost of cb_index %d : %.2f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
+	//printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	return cost_cb;
 }
 
@@ -645,7 +652,7 @@ __device__ inline float CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	// Decrease the distance between the vessels by their respective max dimension
 	d_0i_p = d_0i_p - 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length()); 
 	
-	L_0i_p = L_0i_p.normalized();
+	L_0i_p.normalize();
 
 	v_i_p(0) = xs_i_p(2);
 	v_i_p(1) = xs_i_p(3);
@@ -669,6 +676,11 @@ __device__ inline float CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 
 	cost_do = l_i * C * P_c_i + pars->kappa * mu  + 0 * pars->kappa_TC * trans;
 
+	/* printf("psi_0_p = %.2f | v_0_p = %.2f, %.2f\n", psi_0_p, v_0_p(0), v_0_p(1));
+	printf("psi_i_p = %.2f | v_i_p = %.2f, %.2f\n", psi_i_p, v_i_p(0), v_i_p(1));
+	printf("d_0i_p = %.2f  | L_0i_p = %.2f, %.2f\n", d_0i_p, L_0i_p(0), L_0i_p(1));
+	printf("C = %.4f       | mu = %d                 | trans = %d           | l_i = %.4f\n", C, mu, trans, l_i);
+	printf("cost_ps = %.4f\n", cost_do); */
 	return cost_do;
 }
 
