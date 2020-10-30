@@ -1,5 +1,5 @@
 # PSB-MPC C++
-<p> This repository implements libraries for the Probabilistic Scenario-based MPC [[2]](#2) in C/C++, one version for the CPU and another experimental for the GPU. The algorithm is an extended and improved version of the original one posed in [[1]](#1), which was implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3). The libraries are located under libs/. </p>
+<p> This repository implements libraries for the Probabilistic Scenario-based MPC [[2]](#2) in C/C++, one version for the CPU and another experimental for the GPU. The algorithm is a new extended and improved version of the original one posed in [[1]](#1), which was implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3). The libraries are located under libs/. </p>
 
 ## Dependencies
 
