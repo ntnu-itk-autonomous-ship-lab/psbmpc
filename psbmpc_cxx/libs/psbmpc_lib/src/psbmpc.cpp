@@ -50,6 +50,8 @@ PSBMPC::PSBMPC()
 	offset_sequence.resize(2 * pars.n_M);
 
 	cpe = CPE(pars.cpe_method, pars.dt);
+
+	chi_m_last = 0; u_m_last = 1;
 }
 
 /****************************************************************************************
@@ -229,7 +231,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		cost += cost_i.maxCoeff();
 
-		cost += calculate_grounding_cost(static_obstacles);
+		//cost += calculate_grounding_cost(static_obstacles);
 
 		cost += calculate_control_deviation_cost();
 
@@ -1018,7 +1020,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			//cost_ps = l_i * C * R + pars.kappa * mu  + pars.kappa_TC * trans;
 
 			// PSB-MPC formulation with probabilistic collision cost
-			cost_ps = l_i * C * P_c_i(ps, k) + pars.kappa * mu  + pars.kappa_TC * trans;
+			cost_ps = l_i * C * P_c_i(ps, k) + pars.kappa * mu  + 0 * pars.kappa_TC * trans;
 
 			// Maximize wrt time
 			if (cost_ps > max_cost_ps(ps))
@@ -1027,7 +1029,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			}
 		}
 	}
-
+	//std::cout << "max cost ps = " << max_cost_ps.transpose() << std::endl;
 	// If only 1 prediction scenario
 	// => Original PSB-MPC formulation
 	if (n_ps[i] == 1)
@@ -1069,15 +1071,15 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 		}
 	}
 	// Average the cost for the corresponding intention
-	cost_a(1) = cost_a(1) / ((n_ps[i] - 1) / 2);
-	cost_a(2) = cost_a(2) / ((n_ps[i] - 1) / 2);
+	cost_a(1) /= (((double)n_ps[i] - 1.0) / 2.0);
+	cost_a(2) /= (((double)n_ps[i] - 1.0) / 2.0);
 
 	// Weight by the intention probabilities
 	cost = Pr_a.dot(cost_a);
-	//std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
-	//std::cout << "max cost ps = " << max_cost_ps.transpose() << std::endl;
-	//std::cout << "cost a = " << cost_a.transpose() << std::endl;
-	//std::cout << "cost = " << cost << std::endl;
+
+	/* std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
+	std::cout << "cost a = " << cost_a.transpose() << std::endl;
+	std::cout << "cost_i(i) = " << cost << std::endl; */
 
 	return cost;
 }
@@ -1125,7 +1127,10 @@ double PSBMPC::calculate_control_deviation_cost()
 				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 		}
 	}
-	return cost / pars.n_M;
+	/* printf("K_u (1 - u_m_0) = %.4f | Delta_u(u_m_0, u_m_last) = %.4f | K_chi(chi_0) = %.4f | Delta_chi(chi_0, chi_last) = %.4f\n", 
+		pars.K_u * (1 - offset_sequence[0]), Delta_u(offset_sequence[0], u_m_last), K_chi(offset_sequence[1]), Delta_chi(offset_sequence[1], chi_m_last)); */
+
+	return cost / (double)pars.n_M;
 }
 
 /****************************************************************************************

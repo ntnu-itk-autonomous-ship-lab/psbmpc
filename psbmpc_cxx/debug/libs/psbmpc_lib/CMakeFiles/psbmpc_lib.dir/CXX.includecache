@@ -1150,14 +1150,6 @@ lapacke_mangling.h
 cstdint
 -
 
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/cpe.cpp
-cpe.h
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/cpe.h
-utilities.h
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/utilities.h
-iostream
--
-
 /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/psbmpc.cpp
 utilities.h
 /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/utilities.h
