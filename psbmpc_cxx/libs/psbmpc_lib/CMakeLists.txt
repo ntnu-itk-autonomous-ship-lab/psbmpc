@@ -18,6 +18,8 @@ find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 add_library(psbmpc_lib STATIC 
 	src/psbmpc.cpp 
 	src/psbmpc_parameters.cpp
+	src/sbmpc.cpp 
+	src/sbmpc_parameters.cpp
 	src/ownship.cpp 
 	src/cpe.cpp 
 	src/kf.cpp 

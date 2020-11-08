@@ -48,6 +48,17 @@ public:
 
   KF(const Eigen::Vector4d& xs_0, const Eigen::Matrix4d& P_0, const int ID, const double dt, const double t_0);
 
+  // Use the constructor below for simulations where the KF is used as a tracking system outside the COLAV algorithm
+  // where typically only position measurements of vessels are used.
+  KF(
+    const Eigen::Vector4d &xs_0, 
+    const Eigen::Matrix4d &P_0, 
+    const int ID, 
+    const double dt, 
+    const double t_0, 
+    const Eigen::Matrix4d &Q,
+    const Eigen::Matrix4d &R);
+
   int get_ID() const { return ID; };
 
   double get_time() const { return t; };

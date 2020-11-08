@@ -105,6 +105,42 @@ KF::KF(
 	P_upd = P_0;
 }
 
+// Use the constructor below for simulations where the KF is used as a tracking system outside the COLAV algorithm
+// where typically only position measurements of vessels are used.
+KF::KF(
+	const Eigen::Vector4d &xs_0, 				// In: Initial filter state
+	const Eigen::Matrix4d &P_0,					// In: Initial filter covariance
+	const int ID, 								// In: Filter ID
+	const double dt, 							// In: Sampling interval
+	const double t_0,							// In: Initial time
+	const Eigen::Matrix4d &Q, 					// In: Process noise covariance
+	const Eigen::Matrix4d &R					// In: Measurement noise covariance
+	) : 	
+	ID(ID), t_0(t_0), t(t_0), initialized(true), xs_p(xs_0), P_0(P_0)
+{
+	I.setIdentity();
+
+	A << 1, 0, dt, 0,
+		 0, 1, 0, dt,
+		 0, 0, 1, 0,
+		 0, 0, 0, 1;
+
+	// In this case, only position measurements
+	C <<  	1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 0, 0,
+			0, 0, 0, 0;
+
+	this->Q = Q;
+
+	this->R = R;
+
+	xs_upd = xs_p;
+
+	P_p = P_0;
+	P_upd = P_0;
+}
+
 /****************************************************************************************
 *  Name     : reset
 *  Function : Resets filter to specified time and state, and covariance to P_0
@@ -112,8 +148,8 @@ KF::KF(
 *  Modified :
 *****************************************************************************************/
  void KF::reset(
- 	const Eigen::Vector4d& xs_0,				// In: Initial filter state
-	const Eigen::Matrix4d& P_0,					// In: Initial filter covariance
+ 	const Eigen::Vector4d &xs_0,				// In: Initial filter state
+	const Eigen::Matrix4d &P_0,					// In: Initial filter covariance
  	const double t_0 							// In: Initial time
  	)
 {

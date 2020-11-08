@@ -442,6 +442,60 @@ src/psbmpc_parameters.cpp.s:
 	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc_parameters.cpp.s
 .PHONY : src/psbmpc_parameters.cpp.s
 
+src/sbmpc.o: src/sbmpc.cpp.o
+
+.PHONY : src/sbmpc.o
+
+# target to build an object file
+src/sbmpc.cpp.o:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc.cpp.o
+.PHONY : src/sbmpc.cpp.o
+
+src/sbmpc.i: src/sbmpc.cpp.i
+
+.PHONY : src/sbmpc.i
+
+# target to preprocess a source file
+src/sbmpc.cpp.i:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc.cpp.i
+.PHONY : src/sbmpc.cpp.i
+
+src/sbmpc.s: src/sbmpc.cpp.s
+
+.PHONY : src/sbmpc.s
+
+# target to generate assembly for a file
+src/sbmpc.cpp.s:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc.cpp.s
+.PHONY : src/sbmpc.cpp.s
+
+src/sbmpc_parameters.o: src/sbmpc_parameters.cpp.o
+
+.PHONY : src/sbmpc_parameters.o
+
+# target to build an object file
+src/sbmpc_parameters.cpp.o:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc_parameters.cpp.o
+.PHONY : src/sbmpc_parameters.cpp.o
+
+src/sbmpc_parameters.i: src/sbmpc_parameters.cpp.i
+
+.PHONY : src/sbmpc_parameters.i
+
+# target to preprocess a source file
+src/sbmpc_parameters.cpp.i:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc_parameters.cpp.i
+.PHONY : src/sbmpc_parameters.cpp.i
+
+src/sbmpc_parameters.s: src/sbmpc_parameters.cpp.s
+
+.PHONY : src/sbmpc_parameters.s
+
+# target to generate assembly for a file
+src/sbmpc_parameters.cpp.s:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc_parameters.cpp.s
+.PHONY : src/sbmpc_parameters.cpp.s
+
 src/tracked_obstacle.o: src/tracked_obstacle.cpp.o
 
 .PHONY : src/tracked_obstacle.o
@@ -538,6 +592,12 @@ help:
 	@echo "... src/psbmpc_parameters.o"
 	@echo "... src/psbmpc_parameters.i"
 	@echo "... src/psbmpc_parameters.s"
+	@echo "... src/sbmpc.o"
+	@echo "... src/sbmpc.i"
+	@echo "... src/sbmpc.s"
+	@echo "... src/sbmpc_parameters.o"
+	@echo "... src/sbmpc_parameters.i"
+	@echo "... src/sbmpc_parameters.s"
 	@echo "... src/tracked_obstacle.o"
 	@echo "... src/tracked_obstacle.i"
 	@echo "... src/tracked_obstacle.s"

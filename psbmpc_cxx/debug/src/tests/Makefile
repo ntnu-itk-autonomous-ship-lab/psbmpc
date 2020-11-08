@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-test_psbmpc.o: test_psbmpc.cpp.o
+paper_simulations/test_psbmpc_psim.o: paper_simulations/test_psbmpc_psim.cpp.o
 
-.PHONY : test_psbmpc.o
+.PHONY : paper_simulations/test_psbmpc_psim.o
 
 # target to build an object file
-test_psbmpc.cpp.o:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.o
-.PHONY : test_psbmpc.cpp.o
+paper_simulations/test_psbmpc_psim.cpp.o:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/paper_simulations/test_psbmpc_psim.cpp.o
+.PHONY : paper_simulations/test_psbmpc_psim.cpp.o
 
-test_psbmpc.i: test_psbmpc.cpp.i
+paper_simulations/test_psbmpc_psim.i: paper_simulations/test_psbmpc_psim.cpp.i
 
-.PHONY : test_psbmpc.i
+.PHONY : paper_simulations/test_psbmpc_psim.i
 
 # target to preprocess a source file
-test_psbmpc.cpp.i:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.i
-.PHONY : test_psbmpc.cpp.i
+paper_simulations/test_psbmpc_psim.cpp.i:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/paper_simulations/test_psbmpc_psim.cpp.i
+.PHONY : paper_simulations/test_psbmpc_psim.cpp.i
 
-test_psbmpc.s: test_psbmpc.cpp.s
+paper_simulations/test_psbmpc_psim.s: paper_simulations/test_psbmpc_psim.cpp.s
 
-.PHONY : test_psbmpc.s
+.PHONY : paper_simulations/test_psbmpc_psim.s
 
 # target to generate assembly for a file
-test_psbmpc.cpp.s:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.s
-.PHONY : test_psbmpc.cpp.s
+paper_simulations/test_psbmpc_psim.cpp.s:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/paper_simulations/test_psbmpc_psim.cpp.s
+.PHONY : paper_simulations/test_psbmpc_psim.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... test_psbmpc.o"
-	@echo "... test_psbmpc.i"
-	@echo "... test_psbmpc.s"
+	@echo "... paper_simulations/test_psbmpc_psim.o"
+	@echo "... paper_simulations/test_psbmpc_psim.i"
+	@echo "... paper_simulations/test_psbmpc_psim.s"
 .PHONY : help
 
 

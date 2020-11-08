@@ -2,7 +2,6 @@
 th = 0 : 0.01 : 2.01 * pi;
 x_a = 20 * cos(th); y_a = 20 * sin(th);
 
-disp(WPs_i);
 plot(ax1, WPs_i(2, :), WPs_i(1, :), 'mx', 'Linewidth', 2);
 
 h_X_i{i} = [];
@@ -19,4 +18,6 @@ if i == n_obst
         count = count + 1;
     end
 end
+
+plot(ax1, X
 

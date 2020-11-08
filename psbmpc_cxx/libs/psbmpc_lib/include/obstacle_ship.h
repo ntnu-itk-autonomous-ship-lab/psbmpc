@@ -61,6 +61,8 @@ public:
 
 	Obstacle_Ship();
 
+	Obstacle_Ship(const double T_U, const double  T_chi, const double R_a, const double LOS_LD, const double LOS_K_i);
+
 	void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Vector4d &xs);
 
 	void update_guidance_references(
