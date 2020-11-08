@@ -31,6 +31,8 @@ Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
 
 ../libs/psbmpc_lib/include/obstacle_manager.h
+utilities.h
+../libs/psbmpc_lib/include/utilities.h
 psbmpc_parameters.h
 ../libs/psbmpc_lib/include/psbmpc_parameters.h
 tracked_obstacle.h
@@ -43,6 +45,12 @@ memory
 -
 string
 -
+
+../libs/psbmpc_lib/include/obstacle_ship.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+psbmpc_parameters.h
+../libs/psbmpc_lib/include/psbmpc_parameters.h
 
 ../libs/psbmpc_lib/include/ownship.h
 Eigen/Dense
@@ -75,6 +83,34 @@ memory
 ../libs/psbmpc_lib/include/psbmpc_parameters.h
 psbmpc_index.h
 ../libs/psbmpc_lib/include/psbmpc_index.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+vector
+-
+
+../libs/psbmpc_lib/include/sbmpc.h
+psbmpc_index.h
+../libs/psbmpc_lib/include/psbmpc_index.h
+sbmpc_parameters.h
+../libs/psbmpc_lib/include/sbmpc_parameters.h
+obstacle_manager.h
+../libs/psbmpc_lib/include/obstacle_manager.h
+ownship.h
+../libs/psbmpc_lib/include/ownship.h
+obstacle.h
+../libs/psbmpc_lib/include/obstacle.h
+Eigen/Dense
+../libs/psbmpc_lib/include/Eigen/Dense
+vector
+-
+memory
+-
+
+../libs/psbmpc_lib/include/sbmpc_parameters.h
+psbmpc_index.h
+../libs/psbmpc_lib/include/psbmpc_index.h
+psbmpc_parameters.h
+../libs/psbmpc_lib/include/psbmpc_parameters.h
 Eigen/Dense
 ../libs/psbmpc_lib/include/Eigen/Dense
 vector
@@ -1150,11 +1186,15 @@ lapacke_mangling.h
 cstdint
 -
 
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/test_psbmpc.cpp
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/paper_simulations/test_psbmpc_psim.cpp
+obstacle_ship.h
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/paper_simulations/obstacle_ship.h
 psbmpc.h
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/psbmpc.h
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/paper_simulations/psbmpc.h
+sbmpc.h
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/paper_simulations/sbmpc.h
 utilities.h
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/utilities.h
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/paper_simulations/utilities.h
 iostream
 -
 vector
@@ -1164,9 +1204,9 @@ chrono
 memory
 -
 Eigen/Dense
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/Eigen/Dense
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/paper_simulations/Eigen/Dense
 engine.h
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/engine.h
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/paper_simulations/engine.h
 
 /usr/local/MATLAB/R2019a/extern/include/engine.h
 matrix.h

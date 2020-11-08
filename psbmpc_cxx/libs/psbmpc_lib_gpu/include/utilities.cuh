@@ -103,7 +103,7 @@ template <class T, size_t Max_Rows, size_t Max_Cols>
 inline TML::PDMatrix<T, Max_Rows, Max_Cols> read_matrix_from_file(const size_t n_rows, const size_t n_cols)
 {
     TML::PDMatrix<T, Max_Rows, Max_Cols> out(n_rows, n_cols);
-    std::ifstream indata("/home/trymte/Desktop/cybercolav_cxx/src/matlab_scripts/matrix.csv");
+    std::ifstream indata("/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv");
 
     if(!indata) 
     {

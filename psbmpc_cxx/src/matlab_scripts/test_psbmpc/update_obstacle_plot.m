@@ -3,6 +3,7 @@ delete(h_X_i{i}); delete(h_X_i_ptch{i});
 psi_i_k = X_i(3, k);
 boat_dim_i_k = rotMatrx2D(psi_i_k)*boat_dim;
 
+
 % Plot predicted obstacle trajectory
 h_X_i{i} = plot(ax1, X_i(2, 1:k),X_i(1, 1:k), 'g', 'Linewidth', 1.6);
 

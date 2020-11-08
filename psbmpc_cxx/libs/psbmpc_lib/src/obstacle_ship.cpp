@@ -45,6 +45,22 @@ Obstacle_Ship::Obstacle_Ship()
 		
 }
 
+Obstacle_Ship::Obstacle_Ship(
+	const double T_U, 												// In: Ship first order speed time constant
+	const double T_chi, 											// In: Ship first order course time constant
+	const double R_a, 												// In: Ship radius of acceptance parameter in WP following
+	const double LOS_LD, 											// In: Ship lookahead distance parameter in LOS WP following
+	const double LOS_K_i 											// In: Ship integral gain parameter in LOS WP following
+	) : 
+	T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
+{
+	// Guidance parameters
+	e_int = 0;
+	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
+
+	wp_c_0 = 0;	wp_c_p = 0;	
+}
+
 /****************************************************************************************
 *  Name     : determine_active_waypoint_segment
 *  Function : 
