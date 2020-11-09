@@ -1207,6 +1207,8 @@ Eigen/Dense
 /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/paper_simulations/Eigen/Dense
 engine.h
 /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/paper_simulations/engine.h
+xoshiro.hpp
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/tests/paper_simulations/xoshiro.hpp
 
 /usr/local/MATLAB/R2019a/extern/include/engine.h
 matrix.h

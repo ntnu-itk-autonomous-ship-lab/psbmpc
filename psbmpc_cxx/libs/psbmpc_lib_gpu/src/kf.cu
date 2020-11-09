@@ -42,7 +42,7 @@ KF::KF() :
 		 0, 0, 1, 0,
 		 0, 0, 0, 1;
 
-	C <<  	1, 0, 0, 0,
+	C << 	1, 0, 0, 0,
 			0, 1, 0, 0,
 			0, 0, 1, 0,
 			0, 0, 0, 1;
@@ -83,7 +83,7 @@ KF::KF(
 		 0, 0, 1, 0,
 		 0, 0, 0, 1;
 
-	C <<  	1, 0, 0, 0,
+	C << 	1, 0, 0, 0,
 			0, 1, 0, 0,
 			0, 0, 1, 0,
 			0, 0, 0, 1;
@@ -125,7 +125,7 @@ KF::KF(
 		 0, 0, 0, 1;
 
 	// In this case, only position measurements
-	C <<  	1, 0, 0, 0,
+	C << 	1, 0, 0, 0,
 			0, 1, 0, 0,
 			0, 0, 0, 0,
 			0, 0, 0, 0;
@@ -200,7 +200,6 @@ void KF::update(
 	)
 {
 	if(!initialized)
-
     	throw std::runtime_error("Filter is not initialized!");
 
     if (duration_lost == 0.0){
@@ -218,6 +217,29 @@ void KF::update(
 
     	P_upd = P_p;
     }
+
+	t += dt; // Time used for fault detection (measurement loss)
+}
+
+// Use the update function below when the KF is used as a tracking system outside the COLAV algorithm
+// where typically only position measurements of vessels are used.
+void KF::update(
+	const Eigen::Vector2d &y_m, 				// In: Measurement of cartesian position
+	const double dt 							// In: Sampling interval
+	)
+{
+	if(!initialized)
+    	throw std::runtime_error("Filter is not initialized!");
+
+	Eigen::Matrix<double, 4, 2> K;
+	Eigen::Matrix<double, 2, 4> C_2D = C.block<2, 4>(0, 0);
+	K = P_p * C_2D.transpose() * (C_2D * P_p * C_2D.transpose() + R.block<2, 2>(0, 0).inverse(); 
+
+	xs_upd = xs_p + K * (y_m - C_2D * xs_p);
+
+	P_upd = (I - K * C_2D) * P_p;
+
+	predict(dt); 
 
 	t += dt; // Time used for fault detection (measurement loss)
 }
