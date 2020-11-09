@@ -18,6 +18,3 @@ if i == n_obst
         count = count + 1;
     end
 end
-
-plot(ax1, X
-
