@@ -939,7 +939,7 @@ void SBMPC::assign_optimal_trajectory(
 {
 	int n_samples = std::round(pars.T / pars.dt);
 	// Set current optimal x-y position trajectory, downsample if linear prediction was not used
-	if (pars.prediction_method > Linear)
+	if (false)//(pars.prediction_method > Linear)
 	{
 		int count = 0;
 		optimal_trajectory.resize(2, n_samples / pars.p_step);
