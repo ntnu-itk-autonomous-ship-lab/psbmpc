@@ -1180,6 +1180,22 @@ lapacke_mangling.h
 cstdint
 -
 
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/kf.cpp
+kf.h
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/kf.h
+stdexcept
+-
+
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/obstacle_manager.cpp
+obstacle_manager.h
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/obstacle_manager.h
+string
+-
+iostream
+-
+iomanip
+-
+
 /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/psbmpc.cpp
 utilities.h
 /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/utilities.h
@@ -1209,6 +1225,16 @@ iostream
 -
 engine.h
 /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/engine.h
+
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/tracked_obstacle.cpp
+tracked_obstacle.h
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/tracked_obstacle.h
+utilities.h
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/utilities.h
+assert.h
+/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/libs/psbmpc_lib/src/assert.h
+iostream
+-
 
 /usr/local/MATLAB/R2019a/extern/include/engine.h
 matrix.h
