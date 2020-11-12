@@ -63,8 +63,10 @@ public:
 
   double get_time() const { return t; };
 
+  Eigen::Vector4d get_predicted_state() const { return xs_p; }
   Eigen::Vector4d get_state() const { return xs_upd; };
 
+  Eigen::Matrix4d get_predicted_covariance() const { return P_p; }
   Eigen::Matrix4d get_covariance() const { return P_upd; };
 
   void reset(const Eigen::Vector4d &xs_0, const Eigen::Matrix4d &P_0, const double t_0);
