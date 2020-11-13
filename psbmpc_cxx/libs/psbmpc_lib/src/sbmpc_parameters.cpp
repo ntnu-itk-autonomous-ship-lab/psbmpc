@@ -322,14 +322,14 @@ void SBMPC_Parameters::initialize_pars()
 	t_ts = 50;
 
 	d_init = 1500;								 
-	d_close = 200;
+	d_close = 250;
 	d_safe = 50; 							
-	K_coll = 1.0;		  					
+	K_coll = 2.0;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 3.0;		  					
+	kappa = 100.0;		  					
 	kappa_TC = 100.0;						 
 	K_u = 3;		   						 
 	K_du = 2.5;		    					
