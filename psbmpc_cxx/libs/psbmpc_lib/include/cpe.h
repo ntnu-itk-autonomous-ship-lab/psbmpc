@@ -92,7 +92,8 @@ private:
 	double q, r, dt_seg; 
 	double P_c_p, var_P_c_p, P_c_upd, var_P_c_upd; 
 
-	// Temporaries
+	// Temporaries between dashed lines
+	//--------------------------------------------
 	double y_P_c_i; // Collision probability "measurement" from MCS, temporary var.
 	
 	double t_cpa, d_cpa, K;
@@ -108,11 +109,9 @@ private:
 
 	bool complex_roots;
 
-	// These parameters are double because the calculations
-	// involved in "determine_sample_validity_4D" were found to be
-	// very sensitive to change in floating point number precision
     Eigen::Vector2d roots, p_i_sample, v_i_sample;
     double d, A, B, C, constant;
+	//--------------------------------------------
 	//====================================
 
 	// Common internal sample variables
@@ -135,6 +134,7 @@ private:
 
 	Eigen::MatrixXd xs_os_seg, xs_i_seg, P_i_seg;
 	Eigen::Matrix2d P_i_2D;
+	Eigen::Vector2d v_os_prev, v_i_prev;
 	//====================================
 	void assign_data(const CPE &cpe);
 
@@ -176,7 +176,10 @@ private:
 	double CE_estimation(
 		const Eigen::Vector2d &p_os, 
 		const Eigen::Vector2d &p_i, 
-		const Eigen::Matrix2d &P_i);
+		const Eigen::Matrix2d &P_i,
+		const Eigen::Vector2d &v_os_prev,
+    	const Eigen::Vector2d &v_i_prev, 
+		const double dt);
 
 public:
 
@@ -197,11 +200,6 @@ public:
 		const Eigen::Vector4d &xs_i, 
 		const Eigen::VectorXd &P_i,
 		const double d_safe_i);
-	
-	double estimate(
-		const Eigen::MatrixXd &xs_os,
-		const Eigen::MatrixXd &xs_i,
-		const Eigen::MatrixXd &P_i);
 
 	void estimate_over_trajectories(
 		Eigen::Matrix<double, 1, -1> &P_c_i,

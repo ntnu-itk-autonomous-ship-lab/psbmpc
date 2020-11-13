@@ -63,6 +63,7 @@ private:
 	TML::Vector3f cost_a, Pr_a;
 
 	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
+	// Only keeps n_seg_samples at a time, sliding window. Minimum 2
 	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
 	// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
 	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_p; 
@@ -84,7 +85,7 @@ private:
 	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 
 	// For the CE-method:
-	TML::Vector2f p_os, p_i;
+	TML::Vector2f p_os, p_i, v_os_prev, v_i_prev;
     TML::Matrix2f P_i_2D;
 	//==============================================
 	//==============================================

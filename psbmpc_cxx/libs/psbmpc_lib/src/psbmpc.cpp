@@ -72,11 +72,23 @@ void PSBMPC::calculate_optimal_offsets(
 	int n_obst = data.obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
+	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
+
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
 	{
 		u_opt = 1; 		u_m_last = u_opt;
 		chi_opt = 0; 	chi_m_last = chi_opt;
+
+		for (int M = 0; M < pars.n_M; M++)
+		{
+			opt_offset_sequence(2 * M) = 1.0; opt_offset_sequence(2 * M + 1) = 0.0;
+		}
+		maneuver_times.setZero();
+		ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+		
+		assign_optimal_trajectory(predicted_trajectory);
+
 		return;
 	}
 
@@ -168,7 +180,7 @@ void PSBMPC::calculate_optimal_offsets(
 	
 	//===============================================================================================================
 	double cost;
-	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M), cost_i(n_obst);
+	Eigen::VectorXd cost_i(n_obst);
 	Eigen::MatrixXd P_c_i;
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	min_cost = 1e12;
@@ -1382,7 +1394,7 @@ void PSBMPC::assign_optimal_trajectory(
 {
 	int n_samples = std::round(pars.T / pars.dt);
 	// Set current optimal x-y position trajectory, downsample if linear prediction was not used
-	if (pars.prediction_method > Linear)
+	if (false) //(pars.prediction_method > Linear)
 	{
 		int count = 0;
 		optimal_trajectory.resize(2, n_samples / pars.p_step);

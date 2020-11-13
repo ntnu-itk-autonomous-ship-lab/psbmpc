@@ -103,7 +103,7 @@ public:
 		P_c_i->resize(1, n_samples);
 
 		// For the CE-method:
-		TML::Vector2f p_os, p_i;
+		TML::Vector2f p_os, p_i, v_os_prev, v_i_prev;
 		TML::Matrix2f P_i_2D;
 
 		for (int k = 0; k < n_samples; k++)
@@ -143,12 +143,18 @@ public:
 			switch(cpe_method)
 			{
 				case CE :	
+					if (k > 0)
+					{
+						v_os_prev = xs_seg.get_block<2, 1>(3, n_seg_samples - 2, 2, 1);
+						v_os_prev = rotate_vector_2D(v_os_prev, xs_seg(2, n_seg_samples - 2));
+                    	v_i_prev = xs_i_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
+					}
 					p_os = xs_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 					p_i = xs_i_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 
 					P_i_2D = reshape<16, 1, 4, 4>(P_i_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-					P_c_i->operator()(k) = cpe->CE_estimate(p_os, p_i, P_i_2D);
+					P_c_i->operator()(k) = cpe->CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, dt);
 					printf("k = %d | P_c_i = %.6f\n", k, P_c_i->operator()(k));
 					
 					break;

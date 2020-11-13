@@ -37,7 +37,7 @@ CPE::CPE(
     // CE pars
     n_CE = 500;
     
-    sigma_inject = 1 / 3.0; // dependent on d_safe wrt obstacle i => set in CE-method
+    sigma_inject = 1.0 / 3.0; // dependent on d_safe wrt obstacle i => set in CE-method
 
     alpha_n = 0.9;
 
@@ -52,12 +52,12 @@ CPE::CPE(
 
     rho = 0.9;
 
-    max_it = 10;
+    max_it = 6;
 
     converged_last = false;
 
     // MCSKF4D pars
-    n_MCSKF = 100;
+    n_MCSKF = 500;
 
     r = 0.001;
     q = 8e-4;
@@ -136,40 +136,6 @@ void CPE::initialize(
     }
 }
 
-/****************************************************************************************
-*  Name     : estimate
-*  Function : Input parameters have different size depending on if CE or MCSKF4D are used.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-double CPE::estimate(
-	const Eigen::MatrixXd &xs_os,                       // In: Own-ship state vector(s)
-    const Eigen::MatrixXd &xs_i,                        // In: Obstacle i state vector(s)
-    const Eigen::MatrixXd &P_i                          // In: Obstacle i covariance(s), flattened into n² x n_cols
-    )
-{
-    P_c_est = 0.0;
-
-    n_cols = xs_os.cols();
-    switch (method)
-    {
-        case CE :
-            // If CE is used, (typically when n_cols = 1)
-            // The last column gives the current prediction time information
-            P_i_2D = reshape(P_i, 4, 4).block<2, 2>(0, n_cols - 1);
-
-            P_c_est = CE_estimation(xs_os.block<2, 1>(0, n_cols - 1), xs_i.block<2, 1>(0, n_cols - 1), P_i_2D);
-            break;
-        case MCSKF4D :
-            P_c_est = MCSKF4D_estimation(xs_os, xs_i, P_i);
-            break;
-        default :
-            P_c_est = -1;
-            // Throw
-            break;
-    }
-    return P_c_est;
-}
 
 /****************************************************************************************
 *  Name     : estimate_over_trajectories
@@ -196,13 +162,25 @@ void CPE::estimate_over_trajectories(
 
     initialize(xs_p.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i);
 
+    v_os_prev.setZero(); v_i_prev.setZero();
     k_j_ = 0; k_j = 0;
     for (int k = 0; k < n_samples_traj; k++)
     {
         switch(method)
         {
             case CE :	
-                P_c_i(0, k) = estimate(xs_p.col(k), xs_i_p.col(k), P_i_p.col(k));
+                // If CE is used, (typically when n_cols = 1)
+                // The last column gives the current prediction time information
+                P_i_2D = reshape(P_i_p.col(k), 4, 4).block<2, 2>(0, 0);
+
+                if (k > 0)
+                {   
+                    v_os_prev = xs_p.block<2, 1>(3, k - 1);
+                    v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, k - 1));
+                    v_i_prev = xs_i_p.block<2, 1>(2, k - 1);
+                }
+
+                P_c_i(0, k) = CE_estimation(xs_p.block<2, 1>(0, k), xs_i_p.block<2, 1>(0, k), P_i_2D, v_os_prev, v_i_prev, dt);
                 break;
             case MCSKF4D :                
                 if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
@@ -213,7 +191,7 @@ void CPE::estimate_over_trajectories(
 
                     P_i_seg = P_i_p.block(0, k_j_, 16, n_seg_samples);
 
-                    P_c_i(0, k_j_) = estimate(xs_os_seg, xs_i_seg, P_i_seg);
+                    P_c_i(0, k_j_) = MCSKF4D_estimation(xs_os_seg, xs_i_seg, P_i_seg);
 
                     // Collision probability on this active segment are all equal
                     P_c_i.block(0, k_j_, 1, n_seg_samples) = P_c_i(0, k_j_) * Eigen::MatrixXd::Ones(1, k_j - k_j_ + 1);
@@ -695,7 +673,10 @@ void CPE::update_importance_density()
 double CPE::CE_estimation(
 	const Eigen::Vector2d &p_os,                                                // In: Own-ship position vector
     const Eigen::Vector2d &p_i,                                                 // In: Obstacle i position vector
-    const Eigen::Matrix2d &P_i                                                  // In: Obstacle i positional covariance
+    const Eigen::Matrix2d &P_i,                                                 // In: Obstacle i positional covariance
+    const Eigen::Vector2d &v_os_prev,                                           // In: Previous time step own-ship north-east velocity (or zero if k = 0)
+    const Eigen::Vector2d &v_i_prev,                                            // In: Previous time step obstacle north-east velocity (or zero if k = 0)
+    const double dt                                                             // In: Time step
     )
 {
     P_c_CE = 0.0;
@@ -709,7 +690,7 @@ double CPE::CE_estimation(
     else                       { var_P_i_largest = P_i(1, 1); }
 
     // This large a distance usually means no effective conflict zone, as
-    // approx 99.7% of probability mass inside 3.5 * standard deviations
+    // practically 100% of probability mass inside 3.5 * standard deviations
     // (assuming equal std dev in x, y (assumption))
     if (d_0i > d_safe + 3.5 * sqrt(var_P_i_largest)) 
     { 
@@ -723,7 +704,7 @@ double CPE::CE_estimation(
     if (converged_last)
     {
         mu_CE_prev = mu_CE_last; 
-        mu_CE = mu_CE_last;
+        mu_CE = mu_CE_last + (v_os_prev + v_i_prev) * dt;
 
         P_CE_prev = P_CE_last; 
         P_CE = P_CE_last + pow(sigma_inject, 2) * Eigen::Matrix2d::Identity();

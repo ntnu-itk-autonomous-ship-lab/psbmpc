@@ -80,6 +80,7 @@ private:
 	bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
 
 	TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> weights, integrand, importance;
+	TML::Vector2f v_os_prev, v_i_prev;
 	//====================================
 
 	//====================================
@@ -199,12 +200,10 @@ public:
 	__device__ float CE_estimate(
 		const TML::Vector2f &p_os, 
 		const TML::Vector2f &p_i, 
-		const TML::Matrix2f &P_i);
-	
-	__device__ float estimate(
-		const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,
-		const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_i,
-		const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i);
+		const TML::Matrix2f &P_i,
+		const TML::Vector2f &v_os_prev,
+		const TML::Vector2f &v_i_prev,
+		const float dt);
 
 	__device__ void estimate_over_trajectories(
 		TML::PDMatrix<float, 1, MAX_N_SAMPLES> &P_c_i,

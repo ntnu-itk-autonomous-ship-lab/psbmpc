@@ -233,7 +233,7 @@ void KF::update(
 
 	Eigen::Matrix<double, 4, 2> K;
 	Eigen::Matrix<double, 2, 4> C_2D = C.block<2, 4>(0, 0);
-	K = P_p * C_2D.transpose() * (C_2D * P_p * C_2D.transpose() + R.block<2, 2>(0, 0).inverse(); 
+	K = P_p * C_2D.transpose() * (C_2D * P_p * C_2D.transpose() + R.block<2, 2>(0, 0).inverse()); 
 
 	xs_upd = xs_p + K * (y_m - C_2D * xs_p);
 

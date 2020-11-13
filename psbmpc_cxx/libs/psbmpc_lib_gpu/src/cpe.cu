@@ -47,7 +47,7 @@ __host__ __device__ CPE::CPE(
 {
     // CE pars
 
-    n_CE = 1000;
+    n_CE = 500;
     
     sigma_inject = 1.0f / 3.0f; // dependent on d_safe wrt obstacle i => set in CE-method
 
@@ -70,7 +70,7 @@ __host__ __device__ CPE::CPE(
 
     // MCSKF4D pars
     
-    n_MCSKF = 1000;
+    n_MCSKF = 500;
 
     r = 0.001f;
     q = 8e-4;
@@ -121,46 +121,6 @@ __device__ void CPE::initialize(
     }
 }
 
-/****************************************************************************************
-*  Name     : estimate
-*  Function : Input parameters have different size depending on if CE or MCSKF4D are used.
-*             NOT USED CURRENTLY IN THIS .CU IMPLEMENTATION.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__device__ float CPE::estimate(
-	const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,                       // In: Own-ship state vector(s)
-    const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_i,                        // In: Obstacle i state vector(s)
-    const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i                          // In: Obstacle i covariance(s), flattened into n² x n_cols
-    )
-{
-    n_seg_samples = xs_os.get_cols();
-    TML::Vector2f p_os, p_i;
-    TML::Matrix2f P_i_2D;
-
-    P_c_est = 0.0;
-    switch (method)
-    {
-        case CE :
-            // The last column gives the current prediction time information
-            p_os = xs_os.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
-            p_i = xs_i.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
-
-            P_i_2D = reshape<16, 1, 4, 4>(P_i.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
-
-            P_c_est = CE_estimate(p_os, p_i, P_i_2D);
-            break;
-        case MCSKF4D :
-            P_c_est = MCSKF4D_estimate(xs_os, xs_i, P_i);
-            break;
-        default :
-            P_c_est = -1;
-            // Throw
-            break;
-    }
-    
-    return P_c_est;
-}
 
 /****************************************************************************************
 *  Name     : estimate_over_trajectories
@@ -190,17 +150,24 @@ __device__ void CPE::estimate_over_trajectories(
     
     initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i);
 
+    v_os_prev.set_zero(); v_i_prev.set_zero();
     for (int k = 0; k < n_traj_samples; k++)
     {
         switch(method)
         {
             case CE :	
+                if (k > 0)
+                {
+                    v_os_prev = xs_p.get_block<2, 1>(3, k - 1, 2, 1);
+                    v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, k - 1));
+                    v_i_prev = xs_i_p.get_block<2, 1>(2, k - 1, 2, 1);
+                }
                 p_os = xs_p.get_block<2, 1>(0, k, 2, 1);
                 p_i = xs_i_p.get_block<2, 1>(0, k, 2, 1);
 
                 P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(k), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-                P_c_i(0, k) = CE_estimate(p_os, p_i, P_i_2D);
+                P_c_i(0, k) = CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, dt);
                 break;
             case MCSKF4D :                
                 if (fmod(k, n_seg_samples_temp - 1) == 0 && k > 0)
@@ -728,9 +695,12 @@ __device__ void CPE::update_importance_density(
 *  Modified :
 *****************************************************************************************/
 __device__ float CPE::CE_estimate(
-	const TML::Vector2f &p_os,                                                // In: Own-ship position vector
-    const TML::Vector2f &p_i,                                                 // In: Obstacle i position vector
-    const TML::Matrix2f &P_i                                                  // In: Obstacle i positional covariance
+	const TML::Vector2f &p_os,                                                  // In: Own-ship position vector
+    const TML::Vector2f &p_i,                                                   // In: Obstacle i position vector
+    const TML::Matrix2f &P_i,                                                   // In: Obstacle i positional covariance
+    const TML::Vector2f &v_os_prev,                                             // In: Previous time step own-ship north-east velocity (or zero if k = 0)
+    const TML::Vector2f &v_i_prev,                                              // In: Previous time step obstacle north-east velocity (or zero if k = 0)
+    const float dt                                                              // In: Time step
     )
 {            
     P_c_CE = 0.0f;
@@ -756,7 +726,10 @@ __device__ float CPE::CE_estimate(
     sigma_inject = d_safe / 3.0f;
     if (converged_last)
     {
-        mu_CE_prev = mu_CE_last; mu_CE = mu_CE_last;
+        mu_CE_prev = mu_CE_last; 
+        mu_CE = v_os_prev + v_i_prev; 
+        mu_CE *= dt; 
+        mu_CE += mu_CE_last;
 
         P_CE_prev = P_CE_last; 
         P_CE = P_CE_last + powf(sigma_inject, 2) * TML::Matrix2f::identity();

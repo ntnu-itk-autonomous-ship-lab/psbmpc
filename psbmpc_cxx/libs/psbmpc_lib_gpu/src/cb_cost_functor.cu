@@ -114,6 +114,7 @@ __device__ float CB_Cost_Functor::operator()(
 		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 		{	
 			cost_ps = 0;
+			v_os_prev.set_zero(); v_i_prev.set_zero();
 			for (int k = 0; k < n_samples; k++)
 			{	
 				//==========================================================================================
@@ -169,12 +170,18 @@ __device__ float CB_Cost_Functor::operator()(
 					switch(pars->cpe_method)
 					{
 						case CE :	
+							if (k > 0)
+							{
+								v_os_prev = xs_p.get_block<2, 1>(3, n_seg_samples - 2, 2, 1);
+								v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, n_seg_samples - 2));
+								v_i_prev = xs_i_p.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
+							}
 							p_os = xs_p.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 							p_i = xs_i_p.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 
 							P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-							P_c_i(ps) = cpe[cb_index].CE_estimate(p_os, p_i, P_i_2D);
+							P_c_i(ps) = cpe[cb_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt);
 							break;
 						case MCSKF4D :                
 							if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
