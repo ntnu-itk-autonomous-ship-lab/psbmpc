@@ -18,19 +18,10 @@
 *
 *****************************************************************************************/
 
+#include "utilities.h"
 #include "psbmpc_parameters.h"
 #include "Eigen/Dense"
 #include <vector>
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-#ifndef DEG2RAD
-#define DEG2RAD M_PI / 180.0f
-#endif
-#ifndef RAD2DEG
-#define RAD2DEG 180.0f / M_PI
-#endif
 
 
 /****************************************************************************************
@@ -163,7 +154,7 @@ void PSBMPC_Parameters::set_par(
 	{	
 		switch(index)
 		{
-			case i_ipar_n_M 				: n_M = value; break;
+			case i_ipar_n_M 				: n_M = value; break; 	// Should here resize offset matrices to make this change legal
 			default : 
 				// Throw
 				break;
@@ -299,7 +290,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 		ipar_low[i] = 0.0;
 		ipar_high[i] = 1e12;
 	}
-	ipar_low[i_ipar_n_M] = 1; ipar_high[i_ipar_n_M] = 5; 
+	ipar_low[i_ipar_n_M] = 1; ipar_high[i_ipar_n_M] = 10; 
 
 	//std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
 	//std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
@@ -377,14 +368,14 @@ void PSBMPC_Parameters::initialize_pars()
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
 	}
 
-	obstacle_course_changes.resize(1);
+	obstacle_course_changes.resize(3);
 	obstacle_course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 
 	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 180.0; 	      // 400.0, 300.0, 240 (sim/Euler)
+	T = 140.0; 	      // 400.0, 300.0, 240 (sim/Euler)
 	dt = 5.0;		      // 5.0, 0.5 (sim/Euler)
   	T_static = 60.0;		  // (50.0)
 
@@ -394,17 +385,17 @@ void PSBMPC_Parameters::initialize_pars()
 		dt = 0.5; 
 		p_step = 10;
 	}
-	t_ts = 25;
+	t_ts = 35;
 
 	d_init = 1500;								 
-	d_close = 250;
+	d_close = 1000;
 	d_safe = 50; 							
 	K_coll = 2.0;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 3.0;		  					
+	kappa = 30.0;		  					
 	kappa_TC = 100.0;						 
 	K_u = 3;		   						 
 	K_du = 2.5;		    					

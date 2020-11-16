@@ -2158,6 +2158,7 @@ libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc.cpp.o
 libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc_parameters.cpp.o
  ../libs/psbmpc_lib/include/psbmpc_index.h
  ../libs/psbmpc_lib/include/psbmpc_parameters.h
+ ../libs/psbmpc_lib/include/utilities.h
  ../libs/third_party_libs/Eigen/Cholesky
  ../libs/third_party_libs/Eigen/Core
  ../libs/third_party_libs/Eigen/Dense
