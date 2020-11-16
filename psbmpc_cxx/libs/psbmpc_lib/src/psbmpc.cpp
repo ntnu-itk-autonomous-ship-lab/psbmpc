@@ -273,15 +273,15 @@ void PSBMPC::calculate_optimal_offsets(
 	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
 	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
 
-	std::cout << "Optimal offset sequence : ";
+	/* std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)
 	{
 		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
 		if (M < pars.n_M - 1) std::cout << ", ";
 	}
-	std::cout << std::endl;
+	std::cout << std::endl; */
 
-	std::cout << "Cost at optimum : " << min_cost << std::endl;
+	//std::cout << "Cost at optimum : " << min_cost << std::endl;
 
 	/* engClose(ep); */ 
 }
@@ -463,14 +463,14 @@ void PSBMPC::initialize_prediction(
 			// obstacle (that is not passed) is taken at t_cpa_min
 			if (d_cpa(index_closest) > d_safe_i)
 			{
-				std::cout << "OS maneuver M = " << M << " at t = " << t_cpa(index_closest) << " wrt obstacle " << index_closest << std::endl;
+				//std::cout << "OS maneuver M = " << M << " at t = " << t_cpa(index_closest) << " wrt obstacle " << index_closest << std::endl;
 				maneuvered_by[index_closest] = true;
 				maneuver_times(M) = std::round(t_cpa(index_closest) / pars.dt);
 			}
 		}
 	}
 	
-	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
+	//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -532,7 +532,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 		}	
 	}
 	//std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
-	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
+	//std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
 	// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
 	ps_weights_i.resize(n_ps[i]);
 	Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
@@ -943,11 +943,8 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 {
 	// l_i is the collision cost modifier depending on the obstacle track loss.
 	double cost(0.0), cost_ps(0.0), C(0.0), l_i(0.0);
-	Eigen::VectorXd max_cost_ps(n_ps[i]);
-	for (int ps = 0; ps < n_ps[i]; ps++)
-	{
-		max_cost_ps(ps) = 0.0;
-	}
+	Eigen::VectorXd max_cost_ps(n_ps[i]), max_cost_ps_normalized(n_ps[i]);
+	max_cost_ps.setZero(); max_cost_ps_normalized.setZero();
 
 	int n_samples = trajectory.cols();
 	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
@@ -1047,13 +1044,14 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	{
 		if (mu_i[ps])
 		{
-			max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
+			max_cost_ps_normalized(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
 		}
 		else
 		{
-			max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
+			max_cost_ps_normalized(ps) = Pr_CC_i * max_cost_ps(ps);
 		}
 	}
+	max_cost_ps_normalized = max_cost_ps_normalized / max_cost_ps_normalized.sum();
 
 	Eigen::Vector3d cost_a = {0, 0, 0};
 	Eigen::VectorXd Pr_a = data.obstacles[i].get_intention_probabilities();
@@ -1064,12 +1062,12 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 		// Starboard maneuvers
 		if (ps < (n_ps[i] - 1) / 2 + 1)
 		{
-			cost_a(1) += max_cost_ps(ps);
+			cost_a(1) += max_cost_ps_normalized(ps);
 		}
 		// Port maneuvers
 		else
 		{
-			cost_a(2) += max_cost_ps(ps);
+			cost_a(2) += max_cost_ps_normalized(ps);
 		}
 	}
 	// Average the cost for the corresponding intention

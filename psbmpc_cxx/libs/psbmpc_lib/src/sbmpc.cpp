@@ -255,7 +255,7 @@ void SBMPC::calculate_optimal_offsets(
 	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
 	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
 
-	std::cout << "Optimal offset sequence : ";
+	/* std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)
 	{
 		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
@@ -263,7 +263,7 @@ void SBMPC::calculate_optimal_offsets(
 	}
 	std::cout << std::endl;
 
-	std::cout << "Cost at optimum : " << min_cost << std::endl;
+	std::cout << "Cost at optimum : " << min_cost << std::endl; */
 
 	/* engClose(ep); */ 
 }
@@ -406,13 +406,13 @@ void SBMPC::initialize_prediction(
 			// obstacle (that is not passed) is taken at t_cpa_min
 			if (d_cpa(index_closest) > d_safe_i)
 			{
-				std::cout << "OS maneuver M = " << M << " at t = " << t_cpa(index_closest) << " wrt obstacle " << index_closest << std::endl;
+				//std::cout << "OS maneuver M = " << M << " at t = " << t_cpa(index_closest) << " wrt obstacle " << index_closest << std::endl;
 				maneuvered_by[index_closest] = true;
 				maneuver_times(M) = std::round(t_cpa(index_closest) / pars.dt);
 			}
 		}
 	}
-	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
+	//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 
 
