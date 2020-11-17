@@ -329,7 +329,7 @@ void SBMPC_Parameters::initialize_pars()
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 30.0;		  					
+	kappa = 8.0;		  					
 	kappa_TC = 100.0;						 
 	K_u = 3;		   						 
 	K_du = 2.5;		    					
