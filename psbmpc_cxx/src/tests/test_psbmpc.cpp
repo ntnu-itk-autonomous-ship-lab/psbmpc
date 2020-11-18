@@ -113,18 +113,18 @@ int main(){
 	//=====================================================================
 	// Matlab array setup for the ownship and obstacle, ++
 	//=====================================================================
-	mxArray *traj_os = mxCreateDoubleMatrix(6, N, mxREAL);
-	mxArray *wps_os = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
+	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, N, mxREAL);
+	mxArray *wps_os_mx = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
 
-	double *ptraj_os = mxGetPr(traj_os); 
-	double *p_wps_os = mxGetPr(wps_os); 
+	double *p_traj_os = mxGetPr(traj_os_mx); 
+	double *p_wps_os = mxGetPr(wps_os_mx); 
 
 	Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_os, 2, n_wps_os);
 	map_wps_i = waypoints;
 
-	std::vector<mxArray*> traj_i(n_obst); 
-	std::vector<mxArray*> P_traj_i(n_obst); 
-	std::vector<mxArray*> wps_i(n_obst);
+	std::vector<mxArray*> traj_i_mx(n_obst); 
+	std::vector<mxArray*> P_traj_i_mx(n_obst); 
+	std::vector<mxArray*> wps_i_mx(n_obst);
 
 	double* ptraj_i; 
 	double* p_P_traj_i; 
@@ -167,9 +167,9 @@ int main(){
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], ERK1, LOS, T_sim, dt);
 
-		wps_i[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
-		traj_i[i] = mxCreateDoubleMatrix(6, N, mxREAL);
-		P_traj_i[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
+		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
+		traj_i_mx[i] = mxCreateDoubleMatrix(6, N, mxREAL);
+		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
 
 //*****************************************************************************************************************
@@ -220,7 +220,7 @@ int main(){
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
 	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
 
-	mxArray *pred_traj;
+	mxArray *pred_traj_mx;
 	double *p_pred_traj;
 
 	mxArray *static_obst_mx = mxCreateDoubleMatrix(4, n_static_obst, mxREAL);
@@ -233,19 +233,19 @@ int main(){
 	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
 	engPutVariable(ep, "T_sim", T_sim_mx);
-	engPutVariable(ep, "WPs", wps_os);
+	engPutVariable(ep, "WPs", wps_os_mx);
 
 	engEvalString(ep, "init_psbmpc_plotting");
-	mxArray *i_mx, *k_s;
+	mxArray *i_mx, *k_s_mx;
 
 	for (int i = 0; i < n_obst; i++)
 	{
-		p_wps_i = mxGetPr(wps_i[i]);
+		p_wps_i = mxGetPr(wps_i_mx[i]);
 
 		Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_i, 2, n_wps_i);
 		map_wps_i = waypoints_i[i];
 
-		engPutVariable(ep, "WPs_i", wps_i[i]);
+		engPutVariable(ep, "WPs_i", wps_i_mx[i]);
 
 		i_mx = mxCreateDoubleScalar(i + 1);
 		engPutVariable(ep, "i", i_mx);
@@ -322,27 +322,27 @@ int main(){
 		buffer[BUFSIZE] = '\0';
 		engOutputBuffer(ep, buffer, BUFSIZE);
 
-		k_s = mxCreateDoubleScalar(k + 1);
-		engPutVariable(ep, "k", k_s);
+		k_s_mx = mxCreateDoubleScalar(k + 1);
+		engPutVariable(ep, "k", k_s_mx);
 		
-		pred_traj = mxCreateDoubleMatrix(predicted_trajectory.rows(), predicted_trajectory.cols(), mxREAL);
-		p_pred_traj = mxGetPr(pred_traj);
+		pred_traj_mx = mxCreateDoubleMatrix(predicted_trajectory.rows(), predicted_trajectory.cols(), mxREAL);
+		p_pred_traj = mxGetPr(pred_traj_mx);
 
 		Eigen::Map<Eigen::MatrixXd> map_pred_traj_os(p_pred_traj, 2, predicted_trajectory.cols());
 		map_pred_traj_os = predicted_trajectory;
 
-		Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, N);
+		Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os, 6, N);
 		map_traj_os = trajectory;
 
-		engPutVariable(ep, "X_pred", pred_traj);
-		engPutVariable(ep, "X", traj_os);
+		engPutVariable(ep, "X_pred", pred_traj_mx);
+		engPutVariable(ep, "X", traj_os_mx);
 
 		engEvalString(ep, "update_ownship_plot");
 
 		for(int i = 0; i < n_obst; i++)
 		{
-			ptraj_i = mxGetPr(traj_i[i]);
-			p_P_traj_i = mxGetPr(P_traj_i[i]);
+			ptraj_i = mxGetPr(traj_i_mx[i]);
+			p_P_traj_i = mxGetPr(P_traj_i_mx[i]);
 
 			Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 6, N);
 			Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, 1);
@@ -350,8 +350,8 @@ int main(){
 			map_traj_i = trajectory_i[i];
 			map_P_traj_i = trajectory_covariances_i[i];
 			
-			engPutVariable(ep, "X_i", traj_i[i]);
-			engPutVariable(ep, "P_i", P_traj_i[i]);
+			engPutVariable(ep, "X_i", traj_i_mx[i]);
+			engPutVariable(ep, "P_i", P_traj_i_mx[i]);
 
 			i_mx = mxCreateDoubleScalar(i + 1);
 			engPutVariable(ep, "i", i_mx);
@@ -362,14 +362,19 @@ int main(){
 		
 	}
 
-	mxDestroyArray(traj_os);
-	mxDestroyArray(wps_os);
-	mxDestroyArray(pred_traj);
+	mxDestroyArray(traj_os_mx);
+	mxDestroyArray(wps_os_mx);
+	mxDestroyArray(pred_traj_mx);
+	mxDestroyArray(i_mx);
+	mxDestroyArray(k_s_mx);
+	mxDestroyArray(T_sim_mx);
+	mxDestroyArray(n_obst_mx);
+	mxDestroyArray(n_static_obst_mx);
 	for (int i = 0; i < n_obst; i++)
 	{
-		mxDestroyArray(traj_i[i]);
-		mxDestroyArray(P_traj_i[i]);
-		mxDestroyArray(wps_i[i]);
+		mxDestroyArray(traj_i_mx[i]);
+		mxDestroyArray(P_traj_i_mx[i]);
+		mxDestroyArray(wps_i_mx[i]);
 	}
 	engClose(ep);  
 

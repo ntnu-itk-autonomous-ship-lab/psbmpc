@@ -1,9 +1,9 @@
 /****************************************************************************************
 *
-*  File name : test_obstacle_ship.cpp
+*  File name : test_obstacle_ship.cu
 *
 *  Function  : Test file for the Obstacle_Ship class for PSB-MPC, using Matlab for 
-*			   visualization.
+*			   visualization. Not complete yet. 
 *			   
 *	           ---------------------
 *
@@ -65,7 +65,8 @@ int main(){
 	trajectory.resize(4, n_samples);
 	trajectory.block<4, 1>(0, 0) << xs;
 
-	waypoints.resize(2, 7); 
+	int n_wps = 7;
+	waypoints.resize(2, n_wps); 
 	waypoints << 0, 200, 200, 0,    0, 300, 1000,
 				 0, -50,  -200, -200,  0, 300, 0;
 
@@ -82,29 +83,33 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
-	mxArray *traj = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
+	mxArray *traj_mx = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+	mxArray *wps_mx = mxCreateDoubleMatrix(2, 7, mxREAL);
+	mxArray *T_sim_mx = mxCreateDoubleScalar(T);
+	mxArray *dt_sim_mx = mxCreateDoubleScalar(dt);
 
-	double *ptraj = mxGetPr(traj);
-	double *pwps = mxGetPr(wps);
+	double *p_traj_mx = mxGetPr(traj_mx);
+	double *p_wps_mx = mxGetPr(wps_mx);
 
-	Eigen::Map<Eigen::MatrixXd> map_traj(ptraj, 4, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_mx, 4, n_samples);
 	map_traj = trajectory;
 
-	Eigen::Map<Eigen::MatrixXd> map_wps(pwps, 2, 7);
+	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_mx, 2, n_wps);
 	map_wps = waypoints;
 
 	buffer[BUFSIZE] = '\0';
 	engOutputBuffer(ep, buffer, BUFSIZE);
 
-	engPutVariable(ep, "X", traj);
-	engPutVariable(ep, "WPs", wps);
+	engPutVariable(ep, "X", traj_mx);
+	engPutVariable(ep, "WPs", wps_mx);
+	engPutVariable(ep, "T_sim", T_sim_mx);
+	engPutVariable(ep, "dt_sim", dt_sim_mx);
 
-	engEvalString(ep, "test_ownship_plot");
+	engEvalString(ep, "test_obstacle_ship_plot");
 	
 	printf("%s", buffer);
-	mxDestroyArray(traj);
-	mxDestroyArray(wps);
+	mxDestroyArray(traj_mx);
+	mxDestroyArray(wps_mx);
 	engClose(ep);
 
 	return 0;
