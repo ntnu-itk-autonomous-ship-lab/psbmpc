@@ -204,19 +204,19 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
-	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
-	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
+	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *wps_mx = mxCreateDoubleMatrix(2, 7, mxREAL);
 
-	double *ptraj_os = mxGetPr(traj_os);
-	double *pwps = mxGetPr(wps);
+	double *p_traj_os = mxGetPr(traj_os_mx);
+	double *p_wps = mxGetPr(wps_mx);
 
-	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-	mxArray *vtraj_i = mxCreateDoubleMatrix(2, n_samples, mxREAL);
-	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
+	mxArray *traj_i_mx = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+	mxArray *v_traj_i_mx = mxCreateDoubleMatrix(2, n_samples, mxREAL);
+	mxArray *P_traj_i_mx = mxCreateDoubleMatrix(16, n_samples, mxREAL);
 
-	double *ptraj_i = mxGetPr(traj_i);
-	double *pvtraj_i = mxGetPr(vtraj_i);
-	double *p_P_traj_i = mxGetPr(P_traj_i);
+	double *p_traj_i = mxGetPr(traj_i_mx);
+	double *p_v_traj_i = mxGetPr(v_traj_i_mx);
+	double *p_P_traj_i = mxGetPr(P_traj_i_mx);
 
 	mxArray *Pcoll_CE = mxCreateDoubleMatrix(1, n_samples, mxREAL);
 	mxArray *Pcoll_MCSKF = mxCreateDoubleMatrix(1, n_samples, mxREAL);
@@ -224,17 +224,17 @@ int main(){
 	double *p_CE = mxGetPr(Pcoll_CE);
 	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
-	Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os, 6, n_samples);
 	map_traj_os = trajectory;
 
-	Eigen::Map<Eigen::MatrixXd> map_wps(pwps, 2, 2);
+	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps, 2, 2);
 	map_wps = waypoints;
 
-	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_traj_i(p_traj_i, 4, n_samples);
 	map_traj_i = xs_p[0];
 
-	Eigen::Map<Eigen::MatrixXd> map_vtraj_i(pvtraj_i, 2, n_samples);
-	map_vtraj_i = v_p[0];
+	Eigen::Map<Eigen::MatrixXd> map_v_traj_i(p_v_traj_i, 2, n_samples);
+	map_v_traj_i = v_p[0];
 
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 	map_P_traj_i = P_p;
@@ -248,12 +248,12 @@ int main(){
 	buffer[BUFSIZE] = '\0';
 	engOutputBuffer(ep, buffer, BUFSIZE);
 
-	engPutVariable(ep, "X", traj_os);
-	engPutVariable(ep, "WPs", wps);
+	engPutVariable(ep, "X", traj_os_mx);
+	engPutVariable(ep, "WPs", wps_mx);
 
-	engPutVariable(ep, "X_i", traj_i);
-	engPutVariable(ep, "v", vtraj_i);
-	engPutVariable(ep, "P_flat", P_traj_i);
+	engPutVariable(ep, "X_i", traj_i_mx);
+	engPutVariable(ep, "v", v_traj_i_mx);
+	engPutVariable(ep, "P_flat", P_traj_i_mx);
 
 	engPutVariable(ep, "P_c_CE", Pcoll_CE);
 	engPutVariable(ep, "P_c_MCSKF", Pcoll_MCSKF);
@@ -263,12 +263,12 @@ int main(){
 	//save_matrix_to_file(P_c_i_MCSKF[0]);
 
 	printf("%s", buffer);
-	mxDestroyArray(traj_os);
-	mxDestroyArray(wps);
+	mxDestroyArray(traj_os_mx);
+	mxDestroyArray(wps_mx);
 
-	mxDestroyArray(traj_i);
-	mxDestroyArray(vtraj_i);
-	mxDestroyArray(P_traj_i);
+	mxDestroyArray(traj_i_mx);
+	mxDestroyArray(v_traj_i_mx);
+	mxDestroyArray(P_traj_i_mx);
 
 	mxDestroyArray(Pcoll_CE);
 	mxDestroyArray(Pcoll_MCSKF);

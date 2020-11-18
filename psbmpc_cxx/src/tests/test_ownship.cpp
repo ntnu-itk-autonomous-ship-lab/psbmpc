@@ -46,7 +46,7 @@ int main(){
 	Eigen::Matrix<double, 6, 1> xs;
 	xs << 0, 0, 0, 6, 0, 0;
 
-	double T = 300; double dt = 0.5;
+	double T = 250; double dt = 0.5;
 
 	double u_d = 6.0; double chi_d = 0.0;
 
@@ -77,29 +77,29 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
-	mxArray *traj = mxCreateDoubleMatrix(6, n_samples, mxREAL);
-	mxArray *wps = mxCreateDoubleMatrix(2, 7, mxREAL);
+	mxArray *traj_mx = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *wps_mx = mxCreateDoubleMatrix(2, 7, mxREAL);
 
-	double *ptraj = mxGetPr(traj);
-	double *pwps = mxGetPr(wps);
+	double *p_traj_mx = mxGetPr(traj_mx);
+	double *p_wps_mx = mxGetPr(wps_mx);
 
-	Eigen::Map<Eigen::MatrixXd> map_traj(ptraj, 6, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_mx, 6, n_samples);
 	map_traj = trajectory;
 
-	Eigen::Map<Eigen::MatrixXd> map_wps(pwps, 2, 7);
+	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_mx, 2, 7);
 	map_wps = waypoints;
 
 	buffer[BUFSIZE] = '\0';
 	engOutputBuffer(ep, buffer, BUFSIZE);
 
-	engPutVariable(ep, "X", traj);
-	engPutVariable(ep, "WPs", wps);
+	engPutVariable(ep, "X", traj_mx);
+	engPutVariable(ep, "WPs", wps_mx);
 
 	engEvalString(ep, "test_ownship_plot");
 	
 	printf("%s", buffer);
-	mxDestroyArray(traj);
-	mxDestroyArray(wps);
+	mxDestroyArray(traj_mx);
+	mxDestroyArray(wps_mx);
 	engClose(ep);
 
 	return 0;

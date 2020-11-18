@@ -100,13 +100,13 @@ int main()
 		if (k < n_samples - 1)	v_p[0].col(k + 1) = v;
 	}
 	
-	mxArray *traj = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-	mxArray *vtraj = mxCreateDoubleMatrix(2, n_samples, mxREAL);
-	mxArray *P_traj = mxCreateDoubleMatrix(16, n_samples, mxREAL);
+	mxArray *traj_mx = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+	mxArray *v_traj_mx = mxCreateDoubleMatrix(2, n_samples, mxREAL);
+	mxArray *P_traj_mx = mxCreateDoubleMatrix(16, n_samples, mxREAL);
 
-	double *ptraj = mxGetPr(traj);
-	double *pvtraj = mxGetPr(vtraj);
-	double *p_P_traj = mxGetPr(P_traj);
+	double *p_traj = mxGetPr(traj_mx);
+	double *p_v_traj = mxGetPr(v_traj_mx);
+	double *p_P_traj = mxGetPr(P_traj_mx);
 
 	double t = 0;
 	Eigen::Vector4d xs = xs_0;
@@ -127,11 +127,11 @@ int main()
 		}
 	}
 
-	Eigen::Map<Eigen::MatrixXd> map_traj(ptraj, 4, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_traj(p_traj, 4, n_samples);
 	map_traj = xs_p[0];
 
-	Eigen::Map<Eigen::MatrixXd> map_vtraj(pvtraj, 2, n_samples);
-	map_vtraj = v_p[0];
+	Eigen::Map<Eigen::MatrixXd> map_v_traj(p_v_traj, 2, n_samples);
+	map_v_traj = v_p[0];
 
 	Eigen::Map<Eigen::MatrixXd> map_P_traj(p_P_traj, 16, n_samples);
 	map_P_traj = P_p;
@@ -139,15 +139,15 @@ int main()
 	buffer[BUFSIZE] = '\0';
 	engOutputBuffer(ep, buffer, BUFSIZE);
 
-	engPutVariable(ep, "X", traj);
-	engPutVariable(ep, "v", vtraj);
-	engPutVariable(ep, "P_flat", P_traj);
+	engPutVariable(ep, "X", traj_mx);
+	engPutVariable(ep, "v", v_traj_mx);
+	engPutVariable(ep, "P_flat", P_traj_mx);
 	engEvalString(ep, "test_mrou_plot");
 
 	printf("%s", buffer);
-	mxDestroyArray(traj);
-	mxDestroyArray(vtraj);
-	mxDestroyArray(P_traj);
+	mxDestroyArray(traj_mx);
+	mxDestroyArray(v_traj_mx);
+	mxDestroyArray(P_traj_mx);
 	engClose(ep);
 	
 	return 0;

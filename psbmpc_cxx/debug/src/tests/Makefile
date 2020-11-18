@@ -145,32 +145,32 @@ tester/fast:
 	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-paper_simulations/test_psbmpc_psim.o: paper_simulations/test_psbmpc_psim.cpp.o
+test_obstacle_ship.o: test_obstacle_ship.cpp.o
 
-.PHONY : paper_simulations/test_psbmpc_psim.o
+.PHONY : test_obstacle_ship.o
 
 # target to build an object file
-paper_simulations/test_psbmpc_psim.cpp.o:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/paper_simulations/test_psbmpc_psim.cpp.o
-.PHONY : paper_simulations/test_psbmpc_psim.cpp.o
+test_obstacle_ship.cpp.o:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle_ship.cpp.o
+.PHONY : test_obstacle_ship.cpp.o
 
-paper_simulations/test_psbmpc_psim.i: paper_simulations/test_psbmpc_psim.cpp.i
+test_obstacle_ship.i: test_obstacle_ship.cpp.i
 
-.PHONY : paper_simulations/test_psbmpc_psim.i
+.PHONY : test_obstacle_ship.i
 
 # target to preprocess a source file
-paper_simulations/test_psbmpc_psim.cpp.i:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/paper_simulations/test_psbmpc_psim.cpp.i
-.PHONY : paper_simulations/test_psbmpc_psim.cpp.i
+test_obstacle_ship.cpp.i:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle_ship.cpp.i
+.PHONY : test_obstacle_ship.cpp.i
 
-paper_simulations/test_psbmpc_psim.s: paper_simulations/test_psbmpc_psim.cpp.s
+test_obstacle_ship.s: test_obstacle_ship.cpp.s
 
-.PHONY : paper_simulations/test_psbmpc_psim.s
+.PHONY : test_obstacle_ship.s
 
 # target to generate assembly for a file
-paper_simulations/test_psbmpc_psim.cpp.s:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/paper_simulations/test_psbmpc_psim.cpp.s
-.PHONY : paper_simulations/test_psbmpc_psim.cpp.s
+test_obstacle_ship.cpp.s:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_obstacle_ship.cpp.s
+.PHONY : test_obstacle_ship.cpp.s
 
 # Help Target
 help:
@@ -181,9 +181,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... paper_simulations/test_psbmpc_psim.o"
-	@echo "... paper_simulations/test_psbmpc_psim.i"
-	@echo "... paper_simulations/test_psbmpc_psim.s"
+	@echo "... test_obstacle_ship.o"
+	@echo "... test_obstacle_ship.i"
+	@echo "... test_obstacle_ship.s"
 .PHONY : help
 
 
