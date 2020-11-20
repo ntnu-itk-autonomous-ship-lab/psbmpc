@@ -273,6 +273,11 @@ void PSBMPC::calculate_optimal_offsets(
 	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
 	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
 
+	if(u_opt == 0)
+	{
+		chi_opt = 0; 	chi_m_last = chi_opt;
+	} 	
+
 	/* std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)
 	{
@@ -1019,7 +1024,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			//cost_ps = l_i * C * R + pars.kappa * mu  + pars.kappa_TC * trans;
 
 			// PSB-MPC formulation with probabilistic collision cost
-			cost_ps = l_i * C * P_c_i(ps, k) + pars.kappa * mu  + 0 * pars.kappa_TC * trans;
+			cost_ps = l_i * C * P_c_i(ps, k) + pars.kappa * mu  + pars.kappa_TC * trans;
 
 			// Maximize wrt time
 			if (cost_ps > max_cost_ps(ps))

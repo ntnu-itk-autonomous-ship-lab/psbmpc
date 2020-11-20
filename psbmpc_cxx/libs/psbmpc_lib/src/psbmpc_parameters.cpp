@@ -375,7 +375,7 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 140.0; 	      // 400.0, 300.0, 240 (sim/Euler)
+	T = 110.0; 	      // 400.0, 300.0, 240 (sim/Euler)
 	dt = 5.0;		      // 5.0, 0.5 (sim/Euler)
   	T_static = 60.0;		  // (50.0)
 
@@ -385,19 +385,19 @@ void PSBMPC_Parameters::initialize_pars()
 		dt = 0.5; 
 		p_step = 10;
 	}
-	t_ts = 35;
+	t_ts = 25;
 
 	d_init = 1500;								 
 	d_close = 1000;
 	d_safe = 50; 							
-	K_coll = 2.0;		  					
+	K_coll = 2.5;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
 	kappa = 8.0;		  					
-	kappa_TC = 100.0;						 
-	K_u = 3;		   						 
+	kappa_TC = 10.0;						 
+	K_u = 5;		   						 
 	K_du = 2.5;		    					
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					
