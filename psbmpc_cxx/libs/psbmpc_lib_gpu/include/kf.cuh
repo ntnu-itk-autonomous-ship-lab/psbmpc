@@ -75,9 +75,9 @@ public:
 
   void update(const Eigen::Vector4d &y_m, const double duration_lost, const double dt);
 
-  // Use the update function below when the KF is used as a tracking system outside the COLAV algorithm
+  // Use this update function when the KF is used as a tracking system outside the COLAV algorithm
   // where typically only position measurements of vessels are used.
-  void update(const Eigen::Vector2d &y_m, const double dt);
+  void update(const Eigen::Vector2d &y_m, const double dt, const bool dead_reckon);
 
 };
 

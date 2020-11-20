@@ -221,11 +221,12 @@ void KF::update(
 	t += dt; // Time used for fault detection (measurement loss)
 }
 
-// Use the update function below when the KF is used as a tracking system outside the COLAV algorithm
+// Use this update function when the KF is used as a tracking system outside the COLAV algorithm
 // where typically only position measurements of vessels are used.
 void KF::update(
 	const Eigen::Vector2d &y_m, 				// In: Measurement of cartesian position
-	const double dt 							// In: Sampling interval
+	const double dt, 							// In: Sampling interval	
+	const bool dead_reckon						// In: Boolean flag to determine whether to use measurements or not
 	)
 {
 	if(!initialized)
@@ -233,13 +234,21 @@ void KF::update(
 
 	Eigen::Matrix<double, 4, 2> K;
 	Eigen::Matrix<double, 2, 4> C_2D = C.block<2, 4>(0, 0);
-	K = P_p * C_2D.transpose() * (C_2D * P_p * C_2D.transpose() + R.block<2, 2>(0, 0).inverse()); 
 
-	xs_upd = xs_p + K * (y_m - C_2D * xs_p);
+	if (dead_reckon)
+	{
+		K = P_p * C_2D.transpose() * (C_2D * P_p * C_2D.transpose() + R.block<2, 2>(0, 0)).inverse(); 
 
-	P_upd = (I - K * C_2D) * P_p;
+		xs_upd = xs_p + K * (y_m - C_2D * xs_p);
 
-	predict(dt); 
+		P_upd = (I - K * C_2D) * P_p; 
+	}
+	else
+	{
+		xs_upd = xs_p;
 
+		P_upd = P_p;
+	}
+	
 	t += dt; // Time used for fault detection (measurement loss)
 }

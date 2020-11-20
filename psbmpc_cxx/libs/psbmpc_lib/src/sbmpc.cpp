@@ -255,6 +255,11 @@ void SBMPC::calculate_optimal_offsets(
 	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
 	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
 
+	if(u_opt == 0)
+	{
+		chi_opt = 0; 	chi_m_last = chi_opt;
+	}
+	
 	/* std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)
 	{

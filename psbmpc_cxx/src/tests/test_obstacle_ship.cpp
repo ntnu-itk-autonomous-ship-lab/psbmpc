@@ -53,7 +53,7 @@ int main(){
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
 	
-	double T_U = 15, T_chi = 5, R_a = 30.0, LOS_LD = 200.0;
+	double T_U = 10, T_chi = 7.5, R_a = 30.0, LOS_LD = 200.0;
 	Obstacle_Ship obstacle_ship(T_U, T_chi, R_a, LOS_LD, 0); // xs = [x, y, chi, U]^T for this ship
 
 	Eigen::Matrix<double, 4, -1> trajectory; 
