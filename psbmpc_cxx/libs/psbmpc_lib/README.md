@@ -63,10 +63,10 @@ The obstacle class maintains information about the dynamic obstacle, in addition
 <p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with some first order time constant delay.  </p>
 The model is on the form <br>
 
-<img src="https://render.githubusercontent.com/render/math?math=x_{k%2B1} = x_{k} %2B U_k \cos(\chi_{k})"> <br>
-<img src="https://render.githubusercontent.com/render/math?math=y_{k%2B1} = y_{k} %2B U_k \sin(\chi_{k})"> <br>
-<img src="https://render.githubusercontent.com/render/math?math=\chi_{k%2B1} = \chi_{k} %2B \frac{1}{T_{\chi}}(\chi_d - \chi_{k})"> <br>
-<img src="https://render.githubusercontent.com/render/math?math=U_{k%2B1} = U_{k} %2B \frac{1}{T_{U}}(U_d - U_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=x_{k%2B1} = x_{k} %2B \Delta_t U_k \cos(\chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=y_{k%2B1} = y_{k} %2B \Delta_t U_k \sin(\chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=\chi_{k%2B1} = \chi_{k} %2B \Delta_t \frac{1}{T_{\chi}}(\chi_d - \chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=U_{k%2B1} = U_{k} %2B \Delta_t \frac{1}{T_{U}}(U_d - U_{k})"> <br>
 
 
 
