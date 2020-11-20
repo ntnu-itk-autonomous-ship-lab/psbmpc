@@ -3,7 +3,7 @@
 
 To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib_gpu)" command, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build.<br>
 
-Note that the amount of memory you need on your GPU to run the algorithm will increase alot with the number of maneuvers (and the set of different maneuver types) you consider in the prediction horizon. Around 4 GB is sufficient for using 3 or less maneuvers.
+Note that the amount of memory you need on your GPU to run the algorithm will increase alot with the number of maneuvers (and the set of different maneuver types) you consider in the prediction horizon. Around 4 GB is sufficient for using 2 or less maneuvers. This is considering this specific implementation, and it can be optimized wrt memory, although it would most likely come at the cost of degraded modularity in the cuda code. 
 
  </p>
 
@@ -78,10 +78,10 @@ The obstacle class maintains information about the obstacle, in addition to its 
 <p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with some first order time constant delay.  </p>
 The model is on the form <br>
 
-<img src="https://render.githubusercontent.com/render/math?math=x_{k%2B1} = x_{k} %2B U_k \cos(\chi_{k})"> <br>
-<img src="https://render.githubusercontent.com/render/math?math=y_{k%2B1} = y_{k} %2B U_k \sin(\chi_{k})"> <br>
-<img src="https://render.githubusercontent.com/render/math?math=\chi_{k%2B1} = \chi_{k} %2B \frac{1}{T_{\chi}}(\chi_d - \chi_{k})"> <br>
-<img src="https://render.githubusercontent.com/render/math?math=U_{k%2B1} = U_{k} %2B \frac{1}{T_{U}}(U_d - U_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=x_{k%2B1} = x_{k} %2B \Delta_t U_k \cos(\chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=y_{k%2B1} = y_{k} %2B \Delta_t U_k \sin(\chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=\chi_{k%2B1} = \chi_{k} %2B \Delta_t \frac{1}{T_{\chi}}(\chi_d - \chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=U_{k%2B1} = U_{k} %2B \Delta_t \frac{1}{T_{U}}(U_d - U_{k})"> <br>
 
 
 
@@ -91,7 +91,7 @@ A simple SB-MPC meant for use by obstacles in the PSB-MPC prediction when consid
 
 ### Ownship
 
-This module implements a 3DOF surface vessel model with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. Should naturally match the underlying vessel. **NOTE**: Differs from the CPU-version`s Ownship class, this one is designed to minimize memory usage on the GPU. 
+This module implements a 3DOF surface vessel model with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. Should naturally match the underlying vessel. **NOTE**: Differs from the CPU-versions Ownship class, this one is designed to minimize memory usage on the GPU. 
 
 ### KF
 
