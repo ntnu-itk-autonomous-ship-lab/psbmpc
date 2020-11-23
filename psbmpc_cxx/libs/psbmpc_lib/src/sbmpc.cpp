@@ -351,7 +351,6 @@ void SBMPC::initialize_prediction(
 	//***********************************************************************************
 	std::vector<Intention> ps_ordering_i;
 	Eigen::VectorXd ps_course_changes_i;
-	Eigen::VectorXd ps_weights_i;
 	Eigen::VectorXd ps_maneuver_times_i;
 
 	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
@@ -365,12 +364,10 @@ void SBMPC::initialize_prediction(
 		ps_ordering_i[0] = KCC;		
 		ps_course_changes_i.resize(1);
 		ps_course_changes_i[0] = 0;
-		ps_weights_i.resize(1);
-		ps_weights_i(0)= 1;
 		ps_maneuver_times_i.resize(1);
 		ps_maneuver_times_i(0) = 0;
 		
-		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);		
+		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);		
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization

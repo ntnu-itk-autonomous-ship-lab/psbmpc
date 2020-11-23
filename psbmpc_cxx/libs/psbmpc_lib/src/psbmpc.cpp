@@ -419,7 +419,7 @@ void PSBMPC::initialize_prediction(
 			else // Set up dependent obstacle prediction scenarios
 			{
 				n_ps[i] = 3;
-				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, data, i);
+				//set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, data, i);
 			}	
 		}
 		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);		
@@ -490,7 +490,6 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
-	double Pr_CC_i, t_obst_passed;
 	int turn_count, course_change_count;
 
 	ps_ordering_i.resize(n_ps[i]);
