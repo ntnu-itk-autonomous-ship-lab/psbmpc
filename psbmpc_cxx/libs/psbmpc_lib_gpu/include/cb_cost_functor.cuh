@@ -49,14 +49,14 @@ private:
 
 	int n_samples, n_seg_samples;
 
-	float cost_cb, cost_ps, cost_cd, cost_ch, delta_t, cost_g, ahcr;
+	float cost_cb, cost_ps, cost_cd, cost_ch, delta_t, cost_g, ahcr, sum_sm_weights, sum_pm_weights;
 
 	float d_safe_i, chi_m, Pr_CC_i;
 
 	// Allocate vectors for keeping track of max cost wrt obstacle i in prediction scenario ps, 
 	// collision probabilities and obstacle COLREGS violation indicator
 	TML::PDMatrix<float, MAX_N_OBST, 1> cost_i;
-	TML::PDMatrix<float, MAX_N_PS, 1> P_c_i, max_cost_ps;
+	TML::PDMatrix<float, MAX_N_PS, 1> P_c_i, max_cost_ps, weights_ps;
 	TML::PDMatrix<bool, MAX_N_PS, 1> mu_i;
 
 	// Allocate vectors for the obstacle intention weighted cost, and intention probability vector

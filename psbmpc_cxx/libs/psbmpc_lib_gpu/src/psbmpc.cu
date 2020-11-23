@@ -401,7 +401,6 @@ void PSBMPC::initialize_prediction(
 	int n_turns;
 	std::vector<Intention> ps_ordering_i;
 	Eigen::VectorXd ps_course_changes_i;
-	Eigen::VectorXd ps_weights_i;
 	Eigen::VectorXd ps_maneuver_times_i;
 
 	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
@@ -424,8 +423,6 @@ void PSBMPC::initialize_prediction(
 			
 			ps_course_changes_i.resize(1);
 			ps_course_changes_i[0] = 0;
-			ps_weights_i.resize(1);
-			ps_weights_i(0)= 1;
 			ps_maneuver_times_i.resize(1);
 			ps_maneuver_times_i(0) = 0;
 		}
@@ -445,15 +442,15 @@ void PSBMPC::initialize_prediction(
 				}
 
 				n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
-				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, n_turns, odata, i);
+				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, n_turns, odata, i);
 			}
 			else // Set up dependent obstacle prediction scenarios
 			{
 				n_ps[i] = 3;
-				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i, odata, i);
+				set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, odata, i);
 			}	
 		}
-		odata.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_weights_i, ps_maneuver_times_i);		
+		odata.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);		
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -515,14 +512,12 @@ void PSBMPC::initialize_prediction(
 void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	std::vector<Intention> &ps_ordering_i,									// In/out: Intention ordering of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
-	Eigen::VectorXd &ps_weights_i, 											// In/out: Cost weights of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
 	const int n_turns, 														// In: number of predicted turns for the obstacle 
 	const Obstacle_Data &odata,												// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
-	double Pr_CC_i, t_obst_passed;
 	int turn_count, course_change_count;
 
 	ps_ordering_i.resize(n_ps[i]);
@@ -566,75 +561,6 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	}
 	//std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
 	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
-	// Determine prediction scenario cost weights based on situation type and correct behavior (COLREGS)
-	ps_weights_i.resize(n_ps[i]);
-	Pr_CC_i = odata.obstacles[i].get_a_priori_CC_probability();
-	switch(odata.ST_i_0[i])
-	{
-		case A : // Outside CC consideration zone
-			ps_weights_i(0) = 1;
-			for (int ps = 1; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = 1;	
-			}
-			break;
-		case B : // OT, SO
-			ps_weights_i(0) = Pr_CC_i;
-			for (int ps = 1; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = 1 - Pr_CC_i;	
-			}
-			break;
-		case C : // CR, SO
-			ps_weights_i(0) = Pr_CC_i;
-			for (int ps = 1; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = 1 - Pr_CC_i;	
-			}
-			break;
-		case D : // OT, GW
-			ps_weights_i(0) = 1 - Pr_CC_i;
-			for (int ps = 1; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = Pr_CC_i;
-			}
-			break;
-		case E : // HO, GW
-			for (int ps = 0; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = 1 - Pr_CC_i;	
-
-				// Starboard maneuvers, which are CC
-				if (ps > 0 && ps < (n_ps[i] - 1) / 2 + 1)
-				{
-					ps_weights_i(ps) = Pr_CC_i;	
-				}
-			}
-			break;
-		case F : // CR, GW
-			t_obst_passed = find_time_of_passing(odata, i);
-			ps_weights_i(0) = 1 - Pr_CC_i;
-			for (int ps = 1; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = 1 - Pr_CC_i;
-				// Starboard maneuvers
-				if (ps < (n_ps[i] - 1) / 2 + 1)
-				{
-					// Crossing obstacle prediction scenario gets COLREGS compliant weight Pr_CC_i
-					// if the course change is COLREGS compliant and happens in time before
-					// the own-ship is passed
-					if (ps_maneuver_times_i(ps) * pars.dt < t_obst_passed - pars.t_ts)
-					{
-						ps_weights_i(ps) = Pr_CC_i;
-					}							
-				} 
-			}
-			break;
-		default :
-			std::cout << "This situation type does not exist" << std::endl;
-			break;
-	}
-	ps_weights_i = ps_weights_i / ps_weights_i.sum();
 }
 
 /****************************************************************************************
@@ -646,14 +572,11 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 	std::vector<Intention> &ps_ordering_i,									// In/out: Intention ordering of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
-	Eigen::VectorXd &ps_weights_i, 											// In/out: Cost weights of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
 	const Obstacle_Data &odata,												// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
-	double Pr_CC_i;
-
 	ps_ordering_i.resize(n_ps[i]);
 	ps_ordering_i[0] = KCC;
 	for (int ps = 1; ps < n_ps[i]; ps++)
@@ -664,67 +587,6 @@ void PSBMPC::set_up_dependent_obstacle_prediction_variables(
 	}
 	ps_maneuver_times_i.resize(0);
 	ps_course_changes_i.resize(0);
-
-	ps_weights_i.resize(n_ps[i]);
-	Pr_CC_i = odata.obstacles[i].get_a_priori_CC_probability();
-	switch(odata.ST_i_0[i])
-	{
-		case A : // Outside CC consideration zone
-			ps_weights_i(0) = 1;
-			for (int ps = 1; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = 1;	
-			}
-			break;
-		case B : // OT, SO
-			ps_weights_i(0) = Pr_CC_i;
-			for (int ps = 1; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = 1 - Pr_CC_i;	
-			}
-			break;
-		case C : // CR, SO
-			ps_weights_i(0) = Pr_CC_i;
-			for (int ps = 1; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = 1 - Pr_CC_i;	
-			}
-			break;
-		case D : // OT, GW
-			ps_weights_i(0) = 1 - Pr_CC_i;
-			for (int ps = 1; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = Pr_CC_i;
-			}
-			break;
-		case E : // HO, GW
-			for (int ps = 0; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = 1 - Pr_CC_i;	
-				// Starboard maneuvers, which are CC
-				if (ps > 0 && ps < (n_ps[i] - 1) / 2 + 1)
-				{
-					ps_weights_i(ps) = Pr_CC_i;	
-				}
-			}
-			break;
-		case F : // CR, GW
-			ps_weights_i(0) = 1 - Pr_CC_i;
-			for (int ps = 1; ps < n_ps[i]; ps++)
-			{
-				ps_weights_i(ps) = 1 - Pr_CC_i;
-				// Starboard maneuvers
-				if (ps < (n_ps[i] - 1) / 2 + 1)
-				{
-					ps_weights_i(ps) = Pr_CC_i;						
-				} 
-			}
-			break;
-		default :
-			std::cout << "This situation type does not exist" << std::endl;
-			break;
-	}
-	ps_weights_i = ps_weights_i / ps_weights_i.sum();
 }
 
 /****************************************************************************************

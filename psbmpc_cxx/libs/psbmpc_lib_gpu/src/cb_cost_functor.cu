@@ -103,6 +103,7 @@ __device__ float CB_Cost_Functor::operator()(
 
 		P_c_i.resize(fdata->n_ps[i], 1); P_c_i.set_zero();
 		max_cost_ps.resize(fdata->n_ps[i], 1); max_cost_ps.set_zero();
+		weights_ps.resize(fdata->n_ps[i], 1); weights_ps.set_zero();
 
 		mu_i = obstacles[i].get_COLREGS_violation_indicator();
 
@@ -208,7 +209,17 @@ __device__ float CB_Cost_Functor::operator()(
 				//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i(ps), cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 			}
 		}
-		//printf("max_cost_ps = %.4f, %.4f, %.4f\n", max_cost_ps(0), max_cost_ps(1), max_cost_ps(2));
+		/* printf("max_cost_ps = ");
+		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
+		{
+			printf("%.4f", max_cost_ps(ps));
+			if (ps < fdata->n_ps[i] - 1)
+			{
+				printf(", ");
+			}
+		}
+		printf("\n"); */
+		
 		//printf("Pr_CC = %.4f\n", Pr_CC_i);
 		//==============================================================================================
 		// 2.3 : Calculate a weighted obstacle cost over all prediction scenarios
@@ -224,34 +235,61 @@ __device__ float CB_Cost_Functor::operator()(
 			// which means that higher cost is applied if the obstacle follows COLREGS
 			// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
 			// and the own-ship breaches COLREGS
+			sum_sm_weights = 0.0f; sum_pm_weights = 0.0f;
 			for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 			{
+				weights_ps(ps) = Pr_CC_i;
 				if (mu_i[ps])
 				{
 					//printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
-					max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
+					weights_ps(ps) = 1 - Pr_CC_i;
 				}
-				else
+				
+				if (ps > 0)
 				{
-					max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
+					// Starboard maneuvers
+					if (ps < (fdata->n_ps[i] - 1) / 2 + 1)
+					{
+						sum_sm_weights += weights_ps(ps);
+					}
+					// Port maneuvers
+					else
+					{
+						sum_pm_weights += weights_ps(ps);
+					}
 				}
 			}
-			
-			cost_a(0) = max_cost_ps(0); 
+
+			// Normalize and assign cost associated with starboard and port intentions
 			for(int ps = 1; ps < fdata->n_ps[i]; ps++)
 			{
 				// Starboard maneuvers
 				if (ps < (fdata->n_ps[i] - 1) / 2 + 1)
 				{
-					cost_a(1) += max_cost_ps(ps);
+					if (sum_sm_weights > 0.0)
+					{
+						cost_a(1) += (weights_ps(ps) / sum_sm_weights) * max_cost_ps(ps);
+					}
+					else
+					{
+						cost_a(1) += weights_ps(ps) * max_cost_ps(ps);
+					}
 				}
 				// Port maneuvers
 				else
 				{
-					cost_a(2) += max_cost_ps(ps);
+					if (sum_pm_weights > 0.0)
+					{
+						cost_a(2) += (weights_ps(ps) / sum_pm_weights) * max_cost_ps(ps);
+					}
+					else
+					{
+						cost_a(2) += weights_ps(ps) * max_cost_ps(ps);
+					}
 				}
 			}
 			// Average the cost for the corresponding intention
+			cost_a(0) = weights_ps(0) * max_cost_ps(0); 
 			cost_a(1) /= (((float)fdata->n_ps[i] - 1.0f) / 2.0f);
 			cost_a(2) /= (((float)fdata->n_ps[i] - 1.0f) / 2.0f);
 
@@ -259,9 +297,24 @@ __device__ float CB_Cost_Functor::operator()(
 			cost_i(i) = Pr_a.dot(cost_a);
 
 			//printf("Pr_a = %.4f, %.4f, %.4f\n", Pr_a(0), Pr_a(1), Pr_a(2));
-
-			/* printf("cost_a = %.4f, %.4f, %.4f | cb : %.1f, %.1f\n", cost_a(0), cost_a(1), cost_a(2), offset_sequence(0), RAD2DEG * offset_sequence(1));
-			printf("cost_i(i) = %.6f | cb : %.1f, %.1f\n", cost_i(i), offset_sequence(0), RAD2DEG * offset_sequence(1)); */
+			/* printf("sum_sm_weights = %.4f\n", sum_sm_weights);
+			printf("sum_pm_weights = %.4f\n", sum_pm_weights);
+			printf("weights_ps normalized = %.4f, ", weights_ps(0));
+			for (int ps = 1; ps < fdata->n_ps[i]; ps++)
+			{
+				if (ps < (fdata->n_ps[i] - 1) / 2 + 1)
+				{ 
+					printf("%.4f", weights_ps(ps) / sum_sm_weights);
+				}
+				else
+				{
+					printf("%.4f", weights_ps(ps) / sum_pm_weights);
+				}
+				printf(", ");
+			}
+			printf("%.1f, %.1f\n", offset_sequence(0), RAD2DEG * offset_sequence(1));
+			printf("cost_a = %.4f, %.4f, %.4f | cb : %.1f, %.1f\n", cost_a(0), cost_a(1), cost_a(2), offset_sequence(0), RAD2DEG * offset_sequence(1));
+			printf("cost_i(i) = %.6f | cb : %.1f, %.1f\n", cost_i(i), offset_sequence(0), RAD2DEG * offset_sequence(1));  */
 		}
 		//==============================================================================================
 	}
@@ -569,13 +622,13 @@ __device__ inline float CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 			// Track loss modifier to collision cost
 			if (obstacles[i].get_duration_lost() > pars->p_step)
 			{
-				l_i = pars->dt * pars->p_step / obstacles[i].get_duration_lost(); // Why the 2 Giorgio?
+				l_i = pars->dt * pars->p_step / obstacles[i].get_duration_lost();
 			} else
 			{
 				l_i = 1;
 			}
 
-			cost_ps = l_i * C * P_c_i(ps, k) + pars->kappa * mu  + 0 * pars->kappa_TC * trans;
+			cost_ps = l_i * C * P_c_i(ps, k) + pars->kappa * mu  + pars->kappa_TC * trans;
 
 			// Maximize wrt time
 			if (cost_ps > max_cost_ps(ps))
@@ -681,7 +734,7 @@ __device__ inline float CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 		l_i = 1;
 	}
 
-	cost_do = l_i * C * P_c_i + pars->kappa * mu  + 0 * pars->kappa_TC * trans;
+	cost_do = l_i * C * P_c_i + pars->kappa * mu  + pars->kappa_TC * trans;
 
 	/* printf("psi_0_p = %.2f | v_0_p = %.2f, %.2f\n", psi_0_p, v_0_p(0), v_0_p(1));
 	printf("psi_i_p = %.2f | v_i_p = %.2f, %.2f\n", psi_i_p, v_i_p(0), v_i_p(1));

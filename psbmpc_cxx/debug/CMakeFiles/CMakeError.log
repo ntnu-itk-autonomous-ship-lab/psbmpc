@@ -1,31 +1,30 @@
 Performing C++ SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
 Change Dir: /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make cmTC_a73b4/fast && /usr/bin/make  -f CMakeFiles/cmTC_a73b4.dir/build.make CMakeFiles/cmTC_a73b4.dir/build
+Run Build Command(s):/usr/bin/make cmTC_2cda9/fast && /usr/bin/make  -f CMakeFiles/cmTC_2cda9.dir/build.make CMakeFiles/cmTC_2cda9.dir/build
 make[1]: Entering directory '/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_a73b4.dir/src.cxx.o
-/usr/bin/c++    -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_a73b4.dir/src.cxx.o -c /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/CMakeTmp/src.cxx
-Linking CXX executable cmTC_a73b4
-/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a73b4.dir/link.txt --verbose=1
-/usr/bin/c++   -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_a73b4.dir/src.cxx.o  -o cmTC_a73b4 
-CMakeFiles/cmTC_a73b4.dir/src.cxx.o: In function `main':
-src.cxx:(.text+0x3e): undefined reference to `pthread_create'
-src.cxx:(.text+0x4a): undefined reference to `pthread_detach'
-src.cxx:(.text+0x56): undefined reference to `pthread_cancel'
-src.cxx:(.text+0x67): undefined reference to `pthread_join'
-src.cxx:(.text+0x7b): undefined reference to `pthread_atfork'
+Building CXX object CMakeFiles/cmTC_2cda9.dir/src.cxx.o
+/usr/bin/c++ -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_2cda9.dir/src.cxx.o -c /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_2cda9
+/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2cda9.dir/link.txt --verbose=1
+/usr/bin/c++ CMakeFiles/cmTC_2cda9.dir/src.cxx.o -o cmTC_2cda9 
+CMakeFiles/cmTC_2cda9.dir/src.cxx.o:src.cxx:function main: error: undefined reference to 'pthread_create'
+CMakeFiles/cmTC_2cda9.dir/src.cxx.o:src.cxx:function main: error: undefined reference to 'pthread_detach'
+CMakeFiles/cmTC_2cda9.dir/src.cxx.o:src.cxx:function main: error: undefined reference to 'pthread_cancel'
+CMakeFiles/cmTC_2cda9.dir/src.cxx.o:src.cxx:function main: error: undefined reference to 'pthread_join'
+CMakeFiles/cmTC_2cda9.dir/src.cxx.o:src.cxx:function main: error: undefined reference to 'pthread_atfork'
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_a73b4.dir/build.make:106: recipe for target 'cmTC_a73b4' failed
-make[1]: *** [cmTC_a73b4] Error 1
+CMakeFiles/cmTC_2cda9.dir/build.make:105: recipe for target 'cmTC_2cda9' failed
+make[1]: *** [cmTC_2cda9] Error 1
 make[1]: Leaving directory '/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/CMakeTmp'
-Makefile:141: recipe for target 'cmTC_a73b4/fast' failed
-make: *** [cmTC_a73b4/fast] Error 2
+Makefile:140: recipe for target 'cmTC_2cda9/fast' failed
+make: *** [cmTC_2cda9/fast] Error 2
 
 
 Source file was:
 #include <pthread.h>
 
-void* test_func(void* data)
+static void* test_func(void* data)
 {
   return data;
 }
@@ -46,20 +45,21 @@ int main(void)
 Determining if the function pthread_create exists in the pthreads failed with the following output:
 Change Dir: /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make cmTC_18c5f/fast && /usr/bin/make  -f CMakeFiles/cmTC_18c5f.dir/build.make CMakeFiles/cmTC_18c5f.dir/build
+Run Build Command(s):/usr/bin/make cmTC_a3b50/fast && /usr/bin/make  -f CMakeFiles/cmTC_a3b50.dir/build.make CMakeFiles/cmTC_a3b50.dir/build
 make[1]: Entering directory '/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_18c5f.dir/CheckFunctionExists.cxx.o
-/usr/bin/c++    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_18c5f.dir/CheckFunctionExists.cxx.o -c /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
-Linking CXX executable cmTC_18c5f
-/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_18c5f.dir/link.txt --verbose=1
-/usr/bin/c++   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_18c5f.dir/CheckFunctionExists.cxx.o  -o cmTC_18c5f  -lpthreads 
-/usr/bin/ld: cannot find -lpthreads
+Building CXX object CMakeFiles/cmTC_a3b50.dir/CheckFunctionExists.cxx.o
+/usr/bin/c++   -DCHECK_FUNCTION_EXISTS=pthread_create -o CMakeFiles/cmTC_a3b50.dir/CheckFunctionExists.cxx.o -c /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/CheckLibraryExists/CheckFunctionExists.cxx
+Linking CXX executable cmTC_a3b50
+/usr/local/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a3b50.dir/link.txt --verbose=1
+/usr/bin/c++  -DCHECK_FUNCTION_EXISTS=pthread_create CMakeFiles/cmTC_a3b50.dir/CheckFunctionExists.cxx.o -o cmTC_a3b50  -lpthreads 
+/usr/bin/ld: error: cannot find -lpthreads
+CMakeFiles/cmTC_a3b50.dir/CheckFunctionExists.cxx.o:CheckFunctionExists.cxx:function main: error: undefined reference to 'pthread_create'
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_18c5f.dir/build.make:106: recipe for target 'cmTC_18c5f' failed
-make[1]: *** [cmTC_18c5f] Error 1
+CMakeFiles/cmTC_a3b50.dir/build.make:105: recipe for target 'cmTC_a3b50' failed
+make[1]: *** [cmTC_a3b50] Error 1
 make[1]: Leaving directory '/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/CMakeTmp'
-Makefile:141: recipe for target 'cmTC_18c5f/fast' failed
-make: *** [cmTC_18c5f/fast] Error 2
+Makefile:140: recipe for target 'cmTC_a3b50/fast' failed
+make: *** [cmTC_a3b50/fast] Error 2
 
 
 
