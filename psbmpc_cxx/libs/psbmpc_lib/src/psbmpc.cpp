@@ -288,7 +288,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	//std::cout << "Cost at optimum : " << min_cost << std::endl;
 
-	/* engClose(ep); */ 
+	/* engClose(ep);  */
 }
 
 /****************************************************************************************
@@ -785,7 +785,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	// l_i is the collision cost modifier depending on the obstacle track loss.
 	double cost(0.0), cost_ps(0.0), C(0.0), l_i(0.0);
 	Eigen::VectorXd max_cost_ps(n_ps[i]), weights_ps(n_ps[i]);
-	weights_ps.setZero(); weights_ps.setZero();
+	max_cost_ps.setZero(); weights_ps.setZero();
 
 	int n_samples = trajectory.cols();
 	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
@@ -869,7 +869,6 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			}
 		}
 	}
-	//std::cout << "max cost ps = " << max_cost_ps.transpose() << std::endl;
 	// If only 1 prediction scenario
 	// => Original PSB-MPC formulation
 	if (n_ps[i] == 1)
@@ -947,7 +946,9 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	// Weight by the intention probabilities
 	cost = Pr_a.dot(cost_a);
 
-	/* std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
+	/* std::cout << "weights_ps = " << weights_ps.transpose() << std::endl;
+	std::cout << "max_cost_ps = " << max_cost_ps.transpose() << std::endl;
+	std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
 	std::cout << "cost a = " << cost_a.transpose() << std::endl;
 	std::cout << "cost_i(i) = " << cost << std::endl; */
 
