@@ -144,32 +144,32 @@ tester/fast:
 	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/build
 .PHONY : tester/fast
 
-gpu_implementation_test_files/test_psbmpc.o: gpu_implementation_test_files/test_psbmpc.cu.o
+test_psbmpc.o: test_psbmpc.cpp.o
 
-.PHONY : gpu_implementation_test_files/test_psbmpc.o
+.PHONY : test_psbmpc.o
 
 # target to build an object file
-gpu_implementation_test_files/test_psbmpc.cu.o:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_psbmpc.cu.o
-.PHONY : gpu_implementation_test_files/test_psbmpc.cu.o
+test_psbmpc.cpp.o:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.o
+.PHONY : test_psbmpc.cpp.o
 
-gpu_implementation_test_files/test_psbmpc.i: gpu_implementation_test_files/test_psbmpc.cu.i
+test_psbmpc.i: test_psbmpc.cpp.i
 
-.PHONY : gpu_implementation_test_files/test_psbmpc.i
+.PHONY : test_psbmpc.i
 
 # target to preprocess a source file
-gpu_implementation_test_files/test_psbmpc.cu.i:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_psbmpc.cu.i
-.PHONY : gpu_implementation_test_files/test_psbmpc.cu.i
+test_psbmpc.cpp.i:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.i
+.PHONY : test_psbmpc.cpp.i
 
-gpu_implementation_test_files/test_psbmpc.s: gpu_implementation_test_files/test_psbmpc.cu.s
+test_psbmpc.s: test_psbmpc.cpp.s
 
-.PHONY : gpu_implementation_test_files/test_psbmpc.s
+.PHONY : test_psbmpc.s
 
 # target to generate assembly for a file
-gpu_implementation_test_files/test_psbmpc.cu.s:
-	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/gpu_implementation_test_files/test_psbmpc.cu.s
-.PHONY : gpu_implementation_test_files/test_psbmpc.cu.s
+test_psbmpc.cpp.s:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/release && $(MAKE) $(MAKESILENT) -f src/tests/CMakeFiles/tester.dir/build.make src/tests/CMakeFiles/tester.dir/test_psbmpc.cpp.s
+.PHONY : test_psbmpc.cpp.s
 
 # Help Target
 help:
@@ -180,9 +180,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... tester"
-	@echo "... gpu_implementation_test_files/test_psbmpc.o"
-	@echo "... gpu_implementation_test_files/test_psbmpc.i"
-	@echo "... gpu_implementation_test_files/test_psbmpc.s"
+	@echo "... test_psbmpc.o"
+	@echo "... test_psbmpc.i"
+	@echo "... test_psbmpc.s"
 .PHONY : help
 
 

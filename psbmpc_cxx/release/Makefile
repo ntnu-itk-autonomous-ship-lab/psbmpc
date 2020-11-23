@@ -133,17 +133,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named psbmpc_lib_gpu
+# Target rules for targets named psbmpc_lib
 
 # Build rule for target.
-psbmpc_lib_gpu: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 psbmpc_lib_gpu
-.PHONY : psbmpc_lib_gpu
+psbmpc_lib: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 psbmpc_lib
+.PHONY : psbmpc_lib
 
 # fast build rule for target.
-psbmpc_lib_gpu/fast:
-	$(MAKE) $(MAKESILENT) -f libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build.make libs/psbmpc_lib_gpu/CMakeFiles/psbmpc_lib_gpu.dir/build
-.PHONY : psbmpc_lib_gpu/fast
+psbmpc_lib/fast:
+	$(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build
+.PHONY : psbmpc_lib/fast
 
 #=============================================================================
 # Target rules for targets named tester
@@ -166,7 +166,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... psbmpc_lib_gpu"
+	@echo "... psbmpc_lib"
 	@echo "... tester"
 .PHONY : help
 
