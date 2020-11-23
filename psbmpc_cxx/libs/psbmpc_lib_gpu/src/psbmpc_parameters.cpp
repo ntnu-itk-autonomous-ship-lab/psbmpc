@@ -330,7 +330,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 1;
+	n_M = 2;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -338,15 +338,15 @@ void PSBMPC_Parameters::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(1);
-			u_offsets[M] << 1.0;
-			//u_offsets[M] << 1.0, 0.5, 0.0;
+			u_offsets[M].resize(3);
+			//u_offsets[M] << 1.0;
+			u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(1);
-			chi_offsets[M] << 30.0;
+			chi_offsets[M].resize(13);
+			//chi_offsets[M] << 30.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -356,25 +356,25 @@ void PSBMPC_Parameters::initialize_pars()
 			u_offsets[M] << 1.0, 0.5;
 			//u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(7);
+			chi_offsets[M].resize(13);
 			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
-			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
 	}
 
-	obstacle_course_changes.resize(1);
-	obstacle_course_changes << 30 * DEG2RAD; //60 * DEG2RAD, 90 * DEG2RAD;
+	obstacle_course_changes.resize(3);
+	obstacle_course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 
 	cpe_method = MCSKF4D;
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 100.0; 	      // 400.0, 300.0, 240 (sim/Euler)
+	T = 110.0; 	      // 400.0, 300.0, 240 (sim/Euler)
 	dt = 5.0;		      // 5.0, 0.5 (sim/Euler)
   	T_static = 60.0;		  // (50.0)
 
@@ -384,19 +384,19 @@ void PSBMPC_Parameters::initialize_pars()
 		dt = 0.5; 
 		p_step = 10;
 	}
-	t_ts = 50;
+	t_ts = 35;
 
 	d_init = 1500;								 
-	d_close = 200;
+	d_close = 1000;
 	d_safe = 50; 							
-	K_coll = 1.0;		  					
+	K_coll = 0.5;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 3.0;		  					
-	kappa_TC = 100.0;						 
-	K_u = 3;		   						 
+	kappa = 8.0;		  					
+	kappa_TC = 10.0;						 
+	K_u = 5;		   						 
 	K_du = 2.5;		    					
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					

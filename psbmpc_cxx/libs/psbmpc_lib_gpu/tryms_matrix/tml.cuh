@@ -94,6 +94,8 @@ namespace TML
 
 		__host__ __device__ Derived log() const;
 
+		__host__ __device__ T sum() const;
+
 		__host__ __device__ void set_zero();
 
 		__host__ __device__ void set_ones();
@@ -594,6 +596,27 @@ namespace TML
 			for (size_t j = 0; j < self.get_cols(); j++)
 			{
 				result(i, j) = std::log(result(i, j));		
+			}
+		}
+		return result;
+	}
+
+	/****************************************************************************************
+	*  Name     : sum
+	*  Function : 
+	*  Author   : 
+	*  Modified :
+	*****************************************************************************************/
+	template <class T, class Derived>
+	__host__ __device__ T Matrix_Base<T, Derived>::sum() const
+	{
+		Derived& self = get_this();
+		T result = (T)0;
+		for (int i = 0; i < self.get_rows(); i++)
+		{
+			for (int j = 0; j < self.get_cols(); j++)
+			{
+				result += self(i, j);
 			}
 		}
 		return result;

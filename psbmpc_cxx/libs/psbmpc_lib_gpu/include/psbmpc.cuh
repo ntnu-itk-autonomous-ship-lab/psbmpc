@@ -99,7 +99,6 @@ private:
 	void set_up_independent_obstacle_prediction_variables(
 		std::vector<Intention> &ps_ordering,
 		Eigen::VectorXd &ps_course_changes,
-		Eigen::VectorXd &ps_weights,
 		Eigen::VectorXd &ps_maneuver_times,
 		const int n_turns,
 		const Obstacle_Data &odata,
@@ -108,7 +107,6 @@ private:
 	void set_up_dependent_obstacle_prediction_variables(
 		std::vector<Intention> &ps_ordering,
 		Eigen::VectorXd &ps_course_changes,
-		Eigen::VectorXd &ps_weights,
 		Eigen::VectorXd &ps_maneuver_times,
 		const Obstacle_Data &odata,
 		const int i);

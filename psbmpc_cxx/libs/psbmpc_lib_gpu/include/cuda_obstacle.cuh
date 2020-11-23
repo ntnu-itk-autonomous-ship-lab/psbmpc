@@ -60,9 +60,6 @@ private:
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 	TML::PDMatrix<float, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_p;
 
-	// Weights for the independent prediction scenarios: n_ps x 1
-	TML::PDMatrix<float, MAX_N_PS, 1> ps_weights;
-
 	__host__ void assign_data(const Cuda_Obstacle &co);
 	
 	__host__ void assign_data(const Tracked_Obstacle &to);
@@ -101,8 +98,6 @@ public:
 	}
 
 	__device__ inline TML::PDVector4f get_trajectory_sample(const int ps, const int k) { return xs_p.get_block<4, 1>(4 * ps, k, 4, 1); }
-
-	__device__ inline TML::PDMatrix<float, MAX_N_PS, 1> get_ps_weights() const { return ps_weights; }
 };
 
 #endif

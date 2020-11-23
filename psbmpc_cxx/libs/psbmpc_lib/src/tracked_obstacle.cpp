@@ -134,15 +134,12 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 void Tracked_Obstacle::initialize_prediction(
 	const std::vector<Intention> &ps_ordering, 						// In: Prediction scenario ordering
 	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
-	const Eigen::VectorXd &ps_weights,	 							// In: The cost function weights for the prediction scenarios
 	const Eigen::VectorXd &ps_maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios	
 	)
 {
 	this->ps_ordering = ps_ordering;
 	
 	this->ps_course_changes = ps_course_changes;
-
-	this->ps_weights = ps_weights;
 
 	this->ps_maneuver_times = ps_maneuver_times;
 }
@@ -344,7 +341,7 @@ void Tracked_Obstacle::assign_data(
 	this->v_p = to.v_p;
 
 	this->ps_ordering = to.ps_ordering;
-	this->ps_course_changes = to.ps_course_changes; this->ps_weights = to.ps_weights; this->ps_maneuver_times = to.ps_maneuver_times;
+	this->ps_course_changes = to.ps_course_changes; this->ps_maneuver_times = to.ps_maneuver_times;
 
 	this->kf.reset(new KF(*(to.kf)));
 	this->mrou.reset(new MROU(*(to.mrou)));

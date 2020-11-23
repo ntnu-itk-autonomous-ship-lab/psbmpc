@@ -69,7 +69,7 @@ private:
 	std::vector<Intention> ps_ordering;
 
 	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
-	Eigen::VectorXd ps_course_changes, ps_weights, ps_maneuver_times; 
+	Eigen::VectorXd ps_course_changes, ps_maneuver_times; 
 	
 public:
 
@@ -116,7 +116,6 @@ public:
 	void initialize_prediction(	
 		const std::vector<Intention> &ps_ordering,
 		const Eigen::VectorXd &ps_course_changes,
-		const Eigen::VectorXd &ps_weights,
 		const Eigen::VectorXd &ps_maneuver_times);
 
 	// Some PSBMPC parameters needed to determine if obstacle breaches COLREGS 

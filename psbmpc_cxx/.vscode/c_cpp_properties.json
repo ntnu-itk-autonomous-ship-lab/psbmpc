@@ -4,8 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/include/python3.6/",
-                "/usr/local/MATLAB/R2019a/extern/**",
+                "/usr/local/MATLAB/R2020b/extern/**",
                 "/usr/local/cuda/include/**",
                 "${workspaceFolder}/libs/psbmpc_lib_gpu/tryms_matrix"
             ],

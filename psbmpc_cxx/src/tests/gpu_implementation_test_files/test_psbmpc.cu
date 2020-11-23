@@ -148,7 +148,7 @@ int main(){
 		/* Pr_a[i].resize(1);
 		Pr_a[i] << 1;  */
 
-		Pr_CC[i] = 1; 
+		Pr_CC[i] = 0.5; 
 
 		n_wps_i = 2;
 		waypoints_i[i].resize(2, n_wps_i); 
@@ -209,7 +209,7 @@ int main(){
 	//=========================================================
 	// Matlab plot setup
 	//=========================================================
-	mxArray *T_sim_mx, *n_obst_mx, *n_static_obst_mx;
+	mxArray *T_sim_mx(nullptr), *n_obst_mx(nullptr), *n_static_obst_mx(nullptr);
 	T_sim_mx = mxCreateDoubleScalar(T_sim);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
 	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
@@ -230,7 +230,7 @@ int main(){
 	engPutVariable(ep, "WPs", wps_os_mx);
 
 	engEvalString(ep, "init_psbmpc_plotting");
-	mxArray *i_mx, *k_s_mx;
+	mxArray *i_mx(nullptr), *k_s_mx(nullptr);
 
 	for (int i = 0; i < n_obst; i++)
 	{

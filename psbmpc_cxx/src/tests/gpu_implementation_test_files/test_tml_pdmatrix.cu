@@ -689,5 +689,11 @@ int main()
 	TML::Matrix4d m_4d; m_4d.set_all_coeffs(1.5); 
 	test_conversion7(m_4d);
 
+	// Test summation
+	TML::PDMatrix<double, 1, 7> ts(1, 7), ts_res(1, 7);
+	ts(0) = 8.6892; ts(1) = 8; ts(2) = 8; ts(3) = 8; ts(4) = 27.4912; ts(5) = 14.1670; ts(6) = 8.0825;
+
+	double summ = ts.sum();
+	ts /= summ;
 	return 0;
 }
