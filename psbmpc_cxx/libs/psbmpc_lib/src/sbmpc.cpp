@@ -72,8 +72,8 @@ void SBMPC::calculate_optimal_offsets(
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
 	{
-		u_opt = 1; 		u_m_last = u_opt;
-		chi_opt = 0; 	chi_m_last = chi_opt;
+		u_opt = 1.0; 		u_m_last = u_opt;
+		chi_opt = 0.0; 	chi_m_last = chi_opt;
 
 		for (int M = 0; M < pars.n_M; M++)
 		{
