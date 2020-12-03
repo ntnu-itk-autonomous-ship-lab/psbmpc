@@ -34,6 +34,8 @@
 *  Modified :
 *****************************************************************************************/
 SBMPC::SBMPC()
+	: 
+	pars(false)
 {
 	offset_sequence_counter.resize(2 * pars.n_M);
 	offset_sequence.resize(2 * pars.n_M);
@@ -56,7 +58,7 @@ void SBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
-	Obstacle_Data &data														// In/Out: Dynamic obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
@@ -341,7 +343,7 @@ void SBMPC::increment_control_behaviour()
 *  Modified :
 *****************************************************************************************/
 void SBMPC::initialize_prediction(
-	Obstacle_Data &data														// In: Dynamic obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data									// In: Dynamic obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
@@ -426,7 +428,7 @@ void SBMPC::initialize_prediction(
 *  Modified :
 *****************************************************************************************/
 bool SBMPC::determine_colav_active(
-	const Obstacle_Data &data,												// In: Dynamic obstacle information
+	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
@@ -506,7 +508,7 @@ bool SBMPC::determine_COLREGS_violation(
 /****************************************************************************************
 *  Name     : determine_transitional_cost_indicator
 *  Function : Determine if a transitional cost should be applied for the current
-*			  control behavior, using the method in Hagen, 2018. Two overloads
+*			  control behavior, using the method in Hagen, 2018.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -515,7 +517,7 @@ bool SBMPC::determine_transitional_cost_indicator(
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double chi_m, 													// In: Candidate course offset currently followed
-	const Obstacle_Data &data,												// In: Dynamic obstacle information
+	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle
 	)
 {
@@ -559,7 +561,7 @@ bool SBMPC::determine_transitional_cost_indicator(
 *  Modified :
 *****************************************************************************************/
 double SBMPC::calculate_dynamic_obstacle_cost(
-	const Obstacle_Data &data,									// In: Dynamic obstacle information
+	const Obstacle_Data<Tracked_Obstacle> &data,				// In: Dynamic obstacle information
 	const int i 												// In: Index of obstacle
 	)
 {

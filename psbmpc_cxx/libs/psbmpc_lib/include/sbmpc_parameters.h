@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : sbmpc.h
+*  File name : sbmpc_parameters.h
 *
-*  Function  : Header file for the SB-MPC parameter struct.
+*  Function  : Header file for the SB-MPC parameter class.
 *
 *  
 *	           ---------------------
@@ -27,6 +27,7 @@
 #include <vector>
 
 class SBMPC;
+class Obstacle_SBMPC;
 class Obstacle_Manager;
 
 class SBMPC_Parameters
@@ -34,6 +35,7 @@ class SBMPC_Parameters
 private:
 
 	friend class SBMPC;
+	friend class Obstacle_SBMPC;
 	friend class Obstacle_Manager;
 
 	int n_cbs, n_M;
@@ -63,11 +65,13 @@ private:
 
 	void initialize_par_limits();
 
-	void initialize_pars();
+	void initialize_pars(const bool is_obstacle_sbmpc);
 
 public:
 
-	SBMPC_Parameters() { initialize_pars(); initialize_par_limits(); }
+	SBMPC_Parameters(const bool is_obstacle_sbmpc) { initialize_pars(is_obstacle_sbmpc); initialize_par_limits(); }
+
+	SBMPC_Parameters(std::string tuning_file); // Not implemented yet
 
 	void set_par(const int index, const int value);
 
