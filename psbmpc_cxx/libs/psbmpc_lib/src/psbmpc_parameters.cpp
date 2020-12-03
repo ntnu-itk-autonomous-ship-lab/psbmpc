@@ -1,9 +1,8 @@
 /****************************************************************************************
 *
-*  File name : psbmpc.h
+*  File name : psbmpc_parameters.cpp
 *
-*  Function  : Header file for the PSB-MPC parameter struct.
-*
+*  Function  : Class function file for the PSB-MPC parameter class.
 *  
 *	           ---------------------
 *

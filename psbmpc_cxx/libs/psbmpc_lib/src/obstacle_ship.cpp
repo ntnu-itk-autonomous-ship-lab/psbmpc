@@ -31,6 +31,9 @@
 *****************************************************************************************/
 Obstacle_Ship::Obstacle_Ship()
 {
+	l = 20;
+	w = 4;
+	
 	T_chi = 3; 		// Ad hoc parameters, are very dependent on the ship type
 	T_U = 10;
 
@@ -54,6 +57,9 @@ Obstacle_Ship::Obstacle_Ship(
 	) : 
 	T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
 {
+	l = 20;
+	w = 4;
+
 	// Guidance parameters
 	e_int = 0;
 	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance

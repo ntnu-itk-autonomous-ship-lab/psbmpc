@@ -45,6 +45,9 @@ class Obstacle_Ship
 {
 private:
 
+	// Ship length and width
+	double l, w;
+
 	// Model parameters
 	double T_U, T_chi;
 
@@ -62,6 +65,10 @@ public:
 	Obstacle_Ship();
 
 	Obstacle_Ship(const double T_U, const double  T_chi, const double R_a, const double LOS_LD, const double LOS_K_i);
+
+	double get_length() const { return l; }
+
+	double get_width() const { return w; }
 
 	void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Vector4d &xs);
 

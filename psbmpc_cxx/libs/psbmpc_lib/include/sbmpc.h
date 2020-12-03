@@ -54,9 +54,9 @@ private:
 
 	void increment_control_behaviour();
 
-	void initialize_prediction(Obstacle_Data &data);
+	void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 
-	bool determine_colav_active(const Obstacle_Data &data, const int n_static_obst);
+	bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 
 	bool determine_COLREGS_violation(
 		const Eigen::Vector2d &v_A, 
@@ -70,10 +70,10 @@ private:
 		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
 		const double chi_m,
-		const Obstacle_Data &data,
+		const Obstacle_Data<Tracked_Obstacle> &data,
 		const int i);
 
-	double calculate_dynamic_obstacle_cost(const Obstacle_Data &data, const int i);
+	double calculate_dynamic_obstacle_cost(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 
 	inline double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); }
 
@@ -124,7 +124,7 @@ public:
 		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::Matrix<double, 6, 1> &ownship_state,
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		Obstacle_Data &data);
+		Obstacle_Data<Tracked_Obstacle> &data);
 
 };
 

@@ -24,7 +24,8 @@
 
 
 #include "psbmpc_index.h"
-#include "prediction_obstacle.h"
+#include "sbmpc_parameters.h"
+#include "joint_prediction_manager.h"
 #include "obstacle_ship.h"
 #include "Eigen/Dense"
 #include <vector>
@@ -34,10 +35,7 @@ class Obstacle_SBMPC
 {
 private:
 
-	int n_cbs, n_M;
-
-	std::vector<Eigen::VectorXd> u_offsets;
-	std::vector<Eigen::VectorXd> chi_offsets;
+	int ID; // The ID of this intelligent obstacle, for use in 
 
 	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
 
@@ -45,77 +43,45 @@ private:
 	double chi_m_last;
 
 	double min_cost;
-
-	Eigen::VectorXd dpar_low, dpar_high;
-	Eigen::VectorXd ipar_low, ipar_high;
-
-	Prediction_Method prediction_method;
-
-	Guidance_Method guidance_method;
-
-	double T, T_static, dt, p_step;
-	double t_ts;
-	double d_safe, d_close, d_init;
-	double K_coll;
-	double phi_AH, phi_OT, phi_HO, phi_CR;
-	double kappa, kappa_TC;
-	double K_u, K_du;
-	double K_chi_strb, K_dchi_strb;
-	double K_chi_port, K_dchi_port; 
-	double K_sgn, T_sgn;
-	double G;
-	double q, p;
 	
 	bool obstacle_colav_on;
 
-	std::unique_ptr<Obstacle_Ship> ownship;
+	Obstacle_Ship ownship;
 
 	Eigen::Matrix<double, 4, -1> trajectory;
 
-	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
-	// and <obstacle is passed> (IP_0) indicators
-	std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
-
-	std::vector<std::unique_ptr<Prediction_Obstacle>> old_obstacles;
-	std::vector<std::unique_ptr<Prediction_Obstacle>> new_obstacles;
-
 	void assign_data(const Obstacle_SBMPC &o_sbmpc);
 
-	void initialize_par_limits();
-
-	void initialize_pars();
-
-	void initialize_prediction();
+	void initialize_prediction(const Obstacle_Data<Prediction_Obstacle> &data);
 
 	void reset_control_behavior();
 
 	void increment_control_behavior();
 
-	bool determine_colav_active(const int n_static_obst);
+	bool determine_colav_active(const Obstacle_Data<Prediction_Obstacle> &data, const int n_static_obst);
 
 	bool determine_transitional_cost_indicator(
 		const double psi_A, 
 		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
-		const int i,
-		const double chi_m);
+		const double chi_m,
+		const Obstacle_Data<Prediction_Obstacle> &data,
+		const int i);
 
-	bool determine_transitional_cost_indicator(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B, const int i, const double chi_m);
+	double calculate_dynamic_obstacle_cost(const Obstacle_Data<Prediction_Obstacle> &data, const int i);
 
-	double calculate_dynamic_obstacle_cost(const int i);
-
-	double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
+	double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); }
 
 	double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	double calculate_control_deviation_cost();	
 
-	double Delta_u(const double u_1, const double u_2) const 		{ return K_du * fabs(u_1 - u_2); }
+	double Delta_u(const double u_1, const double u_2) const 		{ return pars.K_du * fabs(u_1 - u_2); }
 
-	double K_chi(const double chi) const 							{ if (chi > 0) return K_chi_strb * pow(chi, 2); else return K_chi_port * pow(chi, 2); };
+	double K_chi(const double chi) const 							{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); };
 
-	double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
+	double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
 	double calculate_chattering_cost();
@@ -137,21 +103,15 @@ private:
 
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
-    void update_obstacles(const Eigen::Matrix<double, 9, -1>& obstacle_states, const Eigen::Matrix<double, 16, -1> &obstacle_covariances);
-
-	void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
-
-	void update_transitional_variables();
-
 public:
+
+	SBMPC_Parameters pars;
 
 	Obstacle_SBMPC();
 
 	Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc);
 
 	Obstacle_SBMPC& operator=(const Obstacle_SBMPC &o_sbmpc);
-
-	bool determine_COLREGS_violation(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B);
 
 	bool determine_COLREGS_violation(
 		const Eigen::Vector2d &v_A, 
@@ -164,15 +124,12 @@ public:
 		double &u_opt, 	
 		double &chi_opt, 
 		Eigen::Matrix<double, 2, -1> &predicted_trajectory,
-		Eigen::Matrix<double, -1, -1> &obstacle_status,
-		Eigen::Matrix<double, -1, 1> &colav_status,
 		const double u_d, 
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints,
-		const Eigen::Matrix<double, 4, 1> &ownship_state,
-		const Eigen::Matrix<double, 9, -1> &obstacle_states,
-		const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 
-		const Eigen::Matrix<double, 4, -1> &static_obstacles);
+		const Eigen::Vector4d &ownship_state,
+		const Eigen::Matrix<double, 4, -1> &static_obstacles,
+		Obstacle_Data<Prediction_Obstacle> &data);
 
 };
 

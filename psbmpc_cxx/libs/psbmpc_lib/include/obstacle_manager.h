@@ -43,6 +43,7 @@ enum ST
 	F 														// Give-way in Crossing 	(ST = CR, GW)
 };	
 
+template <class Obstacle_Type>
 class Obstacle_Data
 {
 public:
@@ -57,8 +58,8 @@ public:
 	// Obstacle hazard levels, on a scale from 0 to 1 (output from PSBMPC)
 	Eigen::VectorXd HL_0;
 
-	std::vector<Tracked_Obstacle> obstacles;
-	std::vector<Tracked_Obstacle> new_obstacles;
+	std::vector<Obstacle_Type> obstacles;
+	std::vector<Obstacle_Type> new_obstacles;
 
 	Eigen::MatrixXd obstacle_status;
 
@@ -81,7 +82,7 @@ private:
 
 	bool obstacle_filter_on;
 
-	Obstacle_Data data;
+	Obstacle_Data<Tracked_Obstacle> data;
 
 	/****************************************************************************************
 	*  Name     : determine_situation_type
@@ -93,7 +94,7 @@ private:
 	void determine_situation_type(
 		ST& st_A,																// In/out: Situation type of vessel A
 		ST& st_B,																// In/out: Situation type of vessel B
-		const Parameter_Object &mpc_pars, 										// In: Parameters of the obstacle manager boss: PSBMPC		
+		const Parameter_Object &mpc_pars, 										// In: Parameters of the obstacle manager boss	
 		const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A 
 		const double psi_A, 													// In: Heading of vessel A
 		const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B
@@ -101,14 +102,8 @@ private:
 		const double d_AB 														// In: Distance from vessel A to vessel B
 		)
 	{
-		// Crash situation, assume reactive maneuvers like in an overtaking scenario
-		if (d_AB < mpc_pars.d_safe) 
-		{
-			st_A = D; st_B = D; 
-			return;
-		} 
-		// Outside consideration range
-		else if(d_AB > mpc_pars.d_close)
+		// Crash situation or outside consideration range
+		if(d_AB < mpc_pars.d_safe || d_AB > mpc_pars.d_close)
 		{
 			st_A = A; st_B = A;
 			return;
@@ -186,7 +181,7 @@ private:
 	*****************************************************************************************/
 	template <class Parameter_Object>
 	void update_obstacles(
-		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss: PSBMPC
+		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
 		const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
 		const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
 		const Eigen::MatrixXd &obstacle_intention_probabilities, 							// In: Obstacle intention probability information
@@ -267,7 +262,7 @@ private:
 	*****************************************************************************************/
 	template <class Parameter_Object>
 	void update_situation_type_and_transitional_variables(
-		const Parameter_Object &mpc_pars,								// In: Parameters of the obstacle manager boss: PSBMPC
+		const Parameter_Object &mpc_pars,								// In: Parameters of the obstacle manager boss
 		const Eigen::Matrix<double, 6, 1> &ownship_state,				// In: Current time own-ship state
 		const double ownship_length										// In: Dimension of ownship along longest axis
 		)
@@ -383,7 +378,7 @@ public:
 
 	Obstacle_Manager();
 
-	Obstacle_Data& get_data() { return data; }
+	Obstacle_Data<Tracked_Obstacle>& get_data() { return data; }
 
 	void update_obstacle_status(const Eigen::Matrix<double, 6, 1> &ownship_state);
 
@@ -398,7 +393,7 @@ public:
 	*****************************************************************************************/
 	template <class Parameter_Object>
 	void operator()(
-		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss: PSBMPC
+		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
 		const Eigen::Matrix<double, 6, 1> &ownship_state,									// In: Current time own-ship state
 		const double ownship_length,														// In: Dimension of ownship along longest axis
 		const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 

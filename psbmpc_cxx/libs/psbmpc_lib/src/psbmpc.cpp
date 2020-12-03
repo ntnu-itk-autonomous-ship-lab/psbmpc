@@ -59,7 +59,7 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
-	Obstacle_Data &data														// In/Out: Dynamic obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
@@ -206,7 +206,7 @@ void PSBMPC::calculate_optimal_offsets(
 			if (pars.obstacle_colav_on) { predict_trajectories_jointly(data); }
 
 			
-			P_c_i.resize(n_ps[i], n_samples);
+			P_c_i.resize(n_ps[i] + 1, n_samples);
 			calculate_collision_probabilities(P_c_i, data, i); 
 
 			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, data, i);
@@ -359,7 +359,7 @@ void PSBMPC::increment_control_behaviour()
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::initialize_prediction(
-	Obstacle_Data &data														// In: Dynamic obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data							// In: Dynamic obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
@@ -400,27 +400,27 @@ void PSBMPC::initialize_prediction(
 		}
 		else
 		{
-			if (!pars.obstacle_colav_on)
+			// RETHINK THIS
+			// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
+			if (d_cpa(i) > pars.d_safe || (d_cpa(i) <= pars.d_safe && t_cpa(i) > pars.T)) // No predicted collision inside time horizon
 			{
-				// Space obstacle maneuvers evenly throughout horizon, depending on CPA configuration
-				if (d_cpa(i) > pars.d_safe || (d_cpa(i) <= pars.d_safe && t_cpa(i) > pars.T)) // No predicted collision inside time horizon
-				{
-					n_turns = std::floor(pars.T / pars.t_ts);
-				} 
-				else  // Safety zone violation at CPA inside prediction horizon, as d_cpa <= d_safe				
-				{
-					if (t_cpa(i) > pars.t_ts)	{ n_turns = std::floor(t_cpa(i) / pars.t_ts); }
-					else					{ n_turns = 1; }	
-				}
-
-				n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
-				set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, n_turns, data, i);
+				n_turns = std::floor(pars.T / pars.t_ts);
+			} 
+			else  // Safety zone violation at CPA inside prediction horizon, as d_cpa <= d_safe				
+			{
+				if (t_cpa(i) > pars.t_ts)	{ n_turns = std::floor(t_cpa(i) / pars.t_ts); }
+				else					{ n_turns = 1; }	
 			}
-			else // Set up dependent obstacle prediction scenarios
+
+			n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
+			set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, n_turns, data, i);
+			
+			if (pars.obstacle_colav_on)
 			{
-				n_ps[i] = 3;
-				//set_up_dependent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, data, i);
-			}	
+				// Add one prediction scenario for when obstacles have their own COLAV system
+				n_ps[i] += 1;
+			}
+
 		}
 		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);		
 	}
@@ -486,7 +486,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
 	const int n_turns, 														// In: number of predicted turns for the obstacle 
-	const Obstacle_Data &data,												// In: Dynamic obstacle information
+	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
@@ -544,7 +544,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::find_time_of_passing(
-	const Obstacle_Data &data,											// In: Dynamic obstacle information
+	const Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
 	const int i 														// In: Index of relevant obstacle
 	)
 {
@@ -596,16 +596,27 @@ double PSBMPC::find_time_of_passing(
 
 /****************************************************************************************
 *  Name     : predict_trajectories_jointly
-*  Function : Predicts the trajectory of the ownship and obstacles with an active COLAV
-*			  system
+*  Function : Predicts the trajectory of the obstacles with an active COLAV system,  
+*		      considering the fixed current control behaviour
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::predict_trajectories_jointly(
-	const Obstacle_Data &data													// In: Dynamic obstacle information
+	const Obstacle_Data<Tracked_Obstacle> &data								// In: Dynamic obstacle information
 	)
 {
+	int n_samples = trajectory.cols();
+	int n_obst = data.obstacles.size();
 
+	std::vector<Obstacle_SBMPC> obst_sbmpc(data.obstacles.size());
+
+	for (int k = 0; k < n_samples; k++)
+	{
+		for (int i = 0; i < n_obst; i++)
+		{
+
+		}
+	}
 }
 
 /****************************************************************************************
@@ -616,7 +627,7 @@ void PSBMPC::predict_trajectories_jointly(
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_colav_active(
-	const Obstacle_Data &data,												// In: Dynamic obstacle information
+	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
@@ -696,7 +707,7 @@ bool PSBMPC::determine_COLREGS_violation(
 /****************************************************************************************
 *  Name     : determine_transitional_cost_indicator
 *  Function : Determine if a transitional cost should be applied for the current
-*			  control behavior, using the method in Hagen, 2018. Two overloads
+*			  control behavior, using the method in Hagen, 2018.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -705,7 +716,7 @@ bool PSBMPC::determine_transitional_cost_indicator(
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double chi_m, 													// In: Candidate course offset currently followed
-	const Obstacle_Data &data,												// In: Dynamic obstacle information
+	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle
 	)
 {
@@ -750,7 +761,7 @@ bool PSBMPC::determine_transitional_cost_indicator(
 *****************************************************************************************/
 void PSBMPC::calculate_collision_probabilities(
 	Eigen::MatrixXd &P_c_i,								// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
-	const Obstacle_Data &data,							// In: Dynamic obstacle information
+	const Obstacle_Data<Tracked_Obstacle> &data,		// In: Dynamic obstacle information
 	const int i 										// In: Index of obstacle
 	)
 {
@@ -778,7 +789,7 @@ void PSBMPC::calculate_collision_probabilities(
 *****************************************************************************************/
 double PSBMPC::calculate_dynamic_obstacle_cost(
 	const Eigen::MatrixXd &P_c_i,								// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
-	const Obstacle_Data &data,									// In: Dynamic obstacle information
+	const Obstacle_Data<Tracked_Obstacle> &data,				// In: Dynamic obstacle information
 	const int i 												// In: Index of obstacle
 	)
 {

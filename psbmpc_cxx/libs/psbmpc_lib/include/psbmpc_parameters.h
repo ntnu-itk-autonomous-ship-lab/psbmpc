@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : psbmpc.h
+*  File name : psbmpc_parameters.h
 *
 *  Function  : Header file for the PSB-MPC parameter struct.
 *
@@ -109,6 +109,8 @@ private:
 public:
 
 	PSBMPC_Parameters() { initialize_pars(); initialize_par_limits(); }
+
+	PSBMPC_Parameters(std::string tuning_file); // Not implemented yet
 
 	void set_par(const int index, const bool value);
 
