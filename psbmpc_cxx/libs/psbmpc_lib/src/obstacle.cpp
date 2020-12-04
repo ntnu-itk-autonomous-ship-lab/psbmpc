@@ -30,14 +30,34 @@
 *  Modified :
 *****************************************************************************************/
 Obstacle::Obstacle(
-	const Eigen::VectorXd &xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
-	const Eigen::VectorXd &P, 									// In: Obstacle covariance
-	const bool colav_on										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
+	const Eigen::VectorXd &xs_aug, 							// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::VectorXd &P, 								// In: Obstacle covariance
+	const bool colav_on										// In: Boolean determining whether the obstacle uses a COLAV system or not in the Obstacle_SBMPC predictions
 	) : 
 	ID(xs_aug(8)), colav_on(colav_on),
 	A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
 	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
 	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6))
+{
+	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
+
+	P_0 = reshape(P, 4, 4);
+}
+
+// A, B, C, D, x_offset and y_offset are dont care variables here, meaning xy-symmetrical obstacle
+Obstacle::Obstacle(
+	const Eigen::VectorXd &xs_aug, 							// In: Obstacle state [x, y, V_x, V_y, l, w, ID]
+	const Eigen::VectorXd &P, 								// In: Obstacle covariance
+	const bool colav_on										// In: Boolean determining whether the obstacle uses a COLAV system or not in the Obstacle_SBMPC predictions
+	) : 
+	ID(xs_aug(6)), colav_on(colav_on),
+	A(0.0), B(0.0), C(0), D(0.0),
+	l(xs_aug(4)), w(xs_aug(5)), 
+	x_offset(0.0), y_offset(0.0)
 {
 	double psi = atan2(xs_aug(3), xs_aug(2));
 	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 

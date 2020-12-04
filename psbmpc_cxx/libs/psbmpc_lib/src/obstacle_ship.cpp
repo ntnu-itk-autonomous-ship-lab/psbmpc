@@ -34,14 +34,14 @@ Obstacle_Ship::Obstacle_Ship()
 	l = 20;
 	w = 4;
 	
-	T_chi = 3; 		// Ad hoc parameters, are very dependent on the ship type
+	T_chi = 7.5; 		// Ad hoc parameters, are very dependent on the ship type
 	T_U = 10;
 
 	// Guidance parameters
 	e_int = 0;
 	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
-	R_a = 20.0; 			    // WP acceptance radius (20.0)
-	LOS_LD = 150.0; 			// LOS lookahead distance (100.0) 
+	R_a = 30.0; 			    // WP acceptance radius (20.0)
+	LOS_LD = 200.0; 			// LOS lookahead distance (100.0) 
 	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;

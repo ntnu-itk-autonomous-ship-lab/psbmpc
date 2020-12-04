@@ -60,6 +60,8 @@ public:
 
 	Obstacle(const Eigen::VectorXd &xs_aug, const Eigen::VectorXd &P, const bool colav_on);
 
+	Obstacle(const Eigen::Vector4d &xs, const Eigen::VectorXd &P, const int ID, const bool colav_on);
+
 	Obstacle(const Obstacle &o); 
 
 	Obstacle& operator=(const Obstacle &rhs);

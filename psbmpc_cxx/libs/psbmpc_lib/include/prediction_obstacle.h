@@ -35,7 +35,7 @@ private:
 
 	Eigen::Matrix4d A_CV;
 
-	// Predicted state trajectory from the current predicted time onwards
+	// Predicted state trajectory from the current time onwards
 	// either from Obstacle_SBMPC or independent prediction
 	Eigen::MatrixXd xs_p;
 
@@ -64,11 +64,11 @@ public:
 	Prediction_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
 	Eigen::Vector4d get_initial_state() const { return xs_0; }; 
-	Eigen::Vector4d get_current_state() const { return xs_p.col(0); }; 
+	Eigen::Vector4d get_predicted_state(const int k) const { return xs_p.col(k); }; 
 
 	Eigen::MatrixXd get_trajectory() const { return xs_p; };
 
-	void set_current_state(const Eigen::Vector4d &xs_k) { xs_p.col(0) = xs_k; }
+	void set_predicted_state(const Eigen::Vector4d &xs_k, const int k) { xs_p.col(k) = xs_k; }
 
 	void set_waypoints(const Eigen::Matrix<double, 2, -1> &waypoints) { this->waypoints = waypoints; }
 
