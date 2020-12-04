@@ -137,15 +137,15 @@ private:
 	/****************************************************************************************
 	*  Name     : update_obstacles
 	*  Function : Takes in new obstacle information and updates the single obstacle data 
-	*			  structures for the asking obstacle i.
+	*			  structures for the "intelligent" obstacle i.
 	*  Author   : Trym Tengesdal
 	*  Modified :
 	*****************************************************************************************/
 	template <class Parameter_Object>
 	void update_obstacles(
-		const int i, 						
+		const int i, 																		// In: Index of obstacle i to update data for				
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
-		const Eigen::Matrix<double, 9, -1> &obstacle_states 								// In: Dynamic obstacle states 
+		const Eigen::Matrix<double, 5, -1> &obstacle_states 								// In: Other dynamic obstacle states 
 		) 			
 	{
 		int n_obst_old = data[i].obstacles.size();
@@ -157,7 +157,7 @@ private:
 			obstacle_exist = false;
 			for (int k = 0; k < n_obst_old; k++)
 			{
-				if ((double)data[i].obstacles[k].get_ID() == obstacle_states(8, j))
+				if ((double)data[i].obstacles[k].get_ID() == obstacle_states(4, j))
 				{
 					data[i].obstacles[k].update(obstacle_states.block<4, 1>(0, j));
 
@@ -193,7 +193,7 @@ private:
 	void update_situation_type_and_transitional_variables(
 		const int i, 																		// In: Index of obstacle asking for a situational awareness update
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss, an Obstacle_SBMPC
-		const Eigen::Matrix<double, 4, 1> &obstacle_i_state,								// In: Current predicted time state of obstacle i
+		const Eigen::Vector4d &obstacle_i_state,											// In: Current predicted time state of obstacle i
 		const double obstacle_i_length														// In: Dimension of obstacle i along longest axis
 		)
 	{
@@ -322,18 +322,23 @@ public:
 	*****************************************************************************************/
 	template <class Parameter_Object>
 	void operator()(
-		const int i, 																		// In: Index of obstacle asking for a situational awareness update
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss, an Obstacle_SBMPC
-		const Eigen::Matrix<double, 4, 1> &obstacle_i_state,								// In: Current predicted time state of obstacle i
-		const double obstacle_i_length,														// In: Dimension of obstacle i along longest axis
-		const Eigen::Matrix<double, 9, -1> &other_obstacle_states 							// In: Other dynamic obstacle states (including the own-ship)
+		const std::vector<Prediction_Obstacle> &pobstacles 									// In: Vector of Prediction Obstacles
 		) 			
 	{
-		update_obstacles<Parameter_Object>(i, mpc_pars, other_obstacle_states);
+		int n_obst = pobstacles.size();
 
-		update_situation_type_and_transitional_variables<Parameter_Object>(i, mpc_pars, obstacle_i_state, obstacle_i_length);
+		Eigen::Matrix<double, 5, -1> other_obstacle_states(9, n_obst);
+		Eigen::Vector4d obstacle_i_state;
+		double obstacle_i_length;
+		for (int i = 0; i < n_obst; i++)
+		{
+			obstacle_i_state = pobstacles[i].get
+			update_obstacles<Parameter_Object>(i, mpc_pars, other_obstacle_states);
+
+			update_situation_type_and_transitional_variables<Parameter_Object>(i, mpc_pars, obstacle_i_state, obstacle_i_length);
+		}
 	}
-
 };
 
 #endif 

@@ -35,7 +35,7 @@ class Obstacle_SBMPC
 {
 private:
 
-	int ID; // The ID of this intelligent obstacle, for use in 
+	int ID; // The ID of the "intelligent" obstacle using this COLAV system
 
 	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
 
@@ -59,6 +59,13 @@ private:
 	void increment_control_behavior();
 
 	bool determine_colav_active(const Obstacle_Data<Prediction_Obstacle> &data, const int n_static_obst);
+
+	bool determine_COLREGS_violation(
+		const Eigen::Vector2d &v_A, 
+		const double psi_A, 
+		const Eigen::Vector2d &v_B,
+		const Eigen::Vector2d &L_AB,	
+		const double d_AB);
 
 	bool determine_transitional_cost_indicator(
 		const double psi_A, 
@@ -112,13 +119,6 @@ public:
 	Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc);
 
 	Obstacle_SBMPC& operator=(const Obstacle_SBMPC &o_sbmpc);
-
-	bool determine_COLREGS_violation(
-		const Eigen::Vector2d &v_A, 
-		const double psi_A, 
-		const Eigen::Vector2d &v_B,
-		const Eigen::Vector2d &L_AB,	
-		const double d_AB);
 
 	void calculate_optimal_offsets(
 		double &u_opt, 	

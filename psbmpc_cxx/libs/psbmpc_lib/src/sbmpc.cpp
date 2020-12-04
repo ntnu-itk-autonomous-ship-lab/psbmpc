@@ -91,14 +91,6 @@ void SBMPC::calculate_optimal_offsets(
 
 	initialize_prediction(data);
 
-	for (int i = 0; i < n_obst; i++)
-	{
-		// PSBMPC parameters needed to determine if obstacle breaches COLREGS 
-		// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
-		data.obstacles[i].predict_independent_trajectories(
-			pars.T, pars.dt, trajectory.col(0), pars.phi_AH, pars.phi_CR, pars.phi_HO, pars.phi_OT, pars.d_close, pars.d_safe);
-	}
-
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
@@ -360,7 +352,6 @@ void SBMPC::initialize_prediction(
 	for (int i = 0; i < n_obst; i++)
 	{
 		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf->get_state());
-		//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
 
 		ps_ordering_i.resize(1); 
 		ps_ordering_i[0] = KCC;		
@@ -369,7 +360,10 @@ void SBMPC::initialize_prediction(
 		ps_maneuver_times_i.resize(1);
 		ps_maneuver_times_i(0) = 0;
 		
-		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);		
+		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
+
+		data.obstacles[i].predict_independent_trajectories<SBMPC>(
+			pars.T, pars.dt, trajectory.col(0), *this);	
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
