@@ -28,9 +28,13 @@
 #include "mrou.h"
 #include "kf.h"
 
+class Prediction_Obstacle;
 class Tracked_Obstacle : public Obstacle
 {
 private:
+
+	// To make transfer of data between obstacle objects easier
+	friend class Prediction_Obstacle;
 
 	// Vector of intention probabilities at the current time or last time of update
 	Eigen::VectorXd Pr_a;
@@ -118,19 +122,12 @@ public:
 		const Eigen::VectorXd &ps_course_changes,
 		const Eigen::VectorXd &ps_maneuver_times);
 
-	// Some PSBMPC parameters needed to determine if obstacle breaches COLREGS 
-	// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation"
-	// function and equal parameters for the phi-angles, d_close and d_safe)
+	template <class MPC_Type>
 	void predict_independent_trajectories(
 		const double T, 
 		const double dt, 
 		const Eigen::Matrix<double, 6, 1> &ownship_state,
-		const double phi_AH,
-		const double phi_CR,
-		const double phi_HO,
-		const double phi_OT,
-		const double d_close,
-		const double d_safe);
+		const MPC_Type &mpc);
 
 	void update(
 		const Eigen::VectorXd &xs_aug, 

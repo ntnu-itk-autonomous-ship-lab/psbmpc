@@ -153,16 +153,12 @@ void Tracked_Obstacle::initialize_prediction(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
+template <class MPC_Type>
 void Tracked_Obstacle::predict_independent_trajectories(						
 	const double T, 											// In: Time horizon
 	const double dt, 											// In: Time step
 	const Eigen::Matrix<double, 6, 1> &ownship_state, 			// In: State of own-ship to use for COLREGS penalization calculation
-	const double phi_AH,
-	const double phi_CR,
-	const double phi_HO,
-	const double phi_OT,
-	const double d_close,
-	const double d_safe
+	const MPC_Type &mpc 										// In: Calling object
 	)
 {
 	int n_samples = std::round(T / dt);
@@ -174,14 +170,16 @@ void Tracked_Obstacle::predict_independent_trajectories(
 	Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
 	P_p.col(0) = flatten(kf->get_covariance());
 
-	Eigen::Vector2d v_p_new, d_0i_p;
-	double chi_ps, t = 0;
+	Eigen::Vector2d v_p_new, d_AB, v_A, v_B, L_AB;
+	double chi_ps, t = 0, psi_A;
 	bool have_turned;
 	for(int ps = 0; ps < n_ps; ps++)
 	{
 		ownship_state_sl = ownship_state;
+
 		v_p(0) = kf->get_state()(2);
 		v_p(1) = kf->get_state()(3);
+
 		xs_p[ps].col(0) = kf->get_state();
 		
 		have_turned = false;	
@@ -189,13 +187,17 @@ void Tracked_Obstacle::predict_independent_trajectories(
 		{
 			t = (k + 1) * dt;
 
-			/* d_0i_p = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl;
-			d_0i_p = */ 
+			v_B(0) = ownship_state_sl(3);
+			v_B(1) = ownship_state_sl(4);
+			v_B = rotate_vector_2D(v_B, ownship_state_sl(2));
+
+			psi_A = atan2(xs_p[ps](4), xs_p[ps](0));
+			d_AB = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl.block<2, 1>(0, 0);
+			L_AB = d_AB.normalized();
 
 			if (!mu[ps])
 			{
-				//mu[ps] = sbmpc->determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl);
-				mu[ps] = determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl, phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
+				mu[ps] = mpc.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
 			}
 		
 			switch (ps_ordering[ps])

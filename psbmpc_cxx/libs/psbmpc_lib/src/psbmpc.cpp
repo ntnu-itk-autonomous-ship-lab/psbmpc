@@ -94,16 +94,6 @@ void PSBMPC::calculate_optimal_offsets(
 
 	initialize_prediction(data);
 
-	if (!pars.obstacle_colav_on)
-	{
-		for (int i = 0; i < n_obst; i++)
-		{
-			// PSBMPC parameters needed to determine if obstacle breaches COLREGS 
-			// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
-			data.obstacles[i].predict_independent_trajectories(
-				pars.T, pars.dt, trajectory.col(0), pars.phi_AH, pars.phi_CR, pars.phi_HO, pars.phi_OT, pars.d_close, pars.d_safe);
-		}
-	}
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
@@ -203,7 +193,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			if (pars.obstacle_colav_on) { predict_trajectories_jointly(data); }
+			if (pars.obstacle_colav_on) { predict_trajectories_jointly(static_obstacles); }
 
 			
 			P_c_i.resize(n_ps[i] + 1, n_samples);
@@ -364,7 +354,7 @@ void PSBMPC::initialize_prediction(
 {
 	int n_obst = data.obstacles.size();
 	n_ps.resize(n_obst);
-
+	pobstacles.resize(n_obst);
 	int n_a = data.obstacles[0].get_intention_probabilities().size();
 	
 	//***********************************************************************************
@@ -379,13 +369,8 @@ void PSBMPC::initialize_prediction(
 	Eigen::Vector2d p_cpa;
 	for (int i = 0; i < n_obst; i++)
 	{
-		//Typically three intentions: KCC, SM, PM
-		//std::cout << trajectory.col(0).transpose() << std::endl;
-		//std::cout << obstacles[i]->kf->get_state() << std::endl;
 		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf->get_state());
-		//std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
-		//std::cout << "t_cpa = " << t_cpa(i) << std::endl;
-		//std::cout << "d_cpa = " << d_cpa(i) << std::endl;
+
 		if (n_a == 1)
 		{
 			n_ps[i] = 1;
@@ -422,7 +407,16 @@ void PSBMPC::initialize_prediction(
 			}
 
 		}
-		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);		
+		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
+
+		data.obstacles[i].predict_independent_trajectories<PSBMPC>(
+			pars.T, pars.dt, trajectory.col(0), *this);
+
+		pobstacles[i] = data.obstacles[i];
+		if (pars.obstacle_colav_on)
+		{
+			pobstacles[i].set_colav_on(true);
+		}
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -602,19 +596,114 @@ double PSBMPC::find_time_of_passing(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::predict_trajectories_jointly(
-	const Obstacle_Data<Tracked_Obstacle> &data								// In: Dynamic obstacle information
+	const Eigen::Matrix<double, 4, -1>& static_obstacles							// In: Static obstacle information
 	)
 {
 	int n_samples = trajectory.cols();
-	int n_obst = data.obstacles.size();
+	int n_obst = pobstacles.size();
+	Joint_Prediction_Manager jpm(n_obst); 
 
-	std::vector<Obstacle_SBMPC> obst_sbmpc(data.obstacles.size());
+	double u_opt_i, chi_opt_i, u_d_i, chi_d_i;
+	Eigen::Matrix2d waypoints_i;
+	Eigen::MatrixXd xs_i_k_p(4, n_obst);
 
-	for (int k = 0; k < n_samples; k++)
+	Eigen::Matrix<double, 2, -1> predicted_trajectory_i;
+
+	Eigen::Matrix<double, 9, -1> obstacle_states;
+	obstacle_states.resize(9, n_obst);
+
+	//===============================================================================================================
+	// MATLAB PLOTTING FOR DEBUGGING
+	//===============================================================================================================
+	/* Engine *ep = engOpen(NULL);
+	if (ep == NULL)
 	{
+		std::cout << "engine start failed!" << std::endl;
+	}
+ 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
+
+	double *p_traj_os = mxGetPr(traj_os); 
+	double *p_wps_os = mxGetPr(wps_os); 
+
+	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
+	map_wps = waypoints;
+
+	mxArray *static_obst_mx = mxCreateDoubleMatrix(4, n_static_obst, mxREAL);
+	double *p_static_obst_mx = mxGetPr(static_obst_mx); 
+	Eigen::Map<Eigen::MatrixXd> map_static_obst(p_static_obst_mx, 4, n_static_obst);
+	map_static_obst = static_obstacles;
+
+	mxArray *dt_sim, *T_sim, *k_s, *n_obst_mx, *i_mx, *n_static_obst_mx;
+	dt_sim = mxCreateDoubleScalar(pars.dt);
+	T_sim = mxCreateDoubleScalar(pars.T);
+	n_obst_mx = mxCreateDoubleScalar(n_obst);
+	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
+
+	engPutVariable(ep, "X_static", static_obst_mx);
+	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
+	engPutVariable(ep, "n_obst", n_obst_mx);
+	engPutVariable(ep, "dt_sim", dt_sim);
+	engPutVariable(ep, "T_sim", T_sim);
+	engPutVariable(ep, "WPs", wps_os);
+	engEvalString(ep, "joint_prediction_init_plotting");
+
+	td::vector<mxArray*> traj_i(n_obst);
+
+	double *p_traj_i = (nullptr);
+	double *p_pred_traj_i(nullptr);
+
+	Eigen::Map<Eigen::MatrixXd> map_traj_i(p_traj_i, 4, n_samples);
+
+	std::vector<mxArray*> P_c_i_mx(n_obst);
+
+	
+
+ 	for(int i = 0; i < n_obst; i++)
+	{
+		i_mx = mxCreateDoubleScalar(i + 1);
+		engPutVariable(ep, "i", i_mx);
+
+		map_P_traj_i = P_i_p;
+		engPutVariable(ep, "P_i_flat", P_traj_i);
+		ps_mx = mxCreateDoubleScalar(ps + 1);
+		engPutVariable(ep, "ps", ps_mx);
+
+		map_traj_i = xs_i_p[ps];
+		
+		engPutVariable(ep, "X_i", traj_i);
+		engEvalString(ep, "joint_prediction_init_obstacle_plot");
+	} */
+	
+	//===============================================================================================================
+
+	double t(0.0);
+	for (int k = 0; k < n_samples; k++)
+	{	
+		t = k * pars.dt;
+		// Update Obstacle Data for each prediction obstacle
+		jpm(pars, pobstacles);
+
 		for (int i = 0; i < n_obst; i++)
 		{
+			waypoints_i.col(0);
 
+			if (fmod(t, 5) == 0)
+			{
+				pobstacles[i].sbmpc->calculate_optimal_offsets(
+					u_opt_i, 
+					chi_opt_i, 
+					predicted_trajectory_i,
+					u_d_i, 
+					chi_d_i,
+					waypoints_i,
+					xs_i_k_p.col(i),
+					static_obstacles,
+					jpm.get_data(i));
+			}
+
+
+			
 		}
 	}
 }
@@ -699,7 +788,10 @@ bool PSBMPC::determine_COLREGS_violation(
 				  !is_head_on 												&&
 				  !is_passed;
 
-	return is_close && (( B_is_starboard && is_head_on) || (B_is_starboard && is_crossing && !A_is_overtaken));
+	// Extra condition that the COLREGS violation is only considered in an annulus; i.e. within d_close but outside d_safe.
+	// The logic behind having to be outside d_safe is that typically a collision happens here, and thus COLREGS should be disregarded
+	// in order to make a safe reactive avoidance maneuver, if possible.  
+	return is_close && (( B_is_starboard && is_head_on) || (B_is_starboard && is_crossing && !A_is_overtaken)) && (d_AB > pars.d_safe);
 }
 
 

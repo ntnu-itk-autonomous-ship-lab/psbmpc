@@ -66,6 +66,14 @@ Prediction_Obstacle::Prediction_Obstacle(
 	assign_data(po);
 }
 
+Prediction_Obstacle::Prediction_Obstacle(
+	const Tracked_Obstacle &to 													// In: Tracked obstacle to copy
+	) :
+	Obstacle(to)
+{
+	assign_data(to);
+}
+
 /****************************************************************************************
 *  Name     : operator=
 *  Function : Assignment operator to prevent shallow assignments and bad pointer management
@@ -81,6 +89,15 @@ Prediction_Obstacle& Prediction_Obstacle::operator=(
 		return *this;
 	}
 
+	assign_data(rhs);
+
+	return *this;
+}
+
+Prediction_Obstacle& Prediction_Obstacle::operator=(
+	const Tracked_Obstacle &rhs 										// In: Rhs prediction obstacle to assign
+	)
+{
 	assign_data(rhs);
 
 	return *this;
@@ -152,4 +169,11 @@ void Prediction_Obstacle::assign_data(
 	this->xs_p = po.xs_p;
 
 	this->sbmpc.reset(new Obstacle_SBMPC(*(po.sbmpc)));
+}
+
+void Prediction_Obstacle::assign_data(
+	const Tracked_Obstacle &to 														// In: Tracked_Obstacle whose data to assign to *this
+	)
+{
+	this->xs_p = to.xs_p[0];
 }

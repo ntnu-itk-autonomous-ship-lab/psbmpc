@@ -24,9 +24,9 @@
 
 #include "psbmpc_index.h"
 #include "psbmpc_parameters.h"
-#include "obstacle_manager.h"
+#include "joint_prediction_manager.h"
+#include "obstacle_sbmpc.h"
 #include "ownship.h"
-#include "obstacle.h"
 #include "cpe.h"
 
 #include "Eigen/Dense"
@@ -56,6 +56,8 @@ private:
 
 	CPE cpe;
 
+	std::vector<Prediction_Obstacle> pobstacles;
+
 	void reset_control_behaviour();
 
 	void increment_control_behaviour();
@@ -70,25 +72,11 @@ private:
 		const Obstacle_Data<Tracked_Obstacle> &data,
 		const int i);
 
-	void set_up_dependent_obstacle_prediction_variables(
-		std::vector<Intention> &ps_ordering,
-		Eigen::VectorXd &ps_course_changes,
-		Eigen::VectorXd &ps_maneuver_times,
-		const Obstacle_Data<Tracked_Obstacle> &data,
-		const int i);
-
 	double find_time_of_passing(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 
-	void predict_trajectories_jointly(const Obstacle_Data<Tracked_Obstacle> &data);
+	void predict_trajectories_jointly(const Eigen::Matrix<double, 4, -1>& static_obstacles);
 
 	bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
-
-	bool determine_COLREGS_violation(
-		const Eigen::Vector2d &v_A, 
-		const double psi_A, 
-		const Eigen::Vector2d &v_B,
-		const Eigen::Vector2d &L_AB, 
-		const double d_AB);
 
 	bool determine_transitional_cost_indicator(
 		const double psi_A, 
@@ -141,6 +129,13 @@ public:
 	PSBMPC_Parameters pars;
 
 	PSBMPC();
+
+	bool determine_COLREGS_violation(
+		const Eigen::Vector2d &v_A, 
+		const double psi_A, 
+		const Eigen::Vector2d &v_B,
+		const Eigen::Vector2d &L_AB, 
+		const double d_AB);
 
 	void calculate_optimal_offsets(
 		double &u_opt, 

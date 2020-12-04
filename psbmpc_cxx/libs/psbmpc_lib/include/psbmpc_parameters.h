@@ -70,6 +70,7 @@ private:
 	friend class PSBMPC;
 	friend class Obstacle_Manager;
 	friend class Obstacle_SBMPC;
+	friend class Tracked_Obstacle;
 
 	int n_cbs, n_M;
 

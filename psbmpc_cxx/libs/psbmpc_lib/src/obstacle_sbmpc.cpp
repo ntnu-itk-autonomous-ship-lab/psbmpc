@@ -117,7 +117,10 @@ bool Obstacle_SBMPC::determine_COLREGS_violation(
 				  !is_head_on 													&&
 				  !is_passed;
 
-	return (is_close && B_is_starboard && is_head_on) || (is_close && B_is_starboard && is_crossing && !A_is_overtaken);
+	// Extra condition that the COLREGS violation is only considered in an annulus; i.e. within d_close but outside d_safe.
+	// The logic behind having to be outside d_safe is that typically a collision happens here, and thus COLREGS should be disregarded
+	// in order to make a safe reactive avoidance maneuver, if possible.  
+	return is_close && (( B_is_starboard && is_head_on) || (B_is_starboard && is_crossing && !A_is_overtaken)) && (d_AB > pars.d_safe);
 }
 
 /****************************************************************************************
