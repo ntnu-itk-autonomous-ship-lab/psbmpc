@@ -31,7 +31,7 @@
 #include "xoshiro.hpp"
 
 
-#define BUFSIZE 1000000
+#define BUFFSIZE 1000000
 
 int main(){
 	// Matlab engine setup
@@ -40,7 +40,7 @@ int main(){
 	{
 		std::cout << "Engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1]; 
+	char buffer[BUFFSIZE+1]; 
 
 //*****************************************************************************************************************
 // Simulation setup
@@ -810,8 +810,8 @@ int main(){
 					//============================================================================================
 					// Send data to matlab for live plotting
 					//============================================================================================
-					buffer[BUFSIZE] = '\0';
-					engOutputBuffer(ep, buffer, BUFSIZE);
+					buffer[BUFFSIZE] = '\0';
+					engOutputBuffer(ep, buffer, BUFFSIZE);
 
 					k_s_mx = mxCreateDoubleScalar(k + 1);
 					engPutVariable(ep, "k", k_s_mx);

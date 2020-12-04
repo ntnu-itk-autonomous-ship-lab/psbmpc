@@ -108,7 +108,7 @@ private:
 
     double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
-	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
+	void assign_optimal_trajectory(Eigen::Matrix<double, 4, -1> &optimal_trajectory);
 
 public:
 
@@ -123,7 +123,7 @@ public:
 	void calculate_optimal_offsets(
 		double &u_opt, 	
 		double &chi_opt, 
-		Eigen::Matrix<double, 2, -1> &predicted_trajectory,
+		Eigen::Matrix<double, 4, -1> &predicted_trajectory,
 		const double u_d, 
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints,

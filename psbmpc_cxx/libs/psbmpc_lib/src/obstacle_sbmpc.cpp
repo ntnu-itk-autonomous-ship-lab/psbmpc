@@ -132,7 +132,7 @@ bool Obstacle_SBMPC::determine_COLREGS_violation(
 void Obstacle_SBMPC::calculate_optimal_offsets(									
 	double &u_opt, 															// In/out: Optimal surge offset
 	double &chi_opt, 														// In/out: Optimal course offset
-	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
+	Eigen::Matrix<double, 4, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
 	const double u_d, 														// In: Surge reference
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
@@ -277,7 +277,7 @@ void Obstacle_SBMPC::initialize_prediction(
 	Eigen::Vector2d p_cpa;
 	for (int i = 0; i < n_obst; i++)
 	{
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].get_state());
+		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].get_current_state());
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -364,8 +364,8 @@ bool Obstacle_SBMPC::determine_colav_active(
 	Eigen::Vector2d d_0i;
 	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
-		d_0i(0) = data.obstacles[i].get_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].get_state()(1) - xs(1);
+		d_0i(0) = data.obstacles[i].get_current_state()(0) - xs(0);
+		d_0i(1) = data.obstacles[i].get_current_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 	}
 	colav_active = colav_active || n_static_obst > 0;
@@ -740,7 +740,7 @@ double Obstacle_SBMPC::distance_to_static_obstacle(
 *  Modified :
 *****************************************************************************************/
 void Obstacle_SBMPC::assign_optimal_trajectory(
-	Eigen::Matrix<double, 2, -1> &optimal_trajectory 									// In/out: Optimal PSB-MPC trajectory
+	Eigen::Matrix<double, 4, -1> &optimal_trajectory 									// In/out: Optimal PSB-MPC trajectory
 	)
 {
 	int n_samples = round(pars.T / pars.dt);
@@ -748,16 +748,16 @@ void Obstacle_SBMPC::assign_optimal_trajectory(
 	if (false) //pars.prediction_method > Linear)
 	{
 		int count = 0;
-		optimal_trajectory.resize(2, n_samples / pars.p_step);
+		optimal_trajectory.resize(4, n_samples / pars.p_step);
 		for (int k = 0; k < n_samples; k += pars.p_step)
 		{
-			optimal_trajectory.col(count) = trajectory.block<2, 1>(0, k);
+			optimal_trajectory.col(count) = trajectory.col(k);
 			if (count < round(n_samples / pars.p_step) - 1) count++;					
 		}
 	} 
 	else
 	{
-		optimal_trajectory.resize(2, n_samples);
-		optimal_trajectory = trajectory.block(0, 0, 2, n_samples);
+		optimal_trajectory.resize(4, n_samples);
+		optimal_trajectory = trajectory.block(0, 0, 4, n_samples);
 	}
 }
