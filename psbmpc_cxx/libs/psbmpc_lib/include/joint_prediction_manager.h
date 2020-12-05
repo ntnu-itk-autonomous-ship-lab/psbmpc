@@ -194,7 +194,8 @@ private:
 		const int i, 																		// In: Index of obstacle asking for a situational awareness update
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss, an Obstacle_SBMPC
 		const Eigen::Vector4d &obstacle_i_state,											// In: Current predicted time state of obstacle i
-		const double obstacle_i_length														// In: Dimension of obstacle i along longest axis
+		const double obstacle_i_length,														// In: Dimension of obstacle i along longest axis
+		const int k																			// In: Index of the current predicted time t_k
 		)
 	{
 		bool is_close;
@@ -217,12 +218,12 @@ private:
 		//std::cout << A << std::endl;
 		for (int j = 0; j < n_obst; j++)
 		{
-			v_B(0) = data[i].obstacles[j].get_state()(2);
-			v_B(1) = data[i].obstacles[j].get_state()(3);
+			v_B(0) = data[i].obstacles[j].get_predicted_state(k)(2);
+			v_B(1) = data[i].obstacles[j].get_predicted_state(k)(3);
 			psi_B = atan2(v_B(1), v_B(0));
 
-			L_AB(0) = data[i].obstacles[j].get_state()(0) - obstacle_i_state(0);
-			L_AB(1) = data[i].obstacles[j].get_state()(1) - obstacle_i_state(1);
+			L_AB(0) = data[i].obstacles[j].get_predicted_state(k)(0) - obstacle_i_state(0);
+			L_AB(1) = data[i].obstacles[j].get_predicted_state(k)(1) - obstacle_i_state(1);
 			d_AB = L_AB.norm();
 
 			// Decrease the distance between the vessels by their respective max dimension
@@ -309,7 +310,7 @@ public:
 
 	Obstacle_Data<Prediction_Obstacle>& get_data(int i) { return data[i]; };
 
-	void update_obstacle_status(const int i, const Eigen::Matrix<double, 6, 1> &obstacle_i_state);
+	void update_obstacle_status(const int i, const Eigen::Matrix<double, 6, 1> &obstacle_i_state, const int k);
 
 	void display_obstacle_information(const int i);
 
@@ -323,20 +324,49 @@ public:
 	template <class Parameter_Object>
 	void operator()(
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss, an Obstacle_SBMPC
-		const std::vector<Prediction_Obstacle> &pobstacles 									// In: Vector of Prediction Obstacles
+		const std::vector<Prediction_Obstacle> &pobstacles, 								// In: Vector of Prediction Obstacles
+		const Eigen::VectorXd &xs_os_aug_k, 												// In: Augmented ownship state consisting of [x, y, Vx, Vy, l, w, ID] at the current predicted time
+		const int k																			// In: Index of the current predicted time t_k
 		) 			
 	{
 		int n_obst = pobstacles.size();
 
-		Eigen::Matrix<double, 5, -1> other_obstacle_states(9, n_obst);
-		Eigen::Vector4d obstacle_i_state;
+		Eigen::Matrix<double, 7, -1> other_obstacle_states(7, n_obst);
+
+		Eigen::Vector4d obstacle_i_state, ownship_4d_state;
 		double obstacle_i_length;
+		int count;
 		for (int i = 0; i < n_obst; i++)
 		{
-			obstacle_i_state = pobstacles[i].get
+			obstacle_i_state = pobstacles[i].get_predicted_state(k);
+
+			// Aquire information from all other obstacles
+			count = 0;
+			for (int j = 0; j < n_obst + 1; j++)
+			{
+				if (j == n_obst) // Ownship is the last "other obstacle" with ID = n_obst
+				{
+					other_obstacle_states.col(count) = xs_os_aug_k; 
+					count += 1;
+				}
+				else if (j != i)
+				{
+					other_obstacle_states.block<4, 1>(0, count) = pobstacles[j].get_predicted_state(k);
+					other_obstacle_states(4, count) = pobstacles[j].get_length();
+					other_obstacle_states(5, count) = pobstacles[j].get_width();
+					other_obstacle_states(6, count) = pobstacles[j].get_ID();
+					count += 1;
+				}
+				else
+				{
+					// Continue
+				}
+			}
+			std::cout << other_obstacle_states << std::endl;
+			
 			update_obstacles<Parameter_Object>(i, mpc_pars, other_obstacle_states);
 
-			update_situation_type_and_transitional_variables<Parameter_Object>(i, mpc_pars, obstacle_i_state, obstacle_i_length);
+			update_situation_type_and_transitional_variables<Parameter_Object>(i, mpc_pars, obstacle_i_state, obstacle_i_length, k);
 		}
 	}
 };

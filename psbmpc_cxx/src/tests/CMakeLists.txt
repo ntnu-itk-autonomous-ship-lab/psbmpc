@@ -19,7 +19,7 @@
 #======================================================================
 
 # Test files for use with CPU-version of PSBMPC
-#add_executable(tester test_psbmpc.cpp)
+add_executable(tester test_psbmpc.cpp)
 #add_executable(tester test_ownship.cpp)
 #add_executable(tester test_obstacle_ship.cpp)
 #add_executable(tester test_obstacle.cpp)
@@ -38,7 +38,7 @@
 #add_executable(tester gpu_implementation_test_files/test_tml.cu)
 #add_executable(tester gpu_implementation_test_files/test_tml_pdmatrix.cu)
 
-add_executable(tester paper_simulations/test_psbmpc_psim.cpp)
+#add_executable(tester paper_simulations/test_psbmpc_psim.cpp)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include

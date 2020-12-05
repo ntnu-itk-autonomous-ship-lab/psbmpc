@@ -33,12 +33,11 @@
 *****************************************************************************************/
 Prediction_Obstacle::Prediction_Obstacle(
 	const Eigen::VectorXd& xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
-	const Eigen::VectorXd &P, 									// In: Obstacle covariance information
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	Obstacle(xs_aug, P, colav_on),
+	Obstacle(xs_aug, colav_on),
 	sbmpc(new Obstacle_SBMPC())
 {
 	int n_samples = std::round(T / dt);
