@@ -27,7 +27,7 @@
 
 class PSBMPC;
 class Obstacle_Manager;
-class Obstacle_SBMPC;
+class Joint_Prediction_Manager;
 
 /* enum Par_Type 
 {
@@ -69,7 +69,7 @@ private:
 
 	friend class PSBMPC;
 	friend class Obstacle_Manager;
-	friend class Tracked_Obstacle;
+	friend class Joint_Prediction_Manager;
 
 	int n_cbs, n_M;
 

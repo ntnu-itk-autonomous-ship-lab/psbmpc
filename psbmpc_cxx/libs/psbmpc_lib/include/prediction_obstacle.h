@@ -24,7 +24,7 @@
 #define _PREDICTION_OBSTACLE_H_
 
 #include "Eigen/Dense"
-#include "obstacle.h"
+#include "tracked_obstacle.h"
 #include <memory>
 
 class Obstacle_SBMPC;
@@ -51,8 +51,7 @@ public:
 
 	Prediction_Obstacle() {};
 
-	Prediction_Obstacle(const Eigen::VectorXd &xs_aug,
-			 const Eigen::VectorXd &P,	 
+	Prediction_Obstacle(const Eigen::VectorXd &xs_aug,	 
 			 const bool colav_on, 
 			 const double T, 
 			 const double dt);
@@ -63,14 +62,14 @@ public:
 	Prediction_Obstacle& operator=(const Prediction_Obstacle &rhs);
 	Prediction_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
-	Eigen::Vector4d get_initial_state() const { return xs_0; }; 
-	Eigen::Vector4d get_predicted_state(const int k) const { return xs_p.col(k); }; 
+	inline Eigen::Vector4d get_initial_state() const { return xs_0; }; 
+	inline Eigen::Vector4d get_predicted_state(const int k) const { return xs_p.col(k); }; 
 
-	Eigen::MatrixXd get_trajectory() const { return xs_p; };
+	inline Eigen::MatrixXd get_trajectory() const { return xs_p; };
 
-	void set_predicted_state(const Eigen::Vector4d &xs_k, const int k) { xs_p.col(k) = xs_k; }
+	inline void set_predicted_state(const Eigen::Vector4d &xs_k, const int k) { xs_p.col(k) = xs_k; }
 
-	void set_waypoints(const Eigen::Matrix<double, 2, -1> &waypoints) { this->waypoints = waypoints; }
+	inline void set_waypoints(const Eigen::Matrix<double, 2, -1> &waypoints) { this->waypoints = waypoints; }
 
 	void predict_independent_trajectory(const double T, const double dt);
 

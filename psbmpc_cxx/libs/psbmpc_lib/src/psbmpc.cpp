@@ -608,8 +608,12 @@ void PSBMPC::predict_trajectories_jointly(
 	Joint_Prediction_Manager jpm(n_obst); 
 
 	double u_opt_i, chi_opt_i, u_d_i, chi_d_i;
-	Eigen::Matrix2d waypoints_i;
-	Eigen::Matrix4d xs_i_p, xs_i_p_transformed;
+	Eigen::Matrix<double, 2, -1> waypoints_i(2, 2);
+	Eigen::Vector4d xs_i_p, xs_i_p_transformed;
+	Eigen::VectorXd xs_os_aug_k(7);
+	xs_os_aug_k(4) = ownship.get_length();
+	xs_os_aug_k(5) = ownship.get_width();
+	xs_os_aug_k(6) = n_obst;
 
 	std::vector<Obstacle_Ship> obstacle_ships(n_obst);
 
@@ -685,15 +689,28 @@ void PSBMPC::predict_trajectories_jointly(
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
 	double t(0.0), mean_t(0.0), u_c_i(0.0), chi_c_i(0.0);
+	Eigen::Vector2d v_os_k;
 	for (int k = 0; k < n_samples; k++)
 	{	
 		t = k * pars.dt;
-		// Update Obstacle Data for each prediction obstacle
-		jpm(pars, pobstacles);
+
+		v_os_k = trajectory.block<2, 1>(3, k);
+		v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
+		xs_os_aug_k.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, k);
+		xs_os_aug_k.block<2, 1>(2, 0) = v_os_k;
+
+		// Update Obstacle Data for each prediction obstacle, taking all other obstacles
+		// including the ownship into account
+		jpm(pars, pobstacles, xs_os_aug_k, k);
 
 		for (int i = 0; i < n_obst; i++)
 		{
 			xs_i_p = pobstacles[i].get_predicted_state(k);
+
+			// Convert from X_i = [x, y, Vx, Vy] to X_i = [x, y, chi, U]
+			xs_i_p_transformed.block<2, 1>(0, 0) = xs_i_p.block<2, 1>(0, 0);
+			xs_i_p_transformed(2) = atan2(xs_i_p(3), xs_i_p(2));
+			xs_i_p_transformed(3) = xs_i_p.block<2, 1>(2, 0).norm();
 
 			obstacle_ships[i].update_guidance_references(
 				u_d_i, 
@@ -730,10 +747,11 @@ void PSBMPC::predict_trajectories_jointly(
 			if (k < n_samples - 1)
 			{
 				xs_i_p = obstacle_ships[i].predict(xs_i_p, u_c_i, chi_c_i, pars.dt, pars.prediction_method);
-
-				/* xs_i_p_transformed.block<2, 1>(0, 0) = xs_i_p.block<2, 1>(0, 0);
+				
+				// Convert from X_i = [x, y, chi, U] to X_i = [x, y, Vx, Vy]
+				xs_i_p_transformed.block<2, 1>(0, 0) = xs_i_p.block<2, 1>(0, 0);
 				xs_i_p_transformed(2) = xs_i_p(3) * cos(xs_i_p(2));
-				xs_i_p_transformed(3) = xs_i_p(3) * sin(xs_i_p(3)); */
+				xs_i_p_transformed(3) = xs_i_p(3) * sin(xs_i_p(2));
 
 				pobstacles[i].set_predicted_state(xs_i_p_transformed, k + 1);
 			}
