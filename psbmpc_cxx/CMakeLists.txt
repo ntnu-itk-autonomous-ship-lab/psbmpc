@@ -27,7 +27,7 @@ project(psbmpc_test LANGUAGES CUDA CXX)
 
 # for debug compilation and profiling
 #add_compile_options(-Wall -Wextra -fno-omit-frame-pointer -g )
-add_compile_options(-Wall -Wextra)
+add_compile_options(-Wall -Wextra -Wno-deprecated-copy)
 
 #add_subdirectory(libs/psbmpc_lib_gpu)
 add_subdirectory(libs/psbmpc_lib)
