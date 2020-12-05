@@ -135,7 +135,7 @@ public:
 		const double psi_A, 
 		const Eigen::Vector2d &v_B,
 		const Eigen::Vector2d &L_AB, 
-		const double d_AB);
+		const double d_AB) const;
 
 	void calculate_optimal_offsets(
 		double &u_opt, 

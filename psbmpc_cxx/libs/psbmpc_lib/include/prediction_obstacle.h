@@ -49,7 +49,7 @@ public:
 
 	std::unique_ptr<Obstacle_SBMPC> sbmpc;
 
-	Prediction_Obstacle() {};
+	Prediction_Obstacle();
 
 	Prediction_Obstacle(const Eigen::VectorXd &xs_aug,	 
 			 const bool colav_on, 
@@ -58,6 +58,8 @@ public:
 
 	Prediction_Obstacle(const Prediction_Obstacle &po);
 	Prediction_Obstacle(const Tracked_Obstacle &to);
+
+	~Prediction_Obstacle();
 
 	Prediction_Obstacle& operator=(const Prediction_Obstacle &rhs);
 	Prediction_Obstacle& operator=(const Tracked_Obstacle &rhs);

@@ -48,6 +48,8 @@ Joint_Prediction_Manager::Joint_Prediction_Manager(
 	data.resize(n_obst);
 }
 
+Joint_Prediction_Manager::~Joint_Prediction_Manager() = default;
+
 /****************************************************************************************
 *  Name     : update_obstacle_status
 *  Function : Updates various information on each obstacle at the current time

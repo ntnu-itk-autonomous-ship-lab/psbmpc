@@ -172,6 +172,33 @@ src/cpe.cpp.s:
 	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpe.cpp.s
 .PHONY : src/cpe.cpp.s
 
+src/joint_prediction_manager.o: src/joint_prediction_manager.cpp.o
+
+.PHONY : src/joint_prediction_manager.o
+
+# target to build an object file
+src/joint_prediction_manager.cpp.o:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/joint_prediction_manager.cpp.o
+.PHONY : src/joint_prediction_manager.cpp.o
+
+src/joint_prediction_manager.i: src/joint_prediction_manager.cpp.i
+
+.PHONY : src/joint_prediction_manager.i
+
+# target to preprocess a source file
+src/joint_prediction_manager.cpp.i:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/joint_prediction_manager.cpp.i
+.PHONY : src/joint_prediction_manager.cpp.i
+
+src/joint_prediction_manager.s: src/joint_prediction_manager.cpp.s
+
+.PHONY : src/joint_prediction_manager.s
+
+# target to generate assembly for a file
+src/joint_prediction_manager.cpp.s:
+	cd /home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug && $(MAKE) $(MAKESILENT) -f libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/joint_prediction_manager.cpp.s
+.PHONY : src/joint_prediction_manager.cpp.s
+
 src/kf.o: src/kf.cpp.o
 
 .PHONY : src/kf.o
@@ -562,6 +589,9 @@ help:
 	@echo "... src/cpe.o"
 	@echo "... src/cpe.i"
 	@echo "... src/cpe.s"
+	@echo "... src/joint_prediction_manager.o"
+	@echo "... src/joint_prediction_manager.i"
+	@echo "... src/joint_prediction_manager.s"
 	@echo "... src/kf.o"
 	@echo "... src/kf.i"
 	@echo "... src/kf.s"

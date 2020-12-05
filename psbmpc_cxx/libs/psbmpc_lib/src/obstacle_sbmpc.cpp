@@ -32,7 +32,13 @@ Obstacle_SBMPC::Obstacle_SBMPC() :
 	pars(SBMPC_Parameters(true))
 {
 	u_m_last = 1.0; chi_m_last = 0.0;
+
+	min_cost = 1e12;
+	
+	obstacle_colav_on = false;
 }
+
+Obstacle_SBMPC::~Obstacle_SBMPC() = default;
 
 /****************************************************************************************
 *  Name     : Obstacle_SBMPC
@@ -149,7 +155,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 	int n_obst = data.obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
-	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
+	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M), cost_i(n_obst);
 
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
@@ -171,17 +177,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 
 	initialize_prediction(data);
 
-	if (!obstacle_colav_on)
-	{
-		for (int i = 0; i < n_obst; i++)
-		{
-			data.obstacles[i].predict_independent_trajectory(pars.T, pars.dt);
-		}
-	}
-
 	double cost;
-	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M), cost_i(n_obst);
-
 	reset_control_behavior();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
@@ -265,7 +261,7 @@ void Obstacle_SBMPC::assign_data(
 *  Modified :
 *****************************************************************************************/
 void Obstacle_SBMPC::initialize_prediction(
-	const Obstacle_Data<Prediction_Obstacle> &data							// In: Dynamic obstacle information
+	Obstacle_Data<Prediction_Obstacle> &data							// In: Dynamic obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
@@ -277,7 +273,12 @@ void Obstacle_SBMPC::initialize_prediction(
 	Eigen::Vector2d p_cpa;
 	for (int i = 0; i < n_obst; i++)
 	{
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].get_current_state());
+		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].get_initial_state());
+
+		if (!obstacle_colav_on)
+		{
+			data.obstacles[i].predict_independent_trajectory(pars.T, pars.dt);
+		}
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -364,8 +365,8 @@ bool Obstacle_SBMPC::determine_colav_active(
 	Eigen::Vector2d d_0i;
 	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
-		d_0i(0) = data.obstacles[i].get_current_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].get_current_state()(1) - xs(1);
+		d_0i(0) = data.obstacles[i].get_initial_state()(0) - xs(0);
+		d_0i(1) = data.obstacles[i].get_initial_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 	}
 	colav_active = colav_active || n_static_obst > 0;

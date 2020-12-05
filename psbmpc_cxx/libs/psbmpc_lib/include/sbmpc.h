@@ -58,20 +58,13 @@ private:
 
 	bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 
-	bool determine_COLREGS_violation(
-		const Eigen::Vector2d &v_A, 
-		const double psi_A, 
-		const Eigen::Vector2d &v_B,
-		const Eigen::Vector2d &L_AB, 
-		const double d_AB);
-
 	bool determine_transitional_cost_indicator(
 		const double psi_A, 
 		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
 		const double chi_m,
 		const Obstacle_Data<Tracked_Obstacle> &data,
-		const int i);
+		const int i) const;
 
 	double calculate_dynamic_obstacle_cost(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 
@@ -115,6 +108,13 @@ public:
 
 	SBMPC();
 
+	bool determine_COLREGS_violation(
+		const Eigen::Vector2d &v_A, 
+		const double psi_A, 
+		const Eigen::Vector2d &v_B,
+		const Eigen::Vector2d &L_AB, 
+		const double d_AB) const;
+		
 	void calculate_optimal_offsets(
 		double &u_opt, 
 		double &chi_opt, 
