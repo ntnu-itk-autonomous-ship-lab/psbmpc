@@ -20,7 +20,6 @@
 *****************************************************************************************/
 
 #include "tracked_obstacle.h"
-#include "utilities.h"
 
 #include "assert.h"
 #include <iostream> 
@@ -142,106 +141,6 @@ void Tracked_Obstacle::initialize_prediction(
 	this->ps_course_changes = ps_course_changes;
 
 	this->ps_maneuver_times = ps_maneuver_times;
-}
-
-/****************************************************************************************
-*  Name     : predict_independent_trajectories
-*  Function : Predicts the obstacle trajectories for scenarios where the obstacle
-*			  does not take the own-ship into account. PSBMPC parameters needed 
-* 			  to determine if obstacle breaches cOLREGS (future: implement simple 
-*			  sbmpc class for obstacle which has the "determine COLREGS violation" function)
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-template <class MPC_Type>
-void Tracked_Obstacle::predict_independent_trajectories(						
-	const double T, 											// In: Time horizon
-	const double dt, 											// In: Time step
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 			// In: State of own-ship to use for COLREGS penalization calculation
-	const MPC_Type &mpc 										// In: Calling object
-	)
-{
-	int n_samples = std::round(T / dt);
-	resize_trajectories(n_samples);
-
-	int n_ps = ps_ordering.size();
-	mu.resize(n_ps);
-	
-	Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
-	P_p.col(0) = flatten(kf->get_covariance());
-
-	Eigen::Vector2d v_p_new, d_AB, v_A, v_B, L_AB;
-	double chi_ps, t = 0, psi_A;
-	bool have_turned;
-	for(int ps = 0; ps < n_ps; ps++)
-	{
-		ownship_state_sl = ownship_state;
-
-		v_p(0) = kf->get_state()(2);
-		v_p(1) = kf->get_state()(3);
-
-		xs_p[ps].col(0) = kf->get_state();
-		
-		have_turned = false;	
-		for(int k = 0; k < n_samples; k++)
-		{
-			t = (k + 1) * dt;
-
-			v_B(0) = ownship_state_sl(3);
-			v_B(1) = ownship_state_sl(4);
-			v_B = rotate_vector_2D(v_B, ownship_state_sl(2));
-
-			psi_A = atan2(xs_p[ps](4), xs_p[ps](0));
-			d_AB = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl.block<2, 1>(0, 0);
-			L_AB = d_AB.normalized();
-
-			if (!mu[ps])
-			{
-				mu[ps] = mpc.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
-			}
-		
-			switch (ps_ordering[ps])
-			{
-				case KCC :	
-					break; // Proceed
-				case SM :
-					if (k == ps_maneuver_times[ps] && !have_turned)
-					{
-						chi_ps = atan2(v_p(1), v_p(0)); 
-						v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
-						v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
-						v_p = v_p_new;
-						have_turned = true;
-					}
-					break;
-				case PM : 
-					if (k == ps_maneuver_times[ps] && !have_turned)
-					{
-						chi_ps = atan2(v_p(1), v_p(0)); 
-						v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
-						v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
-						v_p = v_p_new;
-						have_turned = true;
-					}
-					break;
-				default :
-					std::cout << "This intention is not valid!" << std::endl;
-					break;
-			}
-
-			if (k < n_samples - 1)
-			{
-				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p, dt);
-
-				if (ps == 0) P_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
-
-				// Propagate ownship assuming straight line trajectory
-				ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
-					dt * rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
-				ownship_state_sl.block<4, 1>(2, 0) = ownship_state_sl.block<4, 1>(2, 0);
-			}
-		}
-	}
 }
 
 /****************************************************************************************

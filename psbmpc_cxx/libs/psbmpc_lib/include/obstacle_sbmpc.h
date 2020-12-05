@@ -35,8 +35,6 @@ class Obstacle_SBMPC
 {
 private:
 
-	int ID; // The ID of the "intelligent" obstacle using this COLAV system
-
 	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
 
 	double u_m_last;
@@ -52,7 +50,7 @@ private:
 
 	void assign_data(const Obstacle_SBMPC &o_sbmpc);
 
-	void initialize_prediction(const Obstacle_Data<Prediction_Obstacle> &data);
+	void initialize_prediction(Obstacle_Data<Prediction_Obstacle> &data);
 
 	void reset_control_behavior();
 
@@ -115,6 +113,8 @@ public:
 	SBMPC_Parameters pars;
 
 	Obstacle_SBMPC();
+
+	~Obstacle_SBMPC();
 
 	Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc);
 

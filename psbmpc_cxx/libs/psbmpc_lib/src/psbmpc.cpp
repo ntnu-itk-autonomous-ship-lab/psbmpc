@@ -413,7 +413,7 @@ void PSBMPC::initialize_prediction(
 		}
 		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
 
-		data.obstacles[i].predict_independent_trajectories<PSBMPC>(
+		data.obstacles[i].predict_independent_trajectories(
 			pars.T, pars.dt, trajectory.col(0), *this);
 
 		pobstacles[i] = data.obstacles[i];
@@ -856,7 +856,7 @@ bool PSBMPC::determine_COLREGS_violation(
 	const Eigen::Vector2d& v_B, 											// In: (NE) Velocity vector of vessel B
 	const Eigen::Vector2d& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double d_AB 														// In: Distance from vessel A to vessel B
-	)
+	) const
 {
 	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
 	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;

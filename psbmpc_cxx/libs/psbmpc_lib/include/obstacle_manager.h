@@ -65,6 +65,8 @@ public:
 
 	Obstacle_Data() {}
 
+	~Obstacle_Data() {}
+
 };
 
 class Obstacle_Manager
@@ -376,7 +378,7 @@ private:
 
 public:
 
-	Obstacle_Manager() {}
+	Obstacle_Manager();
 
 	Obstacle_Data<Tracked_Obstacle>& get_data() { return data; }
 

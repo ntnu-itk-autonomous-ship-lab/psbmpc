@@ -458,7 +458,7 @@ bool SBMPC::determine_COLREGS_violation(
 	const Eigen::Vector2d& v_B, 											// In: (NE) Velocity vector of vessel B
 	const Eigen::Vector2d& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double d_AB 														// In: Distance from vessel A to vessel B
-	)
+	) const
 {
 	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
 	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
@@ -513,7 +513,7 @@ bool SBMPC::determine_transitional_cost_indicator(
 	const double chi_m, 													// In: Candidate course offset currently followed
 	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle
-	)
+	) const
 {
 	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 

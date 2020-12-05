@@ -23,8 +23,6 @@
 #ifndef _JOINT_PREDICTION_MANAGER_H_
 #define _JOINT_PREDICTION_MANAGER_H_
 
-#include "utilities.h"
-#include "psbmpc_parameters.h"
 #include "prediction_obstacle.h"
 #include "obstacle_manager.h"
 #include "Eigen/Dense"
@@ -43,7 +41,7 @@ private:
 	// Array to determine width of print in status display
 	int width_arr[13];
 
-	// Need one obstacle data structure for each obstacle
+	// Need one obstacle data structure for each obstacle. Used in the Obstacle_SBMPC. 
 	std::vector<Obstacle_Data<Prediction_Obstacle>> data;
 
 	/****************************************************************************************
@@ -145,7 +143,7 @@ private:
 	void update_obstacles(
 		const int i, 																		// In: Index of obstacle i to update data for				
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
-		const Eigen::Matrix<double, 5, -1> &obstacle_states 								// In: Other dynamic obstacle states 
+		const Eigen::Matrix<double, 7, -1> &obstacle_states 								// In: Other dynamic obstacle states 
 		) 			
 	{
 		int n_obst_old = data[i].obstacles.size();
@@ -177,7 +175,6 @@ private:
 					mpc_pars.dt)));
 			}
 		}
-
 		data[i].obstacles = std::move(data[i].new_obstacles);	
 	}
 
@@ -306,7 +303,9 @@ private:
 
 public:
 
-	Joint_Prediction_Manager(const int n_obst) { data.resize(n_obst); }
+	Joint_Prediction_Manager(const int n_obst);
+
+	~Joint_Prediction_Manager();
 
 	Obstacle_Data<Prediction_Obstacle>& get_data(int i) { return data[i]; };
 
@@ -339,6 +338,7 @@ public:
 		for (int i = 0; i < n_obst; i++)
 		{
 			obstacle_i_state = pobstacles[i].get_predicted_state(k);
+			obstacle_i_length = pobstacles[i].get_length();
 
 			// Aquire information from all other obstacles
 			count = 0;
