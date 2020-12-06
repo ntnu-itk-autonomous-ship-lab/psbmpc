@@ -229,6 +229,19 @@ void Tracked_Obstacle::assign_data(
 	const Tracked_Obstacle &to 												// In: Tracked_Obstacle whose data to assign to *this
 	)
 {
+	// Boring non-pointer class member copy
+	this->ID = to.ID;
+
+	this->colav_on = to.colav_on;
+
+	this->A = to.A; this->B = to.B; this->C = to.C; this->D = to.D;
+	this->l = to.l; this->w = to.w;
+
+	this->x_offset = to.x_offset; this->y_offset = to.y_offset;
+
+	this->xs_0 = to.xs_0;
+	this->P_0 = to.P_0;
+
 	this->Pr_a = to.Pr_a; 
 
 	this->Pr_CC = to.Pr_CC;

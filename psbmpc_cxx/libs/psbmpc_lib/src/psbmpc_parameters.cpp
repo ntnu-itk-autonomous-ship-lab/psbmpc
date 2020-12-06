@@ -408,5 +408,5 @@ void PSBMPC_Parameters::initialize_pars()
 	q = 4.0;
 	p = 1.0;
 
-	obstacle_colav_on = false;
+	obstacle_colav_on = true;
 }
