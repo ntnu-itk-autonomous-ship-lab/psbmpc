@@ -98,7 +98,7 @@ Prediction_Obstacle& Prediction_Obstacle::operator=(
 }
 
 Prediction_Obstacle& Prediction_Obstacle::operator=(
-	const Tracked_Obstacle &rhs 										// In: Rhs prediction obstacle to assign
+	const Tracked_Obstacle &rhs 										// In: Rhs tracked obstacle to assign
 	)
 {
 	assign_data(rhs);
@@ -167,6 +167,19 @@ void Prediction_Obstacle::assign_data(
 	const Prediction_Obstacle &po 													// In: Prediction_Obstacle whose data to assign to *this
 	)
 {
+	// Boring non-pointer class member copy
+	this->ID = po.ID;
+
+	this->colav_on = po.colav_on;
+
+	this->A = po.A; this->B = po.B; this->C = po.C; this->D = po.D;
+	this->l = po.l; this->w = po.w;
+
+	this->x_offset = po.x_offset; this->y_offset = po.y_offset;
+
+	this->xs_0 = po.xs_0;
+	this->P_0 = po.P_0;
+
 	this->A_CV = po.A_CV;
 
 	this->xs_p = po.xs_p;
@@ -178,5 +191,27 @@ void Prediction_Obstacle::assign_data(
 	const Tracked_Obstacle &to 														// In: Tracked_Obstacle whose data to assign to *this
 	)
 {
+	// Boring non-pointer class member copy
+	this->ID = to.ID;
+
+	this->colav_on = to.colav_on;
+
+	this->A = to.A; this->B = to.B; this->C = to.C; this->D = to.D;
+	this->l = to.l; this->w = to.w;
+
+	this->x_offset = to.x_offset; this->y_offset = to.y_offset;
+
+	this->xs_0 = to.xs_0;
+	this->P_0 = to.P_0;
+
+	this->A_CV << 	1, 0, 0.5, 0,
+					0, 1, 0, 0.5,
+					0, 0, 1, 0,
+					0, 0, 0, 1;
+
+	this->waypoints.resize(2, 2);
+
 	this->xs_p = to.xs_p[0];
+
+	this->sbmpc.reset(new Obstacle_SBMPC());
 }

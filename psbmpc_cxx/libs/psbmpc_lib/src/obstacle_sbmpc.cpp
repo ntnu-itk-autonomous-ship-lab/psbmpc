@@ -31,6 +31,9 @@
 Obstacle_SBMPC::Obstacle_SBMPC() :
 	pars(SBMPC_Parameters(true))
 {
+	offset_sequence_counter.resize(2 * pars.n_M);
+	offset_sequence.resize(2 * pars.n_M);
+
 	u_m_last = 1.0; chi_m_last = 0.0;
 
 	min_cost = 1e12;
@@ -156,6 +159,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 	int n_static_obst = static_obstacles.cols();
 
 	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M), cost_i(n_obst);
+	data.HL_0.resize(n_obst);
 
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
@@ -447,9 +451,8 @@ double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
 	for(int k = 0; k < n_samples; k++)
 	{
 		psi_0_p = trajectory(2, k); 
-		v_0_p(0) = trajectory(3, k); 
-		v_0_p(1) = trajectory(4, k); 
-		v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
+		v_0_p(0) = trajectory(3, k) * cos(trajectory(2, k)); 
+		v_0_p(1) = trajectory(3, k) * sin(trajectory(2, k));
 
 		// Determine active course modification at sample k
 		for (int M = 0; M < pars.n_M; M++)
