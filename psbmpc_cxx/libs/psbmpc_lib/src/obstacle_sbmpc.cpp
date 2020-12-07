@@ -159,7 +159,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 	int n_static_obst = static_obstacles.cols();
 
 	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M), cost_i(n_obst);
-	data.HL_0.resize(n_obst);
+	data.HL_0.resize(n_obst); data.HL_0.setZero();
 
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
@@ -182,11 +182,12 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 	initialize_prediction(data);
 
 	double cost;
+	min_cost = 1e12;
 	reset_control_behavior();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
 		cost = 0;
-		//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
+
 		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 		ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 
@@ -196,13 +197,14 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 		}
 
 		cost += cost_i.maxCoeff();
-
+		//std::cout << "cost = " << cost << std::endl;
 		//cost += calculate_grounding_cost(static_obstacles);
 
 		cost += calculate_control_deviation_cost();
 
 		//cost += calculate_chattering_cost();
-		
+		//std::cout << "cost = " << cost << std::endl;
+
 		if (cost < min_cost) 
 		{
 			min_cost = cost;
@@ -226,6 +228,16 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 	{
 		chi_opt = 0; 	chi_m_last = chi_opt;
 	} 
+
+	std::cout << "Optimal offset sequence : ";
+	for (int M = 0; M < pars.n_M; M++)
+	{
+		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
+		if (M < pars.n_M - 1) std::cout << ", ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "Cost at optimum : " << min_cost << std::endl;
 }
 
 /****************************************************************************************
@@ -462,7 +474,6 @@ double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
 				if (k >= maneuver_times[M] && k < maneuver_times[M + 1])
 				{
 					chi_m = offset_sequence[2 * M + 1];
-					
 				}
 			}
 			else
@@ -478,7 +489,7 @@ double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
 		d_0i_p = L_0i_p.norm();
 
 		// Decrease the distance between the vessels by their respective max dimension
-		d_0i_p = d_0i_p - 0.5 * (ownship.get_length() + data.obstacles[i].get_length()); 
+		d_0i_p = abs(d_0i_p - 0.5 * (ownship.get_length() + data.obstacles[i].get_length())); 
 
 		L_0i_p = L_0i_p.normalized();
 
@@ -501,6 +512,23 @@ double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
 		{
 			max_cost = cost;
 		}
+		
+		/* if (cost > 5000)
+		{
+			std::cout << "v_0_p = " << v_0_p.transpose() << std::endl;
+			std::cout << "v_i_p = " << v_i_p.transpose() << std::endl;
+
+			std::cout << "d_0i_p = " << d_0i_p << std::endl;
+			std::cout << "psi_0_p = " << psi_0_p << std::endl;
+			std::cout << "psi_i_p = " << psi_i_p << std::endl;
+
+			std::cout << "C = " << C << std::endl;
+			std::cout << "mu = " << mu << std::endl;
+			std::cout << "trans = " << trans << std::endl;
+			std::cout << "R = " << R << std::endl;
+			std::cout << "cost = " << cost << std::endl;
+			std::cout << "..." << std::endl;
+		}	 */	
 	}
 	return max_cost;
 }
@@ -522,6 +550,7 @@ double Obstacle_SBMPC::calculate_ad_hoc_collision_risk(
 	{
 		assert(t > 0);
 		R = pow(pars.d_safe / d_AB, pars.q) * (1 / pow(abs(t), pars.p)); 
+		assert(t > 0);
 	}
 	return R;
 }
@@ -548,7 +577,7 @@ double Obstacle_SBMPC::calculate_control_deviation_cost()
 				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 		}
 	}
-	return cost / pars.n_M;
+	return cost / (double)pars.n_M;
 }
 
 /****************************************************************************************
@@ -578,7 +607,7 @@ double Obstacle_SBMPC::calculate_chattering_cost()
 			}
 		}
 	}
-	return cost;
+	return cost / (double)(pars.n_M - 1);
 }
 
 /****************************************************************************************

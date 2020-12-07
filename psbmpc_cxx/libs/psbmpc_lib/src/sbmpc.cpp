@@ -600,7 +600,7 @@ double SBMPC::calculate_dynamic_obstacle_cost(
 		d_0i_p = L_0i_p.norm();
 
 		// Decrease the distance between the vessels by their respective max dimension
-		d_0i_p = d_0i_p - 0.5 * (ownship.get_length() + data.obstacles[i].get_length()); 
+		d_0i_p = abs(d_0i_p - 0.5 * (ownship.get_length() + data.obstacles[i].get_length())); 
 
 		L_0i_p = L_0i_p.normalized();
 

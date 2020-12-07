@@ -169,7 +169,7 @@ private:
 			if (!obstacle_exist)
 			{
 				data[i].new_obstacles.push_back(std::move(Prediction_Obstacle(
-					obstacle_states.col(i), 
+					obstacle_states.col(j), 
 					false,
 					mpc_pars.T, 
 					mpc_pars.dt)));
@@ -309,7 +309,7 @@ public:
 
 	Obstacle_Data<Prediction_Obstacle>& get_data(int i) { return data[i]; };
 
-	void update_obstacle_status(const int i, const Eigen::Matrix<double, 6, 1> &obstacle_i_state, const int k);
+	void update_obstacle_status(const int i, const Eigen::Vector4d &obstacle_i_state, const int k);
 
 	void display_obstacle_information(const int i);
 
@@ -362,7 +362,7 @@ public:
 					// Continue
 				}
 			}
-			std::cout << other_obstacle_states << std::endl;
+			//std::cout << other_obstacle_states.transpose() << std::endl;
 			
 			update_obstacles<Parameter_Object>(i, mpc_pars, other_obstacle_states);
 

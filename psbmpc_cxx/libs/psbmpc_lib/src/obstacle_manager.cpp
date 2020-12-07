@@ -104,27 +104,31 @@ void Obstacle_Manager::update_obstacle_status(
 *****************************************************************************************/
 void Obstacle_Manager::display_obstacle_information() 			
 {
-	std::cout << "Obstacle information:" << std::endl;
+	std::ios::fmtflags old_settings = std::cout.flags();
+	int old_precision = std::cout.precision(); 
+
+	//std::cout.setf(std::ios::fixed, std::ios::floatfield);
+	std::cout << std::fixed << std::setprecision(0);
+
+	std::cout << "        Obstacle information:" << std::endl;
 	//std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;
 
-	for (int i = 0; i < data.obstacle_status.rows(); i++)
+	for (int j = 0; j < data.obstacle_status.rows(); j++)
 	{
-		std::cout << std::setw(5) << status_str[i];
+		std::cout << std::setw(10) << status_str[j];
 	}
 	std::cout << "\n";
 
-	for (size_t i = 0; i < data.obstacles.size(); i++)
+	for (size_t j = 0; j < data.obstacles.size(); j++)
 	{
-		for (int j = 0; j < data.obstacle_status.rows(); j++)
+		for (int k = 0; k < data.obstacle_status.rows(); k++)
 		{
-			std::cout << std::setw(width_arr[i] + 4) << std::setprecision(status_precision[i]) << data.obstacle_status(j, i) << std::fixed;
+			std::cout << std::setw(10)  << data.obstacle_status(k, j);
 		}
-		if (i < data.obstacles.size() - 1)
-		{
-			std::cout << "\n";
-		}
+		std::cout << std::endl;
 	}
-	std::cout << std::endl;
+	std::cout.flags(old_settings);
+	std::cout << std::setprecision(old_precision);
 }
 
 
