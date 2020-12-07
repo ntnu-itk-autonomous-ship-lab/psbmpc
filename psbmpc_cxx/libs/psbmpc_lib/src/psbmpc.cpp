@@ -500,7 +500,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 		d_AB += (v_0 - xs_i_0.block<2, 1>(2, 0)) * turn_start_multiplier * pars.t_ts;
 	}
 	
-	// and alternative maneuvers are only up until d_cpa with the own-ship
+	// and alternative maneuvers are only up until cpa with the own-ship
 	n_turns = std::floor((t_cpa(i) - turn_start_multiplier * pars.t_ts) / pars.t_ts);
 
 	n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
