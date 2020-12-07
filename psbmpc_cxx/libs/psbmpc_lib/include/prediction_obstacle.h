@@ -69,6 +69,8 @@ public:
 
 	inline Eigen::MatrixXd get_trajectory() const { return xs_p; };
 
+	inline Eigen::Matrix<double, 2, -1> get_waypoints() const { return waypoints; }
+
 	inline void set_predicted_state(const Eigen::Vector4d &xs_k, const int k) { xs_p.col(k) = xs_k; }
 
 	inline void set_waypoints(const Eigen::Matrix<double, 2, -1> &waypoints) { this->waypoints = waypoints; }

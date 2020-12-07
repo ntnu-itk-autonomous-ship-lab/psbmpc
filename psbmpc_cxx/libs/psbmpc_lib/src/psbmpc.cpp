@@ -364,13 +364,15 @@ void PSBMPC::initialize_prediction(
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
-	int n_turns;
+	int n_turns(0), n_ps_count(0);
 	std::vector<Intention> ps_ordering_i;
 	Eigen::VectorXd ps_course_changes_i;
 	Eigen::VectorXd ps_maneuver_times_i;
 
 	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
 	Eigen::Vector2d p_cpa;
+	Eigen::Vector4d xs_i_0;
+	Eigen::Matrix<double, 2, -1> waypoints_i;
 	for (int i = 0; i < n_obst; i++)
 	{
 		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf->get_state());
@@ -420,6 +422,14 @@ void PSBMPC::initialize_prediction(
 		if (pars.obstacle_colav_on)
 		{
 			pobstacles[i].set_colav_on(false);
+
+			// Set obstacle waypoints to a straight line out from its current time position 
+			// if no future obstacle trajectory is available
+			waypoints_i.resize(2, 2);
+			xs_i_0 = pobstacles[i].get_initial_state();
+			waypoints_i.col(0) = xs_i_0.block<2, 1>(0, 0);
+			waypoints_i.col(1) = waypoints_i.col(0) + xs_i_0.block<2, 1>(2, 0) * (pars.T + 20);
+			pobstacles[i].set_waypoints(waypoints_i);
 		}
 	}
 	//***********************************************************************************
@@ -608,7 +618,6 @@ void PSBMPC::predict_trajectories_jointly(
 	Joint_Prediction_Manager jpm(n_obst); 
 
 	Eigen::VectorXd u_opt_i(n_obst), chi_opt_i(n_obst), u_d_i(n_obst), chi_d_i(n_obst);
-	Eigen::Matrix<double, 2, -1> waypoints_i(2, 2);
 	Eigen::Vector4d xs_i_p, xs_i_p_transformed;
 	Eigen::VectorXd xs_os_aug_k(7);
 	xs_os_aug_k(4) = ownship.get_length();
@@ -659,27 +668,6 @@ void PSBMPC::predict_trajectories_jointly(
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
 	n_static_obst_mx = mxCreateDoubleScalar(static_obstacles.cols());
 
-	Eigen::Vector4d xs_i_0;
- 	for(int i = 0; i < n_obst; i++)
-	{
-		xs_i_0 = pobstacles[i].get_initial_state();
-		u_d_i(i) = xs_i_0.block<2, 1>(2, 0).norm();
-		chi_d_i(i) = atan2(xs_i_0(3), xs_i_0(2));
-
-		wps_i_mx[i] = mxCreateDoubleMatrix(2, 2, mxREAL);
-		traj_i_mx[i] = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-		pred_traj_i_mx[i] = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-
-		// Set obstacle waypoints to a straight line from its current time position
-		xs_i_p = pobstacles[i].get_initial_state();
-		waypoints_i.col(0) = xs_i_p.block<2, 1>(0, 0);
-		waypoints_i.col(1) = waypoints_i.col(0) + xs_i_p.block<2, 1>(2, 0) * (pars.T + 20);
-
-		p_wps_i = mxGetPr(wps_i_mx[i]);
-		new (&map_wps_i) Eigen::Map<Eigen::MatrixXd>(p_wps_i, 2, n_wps_i);
-		map_wps_i = waypoints_i;
-	}
-
 	engPutVariable(ep, "X", traj_os_mx);
 	engPutVariable(ep, "X_static", static_obst_mx);
 	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
@@ -688,6 +676,30 @@ void PSBMPC::predict_trajectories_jointly(
 	engPutVariable(ep, "dt_sim", dt_sim_mx);
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engEvalString(ep, "joint_pred_init_plotting");
+
+	Eigen::Vector4d xs_i_0;
+ 	for(int i = 0; i < n_obst; i++)
+	{
+		
+
+		xs_i_0 = pobstacles[i].get_initial_state();
+		u_d_i(i) = xs_i_0.block<2, 1>(2, 0).norm();
+		chi_d_i(i) = atan2(xs_i_0(3), xs_i_0(2));
+
+		std::cout << "u_d_i = " << u_d_i(i) << std::endl;
+		std::cout << "chi_d_i = " << chi_d_i(i) << std::endl;
+
+		wps_i_mx[i] = mxCreateDoubleMatrix(2, 2, mxREAL);
+		traj_i_mx[i] = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+		pred_traj_i_mx[i] = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+
+		p_wps_i = mxGetPr(wps_i_mx[i]);
+		new (&map_wps_i) Eigen::Map<Eigen::MatrixXd>(p_wps_i, 2, n_wps_i);
+		map_wps_i = pobstacles[i].get_waypoints();
+
+		engPutVariable(ep, "WPs_i", wps_i_mx[i]);
+		engEvalString(ep, "joint_pred_init_obstacle_plot");
+	}	
 	
 	//===============================================================================================================
 	auto start = std::chrono::system_clock::now(), end = start;
@@ -704,17 +716,20 @@ void PSBMPC::predict_trajectories_jointly(
 		xs_os_aug_k.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, k);
 		xs_os_aug_k.block<2, 1>(2, 0) = v_os_k;
 
-		std::cout << "xs_os_aug_k = " << xs_os_aug_k.transpose() << std::endl;
+		//std::cout << "xs_os_aug_k = " << xs_os_aug_k.transpose() << std::endl;
 
 		// Update Obstacle Data for each prediction obstacle, taking all other obstacles
 		// including the ownship into account
 		jpm(pars, pobstacles, xs_os_aug_k, k);
 
+		k_s_mx = mxCreateDoubleScalar(k + 1);
+		engPutVariable(ep, "k", k_s_mx);
+			
 		for (int i = 0; i < n_obst; i++)
 		{
 			xs_i_p = pobstacles[i].get_predicted_state(k);
 
-			std::cout << "xs_i_p = " << xs_i_p.transpose() << std::endl;
+			//std::cout << "xs_i_p = " << xs_i_p.transpose() << std::endl;
 
 			// Convert from X_i = [x, y, Vx, Vy] to X_i = [x, y, chi, U]
 			xs_i_p_transformed.block<2, 1>(0, 0) = xs_i_p.block<2, 1>(0, 0);
@@ -724,7 +739,7 @@ void PSBMPC::predict_trajectories_jointly(
 			obstacle_ships[i].update_guidance_references(
 				u_d_i(i), 
 				chi_d_i(i), 
-				waypoints_i,
+				pobstacles[i].get_waypoints(),
 				xs_i_p,
 				pars.dt,
 				pars.guidance_method);
@@ -739,7 +754,7 @@ void PSBMPC::predict_trajectories_jointly(
 					predicted_trajectory_i,
 					u_d_i(i), 
 					chi_d_i(i),
-					waypoints_i,
+					pobstacles[i].get_waypoints(),
 					xs_i_p_transformed,
 					static_obstacles,
 					jpm.get_data(i));
@@ -750,19 +765,23 @@ void PSBMPC::predict_trajectories_jointly(
 				mean_t = elapsed.count();
 
 				std::cout << "Obstacle_SBMPC time usage : " << mean_t << " milliseconds" << std::endl;
+
+				jpm.update_obstacle_status(i, xs_i_p_transformed, k);
+				jpm.display_obstacle_information(i);
 			}
 			u_c_i = u_d_i(i) * u_opt_i(i); chi_c_i = chi_d_i(i) + chi_opt_i(i);
 
 			if (k < n_samples - 1)
 			{
-				xs_i_p = obstacle_ships[i].predict(xs_i_p, u_c_i, chi_c_i, pars.dt, pars.prediction_method);
+				xs_i_p_transformed = obstacle_ships[i].predict(xs_i_p_transformed, u_c_i, chi_c_i, pars.dt, pars.prediction_method);
 				
-				// Convert from X_i = [x, y, chi, U] to X_i = [x, y, Vx, Vy]
-				xs_i_p_transformed.block<2, 1>(0, 0) = xs_i_p.block<2, 1>(0, 0);
-				xs_i_p_transformed(2) = xs_i_p(3) * cos(xs_i_p(2));
-				xs_i_p_transformed(3) = xs_i_p(3) * sin(xs_i_p(2));
 
-				pobstacles[i].set_predicted_state(xs_i_p_transformed, k + 1);
+				// Convert from X_i = [x, y, chi, U] to X_i = [x, y, Vx, Vy]
+				xs_i_p.block<2, 1>(0, 0) = xs_i_p_transformed.block<2, 1>(0, 0);
+				xs_i_p(2) = xs_i_p_transformed(3) * cos(xs_i_p_transformed(2));
+				xs_i_p(3) = xs_i_p_transformed(3) * sin(xs_i_p_transformed(2));
+
+				pobstacles[i].set_predicted_state(xs_i_p, k + 1);
 			}
 			
 			//============================================================================================
@@ -793,9 +812,6 @@ void PSBMPC::predict_trajectories_jointly(
 		//============================================================================================
 		buffer[BUFFSIZE] = '\0';
 		engOutputBuffer(ep, buffer, BUFFSIZE);
-
-		k_s_mx = mxCreateDoubleScalar(k + 1);
-		engPutVariable(ep, "k", k_s_mx);
 
 		engEvalString(ep, "update_joint_pred_ownship_plot");
 		//============================================================================================
@@ -1047,7 +1063,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			d_0i_p = L_0i_p.norm();
 
 			// Decrease the distance between the vessels by their respective max dimension
-			d_0i_p = d_0i_p - 0.5 * (ownship.get_length() + data.obstacles[i].get_length()); 
+			d_0i_p = abs(d_0i_p - 0.5 * (ownship.get_length() + data.obstacles[i].get_length())); 
 
 			L_0i_p = L_0i_p.normalized();
 
@@ -1247,7 +1263,7 @@ double PSBMPC::calculate_chattering_cost()
 			}
 		}
 	}
-	return cost;
+	return cost / (double)(pars.n_M - 1);
 }
 
 /****************************************************************************************

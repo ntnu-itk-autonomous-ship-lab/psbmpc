@@ -58,14 +58,14 @@ Joint_Prediction_Manager::~Joint_Prediction_Manager() = default;
 *****************************************************************************************/
 void Joint_Prediction_Manager::update_obstacle_status(
 	const int i, 														// In: Index of obstacle asking for a status update
-	const Eigen::Matrix<double, 6, 1> &obstacle_i_state, 				// In: Current predicted time state of obstacle i
+	const Eigen::Vector4d &obstacle_i_state, 							// In: Current predicted time state of obstacle i
 	const int k															// In: Index of the current predicted time t_k
 	)
 {
 	int n_obst = data[i].obstacles.size();
 	data[i].obstacle_status.resize(13, n_obst);
 	double ID_0, RB_0, COG_0, SOG_0; 
-	Eigen::Vector2d d_0j;
+	Eigen::Vector2d d_ij;
 	Eigen::Vector4d xs_j;
 
 	data[i].HL_0.resize(n_obst); data[i].HL_0.setZero();
@@ -75,19 +75,19 @@ void Joint_Prediction_Manager::update_obstacle_status(
 
 		ID_0 = data[i].obstacles[j].get_ID();
 		
-		d_0j = (xs_j.block<2, 1>(0, 0) - obstacle_i_state.block<2, 1>(0, 0));
+		d_ij = (xs_j.block<2, 1>(0, 0) - obstacle_i_state.block<2, 1>(0, 0));
 
 		COG_0 = atan2(xs_j(3), xs_j(2));
 
 		SOG_0 = xs_j.block<2, 1>(2, 0).norm();
 
-		RB_0 = angle_difference_pmpi(atan2(d_0j(1), d_0j(0)), obstacle_i_state(2));
+		RB_0 = angle_difference_pmpi(atan2(d_ij(1), d_ij(0)), obstacle_i_state(2));
 
-		data[i].obstacle_status.col(i) << ID_0, 										// Obstacle ID
+		data[i].obstacle_status.col(j) << ID_0, 										// Obstacle ID
 								  SOG_0, 												// Speed over ground of obstacle
 								  wrap_angle_to_02pi(COG_0) * RAD2DEG, 					// Course over ground of obstacle
 								  RB_0 * RAD2DEG, 										// Relative bearing
-								  d_0j.norm(),											// Range
+								  d_ij.norm(),											// Range
 								  data[i].HL_0[j], 										// Hazard level of obstacle at optimum
 								  data[i].IP_0[j], 										// If obstacle is passed by or not 
 								  data[i].AH_0[j], 										// If obstacle is ahead or not
@@ -109,12 +109,18 @@ void Joint_Prediction_Manager::display_obstacle_information(
 	const int i 														// In: Index of obstacle asking for information display
 	) 			
 {
-	std::cout << "Obstacle information:" << std::endl;
+	std::ios::fmtflags old_settings = std::cout.flags();
+	int old_precision = std::cout.precision(); 
+
+	//std::cout.setf(std::ios::fixed, std::ios::floatfield);
+	std::cout << std::fixed << std::setprecision(0);
+
+	std::cout << "        Obstacle information:" << std::endl;
 	//std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;
 
 	for (int j = 0; j < data[i].obstacle_status.rows(); j++)
 	{
-		std::cout << std::setw(5) << status_str[j];
+		std::cout << std::setw(10) << status_str[j];
 	}
 	std::cout << "\n";
 
@@ -122,14 +128,12 @@ void Joint_Prediction_Manager::display_obstacle_information(
 	{
 		for (int k = 0; k < data[i].obstacle_status.rows(); k++)
 		{
-			std::cout << std::setw(width_arr[j] + 4) << std::setprecision(status_precision[j]) << data[i].obstacle_status(k, j) << std::fixed;
+			std::cout << std::setw(10)  << data[i].obstacle_status(k, j);
 		}
-		if (j < data[i].obstacles.size() - 1)
-		{
-			std::cout << "\n";
-		}
+		std::cout << std::endl;
 	}
-	std::cout << std::endl;
+	std::cout.flags(old_settings);
+	std::cout << std::setprecision(old_precision);
 }
 
 
