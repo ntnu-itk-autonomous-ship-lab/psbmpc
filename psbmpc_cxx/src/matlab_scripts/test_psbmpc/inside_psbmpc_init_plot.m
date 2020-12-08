@@ -1,8 +1,8 @@
 fig = figure(2); clf; axis equal
 hold on; grid on;
 ax1 = gca;
-ylimits_ne = [-400 1000];
-xlimits_ne = [-600 600];
+ylimits_ne = [-100 1000];
+xlimits_ne = [-1000 1000];
 xlim(ax1, xlimits_ne);
 ylim(ax1, ylimits_ne);
 
@@ -64,12 +64,12 @@ for i = 1 : n_obst
 end
 
 h_X_static = cell(n_static_obst, 1);
-so_x = zeros(2, 1); so_y = so_x;
-for j = 1 : n_static_obst
-    so_x(1) = X_static(1, j); so_x(2) = X_static(3, j); 
-    so_y(1) = X_static(2, j); so_y(2) = X_static(4, j); 
-    h_X_static{i} = plot(ax1, so_y, so_x, 'm', 'Linewidth', 3); 
-end
+% so_x = zeros(2, 1); so_y = so_x;
+% for j = 1 : n_static_obst
+%     so_x(1) = X_static(1, j); so_x(2) = X_static(3, j); 
+%     so_y(1) = X_static(2, j); so_y(2) = X_static(4, j); 
+%     h_X_static{i} = plot(ax1, so_y, so_x, 'm', 'Linewidth', 3); 
+% end
 
 drawnow;
 

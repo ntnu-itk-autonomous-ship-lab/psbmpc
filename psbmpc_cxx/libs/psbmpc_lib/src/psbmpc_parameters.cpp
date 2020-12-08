@@ -374,7 +374,7 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 110.0; 	     
+	T = 200.0; 	     
 	dt = 5.0;
   	T_static = 60.0;
 

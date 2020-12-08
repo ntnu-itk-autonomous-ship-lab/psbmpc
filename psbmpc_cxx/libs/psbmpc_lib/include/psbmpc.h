@@ -68,6 +68,7 @@ private:
 		std::vector<Intention> &ps_ordering,
 		Eigen::VectorXd &ps_course_changes,
 		Eigen::VectorXd &ps_maneuver_times,
+		const double t_cpa_i,
 		const Obstacle_Data<Tracked_Obstacle> &data,
 		const int i);
 
