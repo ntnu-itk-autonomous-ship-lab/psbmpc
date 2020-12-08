@@ -8,6 +8,7 @@ h_X_i{i} = plot(ax1, X_i(2, 1:k),X_i(1, 1:k), 'g', 'Linewidth', 1.6);
 
 % Plot predicted obstacle trajectory from Obstacle_SBMPC
 h_X_i_p{i} = plot(ax1, X_i_pred(2, :),X_i_pred(1, :), '--g', 'Linewidth', 1.6);
+obs{i}.X_pred{k} = X_i_pred;
 
 % Patch obstacle
 h_X_i_ptch{i} = patch(ax1, X_i(2, k)+boat_dim_i_k(2,:),...

@@ -99,7 +99,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Engine *ep = engOpen(NULL);
+	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -158,7 +158,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		map_P_traj_i = P_i_p;
 		engPutVariable(ep, "P_i_flat", P_traj_i);
-		for (int ps = 0; ps < n_ps[i]; ps++)
+		for (int ps = 0; ps < n_ps[i] - 1; ps++)
 		{
 			ps_mx = mxCreateDoubleScalar(ps + 1);
 			engPutVariable(ep, "ps", ps_mx);
@@ -168,7 +168,7 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	} */
+	}
 	
 	//===============================================================================================================
 	double cost;
@@ -208,7 +208,7 @@ void PSBMPC::calculate_optimal_offsets(
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
-			/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
+			p_P_c_i = mxGetPr(P_c_i_mx[i]);
 			Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 			map_P_c = P_c_i;
 
@@ -221,7 +221,7 @@ void PSBMPC::calculate_optimal_offsets(
 				ps_mx = mxCreateDoubleScalar(ps + 1);
 				engPutVariable(ep, "ps", ps_mx);
 				engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-			} */
+			}
 			//===============================================================================================================
 		}
 
@@ -253,14 +253,14 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
 		engPutVariable(ep, "k", k_s);
 
 		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
+		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
 		//===============================================================================================================
 	}
 
@@ -282,7 +282,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	//std::cout << "Cost at optimum : " << min_cost << std::endl;
 
-	/* engClose(ep);  */
+	engClose(ep); 
 }
 
 /****************************************************************************************
@@ -392,13 +392,7 @@ void PSBMPC::initialize_prediction(
 		}
 		else
 		{
-			set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, data, i);
-			
-			if (pars.obstacle_colav_on)
-			{
-				// Add one prediction scenario for when obstacles have their own COLAV system
-				n_ps[i] += 1;
-			}
+			set_up_independent_obstacle_prediction_variables(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, t_cpa(i), data, i);
 		}
 		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
 
@@ -480,29 +474,46 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	std::vector<Intention> &ps_ordering_i,									// In/out: Intention ordering of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
+	const double t_cpa_i, 													// In: Time to Closest Point of Approach for obstacle i wrt own-ship
 	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
 	int turn_count(0), turn_start_multiplier(0), n_turns(0), course_change_count(0);
-	double d_AB;
+	double d_AB, d_AB_prev;
 	Eigen::Vector4d xs_i_0 = data.obstacles[i].kf->get_state();
-	Eigen::Vector2d v_0;
+	Eigen::Vector2d v_0, v_i_0;
 
 	d_AB = (trajectory.col(0).block<2, 1>(0, 0) - xs_i_0.block<2, 1>(0, 0)).norm();
 	v_0 = rotate_vector_2D(trajectory.col(0).block<2, 1>(3, 0), trajectory(2, 0));
+	v_i_0 = xs_i_0.block<2, 1>(2, 0);
 
 	// Alternative obstacle maneuvers (other than the straight line prediction) 
 	// are only allowed inside the COLREGS consideration zone, i.e. inside d_close
 	while (d_AB > pars.d_close)
 	{
+		d_AB_prev = d_AB;
 		turn_start_multiplier += 1;
-		d_AB += (v_0 - xs_i_0.block<2, 1>(2, 0)) * turn_start_multiplier * pars.t_ts;
+		// calculate new distance between own-ship and obstacle i, given that both keep
+		// their course for k * t_ts seconds, k = 1, 2, 3, ...
+		d_AB = ((trajectory.col(0).block<2, 1>(0, 0) + v_0 * turn_start_multiplier * pars.t_ts) - 
+				(xs_i_0.block<2, 1>(0, 0) + v_i_0 * turn_start_multiplier * pars.t_ts)).norm();
+		if (d_AB > d_AB_prev)
+		{
+			turn_start_multiplier = -1;
+			break;
+		}
 	}
 	
-	// and alternative maneuvers are only up until cpa with the own-ship
-	n_turns = std::floor((t_cpa(i) - turn_start_multiplier * pars.t_ts) / pars.t_ts);
-
+	if (turn_start_multiplier >= 0) // and alternative maneuvers are only up until cpa with the own-ship
+	{
+		
+		n_turns = std::ceil((t_cpa_i - turn_start_multiplier * pars.t_ts) / pars.t_ts);
+	}
+	else 							// or no alternative maneuvers at all if the obstacle never enters
+	{ 								// the own-ship COLREGS consideration zone
+		n_turns = 0;
+	}
 	n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
 
 	ps_ordering_i.resize(n_ps[i]);
@@ -819,6 +830,13 @@ void PSBMPC::predict_trajectories_jointly(
 
 		engEvalString(ep, "update_joint_pred_ownship_plot");
 		//============================================================================================
+	}
+
+	engEvalString(ep, "store_joint_pred_ownship_data");
+
+	for (int i = 0; i < n_obst; i++)
+	{
+		engEvalString(ep, "store_joint_pred_obstacle_data");
 	}
 
 	//============================================================================================
