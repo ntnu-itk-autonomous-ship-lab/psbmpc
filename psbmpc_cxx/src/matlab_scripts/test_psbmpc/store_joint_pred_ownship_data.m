@@ -1,7 +1,6 @@
 
 % Create ownship data structure
 os.X = X;
-os.X_pred{end} = X(:, end);
 os.u_d = zeros(1, n_samples);
 os.u_m = zeros(1, n_samples);
 os.chi_d = zeros(1, n_samples);

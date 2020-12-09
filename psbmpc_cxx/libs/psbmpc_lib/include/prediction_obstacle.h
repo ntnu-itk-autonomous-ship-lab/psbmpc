@@ -35,9 +35,11 @@ private:
 
 	Eigen::Matrix4d A_CV;
 
-	// Predicted state trajectory from the current time onwards
-	// either from Obstacle_SBMPC or independent prediction
-	Eigen::MatrixXd xs_p;
+	// Actual state trajectory from the joint prediction scheme
+	// when the obstacle uses its own SB-MPC, used by the PSB-MPC,
+	// and the predicted trajectory from the Obstacle_SBMPC
+	// at the current predicted time t_k
+	Eigen::MatrixXd xs_p, xs_k_p;
 
 	// In use when using the Obstacle_SBMPC
 	Eigen::Matrix<double, 2, -1> waypoints; 
@@ -65,19 +67,20 @@ public:
 	Prediction_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
 	inline Eigen::Vector4d get_initial_state() const { return xs_0; }; 
-	inline Eigen::Vector4d get_predicted_state(const int k) const { return xs_p.col(k); }; 
+	inline Eigen::Vector4d get_state(const int k) const { return xs_p.col(k); }; 
 
 	inline Eigen::MatrixXd get_trajectory() const { return xs_p; };
+	inline Eigen::MatrixXd get_predicted_trajectory() const { return xs_k_p; };
 
 	inline Eigen::Matrix<double, 2, -1> get_waypoints() const { return waypoints; }
 
-	inline void set_predicted_state(const Eigen::Vector4d &xs_k, const int k) { xs_p.col(k) = xs_k; }
+	inline void set_state(const Eigen::Vector4d &xs_k, const int k) { xs_p.col(k) = xs_k; }
 
 	inline void set_waypoints(const Eigen::Matrix<double, 2, -1> &waypoints) { this->waypoints = waypoints; }
 
-	void predict_independent_trajectory(const double T, const double dt);
+	void predict_independent_trajectory(const double T, const double dt, const int k);
 
-	void update(const Eigen::Vector4d &xs);
+	void update(const Eigen::Vector4d &xs, const int k);
 };
 
 #endif

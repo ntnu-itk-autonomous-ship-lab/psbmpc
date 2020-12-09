@@ -50,7 +50,7 @@ private:
 
 	void assign_data(const Obstacle_SBMPC &o_sbmpc);
 
-	void initialize_prediction(Obstacle_Data<Prediction_Obstacle> &data);
+	void initialize_prediction(Obstacle_Data<Prediction_Obstacle> &data, const int k_0);
 
 	void reset_control_behavior();
 
@@ -129,7 +129,8 @@ public:
 		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::Vector4d &ownship_state,
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		Obstacle_Data<Prediction_Obstacle> &data);
+		Obstacle_Data<Prediction_Obstacle> &data,
+		const int k_0);
 
 };
 

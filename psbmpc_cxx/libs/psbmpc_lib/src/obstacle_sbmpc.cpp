@@ -147,7 +147,8 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::Vector4d &ownship_state, 									// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
-	Obstacle_Data<Prediction_Obstacle> &data								// In/Out: Dynamic obstacle information
+	Obstacle_Data<Prediction_Obstacle> &data,								// In/Out: Dynamic obstacle information
+	const int k_0 															// In: Index of the current (joint prediction) time t_k0
 	)
 {
 	int n_samples = std::round(pars.T / pars.dt);
@@ -179,7 +180,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 		return;
 	}
 
-	initialize_prediction(data);
+	initialize_prediction(data, k_0);
 
 	double cost;
 	min_cost = 1e12;
@@ -277,7 +278,8 @@ void Obstacle_SBMPC::assign_data(
 *  Modified :
 *****************************************************************************************/
 void Obstacle_SBMPC::initialize_prediction(
-	Obstacle_Data<Prediction_Obstacle> &data							// In: Dynamic obstacle information
+	Obstacle_Data<Prediction_Obstacle> &data,							// In: Dynamic obstacle information
+	const int k_0														// In: Index of the current (joint prediction) time t_k0	 
 	)
 {
 	int n_obst = data.obstacles.size();
@@ -289,11 +291,11 @@ void Obstacle_SBMPC::initialize_prediction(
 	Eigen::Vector2d p_cpa;
 	for (int i = 0; i < n_obst; i++)
 	{
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].get_initial_state());
+		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].get_state(k_0));
 
 		if (!obstacle_colav_on)
 		{
-			data.obstacles[i].predict_independent_trajectory(pars.T, pars.dt);
+			data.obstacles[i].predict_independent_trajectory(pars.T, pars.dt, k_0);
 		}
 	}
 	//***********************************************************************************
@@ -303,7 +305,7 @@ void Obstacle_SBMPC::initialize_prediction(
 	// First avoidance maneuver is always at t0
 	maneuver_times(0) = 0;
 	
-	std::cout << maneuver_times.transpose() << std::endl;
+	//std::cout << maneuver_times.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -455,7 +457,7 @@ double Obstacle_SBMPC::calculate_dynamic_obstacle_cost(
 
 	int n_samples = trajectory.cols();
 
-	Eigen::MatrixXd xs_i_p = data.obstacles[i].get_trajectory();
+	Eigen::MatrixXd xs_i_p = data.obstacles[i].get_predicted_trajectory();
 
 	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 	double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0);
