@@ -71,7 +71,7 @@ void Joint_Prediction_Manager::update_obstacle_status(
 	data[i].HL_0.resize(n_obst); data[i].HL_0.setZero();
 	for(int j = 0; j < n_obst; j++)
 	{
-		xs_j = data[i].obstacles[j].get_predicted_state(k);
+		xs_j = data[i].obstacles[j].get_state(k);
 
 		ID_0 = data[i].obstacles[j].get_ID();
 		

@@ -47,16 +47,14 @@ private:
 	// while the duration lost may be reset if new measurements are aquired
 	double duration_tracked, duration_lost;
 
-	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: (n_ps + 1) x 1
-	// The extra plus one is for when the obstacle uses its own colav system
+	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: n_ps x 1
 	std::vector<bool> mu;
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
 	// This is equal for all prediction scenarios including those with active COLAV (using MROU)
 	Eigen::MatrixXd P_p;  
 
-	// Predicted state for each prediction scenario: (n_ps + 1) x n x n_samples, where n = 4
-	// The extra plus one prediction scenario is when the obstacle uses its own colav system
+	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 	std::vector<Eigen::MatrixXd> xs_p;
 
 	// Mean predicted velocity for the obstacle (MROU): 
@@ -115,8 +113,6 @@ public:
 	inline std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; };
 
 	inline Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
-
-	inline void set_dependent_trajectory(const Eigen::MatrixXd xs_colav_p) { int n_ps = mu.size(); xs_p[n_ps] = xs_colav_p; }
 
 	void initialize_prediction(	
 		const std::vector<Intention> &ps_ordering,

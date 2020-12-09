@@ -51,6 +51,9 @@ Prediction_Obstacle::Prediction_Obstacle(
 
 	xs_p.resize(4, n_samples);
 	xs_p.col(0) = xs_0;
+
+	xs_k_p.resize(4, n_samples);
+	xs_k_p.col(0) = xs_0;
 }
 
 /****************************************************************************************
@@ -108,30 +111,33 @@ Prediction_Obstacle& Prediction_Obstacle::operator=(
 
 /****************************************************************************************
 *  Name     : predict_independent_trajectory
-*  Function : Predicts the straight line obstacle trajectory for use in other obstacle
-*			  SB-MPC predictions (if this obstacle's COLAV is not assumed to be acting).
+*  Function : Predicts the straight line obstacle trajectory at the current predicted time
+*			  in the joint prediction, for use in other obstacle
+*			  SB-MPC predictions (if this obstacle's COLAV is not assumed to be acting
+*			  seen from the predicting obstacle`s point of view).
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void Prediction_Obstacle::predict_independent_trajectory(						
 	const double T, 											// In: Time horizon
-	const double dt 											// In: Time step
+	const double dt, 											// In: Time step
+	const int k													// In: Index of the current predicted time
 	)
 {
 	int n_samples = std::round(T / dt);
-	xs_p.resize(4, n_samples);
-	xs_p.col(0) = xs_0;
+	xs_k_p.resize(4, n_samples);
+	xs_k_p.col(0) = xs_p.col(k);
 
 	A_CV << 1, 0, dt, 0,
 		 0, 1, 0, dt,
 		 0, 0, 1, 0,
 		 0, 0, 0, 1;
 
-	for(int k = 0; k < n_samples; k++)
+	for(int j = 0; j < n_samples; j++)
 	{
-		if (k < n_samples - 1) 
+		if (j < n_samples - 1) 
 		{
-			xs_p.col(k + 1) = A_CV * xs_p.col(k);
+			xs_k_p.col(j + 1) = A_CV * xs_k_p.col(j);
 		}
 	}
 }
@@ -144,14 +150,15 @@ void Prediction_Obstacle::predict_independent_trajectory(
 *  Modified :
 *****************************************************************************************/
 void Prediction_Obstacle::update(
-	const Eigen::Vector4d &xs 								// In: Predicted obstacle state [x, y, V_x, V_y]
+	const Eigen::Vector4d &xs, 								// In: Predicted obstacle state [x, y, V_x, V_y]
+	const int k												// In: Index of the current predicted time
 	)
 {
 	double psi = atan2(xs(3), xs(2));
-	xs_0(0) = xs(0) + x_offset * cos(psi) - y_offset * sin(psi); 
-	xs_0(1) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
-	xs_0(2) = xs(2);
-	xs_0(3) = xs(3);
+	xs_p(0, k) = xs(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_p(1, k) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_p(2, k) = xs(2);
+	xs_p(3, k) = xs(3);
 }
 
 /****************************************************************************************
@@ -167,7 +174,6 @@ void Prediction_Obstacle::assign_data(
 	const Prediction_Obstacle &po 													// In: Prediction_Obstacle whose data to assign to *this
 	)
 {
-	// Boring non-pointer class member copy
 	this->ID = po.ID;
 
 	this->colav_on = po.colav_on;
@@ -184,6 +190,8 @@ void Prediction_Obstacle::assign_data(
 
 	this->xs_p = po.xs_p;
 
+	this->xs_k_p = po.xs_k_p;
+
 	this->sbmpc.reset(new Obstacle_SBMPC(*(po.sbmpc)));
 }
 
@@ -191,7 +199,6 @@ void Prediction_Obstacle::assign_data(
 	const Tracked_Obstacle &to 														// In: Tracked_Obstacle whose data to assign to *this
 	)
 {
-	// Boring non-pointer class member copy
 	this->ID = to.ID;
 
 	this->colav_on = to.colav_on;
@@ -212,6 +219,8 @@ void Prediction_Obstacle::assign_data(
 	this->waypoints.resize(2, 2);
 
 	this->xs_p = to.xs_p[0];
+
+	this->xs_k_p = to.xs_p[0];
 
 	this->sbmpc.reset(new Obstacle_SBMPC());
 }

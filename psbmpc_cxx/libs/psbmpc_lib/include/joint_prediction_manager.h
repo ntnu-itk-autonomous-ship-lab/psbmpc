@@ -143,7 +143,8 @@ private:
 	void update_obstacles(
 		const int i, 																		// In: Index of obstacle i to update data for				
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
-		const Eigen::Matrix<double, 7, -1> &obstacle_states 								// In: Other dynamic obstacle states 
+		const Eigen::Matrix<double, 7, -1> &obstacle_states, 								// In: Other dynamic obstacle states 
+		const int k																			// In: Index of the current predicted time t_k																
 		) 			
 	{
 		int n_obst_old = data[i].obstacles.size();
@@ -153,13 +154,13 @@ private:
 		for (int j = 0; j < n_obst_new; j++)
 		{
 			obstacle_exist = false;
-			for (int k = 0; k < n_obst_old; k++)
+			for (int z = 0; z < n_obst_old; z++)
 			{
-				if ((double)data[i].obstacles[k].get_ID() == obstacle_states(4, j))
+				if ((double)data[i].obstacles[z].get_ID() == obstacle_states(6, j))
 				{
-					data[i].obstacles[k].update(obstacle_states.block<4, 1>(0, j));
+					data[i].obstacles[z].update(obstacle_states.block<4, 1>(0, j), k);
 
-					data[i].new_obstacles.push_back(std::move(data[i].obstacles[k]));
+					data[i].new_obstacles.push_back(std::move(data[i].obstacles[z]));
 
 					obstacle_exist = true;
 
@@ -215,12 +216,12 @@ private:
 		//std::cout << A << std::endl;
 		for (int j = 0; j < n_obst; j++)
 		{
-			v_B(0) = data[i].obstacles[j].get_predicted_state(k)(2);
-			v_B(1) = data[i].obstacles[j].get_predicted_state(k)(3);
+			v_B(0) = data[i].obstacles[j].get_state(k)(2);
+			v_B(1) = data[i].obstacles[j].get_state(k)(3);
 			psi_B = atan2(v_B(1), v_B(0));
 
-			L_AB(0) = data[i].obstacles[j].get_predicted_state(k)(0) - obstacle_i_state(0);
-			L_AB(1) = data[i].obstacles[j].get_predicted_state(k)(1) - obstacle_i_state(1);
+			L_AB(0) = data[i].obstacles[j].get_state(k)(0) - obstacle_i_state(0);
+			L_AB(1) = data[i].obstacles[j].get_state(k)(1) - obstacle_i_state(1);
 			d_AB = L_AB.norm();
 
 			// Decrease the distance between the vessels by their respective max dimension
@@ -337,7 +338,7 @@ public:
 		int count;
 		for (int i = 0; i < n_obst; i++)
 		{
-			obstacle_i_state = pobstacles[i].get_predicted_state(k);
+			obstacle_i_state = pobstacles[i].get_state(k);
 			obstacle_i_length = pobstacles[i].get_length();
 
 			// Aquire information from all other obstacles
@@ -351,7 +352,7 @@ public:
 				}
 				else if (j != i)
 				{
-					other_obstacle_states.block<4, 1>(0, count) = pobstacles[j].get_predicted_state(k);
+					other_obstacle_states.block<4, 1>(0, count) = pobstacles[j].get_state(k);
 					other_obstacle_states(4, count) = pobstacles[j].get_length();
 					other_obstacle_states(5, count) = pobstacles[j].get_width();
 					other_obstacle_states(6, count) = pobstacles[j].get_ID();
@@ -364,7 +365,7 @@ public:
 			}
 			//std::cout << other_obstacle_states.transpose() << std::endl;
 			
-			update_obstacles<Parameter_Object>(i, mpc_pars, other_obstacle_states);
+			update_obstacles<Parameter_Object>(i, mpc_pars, other_obstacle_states, k);
 
 			update_situation_type_and_transitional_variables<Parameter_Object>(i, mpc_pars, obstacle_i_state, obstacle_i_length, k);
 		}

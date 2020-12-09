@@ -99,7 +99,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -169,7 +169,7 @@ void PSBMPC::calculate_optimal_offsets(
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
 	}
-	
+	 */
 	//===============================================================================================================
 	double cost;
 	Eigen::VectorXd cost_i(n_obst);
@@ -200,15 +200,15 @@ void PSBMPC::calculate_optimal_offsets(
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			P_c_i.resize(n_ps[i], n_samples);
+			/* P_c_i.resize(n_ps[i], n_samples);
 			calculate_collision_probabilities(P_c_i, data, i); 
 
-			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, data, i);
+			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, data, i); */
 
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
-			p_P_c_i = mxGetPr(P_c_i_mx[i]);
+			/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
 			Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 			map_P_c = P_c_i;
 
@@ -221,7 +221,7 @@ void PSBMPC::calculate_optimal_offsets(
 				ps_mx = mxCreateDoubleScalar(ps + 1);
 				engPutVariable(ep, "ps", ps_mx);
 				engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-			}
+			} */
 			//===============================================================================================================
 		}
 
@@ -253,14 +253,14 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
 		engPutVariable(ep, "k", k_s);
 
 		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
+		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
 		//===============================================================================================================
 	}
 
@@ -282,7 +282,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	//std::cout << "Cost at optimum : " << min_cost << std::endl;
 
-	engClose(ep); 
+	/* engClose(ep);  */
 }
 
 /****************************************************************************************
@@ -348,7 +348,8 @@ void PSBMPC::increment_control_behaviour()
 /****************************************************************************************
 *  Name     : initialize_prediction
 *  Function : Sets up the own-ship maneuvering times and number of prediction scenarios 
-*			  for each obstacle based on the current situation
+*			  for each obstacle based on the current situation, and predicts
+*			  independent obstacle trajectories.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -364,7 +365,6 @@ void PSBMPC::initialize_prediction(
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
-	int n_turns(0), count(0);
 	std::vector<Intention> ps_ordering_i;
 	Eigen::VectorXd ps_course_changes_i;
 	Eigen::VectorXd ps_maneuver_times_i;
@@ -507,7 +507,6 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	
 	if (turn_start_multiplier >= 0) // and alternative maneuvers are only up until cpa with the own-ship
 	{
-		
 		n_turns = std::ceil((t_cpa_i - turn_start_multiplier * pars.t_ts) / pars.t_ts);
 	}
 	else 							// or no alternative maneuvers at all if the obstacle never enters
@@ -640,7 +639,6 @@ void PSBMPC::predict_trajectories_jointly(
 	xs_os_aug_k(6) = n_obst;
 
 	std::vector<Obstacle_Ship> obstacle_ships(n_obst);
-
 	Eigen::Matrix<double, 4, -1> predicted_trajectory_i(4, n_samples);
 
 	//===============================================================================================================
@@ -695,8 +693,6 @@ void PSBMPC::predict_trajectories_jointly(
 	Eigen::Vector4d xs_i_0;
  	for(int i = 0; i < n_obst; i++)
 	{
-		
-
 		xs_i_0 = pobstacles[i].get_initial_state();
 		u_d_i(i) = xs_i_0.block<2, 1>(2, 0).norm();
 		chi_d_i(i) = atan2(xs_i_0(3), xs_i_0(2));
@@ -706,7 +702,6 @@ void PSBMPC::predict_trajectories_jointly(
 
 		wps_i_mx[i] = mxCreateDoubleMatrix(2, 2, mxREAL);
 		traj_i_mx[i] = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-		pred_traj_i_mx[i] = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 
 		p_wps_i = mxGetPr(wps_i_mx[i]);
 		new (&map_wps_i) Eigen::Map<Eigen::MatrixXd>(p_wps_i, 2, n_wps_i);
@@ -742,7 +737,7 @@ void PSBMPC::predict_trajectories_jointly(
 			
 		for (int i = 0; i < n_obst; i++)
 		{
-			xs_i_p = pobstacles[i].get_predicted_state(k);
+			xs_i_p = pobstacles[i].get_state(k);
 
 			//std::cout << "xs_i_p = " << xs_i_p.transpose() << std::endl;
 
@@ -772,7 +767,8 @@ void PSBMPC::predict_trajectories_jointly(
 					pobstacles[i].get_waypoints(),
 					xs_i_p_transformed,
 					static_obstacles,
-					jpm.get_data(i));
+					jpm.get_data(i),
+					k);
 
 				end = std::chrono::system_clock::now();
 				elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -783,8 +779,11 @@ void PSBMPC::predict_trajectories_jointly(
 
 				jpm.update_obstacle_status(i, xs_i_p_transformed, k);
 				jpm.display_obstacle_information(i);
+
 			}
 			u_c_i = u_d_i(i) * u_opt_i(i); chi_c_i = chi_d_i(i) + chi_opt_i(i);
+
+			
 
 			if (k < n_samples - 1)
 			{
@@ -796,18 +795,22 @@ void PSBMPC::predict_trajectories_jointly(
 				xs_i_p(2) = xs_i_p_transformed(3) * cos(xs_i_p_transformed(2));
 				xs_i_p(3) = xs_i_p_transformed(3) * sin(xs_i_p_transformed(2));
 
-				pobstacles[i].set_predicted_state(xs_i_p, k + 1);
+				pobstacles[i].set_state(xs_i_p, k + 1);
 			}
 			
 			//============================================================================================
 			// Send data to matlab for live plotting
 			//============================================================================================
+			buffer[BUFFSIZE] = '\0';
+			engOutputBuffer(ep, buffer, BUFFSIZE);
+			
+			pred_traj_i_mx[i] = mxCreateDoubleMatrix(4, predicted_trajectory_i.cols(), mxREAL);
 
 			p_traj_i = mxGetPr(traj_i_mx[i]);
 			p_pred_traj_i = mxGetPr(pred_traj_i_mx[i]);
 
 			new (&map_traj_i) Eigen::Map<Eigen::MatrixXd>(p_traj_i, 4, n_samples);
-			new (&map_pred_traj_i) Eigen::Map<Eigen::MatrixXd>(p_pred_traj_i, 4, n_samples);
+			new (&map_pred_traj_i) Eigen::Map<Eigen::MatrixXd>(p_pred_traj_i, 4, predicted_trajectory_i.cols());
 			
 			map_traj_i = pobstacles[i].get_trajectory();
 			map_pred_traj_i = predicted_trajectory_i;
@@ -818,15 +821,16 @@ void PSBMPC::predict_trajectories_jointly(
 			engPutVariable(ep, "X_i", traj_i_mx[i]);			
 			engPutVariable(ep, "X_i_pred", pred_traj_i_mx[i]);
 
-			engEvalString(ep, "update_joint_pred_obstacle_plot");	
+			engEvalString(ep, "update_joint_pred_obstacle_plot");
+
+			printf("%s", buffer);	
 			//============================================================================================				
 			
 		}
 		//============================================================================================
 		// Send data to matlab for live plotting
 		//============================================================================================
-		buffer[BUFFSIZE] = '\0';
-		engOutputBuffer(ep, buffer, BUFFSIZE);
+		
 
 		engEvalString(ep, "update_joint_pred_ownship_plot");
 		//============================================================================================
