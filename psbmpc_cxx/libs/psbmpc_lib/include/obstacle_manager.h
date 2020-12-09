@@ -329,18 +329,18 @@ private:
 
 			// Ownship overtaking the obstacle
 			data.O_TC_0[i] = v_B.dot(v_A) > cos(mpc_pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-					v_B.norm() < v_B.norm()							    						&&
-					v_B.norm() > 0.25															&&
-					is_close 																	&&
+					v_B.norm() < v_B.norm()							    					&&
+					v_B.norm() > 0.25														&&
+					is_close 																&&
 					data.AH_0[i];
 
 			//std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << O_TC_0[i] << std::endl;
 
 			// Obstacle overtaking the ownship
 			data.Q_TC_0[i] = v_A.dot(v_B) > cos(mpc_pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() < v_B.norm()							  			&&
-					v_A.norm() > 0.25 											&&
-					is_close 													&&
+					v_A.norm() < v_B.norm()							  						&&
+					v_A.norm() > 0.25 														&&
+					is_close 																&&
 					!data.AH_0[i];
 
 			//std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << Q_TC_0[i] << std::endl;
@@ -356,8 +356,8 @@ private:
 
 			// This is not mentioned in article, but also implemented here..				
 			data.H_TC_0[i] = v_A.dot(v_B) < - cos(mpc_pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() > 0.25																&&
-					v_B.norm() > 0.25																&&
+					v_A.norm() > 0.25															&&
+					v_B.norm() > 0.25															&&
 					data.AH_0[i];
 			
 			//std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << H_TC_0[i] << std::endl;
@@ -365,11 +365,9 @@ private:
 			// Crossing situation, a bit redundant with the !is_passed condition also, 
 			// but better safe than sorry (could be replaced with B_is_ahead also)
 			data.X_TC_0[i] = v_A.dot(v_B) < cos(mpc_pars.phi_CR) * v_A.norm() * v_B.norm()	&&
-					!data.H_TC_0[i]																&&
-					!data.O_TC_0[i] 															&&
-					!data.Q_TC_0[i] 	 														&&
-					!data.IP_0[i]																&&
-					v_A.norm() > 0.25															&&
+					!data.H_TC_0[i]															&&
+					!data.IP_0[i]															&&
+					v_A.norm() > 0.25														&&
 					v_B.norm() > 0.25;
 
 			//std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << X_TC_0[i] << std::endl;

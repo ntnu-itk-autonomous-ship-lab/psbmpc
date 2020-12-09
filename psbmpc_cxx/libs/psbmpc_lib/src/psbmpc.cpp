@@ -179,9 +179,14 @@ void PSBMPC::calculate_optimal_offsets(
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
+		for (int j = 0; j < 130; j++)
+		{
+			increment_control_behaviour();
+		}
 		cost = 0;
 		//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
-		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
+		std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
+
 		ownship.predict_trajectory(
 			trajectory, 
 			offset_sequence, 
@@ -409,7 +414,7 @@ void PSBMPC::initialize_prediction(
 			waypoints_i.resize(2, 2);
 			xs_i_0 = pobstacles[i].get_initial_state();
 			waypoints_i.col(0) = xs_i_0.block<2, 1>(0, 0);
-			waypoints_i.col(1) = waypoints_i.col(0) + xs_i_0.block<2, 1>(2, 0) * (pars.T + 20);
+			waypoints_i.col(1) = waypoints_i.col(0) + xs_i_0.block<2, 1>(2, 0) * pars.T;
 			pobstacles[i].set_waypoints(waypoints_i);
 		}
 	}
@@ -639,7 +644,7 @@ void PSBMPC::predict_trajectories_jointly(
 	xs_os_aug_k(6) = n_obst;
 
 	std::vector<Obstacle_Ship> obstacle_ships(n_obst);
-	Eigen::Matrix<double, 4, -1> predicted_trajectory_i(4, n_samples);
+	std::vector<Eigen::Matrix<double, 4, -1>> predicted_trajectory_i(n_obst);
 
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
@@ -697,8 +702,8 @@ void PSBMPC::predict_trajectories_jointly(
 		u_d_i(i) = xs_i_0.block<2, 1>(2, 0).norm();
 		chi_d_i(i) = atan2(xs_i_0(3), xs_i_0(2));
 
-		std::cout << "u_d_i = " << u_d_i(i) << std::endl;
-		std::cout << "chi_d_i = " << chi_d_i(i) << std::endl;
+		/* std::cout << "u_d_i = " << u_d_i(i) << std::endl;
+		std::cout << "chi_d_i = " << chi_d_i(i) << std::endl; */
 
 		wps_i_mx[i] = mxCreateDoubleMatrix(2, 2, mxREAL);
 		traj_i_mx[i] = mxCreateDoubleMatrix(4, n_samples, mxREAL);
@@ -761,7 +766,7 @@ void PSBMPC::predict_trajectories_jointly(
 				pobstacles[i].sbmpc->calculate_optimal_offsets(
 					u_opt_i(i), 
 					chi_opt_i(i), 
-					predicted_trajectory_i,
+					predicted_trajectory_i[i],
 					u_d_i(i), 
 					chi_d_i(i),
 					pobstacles[i].get_waypoints(),
@@ -804,16 +809,16 @@ void PSBMPC::predict_trajectories_jointly(
 			buffer[BUFFSIZE] = '\0';
 			engOutputBuffer(ep, buffer, BUFFSIZE);
 			
-			pred_traj_i_mx[i] = mxCreateDoubleMatrix(4, predicted_trajectory_i.cols(), mxREAL);
+			pred_traj_i_mx[i] = mxCreateDoubleMatrix(4, predicted_trajectory_i[i].cols(), mxREAL);
 
 			p_traj_i = mxGetPr(traj_i_mx[i]);
 			p_pred_traj_i = mxGetPr(pred_traj_i_mx[i]);
 
 			new (&map_traj_i) Eigen::Map<Eigen::MatrixXd>(p_traj_i, 4, n_samples);
-			new (&map_pred_traj_i) Eigen::Map<Eigen::MatrixXd>(p_pred_traj_i, 4, predicted_trajectory_i.cols());
+			new (&map_pred_traj_i) Eigen::Map<Eigen::MatrixXd>(p_pred_traj_i, 4, predicted_trajectory_i[i].cols());
 			
 			map_traj_i = pobstacles[i].get_trajectory();
-			map_pred_traj_i = predicted_trajectory_i;
+			map_pred_traj_i = predicted_trajectory_i[i];
 
 			i_mx = mxCreateDoubleScalar(i + 1);
 
