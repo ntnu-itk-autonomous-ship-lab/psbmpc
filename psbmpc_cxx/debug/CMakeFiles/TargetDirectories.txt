@@ -1,8 +1,0 @@
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/rebuild_cache.dir
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/CMakeFiles/edit_cache.dir
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/libs/psbmpc_lib/CMakeFiles/rebuild_cache.dir
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/libs/psbmpc_lib/CMakeFiles/edit_cache.dir
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/src/tests/CMakeFiles/rebuild_cache.dir
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/src/tests/CMakeFiles/edit_cache.dir
-/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/debug/src/tests/CMakeFiles/tester.dir

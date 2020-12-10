@@ -212,8 +212,6 @@ private:
 		data[i].O_TC_0.resize(n_obst); data[i].Q_TC_0.resize(n_obst); data[i].IP_0.resize(n_obst); 
 		data[i].H_TC_0.resize(n_obst); data[i].X_TC_0.resize(n_obst);
 
-		bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-		bool is_ahead, is_passed, is_head_on, is_crossing;
 		//std::cout << "Situation types:: 0 : (ST = Ø), 1 : (ST = OT, SO), 2 : (ST = CR, SO), 3 : (ST = OT, GW), 4 : (ST = HO, GW), 5 : (ST = CR, GW)" << std::endl;
 		for (int j = 0; j < n_obst; j++)
 		{
@@ -260,37 +258,6 @@ private:
 					v_B.norm() > 0.25															&&
 					is_close 																	&&
 					data[i].AH_0[j];
-					
-			
-
-			is_ahead = v_A.dot(L_AB) > cos(mpc_pars.phi_AH) * v_A.norm();
-
-			A_is_overtaken = v_A.dot(v_B) > cos(mpc_pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-							v_A.norm() < v_B.norm()							  		&&
-							v_A.norm() > 0.25;
-
-			B_is_overtaken = v_B.dot(v_A) > cos(mpc_pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-							v_B.norm() < v_A.norm()							  		&&
-							v_B.norm() > 0.25;
-
-			B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-			is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-						!A_is_overtaken) 											||
-						(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-						!B_is_overtaken)) 											&&
-						d_AB > mpc_pars.d_safe;
-
-			is_head_on = v_A.dot(v_B) < - cos(mpc_pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-						v_A.norm() > 0.25											&&
-						v_B.norm() > 0.25											&&
-						is_ahead;
-
-			is_crossing = v_A.dot(v_B) < cos(mpc_pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
-						v_A.norm() > 0.25											&&
-						v_B.norm() > 0.25											&&
-						!is_head_on 												&&
-						!is_passed;
 
 			//std::cout << "Own-ship overtaking obst j = " << j << " at t0 ? " << data[i].O_TC_0[j] << std::endl;
 
