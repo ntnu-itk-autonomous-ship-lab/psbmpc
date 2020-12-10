@@ -179,7 +179,7 @@ void PSBMPC::calculate_optimal_offsets(
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
-		for (int j = 0; j < 130; j++)
+		for (int j = 0; j < 129; j++)
 		{
 			increment_control_behaviour();
 		}
