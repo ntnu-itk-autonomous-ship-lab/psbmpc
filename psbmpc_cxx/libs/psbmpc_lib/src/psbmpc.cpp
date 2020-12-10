@@ -845,6 +845,22 @@ void PSBMPC::predict_trajectories_jointly(
 
 	for (int i = 0; i < n_obst; i++)
 	{
+		i_mx = mxCreateDoubleScalar(i + 1);
+		engPutVariable(ep, "i", i_mx);
+
+		pred_traj_i_mx[i] = mxCreateDoubleMatrix(4, predicted_trajectory_i[i].cols(), mxREAL);
+
+		p_traj_i = mxGetPr(traj_i_mx[i]);
+		p_pred_traj_i = mxGetPr(pred_traj_i_mx[i]);
+
+		new (&map_traj_i) Eigen::Map<Eigen::MatrixXd>(p_traj_i, 4, n_samples);
+		new (&map_pred_traj_i) Eigen::Map<Eigen::MatrixXd>(p_pred_traj_i, 4, predicted_trajectory_i[i].cols());
+		
+		map_traj_i = pobstacles[i].get_trajectory();
+		map_pred_traj_i = predicted_trajectory_i[i];
+
+		engPutVariable(ep, "X_i", traj_i_mx[i]);			
+		engPutVariable(ep, "X_i_pred", pred_traj_i_mx[i]);
 		engEvalString(ep, "store_joint_pred_obstacle_data");
 	}
 
