@@ -484,7 +484,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
-	int turn_count(0), turn_start_multiplier(0), n_turns(0), course_change_count(0);
+	int turn_count(0), turn_start(0), n_turns(0), course_change_count(0);
 	double d_AB, d_AB_prev;
 	Eigen::Vector4d xs_i_0 = data.obstacles[i].kf->get_state();
 	Eigen::Vector2d v_0, v_i_0;
@@ -493,26 +493,26 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	v_0 = rotate_vector_2D(trajectory.col(0).block<2, 1>(3, 0), trajectory(2, 0));
 	v_i_0 = xs_i_0.block<2, 1>(2, 0);
 
-	// Alternative obstacle maneuvers (other than the straight line prediction) 
+	// The out-commented stuff is too ad-hoc to be used.
+	/* // Alternative obstacle maneuvers (other than the straight line prediction) 
 	// are only allowed inside the COLREGS consideration zone, i.e. inside d_close
 	while (d_AB > pars.d_close)
 	{
 		d_AB_prev = d_AB;
-		turn_start_multiplier += 1;
+		turn_start += 1;
 		// calculate new distance between own-ship and obstacle i, given that both keep
 		// their course for k * t_ts seconds, k = 1, 2, 3, ...
-		d_AB = ((trajectory.col(0).block<2, 1>(0, 0) + v_0 * turn_start_multiplier * pars.t_ts) - 
-				(xs_i_0.block<2, 1>(0, 0) + v_i_0 * turn_start_multiplier * pars.t_ts)).norm();
+		d_AB = ((trajectory.col(0).block<2, 1>(0, 0) + v_0 * turn_start * pars.t_ts) - 
+				(xs_i_0.block<2, 1>(0, 0) + v_i_0 * turn_start * pars.t_ts)).norm();
 		if (d_AB > d_AB_prev)
 		{
-			turn_start_multiplier = -1;
+			turn_start = -1;
 			break;
 		}
-	}
-	
-	if (turn_start_multiplier >= 0) // and alternative maneuvers are only up until cpa with the own-ship
+	} */
+	if (turn_start >= 0) // and alternative maneuvers are only up until cpa with the own-ship
 	{
-		n_turns = std::ceil((t_cpa_i - turn_start_multiplier * pars.t_ts) / pars.t_ts);
+		n_turns = std::ceil((t_cpa_i - turn_start * pars.t_ts) / pars.t_ts);
 	}
 	else 							// or no alternative maneuvers at all if the obstacle never enters
 	{ 								// the own-ship COLREGS consideration zone
@@ -534,7 +534,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 		{
 			ps_ordering_i[ps] = SM;
 
-			ps_maneuver_times_i[ps] = (turn_start_multiplier + turn_count) * std::floor(pars.t_ts / pars.dt);
+			ps_maneuver_times_i[ps] = (turn_start + turn_count) * std::floor(pars.t_ts / pars.dt);
 
 			ps_course_changes_i(ps) = pars.obstacle_course_changes(course_change_count);
 			if (++course_change_count == pars.obstacle_course_changes.size())
@@ -548,7 +548,7 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 		{
 			ps_ordering_i[ps] = PM;
 
-			ps_maneuver_times_i[ps] = (turn_start_multiplier + turn_count) * std::floor(pars.t_ts / pars.dt);
+			ps_maneuver_times_i[ps] = (turn_start + turn_count) * std::floor(pars.t_ts / pars.dt);
 
 			ps_course_changes_i(ps) = - pars.obstacle_course_changes(course_change_count);
 			if (++course_change_count == pars.obstacle_course_changes.size())
