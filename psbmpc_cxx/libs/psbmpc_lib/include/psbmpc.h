@@ -74,6 +74,8 @@ private:
 
 	double find_time_of_passing(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 
+	void prune_obstacle_scenarios(const Obstacle_Data<Tracked_Obstacle> &data);
+
 	void predict_trajectories_jointly(const Eigen::Matrix<double, 4, -1>& static_obstacles);
 
 	bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
