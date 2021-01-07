@@ -94,6 +94,8 @@ public:
 
 	inline Eigen::VectorXd get_intention_probabilities() const { return Pr_a; };
 
+	inline std::vector<Intention> get_ps_ordering() const { return ps_ordering; }
+
 	// KF related methods
 	inline double get_duration_tracked() const { return duration_tracked; };
 
@@ -198,7 +200,7 @@ public:
 						}
 						break;
 					default :
-						std::cout << "This intention is not valid!" << std::endl;
+						// Throw
 						break;
 				}
 
@@ -216,6 +218,8 @@ public:
 			}
 		}
 	}
+
+	void prune_ps(std:vector<int> &ps_indices);
 
 	void update(
 		const Eigen::VectorXd &xs_aug, 

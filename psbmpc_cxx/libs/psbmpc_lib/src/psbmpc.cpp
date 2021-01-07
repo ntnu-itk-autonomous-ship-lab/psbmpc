@@ -417,6 +417,8 @@ void PSBMPC::initialize_prediction(
 			waypoints_i.col(1) = waypoints_i.col(0) + xs_i_0.block<2, 1>(2, 0) * pars.T;
 			pobstacles[i].set_waypoints(waypoints_i);
 		}
+
+
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -1148,6 +1150,7 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			}
 		}
 	}
+
 	// If only 1 prediction scenario
 	// => Original PSB-MPC formulation
 	if (n_ps[i] == 1)
@@ -1160,6 +1163,9 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
 	// and the own-ship breaches COLREGS
 
+	std::vector<Intention> ps_ordering = data.obstacles[i].get_ps_ordering();
+
+	int num_sm_ps(0), num_pm_ps(0);
 	double sum_sm_weights(0.0), sum_pm_weights(0.0);
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
@@ -1170,18 +1176,15 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			weights_ps(ps) = 1 - Pr_CC_i;
 		}
 
-		if (ps > 0)
+		if (ps_ordering[ps] == SM)
 		{
-			// Starboard maneuvers
-			if (ps < (n_ps[i] - 1) / 2 + 1)
-			{
-				sum_sm_weights += weights_ps(ps);
-			}
-			// Port maneuvers
-			else
-			{
-				sum_pm_weights += weights_ps(ps);
-			}
+			num_sm_ps += 1;
+			sum_sm_weights += weights_ps(ps);
+		}
+		else if (ps_ordering[ps] = PM)
+		{
+			num_pm_ps += 1;
+			sum_pm_weights += weights_ps(ps);
 		}
 	}
 
@@ -1189,38 +1192,27 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	Eigen::VectorXd Pr_a = data.obstacles[i].get_intention_probabilities();
 	assert(Pr_a.size() == 3);
 	
-	for(int ps = 1; ps < n_ps[i]; ps++)
+	for(int ps = 0; ps < n_ps[i]; ps++)
 	{
-		// Starboard maneuvers
-		if (ps < (n_ps[i] - 1) / 2 + 1)
+		if (ps_ordering[ps] == KCC)
 		{
-			if (sum_sm_weights > 0.0)
-			{
-				cost_a(1) += (weights_ps(ps) / sum_sm_weights) * max_cost_ps(ps);
-			}
-			else
-			{
-				cost_a(1) += weights_ps(ps) * max_cost_ps(ps);
-			}
+			cost_a(0) = weights_ps(ps) * max_cost_ps(ps);
 		}
-		// Port maneuvers
-		else
+		else if (ps_ordering[ps] == SM)
 		{
-			if (sum_pm_weights > 0.0)
-			{
-				cost_a(2) += (weights_ps(ps) / sum_pm_weights) * max_cost_ps(ps);
-			}
-			else
-			{
-				cost_a(2) += weights_ps(ps) * max_cost_ps(ps);
-			}
+			cost_a(1) += (weights_ps(ps) / sum_sm_weights) * max_cost_ps(ps);
+		}
+		else if (ps_ordering[ps] = PM)
+		{
+			cost_a(2) += (weights_ps(ps) / sum_pm_weights) * max_cost_ps(ps);
 		}
 	}
-
-	// Average the cost for the corresponding intention
-	cost_a(0) = weights_ps(0) * max_cost_ps(0); 
-	cost_a(1) /= (((double)n_ps[i] - 1.0) / 2.0);
-	cost_a(2) /= (((double)n_ps[i] - 1.0) / 2.0);
+	
+	// Average the cost for the starboard and port maneuver type of intentions
+	if (num_sm_ps > 0)	{ cost_a(1) /= num_sm_ps; } 
+	else				{ cost_a(1) = 0.0; }
+	if (num_pm_ps > 0)	{ cost_a(2) /= num_pm_ps; } 
+	else				{ cost_a(2) = 0.0; }
 
 	// Weight by the intention probabilities
 	cost = Pr_a.dot(cost_a);
