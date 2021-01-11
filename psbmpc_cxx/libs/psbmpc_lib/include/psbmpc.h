@@ -72,11 +72,11 @@ private:
 		const Obstacle_Data<Tracked_Obstacle> &data,
 		const int i);
 
-	double find_time_of_passing(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
-
 	void prune_obstacle_scenarios(const Obstacle_Data<Tracked_Obstacle> &data);
 
 	void predict_trajectories_jointly(const Eigen::Matrix<double, 4, -1>& static_obstacles);
+
+	double find_time_of_passing(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 
 	bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 
@@ -88,7 +88,7 @@ private:
 		const Obstacle_Data<Tracked_Obstacle> &data,
 		const int i);
 
-	void calculate_collision_probabilities(Eigen::MatrixXd &P_c_i, const Obstacle_Data<Tracked_Obstacle> &data, const int i);
+	void calculate_collision_probabilities(Eigen::MatrixXd &P_c_i, const Obstacle_Data<Tracked_Obstacle> &data, const int i, const double dt);
 
 	double calculate_dynamic_obstacle_cost(const Eigen::MatrixXd &P_c_i, const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 

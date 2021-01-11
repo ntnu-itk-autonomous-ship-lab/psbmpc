@@ -208,7 +208,7 @@ void PSBMPC::calculate_optimal_offsets(
 			/* P_c_i.resize(n_ps[i], n_samples);
 			calculate_collision_probabilities(P_c_i, data, i); 
 
-			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, data, i); */
+			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, data, i, pars.dt); */
 
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
@@ -417,9 +417,10 @@ void PSBMPC::initialize_prediction(
 			waypoints_i.col(1) = waypoints_i.col(0) + xs_i_0.block<2, 1>(2, 0) * pars.T;
 			pobstacles[i].set_waypoints(waypoints_i);
 		}
-
-
 	}
+	//
+	prune_obstacle_scenarios(data);
+
 	//***********************************************************************************
 	// Own-ship prediction initialization
 	//***********************************************************************************
@@ -564,63 +565,44 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
 }
 
-
 /****************************************************************************************
-*  Name     : find_time_of_passing
-*  Function : Finds the time when an obstacle is passed by the own-ship, assuming both 
-*			  vessels keeps their current course
+*  Name     : prune_obstacle_scenarios
+*  Function : Goes through all generated obstacle prediction scenarios, and selects the
+*			  N_r scenarios with highest collision risk for keeping, discarding all others.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double PSBMPC::find_time_of_passing(
-	const Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
-	const int i 														// In: Index of relevant obstacle
+void PSBMPC::prune_obstacle_scenarios(
+	const Obstacle_Data<Tracked_Obstacle> &data							// In: Dynamic obstacle information
 	)
 {
-	double t_obst_passed(1e12), t, psi_A, d_AB;
-	Eigen::VectorXd xs_A = trajectory.col(0);
-	Eigen::VectorXd xs_B = data.obstacles[i].kf->get_state();
-	Eigen::Vector2d p_A, p_B, v_A, v_B, L_AB;
-	p_A(0) = xs_A(0); p_A(1) = xs_A(1); psi_A = xs_A(2);
-	v_A(0) = xs_A(3); v_A(1) = xs_A(4); 
-	v_A = rotate_vector_2D(v_A, psi_A);
-	p_B(0) = xs_B(0); p_B(1) = xs_B(1);
-	v_B(0) = xs_B(2); v_B(1) = xs_B(3); 
+	int n_obst = data.obstacles.size();
 
-	bool A_is_overtaken, B_is_overtaken, is_passed;
+	int dt_coarse = 10 * pars.dt;
+	int n_samples = std::round(pars.T / dt_coarse); 
 
-	int n_samples = pars.T / pars.dt;
-	for (int k = 0; k < n_samples; k++)
-	{
-		t = k * pars.dt;
-		p_A = p_A + v_A * t;
-		p_B = p_B + v_B * t;
+	Eigen::MatrixXd P_c_i;
+	std::vector<int> kept_ps_indices_i;
+	Eigen::VectorXd predicted_collision_risk_i, P_c_ps_i;
+	for (int i = 0; i < n_obst; i++)
+	{	
+		Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
+		std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
 
-		L_AB = p_B - p_A;
-		d_AB = L_AB.norm();
-		L_AB = L_AB.normalized();
-
-		A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-						v_A.norm() < v_B.norm()							  		&&
-						v_A.norm() > 0.25;
-
-		B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-						v_B.norm() < v_A.norm()							  		&&
-						v_B.norm() > 0.25;
-
-		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-					!A_is_overtaken) 											||
-					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-					!B_is_overtaken)) 											&&
-					d_AB > pars.d_safe;
+		// Increase safety zone by half the max obstacle dimension and ownship length
+		double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
 		
-		if (is_passed) 
+		P_c_i.resize(n_ps[i], n_samples); P_c_ps_i.resize(n_ps[i]); 
+		
+		calculate_collision_probabilities(P_c_i, data, i, dt_coarse);
+
+		for (int ps = 0; ps < n_ps[i]; ps++)
 		{
-			t_obst_passed = t; 
-			break;
+			
 		}
+
+		predicted_collision_risk_i.resize(n_ps[i]);
 	}
-	return t_obst_passed;
 }
 
 /****************************************************************************************
@@ -887,6 +869,64 @@ void PSBMPC::predict_trajectories_jointly(
 }
 
 /****************************************************************************************
+*  Name     : find_time_of_passing
+*  Function : Finds the time when an obstacle is passed by the own-ship, assuming both 
+*			  vessels keeps their current course
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+double PSBMPC::find_time_of_passing(
+	const Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
+	const int i 														// In: Index of relevant obstacle
+	)
+{
+	double t_obst_passed(1e12), t, psi_A, d_AB;
+	Eigen::VectorXd xs_A = trajectory.col(0);
+	Eigen::VectorXd xs_B = data.obstacles[i].kf->get_state();
+	Eigen::Vector2d p_A, p_B, v_A, v_B, L_AB;
+	p_A(0) = xs_A(0); p_A(1) = xs_A(1); psi_A = xs_A(2);
+	v_A(0) = xs_A(3); v_A(1) = xs_A(4); 
+	v_A = rotate_vector_2D(v_A, psi_A);
+	p_B(0) = xs_B(0); p_B(1) = xs_B(1);
+	v_B(0) = xs_B(2); v_B(1) = xs_B(3); 
+
+	bool A_is_overtaken, B_is_overtaken, is_passed;
+
+	int n_samples = pars.T / pars.dt;
+	for (int k = 0; k < n_samples; k++)
+	{
+		t = k * pars.dt;
+		p_A = p_A + v_A * t;
+		p_B = p_B + v_B * t;
+
+		L_AB = p_B - p_A;
+		d_AB = L_AB.norm();
+		L_AB = L_AB.normalized();
+
+		A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
+						v_A.norm() < v_B.norm()							  		&&
+						v_A.norm() > 0.25;
+
+		B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
+						v_B.norm() < v_A.norm()							  		&&
+						v_B.norm() > 0.25;
+
+		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+					!A_is_overtaken) 											||
+					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+					!B_is_overtaken)) 											&&
+					d_AB > pars.d_safe;
+		
+		if (is_passed) 
+		{
+			t_obst_passed = t; 
+			break;
+		}
+	}
+	return t_obst_passed;
+}
+
+/****************************************************************************************
 *  Name     : determine_colav_active
 *  Function : Uses the freshly updated obstacles vector and the number of static 
 *			  obstacles to determine whether it is necessary to run the PSBMPC
@@ -1032,7 +1072,8 @@ bool PSBMPC::determine_transitional_cost_indicator(
 void PSBMPC::calculate_collision_probabilities(
 	Eigen::MatrixXd &P_c_i,								// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const Obstacle_Data<Tracked_Obstacle> &data,		// In: Dynamic obstacle information
-	const int i 										// In: Index of obstacle
+	const int i, 										// In: Index of obstacle
+	const double dt 									// In: Sample time for estimation
 	)
 {
 	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
@@ -1045,7 +1086,7 @@ void PSBMPC::calculate_collision_probabilities(
 	Eigen::Matrix<double, 1, -1> P_c_i_row(P_i_p.cols());
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		cpe.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, pars.dt);
+		cpe.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt);
 
 		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
 	}		
@@ -1071,8 +1112,6 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	int n_samples = trajectory.cols();
 	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
 	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
-	std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
-	double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
 
 	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 	double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);
@@ -1132,7 +1171,8 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 			if (data.obstacles[i].get_duration_lost() > pars.p_step)
 			{
 				l_i = pars.dt * pars.p_step / data.obstacles[i].get_duration_lost();
-			} else
+			} 
+			else
 			{
 				l_i = 1;
 			}
@@ -1164,6 +1204,8 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	// and the own-ship breaches COLREGS
 
 	std::vector<Intention> ps_ordering = data.obstacles[i].get_ps_ordering();
+	std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
+	double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
 
 	int num_sm_ps(0), num_pm_ps(0);
 	double sum_sm_weights(0.0), sum_pm_weights(0.0);
