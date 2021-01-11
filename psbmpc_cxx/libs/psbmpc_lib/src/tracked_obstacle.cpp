@@ -141,6 +141,21 @@ void Tracked_Obstacle::initialize_prediction(
 	this->ps_course_changes = ps_course_changes;
 
 	this->ps_maneuver_times = ps_maneuver_times;
+
+	int n_a = Pr_a.size();
+	ps_intention_count.resize(n_a);
+	
+	if (n_a == 1)	{ ps_intention_count(0) = 1; }
+	else // n_a = 3
+	{
+		ps_intention_count(0) = 1;
+		int n_ps = ps_ordering.size();
+		for (int ps = 0; ps < n_ps; ps++)
+		{
+			if (ps_ordering[ps] == SM)		{ ps_intention_count(1) += 1; }
+			else if (ps_ordering[ps] == PM)	{ ps_intention_count(2) += 1; }
+		}
+	}	
 }
 
 /****************************************************************************************

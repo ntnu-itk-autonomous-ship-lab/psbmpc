@@ -141,7 +141,8 @@ void CPE::initialize(
 *  Name     : estimate_over_trajectories
 *  Function : Takes in own-ship and obstacle trajectories, plus the associated obstacle
 *             covariances, and estimates the collision probabilities using a chosen 
-*             method.
+*             method. Can use a larger sample time than used in predicting
+*			  the vessel trajectories.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -151,20 +152,20 @@ void CPE::estimate_over_trajectories(
 		const Eigen::Matrix<double, 4, -1> &xs_i_p,         // In: Obstacle i predicted trajectory
 		const Eigen::Matrix<double, 16, -1> &P_i_p,         // In: Obstacle i associated predicted covariances
         const double d_safe_i,                              // In: Safety zone around own-ship when facing obstacle i,
-        const double dt                                     // In: Prediction time step
+        const double dt,                                    // In: Prediction time step, can be larger than that used for the trajectory generation
+        const int p_step                                    // In: Step between trajectory samples, matches the input prediction time step
     )
 {
     n_samples_traj = xs_p.cols();
+    n_seg_samples = std::round(dt_seg / dt) + 1;
 
     xs_os_seg.resize(6, n_seg_samples); xs_i_seg.resize(4, n_seg_samples); P_i_seg.resize(16, n_seg_samples);
-
-    n_seg_samples = std::round(dt_seg / dt) + 1;
 
     initialize(xs_p.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i);
 
     v_os_prev.setZero(); v_i_prev.setZero();
     k_j_ = 0; k_j = 0;
-    for (int k = 0; k < n_samples_traj; k++)
+    for (int k = 0; k < n_samples_traj; k += p_step)
     {
         switch(method)
         {
