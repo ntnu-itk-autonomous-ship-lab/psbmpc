@@ -76,25 +76,25 @@ void PSBMPC::calculate_optimal_offsets(
 
 	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
 
+	for (int M = 0; M < pars.n_M; M++)
+	{
+		opt_offset_sequence(2 * M) = 1.0; opt_offset_sequence(2 * M + 1) = 0.0;
+	}
+	maneuver_times.setZero();
+	ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
 	{
 		u_opt = 1.0; 		u_m_last = u_opt;
 		chi_opt = 0.0; 	chi_m_last = chi_opt;
 
-		for (int M = 0; M < pars.n_M; M++)
-		{
-			opt_offset_sequence(2 * M) = 1.0; opt_offset_sequence(2 * M + 1) = 0.0;
-		}
-		maneuver_times.setZero();
-		ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
-		
 		assign_optimal_trajectory(predicted_trajectory);
 
 		return;
 	}
 
-	initialize_prediction(data);
+	initialize_prediction(data, static_obstacles);
 
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
@@ -359,7 +359,8 @@ void PSBMPC::increment_control_behaviour()
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::initialize_prediction(
-	Obstacle_Data<Tracked_Obstacle> &data							// In: Dynamic obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
+	const Eigen::Matrix<double, 4, -1> &static_obstacles			// In: Static obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
@@ -418,6 +419,12 @@ void PSBMPC::initialize_prediction(
 			pobstacles[i].set_waypoints(waypoints_i);
 		}
 	}
+
+	if (pars.obstacle_colav_on)
+	{
+		predict_trajectories_jointly(static_obstacles);
+	}
+	
 	//
 	prune_obstacle_scenarios(data);
 
@@ -573,35 +580,151 @@ void PSBMPC::set_up_independent_obstacle_prediction_variables(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::prune_obstacle_scenarios(
-	const Obstacle_Data<Tracked_Obstacle> &data							// In: Dynamic obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data							// In: Dynamic obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
 
-	int dt_coarse = 10 * pars.dt;
-	int n_samples = std::round(pars.T / dt_coarse); 
+	int p_step = 10, dt_r = p_step * pars.dt;
+	int n_samples = std::round(pars.T / dt_r); 
 
 	Eigen::MatrixXd P_c_i;
 	std::vector<int> kept_ps_indices_i;
-	Eigen::VectorXd predicted_collision_risk_i, P_c_ps_i;
+	Eigen::VectorXd R_c_i, P_c_i_ps, C_i;
 	for (int i = 0; i < n_obst; i++)
-	{	
-		Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
-		std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
-
-		// Increase safety zone by half the max obstacle dimension and ownship length
-		double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
+	{			
+		P_c_i.resize(n_ps[i], n_samples); P_c_i_ps.resize(n_ps[i]); C_i.resize(n_ps[i]);
 		
-		P_c_i.resize(n_ps[i], n_samples); P_c_ps_i.resize(n_ps[i]); 
-		
-		calculate_collision_probabilities(P_c_i, data, i, dt_coarse);
+		calculate_instantaneous_collision_probabilities(P_c_i, data, i, dt_r, p_step);
 
+		calculate_ps_collision_probabilities(P_c_i_ps, P_c_i, i);
+
+		calculate_ps_collision_consequences(C_i, data, i, dt_r, p_step);
+
+		calculate_ps_collision_risks(R_c_i, C_i, P_c_i_ps, data, i);
+	}
+}
+
+/****************************************************************************************
+*  Name     : calculate_ps_collision_probabilities
+*  Function : Goes through all generated obstacle prediction scenarios, and calculates
+*			  the associated collision probabilities.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::calculate_ps_collision_probabilities(
+	Eigen::VectorXd &P_c_i_ps,											// In/out: Vector of collision consequences, size n_ps_i x 1
+	const Eigen::MatrixXd &P_c_i,										// In: Predicted obstacle collision probabilities for all prediction scenarios, size n_ps[i] x n_samples
+	const int i															// In: Index of obstacle
+	)
+{
+	P_c_i_ps.setZero();
+
+	double product(0.0);
+	int n_samples = P_c_i.cols();
+	for (int ps = 0; ps < n_ps[i]; ps++)
+	{
+		for (int k = 0; k < n_samples; k++)
+		{
+			if (k == 0)	{ product = 1 - P_c_i(ps, k); }
+			else		{ product *= 1 - P_c_i(ps, k); }
+		}
+		P_c_i_ps(ps) = 1 - product;
+	}
+}
+
+/****************************************************************************************
+*  Name     : calculate_ps_collision_consequences
+*  Function : Goes through all generated obstacle prediction scenarios, and calculates
+*			  the associated consequence of collision (parameterized as a function).
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::calculate_ps_collision_consequences(
+	Eigen::VectorXd &C_i, 												// In/out: Vector of collision consequences, size n_ps_i x 1
+	const Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
+	const int i,														// In: Index of obstacle
+	const double dt,													// In: Time step between prediction samples
+	const int p_step													// In: Step between trajectory samples, matches the input prediction time step
+	)
+{
+	C_i.setZero();
+
+	double collision_consequence(0.0), t(0.0), t_cpa(0.0), d_cpa(0.0);
+
+	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
+
+	Eigen::Vector2d p_cpa, v_0_p, v_i_p;
+
+	int n_samples = std::round(pars.T / dt);
+
+	for (int ps = 0; ps < n_ps[i]; ps++)
+	{
+		for (int k = 0; k < n_samples; k += p_step)
+		{
+			t = k * dt;
+
+			v_0_p = trajectory.block<2, 1>(3, k);
+			v_0_p = rotate_vector_2D(v_0_p, trajectory(2, k));
+
+			v_i_p = xs_i_p[ps].block<2, 1>(2, k);
+
+			calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(k), xs_i_p[ps].col(k));
+
+			collision_consequence = pow((v_0_p - v_i_p).norm(), 2) * exp(- abs(t - t_cpa));
+
+			if (C_i(ps) < collision_consequence)
+			{
+				C_i(ps) = collision_consequence;
+			}
+		}
+	}
+}
+
+/****************************************************************************************
+*  Name     : calculate_ps_collision_risks
+*  Function : Goes through all generated obstacle prediction scenarios, and calculates
+*			  the predicted collision risk.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::calculate_ps_collision_risks(
+	Eigen::VectorXd &R_c_i,												// In/out: Vector of collision risks, size n_ps_i x 1
+	const Eigen::VectorXd &C_i,											// In: Vector of collision consequences, size n_ps_i x 1
+	const Eigen::VectorXd &P_c_i_ps,									// In: Vector of collision probabilities, size n_ps_i x 1
+	const Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
+	const int i															// In: Index of obstacle	
+	)
+{
+	R_c_i.setZero();
+
+	int n_obst = data.obstacles.size();
+	double Pr_ps_i_conditional(0.0), Pr_c_i_conditional(0.0);
+	for (int i = 0; i < n_obst; i++)
+	{
+		Eigen::VectorXd Pr_a_i = data.obstacles[i].get_intention_probabilities();
+		Eigen::VectorXd ps_intention_count_i = data.obstacles[i].get_ps_intention_count();
+		int n_a = Pr_a_i.size();
+
+		// The conditional probability of collision with obstacle i is predicted
+		// as the product of the conditional probability Pr(ps | a, I) of prediction scenario ps 
+		// (here taken as a uniform distribution) weighted by intention probabilities Pr(a | I), and the
+		// predicted scenario collision probability Pr(collision | i, s)
+		for (int a = 0; a < n_a; a++)
+		{
+			// Conditional probability of a prediction scenario is taken from a discrete uniform distribution
+			// over the number of prediction scenarios which corresponds to intention a, and is
+			// weighted by the corresponding intention probability
+			Pr_ps_i_conditional += Pr_a_i(a) / (double)ps_intention_count_i(a);
+		}
+		
 		for (int ps = 0; ps < n_ps[i]; ps++)
 		{
-			
-		}
+			Pr_c_i_conditional = P_c_i_ps(ps) * Pr_ps_i_conditional;
 
-		predicted_collision_risk_i.resize(n_ps[i]);
+			R_c_i(ps) = C_i(ps) * Pr_c_i_conditional;
+		}
+		
 	}
 }
 
@@ -1065,15 +1188,17 @@ bool PSBMPC::determine_transitional_cost_indicator(
 /****************************************************************************************
 *  Name     : calculate_collision_probabilities
 *  Function : Estimates collision probabilities for the own-ship and an obstacle i in
-*			  consideration
+*			  consideration. Can use a larger sample time than used in predicting
+*			  the vessel trajectories.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::calculate_collision_probabilities(
+void PSBMPC::calculate_instantaneous_collision_probabilities(
 	Eigen::MatrixXd &P_c_i,								// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const Obstacle_Data<Tracked_Obstacle> &data,		// In: Dynamic obstacle information
 	const int i, 										// In: Index of obstacle
-	const double dt 									// In: Sample time for estimation
+	const double dt, 									// In: Sample time for estimation
+	const int p_step                                    // In: Step between trajectory samples, matches the input prediction time step
 	)
 {
 	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
@@ -1083,10 +1208,10 @@ void PSBMPC::calculate_collision_probabilities(
 	double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
 
 	// Non-optimal temporary row-vector storage solution
-	Eigen::Matrix<double, 1, -1> P_c_i_row(P_i_p.cols());
+	Eigen::Matrix<double, 1, -1> P_c_i_row(std::round(P_i_p.cols() / p_step));
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		cpe.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt);
+		cpe.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
 
 		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
 	}		

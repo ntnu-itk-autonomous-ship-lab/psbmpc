@@ -207,7 +207,8 @@ public:
 		const Eigen::Matrix<double, 4, -1> &xs_i_p,
 		const Eigen::Matrix<double, 16, -1> &P_i_p,
 		const double d_safe_i,
-		const double dt);
+		const double dt,
+		const int p_step);
 };
 
 #endif

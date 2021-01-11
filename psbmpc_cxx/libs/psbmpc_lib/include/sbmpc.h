@@ -68,7 +68,7 @@ private:
 
 	double calculate_dynamic_obstacle_cost(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 
-	inline double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); }
+	inline double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) { return pars.K_coll * pow((v_1 - v_2).norm(), 2); }
 
 	double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 

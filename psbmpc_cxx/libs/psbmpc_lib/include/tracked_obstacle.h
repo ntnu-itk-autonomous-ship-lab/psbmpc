@@ -66,6 +66,9 @@ private:
 	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
 	Eigen::VectorXd ps_course_changes, ps_maneuver_times;
 
+	// Number of prediction scenarios corresponding to intention a = 1, 2, 3, ..., n_a
+	Eigen::VectorXd ps_intention_count;
+
 	void assign_data(const Tracked_Obstacle &to);
 	
 public:
@@ -96,6 +99,8 @@ public:
 
 	inline std::vector<Intention> get_ps_ordering() const { return ps_ordering; }
 
+	inline Eigen::VectorXd get_ps_intention_count() const { return ps_intention_count; }
+
 	// KF related methods
 	inline double get_duration_tracked() const { return duration_tracked; };
 
@@ -111,6 +116,8 @@ public:
 
 	// Trajectory prediction related methods
 	void resize_trajectories(const int n_samples);
+
+	inline Eigen::MatrixXd get_trajectory(const int ps) const { return xs_p[ps]; };
 
 	inline std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; };
 
@@ -219,7 +226,7 @@ public:
 		}
 	}
 
-	void prune_ps(std:vector<int> &ps_indices);
+	void prune_ps(const std::vector<int> &ps_indices);
 
 	void update(
 		const Eigen::VectorXd &xs_aug, 
