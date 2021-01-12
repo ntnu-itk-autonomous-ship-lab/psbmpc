@@ -143,7 +143,7 @@ void Tracked_Obstacle::initialize_prediction(
 	this->ps_maneuver_times = ps_maneuver_times;
 
 	int n_a = Pr_a.size();
-	ps_intention_count.resize(n_a);
+	ps_intention_count.resize(n_a); ps_intention_count.setZero();
 	
 	if (n_a == 1)	{ ps_intention_count(0) = 1; }
 	else // n_a = 3
@@ -156,6 +156,7 @@ void Tracked_Obstacle::initialize_prediction(
 			else if (ps_ordering[ps] == PM)	{ ps_intention_count(2) += 1; }
 		}
 	}	
+	std::cout << ps_intention_count.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -271,6 +272,7 @@ void Tracked_Obstacle::assign_data(
 
 	this->ps_ordering = to.ps_ordering;
 	this->ps_course_changes = to.ps_course_changes; this->ps_maneuver_times = to.ps_maneuver_times;
+	this->ps_intention_count = to.ps_intention_count;
 
 	this->kf.reset(new KF(*(to.kf)));
 	this->mrou.reset(new MROU(*(to.mrou)));
