@@ -127,7 +127,7 @@ private:
 	//====================================
 	// Other pre-allocated temporaries:
 	double P_c_est, P_c_CE, y_P_c, sum;
-	int n, n_samples, n_samples_traj, n_cols, k_j, k_j_;	
+	int n, n_samples, n_samples_traj, n_cols, k_j, k_j_, sample_count;	
 	Eigen::MatrixXd Sigma_inv;
 
 	double exp_val, log_val;
@@ -192,6 +192,8 @@ public:
 	CPE& operator=(const CPE &rhs);
 
 	void set_method(const CPE_Method cpe_method) { if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
+
+	void set_segment_discretization_time(const double dt_seg) { this->dt_seg = dt_seg; };
 
 	double get_segment_discretization_time() const { return dt_seg; };
 

@@ -156,6 +156,8 @@ void CPE::estimate_over_trajectories(
         const int p_step                                    // In: Step between trajectory samples, matches the input prediction time step
     )
 {
+    dt_seg = dt;
+
     n_samples_traj = xs_p.cols();
     n_seg_samples = std::round(dt_seg / dt) + 1;
 
@@ -164,7 +166,7 @@ void CPE::estimate_over_trajectories(
     initialize(xs_p.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i);
 
     v_os_prev.setZero(); v_i_prev.setZero();
-    k_j_ = 0; k_j = 0;
+    k_j_ = 0; k_j = 0; sample_count = 0;
     for (int k = 0; k < n_samples_traj; k += p_step)
     {
         switch(method)
@@ -176,27 +178,43 @@ void CPE::estimate_over_trajectories(
 
                 if (k > 0)
                 {   
-                    v_os_prev = xs_p.block<2, 1>(3, k - 1);
-                    v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, k - 1));
-                    v_i_prev = xs_i_p.block<2, 1>(2, k - 1);
+                    v_os_prev = xs_p.block<2, 1>(3, k - p_step);
+                    v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, k - p_step));
+                    v_i_prev = xs_i_p.block<2, 1>(2, k - p_step);
                 }
 
-                P_c_i(0, k) = CE_estimation(xs_p.block<2, 1>(0, k), xs_i_p.block<2, 1>(0, k), P_i_2D, v_os_prev, v_i_prev, dt);
+                P_c_i(0, k / p_step) = CE_estimation(xs_p.block<2, 1>(0, k), xs_i_p.block<2, 1>(0, k), P_i_2D, v_os_prev, v_i_prev, dt);
                 break;
-            case MCSKF4D :                
-                if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
+            case MCSKF4D :     
+                xs_os_seg.col(sample_count) = xs_p.col(k); 
+                xs_i_seg.col(sample_count) = xs_i_p.col(k);
+                P_i_seg.col(sample_count) = P_i_p.col(k);
+        
+                if (fmod(k / p_step, n_seg_samples - 1) == 0 && k > 0)
                 {
                     k_j_ = k_j; k_j = k;
-                    xs_os_seg = xs_p.block(0, k_j_, 6, n_seg_samples);
-                    xs_i_seg = xs_i_p.block(0, k_j_, 4, n_seg_samples);
 
-                    P_i_seg = P_i_p.block(0, k_j_, 16, n_seg_samples);
+                    /* std::cout << xs_os_seg.transpose() << std::endl;
+                    std::cout << xs_i_seg.transpose() << std::endl; */
 
-                    P_c_i(0, k_j_) = MCSKF4D_estimation(xs_os_seg, xs_i_seg, P_i_seg);
+                    P_c_i(0, k_j_ / p_step) = MCSKF4D_estimation(xs_os_seg, xs_i_seg, P_i_seg);
 
                     // Collision probability on this active segment are all equal
-                    P_c_i.block(0, k_j_, 1, n_seg_samples) = P_c_i(0, k_j_) * Eigen::MatrixXd::Ones(1, k_j - k_j_ + 1);
+                    P_c_i.block(0, k_j_ / p_step, 1, n_seg_samples) = P_c_i(0, k_j_ / p_step) * Eigen::MatrixXd::Ones(1, (k_j - k_j_) / p_step + 1);
                 }	
+
+                // Shift segment samples to the left if necessary
+                sample_count += 1;
+                if (sample_count == n_seg_samples)
+                {
+                    sample_count -= 1;
+                    for (int s = 1; s < n_seg_samples; s++)
+                    {
+                        xs_os_seg.col(s - 1) = xs_os_seg.col(s);
+                        xs_i_seg.col(s - 1) = xs_i_seg.col(s);
+                        P_i_seg.col(s - 1) = P_i_seg.col(s);
+                    }
+                }
                 break;
             default :
                 // Throw

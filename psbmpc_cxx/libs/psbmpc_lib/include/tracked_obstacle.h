@@ -67,7 +67,7 @@ private:
 	Eigen::VectorXd ps_course_changes, ps_maneuver_times;
 
 	// Number of prediction scenarios corresponding to intention a = 1, 2, 3, ..., n_a
-	Eigen::VectorXd ps_intention_count;
+	Eigen::VectorXi ps_intention_count;
 
 	void assign_data(const Tracked_Obstacle &to);
 	
@@ -99,7 +99,7 @@ public:
 
 	inline std::vector<Intention> get_ps_ordering() const { return ps_ordering; }
 
-	inline Eigen::VectorXd get_ps_intention_count() const { return ps_intention_count; }
+	inline Eigen::VectorXi get_ps_intention_count() const { return ps_intention_count; }
 
 	// KF related methods
 	inline double get_duration_tracked() const { return duration_tracked; };
