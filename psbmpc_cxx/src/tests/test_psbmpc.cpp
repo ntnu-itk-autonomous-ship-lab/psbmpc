@@ -70,7 +70,7 @@ int main(){
 //*****************************************************************************************************************
 // Obstacle sim setup
 //*****************************************************************************************************************
-	int n_obst = 3;
+	int n_obst = 1;
 	std::vector<int> ID(n_obst);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_obst);
@@ -134,8 +134,8 @@ int main(){
 		trajectory_covariances_i[i].col(0) = flatten(P_0);
 
 		Pr_a[i].resize(3);
-		Pr_a[i] << 1, 1, 1;
-		Pr_a[i] = Pr_a[0] / Pr_a[0].sum();
+		Pr_a[i] << 0.05, 0.9, 0.05;
+		Pr_a[i] = Pr_a[i] / Pr_a[i].sum();
 		/* Pr_a[i].resize(1);
 		Pr_a[i] << 1; */
 
@@ -144,15 +144,15 @@ int main(){
 		n_wps_i = 2;
 		waypoints_i[i].resize(2, n_wps_i); 
 		xs_i_0[i].resize(6);
-		if (i == 0)
+		if (i == 1)
 		{
 			//xs_i_0[i] << 5000, 0, 180 * DEG2RAD, 6, 0, 0;
-			xs_i_0[i] << 500, 300, -90 * DEG2RAD, 5, 0, 0;
+			xs_i_0[i] << 300, 150, -90 * DEG2RAD, 5, 0, 0;
 			waypoints_i[i] << 	xs_i_0[i](0), 500,
 								xs_i_0[i](1), -300;
 			u_d_i[i] = 5.0; chi_d_i[i] = -90 * DEG2RAD;
 		} 
-		else if (i == 1)
+		else if (i == 2)
 		{
 			xs_i_0[i] << 500, -300, 90 * DEG2RAD, 5, 0, 0;
 			waypoints_i[i] << 	xs_i_0[i](0), 500,
@@ -161,7 +161,7 @@ int main(){
 		}
 		else
 		{
-			xs_i_0[i] << 700, 100, 180 * DEG2RAD, 8, 0, 0;
+			xs_i_0[i] << 700, 0, 180 * DEG2RAD, 8, 0, 0;
 			waypoints_i[i] << 	xs_i_0[i](0), 0,
 								xs_i_0[i](1), 0;
 			u_d_i[i] = 8.0; chi_d_i[i] = 180 * DEG2RAD;

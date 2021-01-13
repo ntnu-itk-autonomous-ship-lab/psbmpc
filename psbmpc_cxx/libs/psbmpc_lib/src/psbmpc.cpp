@@ -100,7 +100,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Engine *ep = engOpen(NULL);
+	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -159,7 +159,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		map_P_traj_i = P_i_p;
 		engPutVariable(ep, "P_i_flat", P_traj_i);
-		for (int ps = 0; ps < n_ps[i] - 1; ps++)
+		for (int ps = 0; ps < n_ps[i]; ps++)
 		{
 			ps_mx = mxCreateDoubleScalar(ps + 1);
 			engPutVariable(ep, "ps", ps_mx);
@@ -170,7 +170,7 @@ void PSBMPC::calculate_optimal_offsets(
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
 	}
-	 */
+	
 	//===============================================================================================================
 	double cost;
 	Eigen::VectorXd cost_i(n_obst);
@@ -206,15 +206,15 @@ void PSBMPC::calculate_optimal_offsets(
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			/* P_c_i.resize(n_ps[i], n_samples);
-			calculate_instantaneous_collision_probabilities(P_c_i, data, i, pars.dt, 1); 
+			P_c_i.resize(n_ps[i], n_samples);
+			calculate_instantaneous_collision_probabilities(P_c_i, data, i, 3 * pars.dt, 1); 
 
-			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, data, i, pars.dt); */
+			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, data, i);
 
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
-			/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
+			p_P_c_i = mxGetPr(P_c_i_mx[i]);
 			Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 			map_P_c = P_c_i;
 
@@ -227,7 +227,7 @@ void PSBMPC::calculate_optimal_offsets(
 				ps_mx = mxCreateDoubleScalar(ps + 1);
 				engPutVariable(ep, "ps", ps_mx);
 				engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-			} */
+			}
 			//===============================================================================================================
 		}
 
@@ -259,14 +259,14 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
 		engPutVariable(ep, "k", k_s);
 
 		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
+		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
 		//===============================================================================================================
 	}
 
@@ -288,7 +288,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	//std::cout << "Cost at optimum : " << min_cost << std::endl;
 
-	/* engClose(ep);  */
+	engClose(ep); 
 }
 
 /****************************************************************************************
@@ -589,7 +589,7 @@ void PSBMPC::prune_obstacle_scenarios(
 {
 	int n_obst = data.obstacles.size();
 
-	int p_step = 1;   
+	int p_step = 3;   
 	double dt_r = (double)p_step * pars.dt;
 	int n_samples = std::round(pars.T / dt_r);
 
@@ -735,11 +735,23 @@ void PSBMPC::calculate_ps_collision_risks(
 	// Sort vector of ps indices to determine collision risk in sorted order
 	std::sort(indices.data(), indices.data() + n_ps[i], [&](const int index_lhs, const int index_rhs) { return R_c_i(index_lhs) > R_c_i(index_rhs); });
 	
-	std::cout << "Predicted conditional collision probability in decending order: " << std::endl;
+	std::cout << "PS collision probabilities in decending order: " << std::endl;
 	for (int j = 0; j < n_ps[i]; j++)
 	{
 		//std::cout << Pr_c_i_conditional(indices(j));
 		std::cout << P_c_i_ps(indices(j));
+		if (j < n_ps[i] - 1) 
+		{ 
+			std::cout << ", "; 
+		}
+	}
+	std::cout << std::endl;
+
+	std::cout << "Predicted conditional collision probability in decending order: " << std::endl;
+	for (int j = 0; j < n_ps[i]; j++)
+	{
+		std::cout << Pr_c_i_conditional(indices(j));
+		//std::cout << P_c_i_ps(indices(j));
 		if (j < n_ps[i] - 1) 
 		{ 
 			std::cout << ", "; 
