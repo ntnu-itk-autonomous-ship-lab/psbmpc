@@ -167,59 +167,67 @@ void CPE::estimate_over_trajectories(
 
     v_os_prev.setZero(); v_i_prev.setZero();
     k_j_ = 0; k_j = 0; sample_count = 0;
-    for (int k = 0; k < n_samples_traj; k += p_step)
+    for (int k = 0; k < n_samples_traj; k++)
     {
-        switch(method)
+        if (fmod(k, p_step) == 0)
         {
-            case CE :	
-                // If CE is used, (typically when n_cols = 1)
-                // The last column gives the current prediction time information
-                P_i_2D = reshape(P_i_p.col(k), 4, 4).block<2, 2>(0, 0);
+            switch(method)
+            {
+                case CE :	
+                    // If CE is used, (typically when n_cols = 1)
+                    // The last column gives the current prediction time information
+                    P_i_2D = reshape(P_i_p.col(k), 4, 4).block<2, 2>(0, 0);
 
-                if (k > 0)
-                {   
-                    v_os_prev = xs_p.block<2, 1>(3, k - p_step);
-                    v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, k - p_step));
-                    v_i_prev = xs_i_p.block<2, 1>(2, k - p_step);
-                }
-
-                P_c_i(0, k / p_step) = CE_estimation(xs_p.block<2, 1>(0, k), xs_i_p.block<2, 1>(0, k), P_i_2D, v_os_prev, v_i_prev, dt);
-                break;
-            case MCSKF4D :     
-                xs_os_seg.col(sample_count) = xs_p.col(k); 
-                xs_i_seg.col(sample_count) = xs_i_p.col(k);
-                P_i_seg.col(sample_count) = P_i_p.col(k);
-        
-                if (fmod(k / p_step, n_seg_samples - 1) == 0 && k > 0)
-                {
-                    k_j_ = k_j; k_j = k;
-
-                    /* std::cout << xs_os_seg.transpose() << std::endl;
-                    std::cout << xs_i_seg.transpose() << std::endl; */
-
-                    P_c_i(0, k_j_ / p_step) = MCSKF4D_estimation(xs_os_seg, xs_i_seg, P_i_seg);
-
-                    // Collision probability on this active segment are all equal
-                    P_c_i.block(0, k_j_ / p_step, 1, n_seg_samples) = P_c_i(0, k_j_ / p_step) * Eigen::MatrixXd::Ones(1, (k_j - k_j_) / p_step + 1);
-                }	
-
-                // Shift segment samples to the left if necessary
-                sample_count += 1;
-                if (sample_count == n_seg_samples)
-                {
-                    sample_count -= 1;
-                    for (int s = 1; s < n_seg_samples; s++)
-                    {
-                        xs_os_seg.col(s - 1) = xs_os_seg.col(s);
-                        xs_i_seg.col(s - 1) = xs_i_seg.col(s);
-                        P_i_seg.col(s - 1) = P_i_seg.col(s);
+                    if (k > 0)
+                    {   
+                        v_os_prev = xs_p.block<2, 1>(3, k - p_step);
+                        v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, k - p_step));
+                        v_i_prev = xs_i_p.block<2, 1>(2, k - p_step);
                     }
-                }
-                break;
-            default :
-                // Throw
-                break;
+                    //fix odd number going to k = 399 => k / p_step = 133 > index in P_c_i, rethink this rhitt...
+                    P_c_i(0, k) = CE_estimation(xs_p.block<2, 1>(0, k), xs_i_p.block<2, 1>(0, k), P_i_2D, v_os_prev, v_i_prev, dt);
+                    break;
+                case MCSKF4D :     
+                    xs_os_seg.col(sample_count) = xs_p.col(k); 
+                    xs_i_seg.col(sample_count) = xs_i_p.col(k);
+                    P_i_seg.col(sample_count) = P_i_p.col(k);
+            
+                    if (fmod(k / p_step, n_seg_samples - 1) == 0 && k > 0)
+                    {
+                        k_j_ = k_j; k_j = k;
+
+                        /* std::cout << xs_os_seg.transpose() << std::endl;
+                        std::cout << xs_i_seg.transpose() << std::endl; */
+
+                        P_c_i(0, k_j_ / p_step) = MCSKF4D_estimation(xs_os_seg, xs_i_seg, P_i_seg);
+
+                        // Collision probability on this active segment are all equal
+                        P_c_i.block(0, k_j_ / p_step, 1, n_seg_samples) = P_c_i(0, k_j_ / p_step) * Eigen::MatrixXd::Ones(1, (k_j - k_j_) / p_step + 1);
+                    }	
+
+                    // Shift segment samples to the left if necessary
+                    sample_count += 1;
+                    if (sample_count == n_seg_samples)
+                    {
+                        sample_count -= 1;
+                        for (int s = 1; s < n_seg_samples; s++)
+                        {
+                            xs_os_seg.col(s - 1) = xs_os_seg.col(s);
+                            xs_i_seg.col(s - 1) = xs_i_seg.col(s);
+                            P_i_seg.col(s - 1) = P_i_seg.col(s);
+                        }
+                    }
+                    break;
+                default :
+                    // Throw
+                    break;
+            }
         }
+        else
+        {
+            P_c_i(0, k) = P_c_i(0, k - 1);
+        }
+        
     }
 }
 
