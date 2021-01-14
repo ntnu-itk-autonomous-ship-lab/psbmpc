@@ -206,8 +206,9 @@ void PSBMPC::calculate_optimal_offsets(
 
 		for (int i = 0; i < n_obst; i++)
 		{
+			int p_stepp = 4;
 			P_c_i.resize(n_ps[i], n_samples);
-			calculate_instantaneous_collision_probabilities(P_c_i, data, i, 3 * pars.dt, 1); 
+			calculate_instantaneous_collision_probabilities(P_c_i, data, i, p_stepp * pars.dt, p_stepp); 
 
 			cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, data, i);
 
@@ -591,7 +592,7 @@ void PSBMPC::prune_obstacle_scenarios(
 
 	int p_step = 3;   
 	double dt_r = (double)p_step * pars.dt;
-	int n_samples = std::round(pars.T / dt_r);
+	int n_samples = std::round(pars.T / pars.dt);
 
 	Eigen::MatrixXd P_c_i;
 	std::vector<int> kept_ps_indices_i;
@@ -603,7 +604,7 @@ void PSBMPC::prune_obstacle_scenarios(
 		
 		calculate_instantaneous_collision_probabilities(P_c_i, data, i, dt_r, p_step);
 
-		calculate_ps_collision_probabilities(P_c_i_ps, P_c_i, i);
+		calculate_ps_collision_probabilities(P_c_i_ps, P_c_i, i, p_step);
 
 		calculate_ps_collision_consequences(C_i, data, i, dt_r, p_step);
 
@@ -621,7 +622,8 @@ void PSBMPC::prune_obstacle_scenarios(
 void PSBMPC::calculate_ps_collision_probabilities(
 	Eigen::VectorXd &P_c_i_ps,											// In/out: Vector of collision consequences, size n_ps_i x 1
 	const Eigen::MatrixXd &P_c_i,										// In: Predicted obstacle collision probabilities for all prediction scenarios, size n_ps[i] x n_samples
-	const int i															// In: Index of obstacle
+	const int i,														// In: Index of obstacle
+	const int p_step													// In: Step between trajectory samples
 	)
 {
 	P_c_i_ps.setZero();
@@ -630,7 +632,7 @@ void PSBMPC::calculate_ps_collision_probabilities(
 	int n_samples = P_c_i.cols();
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		for (int k = 0; k < n_samples; k++)
+		for (int k = 0; k < n_samples; k += p_step)
 		{
 			if (k == 0)	{ product = 1 - P_c_i(ps, k); }
 			else		{ product *= (1 - P_c_i(ps, k)); }
@@ -1266,7 +1268,7 @@ void PSBMPC::calculate_instantaneous_collision_probabilities(
 	// Increase safety zone by half the max obstacle dimension and ownship length
 	double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
 
-	int n_samples = P_i_p.cols() / p_step;
+	int n_samples = P_i_p.cols();
 	// Non-optimal temporary row-vector storage solution
 	Eigen::Matrix<double, 1, -1> P_c_i_row(n_samples);
 	for (int ps = 0; ps < n_ps[i]; ps++)
