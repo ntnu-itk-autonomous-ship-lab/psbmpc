@@ -6,7 +6,7 @@ xlimits_ne = [-1000 1000];
 xlim(ax1, xlimits_ne);
 ylim(ax1, ylimits_ne);
 
-ax2 = axes(fig, 'Position',[0.72 0.55 0.26 0.35]);
+ax2 = axes(fig, 'Position',[0.72 0.15 0.30 0.35]);
 
 
 %ylimits_d = [0 500];
@@ -24,7 +24,7 @@ hold(ax1, 'on'); hold(ax2, 'on');
 grid(ax1, 'on'); grid(ax2, 'on'); 
 
 ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]'); 
-ylabel(ax2,'Probability');  xlabel(ax2,'Sample'); 
+ylabel(ax2,'Probability');  xlabel(ax2,'Time [s]'); 
 
 th = 0 : 0.01 : 2.01 * pi;
 x_cs = cos(th); y_cs = sin(th);
