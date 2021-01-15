@@ -424,12 +424,14 @@ void PSBMPC::initialize_prediction(
 			waypoints_i.col(0) = xs_i_0.block<2, 1>(0, 0);
 			waypoints_i.col(1) = waypoints_i.col(0) + xs_i_0.block<2, 1>(2, 0) * pars.T;
 			pobstacles[i].set_waypoints(waypoints_i);
+
+			n_ps[i] += 1;
 		}
 	}
 
 	if (pars.obstacle_colav_on)
 	{
-		//predict_trajectories_jointly(static_obstacles);
+		predict_trajectories_jointly(static_obstacles);
 	}
 	
 	//
