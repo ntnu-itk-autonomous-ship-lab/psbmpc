@@ -25,6 +25,7 @@
 #include "cpe.h"
 
 #include <iostream>
+#include <iomanip>
 #include <chrono>
 #include "engine.h"
 
@@ -206,7 +207,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			int p_stepp = 4;
+			int p_stepp = 2;
 			P_c_i.resize(n_ps[i], n_samples);
 			calculate_instantaneous_collision_probabilities(P_c_i, data, i, p_stepp * pars.dt, p_stepp); 
 
@@ -368,7 +369,11 @@ void PSBMPC::initialize_prediction(
 	int n_obst = data.obstacles.size();
 	n_ps.resize(n_obst);
 	pobstacles.resize(n_obst);
-	int n_a = data.obstacles[0].get_intention_probabilities().size();
+	int n_a(0);
+	if (data.obstacles.size() > 0)
+	{
+		n_a = data.obstacles[0].get_intention_probabilities().size();
+	} 
 	
 	//***********************************************************************************
 	// Obstacle prediction initialization
@@ -590,7 +595,7 @@ void PSBMPC::prune_obstacle_scenarios(
 {
 	int n_obst = data.obstacles.size();
 
-	int p_step = 3;   
+	int p_step = 1;   
 	double dt_r = (double)p_step * pars.dt;
 	int n_samples = std::round(pars.T / pars.dt);
 
@@ -737,54 +742,28 @@ void PSBMPC::calculate_ps_collision_risks(
 	// Sort vector of ps indices to determine collision risk in sorted order
 	std::sort(indices.data(), indices.data() + n_ps[i], [&](const int index_lhs, const int index_rhs) { return R_c_i(index_lhs) > R_c_i(index_rhs); });
 	
-	std::cout << "PS collision probabilities in decending order: " << std::endl;
+	std::ios::fmtflags old_settings = std::cout.flags();
+	int old_precision = std::cout.precision(); 
+	int cw = 20;
+	//std::cout.setf(std::ios::fixed, std::ios::floatfield);
+	std::cout << std::fixed << std::setprecision(7);
+
+	std::cout << "-------------------------------------------------------------------------------------------------------------------------------" << std::endl;
+	std::cout << "Obstacle i = " << i << " prediction scenario information:" << std::endl;
+	// ps : Prediction scenario, R: Collision risk, C: Collision consequence,
+	// P_c^{i, ps}: Collision probability for that scenario
+	// Pr{C^i | ps, I^i}: Conditional collision probability for that scenario, on
+	// available information in I^i
+	
+	std::cout << "ps" << std::setw(cw - 4) << "R" << std::setw(cw - 2) << "C" << std::setw(cw + 6) << "P_c^{i, ps}" << std::setw(cw + 4) << "Pr{C^i | s, I^i}" << std::endl;
 	for (int j = 0; j < n_ps[i]; j++)
 	{
-		//std::cout << Pr_c_i_conditional(indices(j));
-		std::cout << P_c_i_ps(indices(j));
-		if (j < n_ps[i] - 1) 
-		{ 
-			std::cout << ", "; 
-		}
+		std::cout 	<< indices[j] << std::setw(cw) << R_c_i(indices(j)) << std::setw(cw) << C_i(indices(j)) << std::setw(cw) 
+					<< P_c_i_ps(indices(j)) << std::setw(cw) << Pr_c_i_conditional(indices(j)) << std::endl;
 	}
-	std::cout << std::endl;
-
-	std::cout << "Predicted conditional collision probability in decending order: " << std::endl;
-	for (int j = 0; j < n_ps[i]; j++)
-	{
-		std::cout << Pr_c_i_conditional(indices(j));
-		//std::cout << P_c_i_ps(indices(j));
-		if (j < n_ps[i] - 1) 
-		{ 
-			std::cout << ", "; 
-		}
-	}
-	std::cout << std::endl;
-
-	std::cout << "Predicted collision consequence in decending order: " << std::endl;
-	for (int j = 0; j < n_ps[i]; j++)
-	{
-		std::cout << C_i(indices(j));
-		if (j < n_ps[i] - 1) 
-		{ 
-			std::cout << ", "; 
-		}
-	}
-	std::cout << std::endl;
-
-	std::cout << "Predicted collision risk in decending order: " << std::endl;
-	for (int j = 0; j < n_ps[i]; j++)
-	{
-		std::cout << R_c_i(indices(j));
-		if (j < n_ps[i] - 1) 
-		{ 
-			std::cout << ", "; 
-		}
-	}
-	std::cout << std::endl;
-
-	std::cout << "and the corresponding ps indices:" << std::endl;
-	std::cout << indices.transpose() << std::endl;
+	std::cout.flags(old_settings);
+	std::cout << std::setprecision(old_precision);
+	std::cout << "-------------------------------------------------------------------------------------------------------------------------------" << std::endl;
 }
 
 /****************************************************************************************
@@ -1392,8 +1371,12 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 
 	std::vector<Intention> ps_ordering = data.obstacles[i].get_ps_ordering();
 	std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
-	double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
 
+	double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
+	if (Pr_CC_i < 0.0001) // Should not be allowed to be strictly 0
+	{
+		Pr_CC_i = 0.0001;
+	}
 	int num_sm_ps(0), num_pm_ps(0);
 	double sum_sm_weights(0.0), sum_pm_weights(0.0);
 	for (int ps = 0; ps < n_ps[i]; ps++)
