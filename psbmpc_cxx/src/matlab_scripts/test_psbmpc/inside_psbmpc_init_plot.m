@@ -6,7 +6,7 @@ xlimits_ne = [-1000 1000];
 xlim(ax1, xlimits_ne);
 ylim(ax1, ylimits_ne);
 
-ax2 = axes(fig, 'Position',[0.72 0.15 0.30 0.35]);
+ax2 = axes(fig, 'Position',[0.72 0.15 0.28 0.35]);
 
 
 %ylimits_d = [0 500];
