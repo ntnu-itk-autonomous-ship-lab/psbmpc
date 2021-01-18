@@ -611,7 +611,7 @@ void PSBMPC::prune_obstacle_scenarios(
 		
 		calculate_instantaneous_collision_probabilities(P_c_i, data, i, dt_r, p_step);
 
-		calculate_ps_collision_probabilities(P_c_i_ps, P_c_i, i, p_step);
+		calculate_ps_collision_probabilities(P_c_i_ps, P_c_i, i);
 
 		calculate_ps_collision_consequences(C_i, data, i, dt_r, p_step);
 
@@ -629,8 +629,7 @@ void PSBMPC::prune_obstacle_scenarios(
 void PSBMPC::calculate_ps_collision_probabilities(
 	Eigen::VectorXd &P_c_i_ps,											// In/out: Vector of collision consequences, size n_ps_i x 1
 	const Eigen::MatrixXd &P_c_i,										// In: Predicted obstacle collision probabilities for all prediction scenarios, size n_ps[i] x n_samples
-	const int i,														// In: Index of obstacle
-	const int p_step													// In: Step between trajectory samples
+	const int i															// In: Index of obstacle
 	)
 {
 	P_c_i_ps.setZero();
@@ -639,7 +638,7 @@ void PSBMPC::calculate_ps_collision_probabilities(
 	int n_samples = P_c_i.cols();
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		for (int k = 0; k < n_samples; k += p_step)
+		for (int k = 0; k < n_samples; k++)
 		{
 			if (k == 0)	{ product = 1 - P_c_i(ps, k); }
 			else		{ product *= (1 - P_c_i(ps, k)); }
