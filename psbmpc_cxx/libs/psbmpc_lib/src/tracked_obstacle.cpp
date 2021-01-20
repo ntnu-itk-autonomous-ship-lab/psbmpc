@@ -123,10 +123,8 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 
 /****************************************************************************************
 *  Name     : initialize_prediction
-*  Function : Sets up independent or dependent obstacle prediction, depending on if
-*		      colav is active or not. For the dependent obstacle prediction,
-*			  ps_course_changes and ps_maneuver_times are "dont care" variables, hence
-*		      two overloads.
+*  Function : Sets up independent and dependent obstacle prediction, depending on if
+*		      colav is active or not. 
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -135,7 +133,11 @@ void Tracked_Obstacle::initialize_prediction(
 	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
 	const Eigen::VectorXd &ps_maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios	
 	)
-{
+{	
+	// the size of ps_ordering is greater than the size of ps_course_changes and ps_maneuver_times
+	// when intelligent obstacle predictions are considered (joint predictions are active)
+	// Thus n_ps_i = length(ps_ordering) = n_ps_i_independent + n_ps_i_dependent
+	// where n_ps_i_independent = size(ps_course_changes)
 	this->ps_ordering = ps_ordering;
 	
 	this->ps_course_changes = ps_course_changes;

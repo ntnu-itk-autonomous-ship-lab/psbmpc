@@ -71,7 +71,7 @@ private:
 	friend class Obstacle_Manager;
 	friend class Joint_Prediction_Manager;
 
-	int n_cbs, n_M;
+	int n_cbs, n_M, n_r;
 
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;

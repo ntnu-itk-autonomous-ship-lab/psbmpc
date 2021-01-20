@@ -64,7 +64,7 @@ private:
 
 	void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
-	void set_up_independent_obstacle_prediction_variables(
+	void set_up_independent_obstacle_prediction(
 		std::vector<Intention> &ps_ordering,
 		Eigen::VectorXd &ps_course_changes,
 		Eigen::VectorXd &ps_maneuver_times,
@@ -79,7 +79,7 @@ private:
 
 	void calculate_ps_collision_consequences(Eigen::VectorXd &C_i, const Obstacle_Data<Tracked_Obstacle> &data, const int i, const double dt, const int p_step);
 
-	void calculate_ps_collision_risks(Eigen::VectorXd &R_c_i, const Eigen::VectorXd &C_i, const Eigen::VectorXd &P_c_i_ps, const Obstacle_Data<Tracked_Obstacle> &data, const int i);
+	void calculate_ps_collision_risks(Eigen::VectorXd &R_c_i, Eigen::VectorXi indices_i, const Eigen::VectorXd &C_i, const Eigen::VectorXd &P_c_i_ps, const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 
 	void predict_trajectories_jointly(const Eigen::Matrix<double, 4, -1>& static_obstacles);
 

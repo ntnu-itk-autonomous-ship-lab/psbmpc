@@ -50,6 +50,7 @@ int PSBMPC_Parameters::get_ipar(
 {
 	switch(index){
 		case i_ipar_n_M 				: return n_M; 
+		case i_ipar_n_r					: return n_r;
 		default : 
 			// Throw
 			return 0;
@@ -154,6 +155,7 @@ void PSBMPC_Parameters::set_par(
 		switch(index)
 		{
 			case i_ipar_n_M 				: n_M = value; break; 	// Should here resize offset matrices to make this change legal
+			case i_ipar_n_r					: n_r = value; break;
 			default : 
 				// Throw
 				break;
@@ -290,6 +292,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 		ipar_high[i] = 1e12;
 	}
 	ipar_low[i_ipar_n_M] = 1; ipar_high[i_ipar_n_M] = 10; 
+	ipar_low[i_ipar_n_r] = 1; ipar_high[i_ipar_n_r] = 20; 
 
 	//std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
 	//std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
@@ -331,6 +334,7 @@ void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 1;
+	n_r = 7;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);

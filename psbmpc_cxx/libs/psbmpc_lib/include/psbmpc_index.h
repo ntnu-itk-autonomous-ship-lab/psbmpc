@@ -31,7 +31,8 @@
 #define i_bpar_obstacle_colav_on	0
 
 // Indices for parameters of type int
-#define i_ipar_n_M					0
+#define i_ipar_n_M					0                           // Number of maneuvers considered in the PSBMPC
+#define i_ipar_n_r                  1                           // Max number of obstacle prediction scenarios to consider in the PSBMPC predictions
 
 // Indices for parameters of type double
 #define i_dpar_T 					0
