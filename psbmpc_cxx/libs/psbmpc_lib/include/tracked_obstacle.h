@@ -51,7 +51,7 @@ private:
 	std::vector<bool> mu;
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
-	// This is equal for all prediction scenarios including those with active COLAV (using MROU)
+	// This is equal for all prediction scenarios including those with active COLAV, using the OU-process
 	Eigen::MatrixXd P_p;  
 
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
@@ -63,10 +63,10 @@ private:
 	// Prediction scenario ordering, size n_ps x 1 of intentions
 	std::vector<Intention> ps_ordering;
 
-	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
+	// Course change ordering and maneuvering times for the independent prediction scenarios: n_ps_independent x 1
 	Eigen::VectorXd ps_course_changes, ps_maneuver_times;
 
-	// Number of prediction scenarios corresponding to intention a = 1, 2, 3, ..., n_a
+	// Number of prediction scenarios corresponding to intention a = 1, 2, 3, ..., n_a. Typically n_a = 3. 
 	Eigen::VectorXi ps_intention_count;
 
 	void assign_data(const Tracked_Obstacle &to);
@@ -144,9 +144,9 @@ public:
 	{
 		int n_samples = std::round(T / dt);
 		resize_trajectories(n_samples);
-
-		int n_ps = ps_ordering.size();
-		mu.resize(n_ps);
+		
+		int n_ps_independent = ps_course_changes.size();
+		mu.resize(n_ps_independent);
 		
 		Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
 		P_p.col(0) = flatten(kf->get_covariance());
@@ -154,7 +154,7 @@ public:
 		Eigen::Vector2d v_p_new, v_A, v_B, L_AB;
 		double chi_ps, t = 0, psi_A, d_AB;
 		bool have_turned;
-		for(int ps = 0; ps < n_ps; ps++)
+		for(int ps = 0; ps < n_ps_independent; ps++)
 		{
 			ownship_state_sl = ownship_state;
 

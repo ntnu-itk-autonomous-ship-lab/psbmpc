@@ -94,6 +94,8 @@ __device__ float CB_Cost_Functor::operator()(
 		pars->guidance_method, 
 		pars->T, pars->dt);
 
+	// 1.2: Joint prediction with the current control behaviour
+
 	//======================================================================================================================
 	// 2 : Cost calculation
 	// Not entirely optimal for loop configuration, but the alternative requires alot of memory, so test this first.
@@ -340,67 +342,6 @@ __device__ float CB_Cost_Functor::operator()(
 	//printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	return cost_cb;
 }
-
-/* __device__ float CB_Cost_Functor::operator()(
-	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 20, 1>> &cb_tuple		// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
-	)
-{
-	float cost = 0;
-
-	unsigned int cb_index = thrust::get<0>(cb_tuple);
-	TML::PDMatrix<float, 20, 1> offset_sequence = thrust::get<1>(cb_tuple);
-
-	int n_samples = round(pars->T / pars->dt);
-
-	TML::PDMatrix<float, MAX_N_PS, MAX_N_SAMPLES> P_c_i;
-	TML::PDMatrix<float, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1);
-
-	printf("here1 \n");
- 	ownship.predict_trajectory(
-		fdata->trajectory, 
-		offset_sequence, 
-		fdata->maneuver_times, 
-		fdata->u_d, 
-		fdata->chi_d, 
-		fdata->waypoints, 
-		pars->prediction_method, 
-		pars->guidance_method, 
-		pars->T, 
-		pars->dt);
-	printf("here2 \n");
-
-	printf("n_obst = %d \n", fdata->n_obst);
-	printf("dt = %f \n", pars->dt);
-
-	//CPE cpe(pars->cpe_method, fdata->n_obst, pars->dt);
-
-	//cpe.seed_prng(cb_index);
-
-	printf("here3 \n");
-	
-	 for (int i = 0; i < fdata.n_obst; i++)
-	{
-		if (pars->obstacle_colav_on) { predict_trajectories_jointly(); }
-
-		P_c_i.resize(fdata.n_ps[i], n_samples);
-		calculate_collision_probabilities(P_c_i, i); 
-
-		cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i, offset_sequence);
-	}
-
-	cost += cost_i.max_coeff();
-
-	cost += calculate_grounding_cost();
-
-	cost += calculate_control_deviation_cost(offset_sequence);
-
-	cost += calculate_chattering_cost(offset_sequence); 
-	
-	
-
-	return cost;
-} */
-
  
 //=======================================================================================
 //	Private functions

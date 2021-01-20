@@ -26,12 +26,20 @@
 #include "Eigen/Dense"
 #include "tracked_obstacle.h"
 #include <memory>
+#include <assert.h>
 
 class Obstacle_SBMPC;
 
 class Prediction_Obstacle : public Obstacle
 {
 private:
+
+	// Intention of this obstacle when behaving intelligently
+	Intention a_p;
+
+	// Indicator of whether or not the prediction obstacle breaches COLREGS in
+	// the joint prediction currently considered
+	bool mu; 
 
 	Eigen::Matrix4d A_CV;
 
@@ -66,21 +74,28 @@ public:
 	Prediction_Obstacle& operator=(const Prediction_Obstacle &rhs);
 	Prediction_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
+	inline Intention get_intention() const { return a_p; }
+
+	inline bool get_COLREGS_breach_indicator() const { return mu; }
+
 	inline Eigen::Vector4d get_initial_state() const { return xs_0; }; 
-	inline Eigen::Vector4d get_state(const int k) const { return xs_p.col(k); }; 
+	inline Eigen::Vector4d get_state(const int k) const { assert(k < xs_p.cols() && k >= 0); return xs_p.col(k); }; 
 
 	inline Eigen::MatrixXd get_trajectory() const { return xs_p; };
 	inline Eigen::MatrixXd get_predicted_trajectory() const { return xs_k_p; };
 
 	inline Eigen::Matrix<double, 2, -1> get_waypoints() const { return waypoints; }
 
-	inline void set_state(const Eigen::Vector4d &xs_k, const int k) { xs_p.col(k) = xs_k; }
+	inline void set_intention(const Intention a) {assert(a >= KCC && a <= PM); a_p = a; }
+
+	inline void set_state(const Eigen::Vector4d &xs_k, const int k) { assert(k < xs_p.cols() && k >= 0); xs_p.col(k) = xs_k; }
 
 	inline void set_waypoints(const Eigen::Matrix<double, 2, -1> &waypoints) { this->waypoints = waypoints; }
 
 	void predict_independent_trajectory(const double T, const double dt, const int k);
 
 	void update(const Eigen::Vector4d &xs, const int k);
+
 };
 
 #endif
