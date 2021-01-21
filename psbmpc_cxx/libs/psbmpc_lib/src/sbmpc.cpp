@@ -360,7 +360,7 @@ void SBMPC::initialize_prediction(
 		ps_maneuver_times_i.resize(1);
 		ps_maneuver_times_i(0) = 0;
 		
-		data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
+		data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
 
 		data.obstacles[i].predict_independent_trajectories<SBMPC>(
 			pars.T, pars.dt, trajectory.col(0), *this);	

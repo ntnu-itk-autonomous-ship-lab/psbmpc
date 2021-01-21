@@ -230,7 +230,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 		chi_opt = 0; 	chi_m_last = chi_opt;
 	} 
 
-	std::cout << "Optimal offset sequence : ";
+	/* std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)
 	{
 		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
@@ -238,7 +238,7 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 	}
 	std::cout << std::endl;
 
-	std::cout << "Cost at optimum : " << min_cost << std::endl;
+	std::cout << "Cost at optimum : " << min_cost << std::endl; */
 }
 
 /****************************************************************************************

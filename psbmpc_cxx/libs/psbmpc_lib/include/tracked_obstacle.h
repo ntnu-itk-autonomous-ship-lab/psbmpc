@@ -123,7 +123,7 @@ public:
 
 	inline Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
 
-	void initialize_prediction(	
+	void initialize_independent_prediction(	
 		const std::vector<Intention> &ps_ordering,
 		const Eigen::VectorXd &ps_course_changes,
 		const Eigen::VectorXd &ps_maneuver_times);
@@ -144,9 +144,8 @@ public:
 	{
 		int n_samples = std::round(T / dt);
 		resize_trajectories(n_samples);
-		
+
 		int n_ps_independent = ps_course_changes.size();
-		mu.resize(n_ps_independent);
 		
 		Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
 		P_p.col(0) = flatten(kf->get_covariance());
@@ -226,7 +225,9 @@ public:
 		}
 	}
 
-	void prune_ps(const std::vector<int> &ps_indices);
+	void prune_ps(const Eigen::VectorXi &ps_indices);
+
+	void add_intelligent_prediction(const Prediction_Obstacle &po, const bool overwrite);
 
 	void update(
 		const Eigen::VectorXd &xs_aug, 
