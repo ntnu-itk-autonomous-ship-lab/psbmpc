@@ -78,12 +78,14 @@ void PSBMPC::calculate_optimal_offsets(
 
 	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
 
+	// Predict nominal trajectory first, assign as optimal if no need for
+	// COLAV, or use in the prediction initialization
 	for (int M = 0; M < pars.n_M; M++)
 	{
-		opt_offset_sequence(2 * M) = 1.0; opt_offset_sequence(2 * M + 1) = 0.0;
+		offset_sequence(2 * M) = 1.0; offset_sequence(2 * M + 1) = 0.0;
 	}
 	maneuver_times.setZero();
-	ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+	ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
@@ -181,10 +183,6 @@ void PSBMPC::calculate_optimal_offsets(
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
-		for (int j = 0; j < 129; j++)
-		{
-			increment_control_behaviour();
-		}
 		cost = 0;
 		//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
 		std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
@@ -202,7 +200,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		if (pars.obstacle_colav_on)
 		{ 
-			predict_trajectories_jointly(static_obstacles); 
+			predict_trajectories_jointly(data, static_obstacles, true); 
 		}
 
 		for (int i = 0; i < n_obst; i++)
@@ -419,21 +417,17 @@ void PSBMPC::initialize_prediction(
 				pobstacles[i].set_waypoints(waypoints_i);
 
 				n_ps[i] += 1;
-				// The intention for the obstacle intelligent prediction can be changed inside the MPC loop
-				// KCC is the default
-				pobstacles[i].set_intention(KCC);
-				ps_ordering_i.push_back(KCC); 
 			}
 
-			data.obstacles[i].initialize_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
+			data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
 
-			data.obstacles[i].predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), *this);
+			data.obstacles[i].predict_independent_trajectories<PSBMPC>(pars.T, pars.dt, trajectory.col(0), *this);
 		}
 	}
 
 	if (pars.obstacle_colav_on)
 	{
-		predict_trajectories_jointly(static_obstacles);
+		predict_trajectories_jointly(data, static_obstacles, false);
 	}
 	
 	//
@@ -605,6 +599,7 @@ void PSBMPC::prune_obstacle_scenarios(
 
 	Eigen::MatrixXd P_c_i;
 	Eigen::VectorXi sorted_ps_indices_i;
+	Eigen::VectorXi kept_ps_indices_i;
 	Eigen::VectorXd R_c_i, P_c_i_ps, C_i;
 	for (int i = 0; i < n_obst; i++)
 	{			
@@ -621,6 +616,18 @@ void PSBMPC::prune_obstacle_scenarios(
 		calculate_ps_collision_risks(R_c_i, sorted_ps_indices_i, C_i, P_c_i_ps, data, i);
 
 		std::cout << sorted_ps_indices_i.transpose() << std::endl;
+
+		// Keep only the n_r prediction scenarios with the highest collision risk
+		n_ps[i] = pars.n_r;
+		kept_ps_indices_i = sorted_ps_indices_i.block(0, 0, pars.n_r, 1);
+		std::cout << kept_ps_indices_i.transpose() << std::endl;
+		
+
+		// Sort indices of ps that are to be kept
+		std::sort(kept_ps_indices_i.data(), kept_ps_indices_i.data() + pars.n_r);
+		std::cout << kept_ps_indices_i.transpose() << std::endl;
+
+		data.obstacles[i].prune_ps(kept_ps_indices_i);
 	}
 }
 
@@ -722,7 +729,7 @@ void PSBMPC::calculate_ps_collision_consequences(
 *****************************************************************************************/
 void PSBMPC::calculate_ps_collision_risks(
 	Eigen::VectorXd &R_c_i,												// In/out: Vector of collision risks, size n_ps_i x 1
-	Eigen::VectorXi indices_i,											// In/out: Vector of indices for the ps, in decending order wrt collision risk, size n_ps_i x 1
+	Eigen::VectorXi &indices_i,											// In/out: Vector of indices for the ps, in decending order wrt collision risk, size n_ps_i x 1
 	const Eigen::VectorXd &C_i,											// In: Vector of collision consequences, size n_ps_i x 1
 	const Eigen::VectorXd &P_c_i_ps,									// In: Vector of collision probabilities, size n_ps_i x 1
 	const Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
@@ -788,12 +795,15 @@ void PSBMPC::calculate_ps_collision_risks(
 /****************************************************************************************
 *  Name     : predict_trajectories_jointly
 *  Function : Predicts the trajectory of the obstacles with an active COLAV system,  
-*		      considering the fixed current control behaviour
+*		      considering the fixed current control behaviour, and adds or overwrites
+*			  this information to the obstacle data structure
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::predict_trajectories_jointly(
-	const Eigen::Matrix<double, 4, -1>& static_obstacles							// In: Static obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
+	const Eigen::Matrix<double, 4, -1>& static_obstacles,		// In: Static obstacle information
+	const bool overwrite										// In: Flag to choose whether or not to add the first intelligent prediction to the data, or overwrite the previous
 	)
 {
 	int n_samples = trajectory.cols();
@@ -955,21 +965,17 @@ void PSBMPC::predict_trajectories_jointly(
 
 				mean_t = elapsed.count();
 
-				std::cout << "Obstacle_SBMPC time usage : " << mean_t << " milliseconds" << std::endl;
+				//std::cout << "Obstacle_SBMPC time usage : " << mean_t << " milliseconds" << std::endl;
 
 				jpm.update_obstacle_status(i, xs_i_p_transformed, k);
-				jpm.display_obstacle_information(i);
-
+				//jpm.display_obstacle_information(i);
 			}
 			u_c_i = u_d_i(i) * u_opt_i(i); chi_c_i = chi_d_i(i) + chi_opt_i(i);
-
-			
 
 			if (k < n_samples - 1)
 			{
 				xs_i_p_transformed = obstacle_ships[i].predict(xs_i_p_transformed, u_c_i, chi_c_i, pars.dt, pars.prediction_method);
 				
-
 				// Convert from X_i = [x, y, chi, U] to X_i = [x, y, Vx, Vy]
 				xs_i_p.block<2, 1>(0, 0) = xs_i_p_transformed.block<2, 1>(0, 0);
 				xs_i_p(2) = xs_i_p_transformed(3) * cos(xs_i_p_transformed(2));
@@ -1015,6 +1021,12 @@ void PSBMPC::predict_trajectories_jointly(
 
 		/* engEvalString(ep, "update_joint_pred_ownship_plot"); */
 		//============================================================================================
+	}
+
+	// Transfer intelligent trajectory information to the obstacle data
+	for (int i = 0; i < n_obst; i++)
+	{
+		data.obstacles[i].add_intelligent_prediction(pobstacles[i], overwrite);
 	}
 /* 
 	engEvalString(ep, "store_joint_pred_ownship_data");
@@ -1272,11 +1284,6 @@ void PSBMPC::calculate_instantaneous_collision_probabilities(
 {
 	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
 	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
-	Eigen::MatrixXd xs_i_colav_p;
-	if (pars.obstacle_colav_on)
-	{
-		xs_i_colav_p = pobstacles[i].get_trajectory();
-	}
 
 	// Increase safety zone by half the max obstacle dimension and ownship length
 	double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
@@ -1286,14 +1293,7 @@ void PSBMPC::calculate_instantaneous_collision_probabilities(
 	Eigen::Matrix<double, 1, -1> P_c_i_row(n_samples);
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		if (ps == n_ps[i] - 1 && pars.obstacle_colav_on) // Intelligent prediction is the last prediction scenario
-		{
-			cpe.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_colav_p, P_i_p, d_safe_i, dt, p_step);
-		}
-		else
-		{
-			cpe.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
-		}
+		cpe.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
 		
 		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
 	}		
@@ -1319,11 +1319,6 @@ double PSBMPC::calculate_dynamic_obstacle_cost(
 	int n_samples = trajectory.cols();
 	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
 	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
-	Eigen::MatrixXd xs_i_colav_p;
-	if (pars.obstacle_colav_on)
-	{
-		xs_i_colav_p = pobstacles[i].get_trajectory();
-	}
 
 	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 	double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);

@@ -79,9 +79,9 @@ private:
 
 	void calculate_ps_collision_consequences(Eigen::VectorXd &C_i, const Obstacle_Data<Tracked_Obstacle> &data, const int i, const double dt, const int p_step);
 
-	void calculate_ps_collision_risks(Eigen::VectorXd &R_c_i, Eigen::VectorXi indices_i, const Eigen::VectorXd &C_i, const Eigen::VectorXd &P_c_i_ps, const Obstacle_Data<Tracked_Obstacle> &data, const int i);
+	void calculate_ps_collision_risks(Eigen::VectorXd &R_c_i, Eigen::VectorXi &indices_i, const Eigen::VectorXd &C_i, const Eigen::VectorXd &P_c_i_ps, const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 
-	void predict_trajectories_jointly(const Eigen::Matrix<double, 4, -1>& static_obstacles);
+	void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1>& static_obstacles, const bool overwrite);
 
 	double find_time_of_passing(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 	//
