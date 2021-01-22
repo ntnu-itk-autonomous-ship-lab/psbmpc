@@ -50,17 +50,21 @@ private:
 	// while the duration lost may be reset if new measurements are aquired
 	float duration_tracked, duration_lost;
 
-	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: (n_ps + 1) x 1
-	// The extra plus one is for when the obstacle uses its own colav system
+	// Indicates whether the obstacle breaches COLREGS in a prediction scenario: size n_ps x 1
 	TML::PDMatrix<bool, MAX_N_PS, 1> mu;
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
 	// This is equal for all prediction scenarios including those with active COLAV (using MROU)
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> P_p;  
 
-	// Predicted state for each prediction scenario: (n_ps + 1) x n x n_samples, where n = 4
-	// The extra plus one prediction scenario is when the obstacle uses its own colav system
+	// Predicted state for each prediction scenario: size n_ps x n x n_samples, where n = 4
 	TML::PDMatrix<float, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_p;
+
+	// Prediction scenario ordering, size n_ps x 1 of intentions
+	TML::PDMatrix<Intention, 1, MAX_N_PS> ps_ordering;
+
+	// Number of prediction scenarios corresponding to intention a = 1, 2, 3, ..., n_a. Typically n_a = 3. 
+	TML::PDVector3i ps_intention_count;
 
 	__host__ void assign_data(const Cuda_Obstacle &co);
 	

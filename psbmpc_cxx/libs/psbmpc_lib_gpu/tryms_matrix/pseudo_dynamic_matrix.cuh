@@ -844,6 +844,17 @@ namespace TML
 	//=========================================================================================================
 	// TYPEDEFS
 	//=========================================================================================================
+	using PDMatrix2i = PDMatrix<int, 2, 2>;
+	using PDMatrix3i = PDMatrix<int, 3, 3>;
+	using PDMatrix4i = PDMatrix<int, 4, 4>;
+	using PDMatrix6i = PDMatrix<int, 6, 6>;
+
+	using PDVector2i = PDMatrix<int, 2, 1>;
+	using PDVector3i = PDMatrix<int, 3, 1>;
+	using PDVector4i = PDMatrix<int, 4, 1>;
+	using PDVector6i = PDMatrix<int, 6, 1>;
+	using PDVector16i = PDMatrix<int, 16, 1>;
+
 	using PDMatrix2d = PDMatrix<double, 2, 2>;
 	using PDMatrix3d = PDMatrix<double, 3, 3>;
 	using PDMatrix4d = PDMatrix<double, 4, 4>;

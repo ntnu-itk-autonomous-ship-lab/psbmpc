@@ -112,108 +112,34 @@ void Tracked_Obstacle::initialize_prediction(
 	const Eigen::VectorXd &ps_maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios	
 	)
 {
+	// the size of ps_ordering is greater than the size of ps_course_changes and ps_maneuver_times
+	// when intelligent obstacle predictions are considered (joint predictions are active)
+	// Thus n_ps_i = length(ps_ordering) = n_ps_i_independent + n_ps_i_dependent
+	// where n_ps_i_independent = size(ps_course_changes)
 	this->ps_ordering = ps_ordering;
-	
+
 	this->ps_course_changes = ps_course_changes;
 
 	this->ps_maneuver_times = ps_maneuver_times;
-}
 
-/****************************************************************************************
-*  Name     : predict_independent_trajectories
-*  Function : Predicts the obstacle trajectories for scenarios where the obstacle
-*			  does not take the own-ship into account. PSBMPC parameters needed 
-* 			  to determine if obstacle breaches cOLREGS (future: implement simple 
-*			  sbmpc class for obstacle which has the "determine COLREGS violation" function)
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void Tracked_Obstacle::predict_independent_trajectories(						
-	const double T, 											// In: Time horizon
-	const double dt, 											// In: Time step
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 			// In: State of own-ship to use for COLREGS penalization calculation
-	const double phi_AH,
-	const double phi_CR,
-	const double phi_HO,
-	const double phi_OT,
-	const double d_close,
-	const double d_safe
-	)
-{
-	int n_samples = std::round(T / dt);
-	resize_trajectories(n_samples);
+	int n_ps_independent = ps_ordering.size();
+	mu.resize(n_ps_independent);
 
-	int n_ps = ps_ordering.size();
-	mu.resize(n_ps);
+	int n_a = Pr_a.size();
+	ps_intention_count.resize(n_a); ps_intention_count.setZero();
 	
-	Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
-	P_p.col(0) = flatten(kf.get_covariance());
-
-	Eigen::Vector2d v_p_new, d_0i_p;
-	double chi_ps, t = 0;
-	bool have_turned;
-	for(int ps = 0; ps < n_ps; ps++)
+	if (n_a == 1)	{ ps_intention_count(0) = 1; }
+	else // n_a = 3
 	{
-		ownship_state_sl = ownship_state;
-		v_p(0) = kf.get_state()(2);
-		v_p(1) = kf.get_state()(3);
-		xs_p[ps].col(0) = kf.get_state();
+		ps_intention_count(0) = 1;
 		
-		have_turned = false;	
-		for(int k = 0; k < n_samples; k++)
+		for (int ps = 0; ps < n_ps_independent; ps++)
 		{
-			t = (k + 1) * dt;
-
-			// d_0i_p = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl; 
-
-			if (!mu[ps])
-			{
-				//mu[ps] = sbmpc->determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl);
-				mu[ps] = determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl, phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
-			}
-		
-			switch (ps_ordering[ps])
-			{
-				case KCC :	
-					break; // Proceed
-				case SM :
-					if (k == ps_maneuver_times[ps] && !have_turned)
-					{
-						chi_ps = atan2(v_p(1), v_p(0)); 
-						v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
-						v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
-						v_p = v_p_new;
-						have_turned = true;
-					}
-					break;
-				case PM : 
-					if (k == ps_maneuver_times[ps] && !have_turned)
-					{
-						chi_ps = atan2(v_p(1), v_p(0)); 
-						v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
-						v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
-						v_p = v_p_new;
-						have_turned = true;
-					}
-					break;
-				default :
-					// Throw invalid value
-					break;
-			}
-
-			if (k < n_samples - 1)
-			{
-				xs_p[ps].col(k + 1) = mrou.predict_state(xs_p[ps].col(k), v_p, dt);
-
-				if (ps == 0) P_p.col(k + 1) = flatten(mrou.predict_covariance(P_0, t));
-
-				// Propagate ownship assuming straight line trajectory
-				ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
-					dt * rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
-				ownship_state_sl.block<4, 1>(2, 0) = ownship_state_sl.block<4, 1>(2, 0);
-			}
+			if (ps_ordering[ps] == SM)		{ ps_intention_count(1) += 1; }
+			else if (ps_ordering[ps] == PM)	{ ps_intention_count(2) += 1; }
 		}
-	}
+	}	
+	std::cout << ps_intention_count.transpose() << std::endl;
 }
 
 /****************************************************************************************

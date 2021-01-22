@@ -351,6 +351,7 @@ void PSBMPC::increment_control_behaviour()
 		offset_sequence(2 * M) = pars.u_offsets[M](offset_sequence_counter(2 * M));
 	}
 }
+
 /****************************************************************************************
 *  Name     : initialize_prediction
 *  Function : Sets up the own-ship maneuvering times and number of prediction scenarios 

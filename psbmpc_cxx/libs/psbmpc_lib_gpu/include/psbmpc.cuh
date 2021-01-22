@@ -96,19 +96,12 @@ private:
 
 	void initialize_prediction(Obstacle_Data &data);
 
-	void set_up_independent_obstacle_prediction_variables(
+	void set_up_independent_obstacle_prediction(
 		std::vector<Intention> &ps_ordering,
 		Eigen::VectorXd &ps_course_changes,
 		Eigen::VectorXd &ps_maneuver_times,
-		const int n_turns,
-		const Obstacle_Data &odata,
-		const int i);
-
-	void set_up_dependent_obstacle_prediction_variables(
-		std::vector<Intention> &ps_ordering,
-		Eigen::VectorXd &ps_course_changes,
-		Eigen::VectorXd &ps_maneuver_times,
-		const Obstacle_Data &odata,
+		const double t_cpa_i,
+		const Obstacle_Data<Tracked_Obstacle> &data,
 		const int i);
 
 	double find_time_of_passing(const Obstacle_Data &odata, const int i);
