@@ -174,7 +174,7 @@ public:
 
 	// Temporary
 	__host__ __device__ void set_samples(const TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> &samples) { this->samples = samples; }
-
+	//
 
 	__host__ __device__ CPE() {}
 

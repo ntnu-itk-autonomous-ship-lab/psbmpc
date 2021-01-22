@@ -39,6 +39,8 @@ private:
 
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory;
 
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_colav_p;
+
 	//==============================================
 	// Pre-allocated temporaries
 	//==============================================
@@ -163,9 +165,10 @@ public:
 		Cuda_Obstacle *obstacles, 
 		CPE *cpe,
 		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,
+		TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_colav_p,
 		const int wp_c_0);
 
-	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; cpe = nullptr; trajectory = nullptr; }
+	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; cpe = nullptr; trajectory = nullptr; xs_i_colav_p = nullptr; }
 	
 	__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 	
