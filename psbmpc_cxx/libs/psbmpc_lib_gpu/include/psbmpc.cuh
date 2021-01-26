@@ -78,6 +78,8 @@ private:
 
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory_device_ptr;
 
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_colav_p_device_ptr;
+
 	CB_Functor_Pars *pars_device_ptr;
 
 	friend struct CB_Functor_Data;
@@ -94,7 +96,7 @@ private:
 
 	void increment_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
-	void initialize_prediction(Obstacle_Data &data);
+	void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
 	void set_up_independent_obstacle_prediction(
 		std::vector<Intention> &ps_ordering,
@@ -104,9 +106,9 @@ private:
 		const Obstacle_Data<Tracked_Obstacle> &data,
 		const int i);
 
-	double find_time_of_passing(const Obstacle_Data &odata, const int i);
+	double find_time_of_passing(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 
-	bool determine_colav_active(const Obstacle_Data &odata, const int n_static_obst);
+	bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
@@ -115,7 +117,7 @@ private:
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		const Obstacle_Data &odata);
+		const Obstacle_Data<Tracked_Obstacle> &data);
 
 	void clear_temporary_device_memory();
 
@@ -136,7 +138,7 @@ public:
 		const Eigen::Matrix<double, 2, -1> &waypoints,
 		const Eigen::Matrix<double, 6, 1> &ownship_state,
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		Obstacle_Data &odata);
+		Obstacle_Data<Tracked_Obstacle> &data);
 
 };
 

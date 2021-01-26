@@ -42,8 +42,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	const double dt 											// In: Sampling interval
 	) :
 	Obstacle(xs_aug, false), 
-	duration_tracked(0.0), duration_lost(0.0),
-	mrou(MROU())
+	duration_tracked(0.0), duration_lost(0.0)
 {
  	double psi = atan2(xs_aug(3), xs_aug(2));
 	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
@@ -53,7 +52,9 @@ Tracked_Obstacle::Tracked_Obstacle(
 
 	P_0 = reshape(P, 4, 4); 
 
-	this->kf = KF(xs_0, P_0, ID, dt, 0.0);
+	this->kf.reset(new KF(xs_0, P_0, ID, dt, 0.0));
+
+	this->mrou.reset(new MROU());
 
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	
@@ -72,9 +73,9 @@ Tracked_Obstacle::Tracked_Obstacle(
 
 	if(filter_on) 
 	{
-		this->kf.update(xs_0, duration_lost, dt);
+		this->kf->update(xs_0, duration_lost, dt);
 
-		this->duration_tracked = kf.get_time();
+		this->duration_tracked = kf->get_time();
 	}
 }
 
@@ -91,10 +92,10 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 	xs_p.resize(n_ps);
 	for(int ps = 0; ps < n_ps; ps++)
 	{
-		xs_p[ps].resize(4, n_samples); 	xs_p[ps].col(0) = kf.get_state();
+		xs_p[ps].resize(4, n_samples); 	xs_p[ps].col(0) = kf->get_state();
 	}
 	P_p.resize(16, n_samples);
-	P_p.col(0) 	= flatten(kf.get_covariance());
+	P_p.col(0) 	= flatten(kf->get_covariance());
 }
 
 /****************************************************************************************
@@ -160,17 +161,17 @@ void Tracked_Obstacle::update(
 	// data (xs_0 and P_0)
 	if (filter_on)
 	{
-		kf.update(xs_0, duration_lost, dt);
+		kf->update(xs_0, duration_lost, dt);
 
-		duration_tracked = kf.get_time();
+		duration_tracked = kf->get_time();
 
-		xs_0 = kf.get_state();
+		xs_0 = kf->get_state();
 
-		P_0 = kf.get_covariance();
+		P_0 = kf->get_covariance();
 	}
 	else
 	{ 
-		kf.reset(xs_0, P_0, 0.0); 
+		kf->reset(xs_0, P_0, 0.0); 
 	}
 }
 
@@ -196,17 +197,17 @@ void Tracked_Obstacle::update(
 	// data (xs_0 and P_0)
 	if (filter_on)
 	{
-		kf.update(xs_0, duration_lost, dt);
+		kf->update(xs_0, duration_lost, dt);
 
-		duration_tracked = kf.get_time();
+		duration_tracked = kf->get_time();
 
-		xs_0 = kf.get_state();
+		xs_0 = kf->get_state();
 
-		P_0 = kf.get_covariance();
+		P_0 = kf->get_covariance();
 	}
 	else
 	{ 
-		kf.reset(xs_0, P_0, 0.0); 
+		kf->reset(xs_0, P_0, 0.0); 
 	}
 	
 	this->Pr_a = Pr_a / Pr_a.sum(); 

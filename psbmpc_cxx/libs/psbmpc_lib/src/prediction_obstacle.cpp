@@ -183,6 +183,10 @@ void Prediction_Obstacle::assign_data(
 
 	this->x_offset = po.x_offset; this->y_offset = po.y_offset;
 
+	this->a_p = po.a_p;
+	
+	this->mu = po.mu;
+
 	this->xs_0 = po.xs_0;
 	this->P_0 = po.P_0;
 

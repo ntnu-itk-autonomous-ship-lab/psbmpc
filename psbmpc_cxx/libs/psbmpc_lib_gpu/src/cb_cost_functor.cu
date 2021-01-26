@@ -38,9 +38,10 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, one for all threads
 	CPE *cpe, 		 												// In: Device pointer to the collision probability estimator, one for each thread
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_colav_p,			// In: Device pointer to the intelligent obstacle trajectories, one for each thread
 	const int wp_c_0												// In: Waypoint counter for PSB-MPC Ownship object, to initialize the waypoint following in the thread own-ship objects properly
 	) :
-	pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe), trajectory(trajectory)
+	pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe), trajectory(trajectory), xs_i_colav_p(xs_i_colav_p)
 {
 	ownship.set_wp_counter(wp_c_0);
 }
@@ -98,7 +99,7 @@ __device__ float CB_Cost_Functor::operator()(
 
 	//======================================================================================================================
 	// 2 : Cost calculation
-	// Not entirely optimal for loop configuration, but the alternative requires alot of memory, so test this first.
+	// Not entirely optimal for loop configuration, but the alternative requires alot of memory
 	for (int i = 0; i < fdata->n_obst; i++)
 	{	
 		d_safe_i = pars->d_safe + 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length());

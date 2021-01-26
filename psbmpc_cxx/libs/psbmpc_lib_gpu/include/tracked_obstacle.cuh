@@ -23,6 +23,7 @@
 #define _TRACKED_OBSTACLE_CUH_
 
 #include <vector>
+#include <memory>
 #include "Eigen/Dense"
 
 #include "obstacle.cuh"
@@ -77,9 +78,9 @@ private:
 	
 public:
 
-	KF kf;
+	std::unique_ptr<KF> kf;
 
-	MROU mrou;
+	std::unique_ptr<MROU> mrou;
 
 	Tracked_Obstacle() {}
 

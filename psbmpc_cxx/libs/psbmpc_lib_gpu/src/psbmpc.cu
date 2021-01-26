@@ -105,7 +105,7 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
-	Obstacle_Data &odata													// In/Out: Dynamic obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
@@ -115,10 +115,10 @@ void PSBMPC::calculate_optimal_offsets(
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
-	int n_obst = odata.obstacles.size();
+	int n_obst = data.obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
-	bool colav_active = determine_colav_active(odata, n_static_obst);
+	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
 	{
 		u_opt = 1; 		u_m_last = u_opt;
@@ -126,17 +126,7 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 	
-	initialize_prediction(odata);
-
-	for (int i = 0; i < n_obst; i++)
-	{
-		if (!pars.obstacle_colav_on)
-		{
-			// PSBMPC parameters needed to determine if obstacle breaches COLREGS 
-			// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation" function)
-			odata.obstacles[i].predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), pars.phi_AH, pars.phi_CR, pars.phi_HO, pars.phi_OT, pars.d_close, pars.d_safe);
-		}
-	}
+	initialize_prediction(data, static_obstacles);
 
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
@@ -192,8 +182,8 @@ void PSBMPC::calculate_optimal_offsets(
 	{
 		P_c_i_mx[i] = mxCreateDoubleMatrix(n_ps[i], n_samples, mxREAL);
 
-		Eigen::MatrixXd P_i_p = odata.obstacles[i].get_trajectory_covariance();
-		std::vector<Eigen::MatrixXd> xs_i_p = odata.obstacles[i].get_trajectories();
+		Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
+		std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
 
 		i_mx = mxCreateDoubleScalar(i + 1);
 		engPutVariable(ep, "i", i_mx);
@@ -217,7 +207,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// Cost evaluation
 	//===============================================================================================================
-	set_up_temporary_device_memory(u_d, chi_d, waypoints, static_obstacles, odata);
+	set_up_temporary_device_memory(u_d, chi_d, waypoints, static_obstacles, data);
     
 	Eigen::VectorXd HL_0(n_obst); HL_0.setZero();
 	
@@ -611,13 +601,13 @@ void PSBMPC::set_up_independent_obstacle_prediction(
 *  Modified :
 *****************************************************************************************/
 double PSBMPC::find_time_of_passing(
-	const Obstacle_Data &odata,											// In: Dynamic obstacle information
+	const Obstacle_Data &data,											// In: Dynamic obstacle information
 	const int i 														// In: Index of relevant obstacle
 	)
 {
 	double t_obst_passed(1e12), t, psi_A, d_AB;
 	Eigen::VectorXd xs_A = trajectory.col(0);
-	Eigen::VectorXd xs_B = odata.obstacles[i].kf.get_state();
+	Eigen::VectorXd xs_B = data.obstacles[i].kf.get_state();
 	Eigen::Vector2d p_A, p_B, v_A, v_B, L_AB;
 	p_A(0) = xs_A(0); p_A(1) = xs_A(1); psi_A = xs_A(2);
 	v_A(0) = xs_A(3); v_A(1) = xs_A(4); 
@@ -669,22 +659,22 @@ double PSBMPC::find_time_of_passing(
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_colav_active(
-	const Obstacle_Data &odata,												// In: Dynamic obstacle information
+	const Obstacle_Data &data,												// In: Dynamic obstacle information
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
 	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
-	for (size_t i = 0; i < odata.obstacles.size(); i++)
+	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
-		d_0i(0) = odata.obstacles[i].kf.get_state()(0) - xs(0);
-		d_0i(1) = odata.obstacles[i].kf.get_state()(1) - xs(1);
+		d_0i(0) = data.obstacles[i].kf.get_state()(0) - xs(0);
+		d_0i(1) = data.obstacles[i].kf.get_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 
 		// If all obstacles are passed, even though inside colav range,
 		// then no need for colav
-		if (odata.IP_0[i]) 	{ colav_active = false; }
+		if (data.IP_0[i]) 	{ colav_active = false; }
 		else 				{ colav_active = true; }
 	}
 	colav_active = colav_active || n_static_obst > 0;
@@ -733,10 +723,10 @@ void PSBMPC::set_up_temporary_device_memory(
 	const double chi_d, 											// In: Own-ship course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,					// In: Own-ship waypoints to follow
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,			// In: Static obstacle information
-	const Obstacle_Data &odata 										// In: Dynamic obstacle information
+	const Obstacle_Data &data 										// In: Dynamic obstacle information
 	)
 {
-	int n_obst = odata.obstacles.size();
+	int n_obst = data.obstacles.size();
 
 	/* std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
 	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
@@ -762,7 +752,7 @@ void PSBMPC::set_up_temporary_device_memory(
 	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
     cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
 
-	CB_Functor_Data temporary_fdata(*this, u_d, chi_d, waypoints, static_obstacles, odata);
+	CB_Functor_Data temporary_fdata(*this, u_d, chi_d, waypoints, static_obstacles, data);
 
 	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Data failed.");
@@ -773,7 +763,7 @@ void PSBMPC::set_up_temporary_device_memory(
 	Cuda_Obstacle temporary_transfer_obstacle;
 	for (int i = 0; i < n_obst; i++)
 	{
-		temporary_transfer_obstacle = odata.obstacles[i];
+		temporary_transfer_obstacle = data.obstacles[i];
 
 		cudaMemcpy(&obstacles_device_ptr[i], &temporary_transfer_obstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
