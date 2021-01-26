@@ -27,6 +27,7 @@
 #include "obstacle_manager.h"
 #include "ownship.h"
 #include "obstacle.h"
+#include "mpc_cost.h"
 
 #include "Eigen/Dense"
 #include <vector>
@@ -58,47 +59,6 @@ private:
 
 	bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 
-	bool determine_transitional_cost_indicator(
-		const double psi_A, 
-		const double psi_B, 
-		const Eigen::Vector2d &L_AB, 
-		const double chi_m,
-		const Obstacle_Data<Tracked_Obstacle> &data,
-		const int i) const;
-
-	double calculate_dynamic_obstacle_cost(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
-
-	inline double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) { return pars.K_coll * pow((v_1 - v_2).norm(), 2); }
-
-	double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
-
-	// Methods dealing with control deviation cost
-	double calculate_control_deviation_cost();
-
-	inline double Delta_u(const double u_1, const double u_2) 		{ return pars.K_du * fabs(u_1 - u_2); }
-
-	inline double K_chi(const double chi)							{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); }
-
-	inline double Delta_chi(const double chi_1, const double chi_2) 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); }
-
-	//
-	double calculate_chattering_cost();
-	
-	// Methods dealing with geographical constraints
-	double calculate_grounding_cost(const Eigen::Matrix<double, 4, -1>& static_obstacles);
-
-    int find_triplet_orientation(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);                           
-
-    bool determine_if_on_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r);   
-
-    bool determine_if_behind(const Eigen::Vector2d &p_1, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2, const double d_to_line);                         
-
-    bool determine_if_lines_intersect(const Eigen::Vector2d &p_1, const Eigen::Vector2d &q_1, const Eigen::Vector2d &p_2, const Eigen::Vector2d &q_2);   
-
-    double distance_from_point_to_line(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2);                  
-
-    double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
-
 	//
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
@@ -106,14 +66,9 @@ public:
 
 	SBMPC_Parameters pars;
 
-	SBMPC();
+	MPC_Cost<SBMPC_Parameters> mpc_cost;
 
-	bool determine_COLREGS_violation(
-		const Eigen::Vector2d &v_A, 
-		const double psi_A, 
-		const Eigen::Vector2d &v_B,
-		const Eigen::Vector2d &L_AB, 
-		const double d_AB) const;
+	SBMPC();
 		
 	void calculate_optimal_offsets(
 		double &u_opt, 
