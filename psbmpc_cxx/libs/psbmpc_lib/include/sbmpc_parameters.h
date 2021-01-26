@@ -27,6 +27,7 @@
 #include <vector>
 
 class SBMPC;
+template <typename Parameters> class MPC_Cost;
 class Obstacle_SBMPC;
 class Obstacle_Manager;
 
@@ -35,6 +36,7 @@ class SBMPC_Parameters
 private:
 
 	friend class SBMPC;
+	friend class MPC_Cost<SBMPC_Parameters>;
 	friend class Obstacle_SBMPC;
 	friend class Obstacle_Manager;
 

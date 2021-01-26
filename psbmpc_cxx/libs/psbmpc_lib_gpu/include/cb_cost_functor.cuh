@@ -111,11 +111,6 @@ private:
 
 	__device__ inline void calculate_collision_probabilities(TML::PDMatrix<float, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, const int i, const unsigned int cb_index);
 
-	__device__ inline float calculate_dynamic_obstacle_cost(
-		const TML::PDMatrix<float, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, 
-		const int i, 
-		const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
-		const unsigned int cb_index);
 
 	__device__ inline float calculate_dynamic_obstacle_cost(
 		const float P_c_i_ps,

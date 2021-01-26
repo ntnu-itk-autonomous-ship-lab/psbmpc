@@ -26,20 +26,10 @@
 #include <vector>
 
 class PSBMPC;
+template <typename Parameters> class MPC_Cost;
 class Obstacle_Manager;
 class CB_Cost_Functor;
 
-/* enum Par_Type 
-{
-	BPAR,					// Boolean type parameter
-	IPAR,					// Integer type parameter
-	DPAR,					// Double type parameter
-	OPAR,					// Offset/control behaviour related parameter
-	EVPAR,					// Eigen::Vector parameter
-	CPEM,					// CPE_Method parameter
-	PREDM,					// Prediction_Method parameter
-	GUIDM					// Guidance_Method parameter
-}; */
 
 // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
@@ -68,6 +58,7 @@ class PSBMPC_Parameters
 private:
 
 	friend class PSBMPC;
+	friend class MPC_Cost<PSBMPC_Parameters>;
 	friend class Obstacle_Manager;
 	friend class CB_Functor_Pars;
 
