@@ -122,6 +122,8 @@ public:
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		Obstacle_Data<Tracked_Obstacle> &data);
 
+	void test() { mpc_cost.use(); }
+
 };
 
 #endif 
