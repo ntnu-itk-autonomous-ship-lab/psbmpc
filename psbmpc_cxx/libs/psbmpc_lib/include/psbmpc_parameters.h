@@ -26,6 +26,7 @@
 #include <vector>
 
 class PSBMPC;
+template <typename Parameters> class MPC_Cost;
 class Obstacle_Manager;
 class Joint_Prediction_Manager;
 
@@ -68,6 +69,7 @@ class PSBMPC_Parameters
 private:
 
 	friend class PSBMPC;
+	friend class MPC_Cost<PSBMPC_Parameters>;
 	friend class Obstacle_Manager;
 	friend class Joint_Prediction_Manager;
 

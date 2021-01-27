@@ -207,7 +207,7 @@ void PSBMPC::calculate_optimal_offsets(
 			P_c_i.resize(n_ps[i], n_samples);
 			calculate_instantaneous_collision_probabilities(P_c_i, data, i, p_stepp * pars.dt, p_stepp); 
 
-			//cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, P_c_i, data, i, ownship.get_length());
+			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, P_c_i, data, i, ownship.get_length());
 
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
@@ -231,11 +231,11 @@ void PSBMPC::calculate_optimal_offsets(
 
 		cost += cost_i.maxCoeff();
 
-		//cost += calculate_grounding_cost(trajectory, static_obstacles, ownship.get_length());
+		//cost += mpc_cost.calculate_grounding_cost(trajectory, static_obstacles, ownship.get_length());
 
-		//cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_m_last, chi_m_last);
+		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_m_last, chi_m_last);
 
-		//cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
+		cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
 
 
 		if (cost < min_cost) 
@@ -420,7 +420,7 @@ void PSBMPC::initialize_prediction(
 
 			data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
 
-			//data.obstacles[i].predict_independent_trajectories<PSBMPC>(pars.T, pars.dt, trajectory.col(0), *this);
+			data.obstacles[i].predict_independent_trajectories<PSBMPC>(pars.T, pars.dt, trajectory.col(0), *this);
 		}
 	}
 

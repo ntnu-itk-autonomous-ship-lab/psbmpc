@@ -72,6 +72,8 @@ private:
 
 public:
 
+	SBMPC_Parameters() {}
+
 	SBMPC_Parameters(const bool is_obstacle_sbmpc) { initialize_pars(is_obstacle_sbmpc); initialize_par_limits(); }
 
 	SBMPC_Parameters(std::string tuning_file); // Not implemented yet

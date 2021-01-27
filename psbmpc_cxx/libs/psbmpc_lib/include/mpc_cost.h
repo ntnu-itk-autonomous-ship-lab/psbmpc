@@ -53,7 +53,7 @@ private:
 
 public:
 
-    MPC_Cost();
+    MPC_Cost() {}
 
     MPC_Cost(const Parameters &pars) : pars(pars) {}
 
@@ -100,8 +100,6 @@ public:
 	double calculate_chattering_cost(const Eigen::VectorXd &offset_sequence, const Eigen::VectorXd &maneuver_times) const;
 
 	double calculate_grounding_cost(const Eigen::MatrixXd &trajectory, const Eigen::Matrix<double, 4, -1>& static_obstacles, const double ownship_length) const;
-
-	double use() const { for (int i = 0; i < pars.n_M; i++) { std::cout << pars.K_u << std::endl; }}
 };
 
 /****************************************************************************************
