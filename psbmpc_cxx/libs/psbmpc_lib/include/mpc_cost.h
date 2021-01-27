@@ -55,7 +55,7 @@ public:
 
     MPC_Cost();
 
-    MPC_Cost(const Parameters pars) : pars(pars) {}
+    MPC_Cost(const Parameters &pars) : pars(pars) {}
 
     bool determine_transitional_cost_indicator(
 		const double psi_A, 
@@ -101,6 +101,7 @@ public:
 
 	double calculate_grounding_cost(const Eigen::MatrixXd &trajectory, const Eigen::Matrix<double, 4, -1>& static_obstacles, const double ownship_length) const;
 
+	double use() const { for (int i = 0; i < pars.n_M; i++) { std::cout << pars.K_u << std::endl; }}
 };
 
 /****************************************************************************************

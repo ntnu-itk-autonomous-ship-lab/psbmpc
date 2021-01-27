@@ -31,6 +31,7 @@ class Obstacle_Manager;
 class CB_Cost_Functor;
 
 
+
 // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
 enum CPE_Method 
@@ -59,6 +60,7 @@ private:
 
 	friend class PSBMPC;
 	friend class MPC_Cost<PSBMPC_Parameters>;
+	//template <typename Parameters> friend class MPC_Cost;
 	friend class Obstacle_Manager;
 	friend class CB_Functor_Pars;
 

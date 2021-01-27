@@ -37,6 +37,7 @@ private:
 
 	friend class SBMPC;
 	friend class MPC_Cost<SBMPC_Parameters>;
+	//template <typename Parameters> friend class MPC_Cost;
 	friend class Obstacle_SBMPC;
 	friend class Obstacle_Manager;
 
