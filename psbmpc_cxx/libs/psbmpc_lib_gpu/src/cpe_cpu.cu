@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : cpe.cpp
+*  File name : cpe_cpu.cu
 *
-*  Function  : Class functions for the collision probability estimator
+*  Function  : Class functions for the CPU collision probability estimator
 *
 *  
 *            ---------------------
@@ -18,8 +18,8 @@
 *
 *****************************************************************************************/
 
-#include "cpe.h"
-#include "utilities.h"
+#include "cpe.cuh"
+#include "utilities.cuh"
 #include <iostream>
 
 /****************************************************************************************
@@ -28,7 +28,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-CPE::CPE(
+CPE_CPU::CPE_CPU(
     const CPE_Method cpe_method,                                    // In: Method to be used
     const double dt                                                 // In: Time step of calling function simulation environment
     ) :
@@ -73,8 +73,8 @@ CPE::CPE(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-CPE::CPE(
-    const CPE &other                                                // In: CPE object to copy
+CPE_CPU::CPE_CPU(
+    const CPE_CPU &other                                                // In: CPE object to copy
     )
 {
     assign_data(other);
@@ -86,8 +86,8 @@ CPE::CPE(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-CPE& CPE::operator=(
-    const CPE &rhs                                                  // In: Rhs CPE object to assign
+CPE_CPU& CPE_CPU::operator=(
+    const CPE_CPU &rhs                                                  // In: Rhs CPE object to assign
     )
 {
     if (this == &rhs)
@@ -107,7 +107,7 @@ CPE& CPE::operator=(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::initialize(
+void CPE_CPU::initialize(
     const Eigen::Matrix<double, 6, 1> &xs_os,                                   // In: Own-ship state vector
     const Eigen::Vector4d &xs_i,                                                // In: Obstacle i state vector
     const Eigen::VectorXd &P_i,                                                 // In: Obstacle i covariance flattened into n^2 x 1
@@ -146,7 +146,7 @@ void CPE::initialize(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::estimate_over_trajectories(
+void CPE_CPU::estimate_over_trajectories(
 		Eigen::Matrix<double, 1, -1> &P_c_i,                // In/out: Collision probability row vector: 1 x n_samples
 		const Eigen::Matrix<double, 6, -1> &xs_p,           // In: Ownship predicted trajectory
 		const Eigen::Matrix<double, 4, -1> &xs_i_p,         // In: Obstacle i predicted trajectory
@@ -231,8 +231,8 @@ void CPE::estimate_over_trajectories(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void CPE::assign_data(
-    const CPE &cpe                                                   // In: CPE object whose data to assign to *this
+void CPE_CPU::assign_data(
+    const CPE_CPU &cpe                                                   // In: CPE object whose data to assign to *this
 )
 {
     this->method = cpe.method;
@@ -277,7 +277,7 @@ void CPE::assign_data(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void CPE::resize_matrices()
+void CPE_CPU::resize_matrices()
 {
     switch (method)
     {
@@ -312,7 +312,7 @@ void CPE::resize_matrices()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-inline void CPE::update_L(
+inline void CPE_CPU::update_L(
     const Eigen::MatrixXd &in                                                     // In: Matrix in consideration
     )
 {
@@ -353,7 +353,7 @@ inline void CPE::update_L(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-inline void CPE::norm_pdf_log(
+inline void CPE_CPU::norm_pdf_log(
     Eigen::VectorXd &result,                                                    // In/out: Resulting vector of pdf values
     const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
     const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
@@ -380,7 +380,7 @@ inline void CPE::norm_pdf_log(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-inline void CPE::generate_norm_dist_samples(
+inline void CPE_CPU::generate_norm_dist_samples(
     const Eigen::VectorXd &mu,                                                  // In: Expectation of the MVN
     const Eigen::MatrixXd &Sigma                                                // In: Covariance of the MVN
     )
@@ -407,7 +407,7 @@ inline void CPE::generate_norm_dist_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::calculate_roots_2nd_order()
+void CPE_CPU::calculate_roots_2nd_order()
 {
     complex_roots = false;
 
@@ -440,7 +440,7 @@ void CPE::calculate_roots_2nd_order()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double CPE::produce_MCS_estimate(
+double CPE_CPU::produce_MCS_estimate(
 	const Eigen::Vector4d &xs_i,                                                // In: Obstacle state vector
 	const Eigen::Matrix4d &P_i,                                                 // In: Obstacle covariance
 	const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
@@ -468,7 +468,7 @@ double CPE::produce_MCS_estimate(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::determine_sample_validity_4D(
+void CPE_CPU::determine_sample_validity_4D(
     const Eigen::Vector2d &p_os_cpa,                                            // In: Position of own-ship at cpa
     const double t_cpa                                                          // In: Time to cpa
     )
@@ -515,7 +515,7 @@ void CPE::determine_sample_validity_4D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double CPE::MCSKF4D_estimation(
+double CPE_CPU::MCSKF4D_estimation(
 	const Eigen::MatrixXd &xs_os,                                               // In: Own-ship states for the active segment
     const Eigen::MatrixXd &xs_i,                                                // In: Obstacle i states for the active segment
     const Eigen::MatrixXd &P_i                                                  // In: Obstacle i covariance for the active segment
@@ -607,7 +607,7 @@ double CPE::MCSKF4D_estimation(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::determine_sample_validity_2D(
+void CPE_CPU::determine_sample_validity_2D(
 	const Eigen::Vector2d &p_os                                                // In: Own-ship position vector
     )
 {
@@ -630,7 +630,7 @@ void CPE::determine_sample_validity_2D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::determine_best_performing_samples(
+void CPE_CPU::determine_best_performing_samples(
     const Eigen::Vector2d &p_os,                                                    // In: Own-ship position vector
     const Eigen::Vector2d &p_i,                                                     // In: Obstacle i position vector
     const Eigen::Matrix2d &P_i_inv                                                  // In: Obstacle i positional inverse covariance
@@ -662,7 +662,7 @@ void CPE::determine_best_performing_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void CPE::update_importance_density()
+void CPE_CPU::update_importance_density()
 {
     mu_CE_prev = mu_CE;
     P_CE_prev = P_CE;
@@ -688,7 +688,7 @@ void CPE::update_importance_density()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-double CPE::CE_estimation(
+double CPE_CPU::CE_estimation(
 	const Eigen::Vector2d &p_os,                                                // In: Own-ship position vector
     const Eigen::Vector2d &p_i,                                                 // In: Obstacle i position vector
     const Eigen::Matrix2d &P_i,                                                 // In: Obstacle i positional covariance

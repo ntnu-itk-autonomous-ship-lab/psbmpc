@@ -31,20 +31,6 @@ Joint_Prediction_Manager::Joint_Prediction_Manager(
 	const int n_obst
 	) 
 {
-	width_arr[0] = 1; 		// Obstacle ID
-	width_arr[1] = 1;		// Obstacle SOG
-	width_arr[2] = 7; 		// Obstacle COG
-	width_arr[3] = 5;		// Obstacle R-BRG
-	width_arr[4] = 5; 		// Obstacle RNG
-	width_arr[5] = 2;		// Obstacle HL
-	width_arr[6] = 2; 		// Obstacle IP
-	width_arr[7] = 2;		// Obstacle AH
-	width_arr[8] = 2; 		// Obstacle SB
-	width_arr[9] = 2;		// Obstacle HO
-	width_arr[10] = 2; 		// Obstacle CRG
-	width_arr[11] = 2;		// Obstacle OTG
-	width_arr[12] = 2; 		// Obstacle OT
-
 	data.resize(n_obst);
 }
 

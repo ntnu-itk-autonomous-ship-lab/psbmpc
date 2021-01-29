@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : cpe.cu
+*  File name : cpe_gpu.cu
 *
-*  Function  : Class functions for the collision probability estimator
+*  Function  : Class functions for the GPU collision probability estimator
 *
 *  
 *            ---------------------
@@ -18,14 +18,9 @@
 *
 *****************************************************************************************/
 
-#include "psbmpc_defines.h"
 #include "cpe.cuh"
 #include "utilities.cuh"
-
-#include <thrust/device_vector.h>
 #include <stdio.h>
-#include <cuda.h>
-#include <curand_kernel.h>
 #include "assert.h"
 
 /****************************************************************************************
@@ -34,7 +29,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CPE::CPE(
+__host__ __device__ CPE_GPU::CPE_GPU(
     const CPE_Method cpe_method,                                    // In: Method to be used
     const float dt                                                 // In: Time step of calling function simulation environment
     ) :
@@ -84,7 +79,7 @@ __host__ __device__ CPE::CPE(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void CPE::initialize(
+__device__ void CPE_GPU::initialize(
     const TML::PDVector6f &xs_os,                                                     // In: Own-ship state vector
     const TML::PDVector4f &xs_i,                                                      // In: Obstacle i state vector
     const TML::PDVector16f &P_i,                                                      // In: Obstacle i covariance flattened into n^2 x 1
@@ -125,7 +120,7 @@ __device__ void CPE::initialize(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void CPE::estimate_over_trajectories(
+__device__ void CPE_GPU::estimate_over_trajectories(
 		TML::PDMatrix<float, 1, MAX_N_SAMPLES> &P_c_i,                              // In/out: Collision probability row vector: 1 x n_samples
 		const TML::PDMatrix<float, 6, MAX_N_SAMPLES> &xs_p,                         // In: Ownship predicted trajectory
 		const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &xs_i_p,                       // In: Obstacle i predicted trajectory
@@ -194,7 +189,7 @@ __device__ void CPE::estimate_over_trajectories(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void CPE::resize_matrices()
+__host__ __device__ void CPE_GPU::resize_matrices()
 {
     switch (method)
     {
@@ -227,7 +222,7 @@ __host__ __device__ void CPE::resize_matrices()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void CPE::update_L(
+__host__ __device__ void CPE_GPU::update_L(
     const TML::Matrix2f &in                                                     // In: Matrix in consideration
     )
 {
@@ -261,7 +256,7 @@ __host__ __device__ void CPE::update_L(
         } 
     } 
 }
-__host__ __device__ void CPE::update_L(
+__host__ __device__ void CPE_GPU::update_L(
     const TML::Matrix4f &in                                                     // In: Matrix in consideration
     )
 {
@@ -303,7 +298,7 @@ __host__ __device__ void CPE::update_L(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ inline void CPE::norm_pdf_log(
+__device__ inline void CPE_GPU::norm_pdf_log(
     TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result,                       // In/out: Resulting vector of pdf values
     const TML::Vector2d &mu,                                                  // In: Expectation of the MVN
     const TML::Matrix2d &Sigma                                                // In: Covariance of the MVN
@@ -333,7 +328,7 @@ __device__ inline void CPE::norm_pdf_log(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ inline void CPE::generate_norm_dist_samples(
+__device__ inline void CPE_GPU::generate_norm_dist_samples(
     const TML::Vector2f &mu,                                                  // In: Expectation of the MVN
     const TML::Matrix2f &Sigma                                                // In: Covariance of the MVN
     )
@@ -354,7 +349,7 @@ __device__ inline void CPE::generate_norm_dist_samples(
     samples = L * samples + mu;
 }
 
-__device__ inline void CPE::generate_norm_dist_samples(
+__device__ inline void CPE_GPU::generate_norm_dist_samples(
     const TML::Vector4f &mu,                                                  // In: Expectation of the MVN
     const TML::Matrix4f &Sigma                                                // In: Covariance of the MVN
     )
@@ -381,7 +376,7 @@ __device__ inline void CPE::generate_norm_dist_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void CPE::calculate_roots_2nd_order()
+__host__ __device__ void CPE_GPU::calculate_roots_2nd_order()
 {
     complex_roots = false;
 
@@ -414,7 +409,7 @@ __host__ __device__ void CPE::calculate_roots_2nd_order()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ float CPE::produce_MCS_estimate(
+__device__ float CPE_GPU::produce_MCS_estimate(
 	const TML::Vector4f &xs_i,                                                // In: Obstacle state vector
 	const TML::Matrix4f &P_i,                                                 // In: Obstacle covariance
 	const TML::Vector2f &p_os_cpa,                                            // In: Position of own-ship at cpa
@@ -442,7 +437,7 @@ __device__ float CPE::produce_MCS_estimate(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void CPE::determine_sample_validity_4D(
+__host__ __device__ void CPE_GPU::determine_sample_validity_4D(
     const TML::Vector2d &p_os_cpa,                                           // In: Position of own-ship at cpa
     const double t_cpa                                                       // In: Time to cpa
     )
@@ -489,7 +484,7 @@ __host__ __device__ void CPE::determine_sample_validity_4D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ float CPE::MCSKF4D_estimate(
+__device__ float CPE_GPU::MCSKF4D_estimate(
 	const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,                                               // In: Own-ship states for the active segment
     const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_i,                                                // In: Obstacle i states for the active segment
     const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i                                                 // In: Obstacle i covariance for the active segment
@@ -592,7 +587,7 @@ __device__ float CPE::MCSKF4D_estimate(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void CPE::determine_sample_validity_2D(
+__device__ void CPE_GPU::determine_sample_validity_2D(
 	const TML::Vector2d &p_os                                                // In: Own-ship position vector
     )
 {
@@ -619,7 +614,7 @@ __device__ void CPE::determine_sample_validity_2D(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void CPE::determine_best_performing_samples(
+__device__ void CPE_GPU::determine_best_performing_samples(
     const TML::Vector2d &p_os,                                                    // In: Own-ship position vector
     const TML::Vector2d &p_i,                                                     // In: Obstacle i position vector
     const TML::Matrix2d &P_i_inv                                                  // In: Obstacle i positional covariance
@@ -656,7 +651,7 @@ __device__ void CPE::determine_best_performing_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void CPE::update_importance_density(
+__device__ void CPE_GPU::update_importance_density(
     TML::Vector2f &mu_CE,                                                   // In/out: Expectation of the current importance density
     TML::Matrix2f &P_CE,                                                    // In/out: Covariance of the current importance density
     TML::Vector2f &mu_CE_prev,                                              // In/out: Expectation of the previous importance density
@@ -689,7 +684,7 @@ __device__ void CPE::update_importance_density(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ float CPE::CE_estimate(
+__device__ float CPE_GPU::CE_estimate(
 	const TML::Vector2f &p_os,                                                  // In: Own-ship position vector
     const TML::Vector2f &p_i,                                                   // In: Obstacle i position vector
     const TML::Matrix2f &P_i,                                                   // In: Obstacle i positional covariance

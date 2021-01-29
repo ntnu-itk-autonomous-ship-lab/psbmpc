@@ -238,22 +238,15 @@ void Obstacle_SBMPC::initialize_prediction(
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
-	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
-	Eigen::Vector2d p_cpa;
 	for (int i = 0; i < n_obst; i++)
 	{
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].get_state(k_0));
-
-		if (!obstacle_colav_on)
-		{
-			data.obstacles[i].predict_independent_trajectory(pars.T, pars.dt, k_0);
-		}
+		data.obstacles[i].predict_independent_trajectory(pars.T, pars.dt, k_0);
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
 	//***********************************************************************************
 	maneuver_times.resize(pars.n_M);
-	// First avoidance maneuver is always at t0
+	// First avoidance maneuver is always at t0, and n_M = 1 for Obstacle SBMPC
 	maneuver_times(0) = 0;
 	
 	//std::cout << maneuver_times.transpose() << std::endl;

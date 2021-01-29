@@ -32,7 +32,7 @@
 *  Modified :
 *****************************************************************************************/
 Tracked_Obstacle::Tracked_Obstacle(
-	const Eigen::VectorXd &xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
 	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
 	const double Pr_CC, 										// In: A priori COLREGS compliance probability
@@ -52,7 +52,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 
 	int n_samples = std::round(T / dt);
 
-	// n = 4 states in obstacle model for independent trajectories, using MROU
+	// n = 4 states in obstacle model for independent trajectory prediction, using MROU
 	xs_p.resize(1);
 	xs_p[0].resize(4, n_samples);
 

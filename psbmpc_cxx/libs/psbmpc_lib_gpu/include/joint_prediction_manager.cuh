@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : joint_prediction_manager.h
+*  File name : joint_prediction_manager.cuh
 *
 *  Function  : Header file for the prediction management interface used in the PSB-MPC
 *			   when considering dynamic obstacles with their own deliberative COLAV
@@ -23,8 +23,9 @@
 #ifndef _JOINT_PREDICTION_MANAGER_H_
 #define _JOINT_PREDICTION_MANAGER_H_
 
-#include "prediction_obstacle.h"
-#include "obstacle_manager.h"
+#include <thrust/device_vector.h>
+#include "prediction_obstacle.cuh"
+#include "obstacle_manager.cuh"
 #include "Eigen/Dense"
 #include <vector>
 #include <memory>
@@ -50,7 +51,7 @@ private:
 	*  Modified :
 	*****************************************************************************************/
 	template <class Parameter_Object>
-	void determine_situation_type(
+	__host__ __device__ void determine_situation_type(
 		ST& st_A,																// In/out: Situation type of vessel A
 		ST& st_B,																// In/out: Situation type of vessel B
 		const Parameter_Object &mpc_pars, 										// In: Parameters of the obstacle manager boss	
@@ -139,7 +140,7 @@ private:
 	*  Modified :
 	*****************************************************************************************/
 	template <class Parameter_Object>
-	void update_obstacles(
+	__host__ __device__ void update_obstacles(
 		const int i, 																		// In: Index of obstacle i to update data for				
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
 		const Eigen::Matrix<double, 7, -1> &obstacle_states, 								// In: Other dynamic obstacle states 
@@ -187,7 +188,7 @@ private:
 	*  Modified :
 	*****************************************************************************************/
 	template <class Parameter_Object>
-	void update_situation_type_and_transitional_variables(
+	__host__ __device__ void update_situation_type_and_transitional_variables(
 		const int i, 																		// In: Index of obstacle asking for a situational awareness update
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss, an Obstacle_SBMPC
 		const Eigen::Vector4d &obstacle_i_state,											// In: Current predicted time state of obstacle i
@@ -300,15 +301,15 @@ private:
 
 public:
 
-	Joint_Prediction_Manager(const int n_obst);
+	__host__ __device__ Joint_Prediction_Manager(const int n_obst);
 
-	~Joint_Prediction_Manager();
+	__host__ __device__ ~Joint_Prediction_Manager();
 
-	Obstacle_Data<Prediction_Obstacle>& get_data(int i) { return data[i]; };
+	__host__ __device__ Obstacle_Data<Prediction_Obstacle>& get_data(int i) { return data[i]; };
 
-	void update_obstacle_status(const int i, const Eigen::Vector4d &obstacle_i_state, const int k);
+	__host__ __device__ void update_obstacle_status(const int i, const Eigen::Vector4d &obstacle_i_state, const int k);
 
-	void display_obstacle_information(const int i);
+	__host__ __device__ void display_obstacle_information(const int i);
 
 	/****************************************************************************************
 	*  Name     : operator()
@@ -318,7 +319,7 @@ public:
 	*  Modified :
 	*****************************************************************************************/
 	template <class Parameter_Object>
-	void operator()(
+	__host__ __device__ void operator()(
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss, an Obstacle_SBMPC
 		const std::vector<Prediction_Obstacle> &pobstacles, 								// In: Vector of Prediction Obstacles
 		const Eigen::VectorXd &xs_os_aug_k, 												// In: Augmented ownship state consisting of [x, y, Vx, Vy, l, w, ID] at the current predicted time

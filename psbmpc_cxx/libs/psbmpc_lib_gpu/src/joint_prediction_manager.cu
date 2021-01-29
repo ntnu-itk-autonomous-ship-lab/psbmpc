@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : obstacle_manager.cpp
+*  File name : joint_prediction_manager.cpp
 *
 *  Function  : Class functions for the obstacle management interface
 *	           ---------------------
@@ -16,7 +16,8 @@
 *
 *****************************************************************************************/
 
-#include "obstacle_manager.h"
+#include "joint_prediction_manager.cuh"
+#include "utilities.cuh"
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -27,13 +28,14 @@
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-Obstacle_Manager::Obstacle_Manager()
-{	
-	T_lost_limit = 15.0; 	// 15.0 s obstacle no longer relevant after this time
-	T_tracked_limit = 15.0; // 15.0 s obstacle still relevant if tracked for so long, choice depends on survival rate
-
-	obstacle_filter_on = false;
+__host__ __device__ Joint_Prediction_Manager::Joint_Prediction_Manager(
+	const int n_obst
+	) 
+{
+	data.resize(n_obst);
 }
+
+__host__ __device__ Joint_Prediction_Manager::~Joint_Prediction_Manager() = default;
 
 /****************************************************************************************
 *  Name     : update_obstacle_status
@@ -41,44 +43,46 @@ Obstacle_Manager::Obstacle_Manager()
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Manager::update_obstacle_status(
-	const Eigen::Matrix<double, 6, 1> &ownship_state						// In: Current time own-ship state
+__host__ __device__ void Joint_Prediction_Manager::update_obstacle_status(
+	const int i, 														// In: Index of obstacle asking for a status update
+	const TML::Vector4f &obstacle_i_state, 								// In: Current predicted time state of obstacle i
+	const int k															// In: Index of the current predicted time t_k
 	)
 {
-	int n_obst = data.obstacles.size();
-	data.obstacle_status.resize(13, n_obst);
+	int n_obst = data[i].obstacles.size();
+	data[i].obstacle_status.resize(13, n_obst);
 	double ID_0, RB_0, COG_0, SOG_0; 
-	Eigen::Vector2d d_0i;
-	Eigen::Vector4d xs_i;
+	TML::Vector2f d_ij;
+	TML::Vector4f xs_j;
 
-	data.HL_0.resize(n_obst); data.HL_0.setZero();
-	for(int i = 0; i < n_obst; i++)
+	data[i].HL_0.resize(n_obst); data[i].HL_0.setZero();
+	for(int j = 0; j < n_obst; j++)
 	{
-		xs_i = data.obstacles[i].kf->get_state();
+		xs_j = data[i].obstacles[j].get_state(k);
 
-		ID_0 = data.obstacles[i].get_ID();
+		ID_0 = data[i].obstacles[j].get_ID();
 		
-		d_0i = (xs_i.block<2, 1>(0, 0) - ownship_state.block<2, 1>(0, 0));
+		d_ij = (xs_j.get_block<2, 1>(0, 0) - obstacle_i_state.get_block<2, 1>(0, 0));
 
-		COG_0 = atan2(xs_i(3), xs_i(2));
+		COG_0 = atan2(xs_j(3), xs_j(2));
 
-		SOG_0 = xs_i.block<2, 1>(2, 0).norm();
+		SOG_0 = xs_j.get_block<2, 1>(2, 0).norm();
 
-		RB_0 = angle_difference_pmpi(atan2(d_0i(1), d_0i(0)), ownship_state(2));
+		RB_0 = angle_difference_pmpi(atan2(d_ij(1), d_ij(0)), obstacle_i_state(2));
 
-		data.obstacle_status.col(i) << ID_0, 											// Obstacle ID
+		data[i].obstacle_status.col(j) << ID_0, 										// Obstacle ID
 								  SOG_0, 												// Speed over ground of obstacle
 								  wrap_angle_to_02pi(COG_0) * RAD2DEG, 					// Course over ground of obstacle
 								  RB_0 * RAD2DEG, 										// Relative bearing
-								  d_0i.norm(),											// Range
-								  data.HL_0[i], 										// Hazard level of obstacle at optimum
-								  data.IP_0[i], 										// If obstacle is passed by or not 
-								  data.AH_0[i], 										// If obstacle is ahead or not
-								  data.S_TC_0[i], 										// If obstacle is starboard or not
-								  data.H_TC_0[i],										// If obstacle is head on or not
-								  data.X_TC_0[i],										// If crossing situation or not
-								  data.O_TC_0[i],										// If ownship overtakes obstacle or not
-								  data.Q_TC_0[i];										// If obstacle overtakes ownship or not
+								  d_ij.norm(),											// Range
+								  data[i].HL_0[j], 										// Hazard level of obstacle at optimum
+								  data[i].IP_0[j], 										// If obstacle is passed by or not 
+								  data[i].AH_0[j], 										// If obstacle is ahead or not
+								  data[i].S_TC_0[j], 									// If obstacle is starboard or not
+								  data[i].H_TC_0[j],									// If obstacle is head on or not
+								  data[i].X_TC_0[j],									// If crossing situation or not
+								  data[i].O_TC_0[j],									// If ownship overtakes obstacle or not
+								  data[i].Q_TC_0[j];									// If obstacle overtakes ownship or not
 	}
 }
 
@@ -88,7 +92,9 @@ void Obstacle_Manager::update_obstacle_status(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Manager::display_obstacle_information() 			
+__host__ __device__ void Joint_Prediction_Manager::display_obstacle_information(
+	const int i 														// In: Index of obstacle asking for information display
+	) 			
 {
 	std::ios::fmtflags old_settings = std::cout.flags();
 	int old_precision = std::cout.precision(); 
@@ -99,17 +105,17 @@ void Obstacle_Manager::display_obstacle_information()
 	std::cout << "        Obstacle information:" << std::endl;
 	//std::cout << "ID   SOG   COG   R-BRG   RNG   HL   IP   AH   SB   HO   CRG   OTG   OT" << std::endl;
 
-	for (int j = 0; j < data.obstacle_status.rows(); j++)
+	for (int j = 0; j < data[i].obstacle_status.rows(); j++)
 	{
 		std::cout << std::setw(10) << status_str[j];
 	}
 	std::cout << "\n";
 
-	for (size_t j = 0; j < data.obstacles.size(); j++)
+	for (size_t j = 0; j < data[i].obstacles.size(); j++)
 	{
-		for (int k = 0; k < data.obstacle_status.rows(); k++)
+		for (int k = 0; k < data[i].obstacle_status.rows(); k++)
 		{
-			std::cout << std::setw(10)  << data.obstacle_status(k, j);
+			std::cout << std::setw(10)  << data[i].obstacle_status(k, j);
 		}
 		std::cout << std::endl;
 	}

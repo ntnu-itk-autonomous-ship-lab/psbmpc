@@ -24,6 +24,7 @@
 #define _PREDICTION_OBSTACLE_CUH_
 
 #include "psbmpc_defines.h"
+#include "obstacle_sbmpc.cuh"
 #include "tracked_obstacle.cuh"
 #include <assert.h>
 #include <thrust/device_vector.h>
@@ -55,49 +56,49 @@ private:
 	// In use when using the Obstacle_SBMPC
 	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints; 
 
-	void assign_data(const Prediction_Obstacle &po);
-	void assign_data(const Tracked_Obstacle &to);
+	__host__ __device__ void assign_data(const Prediction_Obstacle &po);
+	__host__ __device__ void assign_data(const Tracked_Obstacle &to);
 	
 public:
 
-	std::unique_ptr<Obstacle_SBMPC> sbmpc;
+	Obstacle_SBMPC sbmpc;
 
-	Prediction_Obstacle();
+	__host__ __device__ Prediction_Obstacle();
 
-	Prediction_Obstacle(const TML::PDMatrix<float, 1, 9> &xs_aug,	 
+	__host__ __device__ Prediction_Obstacle(const TML::PDMatrix<float, 1, 9> &xs_aug,	 
 			 const bool colav_on, 
 			 const double T, 
 			 const double dt);
 
-	Prediction_Obstacle(const Prediction_Obstacle &po);
-	Prediction_Obstacle(const Tracked_Obstacle &to);
+	__host__ __device__ Prediction_Obstacle(const Prediction_Obstacle &po);
+	__host__ __device__ Prediction_Obstacle(const Tracked_Obstacle &to);
 
-	~Prediction_Obstacle();
+	__host__ __device__ ~Prediction_Obstacle();
 
-	Prediction_Obstacle& operator=(const Prediction_Obstacle &rhs);
-	Prediction_Obstacle& operator=(const Tracked_Obstacle &rhs);
+	__host__ __device__ Prediction_Obstacle& operator=(const Prediction_Obstacle &rhs);
+	__host__ __device__ Prediction_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
-	inline Intention get_intention() const { return a_p; }
+	__host__ __device__ inline Intention get_intention() const { return a_p; }
 
-	inline bool get_COLREGS_breach_indicator() const { return mu; }
+	__host__ __device__ inline bool get_COLREGS_breach_indicator() const { return mu; }
 
-	inline TML::Vector4f get_initial_state() const { return xs_0; }; 
-	inline TML::Vector4f get_state(const int k) const { assert(k < xs_p.get_cols() && k >= 0); return xs_p.get_col(k); }; 
+	__host__ __device__ inline TML::Vector4f get_initial_state() const { return xs_0; }; 
+	__host__ __device__ inline TML::Vector4f get_state(const int k) const { assert(k < xs_p.get_cols() && k >= 0); return xs_p.get_col(k); }; 
 
-	inline TML::PDMatrix<float, 4, MAX_N_SAMPLES> get_trajectory() const { return xs_p; };
-	inline TML::PDMatrix<float, 4, MAX_N_SAMPLES> get_predicted_trajectory() const { return xs_k_p; };
+	__host__ __device__ inline TML::PDMatrix<float, 4, MAX_N_SAMPLES> get_trajectory() const { return xs_p; };
+	__host__ __device__ inline TML::PDMatrix<float, 4, MAX_N_SAMPLES> get_predicted_trajectory() const { return xs_k_p; };
 
-	inline TML::PDMatrix<float, 2, MAX_N_WPS> get_waypoints() const { return waypoints; }
+	__host__ __device__ inline TML::PDMatrix<float, 2, MAX_N_WPS> get_waypoints() const { return waypoints; }
 
-	inline void set_intention(const Intention a) {assert(a >= KCC && a <= PM); a_p = a; }
+	__host__ __device__ inline void set_intention(const Intention a) {assert(a >= KCC && a <= PM); a_p = a; }
 
-	inline void set_state(const TML::Vector4f &xs_k, const int k) { assert(k < xs_p.get_cols() && k >= 0); xs_p.get_col(k) = xs_k; }
+	__host__ __device__ inline void set_state(const TML::Vector4f &xs_k, const int k) { assert(k < xs_p.get_cols() && k >= 0); xs_p.get_col(k) = xs_k; }
 
-	inline void set_waypoints(const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints) { this->waypoints = waypoints; }
+	__host__ __device__ inline void set_waypoints(const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints) { this->waypoints = waypoints; }
 
-	void predict_independent_trajectory(const double T, const double dt, const int k);
+	__host__ __device__ void predict_independent_trajectory(const double T, const double dt, const int k);
 
-	void update(const TML::Vector4f &xs, const int k);
+	__host__ __device__ void update(const TML::Vector4f &xs, const int k);
 };
 
 #endif
