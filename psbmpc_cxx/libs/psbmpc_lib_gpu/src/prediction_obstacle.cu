@@ -32,9 +32,9 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Prediction_Obstacle::Prediction_Obstacle() = default;
+__host__ __device__ Prediction_Obstacle::Prediction_Obstacle() = default;
 
-Prediction_Obstacle::Prediction_Obstacle(
+__host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 	const TML::PDMatrix<float, 1, 9>& xs_aug, 					// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	const double T, 											// In: Prediction horizon

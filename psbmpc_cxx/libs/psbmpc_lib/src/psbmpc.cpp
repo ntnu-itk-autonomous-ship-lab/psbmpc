@@ -44,6 +44,8 @@ PSBMPC::PSBMPC()
 	mpc_cost = MPC_Cost<PSBMPC_Parameters>(pars);
 
 	chi_m_last = 0; u_m_last = 1;
+
+	use_joint_prediction = true;
 }
 
 /****************************************************************************************
@@ -178,6 +180,7 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::MatrixXd P_c_i;
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	min_cost = 1e12;
+	int p_step_cpe = 2;
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
@@ -196,16 +199,16 @@ void PSBMPC::calculate_optimal_offsets(
 			pars.T, 
 			pars.dt);
 
-		if (pars.obstacle_colav_on)
+		if (use_joint_prediction)
 		{ 
 			predict_trajectories_jointly(data, static_obstacles, true); 
 		}
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			int p_stepp = 2;
+			
 			P_c_i.resize(n_ps[i], n_samples);
-			calculate_instantaneous_collision_probabilities(P_c_i, data, i, p_stepp * pars.dt, p_stepp); 
+			calculate_instantaneous_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
 
 			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, P_c_i, data, i, ownship.get_length());
 
@@ -592,19 +595,21 @@ void PSBMPC::prune_obstacle_scenarios(
 {
 	int n_obst = data.obstacles.size();
 
-	int p_step = 1;   
+	int p_step = 2;   
 	double dt_r = (double)p_step * pars.dt;
 	int n_samples = std::round(pars.T / pars.dt);
 
+	int count_joint_pred_scenarios = 0;
+
 	Eigen::MatrixXd P_c_i;
-	Eigen::VectorXi sorted_ps_indices_i;
+	Eigen::VectorXi risk_sorted_ps_indices_i;
 	Eigen::VectorXi kept_ps_indices_i;
 	Eigen::VectorXd R_c_i, P_c_i_ps, C_i;
 	for (int i = 0; i < n_obst; i++)
 	{			
 		P_c_i.resize(n_ps[i], n_samples); P_c_i_ps.resize(n_ps[i]); 
 		C_i.resize(n_ps[i]); R_c_i.resize(n_ps[i]);
-		sorted_ps_indices_i.resize(n_ps[i]);
+		risk_sorted_ps_indices_i.resize(n_ps[i]);
 		
 		calculate_instantaneous_collision_probabilities(P_c_i, data, i, dt_r, p_step);
 
@@ -612,21 +617,31 @@ void PSBMPC::prune_obstacle_scenarios(
 
 		calculate_ps_collision_consequences(C_i, data, i, dt_r, p_step);
 
-		calculate_ps_collision_risks(R_c_i, sorted_ps_indices_i, C_i, P_c_i_ps, data, i);
+		calculate_ps_collision_risks(R_c_i, risk_sorted_ps_indices_i, C_i, P_c_i_ps, data, i);
 
-		std::cout << sorted_ps_indices_i.transpose() << std::endl;
+		std::cout << risk_sorted_ps_indices_i.transpose() << std::endl;
 
 		// Keep only the n_r prediction scenarios with the highest collision risk
-		n_ps[i] = pars.n_r;
-		kept_ps_indices_i = sorted_ps_indices_i.block(0, 0, pars.n_r, 1);
-		std::cout << kept_ps_indices_i.transpose() << std::endl;
-		
+		kept_ps_indices_i = risk_sorted_ps_indices_i.block(0, 0, pars.n_r, 1);		
 
 		// Sort indices of ps that are to be kept
 		std::sort(kept_ps_indices_i.data(), kept_ps_indices_i.data() + pars.n_r);
 		std::cout << kept_ps_indices_i.transpose() << std::endl;
 
+		// Joint prediction/intelligent scenario is the last one in the original set
+		if (pars.obstacle_colav_on && (kept_ps_indices_i(pars.n_r - 1) == n_ps[i] - 1))
+		{
+			count_joint_pred_scenarios += 1;
+		}
+
+		n_ps[i] = pars.n_r;
 		data.obstacles[i].prune_ps(kept_ps_indices_i);
+	}
+
+	// All intelligent obstacle scenarios are in this case pruned away
+	if (!count_joint_pred_scenarios) 
+	{
+		use_joint_prediction = false;
 	}
 }
 
@@ -728,7 +743,7 @@ void PSBMPC::calculate_ps_collision_consequences(
 *****************************************************************************************/
 void PSBMPC::calculate_ps_collision_risks(
 	Eigen::VectorXd &R_c_i,												// In/out: Vector of collision risks, size n_ps_i x 1
-	Eigen::VectorXi &indices_i,											// In/out: Vector of indices for the ps, in decending order wrt collision risk, size n_ps_i x 1
+	Eigen::VectorXi &ps_indices_i,										// In/out: Vector of indices for the ps, in decending order wrt collision risk, size n_ps_i x 1
 	const Eigen::VectorXd &C_i,											// In: Vector of collision consequences, size n_ps_i x 1
 	const Eigen::VectorXd &P_c_i_ps,									// In: Vector of collision probabilities, size n_ps_i x 1
 	const Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
@@ -757,7 +772,7 @@ void PSBMPC::calculate_ps_collision_risks(
 	
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		indices_i[ps] = ps;
+		ps_indices_i[ps] = ps;
 
 		Pr_c_i_conditional(ps) = P_c_i_ps(ps) * Pr_ps_i_conditional;
 
@@ -765,7 +780,7 @@ void PSBMPC::calculate_ps_collision_risks(
 	}
 
 	// Sort vector of ps indices to determine collision risk in sorted order
-	std::sort(indices_i.data(), indices_i.data() + n_ps[i], [&](const int index_lhs, const int index_rhs) { return R_c_i(index_lhs) > R_c_i(index_rhs); });
+	std::sort(ps_indices_i.data(), ps_indices_i.data() + n_ps[i], [&](const int index_lhs, const int index_rhs) { return R_c_i(index_lhs) > R_c_i(index_rhs); });
 	
 	std::ios::fmtflags old_settings = std::cout.flags();
 	int old_precision = std::cout.precision(); 
@@ -783,8 +798,8 @@ void PSBMPC::calculate_ps_collision_risks(
 	std::cout << "ps" << std::setw(cw - 4) << "R" << std::setw(cw - 2) << "C" << std::setw(cw + 6) << "P_c^{i, ps}" << std::setw(cw + 4) << "Pr{C^i | s, I^i}" << std::endl;
 	for (int j = 0; j < n_ps[i]; j++)
 	{
-		std::cout 	<< indices_i[j] << std::setw(cw) << R_c_i(indices_i(j)) << std::setw(cw) << C_i(indices_i(j)) << std::setw(cw) 
-					<< P_c_i_ps(indices_i(j)) << std::setw(cw) << Pr_c_i_conditional(indices_i(j)) << std::endl;
+		std::cout 	<< ps_indices_i[j] << std::setw(cw) << R_c_i(ps_indices_i(j)) << std::setw(cw) << C_i(ps_indices_i(j)) << std::setw(cw) 
+					<< P_c_i_ps(ps_indices_i(j)) << std::setw(cw) << Pr_c_i_conditional(ps_indices_i(j)) << std::endl;
 	}
 	std::cout.flags(old_settings);
 	std::cout << std::setprecision(old_precision);

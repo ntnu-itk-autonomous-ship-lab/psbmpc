@@ -59,6 +59,8 @@ private:
 
 	std::vector<Prediction_Obstacle> pobstacles;
 
+	bool use_joint_prediction;
+
 	void reset_control_behaviour();
 
 	void increment_control_behaviour();
