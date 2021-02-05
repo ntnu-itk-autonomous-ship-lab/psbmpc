@@ -201,7 +201,7 @@ inline void calculate_cpa(
 	)
 {
 	double epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
-	double psi_A, psi_B;
+	double psi_A(0.0), psi_B(0.0);
 	Eigen::Vector2d v_A, v_B, p_A, p_B, L_AB;
 	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); p_A(0) = xs_A(0); p_A(1) = xs_A(1); }
@@ -211,6 +211,7 @@ inline void calculate_cpa(
 
 	// Check if the relative speed is too low, or if the vessels are moving away from each other with the current velocity vectors
 	double dt_incr = 0.1;
+
 	if ((v_A - v_B).norm() < epsilon || (p_A - p_B).norm() < ((p_A + v_A * dt_incr) - (p_B + v_B * dt_incr)).norm())
 	{
 		t_cpa = 0;
@@ -245,11 +246,11 @@ inline bool determine_COLREGS_violation(
 	const double d_safe
 	)
 {
-	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
+	bool B_is_starboard(false), A_is_overtaken(false), B_is_overtaken(false);
+	bool is_ahead(false), is_close(false), is_passed(false), is_head_on(false), is_crossing(false);
 
 	Eigen::Vector2d v_A, v_B, L_AB;
-	double psi_A, psi_B;
+	double psi_A(0.0), psi_B(0.0);
 	if (xs_A.size() == 6) { psi_A = xs_A(2); v_A(0) = xs_A(3); v_A(1) = xs_A(4); v_A = rotate_vector_2D(v_A, psi_A); }
 	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
 	

@@ -24,12 +24,13 @@
 #define _JOINT_PREDICTION_MANAGER_H_
 
 #include <thrust/device_vector.h>
-#include "prediction_obstacle.cuh"
+#include "psbmpc_defines.h"
 #include "obstacle_manager.cuh"
 #include "Eigen/Dense"
 #include <vector>
 #include <memory>
 #include <string>
+
 
 class Joint_Prediction_Manager
 {

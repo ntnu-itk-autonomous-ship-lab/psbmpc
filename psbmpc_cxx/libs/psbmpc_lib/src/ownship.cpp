@@ -151,6 +151,9 @@ void Ownship::update_guidance_references(
 	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
 {
+	// No surge modification
+	u_d = u_d;
+	
 	int n_wps = waypoints.cols();
 	double alpha, e;
 	Eigen::Vector2d d_next_wp, L_wp_segment;

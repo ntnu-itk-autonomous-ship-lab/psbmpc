@@ -37,9 +37,6 @@ private:
 	// Array of strings and precisions for the obstacle status states
 	std::vector<std::string> status_str = {"ID", "SOG", "COG", "RB", "RNG", "HL", "IP", "AH", "SB", "HO", "CRG", "OTG", "OT"};
 
-	// Array to determine width of print in status display
-	int width_arr[13];
-
 	// Need one obstacle data structure for each obstacle. Used in the Obstacle_SBMPC. 
 	std::vector<Obstacle_Data<Prediction_Obstacle>> data;
 

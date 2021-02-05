@@ -43,6 +43,10 @@ Prediction_Obstacle::Prediction_Obstacle(
 	sbmpc(new Obstacle_SBMPC())
 {
 	int n_samples = std::round(T / dt);
+
+	a_p = KCC;
+
+	mu = false;
 	
 	A_CV << 1, 0, dt, 0,
 		 0, 1, 0, dt,

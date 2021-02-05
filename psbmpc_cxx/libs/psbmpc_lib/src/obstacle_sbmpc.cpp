@@ -33,6 +33,7 @@ Obstacle_SBMPC::Obstacle_SBMPC() :
 {
 	offset_sequence_counter.resize(2 * pars.n_M);
 	offset_sequence.resize(2 * pars.n_M);
+	maneuver_times.resize(pars.n_M);
 
 	mpc_cost = MPC_Cost<SBMPC_Parameters>(pars);
 
@@ -129,12 +130,12 @@ void Obstacle_SBMPC::calculate_optimal_offsets(
 
 	initialize_prediction(data, k_0);
 
-	double cost;
+	double cost(0.0);
 	min_cost = 1e12;
 	reset_control_behavior();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
-		cost = 0;
+		cost = 0.0;
 
 		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 		ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
@@ -247,7 +248,7 @@ void Obstacle_SBMPC::initialize_prediction(
 	//***********************************************************************************
 	maneuver_times.resize(pars.n_M);
 	// First avoidance maneuver is always at t0, and n_M = 1 for Obstacle SBMPC
-	maneuver_times(0) = 0;
+	maneuver_times(0) = 0.0;
 	
 	//std::cout << maneuver_times.transpose() << std::endl;
 }
