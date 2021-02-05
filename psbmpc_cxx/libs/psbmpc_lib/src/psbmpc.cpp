@@ -202,10 +202,10 @@ void PSBMPC::calculate_optimal_offsets(
 			pars.T, 
 			pars.dt);
 
-		/* if (use_joint_prediction)
+		if (use_joint_prediction)
 		{ 
 			predict_trajectories_jointly(data, static_obstacles, true); 
-		} */
+		}
 
 		for (int i = 0; i < n_obst; i++)
 		{
@@ -370,7 +370,7 @@ void PSBMPC::initialize_prediction(
 {
 	int n_obst = data.obstacles.size();
 	n_ps.resize(n_obst);
-	//pobstacles.resize(n_obst);
+	pobstacles.resize(n_obst);
 	int n_a(0);
 	if (n_obst > 0)
 	{
@@ -406,7 +406,7 @@ void PSBMPC::initialize_prediction(
 		{
 			set_up_independent_obstacle_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, t_cpa(i), data, i);
 
-			/* pobstacles[i] = Prediction_Obstacle(data.obstacles[i]);
+			pobstacles[i] = Prediction_Obstacle(data.obstacles[i]);
 			if (pars.obstacle_colav_on)
 			{
 				pobstacles[i].set_colav_on(false);
@@ -420,7 +420,7 @@ void PSBMPC::initialize_prediction(
 				pobstacles[i].set_waypoints(waypoints_i);
 
 				n_ps[i] += 1;
-			} */
+			}
 
 			data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
 
@@ -428,10 +428,10 @@ void PSBMPC::initialize_prediction(
 		}
 	}
 
-	/* if (pars.obstacle_colav_on)
+	if (pars.obstacle_colav_on)
 	{
 		predict_trajectories_jointly(data, static_obstacles, false);
-	} */
+	}
 	
 	//
 	prune_obstacle_scenarios(data);
@@ -702,7 +702,7 @@ void PSBMPC::calculate_ps_collision_consequences(
 	Eigen::MatrixXd xs_i_colav_p;
 	if (pars.obstacle_colav_on)
 	{
-		//xs_i_colav_p = pobstacles[i].get_trajectory();
+		xs_i_colav_p = pobstacles[i].get_trajectory();
 	}
 
 	Eigen::Vector2d p_cpa, v_0_p, v_i_p;
@@ -720,8 +720,8 @@ void PSBMPC::calculate_ps_collision_consequences(
 
 			if (ps == n_ps[i] - 1 && pars.obstacle_colav_on) // Intelligent prediction is the last prediction scenario
 			{
-				/* v_i_p(0) = xs_i_colav_p(3, k) * cos(xs_i_colav_p(2, k));
-				v_i_p(1) = xs_i_colav_p(3, k) * sin(xs_i_colav_p(2, k)); */
+				v_i_p(0) = xs_i_colav_p(3, k) * cos(xs_i_colav_p(2, k));
+				v_i_p(1) = xs_i_colav_p(3, k) * sin(xs_i_colav_p(2, k));
 			}
 			else
 			{
