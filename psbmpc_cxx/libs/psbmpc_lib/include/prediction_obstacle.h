@@ -78,7 +78,9 @@ public:
 
 	inline bool get_COLREGS_breach_indicator() const { return mu; }
 
+	// State at the current predicted time in the joint predictions
 	inline Eigen::Vector4d get_initial_state() const { return xs_0; }; 
+	// State at the current predicted time + k time steps in the joint predictions
 	inline Eigen::Vector4d get_state(const int k) const { assert(k < xs_p.cols() && k >= 0); return xs_p.col(k); }; 
 
 	inline Eigen::MatrixXd get_trajectory() const { return xs_p; };

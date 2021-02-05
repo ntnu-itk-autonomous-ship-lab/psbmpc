@@ -25,24 +25,25 @@
 #include <chrono>
 #include <memory>
 #include "Eigen/Dense"
-#include "engine.h"
+//#include "engine.h"
 
 
 #define BUFSIZE 1000000
 
-int main(){
+int main()
+{
 	// Matlab engine setup
- 	Engine *ep = engOpen(NULL);
+ 	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1]; 
+	char buffer[BUFSIZE+1];  */
 
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
-	double T_sim = 200; double dt = 0.5;
+	double T_sim = 0.5; double dt = 0.5;
 	int N = std::round(T_sim / dt);
 
 //*****************************************************************************************************************
@@ -50,7 +51,7 @@ int main(){
 //*****************************************************************************************************************
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 9, 0, 0;
-	double u_d = 9, chi_d, u_c, chi_c;
+	double u_d(9.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 	
 	Ownship asv_sim;
 
@@ -122,9 +123,9 @@ int main(){
 	double* ptraj_i; 
 	double* p_P_traj_i; 
 	double* p_wps_i; */
+	//=====================================================================
 
-
-	int n_wps_i;
+	int n_wps_i(0);
 
 	for (int i = 0; i < n_obst; i++)
 	{
@@ -179,9 +180,13 @@ int main(){
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], ERK1, LOS, T_sim, dt);
 
+		//=========================================================
+		// Matlab obstacle related data setup
+		//=========================================================
 		/* wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
 		traj_i_mx[i] = mxCreateDoubleMatrix(6, N, mxREAL);
 		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL); */
+		//=========================================================
 	}
 
 //*****************************************************************************************************************
@@ -192,7 +197,7 @@ int main(){
 // PSB-MPC setup
 //*****************************************************************************************************************	
 	PSBMPC psbmpc;
-	double u_opt, chi_opt;
+	double u_opt(1.0), chi_opt(0.0);
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
 
@@ -388,7 +393,7 @@ int main(){
 		mxDestroyArray(P_traj_i_mx[i]);
 		mxDestroyArray(wps_i_mx[i]);
 	}
-	engClose(ep);   */
+	engClose(ep);  */ 
 
 	return 0;
 }

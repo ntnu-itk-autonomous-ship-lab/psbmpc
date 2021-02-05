@@ -39,11 +39,14 @@ PSBMPC::PSBMPC()
 	offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
 
+	u_m_last = 1.0;
+	chi_m_last = 0.0;
+
+	min_cost = 1e12;
+
 	cpe = CPE(pars.cpe_method, pars.dt);
 
 	mpc_cost = MPC_Cost<PSBMPC_Parameters>(pars);
-
-	chi_m_last = 0; u_m_last = 1;
 
 	use_joint_prediction = true;
 }
@@ -97,7 +100,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		return;
 	}
-
+	
 	initialize_prediction(data, static_obstacles);
 
 	//===============================================================================================================
@@ -175,18 +178,18 @@ void PSBMPC::calculate_optimal_offsets(
 	}
 	
 	//===============================================================================================================
-	double cost;
+	double cost(0.0);
 	Eigen::VectorXd cost_i(n_obst);
 	Eigen::MatrixXd P_c_i;
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	min_cost = 1e12;
-	int p_step_cpe = 2;
+	int p_step_cpe = 2; // step between calculated collision probability samples
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
 		cost = 0;
 		//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
-		std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
+		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 
 		ownship.predict_trajectory(
 			trajectory, 
@@ -199,10 +202,10 @@ void PSBMPC::calculate_optimal_offsets(
 			pars.T, 
 			pars.dt);
 
-		if (use_joint_prediction)
+		/* if (use_joint_prediction)
 		{ 
 			predict_trajectories_jointly(data, static_obstacles, true); 
-		}
+		} */
 
 		for (int i = 0; i < n_obst; i++)
 		{
@@ -239,7 +242,6 @@ void PSBMPC::calculate_optimal_offsets(
 		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_m_last, chi_m_last);
 
 		cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
-
 
 		if (cost < min_cost) 
 		{
@@ -368,13 +370,12 @@ void PSBMPC::initialize_prediction(
 {
 	int n_obst = data.obstacles.size();
 	n_ps.resize(n_obst);
-	pobstacles.resize(n_obst);
+	//pobstacles.resize(n_obst);
 	int n_a(0);
 	if (n_obst > 0)
 	{
 		n_a = data.obstacles[0].get_intention_probabilities().size();
 	} 
-	
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
@@ -390,7 +391,7 @@ void PSBMPC::initialize_prediction(
 	{
 		xs_i_0 = data.obstacles[i].kf->get_state();
 		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), xs_i_0);
-
+		
 		if (n_a == 1)
 		{
 			n_ps[i] = 1;
@@ -405,7 +406,7 @@ void PSBMPC::initialize_prediction(
 		{
 			set_up_independent_obstacle_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, t_cpa(i), data, i);
 
-			pobstacles[i] = Prediction_Obstacle(data.obstacles[i]);
+			/* pobstacles[i] = Prediction_Obstacle(data.obstacles[i]);
 			if (pars.obstacle_colav_on)
 			{
 				pobstacles[i].set_colav_on(false);
@@ -419,7 +420,7 @@ void PSBMPC::initialize_prediction(
 				pobstacles[i].set_waypoints(waypoints_i);
 
 				n_ps[i] += 1;
-			}
+			} */
 
 			data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
 
@@ -427,10 +428,10 @@ void PSBMPC::initialize_prediction(
 		}
 	}
 
-	if (pars.obstacle_colav_on)
+	/* if (pars.obstacle_colav_on)
 	{
 		predict_trajectories_jointly(data, static_obstacles, false);
-	}
+	} */
 	
 	//
 	prune_obstacle_scenarios(data);
@@ -530,6 +531,7 @@ void PSBMPC::set_up_independent_obstacle_prediction(
 			break;
 		}
 	} */
+
 	if (turn_start >= 0) // and alternative maneuvers are only up until cpa with the own-ship
 	{
 		n_turns = std::ceil((t_cpa_i - turn_start * pars.t_ts) / pars.t_ts);
@@ -539,6 +541,10 @@ void PSBMPC::set_up_independent_obstacle_prediction(
 		n_turns = 0;
 	}
 	n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
+
+	std::cout << n_turns << std::endl;
+	//std::cout << pars.obstacle_course_changes.size() << std::endl;
+	//std::cout << n_ps[i] << std::endl;
 
 	ps_ordering_i.resize(n_ps[i]);
 	ps_ordering_i[0] = KCC;
@@ -696,7 +702,7 @@ void PSBMPC::calculate_ps_collision_consequences(
 	Eigen::MatrixXd xs_i_colav_p;
 	if (pars.obstacle_colav_on)
 	{
-		xs_i_colav_p = pobstacles[i].get_trajectory();
+		//xs_i_colav_p = pobstacles[i].get_trajectory();
 	}
 
 	Eigen::Vector2d p_cpa, v_0_p, v_i_p;
@@ -714,8 +720,8 @@ void PSBMPC::calculate_ps_collision_consequences(
 
 			if (ps == n_ps[i] - 1 && pars.obstacle_colav_on) // Intelligent prediction is the last prediction scenario
 			{
-				v_i_p(0) = xs_i_colav_p(3, k) * cos(xs_i_colav_p(2, k));
-				v_i_p(1) = xs_i_colav_p(3, k) * sin(xs_i_colav_p(2, k));
+				/* v_i_p(0) = xs_i_colav_p(3, k) * cos(xs_i_colav_p(2, k));
+				v_i_p(1) = xs_i_colav_p(3, k) * sin(xs_i_colav_p(2, k)); */
 			}
 			else
 			{

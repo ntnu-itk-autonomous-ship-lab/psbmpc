@@ -34,8 +34,8 @@ Obstacle_Ship::Obstacle_Ship()
 	l = 20;
 	w = 4;
 	
-	T_chi = 7.5; 		// Ad hoc parameters, are very dependent on the ship type
 	T_U = 10;
+	T_chi = 7.5; 		// Ad hoc parameters, are very dependent on the ship type
 
 	// Guidance parameters
 	e_int = 0;
@@ -118,8 +118,11 @@ void Obstacle_Ship::update_guidance_references(
 	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
 {
+	// No surge modification
+	u_d = u_d;
+	
 	int n_wps = waypoints.cols();
-	double alpha, e;
+	double alpha(0.0), e(0.0);
 	Eigen::Vector2d d_next_wp, L_wp_segment;
 	bool segment_passed = false;
 	
