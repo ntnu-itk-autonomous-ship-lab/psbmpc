@@ -151,8 +151,8 @@ public:
 		P_p.col(0) = flatten(kf->get_covariance());
 
 		Eigen::Vector2d v_p_new, v_A, v_B, L_AB;
-		double chi_ps, t = 0, psi_A, d_AB;
-		bool have_turned;
+		double chi_ps(0.0), t(0.0), psi_A(0.0), d_AB(0.0);
+		bool have_turned(false);
 		for(int ps = 0; ps < n_ps_independent; ps++)
 		{
 			ownship_state_sl = ownship_state;
@@ -178,7 +178,7 @@ public:
 
 				if (!mu[ps])
 				{
-					mu[ps] = mpc.mpc_cost.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
+					//mu[ps] = mpc.mpc_cost.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
 				}
 			
 				switch (ps_ordering[ps])

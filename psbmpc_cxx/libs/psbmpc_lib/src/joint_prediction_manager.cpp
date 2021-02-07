@@ -50,7 +50,7 @@ void Joint_Prediction_Manager::update_obstacle_status(
 {
 	int n_obst = data[i].obstacles.size();
 	data[i].obstacle_status.resize(13, n_obst);
-	double ID_0, RB_0, COG_0, SOG_0; 
+	double ID_0(0.0), RB_0(0.0), COG_0(0.0), SOG_0(0.0); 
 	Eigen::Vector2d d_ij;
 	Eigen::Vector4d xs_j;
 

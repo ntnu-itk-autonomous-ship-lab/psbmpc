@@ -244,12 +244,13 @@ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
 
 	int n_ps = xs_i_p.size();
+	std::cout << "n_ps mpc cost = " << n_ps << std::endl;
 	Eigen::VectorXd max_cost_ps(n_ps), weights_ps(n_ps);
 	max_cost_ps.setZero(); weights_ps.setZero();
 
 	Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 	double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);
-	bool mu, trans;
+	bool mu(false), trans(false);
 	for(int k = 0; k < n_samples; k++)
 	{
 		psi_0_p = trajectory(2, k); 

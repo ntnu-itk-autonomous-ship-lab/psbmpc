@@ -177,7 +177,9 @@ void Tracked_Obstacle::prune_ps(
 	int n_ps_new = ps_indices.size();
 	int n_ps = ps_ordering.size();
 	int n_ps_independent = ps_course_changes.size();
-
+	std::cout << "n_ps_new = " << n_ps_new << std::endl;
+	std::cout << "n_ps = " << n_ps << std::endl;
+	std::cout << "n_ps_independent = " << n_ps_independent << std::endl;
 	std::vector<bool> mu_copy(n_ps_new);
 	std::vector<Eigen::MatrixXd> xs_p_copy(n_ps_new);
 	std::vector<Intention> ps_ordering_copy(n_ps_new);
@@ -213,7 +215,6 @@ void Tracked_Obstacle::prune_ps(
 			}
 		}
 	}
-
 	mu = mu_copy;
 
 	xs_p = xs_p_copy; 

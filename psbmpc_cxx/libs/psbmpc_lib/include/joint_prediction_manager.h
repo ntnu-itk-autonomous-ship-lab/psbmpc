@@ -67,8 +67,8 @@ private:
 		// Inside consideration range
 		else
 		{
-			bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-			bool is_ahead, is_passed, is_head_on, is_crossing;
+			bool B_is_starboard(false), A_is_overtaken(false), B_is_overtaken(false);
+			bool is_ahead(false), is_passed(false), is_head_on(false), is_crossing(false);
 
 			is_ahead = v_A.dot(L_AB) > cos(mpc_pars.phi_AH) * v_A.norm();
 
@@ -146,7 +146,7 @@ private:
 		int n_obst_old = data[i].obstacles.size();
 		int n_obst_new = obstacle_states.cols();
 
-		bool obstacle_exist;
+		bool obstacle_exist(false);
 		for (int j = 0; j < n_obst_new; j++)
 		{
 			obstacle_exist = false;
@@ -192,11 +192,11 @@ private:
 		const int k																			// In: Index of the current predicted time t_k
 		)
 	{
-		bool is_close;
+		bool is_close(false);
 
 		// A : Obstacle i, B : Obstacle j
 		Eigen::Vector2d v_A, v_B, L_AB;
-		double psi_A, psi_B, d_AB;
+		double psi_A(0.0), psi_B(0.0), d_AB(0.0);
 		v_A(0) = obstacle_i_state(2);
 		v_A(1) = obstacle_i_state(3);
 		psi_A = atan2(v_A(1), v_A(0));
@@ -327,8 +327,8 @@ public:
 		Eigen::Matrix<double, 7, -1> other_obstacle_states(7, n_obst);
 
 		Eigen::Vector4d obstacle_i_state, ownship_4d_state;
-		double obstacle_i_length;
-		int count;
+		double obstacle_i_length(0.0);
+		int count(0);
 		for (int i = 0; i < n_obst; i++)
 		{
 			obstacle_i_state = pobstacles[i].get_state(k);
