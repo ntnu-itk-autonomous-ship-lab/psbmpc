@@ -265,11 +265,11 @@ private:
 		const double ownship_length										// In: Dimension of ownship along longest axis
 		)
 	{
-		bool is_close;
+		bool is_close(false);
 
 		// A : Own-ship, B : Obstacle i
 		Eigen::Vector2d v_A, v_B, L_AB;
-		double psi_A, psi_B, d_AB;
+		double psi_A(0.0), psi_B(0.0), d_AB(0.0);
 		v_A(0) = ownship_state(3);
 		v_A(1) = ownship_state(4);
 		psi_A = wrap_angle_to_pmpi(ownship_state(2));

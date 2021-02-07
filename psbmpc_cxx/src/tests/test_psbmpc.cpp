@@ -25,21 +25,13 @@
 #include <chrono>
 #include <memory>
 #include "Eigen/Dense"
-//#include "engine.h"
+#include "engine.h"
 
 
 #define BUFSIZE 1000000
 
 int main()
 {
-	// Matlab engine setup
- 	/* Engine *ep = engOpen(NULL);
-	if (ep == NULL)
-	{
-		std::cout << "engine start failed!" << std::endl;
-	}
-	char buffer[BUFSIZE+1];  */
-
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
@@ -105,9 +97,17 @@ int main()
 	std::vector<Eigen::Matrix<double, 2, -1>> waypoints_i(n_obst);
 
 	//=====================================================================
-	// Matlab array setup for the ownship and obstacle, ++
+	// Matlab engine setup and array setup for the ownship and obstacle, ++
 	//=====================================================================
-	/* mxArray *traj_os_mx = mxCreateDoubleMatrix(6, N, mxREAL);
+	// Matlab engine setup
+ 	/* Engine *ep = engOpen(NULL);
+	if (ep == NULL)
+	{
+		std::cout << "engine start failed!" << std::endl;
+	}
+	char buffer[BUFSIZE+1]; 
+
+	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, N, mxREAL);
 	mxArray *wps_os_mx = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
 
 	double *p_traj_os = mxGetPr(traj_os_mx); 
@@ -122,7 +122,9 @@ int main()
 
 	double* ptraj_i; 
 	double* p_P_traj_i; 
-	double* p_wps_i; */
+	double* p_wps_i;
+	
+	*/
 	//=====================================================================
 
 	int n_wps_i(0);
@@ -179,14 +181,6 @@ int main()
 
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], ERK1, LOS, T_sim, dt);
-
-		//=========================================================
-		// Matlab obstacle related data setup
-		//=========================================================
-		/* wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
-		traj_i_mx[i] = mxCreateDoubleMatrix(6, N, mxREAL);
-		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL); */
-		//=========================================================
 	}
 
 //*****************************************************************************************************************
@@ -232,7 +226,15 @@ int main()
 	//=========================================================
 	// Matlab plot setup
 	//=========================================================
-	/* mxArray *T_sim_mx(nullptr), *n_obst_mx(nullptr), *n_static_obst_mx(nullptr);
+	/* 
+	for (int i = 0; i < n_obst; i++)
+	{
+		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
+		traj_i_mx[i] = mxCreateDoubleMatrix(6, N, mxREAL);
+		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
+	}
+	
+	mxArray *T_sim_mx(nullptr), *n_obst_mx(nullptr), *n_static_obst_mx(nullptr);
 	T_sim_mx = mxCreateDoubleScalar(T_sim);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
 	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
@@ -393,7 +395,7 @@ int main()
 		mxDestroyArray(P_traj_i_mx[i]);
 		mxDestroyArray(wps_i_mx[i]);
 	}
-	engClose(ep);  */ 
+	engClose(ep);  */  
 
 	return 0;
 }
