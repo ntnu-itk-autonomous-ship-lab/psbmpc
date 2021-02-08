@@ -203,18 +203,16 @@ inline void calculate_cpa(
 	double epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
 	double psi_A(0.0), psi_B(0.0);
 	Eigen::Vector2d v_A, v_B, p_A, p_B, L_AB;
+	p_A = xs_A.block<2, 1>(0, 0); p_B = xs_B.block<2, 1>(0, 0);
 	if (xs_A.size() == 6) { psi_A = xs_A(2); v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
-	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); p_A(0) = xs_A(0); p_A(1) = xs_A(1); }
+	else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
 	
 	if (xs_B.size() == 6) { psi_B = xs_B(2); v_B(1) = xs_B(4); v_B(1) = xs_B(4); rotate_vector_2D(v_B, psi_B); }
-	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); p_B(0) = xs_B(0); p_B(1) = xs_B(1);}
+	else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3);}
 
 	// Check if the relative speed is too low, or if the vessels are moving away from each other with the current velocity vectors
 	double dt_incr = 0.1;
-	/* std::cout << "p_A = " << p_A.transpose() << std::endl;
-	std::cout << "p_B = " << p_B.transpose() << std::endl;
-	std::cout << "t_cpa = " << t_cpa << std::endl; */
-	
+
 	if ((v_A - v_B).norm() < epsilon || (p_A - p_B).norm() < ((p_A + v_A * dt_incr) - (p_B + v_B * dt_incr)).norm())
 	{
 		t_cpa = 0;
@@ -227,7 +225,6 @@ inline void calculate_cpa(
 		p_cpa = p_A + v_A * t_cpa;
 		d_cpa = (p_cpa - (p_B + v_B * t_cpa)).norm();
 	}
-	/* std::cout << "t_cpa = " << t_cpa << std::endl; */
 }
 
 /****************************************************************************************

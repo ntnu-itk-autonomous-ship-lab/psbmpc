@@ -35,7 +35,7 @@ int main()
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
-	double T_sim = 0.5, dt = 0.5;
+	double T_sim = 150, dt = 0.5;
 	int N = std::round(T_sim / dt);
 
 //*****************************************************************************************************************
@@ -100,7 +100,7 @@ int main()
 	// Matlab engine setup and array setup for the ownship and obstacle, ++
 	//=====================================================================
 	// Matlab engine setup
- 	/* Engine *ep = engOpen(NULL);
+ 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -124,7 +124,7 @@ int main()
 	double* p_P_traj_i; 
 	double* p_wps_i;
 	
-	*/
+	
 	//=====================================================================
 
 	int n_wps_i(0);
@@ -226,7 +226,7 @@ int main()
 	//=========================================================
 	// Matlab plot setup
 	//=========================================================
-	/* 
+	
 	for (int i = 0; i < n_obst; i++)
 	{
 		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
@@ -270,7 +270,7 @@ int main()
 		engPutVariable(ep, "i", i_mx);
 
 		engEvalString(ep, "init_obstacle_plot");
-	} */
+	}
 	//=========================================================
 	
 	Eigen::Vector4d xs_i_k;
@@ -328,7 +328,6 @@ int main()
 
 			obstacle_manager.update_obstacle_status(trajectory.col(k));
 			obstacle_manager.display_obstacle_information();
-		
 		}
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 		asv_sim.update_ctrl_input(u_c, chi_c, trajectory.col(k));
@@ -338,7 +337,7 @@ int main()
 		//===========================================
 		// Send trajectory data to matlab
 		//===========================================
-		/* buffer[BUFSIZE] = '\0';
+		buffer[BUFSIZE] = '\0';
 		engOutputBuffer(ep, buffer, BUFSIZE);
 
 		k_s_mx = mxCreateDoubleScalar(k + 1);
@@ -376,12 +375,12 @@ int main()
 			engPutVariable(ep, "i", i_mx);
 
 			engEvalString(ep, "update_obstacle_plot");
-		} */
+		}
 		//======================================================
 		
 	}
 
-	/* mxDestroyArray(traj_os_mx);
+	mxDestroyArray(traj_os_mx);
 	mxDestroyArray(wps_os_mx);
 	mxDestroyArray(pred_traj_mx);
 	mxDestroyArray(i_mx);
@@ -395,7 +394,7 @@ int main()
 		mxDestroyArray(P_traj_i_mx[i]);
 		mxDestroyArray(wps_i_mx[i]);
 	}
-	engClose(ep);  */  
+	engClose(ep);   
 
 	return 0;
 }

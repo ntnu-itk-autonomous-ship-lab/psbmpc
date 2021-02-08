@@ -161,7 +161,7 @@ void Tracked_Obstacle::initialize_independent_prediction(
 			else if (ps_ordering[ps] == PM)	{ ps_intention_count(2) += 1; }
 		}
 	}	
-	std::cout << ps_intention_count.transpose() << std::endl;
+	//std::cout << ps_intention_count.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -177,9 +177,9 @@ void Tracked_Obstacle::prune_ps(
 	int n_ps_new = ps_indices.size();
 	int n_ps = ps_ordering.size();
 	int n_ps_independent = ps_course_changes.size();
-	std::cout << "n_ps_new = " << n_ps_new << std::endl;
+	/* std::cout << "n_ps_new = " << n_ps_new << std::endl;
 	std::cout << "n_ps = " << n_ps << std::endl;
-	std::cout << "n_ps_independent = " << n_ps_independent << std::endl;
+	std::cout << "n_ps_independent = " << n_ps_independent << std::endl; */
 	std::vector<bool> mu_copy(n_ps_new);
 	std::vector<Eigen::MatrixXd> xs_p_copy(n_ps_new);
 	std::vector<Intention> ps_ordering_copy(n_ps_new);
@@ -187,7 +187,6 @@ void Tracked_Obstacle::prune_ps(
 	Eigen::VectorXd ps_course_changes_copy(n_ps_new), ps_maneuver_times_copy(n_ps_new);
 	ps_intention_count.setZero();
 
-	bool keep_ps = false;
 	int ps_count = 0;
 	for (int ps = 0; ps < n_ps; ps++)
 	{

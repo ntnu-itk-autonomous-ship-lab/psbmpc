@@ -145,7 +145,6 @@ private:
 	{
 		int n_obst_old = data[i].obstacles.size();
 		int n_obst_new = obstacle_states.cols();
-
 		bool obstacle_exist(false);
 		for (int j = 0; j < n_obst_new; j++)
 		{
@@ -357,7 +356,7 @@ public:
 				}
 			}
 			//std::cout << other_obstacle_states.transpose() << std::endl;
-			
+
 			update_obstacles<Parameter_Object>(i, mpc_pars, other_obstacle_states, k);
 
 			update_situation_type_and_transitional_variables<Parameter_Object>(i, mpc_pars, obstacle_i_state, obstacle_i_length, k);

@@ -178,7 +178,7 @@ public:
 
 				if (!mu[ps])
 				{
-					//mu[ps] = mpc.mpc_cost.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
+					mu[ps] = mpc.mpc_cost.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
 				}
 			
 				switch (ps_ordering[ps])

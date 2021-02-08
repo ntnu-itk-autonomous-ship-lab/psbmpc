@@ -39,7 +39,7 @@ Prediction_Obstacle::Prediction_Obstacle(
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	Obstacle(xs_aug, colav_on)//, sbmpc(new Obstacle_SBMPC())
+	Obstacle(xs_aug, colav_on), sbmpc(new Obstacle_SBMPC())
 {
 	int n_samples = std::round(T / dt);
 
@@ -199,7 +199,7 @@ void Prediction_Obstacle::assign_data(
 
 	this->xs_k_p = po.xs_k_p;
 
-	//this->sbmpc.reset(new Obstacle_SBMPC(*(po.sbmpc)));
+	this->sbmpc.reset(new Obstacle_SBMPC(*(po.sbmpc)));
 }
 
 void Prediction_Obstacle::assign_data(
@@ -229,5 +229,5 @@ void Prediction_Obstacle::assign_data(
 
 	this->xs_k_p = to.xs_p[0];
 
-	//this->sbmpc.reset(new Obstacle_SBMPC());
+	this->sbmpc.reset(new Obstacle_SBMPC());
 }

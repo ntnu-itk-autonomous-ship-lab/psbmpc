@@ -90,7 +90,7 @@ void Obstacle_Manager::update_obstacle_status(
 *****************************************************************************************/
 void Obstacle_Manager::display_obstacle_information() 			
 {
-	/* std::ios::fmtflags old_settings = std::cout.flags();
+	std::ios::fmtflags old_settings = std::cout.flags();
 	int old_precision = std::cout.precision(); 
 
 	//std::cout.setf(std::ios::fixed, std::ios::floatfield);
@@ -114,7 +114,7 @@ void Obstacle_Manager::display_obstacle_information()
 		std::cout << std::endl;
 	}
 	std::cout.flags(old_settings);
-	std::cout << std::setprecision(old_precision); */
+	std::cout << std::setprecision(old_precision);
 }
 
 
