@@ -24,74 +24,73 @@
 
 #include <thrust/device_vector.h>
 #include "psbmpc_index.h"
-#include "prediction_obstacle.cuh"
+#include "sbmpc_parameters.h"
+#include "joint_prediction_manager.cuh"
 #include "obstacle_ship.cuh"
-#include "cml.cuh"
+#include "tml.cuh"
 #include <vector>
 
-// MUST REPLACE std::vector with *ers...
+
 class Obstacle_SBMPC
 {
 private:
 
-	PSBMPC_Parameters pars;
+	TML::PDMatrix<float, 1, 2 * MAX_N_M> offset_sequence;
 
-	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
+	TML::PDMatrix<int, 1, MAX_N_M> offset_sequence_counter;
 
+	TML::PDMatrix<float, 1, MAX_N_M> maneuver_times;
+	
 	double u_m_last;
 	double chi_m_last;
 
 	double min_cost;
+	
+	bool obstacle_colav_on;
 
 	Obstacle_Ship ownship;
 
-	CML::MatrixXd trajectory;
-
-	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
-	// and <obstacle is passed> (IP_0) indicators
-	CML::MatrixXb AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
-
-	int n_obst;
-	//Prediction_Obstacle *old_obstacles;
-	//Prediction_Obstacle *new_obstacles;
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> trajectory;
 
 	__host__ __device__ void assign_data(const Obstacle_SBMPC &o_sbmpc);
 
-	__host__ __device__ void assign_obstacle_vector(Prediction_Obstacle *lhs, Prediction_Obstacle *rhs, const int size);
-
-	__host__ __device__ void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
-
-	__host__ __device__ void initialize_prediction();
+	__host__ __device__ void initialize_prediction(Obstacle_Data<Prediction_Obstacle> &data, const int k_0);
 
 	__host__ __device__ void reset_control_behavior();
 
 	__host__ __device__ void increment_control_behavior();
 
-	__host__ __device__ bool determine_colav_active(const int n_static_obst);
+	__host__ __device__ bool determine_colav_active(const Obstacle_Data<Prediction_Obstacle> &data, const int n_static_obst);
+
+	__host__ __device__ bool determine_COLREGS_violation(
+		const Eigen::Vector2d &v_A, 
+		const double psi_A, 
+		const Eigen::Vector2d &v_B,
+		const Eigen::Vector2d &L_AB,	
+		const double d_AB);
 
 	__host__ __device__ bool determine_transitional_cost_indicator(
 		const double psi_A, 
 		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
-		const int i,
-		const double chi_m);
+		const double chi_m,
+		const Obstacle_Data<Prediction_Obstacle> &data,
+		const int i);
 
-	__host__ __device__ bool determine_transitional_cost_indicator(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B, const int i, const double chi_m);
+	__host__ __device__ double calculate_dynamic_obstacle_cost(const Obstacle_Data<Prediction_Obstacle> &data, const int i);
 
-	__host__ __device__ double calculate_dynamic_obstacle_cost(const int i);
-
-	__host__ __device__ double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
+	__host__ __device__ double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) { return pars.K_coll * (v_1 - v_2).norm(); }
 
 	__host__ __device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 
 	// Methods dealing with control deviation cost
 	__host__ __device__ double calculate_control_deviation_cost();	
 
-	//__host__ __device__ double Delta_u(const double u_1, const double u_2) const 		{ return pars.K_du * fabs(u_1 - u_2); }
+	__host__ __device__ double Delta_u(const double u_1, const double u_2) const 		{ return pars.K_du * fabs(u_1 - u_2); }
 
-	//__host__ __device__ double K_chi(const double chi) const 							{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); };
+	__host__ __device__ double K_chi(const double chi) const 							{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); };
 
-	//__host__ __device__ double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
+	__host__ __device__ double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); };
 
 	//
 	__host__ __device__ double calculate_chattering_cost();
@@ -111,47 +110,31 @@ private:
 
     __host__ __device__ double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2);
 
-    __host__ __device__ void update_obstacles(const Eigen::Matrix<double, 9, -1>& obstacle_states, const Eigen::Matrix<double, 16, -1> &obstacle_covariances);
-
-	__host__ __device__ void update_obstacle_status(Eigen::Matrix<double,-1,-1> &obstacle_status, const Eigen::VectorXd &HL_0);
-
-	__host__ __device__ void update_transitional_variables();
+	__host__ __device__ void assign_optimal_trajectory(Eigen::Matrix<double, 4, -1> &optimal_trajectory);
 
 public:
 
+	SBMPC_Parameters pars;
+
 	__host__ __device__ Obstacle_SBMPC();
 
-	__host__ __device__ Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc) = default;
+	__host__ __device__ ~Obstacle_SBMPC();
 
-	__host__ __device__ ~Obstacle_SBMPC() = default;
+	__host__ __device__ Obstacle_SBMPC(const Obstacle_SBMPC &o_sbmpc);
 
-	__host__ __device__ void clean();
-
-	__host__ __device__ Obstacle_SBMPC& operator=(const Obstacle_SBMPC &rhs) = default;
-
-	__host__ __device__ bool determine_COLREGS_violation(const Eigen::VectorXd &xs_A, const Eigen::VectorXd &xs_B);
-
-	__host__ __device__ bool determine_COLREGS_violation(
-		const Eigen::Vector2d &v_A, 
-		const double psi_A, 
-		const Eigen::Vector2d &v_B,
-		const Eigen::Vector2d &L_AB,	
-		const double d_AB);
+	__host__ __device__ Obstacle_SBMPC& operator=(const Obstacle_SBMPC &o_sbmpc);
 
 	__host__ __device__ void calculate_optimal_offsets(
 		double &u_opt, 	
 		double &chi_opt, 
-		Eigen::Matrix<double, 2, -1> &predicted_trajectory,
-		Eigen::Matrix<double, -1, -1> &obstacle_status,
-		Eigen::Matrix<double, -1, 1> &colav_status,
+		Eigen::Matrix<double, 4, -1> &predicted_trajectory,
 		const double u_d, 
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints,
-		const Eigen::Matrix<double, 4, 1> &ownship_state,
-		const Eigen::Matrix<double, 9, -1> &obstacle_states, 
-		const Eigen::Matrix<double, 16, -1> &obstacle_covariances,
-		const Eigen::Matrix<double, 4, -1> &static_obstacles);
-
+		const Eigen::Vector4d &ownship_state,
+		const Eigen::Matrix<double, 4, -1> &static_obstacles,
+		Obstacle_Data<Prediction_Obstacle> &data,
+		const int k_0);
 };
 
 #endif 

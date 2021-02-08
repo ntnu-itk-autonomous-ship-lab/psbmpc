@@ -38,9 +38,10 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, one for all threads
 	CPE *cpe, 		 												// In: Device pointer to the collision probability estimator, one for each thread
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_colav_p,			// In: Device pointer to the intelligent obstacle trajectories, one for each thread
 	const int wp_c_0												// In: Waypoint counter for PSB-MPC Ownship object, to initialize the waypoint following in the thread own-ship objects properly
 	) :
-	pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe), trajectory(trajectory)
+	pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe), trajectory(trajectory), xs_i_colav_p(xs_i_colav_p)
 {
 	ownship.set_wp_counter(wp_c_0);
 }
@@ -94,9 +95,11 @@ __device__ float CB_Cost_Functor::operator()(
 		pars->guidance_method, 
 		pars->T, pars->dt);
 
+	// 1.2: Joint prediction with the current control behaviour
+
 	//======================================================================================================================
 	// 2 : Cost calculation
-	// Not entirely optimal for loop configuration, but the alternative requires alot of memory, so test this first.
+	// Not entirely optimal for loop configuration, but the alternative requires alot of memory
 	for (int i = 0; i < fdata->n_obst; i++)
 	{	
 		d_safe_i = pars->d_safe + 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length());
@@ -340,67 +343,6 @@ __device__ float CB_Cost_Functor::operator()(
 	//printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	return cost_cb;
 }
-
-/* __device__ float CB_Cost_Functor::operator()(
-	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 20, 1>> &cb_tuple		// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
-	)
-{
-	float cost = 0;
-
-	unsigned int cb_index = thrust::get<0>(cb_tuple);
-	TML::PDMatrix<float, 20, 1> offset_sequence = thrust::get<1>(cb_tuple);
-
-	int n_samples = round(pars->T / pars->dt);
-
-	TML::PDMatrix<float, MAX_N_PS, MAX_N_SAMPLES> P_c_i;
-	TML::PDMatrix<float, MAX_N_OBST, 1> cost_i(fdata->n_obst, 1);
-
-	printf("here1 \n");
- 	ownship.predict_trajectory(
-		fdata->trajectory, 
-		offset_sequence, 
-		fdata->maneuver_times, 
-		fdata->u_d, 
-		fdata->chi_d, 
-		fdata->waypoints, 
-		pars->prediction_method, 
-		pars->guidance_method, 
-		pars->T, 
-		pars->dt);
-	printf("here2 \n");
-
-	printf("n_obst = %d \n", fdata->n_obst);
-	printf("dt = %f \n", pars->dt);
-
-	//CPE cpe(pars->cpe_method, fdata->n_obst, pars->dt);
-
-	//cpe.seed_prng(cb_index);
-
-	printf("here3 \n");
-	
-	 for (int i = 0; i < fdata.n_obst; i++)
-	{
-		if (pars->obstacle_colav_on) { predict_trajectories_jointly(); }
-
-		P_c_i.resize(fdata.n_ps[i], n_samples);
-		calculate_collision_probabilities(P_c_i, i); 
-
-		cost_i(i) = calculate_dynamic_obstacle_cost(P_c_i, i, offset_sequence);
-	}
-
-	cost += cost_i.max_coeff();
-
-	cost += calculate_grounding_cost();
-
-	cost += calculate_control_deviation_cost(offset_sequence);
-
-	cost += calculate_chattering_cost(offset_sequence); 
-	
-	
-
-	return cost;
-} */
-
  
 //=======================================================================================
 //	Private functions
@@ -546,147 +488,11 @@ __device__ inline void CB_Cost_Functor::calculate_collision_probabilities(
 
 //=======================================================================================
 //  Name     : calculate_dynamic_obstacle_cost
-//  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i.
-//			   Two overloads: One considering whole trajectories, and one considering
+//  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i considering 
 //			   a certain time instant for the ownship and obstacle i in pred. scen. ps.
-// 			   The overloads correspond to different overloads of the operator() func.
 //  Author   : Trym Tengesdal
 //  Modified :
 //=======================================================================================
-__device__ inline float CB_Cost_Functor::calculate_dynamic_obstacle_cost(
-	const TML::PDMatrix<float, MAX_N_PS, MAX_N_SAMPLES> &P_c_i,	// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i]+1 x n_samples
-	const int i, 													// In: Index of obstacle
-	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, 	// In: Control behaviour currently followed
-	const unsigned int cb_index										// In: Index of control behaviour currently followed in this thread
-	)
-{
-	cost_do = 0.0;
-	
-	// l_i is the collision cost modifier depending on the obstacle track loss.
-	C = 0.0; l_i = 0.0;
-
-	max_cost_ps.resize(fdata->n_ps[i], 1); max_cost_ps.set_zero();
-
-	n_samples = round(pars->T / pars->dt);
-	
-	Pr_CC_i = obstacles[i].get_a_priori_CC_probability();
-	TML::PDMatrix<float, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_i_p = obstacles[i].get_trajectories();
-	mu_i = obstacles[i].get_COLREGS_violation_indicator();
-	
-	for(int k = 0; k < n_samples; k++)
-	{
-		psi_0_p = trajectory[cb_index](2, k); 
-		v_0_p(0) = trajectory[cb_index](3, k); 
-		v_0_p(1) = trajectory[cb_index](4, k); 
-		v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
-
-		// Determine active course modification at sample k
-		for (int M = 0; M < pars->n_M; M++)
-		{
-			if (M < pars->n_M - 1)
-			{
-				if (k >= fdata->maneuver_times[M] && k < fdata->maneuver_times[M + 1])
-				{
-					chi_m = offset_sequence[2 * M + 1];
-				}
-			}
-			else
-			{
-				if (k >= fdata->maneuver_times[M])
-				{
-					chi_m = offset_sequence[2 * M + 1];
-				}
-			}
-		}
-		
-		for(int ps = 0; ps < fdata->n_ps[i]; ps++)
-		{
-			L_0i_p = xs_i_p.get_block<2, 1>(4 * ps, k, 2, 1) - trajectory[cb_index].get_block<2, 1>(0, k, 2, 1);
-			d_0i_p = L_0i_p.norm();
-
-			// Decrease the distance between the vessels by their respective max dimension
-			d_0i_p = d_0i_p - 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length()); 
-			
-			L_0i_p = L_0i_p.normalized();
-
-			v_i_p(0) = xs_i_p(4 * ps + 2, k);
-			v_i_p(1) = xs_i_p(4 * ps + 3, k);
-			psi_i_p = atan2(v_i_p(1), v_i_p(0));
-
-			C = calculate_collision_cost(v_0_p, v_i_p);
-
-			mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
-
-			trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, i, chi_m, cb_index);
-
-			// Track loss modifier to collision cost
-			if (obstacles[i].get_duration_lost() > pars->p_step)
-			{
-				l_i = pars->dt * pars->p_step / obstacles[i].get_duration_lost();
-			} else
-			{
-				l_i = 1;
-			}
-
-			cost_ps = l_i * C * P_c_i(ps, k) + pars->kappa * mu  + pars->kappa_TC * trans;
-
-			// Maximize wrt time
-			if (cost_ps > max_cost_ps(ps))
-			{
-				max_cost_ps(ps) = cost_ps;
-			}
-		}
-	}
-
-	// If only 1 prediction scenario
-	// => Original PSB-MPC formulation
-	if (fdata->n_ps[i] == 1)
-	{
-		cost_do = max_cost_ps(0);
-		return cost_do;
-	}
-	// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-	// which means that higher cost is applied if the obstacle follows COLREGS
-	// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-	// and the own-ship breaches COLREGS
-	for (int ps = 0; ps < fdata->n_ps[i]; ps++)
-	{
-		if (mu_i[ps])
-		{
-			max_cost_ps(ps) = (1 - Pr_CC_i) * max_cost_ps(ps);
-		}
-		else
-		{
-			max_cost_ps(ps) = Pr_CC_i * max_cost_ps(ps);
-		}
-	}
-
-	cost_a.set_zero();
-	Pr_a = obstacles[i].get_intention_probabilities();
-	cost_a(0) = max_cost_ps(0); 
-	for(int ps = 1; ps < fdata->n_ps[i]; ps++)
-	{
-		// Starboard maneuvers
-		if (ps < (fdata->n_ps[i] - 1) / 2 + 1)
-		{
-			cost_a(1) += max_cost_ps(ps);
-		}
-		// Port maneuvers
-		else
-		{
-			cost_a(2) += max_cost_ps(ps);
-		}
-	}
-	// Average the cost for the corresponding intention
-	cost_a(1) = cost_a(1) / ((fdata->n_ps[i] - 1) / 2);
-	cost_a(2) = cost_a(2) / ((fdata->n_ps[i] - 1) / 2);
-
-	// Weight by the intention probabilities
-	cost_do = Pr_a.dot(cost_a);
-
-	return cost_do;
-}
-
 __device__ inline float CB_Cost_Functor::calculate_dynamic_obstacle_cost(
 	const float P_c_i,															// In: Predicted obstacle collision probabilities for obstacle in prediction scenario ps
 	const TML::PDVector6f xs_p, 												// In: Predicted own-ship state at time step k

@@ -20,7 +20,7 @@
 *****************************************************************************************/
 
 #include "tracked_obstacle.h"
-#include "utilities.h"
+#include "prediction_obstacle.h"
 
 #include "assert.h"
 #include <iostream> 
@@ -32,7 +32,7 @@
 *  Modified :
 *****************************************************************************************/
 Tracked_Obstacle::Tracked_Obstacle(
-	const Eigen::VectorXd &xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
 	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
 	const double Pr_CC, 										// In: A priori COLREGS compliance probability
@@ -52,7 +52,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 
 	int n_samples = std::round(T / dt);
 
-	// n = 4 states in obstacle model for independent trajectories, using MROU
+	// n = 4 states in obstacle model for independent trajectory prediction, using MROU
 	xs_p.resize(1);
 	xs_p[0].resize(4, n_samples);
 
@@ -123,123 +123,139 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 }
 
 /****************************************************************************************
-*  Name     : initialize_prediction
-*  Function : Sets up independent or dependent obstacle prediction, depending on if
-*		      colav is active or not. For the dependent obstacle prediction,
-*			  ps_course_changes and ps_maneuver_times are "dont care" variables, hence
-*		      two overloads.
+*  Name     : initialize_independent_prediction
+*  Function : 
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::initialize_prediction(
+void Tracked_Obstacle::initialize_independent_prediction(
 	const std::vector<Intention> &ps_ordering, 						// In: Prediction scenario ordering
 	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
 	const Eigen::VectorXd &ps_maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios	
 	)
-{
+{	
+	// the size of ps_ordering is greater than the size of ps_course_changes and ps_maneuver_times
+	// when intelligent obstacle predictions are considered (joint predictions are active)
+	// Thus n_ps_i = length(ps_ordering) = n_ps_i_independent + n_ps_i_dependent
+	// where n_ps_i_independent = size(ps_course_changes)
 	this->ps_ordering = ps_ordering;
-	
+
 	this->ps_course_changes = ps_course_changes;
 
 	this->ps_maneuver_times = ps_maneuver_times;
+
+	int n_ps_independent = ps_ordering.size();
+	mu.resize(n_ps_independent);
+
+	int n_a = Pr_a.size();
+	ps_intention_count.resize(n_a); ps_intention_count.setZero();
+	
+	if (n_a == 1)	{ ps_intention_count(0) = 1; }
+	else // n_a = 3
+	{
+		ps_intention_count(0) = 1;
+		
+		for (int ps = 0; ps < n_ps_independent; ps++)
+		{
+			if (ps_ordering[ps] == SM)		{ ps_intention_count(1) += 1; }
+			else if (ps_ordering[ps] == PM)	{ ps_intention_count(2) += 1; }
+		}
+	}	
+	//std::cout << ps_intention_count.transpose() << std::endl;
 }
 
 /****************************************************************************************
-*  Name     : predict_independent_trajectories
-*  Function : Predicts the obstacle trajectories for scenarios where the obstacle
-*			  does not take the own-ship into account. PSBMPC parameters needed 
-* 			  to determine if obstacle breaches cOLREGS (future: implement simple 
-*			  sbmpc class for obstacle which has the "determine COLREGS violation" function)
-*  Author   : Trym Tengesdal
-*  Modified :
+*  Name     : prune_ps
+*  Function : Removes prediction data for prediction scenarios not in the 
+*			  input vector.
+*  Modified : Trym Tengesdal
 *****************************************************************************************/
-void Tracked_Obstacle::predict_independent_trajectories(						
-	const double T, 											// In: Time horizon
-	const double dt, 											// In: Time step
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 			// In: State of own-ship to use for COLREGS penalization calculation
-	const double phi_AH,
-	const double phi_CR,
-	const double phi_HO,
-	const double phi_OT,
-	const double d_close,
-	const double d_safe
+void Tracked_Obstacle::prune_ps(
+	const Eigen::VectorXi &ps_indices
 	)
 {
-	int n_samples = std::round(T / dt);
-	resize_trajectories(n_samples);
-
+	int n_ps_new = ps_indices.size();
 	int n_ps = ps_ordering.size();
-	mu.resize(n_ps);
-	
-	Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
-	P_p.col(0) = flatten(kf->get_covariance());
+	int n_ps_independent = ps_course_changes.size();
+	/* std::cout << "n_ps_new = " << n_ps_new << std::endl;
+	std::cout << "n_ps = " << n_ps << std::endl;
+	std::cout << "n_ps_independent = " << n_ps_independent << std::endl; */
+	std::vector<bool> mu_copy(n_ps_new);
+	std::vector<Eigen::MatrixXd> xs_p_copy(n_ps_new);
+	std::vector<Intention> ps_ordering_copy(n_ps_new);
 
-	Eigen::Vector2d v_p_new, d_0i_p;
-	double chi_ps, t = 0;
-	bool have_turned;
-	for(int ps = 0; ps < n_ps; ps++)
+	Eigen::VectorXd ps_course_changes_copy(n_ps_new), ps_maneuver_times_copy(n_ps_new);
+	ps_intention_count.setZero();
+
+	int ps_count = 0;
+	for (int ps = 0; ps < n_ps; ps++)
 	{
-		ownship_state_sl = ownship_state;
-		v_p(0) = kf->get_state()(2);
-		v_p(1) = kf->get_state()(3);
-		xs_p[ps].col(0) = kf->get_state();
-		
-		have_turned = false;	
-		for(int k = 0; k < n_samples; k++)
+		if (ps == ps_indices(ps_count))
 		{
-			t = (k + 1) * dt;
+			mu_copy[ps_count] = mu[ps];
 
-			/* d_0i_p = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl;
-			d_0i_p = */ 
+			xs_p_copy[ps_count] = xs_p[ps];
 
-			if (!mu[ps])
+			ps_ordering_copy[ps_count] = ps_ordering[ps];
+
+			if (ps < n_ps_independent)
 			{
-				//mu[ps] = sbmpc->determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl);
-				mu[ps] = determine_COLREGS_violation(xs_p[ps].col(k), ownship_state_sl, phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
-			}
-		
-			switch (ps_ordering[ps])
-			{
-				case KCC :	
-					break; // Proceed
-				case SM :
-					if (k == ps_maneuver_times[ps] && !have_turned)
-					{
-						chi_ps = atan2(v_p(1), v_p(0)); 
-						v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
-						v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
-						v_p = v_p_new;
-						have_turned = true;
-					}
-					break;
-				case PM : 
-					if (k == ps_maneuver_times[ps] && !have_turned)
-					{
-						chi_ps = atan2(v_p(1), v_p(0)); 
-						v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
-						v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
-						v_p = v_p_new;
-						have_turned = true;
-					}
-					break;
-				default :
-					std::cout << "This intention is not valid!" << std::endl;
-					break;
+				ps_course_changes_copy(ps_count) = ps_course_changes(ps);
+				ps_maneuver_times_copy(ps_count) = ps_maneuver_times(ps);
 			}
 
-			if (k < n_samples - 1)
+			if 		(ps_ordering_copy[ps_count] == KCC)		{ ps_intention_count(0) += 1;}
+			else if (ps_ordering_copy[ps_count] == SM)		{ ps_intention_count(1) += 1; }
+			else if (ps_ordering_copy[ps_count] == PM)		{ ps_intention_count(2) += 1; }
+
+			if (ps_count < n_ps_new - 1)
 			{
-				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p, dt);
-
-				if (ps == 0) P_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
-
-				// Propagate ownship assuming straight line trajectory
-				ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
-					dt * rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
-				ownship_state_sl.block<4, 1>(2, 0) = ownship_state_sl.block<4, 1>(2, 0);
+				ps_count += 1;
 			}
 		}
 	}
+	mu = mu_copy;
+
+	xs_p = xs_p_copy; 
+
+	ps_ordering = ps_ordering_copy;
+	ps_course_changes = ps_course_changes_copy; ps_maneuver_times = ps_maneuver_times_copy;
+}
+
+/****************************************************************************************
+*  Name     : add_intelligent_prediction
+*  Function : Only used when obstacle predictions with their own COLAV system is enabled.
+*			  Adds prediction data for this obstacle`s intelligent prediction to the set
+*			  of trajectories. If an intelligent prediction has already been added before,
+*			  it is overwritten.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void Tracked_Obstacle::add_intelligent_prediction(
+	const Prediction_Obstacle &po,					// In: Prediction obstacle with intelligent prediction information
+	const bool overwrite							// In: Flag to choose whether or not to add the first intelligent prediction, or overwrite the previous
+	)
+{
+	if (mu.size() > 0 && overwrite)
+	{
+		mu.back() = po.get_COLREGS_breach_indicator();
+
+		xs_p.back() = po.get_trajectory();
+
+		ps_ordering.back() = po.get_intention();
+	}
+	else
+	{
+		mu.push_back(po.get_COLREGS_breach_indicator());
+
+		xs_p.push_back(po.get_trajectory());
+		
+		ps_ordering.push_back(po.get_intention());
+	}
+
+	if (ps_ordering.back() == KCC) 	{ ps_intention_count(0) += 1;}
+	else if (ps_ordering.back() == SM) { ps_intention_count(1) += 1;}
+	else if (ps_ordering.back() == PM) { ps_intention_count(2) += 1;}
 }
 
 /****************************************************************************************
@@ -328,6 +344,19 @@ void Tracked_Obstacle::assign_data(
 	const Tracked_Obstacle &to 												// In: Tracked_Obstacle whose data to assign to *this
 	)
 {
+	// Boring non-pointer class member copy
+	this->ID = to.ID;
+
+	this->colav_on = to.colav_on;
+
+	this->A = to.A; this->B = to.B; this->C = to.C; this->D = to.D;
+	this->l = to.l; this->w = to.w;
+
+	this->x_offset = to.x_offset; this->y_offset = to.y_offset;
+
+	this->xs_0 = to.xs_0;
+	this->P_0 = to.P_0;
+
 	this->Pr_a = to.Pr_a; 
 
 	this->Pr_CC = to.Pr_CC;
@@ -342,6 +371,7 @@ void Tracked_Obstacle::assign_data(
 
 	this->ps_ordering = to.ps_ordering;
 	this->ps_course_changes = to.ps_course_changes; this->ps_maneuver_times = to.ps_maneuver_times;
+	this->ps_intention_count = to.ps_intention_count;
 
 	this->kf.reset(new KF(*(to.kf)));
 	this->mrou.reset(new MROU(*(to.mrou)));

@@ -1,9 +1,8 @@
 /****************************************************************************************
 *
-*  File name : psbmpc.h
+*  File name : psbmpc_parameters.cpp
 *
-*  Function  : Header file for the PSB-MPC parameter struct.
-*
+*  Function  : Class function file for the PSB-MPC parameter class.
 *  
 *	           ---------------------
 *
@@ -51,6 +50,7 @@ int PSBMPC_Parameters::get_ipar(
 {
 	switch(index){
 		case i_ipar_n_M 				: return n_M; 
+		case i_ipar_n_r					: return n_r;
 		default : 
 			// Throw
 			return 0;
@@ -155,6 +155,7 @@ void PSBMPC_Parameters::set_par(
 		switch(index)
 		{
 			case i_ipar_n_M 				: n_M = value; break; 	// Should here resize offset matrices to make this change legal
+			case i_ipar_n_r					: n_r = value; break;
 			default : 
 				// Throw
 				break;
@@ -291,6 +292,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 		ipar_high[i] = 1e12;
 	}
 	ipar_low[i_ipar_n_M] = 1; ipar_high[i_ipar_n_M] = 10; 
+	ipar_low[i_ipar_n_r] = 1; ipar_high[i_ipar_n_r] = 20; 
 
 	//std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
 	//std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
@@ -331,7 +333,8 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
+	n_M = 1;
+	n_r = 4;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -344,7 +347,7 @@ void PSBMPC_Parameters::initialize_pars()
 			u_offsets[M] << 1.0, 0.5, 0.0;
 
 			chi_offsets[M].resize(13);
-			//chi_offsets[M] << 30.0;
+			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
@@ -375,7 +378,7 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 110.0; 	     
+	T = 150.0; 	     
 	dt = 5.0;
   	T_static = 60.0;
 
@@ -385,7 +388,7 @@ void PSBMPC_Parameters::initialize_pars()
 		dt = 0.5; 
 		p_step = 10;
 	}
-	t_ts = 30;
+	t_ts = 35;
 
 	d_init = 1500;								 
 	d_close = 1000;
@@ -409,5 +412,5 @@ void PSBMPC_Parameters::initialize_pars()
 	q = 4.0;
 	p = 1.0;
 
-	obstacle_colav_on = false;
+	obstacle_colav_on = true;
 }

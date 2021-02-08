@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : psbmpc.h
+*  File name : psbmpc_parameters.h
 *
 *  Function  : Header file for the PSB-MPC parameter struct.
 *
@@ -26,8 +26,9 @@
 #include <vector>
 
 class PSBMPC;
+template <typename Parameters> class MPC_Cost;
 class Obstacle_Manager;
-class Obstacle_SBMPC;
+class Joint_Prediction_Manager;
 
 /* enum Par_Type 
 {
@@ -68,10 +69,11 @@ class PSBMPC_Parameters
 private:
 
 	friend class PSBMPC;
+	friend class MPC_Cost<PSBMPC_Parameters>;
 	friend class Obstacle_Manager;
-	friend class Obstacle_SBMPC;
+	friend class Joint_Prediction_Manager;
 
-	int n_cbs, n_M;
+	int n_cbs, n_M, n_r;
 
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
@@ -109,6 +111,8 @@ private:
 public:
 
 	PSBMPC_Parameters() { initialize_pars(); initialize_par_limits(); }
+
+	//PSBMPC_Parameters(std::string tuning_file); // Not implemented yet
 
 	void set_par(const int index, const bool value);
 

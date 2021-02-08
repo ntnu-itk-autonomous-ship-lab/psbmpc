@@ -162,7 +162,6 @@ public:
 
 	__host__ Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 	
-	// Used when memory is not an issue
 	__host__ __device__ void predict_trajectory(
 		TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory,
 		const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
