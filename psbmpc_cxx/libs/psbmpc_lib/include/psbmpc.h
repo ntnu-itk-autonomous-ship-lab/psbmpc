@@ -27,8 +27,8 @@
 //#include "prediction_obstacle.h"
 #include "obstacle_manager.h"
 #include "ownship.h"
-//#include "cpe.h"
-//#include "mpc_cost.h"
+#include "cpe.h"
+#include "mpc_cost.h"
 
 #include "Eigen/Dense"
 #include <vector>
@@ -55,7 +55,7 @@ private:
 
 	Ownship ownship;
 
-	//CPE cpe;
+	CPE cpe;
 
 	//std::vector<Prediction_Obstacle> pobstacles;
 
@@ -109,7 +109,7 @@ public:
 
 	PSBMPC_Parameters pars;
 
-	//MPC_Cost<PSBMPC_Parameters> mpc_cost;
+	MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 	PSBMPC();
 

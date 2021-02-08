@@ -112,7 +112,7 @@ public:
 
 	PSBMPC_Parameters() { initialize_pars(); initialize_par_limits(); }
 
-	PSBMPC_Parameters(std::string tuning_file); // Not implemented yet
+	//PSBMPC_Parameters(std::string tuning_file); // Not implemented yet
 
 	void set_par(const int index, const bool value);
 

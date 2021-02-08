@@ -94,7 +94,7 @@ private:
 
 	// Temporaries between dashed lines
 	//--------------------------------------------
-	double y_P_c_i; // Collision probability "measurement" from MCS, temporary var.
+	double y_P_c_i; 
 	
 	double t_cpa, d_cpa, K;
 	Eigen::Vector2d p_os_cpa;
