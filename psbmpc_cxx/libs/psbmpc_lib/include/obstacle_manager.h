@@ -104,13 +104,12 @@ private:
 		if(d_AB < mpc_pars.d_safe || d_AB > mpc_pars.d_close)
 		{
 			st_A = A; st_B = A;
-			return;
 		} 
 		// Inside consideration range
 		else
 		{
-			bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-			bool is_ahead, is_passed, is_head_on, is_crossing;
+			bool B_is_starboard(false), A_is_overtaken(false), B_is_overtaken(false);
+			bool is_ahead(false), is_passed(false), is_head_on(false), is_crossing(false);
 
 			is_ahead = v_A.dot(L_AB) > cos(mpc_pars.phi_AH) * v_A.norm();
 
@@ -189,7 +188,7 @@ private:
 		int n_obst_old = data.obstacles.size();
 		int n_obst_new = obstacle_states.cols();
 
-		bool obstacle_exist;
+		bool obstacle_exist(false);
 		for (int i = 0; i < n_obst_new; i++)
 		{
 			obstacle_exist = false;

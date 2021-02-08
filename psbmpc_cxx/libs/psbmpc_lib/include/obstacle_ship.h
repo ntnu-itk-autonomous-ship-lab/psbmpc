@@ -89,8 +89,8 @@ public:
 
 	void predict_trajectory(
 		Eigen::Matrix<double, 4, -1> &trajectory,
-		const Eigen::VectorXd offset_sequence,
-		const Eigen::VectorXd maneuver_times,
+		const Eigen::VectorXd &offset_sequence,
+		const Eigen::VectorXd &maneuver_times,
 		const double u_d,
 		const double chi_d,
 		const Eigen::Matrix<double, 2, -1> &waypoints,

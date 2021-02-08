@@ -390,10 +390,13 @@ void PSBMPC::initialize_prediction(
 	for (int i = 0; i < n_obst; i++)
 	{
 		n_ps[i] = 1;
-
+		
 		xs_i_0 = data.obstacles[i].kf->get_state();
+
+		std::cout << "xs_i_0 = " << xs_i_0.transpose() << std::endl;
+		std::cout << "xs_0 = " << trajectory.col(0).transpose() << std::endl;
 		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), xs_i_0);
-		std::cout << "p_cpa(i) = " << p_cpa.transpose() << std::endl;
+		std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
 		std::cout << "t_cpa(i) = " << t_cpa(i) << std::endl;
 		std::cout << "d_cpa(i) = " << d_cpa(i) << std::endl;
 		if (n_a == 1)
@@ -425,10 +428,11 @@ void PSBMPC::initialize_prediction(
 				n_ps[i] += 1;
 			} */
 
-			data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
-
-			//data.obstacles[i].predict_independent_trajectories<PSBMPC>(pars.T, pars.dt, trajectory.col(0), *this);
+			
 		}
+		data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
+
+		//data.obstacles[i].predict_independent_trajectories<PSBMPC>(pars.T, pars.dt, trajectory.col(0), *this);
 	}
 
 	if (pars.obstacle_colav_on)
