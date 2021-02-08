@@ -24,8 +24,7 @@
 
 #include "psbmpc_index.h"
 #include "psbmpc_parameters.h"
-//#include "prediction_obstacle.h"
-#include "obstacle_manager.h"
+#include "obstacle_sbmpc.h"
 #include "ownship.h"
 #include "cpe.h"
 #include "mpc_cost.h"
@@ -57,7 +56,7 @@ private:
 
 	CPE cpe;
 
-	//std::vector<Prediction_Obstacle> pobstacles;
+	std::vector<Prediction_Obstacle> pobstacles;
 
 	bool use_joint_prediction;
 

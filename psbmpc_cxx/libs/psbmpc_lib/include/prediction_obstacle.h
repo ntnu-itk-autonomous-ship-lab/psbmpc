@@ -57,7 +57,7 @@ private:
 	
 public:
 
-	//std::unique_ptr<Obstacle_SBMPC> sbmpc;
+	std::unique_ptr<Obstacle_SBMPC> sbmpc;
 
 	Prediction_Obstacle();
 

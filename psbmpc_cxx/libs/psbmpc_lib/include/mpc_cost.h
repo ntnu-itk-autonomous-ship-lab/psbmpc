@@ -244,7 +244,6 @@ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
 
 	int n_ps = xs_i_p.size();
-	std::cout << "n_ps mpc cost = " << n_ps << std::endl;
 	Eigen::VectorXd max_cost_ps(n_ps), weights_ps(n_ps);
 	max_cost_ps.setZero(); weights_ps.setZero();
 
@@ -658,21 +657,23 @@ double MPC_Cost<Parameters>::calculate_chattering_cost(
     const Eigen::VectorXd &maneuver_times                           // In: Time of each maneuver in the offset sequence
     ) const
 {
-	double cost = 0;
+	double cost = 0.0;
 
-	if (pars.n_M > 1) 
+	if (pars.n_M == 1) 
 	{
-		double delta_t = 0;
-		for(int M = 0; M < pars.n_M; M++)
+		return cost;
+	}
+
+	double delta_t = 0.0;
+	for(int M = 0; M < pars.n_M; M++)
+	{
+		if (M < pars.n_M - 1)
 		{
-			if (M < pars.n_M - 1)
+			if ((offset_sequence(2 * M + 1) > 0 && offset_sequence(2 * M + 3) < 0) ||
+				(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) > 0))
 			{
-				if ((offset_sequence(2 * M + 1) > 0 && offset_sequence(2 * M + 3) < 0) ||
-					(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) > 0))
-				{
-					delta_t = maneuver_times(M + 1) - maneuver_times(M);
-					cost += pars.K_sgn * exp( - delta_t / pars.T_sgn);
-				}
+				delta_t = maneuver_times(M + 1) - maneuver_times(M);
+				cost += pars.K_sgn * exp( - delta_t / pars.T_sgn);
 			}
 		}
 	}
