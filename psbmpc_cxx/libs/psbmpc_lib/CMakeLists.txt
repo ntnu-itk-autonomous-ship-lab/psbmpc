@@ -27,6 +27,7 @@ add_library(psbmpc_lib STATIC
 	src/obstacle.cpp 
 	src/obstacle_ship.cpp 
 	src/obstacle_sbmpc.cpp 
+	src/joint_prediction_manager.cpp
 	src/tracked_obstacle.cpp
 	src/prediction_obstacle.cpp 
 	src/mrou.cpp 

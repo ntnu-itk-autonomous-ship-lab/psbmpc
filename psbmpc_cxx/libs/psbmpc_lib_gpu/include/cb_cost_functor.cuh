@@ -39,6 +39,8 @@ private:
 
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory;
 
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_colav_p;
+
 	//==============================================
 	// Pre-allocated temporaries
 	//==============================================
@@ -109,11 +111,6 @@ private:
 
 	__device__ inline void calculate_collision_probabilities(TML::PDMatrix<float, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, const int i, const unsigned int cb_index);
 
-	__device__ inline float calculate_dynamic_obstacle_cost(
-		const TML::PDMatrix<float, MAX_N_PS, MAX_N_SAMPLES> &P_c_i, 
-		const int i, 
-		const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
-		const unsigned int cb_index);
 
 	__device__ inline float calculate_dynamic_obstacle_cost(
 		const float P_c_i_ps,
@@ -163,9 +160,10 @@ public:
 		Cuda_Obstacle *obstacles, 
 		CPE *cpe,
 		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,
+		TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_colav_p,
 		const int wp_c_0);
 
-	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; cpe = nullptr; trajectory = nullptr; }
+	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; cpe = nullptr; trajectory = nullptr; xs_i_colav_p = nullptr; }
 	
 	__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 	

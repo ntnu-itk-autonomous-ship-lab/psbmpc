@@ -24,13 +24,18 @@
 #include <vector>
 #include <memory>
 #include "Eigen/Dense"
+#include "utilities.h"
 #include "obstacle.h"
 #include "mrou.h"
 #include "kf.h"
 
+class Prediction_Obstacle;
 class Tracked_Obstacle : public Obstacle
 {
 private:
+
+	// To make transfer of data between obstacle objects easier
+	friend class Prediction_Obstacle;
 
 	// Vector of intention probabilities at the current time or last time of update
 	Eigen::VectorXd Pr_a;
@@ -46,7 +51,7 @@ private:
 	std::vector<bool> mu;
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
-	// This is equal for all prediction scenarios including those with active COLAV (using MROU)
+	// This is equal for all prediction scenarios including those with active COLAV, using the OU-process
 	Eigen::MatrixXd P_p;  
 
 	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
@@ -58,8 +63,11 @@ private:
 	// Prediction scenario ordering, size n_ps x 1 of intentions
 	std::vector<Intention> ps_ordering;
 
-	// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
+	// Course change ordering and maneuvering times for the independent prediction scenarios: n_ps_independent x 1
 	Eigen::VectorXd ps_course_changes, ps_maneuver_times;
+
+	// Number of prediction scenarios corresponding to intention a = 1, 2, 3, ..., n_a. Typically n_a = 3. 
+	Eigen::VectorXi ps_intention_count;
 
 	void assign_data(const Tracked_Obstacle &to);
 	
@@ -89,6 +97,10 @@ public:
 
 	inline Eigen::VectorXd get_intention_probabilities() const { return Pr_a; };
 
+	inline std::vector<Intention> get_ps_ordering() const { return ps_ordering; }
+
+	inline Eigen::VectorXi get_ps_intention_count() const { return ps_intention_count; }
+
 	// KF related methods
 	inline double get_duration_tracked() const { return duration_tracked; };
 
@@ -105,28 +117,117 @@ public:
 	// Trajectory prediction related methods
 	void resize_trajectories(const int n_samples);
 
+	inline Eigen::MatrixXd get_trajectory(const int ps) const { return xs_p[ps]; };
+
 	inline std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; };
 
 	inline Eigen::MatrixXd get_trajectory_covariance() const { return P_p; };
 
-	void initialize_prediction(	
+	void initialize_independent_prediction(	
 		const std::vector<Intention> &ps_ordering,
 		const Eigen::VectorXd &ps_course_changes,
 		const Eigen::VectorXd &ps_maneuver_times);
 
-	// Some PSBMPC parameters needed to determine if obstacle breaches COLREGS 
-	// (future: implement simple sbmpc class for obstacle which has the "determine COLREGS violation"
-	// function and equal parameters for the phi-angles, d_close and d_safe)
+	/****************************************************************************************
+	*  Name     : predict_independent_trajectories
+	*  Function : Predicts the obstacle trajectories for scenarios where the obstacle
+	*			  does not take the own-ship into account.
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
+	template <class MPC_Type>
 	void predict_independent_trajectories(
 		const double T, 
 		const double dt, 
 		const Eigen::Matrix<double, 6, 1> &ownship_state,
-		const double phi_AH,
-		const double phi_CR,
-		const double phi_HO,
-		const double phi_OT,
-		const double d_close,
-		const double d_safe);
+		const MPC_Type &mpc)
+	{
+		int n_samples = std::round(T / dt);
+		resize_trajectories(n_samples);
+
+		int n_ps_independent = ps_course_changes.size();
+		
+		Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
+		P_p.col(0) = flatten(kf->get_covariance());
+
+		Eigen::Vector2d v_p_new, v_A, v_B, L_AB;
+		double chi_ps(0.0), t(0.0), psi_A(0.0), d_AB(0.0);
+		bool have_turned(false);
+		for(int ps = 0; ps < n_ps_independent; ps++)
+		{
+			ownship_state_sl = ownship_state;
+
+			v_p(0) = kf->get_state()(2);
+			v_p(1) = kf->get_state()(3);
+
+			xs_p[ps].col(0) = kf->get_state();
+			
+			have_turned = false;	
+			for(int k = 0; k < n_samples; k++)
+			{
+				t = (k + 1) * dt;
+
+				v_B(0) = ownship_state_sl(3);
+				v_B(1) = ownship_state_sl(4);
+				v_B = rotate_vector_2D(v_B, ownship_state_sl(2));
+
+				psi_A = atan2(xs_p[ps](4), xs_p[ps](0));
+				L_AB = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl.block<2, 1>(0, 0);
+				d_AB = L_AB.norm();
+				L_AB.normalize();
+
+				if (!mu[ps])
+				{
+					mu[ps] = mpc.mpc_cost.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
+				}
+			
+				switch (ps_ordering[ps])
+				{
+					case KCC :	
+						break; // Proceed
+					case SM :
+						if (k == ps_maneuver_times[ps] && !have_turned)
+						{
+							chi_ps = atan2(v_p(1), v_p(0)); 
+							v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
+							v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
+							v_p = v_p_new;
+							have_turned = true;
+						}
+						break;
+					case PM : 
+						if (k == ps_maneuver_times[ps] && !have_turned)
+						{
+							chi_ps = atan2(v_p(1), v_p(0)); 
+							v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
+							v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
+							v_p = v_p_new;
+							have_turned = true;
+						}
+						break;
+					default :
+						// Throw
+						break;
+				}
+
+				if (k < n_samples - 1)
+				{
+					xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p, dt);
+
+					if (ps == 0) P_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
+
+					// Propagate ownship assuming straight line trajectory
+					ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
+						dt * rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
+					ownship_state_sl.block<4, 1>(2, 0) = ownship_state_sl.block<4, 1>(2, 0);
+				}
+			}
+		}
+	}
+
+	void prune_ps(const Eigen::VectorXi &ps_indices);
+
+	void add_intelligent_prediction(const Prediction_Obstacle &po, const bool overwrite);
 
 	void update(
 		const Eigen::VectorXd &xs_aug, 

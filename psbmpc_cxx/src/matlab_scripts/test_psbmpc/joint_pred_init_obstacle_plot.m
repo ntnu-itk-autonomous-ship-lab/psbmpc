@@ -1,0 +1,1 @@
+plot(ax1, WPs_i(2, :), WPs_i(1, :), 'mx', 'Linewidth', 2);

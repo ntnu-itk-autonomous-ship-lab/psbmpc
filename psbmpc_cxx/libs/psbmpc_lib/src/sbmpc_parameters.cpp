@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : psbmpc.h
+*  File name : sbmpc_parameters.cpp
 *
-*  Function  : Header file for the PSB-MPC parameter struct.
+*  Function  : Class function file for the SB-MPC parameter class
 *
 *  
 *	           ---------------------
@@ -262,85 +262,167 @@ void SBMPC_Parameters::initialize_par_limits()
 
 /****************************************************************************************
 *  Name     : initialize_pars
-*  Function : Sets initial values for PSBMPC tuning parameters
+*  Function : Sets initial values for SBMPC tuning parameters
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void SBMPC_Parameters::initialize_pars()
+void SBMPC_Parameters::initialize_pars(
+	const bool is_obstacle_sbmpc							// In: Boolean flag to determine MPC tuning
+	)
 {
-	n_cbs = 1;
-	n_M = 1;
-
-	chi_offsets.resize(n_M);
-	u_offsets.resize(n_M);
-	for (int M = 0; M < n_M; M++)
+	if (!is_obstacle_sbmpc) // Tuning for SB-MPC
 	{
-		if (M == 0)
-		{
-			u_offsets[M].resize(3);
-			//u_offsets[M] << 1.0;
-			u_offsets[M] << 1.0, 0.5, 0.0;
+		n_cbs = 1;
+		n_M = 1;
 
-			chi_offsets[M].resize(13);
-			//chi_offsets[M] << 30.0;
-			//chi_offsets[M] << -30.0, 0.0, 30.0;
-			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
-			chi_offsets[M] *= DEG2RAD;
-		} 
-		else
+		chi_offsets.resize(n_M);
+		u_offsets.resize(n_M);
+		for (int M = 0; M < n_M; M++)
 		{
-			u_offsets[M].resize(2);
-			//u_offsets[M] << 1.0;
-			u_offsets[M] << 1.0, 0.5;
-			//u_offsets[M] << 1.0, 0.5, 0.0;
+			if (M == 0)
+			{
+				u_offsets[M].resize(3);
+				//u_offsets[M] << 1.0;
+				u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(7);
-			//chi_offsets[M] << 0.0;
-			//chi_offsets[M] << -30.0, 0.0, 30.0;
-			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
-			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
-			chi_offsets[M] *= DEG2RAD;
+				chi_offsets[M].resize(13);
+				//chi_offsets[M] << 30.0;
+				//chi_offsets[M] << -30.0, 0.0, 30.0;
+				//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				chi_offsets[M] *= DEG2RAD;
+			} 
+			else
+			{
+				u_offsets[M].resize(2);
+				//u_offsets[M] << 1.0;
+				u_offsets[M] << 1.0, 0.5;
+				//u_offsets[M] << 1.0, 0.5, 0.0;
+
+				chi_offsets[M].resize(7);
+				//chi_offsets[M] << 0.0;
+				//chi_offsets[M] << -30.0, 0.0, 30.0;
+				//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+				chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				chi_offsets[M] *= DEG2RAD;
+			}
+			n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
 		}
-		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
+
+		prediction_method = ERK1;
+		guidance_method = LOS;
+
+		T = 110.0;
+		dt = 5.0;
+		T_static = 60.0;
+
+		p_step = 1;
+		if (prediction_method == ERK1)
+		{ 
+			dt = 0.5; 
+			p_step = 10;
+		}
+		t_ts = 50;
+
+		d_init = 1500;								 
+		d_close = 1000;
+		d_safe = 50; 							
+		K_coll = 2.5;		  					
+		phi_AH = 68.5 * DEG2RAD;		 	
+		phi_OT = 68.5 * DEG2RAD;		 		 
+		phi_HO = 22.5 * DEG2RAD;		 		
+		phi_CR = 68.5 * DEG2RAD;	     		
+		kappa = 8.0;		  					
+		kappa_TC = 10.0;						 
+		K_u = 4;		   						 
+		K_du = 2.5;		    					
+		K_chi_strb = 1.3;	  					
+		K_chi_port =  1.6;	  					
+		K_dchi_strb = 0.9;	 			
+		K_dchi_port = 1.2;
+		K_sgn = 5;
+		T_sgn = 4 * t_ts;	  					
+		G = 1e3;		         					 
+		q = 4.0;
+		p = 1.0;
 	}
+	else // Tuning for Obstacle SB-MPC
+	{
+		n_cbs = 1;
+		n_M = 1;
 
-	prediction_method = ERK1;
-	guidance_method = LOS;
+		chi_offsets.resize(n_M);
+		u_offsets.resize(n_M);
+		for (int M = 0; M < n_M; M++)
+		{
+			if (M == 0)
+			{
+				u_offsets[M].resize(3);
+				//u_offsets[M] << 1.0;
+				u_offsets[M] << 1.0, 0.5, 0.0;
 
-	T = 110.0;
-	dt = 5.0;
-  	T_static = 60.0;
+				chi_offsets[M].resize(13);
+				//chi_offsets[M] << 30.0;
+				//chi_offsets[M] << -30.0, 0.0, 30.0;
+				//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				chi_offsets[M] *= DEG2RAD;
+			} 
+			else
+			{
+				u_offsets[M].resize(2);
+				//u_offsets[M] << 1.0;
+				u_offsets[M] << 1.0, 0.5;
+				//u_offsets[M] << 1.0, 0.5, 0.0;
 
-	p_step = 1;
-	if (prediction_method == ERK1)
-	{ 
-		dt = 0.5; 
-		p_step = 10;
+				chi_offsets[M].resize(7);
+				//chi_offsets[M] << 0.0;
+				//chi_offsets[M] << -30.0, 0.0, 30.0;
+				//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+				chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				chi_offsets[M] *= DEG2RAD;
+			}
+			n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
+		}
+
+		prediction_method = ERK1;
+		guidance_method = LOS;
+
+		T = 150.0;
+		dt = 5.0;
+		T_static = 60.0;
+
+		p_step = 1;
+		if (prediction_method == ERK1)
+		{ 
+			dt = 0.5; 
+			p_step = 10;
+		}
+		t_ts = 50;
+
+		d_init = 1500;								 
+		d_close = 1000;
+		d_safe = 50; 							
+		K_coll = 2.5;		  					
+		phi_AH = 68.5 * DEG2RAD;		 	
+		phi_OT = 68.5 * DEG2RAD;		 		 
+		phi_HO = 22.5 * DEG2RAD;		 		
+		phi_CR = 68.5 * DEG2RAD;	     		
+		kappa = 8.0;		  					
+		kappa_TC = 10.0;						 
+		K_u = 4;		   						 
+		K_du = 2.5;		    					
+		K_chi_strb = 1.3;	  					
+		K_chi_port =  1.6;	  					
+		K_dchi_strb = 0.9;	 			
+		K_dchi_port = 1.2;
+		K_sgn = 5;
+		T_sgn = 4 * t_ts;	  					
+		G = 1e3;		         					 
+		q = 4.0;
+		p = 1.0;
 	}
-	t_ts = 50;
-
-	d_init = 1500;								 
-	d_close = 1000;
-	d_safe = 50; 							
-	K_coll = 2.5;		  					
-	phi_AH = 68.5 * DEG2RAD;		 	
-	phi_OT = 68.5 * DEG2RAD;		 		 
-	phi_HO = 22.5 * DEG2RAD;		 		
-	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 8.0;		  					
-	kappa_TC = 10.0;						 
-	K_u = 4;		   						 
-	K_du = 2.5;		    					
-	K_chi_strb = 1.3;	  					
-	K_chi_port =  1.6;	  					
-	K_dchi_strb = 0.9;	 			
-	K_dchi_port = 1.2;
-	K_sgn = 5;
-	T_sgn = 4 * t_ts;	  					
-	G = 1e3;		         					 
-	q = 4.0;
-	p = 1.0;
-
+	
 }

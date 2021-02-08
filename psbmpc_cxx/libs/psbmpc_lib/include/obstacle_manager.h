@@ -43,6 +43,7 @@ enum ST
 	F 														// Give-way in Crossing 	(ST = CR, GW)
 };	
 
+template <class Obstacle_Type>
 class Obstacle_Data
 {
 public:
@@ -57,12 +58,14 @@ public:
 	// Obstacle hazard levels, on a scale from 0 to 1 (output from PSBMPC)
 	Eigen::VectorXd HL_0;
 
-	std::vector<Tracked_Obstacle> obstacles;
-	std::vector<Tracked_Obstacle> new_obstacles;
+	std::vector<Obstacle_Type> obstacles;
+	std::vector<Obstacle_Type> new_obstacles;
 
 	Eigen::MatrixXd obstacle_status;
 
 	Obstacle_Data() {}
+
+	~Obstacle_Data() {}
 
 };
 
@@ -72,16 +75,12 @@ private:
 
 	// Array of strings and precisions for the obstacle status states
 	std::vector<std::string> status_str = {"ID", "SOG", "COG", "RB", "RNG", "HL", "IP", "AH", "SB", "HO", "CRG", "OTG", "OT"};
-	std::vector<int> status_precision = {0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0};
-
-	// Array to determine width of print in status display
-	int width_arr[13];
 
 	double T_lost_limit, T_tracked_limit;
 
 	bool obstacle_filter_on;
 
-	Obstacle_Data data;
+	Obstacle_Data<Tracked_Obstacle> data;
 
 	/****************************************************************************************
 	*  Name     : determine_situation_type
@@ -93,7 +92,7 @@ private:
 	void determine_situation_type(
 		ST& st_A,																// In/out: Situation type of vessel A
 		ST& st_B,																// In/out: Situation type of vessel B
-		const Parameter_Object &mpc_pars, 										// In: Parameters of the obstacle manager boss: PSBMPC		
+		const Parameter_Object &mpc_pars, 										// In: Parameters of the obstacle manager boss	
 		const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A 
 		const double psi_A, 													// In: Heading of vessel A
 		const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B
@@ -101,23 +100,16 @@ private:
 		const double d_AB 														// In: Distance from vessel A to vessel B
 		)
 	{
-		// Crash situation, assume reactive maneuvers like in an overtaking scenario
-		if (d_AB < mpc_pars.d_safe) 
-		{
-			st_A = D; st_B = D; 
-			return;
-		} 
-		// Outside consideration range
-		else if(d_AB > mpc_pars.d_close)
+		// Crash situation or outside consideration range
+		if(d_AB < mpc_pars.d_safe || d_AB > mpc_pars.d_close)
 		{
 			st_A = A; st_B = A;
-			return;
 		} 
 		// Inside consideration range
 		else
 		{
-			bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-			bool is_ahead, is_passed, is_head_on, is_crossing;
+			bool B_is_starboard(false), A_is_overtaken(false), B_is_overtaken(false);
+			bool is_ahead(false), is_passed(false), is_head_on(false), is_crossing(false);
 
 			is_ahead = v_A.dot(L_AB) > cos(mpc_pars.phi_AH) * v_A.norm();
 
@@ -186,7 +178,7 @@ private:
 	*****************************************************************************************/
 	template <class Parameter_Object>
 	void update_obstacles(
-		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss: PSBMPC
+		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
 		const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
 		const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
 		const Eigen::MatrixXd &obstacle_intention_probabilities, 							// In: Obstacle intention probability information
@@ -196,7 +188,7 @@ private:
 		int n_obst_old = data.obstacles.size();
 		int n_obst_new = obstacle_states.cols();
 
-		bool obstacle_exist;
+		bool obstacle_exist(false);
 		for (int i = 0; i < n_obst_new; i++)
 		{
 			obstacle_exist = false;
@@ -267,16 +259,16 @@ private:
 	*****************************************************************************************/
 	template <class Parameter_Object>
 	void update_situation_type_and_transitional_variables(
-		const Parameter_Object &mpc_pars,								// In: Parameters of the obstacle manager boss: PSBMPC
+		const Parameter_Object &mpc_pars,								// In: Parameters of the obstacle manager boss
 		const Eigen::Matrix<double, 6, 1> &ownship_state,				// In: Current time own-ship state
 		const double ownship_length										// In: Dimension of ownship along longest axis
 		)
 	{
-		bool is_close;
+		bool is_close(false);
 
 		// A : Own-ship, B : Obstacle i
 		Eigen::Vector2d v_A, v_B, L_AB;
-		double psi_A, psi_B, d_AB;
+		double psi_A(0.0), psi_B(0.0), d_AB(0.0);
 		v_A(0) = ownship_state(3);
 		v_A(1) = ownship_state(4);
 		psi_A = wrap_angle_to_pmpi(ownship_state(2));
@@ -332,18 +324,18 @@ private:
 
 			// Ownship overtaking the obstacle
 			data.O_TC_0[i] = v_B.dot(v_A) > cos(mpc_pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-					v_B.norm() < v_B.norm()							    						&&
-					v_B.norm() > 0.25															&&
-					is_close 																	&&
+					v_B.norm() < v_B.norm()							    					&&
+					v_B.norm() > 0.25														&&
+					is_close 																&&
 					data.AH_0[i];
 
 			//std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << O_TC_0[i] << std::endl;
 
 			// Obstacle overtaking the ownship
 			data.Q_TC_0[i] = v_A.dot(v_B) > cos(mpc_pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() < v_B.norm()							  			&&
-					v_A.norm() > 0.25 											&&
-					is_close 													&&
+					v_A.norm() < v_B.norm()							  						&&
+					v_A.norm() > 0.25 														&&
+					is_close 																&&
 					!data.AH_0[i];
 
 			//std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << Q_TC_0[i] << std::endl;
@@ -359,8 +351,8 @@ private:
 
 			// This is not mentioned in article, but also implemented here..				
 			data.H_TC_0[i] = v_A.dot(v_B) < - cos(mpc_pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() > 0.25																&&
-					v_B.norm() > 0.25																&&
+					v_A.norm() > 0.25															&&
+					v_B.norm() > 0.25															&&
 					data.AH_0[i];
 			
 			//std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << H_TC_0[i] << std::endl;
@@ -368,11 +360,9 @@ private:
 			// Crossing situation, a bit redundant with the !is_passed condition also, 
 			// but better safe than sorry (could be replaced with B_is_ahead also)
 			data.X_TC_0[i] = v_A.dot(v_B) < cos(mpc_pars.phi_CR) * v_A.norm() * v_B.norm()	&&
-					!data.H_TC_0[i]																&&
-					!data.O_TC_0[i] 															&&
-					!data.Q_TC_0[i] 	 														&&
-					!data.IP_0[i]																&&
-					v_A.norm() > 0.25															&&
+					!data.H_TC_0[i]															&&
+					!data.IP_0[i]															&&
+					v_A.norm() > 0.25														&&
 					v_B.norm() > 0.25;
 
 			//std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << X_TC_0[i] << std::endl;
@@ -383,7 +373,7 @@ public:
 
 	Obstacle_Manager();
 
-	Obstacle_Data& get_data() { return data; }
+	Obstacle_Data<Tracked_Obstacle>& get_data() { return data; }
 
 	void update_obstacle_status(const Eigen::Matrix<double, 6, 1> &ownship_state);
 
@@ -398,7 +388,7 @@ public:
 	*****************************************************************************************/
 	template <class Parameter_Object>
 	void operator()(
-		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss: PSBMPC
+		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
 		const Eigen::Matrix<double, 6, 1> &ownship_state,									// In: Current time own-ship state
 		const double ownship_length,														// In: Dimension of ownship along longest axis
 		const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 

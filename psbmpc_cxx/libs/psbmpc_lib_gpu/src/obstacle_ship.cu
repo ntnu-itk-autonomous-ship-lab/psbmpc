@@ -21,7 +21,6 @@
 #include <thrust/device_vector.h>
 #include "utilities.cuh"
 #include "obstacle_ship.cuh"
-#include <vector>
 #include <iostream>
 
 /****************************************************************************************
@@ -43,68 +42,73 @@ __host__ __device__ Obstacle_Ship::Obstacle_Ship()
 	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
-		
 }
 
 /****************************************************************************************
 *  Name     : determine_active_waypoint_segment
-*  Function : 
+*  Function : Two overloads depending on matrix library used.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
-	const CML::MatrixXd &waypoints,  				// In: Waypoints to follow
-	const CML::MatrixXd &xs 						// In: Ownship state
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,  			// In: Waypoints to follow
+	const TML::Vector4f &xs 										// In: Ownship state
 	)	
 {
-	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
-
-	int n_wps = waypoints.get_cols();
-	CML::MatrixXd d_0_wp(2, 1), L_wp_segment(2, 1), L_0wp(2, 1);
-	bool segment_passed = false;
+	n_wps = waypoints.get_cols();
+	segment_passed = false;
 
 	if (n_wps <= 2) { wp_c_0 = 0; wp_c_p = 0; return; }
 
 	for (int i = wp_c_0; i < n_wps - 1; i++)
 	{
-		d_0_wp(0) = waypoints(0, i + 1) - xs(0);
-		d_0_wp(1) = waypoints(1, i + 1) - xs(1);
+		d_next_wp(0) = waypoints(0, i + 1) - xs(0);
+		d_next_wp(1) = waypoints(1, i + 1) - xs(1);
 
 		L_wp_segment(0) = waypoints(0, i + 1) - waypoints(0, i);
 		L_wp_segment(1) = waypoints(1, i + 1) - waypoints(1, i);
 		L_wp_segment = L_wp_segment.normalized();
 
-		segment_passed = L_wp_segment.dot(d_0_wp.normalized()) < cos(90 * DEG2RAD);
+		segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
 
 		//(s > R_a && fabs(e) <= R_a))) 	
-		if (d_0_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
+		if (d_next_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
 		else										{ break; }		
-		
 	}
 	wp_c_p = wp_c_0;
 }
 
+__host__ void Obstacle_Ship::determine_active_waypoint_segment(
+	const Eigen::Matrix<double, 2, -1> &waypoints,  			// In: Waypoints to follow
+	const Eigen::Vector4d &xs 						// In: Ownship state
+	)	
+{
+	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints_copy;
+	TML::Vector4f xs_copy;
+	TML::assign_eigen_object(waypoints_copy, waypoints);
+	TML::assign_eigen_object(xs_copy, xs);
+
+	determine_active_waypoint_segment(waypoints_copy, xs_copy);
+}
+
 /****************************************************************************************
 *  Name     : update_guidance_references 
-*  Function : 
+*  Function : Two overloads depending on matrix library used.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Obstacle_Ship::update_guidance_references(
-	double &u_d,												// In/out: Surge reference
-	double &chi_d,												// In/out: Course reference 
-	const CML::MatrixXd &waypoints,								// In: Waypoints to follow.
-	const CML::MatrixXd &xs, 									// In: Ownship state	
-	const double dt, 											// In: Time step
-	const Guidance_Method guidance_method						// In: Type of guidance used	
+	float &u_d,																	// In/out: Surge reference
+	float &chi_d,																// In/out: Course reference 
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,						// In: Waypoints to follow.
+	const TML::Vector4f &xs, 													// In: Ownship state	
+	const float dt, 															// In: Time step
+	const Guidance_Method guidance_method										// In: Type of guidance used	
 	)
 {
-	assert(waypoints.get_rows() == 2 && xs.get_rows() == 6 && xs.get_cols() == 1);
-
-	int n_wps = waypoints.get_cols();
-	double alpha, e;
-	CML::MatrixXd d_next_wp(2, 1), L_wp_segment(2, 1);
-	bool segment_passed = false;
+	n_wps = waypoints.get_cols();
+	alpha = 0.0f; e = 0.0f;
+	segment_passed = false;
 	
 	if (wp_c_p < n_wps - 1 && (guidance_method == LOS || guidance_method == WPP))
 	{
@@ -120,7 +124,7 @@ __host__ __device__ void Obstacle_Ship::update_guidance_references(
 
 		if (d_next_wp.norm() <= R_a || segment_passed) //(s > 0 && e <= R_a))
 		{
-			e_int = 0;
+			e_int = 0.0f;
 			wp_c_p ++;
 		} 
 	}
@@ -172,34 +176,47 @@ __host__ __device__ void Obstacle_Ship::update_guidance_references(
 	}
 }
 
+__host__ void Obstacle_Ship::update_guidance_references(
+	double &u_d,												// In/out: Surge reference
+	double &chi_d,												// In/out: Course reference 
+	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
+	const Eigen::Vector4d &xs, 									// In: Ownship state	
+	const double dt, 											// In: Time step
+	const Guidance_Method guidance_method						// In: Type of guidance used	
+	)
+{
+	TML::Vector4f xs_copy;
+	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints_copy;
+	TML::assign_eigen_object(waypoints_copy, waypoints); 
+	TML::assign_eigen_object(xs_copy, xs); 
+
+	update_guidance_references((float&)u_d, (float&)chi_d, waypoints_copy, xs_copy, (float)dt, guidance_method);
+}
+
 /****************************************************************************************
 *  Name     : predict
 *  Function : Predicts obstacle state xs a number of dt units forward in time with the 
-*			  chosen prediction method
+*			  chosen prediction method. Two overloads depending on matrix library used.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CML::MatrixXd Obstacle_Ship::predict(
-	const CML::MatrixXd &xs_old, 									// In: State [x, y, chi, U] to predict forward
+__host__ __device__ TML::Vector4f Obstacle_Ship::predict(
+	const TML::Vector4f &xs_old, 									// In: State [x, y, chi, U] to predict forward
 	const double U_d, 												// In: Speed over ground (SOG) reference
 	const double chi_d, 											// In: Course (COG) reference
 	const double dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
 	)
 {
-	assert(xs_old.get_rows() == 4 && xs_old.get_cols() == 1);
-
-	CML::MatrixXd xs_new(4, 1);
-	double chi_diff = angle_difference_pmpi(chi_d, xs_old(2));
+	chi_diff = angle_difference_pmpi(chi_d, xs_old(2));
 
 	switch (prediction_method)
 	{
 		case Linear : 
-			// Straight line trajectory with the current heading and speed
+			// Straight line trajectory with the current heading and surge speed
 			xs_new(0) = xs_old(0) + dt * xs_old(3) * cos(xs_old(2));
 			xs_new(1) = xs_old(1) + dt * xs_old(3) * sin(xs_old(2));
-			xs_new(2) = xs_old(2); 
-			xs_new(3) = xs_old(3);
+			xs_new.set_block<2, 1>(2, 0, xs_old.get_block<2, 1>(2, 0));
 			break;
 		case ERK1 : 
 			// First set xs_new to the continuous time derivative of the model
@@ -209,7 +226,8 @@ __host__ __device__ CML::MatrixXd Obstacle_Ship::predict(
 			xs_new(3) = (1 / T_U) * (U_d - xs_old(3));
 
 			// Then use forward euler to obtain new states
-			xs_new = xs_old + dt * xs_new;
+			xs_new *= dt;
+			xs_new += xs_old;
 			break;
 		default :
 			// Throw
@@ -219,38 +237,54 @@ __host__ __device__ CML::MatrixXd Obstacle_Ship::predict(
 	return xs_new;
 }
 
+__host__ Eigen::Vector4d Obstacle_Ship::predict(
+	const Eigen::Vector4d &xs_old, 									// In: State to predict forward
+	const double U_d, 												// In: Speed over ground (SOG) reference
+	const double chi_d, 											// In: Course (COG) reference
+	const double dt, 												// In: Time step
+	const Prediction_Method prediction_method 						// In: Method used for prediction
+	)
+{
+	TML::Vector4f xs_old_copy;
+	TML::assign_eigen_object(xs_old_copy, xs_old);
+
+	TML::Vector4f result = predict(xs_old_copy, U_d, chi_d, dt, prediction_method);
+	Eigen::Vector4d xs_new;
+	TML::assign_tml_object(xs_new, result);
+
+	return xs_new;
+}
+
 /****************************************************************************************
 *  Name     : predict_trajectory
-*  Function : Predicts the bbstacle ship trajectory for a sequence of avoidance maneuvers
-*			  in the offset sequence.
+*  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
+*			  in the offset sequence. Two overloads depending on matrix library used.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Obstacle_Ship::predict_trajectory(
-	CML::MatrixXd &trajectory, 										// In/out: Obstacle ship trajectory
-	const CML::MatrixXd &offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
-	const CML::MatrixXd &maneuver_times,								// In: Time indices for each Obstacle_Model avoidance maneuver
-	const double u_d, 												// In: Surge reference
-	const double chi_d, 											// In: Course reference
-	const CML::MatrixXd &waypoints, 								// In: Obstacle waypoints
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 			// In/out: Obstacle ship trajectory
+	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, 	// In: Sequence of offsets in the candidate control behavior
+	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,			// In: Time indices for each Obstacle_Model avoidance maneuver
+	const float u_d, 												// In: Surge reference
+	const float chi_d, 												// In: Course reference
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 			// In: Obstacle waypoints
 	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
 	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
-	const double T,													// In: Prediction horizon
-	const double dt 												// In: Prediction time step
+	const float T,													// In: Prediction horizon
+	const float dt 													// In: Prediction time step
 	)
 {
-	assert(waypoints.get_rows() == 2);
-
-	int n_samples = T / dt;
+	n_samples = T / dt;
 	
-	trajectory.conservative_resize(4, n_samples);
+	trajectory.resize(4, n_samples);
 
-	wp_c_p = wp_c_0;
+	initialize_wp_following();
 
-	int man_count = 0;
-	double u_m = 1, u_d_p = u_d;
-	double chi_m = 0, chi_d_p = chi_d;
-	CML::MatrixXd xs = trajectory.get_col(0);
+	man_count = 0;
+	u_m = 1, u_d_p = u_d;
+	chi_m = 0, chi_d_p = chi_d;
+	xs_p = trajectory.get_col(0);
 
 	for (int k = 0; k < n_samples; k++)
 	{ 
@@ -260,12 +294,40 @@ __host__ __device__ void Obstacle_Ship::predict_trajectory(
 			if (man_count < (int)maneuver_times.size() - 1) man_count += 1;
 		}  
 
-		update_guidance_references(u_d_p, chi_d_p, waypoints, xs, dt, guidance_method);
+		update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
 
-		xs = predict(xs, u_m * u_d_p , chi_d_p + chi_m, dt, prediction_method);
+		xs_p = predict(xs_p, u_m * u_d_p , chi_d_p + chi_m, dt, prediction_method);
 		
-		if (k < n_samples - 1) trajectory.set_col(k + 1, xs);
+		if (k < n_samples - 1) trajectory.set_col(k + 1, xs_p);
 	}
+}
+
+__host__ void Obstacle_Ship::predict_trajectory(
+	Eigen::Matrix<double, 4, -1> &trajectory, 						// In/out: Own-ship trajectory
+	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
+	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
+	const double u_d, 												// In: Surge reference
+	const double chi_d, 											// In: Course reference
+	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Waypoints to follow
+	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
+	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
+	const double T,													// In: Prediction horizon
+	const double dt 												// In: Prediction time step
+	)
+{
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> trajectory_copy;
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_copy;
+	TML::PDMatrix<float, MAX_N_M, 1> maneuver_times_copy;
+	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints_copy;
+	
+	TML::assign_eigen_object(trajectory_copy, trajectory); 
+	TML::assign_eigen_object(offset_sequence_copy, offset_sequence); 
+	TML::assign_eigen_object(maneuver_times_copy, maneuver_times); 
+	TML::assign_eigen_object(waypoints_copy, waypoints); 
+
+	predict_trajectory(trajectory_copy, offset_sequence_copy, maneuver_times_copy, u_d, chi_d, waypoints_copy, prediction_method, guidance_method, T, dt);
+
+	TML::assign_tml_object(trajectory, trajectory_copy);
 }
 
 

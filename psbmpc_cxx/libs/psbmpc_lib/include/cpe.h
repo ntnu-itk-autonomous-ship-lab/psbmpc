@@ -94,7 +94,7 @@ private:
 
 	// Temporaries between dashed lines
 	//--------------------------------------------
-	double y_P_c_i; // Collision probability "measurement" from MCS, temporary var.
+	double y_P_c_i; 
 	
 	double t_cpa, d_cpa, K;
 	Eigen::Vector2d p_os_cpa;
@@ -127,7 +127,7 @@ private:
 	//====================================
 	// Other pre-allocated temporaries:
 	double P_c_est, P_c_CE, y_P_c, sum;
-	int n, n_samples, n_samples_traj, n_cols, k_j, k_j_;	
+	int n, n_samples, n_samples_traj, n_cols, k_j, k_j_, sample_count;	
 	Eigen::MatrixXd Sigma_inv;
 
 	double exp_val, log_val;
@@ -193,6 +193,8 @@ public:
 
 	void set_method(const CPE_Method cpe_method) { if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
 
+	void set_segment_discretization_time(const double dt_seg) { this->dt_seg = dt_seg; };
+
 	double get_segment_discretization_time() const { return dt_seg; };
 
 	void initialize(
@@ -207,7 +209,8 @@ public:
 		const Eigen::Matrix<double, 4, -1> &xs_i_p,
 		const Eigen::Matrix<double, 16, -1> &P_i_p,
 		const double d_safe_i,
-		const double dt);
+		const double dt,
+		const int p_step);
 };
 
 #endif

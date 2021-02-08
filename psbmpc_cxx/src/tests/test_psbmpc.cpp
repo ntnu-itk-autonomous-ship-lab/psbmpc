@@ -30,19 +30,12 @@
 
 #define BUFSIZE 1000000
 
-int main(){
-	// Matlab engine setup
- 	Engine *ep = engOpen(NULL);
-	if (ep == NULL)
-	{
-		std::cout << "engine start failed!" << std::endl;
-	}
-	char buffer[BUFSIZE+1]; 
-
+int main()
+{
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
-	double T_sim = 200; double dt = 0.5;
+	double T_sim = 150, dt = 0.5;
 	int N = std::round(T_sim / dt);
 
 //*****************************************************************************************************************
@@ -50,7 +43,7 @@ int main(){
 //*****************************************************************************************************************
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 9, 0, 0;
-	double u_d = 9, chi_d, u_c, chi_c;
+	double u_d(9.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 	
 	Ownship asv_sim;
 
@@ -74,8 +67,6 @@ int main(){
 	std::vector<int> ID(n_obst);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_obst);
-	xs_i_0[0].resize(6);
-	xs_i_0[0] << 500, 300, -90 * DEG2RAD, 5, 0, 0;
 
 	// Use constant obstacle uncertainty throughout the simulation, for simplicity
 	Eigen::MatrixXd P_0(4, 4);
@@ -84,7 +75,7 @@ int main(){
 		 0, 0, 0.025, 0,
 		 0, 0, 0, 0.025;
 
-	double A = 5, B = 5, C = 5, D = 5; 
+	double A = 10, B = 10, C = 2, D = 2; 
 	
 	// Use constant equal intention probability and a priori CC probability  for simplicity
 	std::vector<Eigen::VectorXd> Pr_a(n_obst);
@@ -106,8 +97,16 @@ int main(){
 	std::vector<Eigen::Matrix<double, 2, -1>> waypoints_i(n_obst);
 
 	//=====================================================================
-	// Matlab array setup for the ownship and obstacle, ++
+	// Matlab engine setup and array setup for the ownship and obstacle, ++
 	//=====================================================================
+	// Matlab engine setup
+ 	Engine *ep = engOpen(NULL);
+	if (ep == NULL)
+	{
+		std::cout << "engine start failed!" << std::endl;
+	}
+	char buffer[BUFSIZE+1]; 
+
 	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, N, mxREAL);
 	mxArray *wps_os_mx = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
 
@@ -124,25 +123,22 @@ int main(){
 	double* ptraj_i; 
 	double* p_P_traj_i; 
 	double* p_wps_i;
+	
+	
+	//=====================================================================
 
-
-	int n_wps_i;
+	int n_wps_i(0);
 
 	for (int i = 0; i < n_obst; i++)
 	{
 		ID[i] = i;
 
-		u_d_i[i] = 5.0; chi_d_i[i] = 0.0;
-
-		trajectory_i[i].resize(6, N);
-		trajectory_i[i].col(0) = xs_i_0[i];
-
 		trajectory_covariances_i[i].resize(16, 1);
 		trajectory_covariances_i[i].col(0) = flatten(P_0);
 
 		Pr_a[i].resize(3);
-		Pr_a[i] << 1, 1, 1;
-		Pr_a[i] = Pr_a[0] / Pr_a[0].sum();
+		Pr_a[i] << 0.05, 0.9, 0.05;
+		Pr_a[i] = Pr_a[i] / Pr_a[i].sum();
 		/* Pr_a[i].resize(1);
 		Pr_a[i] << 1; */
 
@@ -150,8 +146,32 @@ int main(){
 
 		n_wps_i = 2;
 		waypoints_i[i].resize(2, n_wps_i); 
-		waypoints_i[i] << 500, 500,
-					300, -300;
+		xs_i_0[i].resize(6);
+		if (i == 1)
+		{
+			//xs_i_0[i] << 5000, 0, 180 * DEG2RAD, 6, 0, 0;
+			xs_i_0[i] << 300, 150, -90 * DEG2RAD, 5, 0, 0;
+			waypoints_i[i] << 	xs_i_0[i](0), 500,
+								xs_i_0[i](1), -300;
+			u_d_i[i] = 5.0; chi_d_i[i] = -90 * DEG2RAD;
+		} 
+		else if (i == 2)
+		{
+			xs_i_0[i] << 500, -300, 90 * DEG2RAD, 5, 0, 0;
+			waypoints_i[i] << 	xs_i_0[i](0), 500,
+								xs_i_0[i](1), 300;
+			u_d_i[i] = 5.0; chi_d_i[i] = 90 * DEG2RAD;
+		}
+		else
+		{
+			xs_i_0[i] << 700, 0, 180 * DEG2RAD, 8, 0, 0;
+			waypoints_i[i] << 	xs_i_0[i](0), 0,
+								xs_i_0[i](1), 0;
+			u_d_i[i] = 8.0; chi_d_i[i] = 180 * DEG2RAD;
+		}
+
+		trajectory_i[i].resize(6, N);
+		trajectory_i[i].col(0) = xs_i_0[i];
 		
 		offset_sequence_i[i].resize(6);
 		offset_sequence_i[i] << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
@@ -161,10 +181,6 @@ int main(){
 
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], ERK1, LOS, T_sim, dt);
-
-		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
-		traj_i_mx[i] = mxCreateDoubleMatrix(6, N, mxREAL);
-		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
 
 //*****************************************************************************************************************
@@ -175,7 +191,7 @@ int main(){
 // PSB-MPC setup
 //*****************************************************************************************************************	
 	PSBMPC psbmpc;
-	double u_opt, chi_opt;
+	double u_opt(1.0), chi_opt(0.0);
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
 
@@ -210,6 +226,14 @@ int main(){
 	//=========================================================
 	// Matlab plot setup
 	//=========================================================
+	
+	for (int i = 0; i < n_obst; i++)
+	{
+		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
+		traj_i_mx[i] = mxCreateDoubleMatrix(6, N, mxREAL);
+		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
+	}
+	
 	mxArray *T_sim_mx(nullptr), *n_obst_mx(nullptr), *n_static_obst_mx(nullptr);
 	T_sim_mx = mxCreateDoubleScalar(T_sim);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
@@ -251,7 +275,7 @@ int main(){
 	
 	Eigen::Vector4d xs_i_k;
 	Eigen::VectorXd xs_aug(9);
-	double mean_t = 0, t(0.0);
+	double mean_t(0.0), t(0.0);
 	for (int k = 0; k < N; k++)
 	{
 		t = k * dt;
@@ -304,7 +328,6 @@ int main(){
 
 			obstacle_manager.update_obstacle_status(trajectory.col(k));
 			obstacle_manager.display_obstacle_information();
-		
 		}
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 		asv_sim.update_ctrl_input(u_c, chi_c, trajectory.col(k));
@@ -371,7 +394,7 @@ int main(){
 		mxDestroyArray(P_traj_i_mx[i]);
 		mxDestroyArray(wps_i_mx[i]);
 	}
-	engClose(ep);  
+	engClose(ep);   
 
 	return 0;
 }

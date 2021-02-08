@@ -60,17 +60,19 @@ public:
 
 	Obstacle(const Eigen::VectorXd &xs_aug, const Eigen::VectorXd &P, const bool colav_on);
 
+	Obstacle(const Eigen::VectorXd &xs_aug, const bool colav_on);
+
 	Obstacle(const Obstacle &o); 
 
 	Obstacle& operator=(const Obstacle &rhs);
 
-	int get_ID() const { return ID; };
+	inline int get_ID() const { return ID; };
 
-	void set_colav_on(const bool colav_on) { this->colav_on = colav_on; };
+	inline void set_colav_on(const bool colav_on) { this->colav_on = colav_on; };
 
-	double get_length() const { return l; };
+	inline double get_length() const { return l; };
 
-	double get_width() const { return w; };
+	inline double get_width() const { return w; };
 };
 
 #endif

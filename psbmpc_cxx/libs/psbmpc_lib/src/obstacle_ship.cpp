@@ -31,14 +31,17 @@
 *****************************************************************************************/
 Obstacle_Ship::Obstacle_Ship()
 {
-	T_chi = 3; 		// Ad hoc parameters, are very dependent on the ship type
+	l = 20;
+	w = 4;
+	
 	T_U = 10;
+	T_chi = 7.5; 		// Ad hoc parameters, are very dependent on the ship type
 
 	// Guidance parameters
 	e_int = 0;
 	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
-	R_a = 20.0; 			    // WP acceptance radius (20.0)
-	LOS_LD = 150.0; 			// LOS lookahead distance (100.0) 
+	R_a = 30.0; 			    // WP acceptance radius (20.0)
+	LOS_LD = 200.0; 			// LOS lookahead distance (100.0) 
 	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
@@ -54,6 +57,9 @@ Obstacle_Ship::Obstacle_Ship(
 	) : 
 	T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
 {
+	l = 20;
+	w = 4;
+
 	// Guidance parameters
 	e_int = 0;
 	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
@@ -112,8 +118,11 @@ void Obstacle_Ship::update_guidance_references(
 	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
 {
+	// No surge modification
+	u_d = u_d;
+	
 	int n_wps = waypoints.cols();
-	double alpha, e;
+	double alpha(0.0), e(0.0);
 	Eigen::Vector2d d_next_wp, L_wp_segment;
 	bool segment_passed = false;
 	
@@ -229,15 +238,15 @@ Eigen::Vector4d Obstacle_Ship::predict(
 
 /****************************************************************************************
 *  Name     : predict_trajectory
-*  Function : Predicts the bbstacle ship trajectory for a sequence of avoidance maneuvers
+*  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
 *			  in the offset sequence.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
 void Obstacle_Ship::predict_trajectory(
 	Eigen::Matrix<double, 4, -1>& trajectory, 						// In/out: Obstacle ship trajectory
-	const Eigen::VectorXd offset_sequence, 							// In: Sequence of offsets in the candidate control behavior
-	const Eigen::VectorXd maneuver_times,							// In: Time indices for each Obstacle_Model avoidance maneuver
+	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
+	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each Obstacle_Ship avoidance maneuver
 	const double u_d, 												// In: Surge reference
 	const double chi_d, 											// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Obstacle waypoints
@@ -247,7 +256,7 @@ void Obstacle_Ship::predict_trajectory(
 	const double dt 												// In: Prediction time step
 	)
 {
-	int n_samples = T / dt;
+	int n_samples = std::round(T / dt);
 	
 	trajectory.conservativeResize(4, n_samples);
 
