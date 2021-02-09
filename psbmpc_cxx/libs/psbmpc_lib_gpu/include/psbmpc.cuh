@@ -70,6 +70,8 @@ private:
 
 	Eigen::Matrix<double, 6, -1> trajectory;
 
+	CPE_CPU cpe_host;
+
 	//=====================================================
 	// Device related objects read/write-ed upon by each
 	// GPU thread.
@@ -104,6 +106,21 @@ private:
 		Eigen::VectorXd &ps_maneuver_times,
 		const double t_cpa_i,
 		const Obstacle_Data<Tracked_Obstacle> &data,
+		const int i);
+	
+	// Obstacle prediction scenario pruning related methods
+	void prune_obstacle_scenarios(Obstacle_Data<Tracked_Obstacle> &data);
+
+	void calculate_ps_collision_probabilities(Eigen::VectorXd &P_c_i_ps, const Eigen::MatrixXd &P_c_i, const int i);
+
+	void calculate_ps_collision_consequences(Eigen::VectorXd &C_i, const Obstacle_Data<Tracked_Obstacle> &data, const int i, const double dt, const int p_step);
+
+	void calculate_ps_collision_risks(
+		Eigen::VectorXd &R_c_i, 
+		Eigen::VectorXi &indices_i, 
+		const Eigen::VectorXd &C_i, 
+		const Eigen::VectorXd &P_c_i_ps, 
+		const Obstacle_Data<Tracked_Obstacle> &data, 
 		const int i);
 
 	double find_time_of_passing(const Obstacle_Data<Tracked_Obstacle> &data, const int i);

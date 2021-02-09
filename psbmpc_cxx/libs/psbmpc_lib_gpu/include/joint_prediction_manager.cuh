@@ -31,6 +31,30 @@
 #include <memory>
 #include <string>
 
+class Obstacle_Data_GPU
+{
+public:
+
+	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
+	// and <obstacle is passed> (IP_0) indicators
+	TML::PDMatrix<bool, MAX_N_OBST, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
+
+	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
+	TML::PDMatrix<ST, MAX_N_OBST, 1> ST_0, ST_i_0;
+
+	// Obstacle hazard levels, on a scale from 0 to 1 (output from PSBMPC)
+	TML::PDMatrix<float, MAX_N_OBST, 1> HL_0;
+
+	Prediction_Obstacle *obstacles;
+	Prediction_Obstacle *new_obstacles;
+
+	TML::PDMatrix<float, 13, MAX_N_OBST> obstacle_status;
+
+	Obstacle_Data_GPU() {}
+
+	~Obstacle_Data_GPU() {}
+
+};
 
 class Joint_Prediction_Manager
 {
