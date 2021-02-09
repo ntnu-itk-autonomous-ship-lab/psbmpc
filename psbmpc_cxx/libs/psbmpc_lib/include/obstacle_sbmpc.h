@@ -42,8 +42,6 @@ private:
 	double chi_m_last;
 
 	double min_cost;
-	
-	bool obstacle_colav_on;
 
 	Obstacle_Ship ownship;
 

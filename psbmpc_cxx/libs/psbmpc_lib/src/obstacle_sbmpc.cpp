@@ -40,8 +40,6 @@ Obstacle_SBMPC::Obstacle_SBMPC() :
 	u_m_last = 1.0; chi_m_last = 0.0;
 
 	min_cost = 1e12;
-	
-	obstacle_colav_on = false;
 }
 
 Obstacle_SBMPC::~Obstacle_SBMPC() = default;
@@ -210,8 +208,6 @@ void Obstacle_SBMPC::assign_data(
 	this->chi_m_last = o_sbmpc.chi_m_last;
 
 	this->min_cost = o_sbmpc.min_cost;
-
-	this->obstacle_colav_on = o_sbmpc.obstacle_colav_on;
 
 	this->ownship = o_sbmpc.ownship;
 
