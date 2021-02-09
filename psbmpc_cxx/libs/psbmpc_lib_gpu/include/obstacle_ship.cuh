@@ -23,7 +23,8 @@
 #define _OBSTACLE_SHIP_CUH_
 
 #include "psbmpc_defines.h"
-#include "tml.cuh"
+#include "tml.cuh
+#include "Eigen/Dense"
 #include <thrust/device_vector.h>
 
 // NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below

@@ -77,6 +77,13 @@ private:
 	// Obstacle prediction scenario pruning related methods
 	void prune_obstacle_scenarios(Obstacle_Data<Tracked_Obstacle> &data);
 
+	void calculate_instantaneous_collision_probabilities(
+		Eigen::MatrixXd &P_c_i, 
+		const Obstacle_Data<Tracked_Obstacle> &data, 
+		const int i, 
+		const double dt, 
+		const int p_step);
+		
 	void calculate_ps_collision_probabilities(Eigen::VectorXd &P_c_i_ps, const Eigen::MatrixXd &P_c_i, const int i);
 
 	void calculate_ps_collision_consequences(Eigen::VectorXd &C_i, const Obstacle_Data<Tracked_Obstacle> &data, const int i, const double dt, const int p_step);
@@ -94,13 +101,6 @@ private:
 	double find_time_of_passing(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
 
 	bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
-
-	void calculate_instantaneous_collision_probabilities(
-		Eigen::MatrixXd &P_c_i, 
-		const Obstacle_Data<Tracked_Obstacle> &data, 
-		const int i, 
-		const double dt, 
-		const int p_step);
 
 	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
