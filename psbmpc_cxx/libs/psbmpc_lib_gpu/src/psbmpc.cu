@@ -27,6 +27,7 @@
 #include "cb_cost_functor.cuh"
 
 #include <iostream>
+#include <iomanip>
 #include "engine.h"
 
 /****************************************************************************************
@@ -42,6 +43,8 @@ PSBMPC::PSBMPC()
 	u_m_last = 1; chi_m_last = 0;
 
 	map_offset_sequences();
+
+	cpe_host = CPE_CPU(pars.cpe_method, pars.dt);
 
 	// Only need to allocate trajectory, CB_Functor_Pars and CPE device memory once 
 	// One trajectory and CPE for each thread, as these are both read and write objects.
@@ -118,11 +121,24 @@ void PSBMPC::calculate_optimal_offsets(
 	int n_obst = data.obstacles.size();
 	int n_static_obst = static_obstacles.cols();
 
+	Eigen::VectorXd opt_offset_sequence_e(2 * pars.n_M);
+	// Predict nominal trajectory first, assign as optimal if no need for
+	// COLAV, or use in the prediction initialization
+	for (int M = 0; M < pars.n_M; M++)
+	{
+		opt_offset_sequence_e(2 * M) = 1.0; opt_offset_sequence_e(2 * M + 1) = 0.0;
+	}
+	maneuver_times.setZero();
+	ownship.predict_trajectory(trajectory, opt_offset_sequence_e, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
 	{
-		u_opt = 1; 		u_m_last = u_opt;
-		chi_opt = 0; 	chi_m_last = chi_opt;
+		u_opt = 1.0; 		u_m_last = u_opt;
+		chi_opt = 0.0; 	chi_m_last = chi_opt;
+
+		assign_optimal_trajectory(predicted_trajectory);
+
 		return;
 	}
 	
@@ -232,7 +248,6 @@ void PSBMPC::calculate_optimal_offsets(
 
 	// Assign optimal offset sequence/control behaviour
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> opt_offset_sequence = control_behavior_dvec[min_index];
-	Eigen::VectorXd opt_offset_sequence_e;
 	TML::assign_tml_object(opt_offset_sequence_e, opt_offset_sequence);
 
 	// Set the trajectory to the optimal one and assign to the output trajectory
@@ -385,7 +400,6 @@ void PSBMPC::initialize_prediction(
 	{
 		n_a = data.obstacles[0].get_intention_probabilities().size();
 	} 
-	
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
@@ -397,14 +411,23 @@ void PSBMPC::initialize_prediction(
 	Eigen::Vector2d p_cpa, d_AB, v_0;
 	Eigen::Vector4d xs_i_0;
 	Eigen::Matrix<double, 2, -1> waypoints_i;
+
+	// only use intelligent prediction n_a > 1 intentions are considered
+	// and obstacle colav is on
+	use_joint_prediction = false; 
 	for (int i = 0; i < n_obst; i++)
 	{
+		n_ps[i] = 1;
+		
 		xs_i_0 = data.obstacles[i].kf->get_state();
+		/* std::cout << "xs_i_0 = " << xs_i_0.transpose() << std::endl;
+		std::cout << "xs_0 = " << trajectory.col(0).transpose() << std::endl; */
 		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), xs_i_0);
-
-		if (n_a == 1)
+		/* std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
+		std::cout << "t_cpa(i) = " << t_cpa(i) << std::endl;
+		std::cout << "d_cpa(i) = " << d_cpa(i)<< std::endl; */
+		if (n_a == 1 || data.IP_0[i])
 		{
-			n_ps[i] = 1;
 			ps_ordering_i.resize(1);
 			ps_ordering_i[0] = KCC;			
 			ps_course_changes_i.resize(1);
@@ -419,6 +442,7 @@ void PSBMPC::initialize_prediction(
 			pobstacles[i] = Prediction_Obstacle(data.obstacles[i]);
 			if (pars.obstacle_colav_on)
 			{
+				use_joint_prediction = true;
 				pobstacles[i].set_colav_on(false);
 
 				// Set obstacle waypoints to a straight line out from its current time position 
@@ -432,30 +456,29 @@ void PSBMPC::initialize_prediction(
 				n_ps[i] += 1;
 			}
 
-			data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
-
-			data.obstacles[i].predict_independent_trajectories<PSBMPC>(pars.T, pars.dt, trajectory.col(0), *this);
+			
 		}
+		data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
+
+		data.obstacles[i].predict_independent_trajectories<PSBMPC>(pars.T, pars.dt, trajectory.col(0), *this);
 	}
 
-	if (pars.obstacle_colav_on)
+	if (use_joint_prediction)
 	{
 		predict_trajectories_jointly(data, static_obstacles, false);
 	}
 	
-	//
 	prune_obstacle_scenarios(data);
 
 	//***********************************************************************************
 	// Own-ship prediction initialization
 	//***********************************************************************************
-	maneuver_times.resize(pars.n_M);
 	// First avoidance maneuver is always at t0
 	maneuver_times.setZero();
 
-	double t_cpa_min, d_safe_i;
+	double t_cpa_min(0.0), d_safe_i(0.0);
 	std::vector<bool> maneuvered_by(n_obst);
-	int index_closest;
+	int index_closest(-1);
 	for (int M = 1; M < pars.n_M; M++)
 	{
 		// This is the solution so far if n_obst = 0. And also:
@@ -591,6 +614,273 @@ void PSBMPC::set_up_independent_obstacle_prediction(
 	}
 	std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
 	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
+}
+
+/****************************************************************************************
+*  Name     : prune_obstacle_scenarios
+*  Function : Goes through all generated obstacle prediction scenarios, and selects the
+*			  N_r scenarios with highest collision risk for keeping, discarding all others.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::prune_obstacle_scenarios(
+	Obstacle_Data<Tracked_Obstacle> &data							// In: Dynamic obstacle information
+	)
+{
+	int n_obst = data.obstacles.size();
+
+	int p_step = 2;   
+	double dt_r = (double)p_step * pars.dt;
+	int n_samples = std::round(pars.T / pars.dt);
+
+	int count_joint_pred_scenarios = 0;
+
+	Eigen::MatrixXd P_c_i;
+	Eigen::VectorXi risk_sorted_ps_indices_i;
+	Eigen::VectorXi kept_ps_indices_i;
+	Eigen::VectorXd R_c_i, P_c_i_ps, C_i;
+	for (int i = 0; i < n_obst; i++)
+	{			
+		P_c_i.resize(n_ps[i], n_samples); P_c_i_ps.resize(n_ps[i]); 
+		C_i.resize(n_ps[i]); R_c_i.resize(n_ps[i]);
+		risk_sorted_ps_indices_i.resize(n_ps[i]);
+		
+		calculate_instantaneous_collision_probabilities(P_c_i, data, i, dt_r, p_step);
+
+		calculate_ps_collision_probabilities(P_c_i_ps, P_c_i, i);
+
+		calculate_ps_collision_consequences(C_i, data, i, dt_r, p_step);
+
+		calculate_ps_collision_risks(R_c_i, risk_sorted_ps_indices_i, C_i, P_c_i_ps, data, i);
+
+		std::cout << risk_sorted_ps_indices_i.transpose() << std::endl;
+
+		// Keep only the n_r prediction scenarios with the highest collision risk
+		if (n_ps[i] < pars.n_r)
+		{
+			kept_ps_indices_i = risk_sorted_ps_indices_i;
+		}
+		else
+		{
+			kept_ps_indices_i = risk_sorted_ps_indices_i.block(0, 0, pars.n_r, 1);		
+		}
+
+		// Sort indices of ps that are to be kept
+		std::sort(kept_ps_indices_i.data(), kept_ps_indices_i.data() + kept_ps_indices_i.size());
+		std::cout << kept_ps_indices_i.transpose() << std::endl;
+
+		// For n_a > 1: Joint prediction/intelligent scenario is the last one in the original set
+		if (use_joint_prediction && (kept_ps_indices_i(kept_ps_indices_i.size() - 1) == n_ps[i] - 1))
+		{
+			count_joint_pred_scenarios += 1;
+		}
+
+		n_ps[i] = kept_ps_indices_i.size();
+		data.obstacles[i].prune_ps(kept_ps_indices_i);
+	}
+
+	// For n_a > 1: All intelligent obstacle scenarios are in this case pruned away
+	if (!count_joint_pred_scenarios) 
+	{
+		use_joint_prediction = false;
+	}
+}
+
+/****************************************************************************************
+*  Name     : calculate_collision_probabilities
+*  Function : Estimates collision probabilities for the own-ship and an obstacle i in
+*			  consideration. Can use a larger sample time than used in predicting
+*			  the vessel trajectories.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::calculate_instantaneous_collision_probabilities(
+	Eigen::MatrixXd &P_c_i,								// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
+	const Obstacle_Data<Tracked_Obstacle> &data,		// In: Dynamic obstacle information
+	const int i, 										// In: Index of obstacle
+	const double dt, 									// In: Sample time for estimation
+	const int p_step                                    // In: Step between trajectory samples, matches the input prediction time step
+	)
+{
+	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
+	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
+
+	// Increase safety zone by half the max obstacle dimension and ownship length
+	double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
+
+	int n_samples = P_i_p.cols();
+	// Non-optimal temporary row-vector storage solution
+	Eigen::Matrix<double, 1, -1> P_c_i_row(n_samples);
+	for (int ps = 0; ps < n_ps[i]; ps++)
+	{
+		cpe_host.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
+		
+		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
+	}		
+}
+
+/****************************************************************************************
+*  Name     : calculate_ps_collision_probabilities
+*  Function : Goes through all generated obstacle prediction scenarios, and calculates
+*			  the associated collision probabilities.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::calculate_ps_collision_probabilities(
+	Eigen::VectorXd &P_c_i_ps,											// In/out: Vector of collision consequences, size n_ps_i x 1
+	const Eigen::MatrixXd &P_c_i,										// In: Predicted obstacle collision probabilities for all prediction scenarios, size n_ps[i] x n_samples
+	const int i															// In: Index of obstacle
+	)
+{
+	P_c_i_ps.setZero();
+
+	double product(0.0);
+	int n_samples = P_c_i.cols();
+	for (int ps = 0; ps < n_ps[i]; ps++)
+	{
+		for (int k = 0; k < n_samples; k++)
+		{
+			if (k == 0)	{ product = 1 - P_c_i(ps, k); }
+			else		{ product *= (1 - P_c_i(ps, k)); }
+		}
+		P_c_i_ps(ps) = 1 - product;
+	}
+}
+
+/****************************************************************************************
+*  Name     : calculate_ps_collision_consequences
+*  Function : Goes through all generated obstacle prediction scenarios, and calculates
+*			  the associated consequence of collision.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::calculate_ps_collision_consequences(
+	Eigen::VectorXd &C_i, 												// In/out: Vector of collision consequences, size n_ps_i x 1
+	const Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
+	const int i,														// In: Index of obstacle
+	const double dt,													// In: Time step between predicted trajectory samples
+	const int p_step													// In: Step between trajectory samples, matches the input prediction time step
+	)
+{
+	C_i.setZero();
+
+	double collision_consequence(0.0), t(0.0), t_cpa(0.0), d_cpa(0.0);
+
+	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
+	Eigen::MatrixXd xs_i_colav_p;
+	if (use_joint_prediction)
+	{
+		xs_i_colav_p = pobstacles[i].get_trajectory();
+	}
+
+	Eigen::Vector2d p_cpa, v_0_p, v_i_p;
+
+	int n_samples = std::round(pars.T / dt);
+
+	for (int ps = 0; ps < n_ps[i]; ps++)
+	{
+		for (int k = 0; k < n_samples; k += p_step)
+		{
+			t = k * dt;
+
+			v_0_p = trajectory.block<2, 1>(3, k);
+			v_0_p = rotate_vector_2D(v_0_p, trajectory(2, k));
+
+			if (ps == n_ps[i] - 1 && use_joint_prediction) // Intelligent prediction is the last prediction scenario
+			{
+				v_i_p(0) = xs_i_colav_p(3, k) * cos(xs_i_colav_p(2, k));
+				v_i_p(1) = xs_i_colav_p(3, k) * sin(xs_i_colav_p(2, k));
+			}
+			else
+			{
+				v_i_p = xs_i_p[ps].block<2, 1>(2, k);
+			}			
+
+			calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(k), xs_i_p[ps].col(k));
+
+			collision_consequence = pow((v_0_p - v_i_p).norm(), 2) * exp(- abs(t - t_cpa));
+
+			if (C_i(ps) < collision_consequence)
+			{
+				C_i(ps) = collision_consequence;
+			}
+		}
+	}
+}
+
+/****************************************************************************************
+*  Name     : calculate_ps_collision_risks
+*  Function : Goes through all generated obstacle i prediction scenarios, and calculates
+*			  the predicted collision risk.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::calculate_ps_collision_risks(
+	Eigen::VectorXd &R_c_i,												// In/out: Vector of collision risks, size n_ps_i x 1
+	Eigen::VectorXi &ps_indices_i,										// In/out: Vector of indices for the ps, in decending order wrt collision risk, size n_ps_i x 1
+	const Eigen::VectorXd &C_i,											// In: Vector of collision consequences, size n_ps_i x 1
+	const Eigen::VectorXd &P_c_i_ps,									// In: Vector of collision probabilities, size n_ps_i x 1
+	const Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
+	const int i															// In: Index of obstacle	
+	)
+{
+	R_c_i.setZero();
+
+	double Pr_ps_i_conditional(0.0);
+	Eigen::VectorXd Pr_c_i_conditional(n_ps[i]);
+	Eigen::VectorXd Pr_a_i = data.obstacles[i].get_intention_probabilities();
+	Eigen::VectorXi ps_intention_count_i = data.obstacles[i].get_ps_intention_count();
+	int n_a = Pr_a_i.size();
+
+	// The conditional probability of collision with obstacle i is predicted
+	// as the product of the conditional probability Pr(ps | a, I) of prediction scenario ps 
+	// (here taken as a uniform distribution) weighted by intention probabilities Pr(a | I), and the
+	// predicted scenario collision probability Pr(collision | i, s)
+	for (int a = 0; a < n_a; a++)
+	{
+		// Conditional probability of a prediction scenario is taken from a discrete uniform distribution
+		// over the number of prediction scenarios which corresponds to intention a, and is
+		// weighted by the corresponding intention probability
+		if (ps_intention_count_i(a))
+		{
+			Pr_ps_i_conditional += Pr_a_i(a) / (double)ps_intention_count_i(a);
+		}
+	}
+	
+	for (int ps = 0; ps < n_ps[i]; ps++)
+	{
+		ps_indices_i[ps] = ps;
+
+		Pr_c_i_conditional(ps) = P_c_i_ps(ps) * Pr_ps_i_conditional;
+
+		R_c_i(ps) = C_i(ps) * Pr_c_i_conditional(ps);
+	}
+
+	// Sort vector of ps indices to determine collision risk in sorted order
+	std::sort(ps_indices_i.data(), ps_indices_i.data() + n_ps[i], [&](const int index_lhs, const int index_rhs) { return R_c_i(index_lhs) > R_c_i(index_rhs); });
+	
+	 std::ios::fmtflags old_settings = std::cout.flags();
+	int old_precision = std::cout.precision(); 
+	int cw = 20;
+	//std::cout.setf(std::ios::fixed, std::ios::floatfield);
+	std::cout << std::fixed << std::setprecision(7);
+
+	std::cout << "-------------------------------------------------------------------------------------------------------------------------------" << std::endl;
+	std::cout << "Obstacle i = " << i << " prediction scenario information:" << std::endl;
+	// ps : Prediction scenario, R: Collision risk, C: Collision consequence,
+	// P_c^{i, ps}: Collision probability for that scenario
+	// Pr{C^i | ps, I^i}: Conditional collision probability for that scenario, on
+	// available information in I^i
+	
+	std::cout << "ps" << std::setw(cw - 4) << "R" << std::setw(cw - 2) << "C" << std::setw(cw + 6) << "P_c^{i, ps}" << std::setw(cw + 4) << "Pr{C^i | s, I^i}" << std::endl;
+	for (int j = 0; j < n_ps[i]; j++)
+	{
+		std::cout 	<< ps_indices_i[j] << std::setw(cw) << R_c_i(ps_indices_i(j)) << std::setw(cw) << C_i(ps_indices_i(j)) << std::setw(cw) 
+					<< P_c_i_ps(ps_indices_i(j)) << std::setw(cw) << Pr_c_i_conditional(ps_indices_i(j)) << std::endl;
+	}
+	std::cout.flags(old_settings);
+	std::cout << std::setprecision(old_precision);
+	std::cout << "-------------------------------------------------------------------------------------------------------------------------------" << std::endl;
 }
 
 /****************************************************************************************

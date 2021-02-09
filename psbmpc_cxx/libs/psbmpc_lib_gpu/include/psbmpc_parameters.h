@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : psbmpc.h
+*  File name : psbmpc_parameters.h
 *
 *  Function  : Header file for the PSB-MPC parameter struct.
 *
@@ -26,11 +26,21 @@
 #include <vector>
 
 class PSBMPC;
-//template <typename Parameters> class MPC_Cost;
+template <typename Parameters> class MPC_Cost;
 class Obstacle_Manager;
-class CB_Cost_Functor;
+class Joint_Prediction_Manager;
 
-
+/* enum Par_Type 
+{
+	BPAR,					// Boolean type parameter
+	IPAR,					// Integer type parameter
+	DPAR,					// Double type parameter
+	OPAR,					// Offset/control behaviour related parameter
+	EVPAR,					// Eigen::Vector parameter
+	CPEM,					// CPE_Method parameter
+	PREDM,					// Prediction_Method parameter
+	GUIDM					// Guidance_Method parameter
+}; */
 
 // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
@@ -59,11 +69,11 @@ class PSBMPC_Parameters
 private:
 
 	friend class PSBMPC;
-	//friend class MPC_Cost<PSBMPC_Parameters>;
+	friend class MPC_Cost<PSBMPC_Parameters>;
 	friend class Obstacle_Manager;
-	friend class CB_Functor_Pars;
+	friend class Joint_Prediction_Manager;
 
-	int n_cbs, n_M;
+	int n_cbs, n_M, n_r;
 
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
@@ -102,6 +112,8 @@ public:
 
 	PSBMPC_Parameters() { initialize_pars(); initialize_par_limits(); }
 
+	//PSBMPC_Parameters(std::string tuning_file); // Not implemented yet
+
 	void set_par(const int index, const bool value);
 
 	void set_par(const int index, const int value);
@@ -112,11 +124,11 @@ public:
 
 	void set_par(const int index, const Eigen::VectorXd &value);
 
-	inline void set_cpe_method(CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
+	inline void set_cpe_method(const CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
 
-	inline void set_prediction_method(Prediction_Method prediction_method) { if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
+	inline void set_prediction_method(const Prediction_Method prediction_method)  	{ if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
 
-	inline void set_guidance_method(Guidance_Method guidance_method) 		{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
+	inline void set_guidance_method(const Guidance_Method guidance_method) 		 	{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
 
 	bool get_bpar(const int index) const;  
 

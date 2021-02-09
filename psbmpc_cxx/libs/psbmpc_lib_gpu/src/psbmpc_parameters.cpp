@@ -1,9 +1,8 @@
 /****************************************************************************************
 *
-*  File name : psbmpc.h
+*  File name : psbmpc_parameters.cpp
 *
-*  Function  : Header file for the PSB-MPC parameter struct.
-*
+*  Function  : Class function file for the PSB-MPC parameter class.
 *  
 *	           ---------------------
 *
@@ -18,10 +17,11 @@
 *
 *****************************************************************************************/
 
-#include "psbmpc_defines.h"
+#include "utilities.h"
 #include "psbmpc_parameters.h"
 #include "Eigen/Dense"
 #include <vector>
+
 
 /****************************************************************************************
 	Public functions
@@ -50,6 +50,7 @@ int PSBMPC_Parameters::get_ipar(
 {
 	switch(index){
 		case i_ipar_n_M 				: return n_M; 
+		case i_ipar_n_r					: return n_r;
 		default : 
 			// Throw
 			return 0;
@@ -153,7 +154,8 @@ void PSBMPC_Parameters::set_par(
 	{	
 		switch(index)
 		{
-			case i_ipar_n_M 				: n_M = value; break;
+			case i_ipar_n_M 				: n_M = value; break; 	// Should here resize offset matrices to make this change legal
+			case i_ipar_n_r					: n_r = value; break;
 			default : 
 				// Throw
 				break;
@@ -289,7 +291,8 @@ void PSBMPC_Parameters::initialize_par_limits()
 		ipar_low[i] = 0.0;
 		ipar_high[i] = 1e12;
 	}
-	ipar_low[i_ipar_n_M] = 1; ipar_high[i_ipar_n_M] = 5; 
+	ipar_low[i_ipar_n_M] = 1; ipar_high[i_ipar_n_M] = 10; 
+	ipar_low[i_ipar_n_r] = 1; ipar_high[i_ipar_n_r] = 20; 
 
 	//std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
 	//std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
@@ -330,7 +333,8 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
+	n_M = 1;
+	n_r = 4;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -343,7 +347,7 @@ void PSBMPC_Parameters::initialize_pars()
 			u_offsets[M] << 1.0, 0.5, 0.0;
 
 			chi_offsets[M].resize(13);
-			//chi_offsets[M] << 30.0;
+			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
@@ -356,12 +360,12 @@ void PSBMPC_Parameters::initialize_pars()
 			u_offsets[M] << 1.0, 0.5;
 			//u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(13);
+			chi_offsets[M].resize(7);
 			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
-			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
@@ -370,13 +374,13 @@ void PSBMPC_Parameters::initialize_pars()
 	obstacle_course_changes.resize(3);
 	obstacle_course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 
-	cpe_method = MCSKF4D;
+	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 110.0; 	      // 400.0, 300.0, 240 (sim/Euler)
-	dt = 5.0;		      // 5.0, 0.5 (sim/Euler)
-  	T_static = 60.0;		  // (50.0)
+	T = 150.0; 	     
+	dt = 5.0;
+  	T_static = 60.0;
 
 	p_step = 1;
 	if (prediction_method == ERK1)
@@ -389,14 +393,14 @@ void PSBMPC_Parameters::initialize_pars()
 	d_init = 1500;								 
 	d_close = 1000;
 	d_safe = 50; 							
-	K_coll = 0.5;		  					
+	K_coll = 2.5;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
 	kappa = 8.0;		  					
 	kappa_TC = 10.0;						 
-	K_u = 5;		   						 
+	K_u = 4;		   						 
 	K_du = 2.5;		    					
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					
@@ -408,5 +412,5 @@ void PSBMPC_Parameters::initialize_pars()
 	q = 4.0;
 	p = 1.0;
 
-	obstacle_colav_on = false;
+	obstacle_colav_on = true;
 }
