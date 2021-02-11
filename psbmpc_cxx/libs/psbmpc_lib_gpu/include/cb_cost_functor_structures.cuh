@@ -120,6 +120,8 @@ public:
 	float u_m_last;
 	float chi_m_last;
 
+	bool use_joint_prediction;
+
 	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints;
 
 	TML::PDMatrix<float, 4, MAX_N_OBST> static_obstacles;
@@ -147,7 +149,7 @@ public:
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		const Obstacle_Data &odata)
+		const Obstacle_Data<Tracked_Obstacle> &odata)
 	{
 		ownship = master.ownship;
 
@@ -160,6 +162,8 @@ public:
 
 		u_m_last = master.u_m_last;
 		chi_m_last = master.chi_m_last;	
+
+		use_joint_prediction = master.use_joint_prediction;
 
 		TML::assign_eigen_object(this->waypoints, waypoints);	
 

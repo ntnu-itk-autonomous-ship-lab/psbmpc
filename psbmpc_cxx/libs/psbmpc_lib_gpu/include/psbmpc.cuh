@@ -93,7 +93,7 @@ private:
 
 	Cuda_Obstacle *obstacles_device_ptr;
 
-	CPE *cpe_device_ptr;
+	CPE_GPU *cpe_device_ptr;
 	//=====================================================
 
 	void map_offset_sequences();
@@ -134,7 +134,7 @@ private:
 		const Obstacle_Data<Tracked_Obstacle> &data, 
 		const int i);
 
-	double find_time_of_passing(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
+	void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1>& static_obstacles);
 
 	bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 

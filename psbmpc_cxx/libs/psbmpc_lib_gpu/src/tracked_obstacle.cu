@@ -20,8 +20,9 @@
 *
 *****************************************************************************************/
 
-#include "tracked_obstacle.cuh"
+#include "prediction_obstacle.cuh"
 #include "utilities.cuh"
+#include "tml.cuh"
 
 #include "assert.h"
 #include <iostream> 
@@ -107,7 +108,7 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::initialize_prediction(
+void Tracked_Obstacle::initialize_independent_prediction(
 	const std::vector<Intention> &ps_ordering, 						// In: Prediction scenario ordering
 	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
 	const Eigen::VectorXd &ps_maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios	
@@ -141,6 +142,64 @@ void Tracked_Obstacle::initialize_prediction(
 		}
 	}	
 	std::cout << ps_intention_count.transpose() << std::endl;
+}
+
+/****************************************************************************************
+*  Name     : prune_ps
+*  Function : Removes prediction data for prediction scenarios not in the 
+*			  input vector.
+*  Modified : Trym Tengesdal
+*****************************************************************************************/
+void Tracked_Obstacle::prune_ps(
+	const Eigen::VectorXi &ps_indices
+	)
+{
+	int n_ps_new = ps_indices.size();
+	int n_ps = ps_ordering.size();
+	int n_ps_independent = ps_course_changes.size();
+	/* std::cout << "n_ps_new = " << n_ps_new << std::endl;
+	std::cout << "n_ps = " << n_ps << std::endl;
+	std::cout << "n_ps_independent = " << n_ps_independent << std::endl; */
+	std::vector<bool> mu_copy(n_ps_new);
+	std::vector<Eigen::MatrixXd> xs_p_copy(n_ps_new);
+	std::vector<Intention> ps_ordering_copy(n_ps_new);
+
+	Eigen::VectorXd ps_course_changes_copy(n_ps_new), ps_maneuver_times_copy(n_ps_new);
+	ps_intention_count.setZero();
+
+	int ps_count = 0;
+	for (int ps = 0; ps < n_ps; ps++)
+	{
+		if (ps == ps_indices(ps_count))
+		{
+			mu_copy[ps_count] = mu[ps];
+
+			xs_p_copy[ps_count] = xs_p[ps];
+
+			ps_ordering_copy[ps_count] = ps_ordering[ps];
+
+			if (ps < n_ps_independent)
+			{
+				ps_course_changes_copy(ps_count) = ps_course_changes(ps);
+				ps_maneuver_times_copy(ps_count) = ps_maneuver_times(ps);
+			}
+
+			if 		(ps_ordering_copy[ps_count] == KCC)		{ ps_intention_count(0) += 1;}
+			else if (ps_ordering_copy[ps_count] == SM)		{ ps_intention_count(1) += 1; }
+			else if (ps_ordering_copy[ps_count] == PM)		{ ps_intention_count(2) += 1; }
+
+			if (ps_count < n_ps_new - 1)
+			{
+				ps_count += 1;
+			}
+		}
+	}
+	mu = mu_copy;
+
+	xs_p = xs_p_copy; 
+
+	ps_ordering = ps_ordering_copy;
+	ps_course_changes = ps_course_changes_copy; ps_maneuver_times = ps_maneuver_times_copy;
 }
 
 /****************************************************************************************

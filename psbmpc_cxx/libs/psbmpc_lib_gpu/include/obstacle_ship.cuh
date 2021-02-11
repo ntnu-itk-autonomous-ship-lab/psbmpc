@@ -52,15 +52,15 @@ private:
 	TML::Vector4f xs_p;
 	
 	// Ship length and width
-	double l, w;
+	float l, w;
 
 	// Model parameters
-	double T_U, T_chi;
+	float T_U, T_chi;
 
 	// Guidance parameters
-	double e_int, e_int_max; 
-	double R_a;
-	double LOS_LD, LOS_K_i;
+	float e_int, e_int_max; 
+	float R_a;
+	float LOS_LD, LOS_K_i;
 
 	// Counter variables to keep track of the active WP segment at the current 
 	// time and predicted time
@@ -71,7 +71,7 @@ private:
 	int n_samples, n_wps, man_count;
 	float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
 
-	TML::Vector2d d_next_wp, L_wp_segment;
+	TML::Vector2f d_next_wp, L_wp_segment;
 	bool segment_passed;
 
 	TML::Vector4f xs_new;
@@ -82,6 +82,10 @@ private:
 public:
 
 	__host__ __device__ Obstacle_Ship();
+
+	__host__ __device__ float get_length() const { return l; }
+	
+	__host__ __device__ float get_width() const { return w; }
 
 	__host__ __device__ inline void initialize_wp_following() { wp_c_p = wp_c_0; }
 
