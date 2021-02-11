@@ -29,6 +29,7 @@ class PSBMPC;
 template <typename Parameters> class MPC_Cost;
 class Obstacle_Manager;
 class Joint_Prediction_Manager;
+class CB_Functor_Pars;
 
 /* enum Par_Type 
 {
@@ -72,6 +73,7 @@ private:
 	friend class MPC_Cost<PSBMPC_Parameters>;
 	friend class Obstacle_Manager;
 	friend class Joint_Prediction_Manager;
+	friend class CB_Functor_Pars;
 
 	int n_cbs, n_M, n_r;
 

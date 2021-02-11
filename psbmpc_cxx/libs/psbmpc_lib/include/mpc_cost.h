@@ -130,7 +130,7 @@ bool MPC_Cost<Parameters>::determine_transitional_cost_indicator(
 	const int i 															// In: Index of obstacle
 	) const
 {
-	bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
+	bool S_TC(false), S_i_TC(false), O_TC(false), Q_TC(false), X_TC(false), H_TC(false);
 
 	// Obstacle on starboard side
 	S_TC = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
@@ -178,12 +178,12 @@ bool MPC_Cost<Parameters>::determine_COLREGS_violation(
 	const double d_AB 														// In: Distance from vessel A to vessel B
 	) const
 {
-	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-	bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
+	bool B_is_starboard(false), A_is_overtaken(false), B_is_overtaken(false);
+	bool is_ahead(false), is_passed(false), is_head_on(false), is_crossing(false);
 
 	is_ahead = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
 
-	is_close = d_AB <= pars.d_close;
+	bool is_close = d_AB <= pars.d_close;
 
 	A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
 					 v_A.norm() < v_B.norm()							  	&&
@@ -339,14 +339,15 @@ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 
 	std::vector<Intention> ps_ordering = data.obstacles[i].get_ps_ordering();
 	std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
+	Eigen::VectorXi ps_intention_count = data.obstacles[i].get_ps_intention_count();
 
 	double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
 	if (Pr_CC_i < 0.0001) // Should not be allowed to be strictly 0
 	{
 		Pr_CC_i = 0.0001;
 	}
-	int num_sm_ps(0), num_pm_ps(0);
-	double sum_sm_weights(0.0), sum_pm_weights(0.0);
+
+	Eigen::Vector3d cost_a_weight_sums; cost_a_weight_sums.setZero();
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		weights_ps(ps) = Pr_CC_i;
@@ -355,16 +356,18 @@ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 			//printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
 			weights_ps(ps) = 1 - Pr_CC_i;
 		}
-
-		if (ps_ordering[ps] == SM)
+		
+		if (ps_ordering[ps] == KCC)
 		{
-			num_sm_ps += 1;
-			sum_sm_weights += weights_ps(ps);
+			cost_a_weight_sums(0) += weights_ps(ps);
+		}
+		else if (ps_ordering[ps] == SM)
+		{
+			cost_a_weight_sums(1) += weights_ps(ps);
 		}
 		else if (ps_ordering[ps] == PM)
 		{
-			num_pm_ps += 1;
-			sum_pm_weights += weights_ps(ps);
+			cost_a_weight_sums(1) += weights_ps(ps);
 		}
 	}
 
@@ -376,23 +379,25 @@ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	{
 		if (ps_ordering[ps] == KCC)
 		{
-			cost_a(0) = weights_ps(ps) * max_cost_ps(ps);
+			cost_a(0) += (weights_ps(ps) / cost_a_weight_sums(0)) * max_cost_ps(ps);
 		}
 		else if (ps_ordering[ps] == SM)
 		{
-			cost_a(1) += (weights_ps(ps) / sum_sm_weights) * max_cost_ps(ps);
+			cost_a(1) +=  (weights_ps(ps) / cost_a_weight_sums(1)) * max_cost_ps(ps);
 		}
 		else if (ps_ordering[ps] == PM)
 		{
-			cost_a(2) += (weights_ps(ps) / sum_pm_weights) * max_cost_ps(ps);
+			cost_a(2) +=  (weights_ps(ps) / cost_a_weight_sums(2)) * max_cost_ps(ps);
 		}
 	}
 	
 	// Average the cost for the starboard and port maneuver type of intentions
-	if (num_sm_ps > 0)	{ cost_a(1) /= num_sm_ps; } 
-	else				{ cost_a(1) = 0.0; }
-	if (num_pm_ps > 0)	{ cost_a(2) /= num_pm_ps; } 
-	else				{ cost_a(2) = 0.0; }
+	if (ps_intention_count(0) > 0) 	{ cost_a(0) /= (double)ps_intention_count(0); }
+	else 							{ cost_a(0) = 0.0;}
+	if (ps_intention_count(1) > 0)	{ cost_a(1) /= (double)ps_intention_count(1); } 
+	else							{ cost_a(1) = 0.0; }
+	if (ps_intention_count(2) > 0)	{ cost_a(2) /= (double)ps_intention_count(2); } 
+	else							{ cost_a(2) = 0.0; }
 
 	// Weight by the intention probabilities
 	cost = Pr_a.dot(cost_a);
@@ -406,12 +411,6 @@ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	return cost;
 }
 
-/****************************************************************************************
-*  Name     : calculate_dynamic_obstacle_cost
-*  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
 template <typename Parameters>
 double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
     const Eigen::MatrixXd &trajectory,                          // In: Own-ship trajectory when following the current offset_sequence/control behaviour

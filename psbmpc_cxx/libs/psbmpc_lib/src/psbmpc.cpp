@@ -106,7 +106,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Engine *ep = engOpen(NULL);
+	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -175,7 +175,7 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	} */
+	}
 	
 	//===============================================================================================================
 	double cost(0.0);
@@ -218,7 +218,7 @@ void PSBMPC::calculate_optimal_offsets(
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
-			/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
+			p_P_c_i = mxGetPr(P_c_i_mx[i]);
 			Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 			map_P_c = P_c_i;
 
@@ -231,7 +231,7 @@ void PSBMPC::calculate_optimal_offsets(
 				ps_mx = mxCreateDoubleScalar(ps + 1);
 				engPutVariable(ep, "ps", ps_mx);
 				engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-			} */
+			}
 			//===============================================================================================================
 		}
 
@@ -262,14 +262,14 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
 		engPutVariable(ep, "k", k_s);
 
 		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
+		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
 		//===============================================================================================================
 	}
 
@@ -291,7 +291,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	//std::cout << "Cost at optimum : " << min_cost << std::endl;
 
-	/* engClose(ep);  */
+	engClose(ep); 
 }
 
 /****************************************************************************************
@@ -678,16 +678,20 @@ void PSBMPC::calculate_ps_collision_probabilities(
 {
 	P_c_i_ps.setZero();
 
-	double product(0.0);
+	//double product(0.0);
 	int n_samples = P_c_i.cols();
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
 		for (int k = 0; k < n_samples; k++)
 		{
-			if (k == 0)	{ product = 1 - P_c_i(ps, k); }
-			else		{ product *= (1 - P_c_i(ps, k)); }
+			/* if (k == 0)	{ product = 1 - P_c_i(ps, k); }
+			else		{ product *= (1 - P_c_i(ps, k)); } */
+			if (P_c_i(ps, k) > P_c_i_ps(ps))
+			{
+				P_c_i_ps(ps) = P_c_i(ps, k);
+			}
 		}
-		P_c_i_ps(ps) = 1 - product;
+		//P_c_i_ps(ps) = 1 - product;
 	}
 }
 
@@ -743,6 +747,7 @@ void PSBMPC::calculate_ps_collision_consequences(
 			calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(k), xs_i_p[ps].col(k));
 
 			collision_consequence = pow((v_0_p - v_i_p).norm(), 2) * exp(- abs(t - t_cpa));
+			//collision_consequence = pow((v_0_p - v_i_p).norm(), 2) * exp(- abs(t));
 
 			if (C_i(ps) < collision_consequence)
 			{

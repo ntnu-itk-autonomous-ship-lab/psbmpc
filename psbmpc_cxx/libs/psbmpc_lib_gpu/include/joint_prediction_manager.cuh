@@ -96,8 +96,8 @@ private:
 		// Inside consideration range
 		else
 		{
-			bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-			bool is_ahead, is_passed, is_head_on, is_crossing;
+			bool B_is_starboard(false), A_is_overtaken(false), B_is_overtaken(false);
+			bool is_ahead(false), is_passed(false), is_head_on(false), is_crossing(false);
 
 			is_ahead = v_A.dot(L_AB) > cos(mpc_pars.phi_AH) * v_A.norm();
 
@@ -332,7 +332,7 @@ public:
 
 	__host__ __device__ Obstacle_Data<Prediction_Obstacle>& get_data(int i) { return data[i]; };
 
-	__host__ __device__ void update_obstacle_status(const int i, const Eigen::Vector4d &obstacle_i_state, const int k);
+	__host__ __device__ void update_obstacle_status(const int i, const TML::Vector4f &obstacle_i_state, const int k);
 
 	__host__ __device__ void display_obstacle_information(const int i);
 
@@ -347,16 +347,16 @@ public:
 	__host__ __device__ void operator()(
 		const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss, an Obstacle_SBMPC
 		const std::vector<Prediction_Obstacle> &pobstacles, 								// In: Vector of Prediction Obstacles
-		const Eigen::VectorXd &xs_os_aug_k, 												// In: Augmented ownship state consisting of [x, y, Vx, Vy, l, w, ID] at the current predicted time
+		const TML::PDMatrix<float, 1, 7> &xs_os_aug_k,										// In: Augmented ownship state consisting of [x, y, Vx, Vy, l, w, ID] at the current predicted time
 		const int k																			// In: Index of the current predicted time t_k
 		) 			
 	{
 		int n_obst = pobstacles.size();
 
-		Eigen::Matrix<double, 7, -1> other_obstacle_states(7, n_obst);
+		TML::PDMatrix<float, 7, MAX_N_OBST> other_obstacle_states(7, n_obst);
 
-		Eigen::Vector4d obstacle_i_state, ownship_4d_state;
-		double obstacle_i_length;
+		TML::Vector4f obstacle_i_state, ownship_4d_state;
+		float obstacle_i_length;
 		int count;
 		for (int i = 0; i < n_obst; i++)
 		{

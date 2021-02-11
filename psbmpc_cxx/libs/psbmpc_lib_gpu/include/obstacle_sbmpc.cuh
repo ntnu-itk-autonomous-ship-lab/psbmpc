@@ -27,6 +27,7 @@
 #include "sbmpc_parameters.h"
 #include "joint_prediction_manager.cuh"
 #include "obstacle_ship.cuh"
+#include "mpc_cost.cuh"
 #include "tml.cuh"
 #include <vector>
 
@@ -35,11 +36,11 @@ class Obstacle_SBMPC
 {
 private:
 
-	TML::PDMatrix<float, 1, 2 * MAX_N_M> offset_sequence;
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
 
-	TML::PDMatrix<int, 1, MAX_N_M> offset_sequence_counter;
+	TML::PDMatrix<int, 2 * MAX_N_M, 1> offset_sequence_counter;
 
-	TML::PDMatrix<float, 1, MAX_N_M> maneuver_times;
+	TML::PDMatrix<float, MAX_N_M, 1> maneuver_times;
 	
 	float u_m_last;
 	float chi_m_last;
@@ -49,6 +50,21 @@ private:
 	Obstacle_Ship ownship;
 
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> trajectory;
+
+	//==============================================
+	// Pre-allocated temporaries
+	//==============================================
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> opt_offset_sequence;
+	TML::PDMatrix<float, MAX_N_OBST, 1> cost_i;
+	int n_samples, n_obst, n_static_obst, count;
+
+	bool colav_active;
+
+	float cost;
+
+	TML::Vector4f xs;
+	TML::Vector2f d_0i;
+	//==============================================
 
 	__host__ __device__ void assign_data(const Obstacle_SBMPC &o_sbmpc);
 
@@ -60,7 +76,7 @@ private:
 
 	__host__ __device__ bool determine_colav_active(const Obstacle_Data<Prediction_Obstacle> &data, const int n_static_obst);
 
-	__host__ __device__ void assign_optimal_trajectory(Eigen::Matrix<double, 4, -1> &optimal_trajectory);
+	__host__ __device__ void assign_optimal_trajectory(TML::PDMatrix<float, 4, MAX_N_SAMPLES> &optimal_trajectory);
 
 public:
 
@@ -77,14 +93,14 @@ public:
 	__host__ __device__ Obstacle_SBMPC& operator=(const Obstacle_SBMPC &o_sbmpc);
 
 	__host__ __device__ void calculate_optimal_offsets(
-		double &u_opt, 	
-		double &chi_opt, 
-		Eigen::Matrix<double, 4, -1> &predicted_trajectory,
-		const double u_d, 
-		const double chi_d, 
-		const Eigen::Matrix<double, 2, -1> &waypoints,
-		const Eigen::Vector4d &ownship_state,
-		const Eigen::Matrix<double, 4, -1> &static_obstacles,
+		float &u_opt, 	
+		float &chi_opt, 
+		TML::PDMatrix<float, 4, MAX_N_SAMPLES> &predicted_trajectory,
+		const float u_d, 
+		const float chi_d, 
+		const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
+		const TML::Vector4f &ownship_state,
+		const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles,
 		Obstacle_Data<Prediction_Obstacle> &data,
 		const int k_0);
 };

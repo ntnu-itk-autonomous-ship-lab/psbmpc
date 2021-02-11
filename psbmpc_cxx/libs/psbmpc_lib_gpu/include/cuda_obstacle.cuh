@@ -86,6 +86,10 @@ public:
 
 	__device__ inline float get_a_priori_CC_probability() const { return Pr_CC; }
 
+	__device__ inline TML::PDMatrix<Intention, 1, MAX_N_PS> get_ps_ordering() const { return ps_ordering; }
+
+	__device__ inline TML::PDVector3i get_ps_intention_count() const { return ps_intention_count; }
+
 	__device__ inline float get_duration_lost() const { return duration_lost; }
 
 	__device__ inline float get_duration_tracked() const { return duration_tracked; }
