@@ -23,7 +23,7 @@
 #define _OBSTACLE_SHIP_CUH_
 
 #include "psbmpc_defines.h"
-#include "tml.cuh
+#include "tml.cuh"
 #include "Eigen/Dense"
 #include <thrust/device_vector.h>
 
@@ -46,11 +46,7 @@ enum Guidance_Method
 
 class Obstacle_Ship
 {
-private:
-
-	// Own-ship state at the predicted time
-	TML::Vector4f xs_p;
-	
+private:	
 	// Ship length and width
 	float l, w;
 
@@ -68,13 +64,14 @@ private:
 
 	//===================================
 	// Pre-allocated temporaries
+	TML::Vector4f xs_p;
 	int n_samples, n_wps, man_count;
 	float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
 
 	TML::Vector2f d_next_wp, L_wp_segment;
 	bool segment_passed;
 
-	TML::Vector4f xs_new;
+	TML::Vector4f xs_p, xs_new;
 
 	float chi_diff;
 	//===================================

@@ -23,13 +23,14 @@ add_library(psbmpc_lib_gpu STATIC
 	src/cb_cost_functor.cu
 	src/obstacle_manager.cu
 	src/obstacle.cu
-	#src/obstacle_ship.cu 
-	#src/obstacle_sbmpc.cu 
+	src/obstacle_ship.cu 
+	src/obstacle_sbmpc.cu 
 	src/tracked_obstacle.cu
 	src/cuda_obstacle.cu
-	#src/prediction_obstacle.cu
+	src/prediction_obstacle.cu
 	src/ownship.cu 
-	src/cpe.cu
+	src/cpe_cpu.cu
+	src/cpe_gpu.cu
 	src/kf.cu  
 	src/mrou.cu 
 	src/utilities.cu
@@ -60,9 +61,10 @@ target_compile_options(psbmpc_lib_gpu
 	# The below is for the GPU beast with Geforce RTX 3090
 	# debug compilation
 	#PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc -gencode arch=compute_86,code=sm_86 --expt-relaxed-constexpr -Xlinker -dlink> 
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink> 
 
 	# release compilation
-	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -Wall -Wno-pedantic -dc -gencode arch=compute_86,code=sm_86 --expt-relaxed-constexpr -Xlinker -dlink> 
+	#PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -Wall -Wno-pedantic -dc -gencode arch=compute_86,code=sm_86 --expt-relaxed-constexpr -Xlinker -dlink> 
 )
 
 target_link_libraries(psbmpc_lib_gpu 

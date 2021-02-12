@@ -63,7 +63,7 @@ private:
 	TML::PDMatrix<float, MAX_N_OBST, 1> cost_i;
 	TML::PDMatrix<float, MAX_N_PS, 1> P_c_i, max_cost_ps, weights_ps;
 	TML::PDMatrix<bool, MAX_N_PS, 1> mu_i;
-	TML::PDMatrix<Intention, 1, MAX_N_PS> ps_ordering;
+	TML::PDMatrix<Intention, MAX_N_PS, 1> ps_ordering;
 
 	// Allocate vectors for the obstacle intention weighted cost, and intention probability vector
 	TML::Vector3f ps_intention_count, cost_a_weight_sums, cost_a, Pr_a;
@@ -74,13 +74,23 @@ private:
 	// Only keeps n_seg_samples at a time, sliding window. Minimum 2
 	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
 	// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
-	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_p; 
-	TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_p;
-	TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_p;
+	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_p_seg; 
+	TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_p_seg;
+	TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_p_seg;
 
 	// For the CE-method:
 	TML::Vector2f p_os, p_i, v_os_prev, v_i_prev;
     TML::Matrix2f P_i_2D;
+
+	// Joint prediction related
+	TML::PDMatrix<float, MAX_N_OBST, 1> u_d_i, u_opt_i, chi_d_i, chi_opt_i;
+
+	TML::PDMatrix<float, 7, 1> xs_os_aug_k;
+	
+	TML::Vector2f v_os_k;
+	TML::Vector4f xs_i_p, xs_i_p_transformed;
+
+	float t, chi_i; 
 	//==============================================
 	//==============================================
 

@@ -103,6 +103,17 @@ public:
 		const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles,
 		Obstacle_Data<Prediction_Obstacle> &data,
 		const int k_0);
+
+	__host__ __device__ void calculate_optimal_offsets(
+		float &u_opt, 	
+		float &chi_opt, 
+		const float u_d, 
+		const float chi_d, 
+		const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
+		const TML::Vector4f &ownship_state,
+		const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles,
+		Obstacle_Data<Prediction_Obstacle> &data,
+		const int k_0);
 };
 
 #endif 

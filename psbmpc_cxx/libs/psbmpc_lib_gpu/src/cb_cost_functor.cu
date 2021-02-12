@@ -79,9 +79,9 @@ __device__ float CB_Cost_Functor::operator()(
 	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
 	n_seg_samples = std::round(cpe[cb_index].get_segment_discretization_time() / pars->dt) + 1;
 	
-	xs_p.resize(6, n_seg_samples);
-	xs_i_p.resize(4, n_seg_samples);
-	P_i_p.resize(16, n_seg_samples);
+	xs_p_seg.resize(6, n_seg_samples);
+	xs_i_p_seg.resize(4, n_seg_samples);
+	P_i_p_seg.resize(16, n_seg_samples);
 
 	//======================================================================================================================
 	// 1.1: Predict own-ship trajectory with the current control behaviour
@@ -96,7 +96,7 @@ __device__ float CB_Cost_Functor::operator()(
 		pars->T, pars->dt);
 
 	// 1.2: Joint prediction with the current control behaviour
-
+	predict_trajectories_jointly();
 	//======================================================================================================================
 	// 2 : Cost calculation
 	// Not entirely optimal for loop configuration, but the alternative requires alot of memory
@@ -127,18 +127,22 @@ __device__ float CB_Cost_Functor::operator()(
 				//==========================================================================================
 				// 2.0 : Extract states and information relevant for cost evaluation at sample k. 
 
-				xs_p.shift_columns_left();
-				xs_p.set_col(n_seg_samples - 1, trajectory[cb_index].get_col(k));
+				xs_p_seg.shift_columns_left();
+				xs_p_seg.set_col(n_seg_samples - 1, trajectory[cb_index].get_col(k));
 
-				P_i_p.shift_columns_left();
-				P_i_p.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_covariance_sample(k));
+				P_i_p_seg.shift_columns_left();
+				P_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_covariance_sample(k));
 
-				xs_i_p.shift_columns_left();
-				xs_i_p.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
+				xs_i_p_seg.shift_columns_left();
+				xs_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
 
 				if (k == 0)
 				{
-					cpe[cb_index].initialize(xs_p.get_col(n_seg_samples - 1), xs_i_p.get_col(n_seg_samples - 1), P_i_p.get_col(n_seg_samples - 1), d_safe_i);
+					cpe[cb_index].initialize(
+						xs_p_seg.get_col(n_seg_samples - 1), 
+						xs_i_p_seg.get_col(n_seg_samples - 1), 
+						P_i_p_seg.get_col(n_seg_samples - 1), 
+						d_safe_i);
 				}
 
 				// Determine active course modification at sample k
@@ -179,21 +183,21 @@ __device__ float CB_Cost_Functor::operator()(
 						case CE :	
 							if (k > 0)
 							{
-								v_os_prev = xs_p.get_block<2, 1>(3, n_seg_samples - 2, 2, 1);
-								v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, n_seg_samples - 2));
-								v_i_prev = xs_i_p.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
+								v_os_prev = xs_p_seg.get_block<2, 1>(3, n_seg_samples - 2, 2, 1);
+								v_os_prev = rotate_vector_2D(v_os_prev, xs_p_seg(2, n_seg_samples - 2));
+								v_i_prev = xs_i_p_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
 							}
-							p_os = xs_p.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
-							p_i = xs_i_p.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+							p_os = xs_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+							p_i = xs_i_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 
-							P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+							P_i_2D = reshape<16, 1, 4, 4>(P_i_p_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
 							P_c_i(ps) = cpe[cb_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt);
 							break;
 						case MCSKF4D :                
 							if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 							{
-								P_c_i(ps) = cpe[cb_index].MCSKF4D_estimate(xs_p, xs_i_p, P_i_p);						
+								P_c_i(ps) = cpe[cb_index].MCSKF4D_estimate(xs_p_seg, xs_i_p_seg, P_i_p_seg);						
 							}	
 							break;
 						default :
@@ -205,7 +209,14 @@ __device__ float CB_Cost_Functor::operator()(
 
 				//==========================================================================================
 				// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
-				cost_ps = mpc_cost.calculate_dynamic_obstacle_cost(fdata, obstacles, P_c_i(ps), xs_p.get_col(n_seg_samples - 1), xs_i_p.get_col(n_seg_samples - 1), i, chi_m);
+				cost_ps = mpc_cost.calculate_dynamic_obstacle_cost(
+					fdata, 
+					obstacles, 
+					P_c_i(ps), 
+					xs_p_seg.get_col(n_seg_samples - 1), 
+					xs_i_p_seg.get_col(n_seg_samples - 1), 
+					i, 
+					chi_m);
 
 				if (max_cost_ps(ps) < cost_ps)
 				{
@@ -378,16 +389,16 @@ __device__ float CB_Cost_Functor::operator()(
 //=======================================================================================
 __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 {
-
+	u_d_i.resize(fdata->n_obst, 1); u_opt_i.resize(fdata->n_obst, 1);
+	chi_d_i.resize(fdata->n_obst, 1); chi_opt_i.resize(fdata->n_obst, 1);
 	for(int k = 0; k < n_samples; k++)
 	{
 		t = k * pars->dt;
 		for (int i = 0; i < fdata->n_obst; i++)
 		{
-
 			xs_i_p = pobstacles[i].get_state(k);
 
-			//std::cout << "xs_i_p = " << xs_i_p.transpose() << std::endl;
+			//std::cout << "xs_i_p = " << xs_i_p.transposed() << std::endl;
 
 			// Convert from X_i = [x, y, Vx, Vy] to X_i = [x, y, chi, U]
 			xs_i_p_transformed.set_block<2, 1>(0, 0, xs_i_p.get_block<2, 1>(0, 0));
@@ -413,37 +424,29 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 
 			if (fmod(t, 5) == 0)
 			{
-				//start = std::chrono::system_clock::now();	
-
-				pobstacles[i].sbmpc->calculate_optimal_offsets(
+				pobstacles[i].sbmpc.calculate_optimal_offsets(
 					u_opt_i(i), 
 					chi_opt_i(i), 
-					predicted_trajectory_i[i],
 					u_d_i(i), 
 					chi_d_i(i),
 					pobstacles[i].get_waypoints(),
 					xs_i_p_transformed,
-					static_obstacles,
+					fdata->static_obstacles,
 					jpm.get_data(i),
 					k);
-
-				end = std::chrono::system_clock::now();
-				elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-				/* mean_t = elapsed.count();
-				std::cout << "Obstacle_SBMPC time usage : " << mean_t << " milliseconds" << std::endl; */
-
-				jpm.update_obstacle_status(i, xs_i_p_transformed, k);
-				//jpm.display_obstacle_information(i);
 			}
-			u_c_i = u_d_i(i) * u_opt_i(i); chi_c_i = chi_d_i(i) + chi_opt_i(i);
 
 			if (k < n_samples - 1)
 			{
-				xs_i_p_transformed = obstacle_ships[i].predict(xs_i_p_transformed, u_c_i, chi_c_i, pars.dt, pars.prediction_method);
+				xs_i_p_transformed = obstacle_ships[i].predict(
+					xs_i_p_transformed, 
+					u_d_i(i) * u_opt_i(i), 
+					chi_d_i(i) + chi_opt_i(i), 
+					pars->dt, 
+					pars->prediction_method);
 				
 				// Convert from X_i = [x, y, chi, U] to X_i = [x, y, Vx, Vy]
-				xs_i_p.block<2, 1>(0, 0) = xs_i_p_transformed.block<2, 1>(0, 0);
+				xs_i_p.set_block<2, 1>(0, 0, xs_i_p_transformed.get_block<2, 1>(0, 0));
 				xs_i_p(2) = xs_i_p_transformed(3) * cos(xs_i_p_transformed(2));
 				xs_i_p(3) = xs_i_p_transformed(3) * sin(xs_i_p_transformed(2));
 

@@ -55,15 +55,17 @@ PSBMPC::PSBMPC()
 	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
 	cuda_check_errors("CudaMalloc of trajectory failed.");
 
+	// Allocate for each thread a control behaviour parameter object
 	CB_Functor_Pars temporary_pars(pars); 
-	CPE_GPU temporary_cpe(pars.cpe_method, pars.dt);
-
+	
 	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
 	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
 
 	cudaMemcpy(pars_device_ptr, &temporary_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
 
+	// Allocate for each thread a Collision Probability Estimator
+	CPE_GPU temporary_cpe(pars.cpe_method, pars.dt);
 	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * sizeof(CPE_GPU));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
@@ -245,9 +247,9 @@ void PSBMPC::calculate_optimal_offsets(
 		pars_device_ptr, 
 		fdata_device_ptr, 
 		obstacles_device_ptr, 
+		pobstacles_device_ptr,
 		cpe_device_ptr, 
 		trajectory_device_ptr, 
-		xs_i_colav_p_device_ptr, 
 		ownship.get_wp_counter()));
     thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), *cb_cost_functor);
 
@@ -915,8 +917,8 @@ void PSBMPC::predict_trajectories_jointly(
 	int n_obst = pobstacles.size();
 	Joint_Prediction_Manager jpm(n_obst); 
 
-	Eigen::VectorXd u_opt_i(n_obst), chi_opt_i(n_obst), u_d_i(n_obst), chi_d_i(n_obst);
-	TML::Vector4d xs_i_p, xs_i_p_transformed;
+	TML::PDMatrix<float, MAX_N_OBST, 1> u_opt_i(n_obst), chi_opt_i(n_obst), u_d_i(n_obst), chi_d_i(n_obst);
+	TML::Vector4f xs_i_p, xs_i_p_transformed;
 	TML::PDMatrix<float, 1, 7> xs_os_aug_k(1, 7);
 	xs_os_aug_k(4) = ownship.get_length();
 	xs_os_aug_k(5) = ownship.get_width();
@@ -924,7 +926,7 @@ void PSBMPC::predict_trajectories_jointly(
 
 	std::vector<Obstacle_Ship> obstacle_ships(n_obst);
 	std::vector<Eigen::Matrix<double, 4, -1>> predicted_trajectory_i(n_obst);
-	TML::Vector4d xs_i_0;
+	TML::Vector4f xs_i_0;
  	for(int i = 0; i < n_obst; i++)
 	{
 		xs_i_0 = pobstacles[i].get_initial_state();
@@ -1004,15 +1006,18 @@ void PSBMPC::predict_trajectories_jointly(
 	//double mean_t(0.0);
 
 	double t(0.0), u_c_i(0.0), chi_c_i(0.0), chi_i(0.0);
-	Eigen::Vector2d v_os_k;
+	TML::Vector2f v_os_k, p_os_k;
 	for (int k = 0; k < n_samples; k++)
 	{	
 		t = k * pars.dt;
 
-		v_os_k = trajectory.block<2, 1>(3, k);
+		v_os_k = trajectory(3, k);
+		v_os_k = trajectory(4, k);
 		v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
-		xs_os_aug_k.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, k);
-		xs_os_aug_k.block<2, 1>(2, 0) = v_os_k;
+		xs_os_aug_k(0) = trajectory(0, k);
+		xs_os_aug_k(1) = trajectory(1, k);
+		xs_os_aug_k(2) = v_os_k(0);
+		xs_os_aug_k(3) = v_os_k(1);
 
 		//std::cout << "xs_os_aug_k = " << xs_os_aug_k.transpose() << std::endl;
 
@@ -1027,9 +1032,10 @@ void PSBMPC::predict_trajectories_jointly(
 			//std::cout << "xs_i_p = " << xs_i_p.transpose() << std::endl;
 
 			// Convert from X_i = [x, y, Vx, Vy] to X_i = [x, y, chi, U]
-			xs_i_p_transformed.block<2, 1>(0, 0) = xs_i_p.block<2, 1>(0, 0);
+			xs_i_p_transformed(0) = xs_i_p(0);
+			xs_i_p_transformed(1) = xs_i_p(1);
 			xs_i_p_transformed(2) = atan2(xs_i_p(3), xs_i_p(2));
-			xs_i_p_transformed(3) = xs_i_p.block<2, 1>(2, 0).norm();
+			xs_i_p_transformed(3) = xs_i_p.get_block<2, 1>(2, 0).norm();
 
 			// Determine the intention that obstacle i`s predicted trajectory
 			// corresponds to
@@ -1052,7 +1058,7 @@ void PSBMPC::predict_trajectories_jointly(
 			{
 				//start = std::chrono::system_clock::now();	
 
-				pobstacles[i].sbmpc->calculate_optimal_offsets(
+				pobstacles[i].sbmpc.calculate_optimal_offsets(
 					u_opt_i(i), 
 					chi_opt_i(i), 
 					predicted_trajectory_i[i],
@@ -1080,7 +1086,8 @@ void PSBMPC::predict_trajectories_jointly(
 				xs_i_p_transformed = obstacle_ships[i].predict(xs_i_p_transformed, u_c_i, chi_c_i, pars.dt, pars.prediction_method);
 				
 				// Convert from X_i = [x, y, chi, U] to X_i = [x, y, Vx, Vy]
-				xs_i_p.block<2, 1>(0, 0) = xs_i_p_transformed.block<2, 1>(0, 0);
+				xs_i_p(0) = xs_i_p_transformed(0);
+				xs_i_p(1) = xs_i_p_transformed(1);
 				xs_i_p(2) = xs_i_p_transformed(3) * cos(xs_i_p_transformed(2));
 				xs_i_p(3) = xs_i_p_transformed(3) * sin(xs_i_p_transformed(2));
 
@@ -1251,7 +1258,8 @@ void PSBMPC::set_up_temporary_device_memory(
 	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
 	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
 	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
-	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; */
+	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
+	std::cout << "Prediction Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; */
 	
 	size_t limit = 0;
 
@@ -1276,16 +1284,25 @@ void PSBMPC::set_up_temporary_device_memory(
 	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Data failed.");
 	
+	// Obstacles
 	cudaMalloc((void**)&obstacles_device_ptr, n_obst * sizeof(Cuda_Obstacle));
     cuda_check_errors("CudaMalloc of Cuda_Obstacle's failed.");
 
-	Cuda_Obstacle temporary_transfer_obstacle;
+	cudaMalloc((void**)&pobstacles_device_ptr, n_obst * sizeof(Prediction_Obstacle));
+    cuda_check_errors("CudaMalloc of Prediction_Obstacle's failed.");
+
+	Cuda_Obstacle temp_transfer_cobstacle;
+	Prediction_Obstacle temp_transfer_pobstacle;
 	for (int i = 0; i < n_obst; i++)
 	{
-		temporary_transfer_obstacle = data.obstacles[i];
+		temp_transfer_cobstacle = data.obstacles[i];
+		temp_transfer_pobstacle = data.obstacles[i];
 
-		cudaMemcpy(&obstacles_device_ptr[i], &temporary_transfer_obstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
+		cudaMemcpy(&obstacles_device_ptr[i], &temp_transfer_cobstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
+
+		cudaMemcpy(&pobstacles_device_ptr[i], &temp_transfer_pobstacle, sizeof(Prediction_Obstacle), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of Prediction_Obstacle i failed.");
 	}
 }
 

@@ -84,14 +84,13 @@ private:
 
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory_device_ptr;
 
-	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_colav_p_device_ptr;
-
 	CB_Functor_Pars *pars_device_ptr;
 
 	friend struct CB_Functor_Data;
 	CB_Functor_Data *fdata_device_ptr;
 
 	Cuda_Obstacle *obstacles_device_ptr;
+	Prediction_Obstacle *pobstacles_device_ptr;
 
 	CPE_GPU *cpe_device_ptr;
 	//=====================================================
