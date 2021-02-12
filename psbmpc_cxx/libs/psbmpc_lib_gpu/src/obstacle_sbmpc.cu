@@ -186,6 +186,83 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	std::cout << "Cost at optimum : " << min_cost << std::endl; */
 }
 
+__host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(									
+	float &u_opt, 															// In/out: Optimal surge offset
+	float &chi_opt, 														// In/out: Optimal course offset
+	const float u_d, 														// In: Surge reference
+	const float chi_d, 														// In: Course reference
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,					// In: Next waypoints
+	const TML::Vector4f &ownship_state, 									// In: Current ship state
+	const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles,			// In: Static obstacle information
+	Obstacle_Data<Prediction_Obstacle> &data,								// In/Out: Dynamic obstacle information
+	const int k_0 															// In: Index of the current (joint prediction) time t_k0
+	)
+{
+	n_samples = std::round(pars.T / pars.dt);
+
+	trajectory.resize(4, n_samples);
+	trajectory.set_col(0, ownship_state);
+
+	n_obst = data.obstacles.size();
+	n_static_obst = static_obstacles.get_cols();
+
+	cost_i.resize(n_obst, 1);
+	data.HL_0.resize(n_obst); data.HL_0.setZero();
+
+	if (!determine_colav_active(data, n_static_obst))
+	{
+		u_opt = 1.0f; 		u_m_last = u_opt;
+		chi_opt = 0.0f; 	chi_m_last = chi_opt;
+
+		return;
+	}
+
+	initialize_prediction(data, k_0);
+
+	min_cost = 1e12;
+	reset_control_behavior();
+	for (int cb = 0; cb < pars.n_cbs; cb++)
+	{
+		cost = 0.0f;
+
+		ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+
+		for (int i = 0; i < n_obst; i++)
+		{
+			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, data, i, ownship.get_length());
+		}
+
+		cost += cost_i.max_coeff();
+
+		//cost += mpc_cost.calculate_grounding_cost(trajectory, static_obstacles, ownship.get_length());
+
+		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_m_last, chi_m_last);
+
+		//cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
+
+		if (cost < min_cost) 
+		{
+			min_cost = cost;
+			opt_offset_sequence = offset_sequence;
+
+			// Assign current optimal hazard level for each obstacle
+			for (int i = 0; i < n_obst; i++)
+			{
+				data.HL_0(i) = cost_i(i) / cost_i.sum();
+			}	
+		}
+		increment_control_behavior();
+	}
+
+	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
+	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
+
+	if(u_opt == 0)
+	{
+		chi_opt = 0; 	chi_m_last = chi_opt;
+	} 
+}
+
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/

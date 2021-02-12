@@ -19,7 +19,7 @@
 #======================================================================
 
 # Test files for use with CPU-version of PSBMPC
-add_executable(tester test_psbmpc.cpp)
+#add_executable(tester test_psbmpc.cpp)
 #add_executable(tester test_ownship.cpp)
 #add_executable(tester test_obstacle_ship.cpp)
 #add_executable(tester test_obstacle.cpp)
@@ -29,7 +29,7 @@ add_executable(tester test_psbmpc.cpp)
 #add_executable(tester test_prng.cpp)
 
 # Test files for use with GPU-version of PSBMPC
-#add_executable(tester gpu_implementation_test_files/test_psbmpc.cu)
+add_executable(tester gpu_implementation_test_files/test_psbmpc.cu)
 #add_executable(tester gpu_implementation_test_files/test_ownship.cu)
 #add_executable(tester gpu_implementation_test_files/test_obstacle_ship.cu)
 #add_executable(tester gpu_implementation_test_files/test_cpe.cu)
@@ -44,3 +44,4 @@ target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_SOURCE_DIR}/libs/
 )
+

@@ -41,7 +41,7 @@ private:
 	float cost_cd, cost_ch, delta_t, cost_g, ahcr;
 
 	// Dynamic obstacle cost related (do cost)
-	float cost_do, C, l_i;
+	float cost_k, cost_do, C, l_i;
 
 	TML::Vector2f v_0_p, v_i_p, L_0i_p;
 	float psi_0_p, psi_i_p, d_0i_p;
@@ -59,6 +59,8 @@ private:
 	int val, o1, o2, o3, o4;
 
 	TML::Vector3f a, b, c;
+
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_i_p;
 	//==============================================
 	//==============================================
 
@@ -89,6 +91,7 @@ public:
 
     __host__ __device__ MPC_Cost(const Parameters &pars) : pars(pars) {}
 
+	//
 	template <class Obstacle_Type>
     __host__ bool determine_transitional_cost_indicator(
 		const float psi_A, 
@@ -105,7 +108,9 @@ public:
 		const TML::Vector2f &L_AB, 
 		const float chi_m,
 		const int i);
-
+	//
+	
+	//
 	__host__ __device__ bool determine_COLREGS_violation(
 		const Eigen::Vector2d &v_A, 
 		const double psi_A, 
@@ -119,6 +124,7 @@ public:
 		const TML::Vector2f &v_B,
 		const TML::Vector2f &L_AB, 
 		const float d_AB);
+	//
 
     // CUDA kernel and Obstacle_SBMPC dynamic obstacle cost, respectively
     __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
@@ -130,13 +136,13 @@ public:
 		const int i,
 		const float chi_m);
 
-	__host__ __device__ double calculate_dynamic_obstacle_cost(
-        const Eigen::MatrixXd &trajectory, 
-		const Eigen::VectorXd &offset_sequence,
-    	const Eigen::VectorXd &maneuver_times,
+	__host__ __device__ float calculate_dynamic_obstacle_cost(
+        const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 
+		const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
+    	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
         const Obstacle_Data<Prediction_Obstacle> &data, 
         const int i, 
-        const double ownship_length);
+        const float ownship_length);
     //
 
 	__host__ __device__ inline double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) const { return pars.K_coll * pow((v_1 - v_2).norm(), 2); }
@@ -402,6 +408,93 @@ __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	printf("d_0i_p = %.2f  | L_0i_p = %.2f, %.2f\n", d_0i_p, L_0i_p(0), L_0i_p(1));
 	printf("C = %.4f       | mu = %d                 | trans = %d           | l_i = %.4f\n", C, mu, trans, l_i);
 	printf("cost_ps = %.4f\n", cost_do); */
+	return cost_do;
+}
+
+template <typename Parameters>
+__host__ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
+    const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,                   // In: Own-ship trajectory when following the current offset_sequence/control behaviour
+	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,                // In: Offset sequence currently followed by the own-ship
+    const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,                     // In: Time of each maneuver in the offset sequence
+	const Obstacle_Data<Prediction_Obstacle> &data,								// In: Dynamic obstacle information
+	const int i, 																// In: Index of obstacle
+    const float ownship_length                                  				// In: Length of the ownship along the body x-axis
+	)
+{
+	cost_do = 0.0f;
+
+	n_samples = trajectory.cols();
+
+	xs_i_p = data.obstacles[i].get_predicted_trajectory();
+
+	for(int k = 0; k < n_samples; k++)
+	{
+		psi_0_p = trajectory(2, k); 
+		v_0_p(0) = trajectory(3, k) * cos(trajectory(2, k)); 
+		v_0_p(1) = trajectory(3, k) * sin(trajectory(2, k));
+
+		// Determine active course modification at sample k
+		for (int M = 0; M < pars.n_M; M++)
+		{
+			if (M < pars.n_M - 1)
+			{
+				if (k >= maneuver_times[M] && k < maneuver_times[M + 1])
+				{
+					chi_m = offset_sequence[2 * M + 1];
+				}
+			}
+			else
+			{
+				if (k >= maneuver_times[M])
+				{
+					chi_m = offset_sequence[2 * M + 1];
+				}
+			}
+		}
+
+		L_0i_p = xs_i_p.block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
+		d_0i_p = L_0i_p.norm();
+
+		// Decrease the distance between the vessels by their respective max dimension
+		d_0i_p = abs(d_0i_p - 0.5 * (ownship_length + data.obstacles[i].get_length())); 
+
+		L_0i_p = L_0i_p.normalized();
+
+		v_i_p(0) = xs_i_p(2, k);
+		v_i_p(1) = xs_i_p(3, k);
+		psi_i_p = atan2(v_i_p(1), v_i_p(0));
+
+		C = calculate_collision_cost(v_0_p, v_i_p);
+
+		mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+
+		trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
+
+		R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
+
+		// SB-MPC formulation with ad-hoc collision risk
+		cost_k = C * R + pars.kappa * mu  + pars.kappa_TC * trans;
+
+		if (cost_k > cost_do)
+		{
+			cost_do = cost_k;
+		}
+		
+		/* if (cost > 5000)
+		{
+			std::cout << "v_0_p = " << v_0_p.transpose() << std::endl;
+			std::cout << "v_i_p = " << v_i_p.transpose() << std::endl;
+			std::cout << "d_0i_p = " << d_0i_p << std::endl;
+			std::cout << "psi_0_p = " << psi_0_p << std::endl;
+			std::cout << "psi_i_p = " << psi_i_p << std::endl;
+			std::cout << "C = " << C << std::endl;
+			std::cout << "mu = " << mu << std::endl;
+			std::cout << "trans = " << trans << std::endl;
+			std::cout << "R = " << R << std::endl;
+			std::cout << "cost = " << cost << std::endl;
+			std::cout << "..." << std::endl;
+		}	 */	
+	}
 	return cost_do;
 }
 
