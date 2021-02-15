@@ -92,13 +92,13 @@ public:
     __host__ __device__ MPC_Cost(const Parameters &pars) : pars(pars) {}
 
 	//
-	template <class Obstacle_Type>
+	template <class Obstacle_Data>
     __host__ bool determine_transitional_cost_indicator(
 		const float psi_A, 
 		const float psi_B, 
 		const TML::Vector2f &L_AB, 
 		const float chi_m,
-		const Obstacle_Data<Obstacle_Type> &data,
+		const Obstacle_Data &data,
 		const int i);
 	
 	__device__ bool determine_transitional_cost_indicator(
@@ -166,14 +166,14 @@ public:
 *  Modified :
 *****************************************************************************************/
 template <typename Parameters>
-template <class Obstacle_Type>
+template <class Obstacle_Data>
 __host__ bool MPC_Cost<Parameters>::determine_transitional_cost_indicator(
 	const float psi_A, 													// In: Heading of vessel A
 	const float psi_B, 													// In: Heading of vessel B
 	const TML::Vector2f &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const float chi_m, 													// In: Candidate course offset currently followed
-	const Obstacle_Data<Obstacle_Type> &data,								// In: Dynamic obstacle information
-	const int i 															// In: Index of obstacle
+	const Obstacle_Data &data,											// In: Dynamic obstacle information
+	const int i 														// In: Index of obstacle
 	)
 {
 	// Obstacle on starboard side

@@ -56,22 +56,26 @@ PSBMPC::PSBMPC()
 	cuda_check_errors("CudaMalloc of trajectory failed.");
 
 	// Allocate for each thread a control behaviour parameter object
-	CB_Functor_Pars temporary_pars(pars); 
+	CB_Functor_Pars temp_pars(pars); 
 	
 	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
 	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
 
-	cudaMemcpy(pars_device_ptr, &temporary_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
+	cudaMemcpy(pars_device_ptr, &temp_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
 
-	// Allocate for each thread a Collision Probability Estimator
-	CPE_GPU temporary_cpe(pars.cpe_method, pars.dt);
+	// Allocate for each thread a Collision Probability Estimator, a max number of prediction obstacles
+	CPE_GPU temp_cpe(pars.cpe_method, pars.dt);
 	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * sizeof(CPE_GPU));
+    cuda_check_errors("CudaMalloc of CPE failed.");
+
+	Prediction_Obstacle temp_pobstacle;
+	cudaMalloc((void**)&pobstacles_device_ptr, pars.n_cbs * sizeof(Prediction_Obstacle));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
-		cudaMemcpy(&cpe_device_ptr[cb], &temporary_cpe, sizeof(CPE_GPU), cudaMemcpyHostToDevice);
+		cudaMemcpy(&cpe_device_ptr[cb], &temp_cpe, sizeof(CPE_GPU), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of CPE failed.");
 	}
 }

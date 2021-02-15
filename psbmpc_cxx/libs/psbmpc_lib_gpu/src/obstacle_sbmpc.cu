@@ -38,8 +38,6 @@ __host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC() :
 
 	mpc_cost = MPC_Cost<SBMPC_Parameters>(pars);
 
-	u_m_last = 1.0; chi_m_last = 0.0;
-
 	min_cost = 1e12;
 }
 
@@ -89,6 +87,8 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	float &u_opt, 															// In/out: Optimal surge offset
 	float &chi_opt, 														// In/out: Optimal course offset
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &predicted_trajectory,			// In/out: Predicted optimal ownship trajectory
+	const float u_opt_last,													// In: Previous optimal surge offset
+	const float chi_opt_last,												// In: Previous optimal course offset
 	const float u_d, 														// In: Surge reference
 	const float chi_d, 														// In: Course reference
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,					// In: Next waypoints
@@ -111,9 +111,8 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 
 	if (!determine_colav_active(data, n_static_obst))
 	{
-		u_opt = 1.0f; 		u_m_last = u_opt;
-		chi_opt = 0.0f; 	chi_m_last = chi_opt;
-		
+		u_opt = 1.0f;
+		chi_opt = 0.0f;
 		for (int M = 0; M < pars.n_M; M++)
 		{
 			opt_offset_sequence(2 * M) = 1.0f; opt_offset_sequence(2 * M + 1) = 0.0f;
@@ -146,7 +145,7 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 		//std::cout << "cost = " << cost << std::endl;
 		//cost += mpc_cost.calculate_grounding_cost(trajectory, static_obstacles, ownship.get_length());
 
-		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_m_last, chi_m_last);
+		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
 
 		//cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
 		//std::cout << "cost = " << cost << std::endl;
@@ -167,12 +166,12 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 		increment_control_behavior();
 	}
 
-	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
-	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
+	u_opt = opt_offset_sequence(0);
+	chi_opt = opt_offset_sequence(1);
 
 	if(u_opt == 0)
 	{
-		chi_opt = 0; 	chi_m_last = chi_opt;
+		chi_opt = 0;
 	} 
 
 	/* std::cout << "Optimal offset sequence : ";
@@ -189,6 +188,8 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(									
 	float &u_opt, 															// In/out: Optimal surge offset
 	float &chi_opt, 														// In/out: Optimal course offset
+	const float u_opt_last,													// In/out: Previous optimal surge offset
+	const float chi_opt_last,												// In/out: Previous optimal course offset
 	const float u_d, 														// In: Surge reference
 	const float chi_d, 														// In: Course reference
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,					// In: Next waypoints
@@ -211,9 +212,8 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 
 	if (!determine_colav_active(data, n_static_obst))
 	{
-		u_opt = 1.0f; 		u_m_last = u_opt;
-		chi_opt = 0.0f; 	chi_m_last = chi_opt;
-
+		u_opt = 1.0f;
+		chi_opt = 0.0f;
 		return;
 	}
 
@@ -236,7 +236,7 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 
 		//cost += mpc_cost.calculate_grounding_cost(trajectory, static_obstacles, ownship.get_length());
 
-		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_m_last, chi_m_last);
+		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
 
 		//cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
 
@@ -254,12 +254,12 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 		increment_control_behavior();
 	}
 
-	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
-	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
+	u_opt = opt_offset_sequence(0);
+	chi_opt = opt_offset_sequence(1);
 
 	if(u_opt == 0)
 	{
-		chi_opt = 0; 	chi_m_last = chi_opt;
+		chi_opt = 0;
 	} 
 }
 
@@ -279,9 +279,6 @@ __host__ __device__ void Obstacle_SBMPC::assign_data(
 	this->offset_sequence_counter = o_sbmpc.offset_sequence_counter;
 	this->offset_sequence = o_sbmpc.offset_sequence;
 	this->maneuver_times = o_sbmpc.maneuver_times;
-
-	this->u_m_last = o_sbmpc.u_m_last;
-	this->chi_m_last = o_sbmpc.chi_m_last;
 
 	this->min_cost = o_sbmpc.min_cost;
 
