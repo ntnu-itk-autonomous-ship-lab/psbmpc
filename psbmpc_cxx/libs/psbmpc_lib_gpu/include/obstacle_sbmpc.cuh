@@ -41,9 +41,6 @@ private:
 	TML::PDMatrix<int, 2 * MAX_N_M, 1> offset_sequence_counter;
 
 	TML::PDMatrix<float, MAX_N_M, 1> maneuver_times;
-	
-	float u_m_last;
-	float chi_m_last;
 
 	float min_cost;
 
@@ -96,6 +93,8 @@ public:
 		float &u_opt, 	
 		float &chi_opt, 
 		TML::PDMatrix<float, 4, MAX_N_SAMPLES> &predicted_trajectory,
+		const float u_opt_last,
+		const float chi_opt_last,
 		const float u_d, 
 		const float chi_d, 
 		const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
@@ -107,6 +106,8 @@ public:
 	__host__ __device__ void calculate_optimal_offsets(
 		float &u_opt, 	
 		float &chi_opt, 
+		const float u_opt_last,
+		const float chi_opt_last,
 		const float u_d, 
 		const float chi_d, 
 		const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,

@@ -35,20 +35,6 @@ Obstacle_Manager::Obstacle_Manager()
 	T_tracked_limit = 15.0; // 15.0 s obstacle still relevant if tracked for so long, choice depends on survival rate
 
 	obstacle_filter_on = false;
-
-	width_arr[0] = 1; 		// Obstacle ID
-	width_arr[1] = 1;		// Obstacle SOG
-	width_arr[2] = 7; 		// Obstacle COG
-	width_arr[3] = 5;		// Obstacle R-BRG
-	width_arr[4] = 5; 		// Obstacle RNG
-	width_arr[5] = 2;		// Obstacle HL
-	width_arr[6] = 2; 		// Obstacle IP
-	width_arr[7] = 2;		// Obstacle AH
-	width_arr[8] = 2; 		// Obstacle SB
-	width_arr[9] = 2;		// Obstacle HO
-	width_arr[10] = 2; 		// Obstacle CRG
-	width_arr[11] = 2;		// Obstacle OTG
-	width_arr[12] = 2; 		// Obstacle OT
 }
 
 /****************************************************************************************
