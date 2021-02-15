@@ -35,8 +35,17 @@ and has the following **outputs**:
 - Obstacle_Data: Some parts of the Obstacle_Data is modified by the PSB-MPC (predicted relative hazard levels for each obstacle)
 
 ### PSBMPC_Parameters
-<p> contains all PSB-MPC parameters in a class, which should be modified according to tuning changes. The class has get/set functionality for each parameter according to an index file "psbmpc_index.h", and uses limits on double and integer type parameters to assure that the setting of these parameters makes sense. Work could although be done to make the get/set functionality even better. </p>
+<p> contains all PSB-MPC parameters in a class, which should be modified according to tuning changes. The class has get/set functionality for each parameter according to an index file "psbmpc_index.h", and uses limits on double and integer type parameters to assure that the setting of these parameters makes sense. Work could although be done to make the get/set functionality even better.  <br>
 
+The class has get/set functionality for each parameter according to an index file **psbmpc_index.h**, and uses limits on double and integer type parameters to assure that the setting of these parameters makes sense. Work could although be done to make the get/set functionality even better. </p>
+
+### SBMPC
+<p> The original SBMPC, made into a separate class for the library to enable easier comparison in simulation than what is possible if the PSBMPC/SBMPC were merged into the same class (due to lack of current programming skills and time constraints). </p>
+### SBMPC_Parameters 
+<p> Parameter class for the SBMPC </p>
+
+### MPC_Cost
+<p> Class responsible for evaluating the cost function in the PSBMPC (in the CB_Cost_Functor, SBMPC and obstacle SBMPC </p>
 ### Obstacle Manager
 
 <p> Is the class responsible for updating dynamic obstacle information, taking the following inputs in its main update functionality: </p>
@@ -48,7 +57,10 @@ and has the following **outputs**:
 
 and also updates the current situation type that the own-ship is in, wrt to each obstacle, and also transitional variables (if an obstacle is passed by, is head on, is ahead, is overtaking the own-ship etc.).
 
-<p> An Obstacle_Data structure containing this dynamic obstacle information is sent to the PSBMPC at each COLAV iteration. </p>
+<p> A templated Obstacle_Data structure containing this dynamic obstacle information is sent to the PSBMPC at each COLAV iteration. </p>
+
+### Joint Prediction Manager
+<p> Class responsible for keeping track of all information on intelligent obstacles (Prediction Obstacles) in the PSBMPC joint prediction. Contains a vector of templated Obstacle_Data to store prediction information, and communicates with each Obstacle_SBMPC. </p>
 
 ### Obstacle
 
@@ -56,7 +68,7 @@ The obstacle class maintains information about the dynamic obstacle, in addition
 
 - Obstacle : Base class holding general information
 	- Tracked_Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the Obstacle Manager and used by the PSB-MPC to keep track of the nearby obstacles. 
-	- Prediction_Obstacle: **Not to be used yet**. More minimalistic derived class than the Tracked_Obstacle, intended for use by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system
+	- Prediction_Obstacle: More minimalistic derived class than the Tracked_Obstacle, used by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system
 
 ### Obstacle_Ship 
 
@@ -72,7 +84,7 @@ The model is on the form <br>
 
 ### Obstacle_SBMPC
 
-A simple SB-MPC meant for use by obstacles in the PSB-MPC prediction when considering intelligent obstacles. **Not tested nor finished yet**, so should not be used. 
+A simple SB-MPC used by obstacles in the PSB-MPC prediction when considering intelligent obstacles.
 
 ### Ownship
 

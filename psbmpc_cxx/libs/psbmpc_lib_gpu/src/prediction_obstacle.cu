@@ -22,7 +22,6 @@
 
 #include <thrust/device_vector.h>
 #include "prediction_obstacle.cuh"
-//#include "obstacle_sbmpc.cuh"
 #include "utilities.cuh"
 #include <iostream>
 
@@ -40,7 +39,7 @@ __host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	Obstacle(xs_aug, colav_on) sbmpc(Obstacle_SBMPC())
+	Obstacle(xs_aug, colav_on)
 {
 	int n_samples = std::round(T / dt);
 	
@@ -193,8 +192,6 @@ void Prediction_Obstacle::assign_data(
 	this->xs_p = po.xs_p;
 
 	this->xs_k_p = po.xs_k_p;
-
-	this->sbmpc = po.sbmpc;
 }
 
 void Prediction_Obstacle::assign_data(
@@ -222,6 +219,4 @@ void Prediction_Obstacle::assign_data(
 	TML::assign_eigen_object(this->xs_p, to.xs_p[0]);
 
 	TML::assign_eigen_object(this->xs_k_p, to.xs_p[0]);
-
-	this->sbmpc = Obstacle_SBMPC();
 }

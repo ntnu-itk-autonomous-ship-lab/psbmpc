@@ -39,8 +39,8 @@ PSBMPC::PSBMPC()
 	offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
 
-	u_m_last = 1.0;
-	chi_m_last = 0.0;
+	u_opt_last = 1.0;
+	chi_opt_last = 0.0;
 
 	min_cost = 1e12;
 
@@ -93,8 +93,8 @@ void PSBMPC::calculate_optimal_offsets(
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
 	{
-		u_opt = 1.0; 		u_m_last = u_opt;
-		chi_opt = 0.0; 	chi_m_last = chi_opt;
+		u_opt = 1.0; 		u_opt_last = u_opt;
+		chi_opt = 0.0; 		chi_opt_last = chi_opt;
 
 		assign_optimal_trajectory(predicted_trajectory);
 
@@ -239,7 +239,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		//cost += mpc_cost.calculate_grounding_cost(trajectory, static_obstacles, ownship.get_length());
 
-		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_m_last, chi_m_last);
+		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
 
 		cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
 
@@ -273,12 +273,12 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 	}
 
-	u_opt = opt_offset_sequence(0); 	u_m_last = u_opt;
-	chi_opt = opt_offset_sequence(1); 	chi_m_last = chi_opt;
+	u_opt = opt_offset_sequence(0); 	u_opt_last = u_opt;
+	chi_opt = opt_offset_sequence(1); 	chi_opt_last = chi_opt;
 
 	if(u_opt == 0)
 	{
-		chi_opt = 0; 	chi_m_last = chi_opt;
+		chi_opt = 0; 	chi_opt_last = chi_opt;
 	} 	
 
 	std::cout << "Optimal offset sequence : ";

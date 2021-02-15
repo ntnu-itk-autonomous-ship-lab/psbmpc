@@ -41,7 +41,7 @@ PSBMPC::PSBMPC()
 	: 
 	ownship(Ownship()), pars(PSBMPC_Parameters()), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr)
 {
-	u_m_last = 1.0; chi_m_last = 0.0;
+	u_opt_last = 1.0; chi_opt_last = 0.0;
 
 	min_cost = 1e12;
 
@@ -143,8 +143,8 @@ void PSBMPC::calculate_optimal_offsets(
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
 	{
-		u_opt = 1.0; 		u_m_last = u_opt;
-		chi_opt = 0.0; 	chi_m_last = chi_opt;
+		u_opt = 1.0; 		u_opt_last = u_opt;
+		chi_opt = 0.0; 		chi_opt_last = chi_opt;
 
 		assign_optimal_trajectory(predicted_trajectory);
 
@@ -288,8 +288,8 @@ void PSBMPC::calculate_optimal_offsets(
 	engClose(ep);*/
 	//===============================================================================================================
 
-	u_opt = opt_offset_sequence_e(0); 		u_m_last = u_opt;
-	chi_opt = opt_offset_sequence_e(1); 	chi_m_last = chi_opt;
+	u_opt = opt_offset_sequence_e(0); 		u_opt_last = u_opt;
+	chi_opt = opt_offset_sequence_e(1); 	chi_opt_last = chi_opt;
 
 	std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)

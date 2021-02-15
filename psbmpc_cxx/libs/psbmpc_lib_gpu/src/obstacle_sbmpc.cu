@@ -33,7 +33,6 @@ __host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC() :
 {
 	offset_sequence_counter.resize(2 * pars.n_M, 1);
 	offset_sequence.resize(2 * pars.n_M, 1);
-	opt_offset_sequence.resize(2 * pars.n_M, 1);
 	maneuver_times.resize(pars.n_M, 1);
 
 	mpc_cost = MPC_Cost<SBMPC_Parameters>(pars);
@@ -51,8 +50,7 @@ __host__ __device__ Obstacle_SBMPC::~Obstacle_SBMPC() = default;
 *****************************************************************************************/
 __host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC(
 	const Obstacle_SBMPC &o_sbmpc 									// In: Obstacle SBMPC to copy
-	) :
-	pars(SBMPC_Parameters(true))
+	)
 {
 	assign_data(o_sbmpc);
 }
@@ -109,16 +107,16 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	cost_i.resize(n_obst, 1);
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 
-	if (!determine_colav_active(data, n_static_obst))
+	if (!determine_colav_active(data, n_static_obst, k_0))
 	{
 		u_opt = 1.0f;
 		chi_opt = 0.0f;
 		for (int M = 0; M < pars.n_M; M++)
 		{
-			opt_offset_sequence(2 * M) = 1.0f; opt_offset_sequence(2 * M + 1) = 0.0f;
+			offset_sequence(2 * M) = 1.0f; offset_sequence(2 * M + 1) = 0.0f;
 		}
 		maneuver_times.set_zero();
-		ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+		ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 		
 		assign_optimal_trajectory(predicted_trajectory);
 
@@ -153,7 +151,8 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 		if (cost < min_cost) 
 		{
 			min_cost = cost;
-			opt_offset_sequence = offset_sequence;
+			u_opt = offset_sequence(0);
+			chi_opt = offset_sequence(1);
 
 			assign_optimal_trajectory(predicted_trajectory);
 
@@ -165,15 +164,6 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 		}
 		increment_control_behavior();
 	}
-
-	u_opt = opt_offset_sequence(0);
-	chi_opt = opt_offset_sequence(1);
-
-	if(u_opt == 0)
-	{
-		chi_opt = 0;
-	} 
-
 	/* std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)
 	{
@@ -188,14 +178,16 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(									
 	float &u_opt, 															// In/out: Optimal surge offset
 	float &chi_opt, 														// In/out: Optimal course offset
-	const float u_opt_last,													// In/out: Previous optimal surge offset
-	const float chi_opt_last,												// In/out: Previous optimal course offset
+	const float u_opt_last,													// In: Previous optimal surge offset
+	const float chi_opt_last,												// In: Previous optimal course offset
 	const float u_d, 														// In: Surge reference
 	const float chi_d, 														// In: Course reference
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,					// In: Next waypoints
 	const TML::Vector4f &ownship_state, 									// In: Current ship state
 	const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles,			// In: Static obstacle information
-	Obstacle_Data<Prediction_Obstacle> &data,								// In/Out: Dynamic obstacle information
+	const Obstacle_Data_GPU &data,											// In: Dynamic obstacle information
+	Prediction_Obstacle *obstacles, 										// In: Pointer to list of all prediction obstacles
+	const int i_caller,														// In: Index of calling obstacle
 	const int k_0 															// In: Index of the current (joint prediction) time t_k0
 	)
 {
@@ -204,32 +196,34 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	trajectory.resize(4, n_samples);
 	trajectory.set_col(0, ownship_state);
 
-	n_obst = data.obstacles.size();
+	n_obst = data.AH_0.size() + 1; // n_obst here includes obstacle i (the calling object)
 	n_static_obst = static_obstacles.get_cols();
 
 	cost_i.resize(n_obst, 1);
-	data.HL_0.resize(n_obst); data.HL_0.setZero();
 
-	if (!determine_colav_active(data, n_static_obst))
+	if (!determine_colav_active(obstacles, i_caller, n_static_obst, k_0))
 	{
 		u_opt = 1.0f;
 		chi_opt = 0.0f;
 		return;
 	}
 
-	initialize_prediction(data, k_0);
+	initialize_prediction(obstacles, i_caller, k_0);
 
 	min_cost = 1e12;
 	reset_control_behavior();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
-		cost = 0.0f;
+		cost = 0.0f; cost_i.set_zero();
 
 		ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, data, i, ownship.get_length());
+			if (i != i_caller)
+			{
+				cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, data, obstacles, i, ownship.get_length());
+			}
 		}
 
 		cost += cost_i.max_coeff();
@@ -243,24 +237,12 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 		if (cost < min_cost) 
 		{
 			min_cost = cost;
-			opt_offset_sequence = offset_sequence;
+			u_opt = offset_sequence(0);
+			chi_opt = offset_sequence(1);
 
-			// Assign current optimal hazard level for each obstacle
-			for (int i = 0; i < n_obst; i++)
-			{
-				data.HL_0(i) = cost_i(i) / cost_i.sum();
-			}	
 		}
 		increment_control_behavior();
 	}
-
-	u_opt = opt_offset_sequence(0);
-	chi_opt = opt_offset_sequence(1);
-
-	if(u_opt == 0)
-	{
-		chi_opt = 0;
-	} 
 }
 
 /****************************************************************************************
@@ -311,6 +293,32 @@ __host__ __device__ void Obstacle_SBMPC::initialize_prediction(
 	for (int i = 0; i < n_obst; i++)
 	{
 		data.obstacles[i].predict_independent_trajectory(pars.T, pars.dt, k_0);
+	}
+	//***********************************************************************************
+	// Own-ship prediction initialization
+	//***********************************************************************************
+	maneuver_times.resize(pars.n_M, 1);
+	// First avoidance maneuver is always at t0, and n_M = 1 for Obstacle SBMPC
+	maneuver_times(0) = 0.0;
+	
+	//std::cout << maneuver_times.transpose() << std::endl;
+}
+
+__device__ void Obstacle_SBMPC::initialize_prediction(
+	Prediction_Obstacle *obstacles, 									// In/out: Pointer to list of all prediction obstacles
+	const int i_caller, 												// In: Index of calling obstacle
+	const int k_0														// In: Index of the current (joint prediction) time t_k0	 
+	)
+{
+	//***********************************************************************************
+	// Obstacle prediction initialization
+	//***********************************************************************************
+	for (int i = 0; i < n_obst; i++)
+	{
+		if (i != i_caller)
+		{
+			obstacles[i].predict_independent_trajectory(pars.T, pars.dt, k_0);
+		}
 	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -389,16 +397,42 @@ __host__ __device__ void Obstacle_SBMPC::increment_control_behavior()
 *****************************************************************************************/
 __host__ __device__ bool Obstacle_SBMPC::determine_colav_active(
 	const Obstacle_Data<Prediction_Obstacle> &data,							// In: Dynamic obstacle information
-	const int n_static_obst 												// In: Number of static obstacles
+	const int n_static_obst, 												// In: Number of static obstacles
+	const int k_0															// In: Index of the current (joint prediction) time t_k0
 	)
 {
 	xs = trajectory.get_col(0);
 	colav_active = false;
 	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
-		d_0i(0) = data.obstacles[i].get_initial_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].get_initial_state()(1) - xs(1);
+		xs_i = data.obstacles[i].get_state(k_0);
+		d_0i(0) = xs_i(0) - xs(0);
+		d_0i(1) = xs_i(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
+	}
+	colav_active = colav_active || n_static_obst > 0;
+
+	return colav_active;
+}
+
+__device__ bool Obstacle_SBMPC::determine_colav_active(
+	Prediction_Obstacle *obstacles, 									// In/out: Pointer to list of all prediction obstacles
+	const int i_caller, 												// In: Index of calling obstacle
+	const int n_static_obst, 											// In: Number of static obstacles
+	const int k_0														// In: Index of the current (joint prediction) time t_k0
+	)
+{
+	xs = trajectory.get_col(0);
+	colav_active = false;
+	for (int i = 0; i < n_obst; i++)
+	{
+		if (i != i_caller)
+		{
+			xs_i = obstacles[i].get_state(k_0);
+			d_0i(0) = xs_i(0) - xs(0);
+			d_0i(1) = xs_i(1) - xs(1);
+			if (d_0i.norm() < pars.d_init) colav_active = true;
+		}
 	}
 	colav_active = colav_active || n_static_obst > 0;
 
