@@ -127,7 +127,7 @@ public:
 	//
 
     // CUDA kernel and Obstacle_SBMPC dynamic obstacle cost, respectively
-    __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
+    __device__ inline float calculate_dynamic_obstacle_cost(
 		const CB_Functor_Data *fdata,
 		const Cuda_Obstacle *obstacles,
 		const float P_c_i,
@@ -143,6 +143,15 @@ public:
         const Obstacle_Data<Prediction_Obstacle> &data, 
         const int i, 
         const float ownship_length);
+
+	__device__ float calculate_dynamic_obstacle_cost(
+        const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 
+		const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
+    	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
+        const Obstacle_Data_GPU &data, 
+		const Prediction_Obstacle *obstacles,
+        const int i, 
+        const float ownship_length);
     //
 
 	__host__ __device__ inline double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) const { return pars.K_coll * pow((v_1 - v_2).norm(), 2); }
@@ -151,7 +160,7 @@ public:
 	__host__ __device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 	__host__ __device__ float calculate_ad_hoc_collision_risk(const float d_AB, const float t);
 
-	__host__ __device__ float calculate_control_deviation_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const float u_m_last, const float chi_m_last);
+	__host__ __device__ float calculate_control_deviation_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const float u_opt_last, const float chi_opt_last);
 
 	__host__ __device__ float calculate_chattering_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times);
 
@@ -498,6 +507,95 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	return cost_do;
 }
 
+template <typename Parameters>
+__device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
+    const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,                   // In: Own-ship trajectory when following the current offset_sequence/control behaviour
+	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,                // In: Offset sequence currently followed by the own-ship
+    const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,                     // In: Time of each maneuver in the offset sequence
+	const Obstacle_Data_GPU &data, 												// In: Dynamic obstacle information
+	const Prediction_Obstacle *obstacles,										// In: Pointer to list of all prediction obstacles
+	const int i, 																// In: Index of obstacle
+    const float ownship_length                                  				// In: Length of the ownship along the body x-axis
+	)
+{
+	cost_do = 0.0f;
+
+	n_samples = trajectory.cols();
+
+	xs_i_p = obstacles[i].get_predicted_trajectory();
+
+	for(int k = 0; k < n_samples; k++)
+	{
+		psi_0_p = trajectory(2, k); 
+		v_0_p(0) = trajectory(3, k) * cos(trajectory(2, k)); 
+		v_0_p(1) = trajectory(3, k) * sin(trajectory(2, k));
+
+		// Determine active course modification at sample k
+		for (int M = 0; M < pars.n_M; M++)
+		{
+			if (M < pars.n_M - 1)
+			{
+				if (k >= maneuver_times[M] && k < maneuver_times[M + 1])
+				{
+					chi_m = offset_sequence[2 * M + 1];
+				}
+			}
+			else
+			{
+				if (k >= maneuver_times[M])
+				{
+					chi_m = offset_sequence[2 * M + 1];
+				}
+			}
+		}
+
+		L_0i_p(0) = xs_i_p(0, k) - trajectory(0, k);
+		L_0i_p(0) = xs_i_p(1, k) - trajectory(1, k);
+		d_0i_p = L_0i_p.norm();
+
+		// Decrease the distance between the vessels by their respective max dimension
+		d_0i_p = abs(d_0i_p - 0.5 * (ownship_length + data.obstacles[i].get_length())); 
+
+		L_0i_p = L_0i_p.normalized();
+
+		v_i_p(0) = xs_i_p(2, k);
+		v_i_p(1) = xs_i_p(3, k);
+		psi_i_p = atan2(v_i_p(1), v_i_p(0));
+
+		C = calculate_collision_cost(v_0_p, v_i_p);
+
+		mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+
+		trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
+
+		R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
+
+		// SB-MPC formulation with ad-hoc collision risk
+		cost_k = C * R + pars.kappa * mu  + pars.kappa_TC * trans;
+
+		if (cost_k > cost_do)
+		{
+			cost_do = cost_k;
+		}
+		
+		/* if (cost > 5000)
+		{
+			std::cout << "v_0_p = " << v_0_p.transpose() << std::endl;
+			std::cout << "v_i_p = " << v_i_p.transpose() << std::endl;
+			std::cout << "d_0i_p = " << d_0i_p << std::endl;
+			std::cout << "psi_0_p = " << psi_0_p << std::endl;
+			std::cout << "psi_i_p = " << psi_i_p << std::endl;
+			std::cout << "C = " << C << std::endl;
+			std::cout << "mu = " << mu << std::endl;
+			std::cout << "trans = " << trans << std::endl;
+			std::cout << "R = " << R << std::endl;
+			std::cout << "cost = " << cost << std::endl;
+			std::cout << "..." << std::endl;
+		}	 */	
+	}
+	return cost_do;
+}
+
 /****************************************************************************************
 *  Name     : calculate_ad_hoc_collision_risk
 *  Function : 
@@ -544,9 +642,9 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_ad_hoc_collision_risk(
 *****************************************************************************************/
 template <typename Parameters>
 __host__ __device__ float MPC_Cost<Parameters>::calculate_control_deviation_cost(
-	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, 				// In: Control behaviour currently followed
-	const float u_m_last,                                          				// In: Previous optimal output surge modification
-    const float chi_m_last                                         				// In: Previous optimal output course modification
+	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, 					// In: Control behaviour currently followed
+	const float u_opt_last,                                          				// In: Previous optimal output surge modification
+    const float chi_opt_last                                         				// In: Previous optimal output course modification
 	)
 {
 	cost_cd = 0;
@@ -554,8 +652,8 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_control_deviation_cost
 	{
 		if (i == 0)
 		{
-			cost_cd += pars->K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_m_last) +
-				    K_chi(offset_sequence[1])      + Delta_chi(offset_sequence[1], chi_m_last);
+			cost_cd += pars->K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_opt_last) +
+				    K_chi(offset_sequence[1])      + Delta_chi(offset_sequence[1], chi_opt_last);
 		}
 		else
 		{
@@ -564,8 +662,8 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_control_deviation_cost
 		}
 	}
 	
-	/* printf("K_u (1 - u_m_0) = %.4f | Delta_u(u_m_0, u_m_last) = %.4f | K_chi(chi_0) = %.4f | Delta_chi(chi_0, chi_last) = %.4f\n", 
-		pars->K_u * (1 - offset_sequence[0]), Delta_u(offset_sequence[0], fdata->u_m_last), K_chi(offset_sequence[1]), Delta_chi(offset_sequence[1], fdata->chi_m_last)); */
+	/* printf("K_u (1 - u_m_0) = %.4f | Delta_u(u_m_0, u_opt_last) = %.4f | K_chi(chi_0) = %.4f | Delta_chi(chi_0, chi_last) = %.4f\n", 
+		pars->K_u * (1 - offset_sequence[0]), Delta_u(offset_sequence[0], fdata->u_opt_last), K_chi(offset_sequence[1]), Delta_chi(offset_sequence[1], fdata->chi_opt_last)); */
 	return cost_cd / (float)pars->n_M;
 }
 

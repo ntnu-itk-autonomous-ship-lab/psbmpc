@@ -42,6 +42,9 @@ private:
 
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory;
 
+	Obstacle_Ship *oship;
+	Obstacle_SBMPC *osbmpc;
+
 	//==============================================
 	// Pre-allocated temporaries
 	//==============================================
@@ -83,21 +86,39 @@ private:
     TML::Matrix2f P_i_2D;
 
 	// Joint prediction related
-	TML::PDMatrix<float, MAX_N_OBST, 1> u_d_i, u_opt_i, chi_d_i, chi_opt_i;
+	TML::PDMatrix<float, MAX_N_OBST, 1> u_d_i, u_opt_i, u_opt_last_i, chi_d_i, chi_opt_i, chi_opt_last_i;
 
 	TML::PDMatrix<float, 7, 1> xs_os_aug_k;
 	
-	TML::Vector2f v_os_k;
+	TML::Vector2f v_os_k, v_A, v_B, L_AB, p_A, p_B;
 	TML::Vector4f xs_i_p, xs_i_p_transformed;
 
-	float t, chi_i; 
+	float t, chi_i, psi_A, psi_B, d_AB; 
+
+	Obstacle_Data_GPU data;
+
+	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
+	bool is_close, is_ahead, is_passed, is_head_on, is_crossing;
+
+	int i_count;
 	//==============================================
 	//==============================================
+	__device__ void determine_situation_type(
+		ST& st_A,
+		ST& st_B,
+		const TML::Vector2f &v_A,
+		const float psi_A,
+		const TML::Vector2f &v_B,
+		const TML::Vector2f &L_AB,
+		const float d_AB);
+
+	__device__ void update_conditional_obstacle_data(const int i_caller, const int k);
 
 	__device__ void predict_trajectories_jointly();
 
 public: 
-	__host__ CB_Cost_Functor() : fdata(nullptr), obstacles(nullptr), cpe(nullptr) {}
+	__host__ CB_Cost_Functor() : 
+		pars(nullptr), fdata(nullptr), obstacles(nullptr), pobstacles(nullptr), cpe(nullptr), trajectory(nullptr), oship(nullptr), osbmpc(nullptr) {}
 
 	__host__ CB_Cost_Functor(
 		CB_Functor_Pars *pars, 
@@ -106,6 +127,8 @@ public:
 		Prediction_Obstacle *pobstacles,
 		CPE_GPU *cpe,
 		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,
+		Obstacle_Ship *oship,
+		Obstacle_SBMPC *osbmpc,
 		const int wp_c_0);
 
 	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; pobstacles = nullptr; cpe = nullptr; trajectory = nullptr; }

@@ -45,6 +45,15 @@ and has the following **outputs**:
 Note that the amount of control behaviours (function of the amount of maneuvers and different maneuver types considered) that can be considered on the GPU, is highly limited by the amount of memory available on the GPU, as some data structures (for instance the CPE class) need to be allocated and transferred to each thread (host to device transfer). 
  </p>
 
+
+### SBMPC
+<p> The original SBMPC, made into a separate class for the library to enable easier comparison in simulation than what is possible if the PSBMPC/SBMPC were merged into the same class (due to lack of current programming skills and time constraints). </p>
+### SBMPC_Parameters 
+<p> Parameter class for the SBMPC </p>
+
+### MPC_Cost
+<p> Class responsible for evaluating the cost function in the PSBMPC, SBMPC and obstacle SBMPC </p>
+
 ## CB Cost Functor
 <p> Special case C++ class/struct which has overloaded the **operator(..)**. This functor is used to evaluate the cost of following one particular control behaviour. The functor is ported to the gpu, where each thread will run the **operator(..)** to evaluate the cost of a certain control behaviour. The **operator(..)** function takes as input the index of the control behaviour considered, and the avoidance maneuver vector (offset sequence) considered in this control behaviour, and returns the cost associated with this control behaviour. </p>
 
@@ -70,7 +79,7 @@ The obstacle class maintains information about the obstacle, in addition to its 
 
 - Obstacle : Base class holding general information
 	- Tracked_Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the PSB-MPC to keep track of the nearby obstacles. 
-	- Prediction_Obstacle: **Not to be used yet**. More minimalistic derived class than the Tracked_Obstacle, intended for use by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system
+	- Prediction_Obstacle: **Not to be used yet**. More minimalistic derived class than the Tracked_Obstacle, used by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system
 	- Cuda_Obstacle: Used as a GPU-friendly data container of relevant Tracked_Obstacle data needed on the GPU. Read-only when processing on the GPU
 
 ### Obstacle_Ship 
@@ -103,7 +112,7 @@ This is the Mean-reverting Ornstein-Uhlenbeck process used for the prediction of
 
 ### CPE
 
-This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based, and is basically among others the main reason for trying to implement the PSB-MPC on the GPU. **NOTE** Changed to facilitate only static data allocation, and only considers one obstacle at the time. A grid of CPEs is allocated prior to running GPU code, where each thread will read/write to their own CPE object. "Optimized" for running on the GPU. 
+This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based, and is basically among others the main reason for trying to implement the PSB-MPC on the GPU. **NOTE** Changed to facilitate only static data allocation, and only considers one obstacle at the time. A grid of CPEs is allocated prior to running GPU code, where each thread will read/write to their own CPE object. Split into a CPU and GPU version, as the GPU version requires a tailor made PRNG, whereas the CPU version can use std:: type or other custom PRNG (like xoshiro, which is fast and efficient). 
 
 ### Utilities
 
@@ -111,7 +120,7 @@ This is the Collision Probability Estimator used in the PSB-MPC predictions. Has
 
 
 ## Tryms_matrix (Tryms shitty matrix library)
-Custom matrix library made specifically for usage of matrices in CUDA kernels, as I did not find another satisfactory third-party solution for this. HOpefully, Eigen will have better CUDA support in the future, which is unfortunately very limited today. **NOTE:** This library should be used with care, as it is only tested for a subset of all "typical matrix functionality", i.e. only the operations currently used in the PSB-MPC GPU run code. 
+Custom matrix library made specifically for usage of matrices in CUDA kernels, as I did not find another satisfactory third-party solution for this. Hopefully, Eigen will have better CUDA support in the future, which is unfortunately very limited today. **NOTE:** This library should be used with care, as it is only tested for a subset of all "typical matrix functionality", i.e. only the operations currently used in the PSB-MPC GPU run code. 
 
 The library implements three matrix type containers:
 - Static_Matrix: Fixed sized matrices

@@ -61,8 +61,6 @@ private:
 	
 public:
 
-	Obstacle_SBMPC sbmpc;
-
 	__host__ __device__ Prediction_Obstacle();
 
 	__host__ __device__ Prediction_Obstacle(const TML::PDMatrix<float, 1, 9> &xs_aug,	 

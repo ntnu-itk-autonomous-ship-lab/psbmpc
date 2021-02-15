@@ -60,8 +60,8 @@ private:
 
 	thrust::device_vector<TML::PDMatrix<float, 2 * MAX_N_M, 1>> control_behavior_dvec;
 	
-	double u_m_last;
-	double chi_m_last;
+	double u_opt_last;
+	double chi_opt_last;
 
 	double min_cost;
 	int min_index;

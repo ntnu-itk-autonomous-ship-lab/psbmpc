@@ -39,9 +39,11 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	Prediction_Obstacle *pobstacles,  								// In: Device pointer to prediction_obstacles, one for each thread
 	CPE_GPU *cpe, 		 											// In: Device pointer to the collision probability estimator, one for each thread
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
+	Obstacle_Ship *oship,											// In: Device pointer to the obstacle ship for joint prediction, one for each thread
+	Obstacle_SBMPC *osbmpc,											// In: Device pointer to the obstacle sbmpc for joint prediction, one for each thread
 	const int wp_c_0												// In: Waypoint counter for PSB-MPC Ownship object, to initialize the waypoint following in the thread own-ship objects properly
 	) :
-	pars(pars), fdata(fdata), obstacles(obstacles), pobstacles(pobstacles), cpe(cpe), trajectory(trajectory)
+	pars(pars), fdata(fdata), obstacles(obstacles), pobstacles(pobstacles), cpe(cpe), trajectory(trajectory), oship(oship), osbmpc(osbmpc)
 {
 	ownship.set_wp_counter(wp_c_0);
 }
@@ -364,7 +366,7 @@ __device__ float CB_Cost_Functor::operator()(
 
 	//==================================================================================================
 	// 2.6 : Calculate cost due to deviating from the nominal path
-	cost_cb += mpc_cost.calculate_control_deviation_cost(offset_sequence, fdata->u_m_last, fdata->chi_m_last);
+	cost_cb += mpc_cost.calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
 	//printf("dev cost = %.4f\n", calculate_control_deviation_cost(offset_sequence, cb_index));
 
 	//==================================================================================================
@@ -379,6 +381,207 @@ __device__ float CB_Cost_Functor::operator()(
 //=======================================================================================
 //	Private functions
 //=======================================================================================
+//=======================================================================================
+//  Name     : determine_situation_type
+//  Function : Determines the situation type for vessel A and B  \in {A, B, C, D, E, F}
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
+__host__ __device__ void CB_Cost_Functor::determine_situation_type(
+	ST& st_A,																// In/out: Situation type of vessel A
+	ST& st_B,																// In/out: Situation type of vessel B	
+	const TML::Vector2f &v_A,												// In: (NE) Velocity vector of vessel A 
+	const float psi_A, 														// In: Heading of vessel A
+	const TML::Vector2f &v_B, 												// In: (NE) Velocity vector of vessel B
+	const TML::Vector2f &L_AB, 												// In: LOS vector pointing from vessel A to vessel B
+	const float d_AB 														// In: Distance from vessel A to vessel B
+	)
+{
+	// Crash situation or outside consideration range
+	if(d_AB < pars->d_safe || d_AB > pars->d_close)
+	{
+		st_A = A; st_B = A;
+		return;
+	} 
+	// Inside consideration range
+	else
+	{
+		is_ahead = v_A.dot(L_AB) > cos(pars->phi_AH) * v_A.norm();
+
+		A_is_overtaken = v_A.dot(v_B) > cos(pars->phi_OT) * v_A.norm() * v_B.norm() 	&&
+						v_A.norm() < v_B.norm()							  		&&
+						v_A.norm() > 0.25;
+
+		B_is_overtaken = v_B.dot(v_A) > cos(pars->phi_OT) * v_B.norm() * v_A.norm() 	&&
+						v_B.norm() < v_A.norm()							  		&&
+						v_B.norm() > 0.25;
+
+		B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+
+		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+					!A_is_overtaken) 											||
+					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+					!B_is_overtaken)) 											&&
+					d_AB > pars->d_safe;
+
+		is_head_on = v_A.dot(v_B) < - cos(pars->phi_HO) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() > 0.25											&&
+					v_B.norm() > 0.25											&&
+					is_ahead;
+
+		is_crossing = v_A.dot(v_B) < cos(pars->phi_CR) * v_A.norm() * v_B.norm()  	&&
+					v_A.norm() > 0.25											&&
+					v_B.norm() > 0.25											&&
+					!is_head_on 												&&
+					!is_passed;
+		
+		if (A_is_overtaken) 
+		{ 
+			st_A = B; st_B = D;
+		} 
+		else if (B_is_overtaken) 
+		{ 
+			st_A = D; st_B = B; 
+		} 
+		else if (is_head_on) 
+		{ 
+			st_A = E; st_B = E; 
+		} 
+		else if (is_crossing)
+		{
+			if (B_is_starboard) 
+			{
+				st_A = F; st_B = C;
+			} else
+			{
+				st_A = C; st_B = F;
+			}
+		} 
+		else 
+		{
+			st_A = A; st_B = A;
+		}
+	}
+}
+
+//=======================================================================================
+//  Name     : update_conditional_obstacle_data
+//  Function : Updates the situation type for the calling obstacle (wrt all other 
+//			   obstacles) and obstacles (wrt own-ship) and the transitional cost 
+//			   indicators O, Q, X, S at the current time t0 wrt all obstacles.
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
+__device__ void CB_Cost_Functor::update_conditional_obstacle_data(
+	const int i_caller, 															// In: Index of obstacle asking for a situational awareness update
+	const int k																		// In: Index of the current predicted time t_k
+	)
+{
+	// A : Obstacle i_caller, B : Obstacle i
+	p_A(0) = pobstacles[i_caller].get_state(k)(0);
+	p_A(1) = pobstacles[i_caller].get_state(k)(1);
+	v_A(0) = pobstacles[i_caller].get_state(k)(2);
+	v_A(1) = pobstacles[i_caller].get_state(k)(3);
+	psi_A = atan2(v_A(1), v_A(0));
+
+	data.ST_0.resize(fdata->n_obst, 1);   data.ST_i_0.resize(fdata->n_obst, 1);
+	
+	data.AH_0.resize(fdata->n_obst, 1);   data.S_TC_0.resize(fdata->n_obst, 1); data.S_i_TC_0.resize(fdata->n_obst, 1); 
+	data.O_TC_0.resize(fdata->n_obst, 1); data.Q_TC_0.resize(fdata->n_obst, 1); data.IP_0.resize(fdata->n_obst, 1); 
+	data.H_TC_0.resize(fdata->n_obst, 1); data.X_TC_0.resize(fdata->n_obst, 1);
+
+	i_count = 0;
+	for (int i = 0; i < fdata->n_obst; i++)
+	{
+		if (i != i_caller)
+		{
+			p_B(0) = pobstacles[i].get_state(k)(0);
+			p_B(1) = pobstacles[i].get_state(k)(1);
+			v_B(0) = pobstacles[i].get_state(k)(2);
+			v_B(1) = pobstacles[i].get_state(k)(3);
+			psi_B = atan2(v_B(1), v_B(0));
+
+			L_AB = p_B - p_A;
+			d_AB = L_AB.norm();
+
+			// Decrease the distance between the vessels by their respective max dimension
+			d_AB = d_AB - 0.5 * (pobstacles[i_caller].get_length() + pobstacles[i].get_length()); 
+			
+			L_AB = L_AB.normalized();
+
+			determine_situation_type(data.ST_0[i], data.ST_i_0[i], v_A, psi_A, v_B, L_AB, d_AB);
+			
+			//std::cout << "Obstacle i = " << i << " situation type wrt obst j = " << j << " ? " << data[i].ST_0[j] << std::endl;
+			//std::cout << "Obst j = " << j << " situation type wrt obstacle i = " << i << " ? " << data[i].ST_i_0[j] << std::endl;
+
+			/*********************************************************************
+			* Transitional variable update
+			*********************************************************************/
+			is_close = d_AB <= pars->d_close;
+
+			data.AH_0[i] = v_A.dot(L_AB) > cos(pars->phi_AH) * v_A.norm();
+
+			//std::cout << "Obst j = " << j << " ahead at t0 ? " << data[i].AH_0[j] << std::endl;
+			
+			// Obstacle on starboard side
+			data.S_TC_0[i] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+
+			//std::cout << "Obst i = " << i << " on starboard side at t0 ? " << data[i].S_TC_0[j] << std::endl;
+
+			// Ownship on starboard side of obstacle
+			data.S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
+
+			//std::cout << "Obstacle i = " << i << " on starboard side of obstacle j = " << j << " at t0 ? " << data[i].S_i_TC_0[j] << std::endl;
+
+			// Ownship overtaking the obstacle
+			data.O_TC_0[i] = v_B.dot(v_A) > cos(pars->phi_OT) * v_B.norm() * v_A.norm() 	&&
+					v_B.norm() < v_A.norm()							    						&&
+					v_B.norm() > 0.25															&&
+					is_close 																	&&
+					data.AH_0[i];
+
+			//std::cout << "Own-ship overtaking obst j = " << j << " at t0 ? " << data[i].O_TC_0[j] << std::endl;
+
+			// Obstacle overtaking the ownship
+			data.Q_TC_0[i] = v_A.dot(v_B) > cos(pars->phi_OT) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() < v_B.norm()							  							&&
+					v_A.norm() > 0.25 															&&
+					is_close 																	&&
+					!data.AH_0[i];
+
+			//std::cout << "Obst j = " << j << " overtaking obstacle i = " << i << " at t0 ? " << data[i].Q_TC_0[j] << std::endl;
+
+			// Determine if the obstacle is passed by
+			data.IP_0[i_count] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
+					!data.Q_TC_0[i_count])		 											||
+					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 					&& // Obstacle's perspective	
+					!data.O_TC_0[i_count]))		 											&&
+					d_AB > pars->d_safe;
+			
+			//std::cout << "Obst j = " << j << " passed by at t0 ? " << data[i].IP_0[j] << std::endl;
+
+			// This is not mentioned in article, but also implemented here..				
+			data.H_TC_0[i_count] = v_A.dot(v_B) < - cos(pars->phi_HO) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() > 0.25																&&
+					v_B.norm() > 0.25																&&
+					data.AH_0[i_count];
+			
+			//std::cout << "Head-on at t0 wrt obst j = " << j << " ? " << data[i].H_TC_0[j] << std::endl;
+
+			// Crossing situation, a bit redundant with the !is_passed condition also, 
+			// but better safe than sorry (could be replaced with B_is_ahead also)
+			data.X_TC_0[i_count] = v_A.dot(v_B) < cos(pars->phi_CR) * v_A.norm() * v_B.norm()		&&
+					!data.H_TC_0[i_count]															&& 
+					!data.IP_0[i_count]																&&
+					v_A.norm() > 0.25																&&
+					v_B.norm() > 0.25;
+
+			//std::cout << "Crossing at t0 wrt obst j = " << j << " ? " << data[i].X_TC_0[j] << std::endl;
+
+			i_count += 1;
+		}
+	}	
+}
 
 //=======================================================================================
 //  Name     : predict_trajectories_jointly
@@ -389,14 +592,17 @@ __device__ float CB_Cost_Functor::operator()(
 //=======================================================================================
 __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 {
-	u_d_i.resize(fdata->n_obst, 1); u_opt_i.resize(fdata->n_obst, 1);
-	chi_d_i.resize(fdata->n_obst, 1); chi_opt_i.resize(fdata->n_obst, 1);
+	u_d_i.resize(fdata->n_obst, 1); u_opt_i.resize(fdata->n_obst, 1); u_opt_last_i.resize(fdata->n_obst, 1);
+	chi_d_i.resize(fdata->n_obst, 1); chi_opt_i.resize(fdata->n_obst, 1); chi_opt_last_i.resize(fdata->n_obst, 1);
 	for(int k = 0; k < n_samples; k++)
 	{
 		t = k * pars->dt;
 		for (int i = 0; i < fdata->n_obst; i++)
 		{
 			xs_i_p = pobstacles[i].get_state(k);
+
+			// Update obstacle data for obstacle i using all other obstacles
+			update_conditional_obstacle_data(i, k);
 
 			//std::cout << "xs_i_p = " << xs_i_p.transposed() << std::endl;
 
@@ -414,7 +620,7 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 				else if (chi_i < -15 * DEG2RAD)							{ pobstacles[i].set_intention(PM); }
 			}
 
-			obstacle_ships[i].update_guidance_references(
+			oship[cb_index].update_guidance_references(
 				u_d_i(i), 
 				chi_d_i(i), 
 				pobstacles[i].get_waypoints(),
@@ -424,21 +630,28 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 
 			if (fmod(t, 5) == 0)
 			{
-				pobstacles[i].sbmpc.calculate_optimal_offsets(
+				osbmpc->calculate_optimal_offsets(
 					u_opt_i(i), 
 					chi_opt_i(i), 
+					u_opt_last_i(i), 
+					chi_opt_last_i(i), 
 					u_d_i(i), 
 					chi_d_i(i),
 					pobstacles[i].get_waypoints(),
 					xs_i_p_transformed,
 					fdata->static_obstacles,
-					jpm.get_data(i),
+					pobstacles,
+					data,
+					i,
 					k);
+
+				u_opt_last_i(i) = u_opt_i(i);
+				chi_opt_last_i(i) = chi_opt_i(i);
 			}
 
 			if (k < n_samples - 1)
 			{
-				xs_i_p_transformed = obstacle_ships[i].predict(
+				xs_i_p_transformed = oship[cb_index].predict(
 					xs_i_p_transformed, 
 					u_d_i(i) * u_opt_i(i), 
 					chi_d_i(i) + chi_opt_i(i), 

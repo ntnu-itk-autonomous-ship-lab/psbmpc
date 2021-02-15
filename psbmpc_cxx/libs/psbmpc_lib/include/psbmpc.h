@@ -43,8 +43,8 @@ private:
 	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
 
 	// Previous optimal offsets/modifications
-	double u_m_last;
-	double chi_m_last;
+	double u_opt_last;
+	double chi_opt_last;
 
 	// Cost at the optimal solution
 	double min_cost;

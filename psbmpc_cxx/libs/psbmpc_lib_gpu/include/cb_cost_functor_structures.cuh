@@ -117,8 +117,8 @@ public:
 
 	float u_d, chi_d;
 
-	float u_m_last;
-	float chi_m_last;
+	float u_opt_last;
+	float chi_opt_last;
 
 	bool use_joint_prediction;
 
@@ -149,7 +149,7 @@ public:
 		const double chi_d, 
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		const Obstacle_Data<Tracked_Obstacle> &odata)
+		const Obstacle_Data<Tracked_Obstacle> &data)
 	{
 		ownship = master.ownship;
 
@@ -160,8 +160,8 @@ public:
 		this->u_d = u_d;
 		this->chi_d = chi_d;
 
-		u_m_last = master.u_m_last;
-		chi_m_last = master.chi_m_last;	
+		u_opt_last = master.u_opt_last;
+		chi_opt_last = master.chi_opt_last;	
 
 		use_joint_prediction = master.use_joint_prediction;
 
@@ -169,7 +169,7 @@ public:
 
 		TML::assign_eigen_object(this->static_obstacles, static_obstacles);
 
-		n_obst = odata.obstacles.size();
+		n_obst = data.obstacles.size();
 
 		n_ps.resize(n_obst, 1);
 
@@ -181,14 +181,14 @@ public:
 		{
 			n_ps[i] = master.n_ps[i];
 
-			AH_0[i] = odata.AH_0[i]; 
-			S_TC_0[i] = odata.S_TC_0[i];
-			S_i_TC_0[i] = odata.S_i_TC_0[i]; 
-			O_TC_0[i] = odata.O_TC_0[i];
-			Q_TC_0[i] = odata.Q_TC_0[i]; 
-			IP_0[i] = odata.IP_0[i];
-			H_TC_0[i] = odata.H_TC_0[i]; 
-			X_TC_0[i] = odata.X_TC_0[i];
+			AH_0[i] = data.AH_0[i]; 
+			S_TC_0[i] = data.S_TC_0[i];
+			S_i_TC_0[i] = data.S_i_TC_0[i]; 
+			O_TC_0[i] = data.O_TC_0[i];
+			Q_TC_0[i] = data.Q_TC_0[i]; 
+			IP_0[i] = data.IP_0[i];
+			H_TC_0[i] = data.H_TC_0[i]; 
+			X_TC_0[i] = data.X_TC_0[i];
 		} 
 	}
 };
