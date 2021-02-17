@@ -1,8 +1,9 @@
 /****************************************************************************************
 *
-*  File name : psbmpc_parameters.cpp
+*  File name : sbmpc_parameters.cpp
 *
-*  Function  : Class function file for the PSB-MPC parameter class.
+*  Function  : Class function file for the SB-MPC parameter class
+*
 *  
 *	           ---------------------
 *
@@ -18,7 +19,7 @@
 *****************************************************************************************/
 
 #include "utilities.cuh"
-#include "psbmpc_parameters.h"
+#include "sbmpc_parameters.h"
 #include "Eigen/Dense"
 #include <vector>
 
@@ -32,32 +33,19 @@
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-bool PSBMPC_Parameters::get_bpar(
-	const int index															// In: Index of parameter to return (Must be of int type)
-	) const
-{
-	switch(index){
-		case i_bpar_obstacle_colav_on 				: return obstacle_colav_on; 
-		default : 
-			// Throw
-			return 0;
-	}
-}
-
-int PSBMPC_Parameters::get_ipar(
+int SBMPC_Parameters::get_ipar(
 	const int index															// In: Index of parameter to return (Must be of int type)
 	) const
 {
 	switch(index){
 		case i_ipar_n_M 				: return n_M; 
-		case i_ipar_n_r					: return n_r;
 		default : 
 			// Throw
 			return 0;
 	}
 }
 	
-double PSBMPC_Parameters::get_dpar(
+double SBMPC_Parameters::get_dpar(
 	const int index															// In: Index of parameter to return (Must be of double type)
 	) const
 {
@@ -93,7 +81,7 @@ double PSBMPC_Parameters::get_dpar(
 	}
 }
 
-std::vector<Eigen::VectorXd> PSBMPC_Parameters::get_opar(
+std::vector<Eigen::VectorXd> SBMPC_Parameters::get_opar(
 	const int index															// In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
 	) const
 {
@@ -109,21 +97,6 @@ std::vector<Eigen::VectorXd> PSBMPC_Parameters::get_opar(
 	}
 }
 
-Eigen::VectorXd PSBMPC_Parameters::get_evpar(
-	const int index															// In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
-	) const
-{
-	switch (index){
-		case i_evpar_obstacle_course_changes			: return obstacle_course_changes;
-		default : 
-		{ 
-			// Throw invalid index
-			Eigen::VectorXd bs;
-			return bs; 
-		}
-	}
-}
-
 /****************************************************************************************
 *  Name     : set_par
 *  Function : Sets parameter with index <index> to value <value>, given that it is inside
@@ -131,21 +104,7 @@ Eigen::VectorXd PSBMPC_Parameters::get_evpar(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC_Parameters::set_par(
-	const int index, 														// In: Index of parameter to set
-	const bool value 														// In: Value to set for parameter
-	)
-{	
-	switch(index)
-	{
-		case i_bpar_obstacle_colav_on 			: obstacle_colav_on = value; break;
-		default : 
-			// Throw invalid index
-			break;
-	}	
-}
-
-void PSBMPC_Parameters::set_par(
+void SBMPC_Parameters::set_par(
 	const int index, 														// In: Index of parameter to set
 	const int value 														// In: Value to set for parameter
 	)
@@ -154,8 +113,7 @@ void PSBMPC_Parameters::set_par(
 	{	
 		switch(index)
 		{
-			case i_ipar_n_M 				: n_M = value; break; 	// Should here resize offset matrices to make this change legal
-			case i_ipar_n_r					: n_r = value; break;
+			case i_ipar_n_M 				: n_M = value; break; // Should here resize offset matrices to make this change legal
 			default : 
 				// Throw
 				break;
@@ -167,7 +125,7 @@ void PSBMPC_Parameters::set_par(
 	}
 }
 
-void PSBMPC_Parameters::set_par(
+void SBMPC_Parameters::set_par(
 	const int index, 														// In: Index of parameter to set
 	const double value 														// In: Value to set for parameter
 	)
@@ -217,7 +175,7 @@ void PSBMPC_Parameters::set_par(
 	
 }
 
-void PSBMPC_Parameters::set_par(
+void SBMPC_Parameters::set_par(
 	const int index,														// In: Index of parameter to set
 	const std::vector<Eigen::VectorXd> &value 								// In: Value to set for parameter
 	)
@@ -253,27 +211,6 @@ void PSBMPC_Parameters::set_par(
 	}
 }
 
-void PSBMPC_Parameters::set_par(
-	const int index, 														// In: Index of parameter to set
-	const Eigen::VectorXd &value 											// In: Value to set for parameter
-	)
-{
-	if (value.size() > 0)
-	{	
-		switch(index)
-		{
-			case i_evpar_obstacle_course_changes 		: obstacle_course_changes = value; break;
-			default : 
-				// Throw invalid index
-				break;
-		}
-	}
-	else
-	{
-		// Throw invalid par value
-	}
-}
-
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
@@ -283,7 +220,7 @@ void PSBMPC_Parameters::set_par(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void PSBMPC_Parameters::initialize_par_limits()
+void SBMPC_Parameters::initialize_par_limits()
 {
 	ipar_low.resize(N_IPAR); ipar_high.resize(N_IPAR);
 	for (int i = 0; i < N_IPAR; i++)
@@ -291,8 +228,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 		ipar_low[i] = 0.0;
 		ipar_high[i] = 1e12;
 	}
-	ipar_low[i_ipar_n_M] = 1; ipar_high[i_ipar_n_M] = 10; 
-	ipar_low[i_ipar_n_r] = 1; ipar_high[i_ipar_n_r] = 20; 
+	ipar_low[i_ipar_n_M] = 1; ipar_high[i_ipar_n_M] = 5; 
 
 	//std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
 	//std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
@@ -326,91 +262,167 @@ void PSBMPC_Parameters::initialize_par_limits()
 
 /****************************************************************************************
 *  Name     : initialize_pars
-*  Function : Sets initial values for PSBMPC tuning parameters
+*  Function : Sets initial values for SBMPC tuning parameters
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void PSBMPC_Parameters::initialize_pars()
+void SBMPC_Parameters::initialize_pars(
+	const bool is_obstacle_sbmpc							// In: Boolean flag to determine MPC tuning
+	)
 {
-	n_cbs = 1;
-	n_M = 1;
-	n_r = 4;
-
-	chi_offsets.resize(n_M);
-	u_offsets.resize(n_M);
-	for (int M = 0; M < n_M; M++)
+	if (!is_obstacle_sbmpc) // Tuning for SB-MPC
 	{
-		if (M == 0)
-		{
-			u_offsets[M].resize(3);
-			//u_offsets[M] << 1.0;
-			u_offsets[M] << 1.0, 0.5, 0.0;
+		n_cbs = 1;
+		n_M = 1;
 
-			chi_offsets[M].resize(13);
-			//chi_offsets[M] << 0.0;
-			//chi_offsets[M] << -30.0, 0.0, 30.0;
-			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
-			chi_offsets[M] *= DEG2RAD;
-		} 
-		else
+		chi_offsets.resize(n_M);
+		u_offsets.resize(n_M);
+		for (int M = 0; M < n_M; M++)
 		{
-			u_offsets[M].resize(2);
-			//u_offsets[M] << 1.0;
-			u_offsets[M] << 1.0, 0.5;
-			//u_offsets[M] << 1.0, 0.5, 0.0;
+			if (M == 0)
+			{
+				u_offsets[M].resize(3);
+				//u_offsets[M] << 1.0;
+				u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(7);
-			//chi_offsets[M] << 0.0;
-			//chi_offsets[M] << -30.0, 0.0, 30.0;
-			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
-			chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
-			chi_offsets[M] *= DEG2RAD;
+				chi_offsets[M].resize(13);
+				//chi_offsets[M] << 30.0;
+				//chi_offsets[M] << -30.0, 0.0, 30.0;
+				//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				chi_offsets[M] *= DEG2RAD;
+			} 
+			else
+			{
+				u_offsets[M].resize(2);
+				//u_offsets[M] << 1.0;
+				u_offsets[M] << 1.0, 0.5;
+				//u_offsets[M] << 1.0, 0.5, 0.0;
+
+				chi_offsets[M].resize(7);
+				//chi_offsets[M] << 0.0;
+				//chi_offsets[M] << -30.0, 0.0, 30.0;
+				//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+				chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				chi_offsets[M] *= DEG2RAD;
+			}
+			n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
 		}
-		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
+
+		prediction_method = ERK1;
+		guidance_method = LOS;
+
+		T = 110.0;
+		dt = 5.0;
+		T_static = 60.0;
+
+		p_step = 1;
+		if (prediction_method == ERK1)
+		{ 
+			dt = 0.5; 
+			p_step = 10;
+		}
+		t_ts = 50;
+
+		d_init = 1500;								 
+		d_close = 1000;
+		d_safe = 50; 							
+		K_coll = 2.5;		  					
+		phi_AH = 68.5 * DEG2RAD;		 	
+		phi_OT = 68.5 * DEG2RAD;		 		 
+		phi_HO = 22.5 * DEG2RAD;		 		
+		phi_CR = 68.5 * DEG2RAD;	     		
+		kappa = 8.0;		  					
+		kappa_TC = 10.0;						 
+		K_u = 4;		   						 
+		K_du = 2.5;		    					
+		K_chi_strb = 1.3;	  					
+		K_chi_port =  1.6;	  					
+		K_dchi_strb = 0.9;	 			
+		K_dchi_port = 1.2;
+		K_sgn = 5;
+		T_sgn = 4 * t_ts;	  					
+		G = 1e3;		         					 
+		q = 4.0;
+		p = 1.0;
 	}
+	else // Tuning for Obstacle SB-MPC
+	{
+		n_cbs = 1;
+		n_M = 1;
 
-	obstacle_course_changes.resize(3);
-	obstacle_course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
+		chi_offsets.resize(n_M);
+		u_offsets.resize(n_M);
+		for (int M = 0; M < n_M; M++)
+		{
+			if (M == 0)
+			{
+				u_offsets[M].resize(3);
+				//u_offsets[M] << 1.0;
+				u_offsets[M] << 1.0, 0.5, 0.0;
 
-	cpe_method = CE;
-	prediction_method = ERK1;
-	guidance_method = LOS;
+				chi_offsets[M].resize(13);
+				//chi_offsets[M] << 30.0;
+				//chi_offsets[M] << -30.0, 0.0, 30.0;
+				//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				chi_offsets[M] *= DEG2RAD;
+			} 
+			else
+			{
+				u_offsets[M].resize(2);
+				//u_offsets[M] << 1.0;
+				u_offsets[M] << 1.0, 0.5;
+				//u_offsets[M] << 1.0, 0.5, 0.0;
 
-	T = 150.0; 	     
-	dt = 5.0;
-  	T_static = 60.0;
+				chi_offsets[M].resize(7);
+				//chi_offsets[M] << 0.0;
+				//chi_offsets[M] << -30.0, 0.0, 30.0;
+				//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+				chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				chi_offsets[M] *= DEG2RAD;
+			}
+			n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
+		}
 
-	p_step = 1;
-	if (prediction_method == ERK1)
-	{ 
-		dt = 0.5; 
-		p_step = 10;
+		prediction_method = ERK1;
+		guidance_method = LOS;
+
+		T = 150.0;
+		dt = 5.0;
+		T_static = 60.0;
+
+		p_step = 1;
+		if (prediction_method == ERK1)
+		{ 
+			dt = 0.5; 
+			p_step = 10;
+		}
+		t_ts = 50;
+
+		d_init = 1500;								 
+		d_close = 1000;
+		d_safe = 50; 							
+		K_coll = 2.5;		  					
+		phi_AH = 68.5 * DEG2RAD;		 	
+		phi_OT = 68.5 * DEG2RAD;		 		 
+		phi_HO = 22.5 * DEG2RAD;		 		
+		phi_CR = 68.5 * DEG2RAD;	     		
+		kappa = 8.0;		  					
+		kappa_TC = 10.0;						 
+		K_u = 4;		   						 
+		K_du = 2.5;		    					
+		K_chi_strb = 1.3;	  					
+		K_chi_port =  1.6;	  					
+		K_dchi_strb = 0.9;	 			
+		K_dchi_port = 1.2;
+		K_sgn = 5;
+		T_sgn = 4 * t_ts;	  					
+		G = 1e3;		         					 
+		q = 4.0;
+		p = 1.0;
 	}
-	t_ts = 35;
-
-	d_init = 1500;								 
-	d_close = 1000;
-	d_safe = 50; 							
-	K_coll = 2.5;		  					
-	phi_AH = 68.5 * DEG2RAD;		 	
-	phi_OT = 68.5 * DEG2RAD;		 		 
-	phi_HO = 22.5 * DEG2RAD;		 		
-	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 8.0;		  					
-	kappa_TC = 10.0;						 
-	K_u = 4;		   						 
-	K_du = 2.5;		    					
-	K_chi_strb = 1.3;	  					
-	K_chi_port =  1.6;	  					
-	K_dchi_strb = 0.9;	 			
-	K_dchi_port = 1.2;
-	K_sgn = 5;
-	T_sgn = 4 * t_ts;	  					
-	G = 1e3;		         					 
-	q = 4.0;
-	p = 1.0;
-
-	obstacle_colav_on = true;
+	
 }

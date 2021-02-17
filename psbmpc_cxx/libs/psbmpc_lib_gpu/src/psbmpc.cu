@@ -24,7 +24,12 @@
 
 #include "utilities.cuh"
 #include "psbmpc.cuh"
+#include "cuda_obstacle.cuh"
+#include "obstacle_ship.cuh"
+#include "obstacle_sbmpc.cuh"
+#include "mpc_cost.cuh"
 #include "cb_cost_functor.cuh"
+#include "cb_cost_functor_structures.cuh"
 
 #include <iostream>
 #include <iomanip>
@@ -39,7 +44,8 @@
 *****************************************************************************************/
 PSBMPC::PSBMPC() 
 	: 
-	ownship(Ownship()), pars(PSBMPC_Parameters()), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr)
+	ownship(Ownship()), pars(PSBMPC_Parameters()), fdata_device_ptr(nullptr), pobstacles_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
+	obstacle_ship_device_ptr(nullptr), obstacle_sbmpc_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
 {
 	u_opt_last = 1.0; chi_opt_last = 0.0;
 
@@ -49,34 +55,89 @@ PSBMPC::PSBMPC()
 
 	cpe_host = CPE_CPU(pars.cpe_method, pars.dt);
 
-	// Only need to allocate trajectory, CB_Functor_Pars and CPE device memory once 
-	// One trajectory and CPE for each thread, as these are both read and write objects.
+	mpc_cost = MPC_Cost<PSBMPC_Parameters>(pars);
+
+	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
+	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
+	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
+	std::cout << "CPE size: " << sizeof(CPE_GPU) << std::endl;
+	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
+	std::cout << "Prediction Obstacle size: " << sizeof(Prediction_Obstacle) << std::endl;
+	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
+	std::cout << "Obstacle SBMPC size: " << sizeof(Obstacle_SBMPC) << std::endl;
+
+	//================================================================================
+	// Cuda device memory allocation
+	//================================================================================
+	// CB_Functor_Data and Cuda_Obstacles are read-only and changed between each 
+	// PSBMPC iteration, so will only be allocated here, 
+	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
+    cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
+
+	// Only need to allocate trajectory, ownship, CB_Functor_Pars, CPE and mpc cost device memory once 
+	// One trajectory, ownship, CB_Functor_Pars, CPE and mpc cost for each thread, as these are both read and write objects.
 
 	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
 	cuda_check_errors("CudaMalloc of trajectory failed.");
 
-	// Allocate for each thread a control behaviour parameter object
+	// Allocate for use by all threads a control behaviour parameter object
 	CB_Functor_Pars temp_pars(pars); 
-	
 	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
 	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
 
 	cudaMemcpy(pars_device_ptr, &temp_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
 
-	// Allocate for each thread a Collision Probability Estimator, a max number of prediction obstacles
+	// Allocate for each thread an ownship
+	cudaMalloc((void**)&ownship_device_ptr, pars.n_cbs * sizeof(Ownship));
+	cuda_check_errors("CudaMalloc of Ownship failed.");
+
+	// Allocate for each thread a Collision Probability Estimator
 	CPE_GPU temp_cpe(pars.cpe_method, pars.dt);
 	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * sizeof(CPE_GPU));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
-	Prediction_Obstacle temp_pobstacle;
-	cudaMalloc((void**)&pobstacles_device_ptr, pars.n_cbs * sizeof(Prediction_Obstacle));
-    cuda_check_errors("CudaMalloc of CPE failed.");
+	// Allocate for each thread an mpc cost object
+	MPC_Cost<CB_Functor_Pars> temp_mpc_cost(temp_pars);
+	cudaMalloc((void**)&mpc_cost_device_ptr, pars.n_cbs * sizeof(MPC_Cost<CB_Functor_Pars>));
+	cuda_check_errors("CudaMalloc of MPC_Cost failed.");
 
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
+		cudaMemcpy(ownship_device_ptr, &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of Ownship failed.");
+
 		cudaMemcpy(&cpe_device_ptr[cb], &temp_cpe, sizeof(CPE_GPU), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of CPE failed.");
+
+		cudaMemcpy(&cpe_device_ptr[cb], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
+	}
+
+	if (pars.obstacle_colav_on)
+	{
+		// Allocate for each thread a max number of prediction obstacles
+		Prediction_Obstacle temp_pobstacle;
+		cudaMalloc((void**)&pobstacles_device_ptr, MAX_N_OBST * pars.n_cbs * sizeof(Prediction_Obstacle));
+		cuda_check_errors("CudaMalloc of Prediction obstacles failed.");
+
+		// Allocate for each thread an obstacle ship and obstacle sbmpc
+		Obstacle_Ship obstacle_ship; 
+		cudaMalloc((void**)&obstacle_ship_device_ptr, pars.n_cbs * sizeof(Obstacle_Ship));
+		cuda_check_errors("CudaMalloc of Obstacle_Ship failed.");
+
+		Obstacle_SBMPC obstacle_sbmpc;
+		cudaMalloc((void**)&obstacle_sbmpc_device_ptr, pars.n_cbs * sizeof(Obstacle_SBMPC));
+		cuda_check_errors("CudaMalloc of Obstacle_SBMPC failed.");
+
+		for (int cb = 0; cb < pars.n_cbs; cb++)
+		{
+			cudaMemcpy(&obstacle_ship_device_ptr[cb], &obstacle_ship, sizeof(Obstacle_Ship), cudaMemcpyHostToDevice);
+			cuda_check_errors("CudaMemCpy of Obstacle_Ship failed.");
+
+			cudaMemcpy(&obstacle_sbmpc_device_ptr[cb], &obstacle_sbmpc, sizeof(Obstacle_SBMPC), cudaMemcpyHostToDevice);
+			cuda_check_errors("CudaMemCpy of Obstacle_SBMPC failed.");
+		}
 	}
 }
 
@@ -91,15 +152,32 @@ PSBMPC::~PSBMPC()
 	cudaFree(trajectory_device_ptr);
 	cuda_check_errors("CudaFree of trajectory failed.");
 
+	cudaFree(ownship_device_ptr);
+	cuda_check_errors("CudaFree of Ownship failed.");
+
 	cudaFree(pars_device_ptr);
 	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
 
 	fdata_device_ptr = nullptr;
 	
-	obstacles_device_ptr = nullptr;
+	obstacles_device_ptr = nullptr;	
 
 	cudaFree(cpe_device_ptr);
 	cuda_check_errors("CudaFree of CPE failed.");
+
+	if (pars.obstacle_colav_on)
+	{
+		pobstacles_device_ptr = nullptr;
+
+		cudaFree(obstacle_ship_device_ptr);
+		cuda_check_errors("CudaFree of Obstacle_Ship failed.");
+
+		cudaFree(obstacle_sbmpc_device_ptr);
+		cuda_check_errors("CudaFree of Obstacle_SBMPC failed.");
+	}
+
+	cudaFree(mpc_cost_device_ptr);
+	cuda_check_errors("CudaFree of MPC_Cost failed.");
 };
 
 /****************************************************************************************
@@ -253,8 +331,11 @@ void PSBMPC::calculate_optimal_offsets(
 		obstacles_device_ptr, 
 		pobstacles_device_ptr,
 		cpe_device_ptr, 
+		ownship_device_ptr,
 		trajectory_device_ptr, 
-		ownship.get_wp_counter()));
+		obstacle_ship_device_ptr,
+		obstacle_sbmpc_device_ptr,
+		mpc_cost_device_ptr));
     thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), *cb_cost_functor);
 
 	// Extract minimum cost
@@ -919,9 +1000,10 @@ void PSBMPC::predict_trajectories_jointly(
 {
 	int n_samples = trajectory.cols();
 	int n_obst = pobstacles.size();
-	Joint_Prediction_Manager jpm(n_obst); 
+	//Joint_Prediction_Manager jpm(n_obst); 
+	Obstacle_SBMPC osbmpc;
 
-	TML::PDMatrix<float, MAX_N_OBST, 1> u_opt_i(n_obst), chi_opt_i(n_obst), u_d_i(n_obst), chi_d_i(n_obst);
+	TML::PDMatrix<float, MAX_N_OBST, 1> u_opt_i(n_obst), u_opt_last_i(n_obst), chi_opt_i(n_obst), chi_opt_last_i(n_obst), u_d_i(n_obst), chi_d_i(n_obst);
 	TML::Vector4f xs_i_p, xs_i_p_transformed;
 	TML::PDMatrix<float, 1, 7> xs_os_aug_k(1, 7);
 	xs_os_aug_k(4) = ownship.get_length();
@@ -1015,8 +1097,8 @@ void PSBMPC::predict_trajectories_jointly(
 	{	
 		t = k * pars.dt;
 
-		v_os_k = trajectory(3, k);
-		v_os_k = trajectory(4, k);
+		v_os_k(0) = trajectory(3, k);
+		v_os_k(1) = trajectory(4, k);
 		v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
 		xs_os_aug_k(0) = trajectory(0, k);
 		xs_os_aug_k(1) = trajectory(1, k);
@@ -1027,7 +1109,7 @@ void PSBMPC::predict_trajectories_jointly(
 
 		// Update Obstacle Data for each prediction obstacle, taking all other obstacles
 		// including the ownship into account
-		jpm(pars, pobstacles, xs_os_aug_k, k);
+		//jpm(pars, pobstacles, xs_os_aug_k, k);
 
 		for (int i = 0; i < n_obst; i++)
 		{
@@ -1062,17 +1144,19 @@ void PSBMPC::predict_trajectories_jointly(
 			{
 				//start = std::chrono::system_clock::now();	
 
-				pobstacles[i].sbmpc.calculate_optimal_offsets(
+				/* osbmpc.calculate_optimal_offsets(
 					u_opt_i(i), 
 					chi_opt_i(i), 
 					predicted_trajectory_i[i],
+					u_opt_last_i(i),
+					chi_opt_last_i(i),
 					u_d_i(i), 
 					chi_d_i(i),
 					pobstacles[i].get_waypoints(),
 					xs_i_p_transformed,
 					static_obstacles,
 					jpm.get_data(i),
-					k);
+					k); */
 
 				end = std::chrono::system_clock::now();
 				elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -1080,7 +1164,7 @@ void PSBMPC::predict_trajectories_jointly(
 				/* mean_t = elapsed.count();
 				std::cout << "Obstacle_SBMPC time usage : " << mean_t << " milliseconds" << std::endl; */
 
-				jpm.update_obstacle_status(i, xs_i_p_transformed, k);
+				//jpm.update_obstacle_status(i, xs_i_p_transformed, k);
 				//jpm.display_obstacle_information(i);
 			}
 			u_c_i = u_d_i(i) * u_opt_i(i); chi_c_i = chi_d_i(i) + chi_opt_i(i);
@@ -1280,20 +1364,24 @@ void PSBMPC::set_up_temporary_device_memory(
 
 	// Allocation of device memory for control behaviour functor data and obstacles
 	// Both are read-only, so only need one on the device
-	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
-    cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
-
-	CB_Functor_Data temporary_fdata(*this, u_d, chi_d, waypoints, static_obstacles, data);
-
+	CB_Functor_Data temporary_fdata( 
+		trajectory, 
+		maneuver_times, 
+		u_opt_last, 
+		chi_opt_last, 
+		u_d, chi_d, 
+		use_joint_prediction, 
+		ownship.get_wp_counter(),
+		waypoints, 
+		static_obstacles, 
+		n_ps, 
+		data);
 	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Data failed.");
 	
 	// Obstacles
 	cudaMalloc((void**)&obstacles_device_ptr, n_obst * sizeof(Cuda_Obstacle));
     cuda_check_errors("CudaMalloc of Cuda_Obstacle's failed.");
-
-	cudaMalloc((void**)&pobstacles_device_ptr, n_obst * sizeof(Prediction_Obstacle));
-    cuda_check_errors("CudaMalloc of Prediction_Obstacle's failed.");
 
 	Cuda_Obstacle temp_transfer_cobstacle;
 	Prediction_Obstacle temp_transfer_pobstacle;

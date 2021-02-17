@@ -20,6 +20,14 @@
 
 #include "psbmpc_defines.h"
 #include "cb_cost_functor.cuh"
+#include "cb_cost_functor_structures.cuh"
+#include "cuda_obstacle.cuh"
+#include "cpe.cuh"
+#include "ownship.cuh"
+#include "obstacle_sbmpc.cuh"
+#include "obstacle_ship.cuh"
+
+
 #include "utilities.cuh"
 
 #include <cmath>
@@ -38,14 +46,18 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, one for all threads
 	Prediction_Obstacle *pobstacles,  								// In: Device pointer to prediction_obstacles, one for each thread
 	CPE_GPU *cpe, 		 											// In: Device pointer to the collision probability estimator, one for each thread
+	Ownship *ownship, 												// In: Device pointer to the ownship class, one for each thread
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
-	Obstacle_Ship *oship,											// In: Device pointer to the obstacle ship for joint prediction, one for each thread
-	Obstacle_SBMPC *osbmpc,											// In: Device pointer to the obstacle sbmpc for joint prediction, one for each thread
-	const int wp_c_0												// In: Waypoint counter for PSB-MPC Ownship object, to initialize the waypoint following in the thread own-ship objects properly
+	Obstacle_Ship *obstacle_ship,									// In: Device pointer to the obstacle ship for joint prediction, one for each thread
+	Obstacle_SBMPC *obstacle_sbmpc,									// In: Device pointer to the obstacle sbmpc for joint prediction, one for each thread
+	MPC_Cost<CB_Functor_Pars> *mpc_cost								// In: Device pointer to the cost function keeper class, one for each thread
 	) :
-	pars(pars), fdata(fdata), obstacles(obstacles), pobstacles(pobstacles), cpe(cpe), trajectory(trajectory), oship(oship), osbmpc(osbmpc)
+	pars(pars), fdata(fdata), 
+	obstacles(obstacles), pobstacles(pobstacles), 
+	cpe(cpe), ownship(ownship), trajectory(trajectory), 
+	obstacle_ship(obstacle_ship), obstacle_sbmpc(obstacle_sbmpc),
+	mpc_cost(mpc_cost)
 {
-	ownship.set_wp_counter(wp_c_0);
 }
 
 /****************************************************************************************
@@ -68,6 +80,8 @@ __device__ float CB_Cost_Functor::operator()(
 
 	n_samples = round(pars->T / pars->dt);
 
+	ownship[cb_index].set_wp_counter(fdata->wp_c_0);
+
 	trajectory[cb_index].resize(6, n_samples);
 	trajectory[cb_index].set_col(0, fdata->ownship_state);
 
@@ -87,7 +101,7 @@ __device__ float CB_Cost_Functor::operator()(
 
 	//======================================================================================================================
 	// 1.1: Predict own-ship trajectory with the current control behaviour
-	ownship.predict_trajectory(
+	ownship[cb_index].predict_trajectory(
 		trajectory[cb_index], 
 		offset_sequence, 
 		fdata->maneuver_times, 
@@ -104,7 +118,7 @@ __device__ float CB_Cost_Functor::operator()(
 	// Not entirely optimal for loop configuration, but the alternative requires alot of memory
 	for (int i = 0; i < fdata->n_obst; i++)
 	{	
-		d_safe_i = pars->d_safe + 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length());
+		d_safe_i = pars->d_safe + 0.5 * (ownship[cb_index].get_length() + obstacles[i].get_length());
 
 		P_c_i.resize(fdata->n_ps[i], 1); P_c_i.set_zero();
 		max_cost_ps.resize(fdata->n_ps[i], 1); max_cost_ps.set_zero();
@@ -211,14 +225,15 @@ __device__ float CB_Cost_Functor::operator()(
 
 				//==========================================================================================
 				// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
-				cost_ps = mpc_cost.calculate_dynamic_obstacle_cost(
-					fdata, 
+				cost_ps = mpc_cost[cb_index].calculate_dynamic_obstacle_cost(
+					fdata,
 					obstacles, 
 					P_c_i(ps), 
 					xs_p_seg.get_col(n_seg_samples - 1), 
 					xs_i_p_seg.get_col(n_seg_samples - 1), 
 					i, 
-					chi_m);
+					chi_m,
+					ownship[cb_index].get_length());
 
 				if (max_cost_ps(ps) < cost_ps)
 				{
@@ -366,12 +381,12 @@ __device__ float CB_Cost_Functor::operator()(
 
 	//==================================================================================================
 	// 2.6 : Calculate cost due to deviating from the nominal path
-	cost_cb += mpc_cost.calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
+	cost_cb += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
 	//printf("dev cost = %.4f\n", calculate_control_deviation_cost(offset_sequence, cb_index));
 
 	//==================================================================================================
 	// 2.7 : Calculate cost due to having a wobbly offset_sequence
-	cost_cb += mpc_cost.calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
+	cost_cb += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
 	//printf("chat cost = %.4f\n", calculate_chattering_cost(offset_sequence, cb_index));
 	//==================================================================================================
 	//printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
@@ -514,9 +529,9 @@ __device__ void CB_Cost_Functor::update_conditional_obstacle_data(
 			//std::cout << "Obstacle i = " << i << " situation type wrt obst j = " << j << " ? " << data[i].ST_0[j] << std::endl;
 			//std::cout << "Obst j = " << j << " situation type wrt obstacle i = " << i << " ? " << data[i].ST_i_0[j] << std::endl;
 
-			/*********************************************************************
-			* Transitional variable update
-			*********************************************************************/
+			//=====================================================================
+			// Transitional variable update
+			//=====================================================================
 			is_close = d_AB <= pars->d_close;
 
 			data.AH_0[i] = v_A.dot(L_AB) > cos(pars->phi_AH) * v_A.norm();
@@ -620,7 +635,7 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 				else if (chi_i < -15 * DEG2RAD)							{ pobstacles[i].set_intention(PM); }
 			}
 
-			oship[cb_index].update_guidance_references(
+			obstacle_ship[cb_index].update_guidance_references(
 				u_d_i(i), 
 				chi_d_i(i), 
 				pobstacles[i].get_waypoints(),
@@ -630,7 +645,7 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 
 			if (fmod(t, 5) == 0)
 			{
-				osbmpc->calculate_optimal_offsets(
+				obstacle_sbmpc[cb_index].calculate_optimal_offsets(
 					u_opt_i(i), 
 					chi_opt_i(i), 
 					u_opt_last_i(i), 
@@ -640,8 +655,8 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 					pobstacles[i].get_waypoints(),
 					xs_i_p_transformed,
 					fdata->static_obstacles,
-					pobstacles,
 					data,
+					pobstacles,
 					i,
 					k);
 
@@ -651,7 +666,7 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 
 			if (k < n_samples - 1)
 			{
-				xs_i_p_transformed = oship[cb_index].predict(
+				xs_i_p_transformed = obstacle_ship[cb_index].predict(
 					xs_i_p_transformed, 
 					u_d_i(i) * u_opt_i(i), 
 					chi_d_i(i) + chi_opt_i(i), 

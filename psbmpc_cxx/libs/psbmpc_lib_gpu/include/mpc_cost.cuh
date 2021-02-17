@@ -24,8 +24,8 @@
 #include "utilities.cuh"
 #include "psbmpc_parameters.h"
 #include "obstacle_manager.cuh"
-#include "prediction_obstacle.cuh"
 #include "cb_cost_functor_structures.cuh"
+#include "cuda_obstacle.cuh"
 #include "tml.cuh"
 
 template <typename Parameters>
@@ -41,10 +41,10 @@ private:
 	float cost_cd, cost_ch, delta_t, cost_g, ahcr;
 
 	// Dynamic obstacle cost related (do cost)
-	float cost_k, cost_do, C, l_i;
+	float cost_k, cost_do, R, C, l_i;
 
 	TML::Vector2f v_0_p, v_i_p, L_0i_p;
-	float psi_0_p, psi_i_p, d_0i_p;
+	float chi_m, psi_0_p, psi_i_p, d_0i_p;
 	bool mu, trans;
 
 	// COLREGS violation related
@@ -56,7 +56,8 @@ private:
 
 	TML::Vector2f v_diff, n;
 
-	int val, o1, o2, o3, o4;
+	float d2line;
+	int n_samples, val, o_1, o_2, o_3, o_4;
 
 	TML::Vector3f a, b, c;
 
@@ -64,13 +65,10 @@ private:
 	//==============================================
 	//==============================================
 
-	__host__ __device__ inline double Delta_u(const double u_1, const double u_2) const 		{ return pars.K_du * fabs(u_1 - u_2); } 
     __host__ __device__ inline float Delta_u(const float u_1, const float u_2) const 			{ return pars.K_du * fabs(u_1 - u_2); } 
 
-	__host__ __device__ inline double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); }
 	__host__ __device__ inline float Delta_chi(const float chi_1, const float chi_2) const 		{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); }
 
-	__host__ __device__ inline double K_chi(const double chi) const								{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); }
 	__host__ __device__ inline float K_chi(const float chi) const								{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); }
 
     __host__ __device__ int find_triplet_orientation(const TML::Vector2f &p, const TML::Vector2f &q, const TML::Vector2f &r);                          
@@ -93,7 +91,7 @@ public:
 
 	//
 	template <class Obstacle_Data>
-    __host__ bool determine_transitional_cost_indicator(
+    __host__ __device__ bool determine_transitional_cost_indicator(
 		const float psi_A, 
 		const float psi_B, 
 		const TML::Vector2f &L_AB, 
@@ -116,7 +114,7 @@ public:
 		const double psi_A, 
 		const Eigen::Vector2d &v_B,
 		const Eigen::Vector2d &L_AB, 
-		const double d_AB);
+		const double d_AB) const;
 	
     __host__ __device__ bool determine_COLREGS_violation(
 		const TML::Vector2f &v_A, 
@@ -134,7 +132,8 @@ public:
 		const TML::PDVector6f xs_p,
 		const TML::PDVector4f xs_i_p,
 		const int i,
-		const float chi_m);
+		const float chi_m,
+		const float ownship_length);
 
 	__host__ __device__ float calculate_dynamic_obstacle_cost(
         const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 
@@ -157,7 +156,6 @@ public:
 	__host__ __device__ inline double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) const { return pars.K_coll * pow((v_1 - v_2).norm(), 2); }
     __host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const { return pars.K_coll * pow((v_1 - v_2).norm(), 2); }
 
-	__host__ __device__ double calculate_ad_hoc_collision_risk(const double d_AB, const double t);
 	__host__ __device__ float calculate_ad_hoc_collision_risk(const float d_AB, const float t);
 
 	__host__ __device__ float calculate_control_deviation_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const float u_opt_last, const float chi_opt_last);
@@ -176,7 +174,7 @@ public:
 *****************************************************************************************/
 template <typename Parameters>
 template <class Obstacle_Data>
-__host__ bool MPC_Cost<Parameters>::determine_transitional_cost_indicator(
+__host__ __device__ bool MPC_Cost<Parameters>::determine_transitional_cost_indicator(
 	const float psi_A, 													// In: Heading of vessel A
 	const float psi_B, 													// In: Heading of vessel B
 	const TML::Vector2f &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
@@ -269,37 +267,37 @@ __host__ __device__ bool MPC_Cost<Parameters>::determine_COLREGS_violation(
 	const Eigen::Vector2d& v_B, 											// In: (NE) Velocity vector of vessel B
 	const Eigen::Vector2d& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double d_AB 														// In: Distance from vessel A to vessel B
-	)
+	) const
 {
-	is_ahead = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
+	bool is_ahead = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
 
-	is_close = d_AB <= pars.d_close;
+	bool is_close = d_AB <= pars.d_close;
 
-	A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-					 v_A.norm() < v_B.norm()							  	&&
+	bool A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
+					 v_A.norm() < v_B.norm()							  				&&
 					 v_A.norm() > 0.25;
 
-	B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-					 v_B.norm() < v_A.norm()							  	&&
+	bool B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
+					 v_B.norm() < v_A.norm()							  				&&
 					 v_B.norm() > 0.25;
 
-	B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+	bool B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
 
-	is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-				!A_is_overtaken) 											||
-				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-				!B_is_overtaken)) 											&&
+	bool is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+				!A_is_overtaken) 													||
+				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 				&& // Vessel B's perspective	
+				!B_is_overtaken)) 													&&
 				d_AB > pars.d_safe;
 
-	is_head_on = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-				 v_A.norm() > 0.25											&&
-				 v_B.norm() > 0.25											&&
+	bool is_head_on = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
+				 v_A.norm() > 0.25													&&
+				 v_B.norm() > 0.25													&&
 				 is_ahead;
 
-	is_crossing = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
-				  v_A.norm() > 0.25											&&
-				  v_B.norm() > 0.25											&&
-				  !is_head_on 												&&
+	bool is_crossing = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
+				  v_A.norm() > 0.25													&&
+				  v_B.norm() > 0.25													&&
+				  !is_head_on 														&&
 				  !is_passed;
 
 	// Extra condition that the COLREGS violation is only considered in an annulus; i.e. within d_close but outside d_safe.
@@ -369,7 +367,8 @@ __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	const TML::PDVector6f xs_p, 												// In: Predicted own-ship state at time step k
 	const TML::PDVector4f xs_i_p, 												// In: Predicted obstacle state at time step k in prediction scenario ps
 	const int i, 																// In: Index of obstacle
-	const float chi_m														 	// In: Course offset used by the own-ship at time step k
+	const float chi_m,														 	// In: Course offset used by the own-ship at time step k
+	const float ownship_length													// In: Length of the own-ship
 	)
 {
 	cost_do = 0.0;
@@ -386,7 +385,7 @@ __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	d_0i_p = L_0i_p.norm();
 
 	// Decrease the distance between the vessels by their respective max dimension
-	d_0i_p = d_0i_p - 0.5 * (fdata->ownship.get_length() + obstacles[i].get_length()); 
+	d_0i_p = d_0i_p - 0.5 * (ownship_length + obstacles[i].get_length()); 
 	
 	L_0i_p.normalize();
 
@@ -398,19 +397,19 @@ __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 
 	mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
 
-	trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, i, chi_m);
+	trans = determine_transitional_cost_indicator(fdata, psi_0_p, psi_i_p, L_0i_p, i, chi_m);
 
 	// Track loss modifier to collision cost
-	if (obstacles[i].get_duration_lost() > pars->p_step)
+	if (obstacles[i].get_duration_lost() > pars.p_step)
 	{
-		l_i = pars->dt * pars->p_step / obstacles[i].get_duration_lost();
+		l_i = pars.dt * pars.p_step / obstacles[i].get_duration_lost();
 	} 
 	else
 	{
 		l_i = 1;
 	}
 
-	cost_do = l_i * C * P_c_i + pars->kappa * mu  + pars->kappa_TC * trans;
+	cost_do = l_i * C * P_c_i + pars.kappa * mu  + pars.kappa_TC * trans;
 
 	/* printf("psi_0_p = %.2f | v_0_p = %.2f, %.2f\n", psi_0_p, v_0_p(0), v_0_p(1));
 	printf("psi_i_p = %.2f | v_i_p = %.2f, %.2f\n", psi_i_p, v_i_p(0), v_i_p(1));
@@ -432,7 +431,7 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 {
 	cost_do = 0.0f;
 
-	n_samples = trajectory.cols();
+	n_samples = trajectory.get_cols();
 
 	xs_i_p = data.obstacles[i].get_predicted_trajectory();
 
@@ -461,7 +460,8 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 			}
 		}
 
-		L_0i_p = xs_i_p.block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
+		L_0i_p(0) = xs_i_p(0, k) - trajectory(0, k);
+		L_0i_p(1) = xs_i_p(1, k) - trajectory(1, k);
 		d_0i_p = L_0i_p.norm();
 
 		// Decrease the distance between the vessels by their respective max dimension
@@ -520,7 +520,7 @@ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 {
 	cost_do = 0.0f;
 
-	n_samples = trajectory.cols();
+	n_samples = trajectory.get_cols();
 
 	xs_i_p = obstacles[i].get_predicted_trajectory();
 
@@ -554,7 +554,7 @@ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 		d_0i_p = L_0i_p.norm();
 
 		// Decrease the distance between the vessels by their respective max dimension
-		d_0i_p = abs(d_0i_p - 0.5 * (ownship_length + data.obstacles[i].get_length())); 
+		d_0i_p = abs(d_0i_p - 0.5 * (ownship_length + obstacles[i].get_length())); 
 
 		L_0i_p = L_0i_p.normalized();
 
@@ -603,35 +603,19 @@ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 *  Modified :
 *****************************************************************************************/
 template <typename Parameters>
-__host__ __device__ double MPC_Cost<Parameters>::calculate_ad_hoc_collision_risk(
-	const double d_AB, 											// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
-																// 	   reduced by half the length of the two vessels (or only own-ship if static obstacles are considered)
-	const double t 												// In: Prediction time t > t0 (= 0)
-	)
-{
-	adcr = 0;
-	if (d_AB <= pars.d_safe)
-	{
-		assert(t > 0);
-		adcr = pow(pars.d_safe / d_AB, pars.q) * (1 / pow(fabs(t), pars.p)); 
-	}
-	return adcr;
-}
-
-template <typename Parameters>
 __host__ __device__ float MPC_Cost<Parameters>::calculate_ad_hoc_collision_risk(
 	const float d_AB, 											// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
 																// 	   reduced by half the length of the two vessels (or only own-ship if static obstacles are considered)
 	const float t 												// In: Prediction time t > t0 (= 0)
 	)
 {
-	adcr = 0;
+	ahcr = 0;
 	if (d_AB <= pars.d_safe)
 	{
 		assert(t > 0);
-		adcr = pow(pars.d_safe / d_AB, pars.q) * (1 / pow(fabs(t), pars.p)); 
+		ahcr = pow(pars.d_safe / d_AB, pars.q) * (1 / pow(fabs(t), pars.p)); 
 	}
-	return adcr;
+	return ahcr;
 }
 
 /****************************************************************************************
@@ -648,23 +632,23 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_control_deviation_cost
 	)
 {
 	cost_cd = 0;
-	for (int i = 0; i < pars->n_M; i++)
+	for (int i = 0; i < pars.n_M; i++)
 	{
 		if (i == 0)
 		{
-			cost_cd += pars->K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_opt_last) +
+			cost_cd += pars.K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_opt_last) +
 				    K_chi(offset_sequence[1])      + Delta_chi(offset_sequence[1], chi_opt_last);
 		}
 		else
 		{
-			cost_cd += pars->K_u * (1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
+			cost_cd += pars.K_u * (1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
 				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 		}
 	}
 	
 	/* printf("K_u (1 - u_m_0) = %.4f | Delta_u(u_m_0, u_opt_last) = %.4f | K_chi(chi_0) = %.4f | Delta_chi(chi_0, chi_last) = %.4f\n", 
-		pars->K_u * (1 - offset_sequence[0]), Delta_u(offset_sequence[0], fdata->u_opt_last), K_chi(offset_sequence[1]), Delta_chi(offset_sequence[1], fdata->chi_opt_last)); */
-	return cost_cd / (float)pars->n_M;
+		pars.K_u * (1 - offset_sequence[0]), Delta_u(offset_sequence[0], fdata->u_opt_last), K_chi(offset_sequence[1]), Delta_chi(offset_sequence[1], fdata->chi_opt_last)); */
+	return cost_cd / (float)pars.n_M;
 }
 
 /****************************************************************************************
@@ -687,13 +671,13 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_chattering_cost(
 	}
 
 	delta_t = 0;
-	for(int M = 0; M < pars->n_M - 1; M++)
+	for(int M = 0; M < pars.n_M - 1; M++)
 	{
 		if ((offset_sequence(2 * M + 1) > 0 && offset_sequence(2 * M + 3) < 0) ||
 			(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) > 0))
 		{
 			delta_t = maneuver_times(M + 1) - maneuver_times(M);
-			cost_ch += pars->K_sgn * exp( - delta_t / pars->T_sgn);
+			cost_ch += pars.K_sgn * exp( - delta_t / pars.T_sgn);
 		}
 	}
 	return cost_ch / (float)(pars.n_M - 1);

@@ -21,13 +21,10 @@
 #define _CB_COST_FUNCTOR_STRUCTURES_CUH_
 
 #include <thrust/device_vector.h>
-#include "psbmpc_defines.h"
-#include "psbmpc.cuh"
-#include "psbmpc_parameters.h"
-#include "tml.cuh"
 #include "ownship.cuh"
-#include "cuda_obstacle.cuh"
-#include "cpe.cuh"
+#include "obstacle_manager.cuh"
+#include "tml.cuh"
+
 
 
 /****************************************************************************************
@@ -108,8 +105,6 @@ struct CB_Functor_Pars
 class CB_Functor_Data
 {
 public:
-	
-	Ownship ownship;
 
 	TML::Vector6f ownship_state;
 
@@ -121,6 +116,8 @@ public:
 	float chi_opt_last;
 
 	bool use_joint_prediction;
+
+	int wp_c_0;
 
 	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints;
 
@@ -137,33 +134,39 @@ public:
 
 	//=======================================================================================
 	//  Name     : CB_Functor_Data
-	//  Function : Struct constructor
+	//  Function : Class constructor
 	//  Author   : 
 	//  Modified :
 	//=======================================================================================
 	__host__ CB_Functor_Data() {}
 
 	__host__ CB_Functor_Data(
-		const PSBMPC &master, 
+		const Eigen::MatrixXd &trajectory,
+		const Eigen::VectorXd &maneuver_times,
+		const double u_opt_last,
+		const double chi_opt_last,
 		const double u_d, 
 		const double chi_d, 
+		const bool use_joint_prediction,
+		const int wp_c_0,
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
+		const std::vector<int> &n_ps,
 		const Obstacle_Data<Tracked_Obstacle> &data)
 	{
-		ownship = master.ownship;
+		this->wp_c_0 = wp_c_0;
 
-		TML::assign_eigen_object(ownship_state, master.trajectory.col(0));
+		TML::assign_eigen_object(ownship_state, trajectory.col(0));
 
-		TML::assign_eigen_object(maneuver_times, master.maneuver_times);
+		TML::assign_eigen_object(this->maneuver_times, maneuver_times);
 
 		this->u_d = u_d;
 		this->chi_d = chi_d;
 
-		u_opt_last = master.u_opt_last;
-		chi_opt_last = master.chi_opt_last;	
+		this->u_opt_last = u_opt_last;
+		this->chi_opt_last = chi_opt_last;	
 
-		use_joint_prediction = master.use_joint_prediction;
+		this->use_joint_prediction = use_joint_prediction;
 
 		TML::assign_eigen_object(this->waypoints, waypoints);	
 
@@ -171,7 +174,7 @@ public:
 
 		n_obst = data.obstacles.size();
 
-		n_ps.resize(n_obst, 1);
+		this->n_ps.resize(n_obst, 1);
 
 		AH_0.resize(n_obst, 1); 	S_TC_0.resize(n_obst, 1); S_i_TC_0.resize(n_obst, 1);
 		O_TC_0.resize(n_obst, 1); 	Q_TC_0.resize(n_obst, 1); IP_0.resize(n_obst, 1);
@@ -179,7 +182,7 @@ public:
 
 		for (int i = 0; i < n_obst; i++)
 		{
-			n_ps[i] = master.n_ps[i];
+			this->n_ps[i] = n_ps[i];
 
 			AH_0[i] = data.AH_0[i]; 
 			S_TC_0[i] = data.S_TC_0[i];

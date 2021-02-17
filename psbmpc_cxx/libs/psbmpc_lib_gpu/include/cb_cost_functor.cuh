@@ -21,8 +21,18 @@
 #ifndef _CB_COST_FUNCTOR_CUH_
 #define _CB_COST_FUNCTOR_CUH_
 
-#include "cb_cost_functor_structures.cuh"
-#include "mpc_cost.cuh"
+#include "tml.cuh"
+#include "obstacle_manager.cuh"
+
+class CB_Functor_Pars;
+class CB_Functor_Data;
+class Cuda_Obstacle;
+class Prediction_Obstacle;
+class CPE_GPU;
+class Ownship;
+class Obstacle_Ship;
+class Obstacle_SBMPC;
+template <typename Parameters> class MPC_Cost;
 
 // DEVICE methods
 // Functor for use in thrust transform
@@ -40,17 +50,18 @@ private:
 
 	CPE_GPU *cpe;
 
+	Ownship *ownship;
+
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory;
 
-	Obstacle_Ship *oship;
-	Obstacle_SBMPC *osbmpc;
+	Obstacle_Ship *obstacle_ship;
 
+	Obstacle_SBMPC *obstacle_sbmpc;
+
+	MPC_Cost<CB_Functor_Pars> *mpc_cost;
 	//==============================================
 	// Pre-allocated temporaries
 	//==============================================
-	MPC_Cost<CB_Functor_Pars> mpc_cost;
-
-	Ownship ownship;
 
 	unsigned int cb_index;
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
@@ -118,7 +129,17 @@ private:
 
 public: 
 	__host__ CB_Cost_Functor() : 
-		pars(nullptr), fdata(nullptr), obstacles(nullptr), pobstacles(nullptr), cpe(nullptr), trajectory(nullptr), oship(nullptr), osbmpc(nullptr) {}
+		pars(nullptr), 
+		fdata(nullptr), 
+		obstacles(nullptr), 
+		pobstacles(nullptr), 
+		cpe(nullptr), 
+		ownship(nullptr), 
+		trajectory(nullptr), 
+		obstacle_ship(nullptr), 
+		obstacle_sbmpc(nullptr), 
+		mpc_cost(nullptr) 
+	{}
 
 	__host__ CB_Cost_Functor(
 		CB_Functor_Pars *pars, 
@@ -126,12 +147,24 @@ public:
 		Cuda_Obstacle *obstacles, 
 		Prediction_Obstacle *pobstacles,
 		CPE_GPU *cpe,
+		Ownship *ownship,
 		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,
-		Obstacle_Ship *oship,
-		Obstacle_SBMPC *osbmpc,
-		const int wp_c_0);
+		Obstacle_Ship *obstacle_ship,
+		Obstacle_SBMPC *obstacle_sbmpc,
+		MPC_Cost<CB_Functor_Pars> *mpc_cost);
 
-	__host__ __device__ ~CB_Cost_Functor() { fdata = nullptr; obstacles = nullptr; pobstacles = nullptr; cpe = nullptr; trajectory = nullptr; }
+	__host__ __device__ ~CB_Cost_Functor() 
+	{ 
+		pars = nullptr; 
+		fdata = nullptr; 
+		obstacles = nullptr; 
+		pobstacles = nullptr; 
+		cpe = nullptr; 
+		trajectory = nullptr; 
+		obstacle_ship = nullptr; 
+		obstacle_sbmpc = nullptr; 
+		mpc_cost = nullptr;
+	}
 	
 	__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 	

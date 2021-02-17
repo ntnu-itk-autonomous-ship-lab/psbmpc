@@ -43,11 +43,9 @@ protected:
 	bool colav_on;
 
 	// Obstacle dimension quantifiers, length (l) and width (w)
-	double A, B, C, D, l, w;
+	float A, B, C, D, l, w;
 
-	double x_offset, y_offset;
-
-	//__host__ __device__ void assign_data(const Obstacle &o);
+	float x_offset, y_offset;
 
 public:
 
@@ -55,21 +53,15 @@ public:
 
 	__host__ __device__ Obstacle(const Eigen::VectorXd &xs_aug, const bool colav_on);
 
-	__host__ __device__ Obstacle(const TML::MatrixXd &xs_aug, const bool colav_on);
-
-	//__host__ __device__ Obstacle(const Obstacle &o);
-
-	//__host__ __device__ ~Obstacle();
-
-	//__host__ __device__ Obstacle& operator=(const Obstacle &rhs);
+	__host__ __device__ Obstacle(const TML::PDMatrix<float, 9, 1> &xs_aug, const bool colav_on);
 
 	__host__ __device__ int get_ID() const { return ID; };
 
 	__host__ __device__ void set_colav_on(const bool colav_on) { this->colav_on = colav_on; };
 
-	__host__ __device__ double get_length() const { return l; };
+	__host__ __device__ float get_length() const { return l; };
 
-	__host__ __device__ double get_width() const { return w; };
+	__host__ __device__ float get_width() const { return w; };
 };
 
 #endif

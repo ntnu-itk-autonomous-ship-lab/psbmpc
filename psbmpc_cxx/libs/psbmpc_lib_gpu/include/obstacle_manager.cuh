@@ -30,8 +30,6 @@
 #include <vector>
 #include <string>
 
-class PSBMPC;
-
 enum ST 
 {
 	A, 														// Non-COLREGS situation	(ST = Ø)
@@ -66,6 +64,22 @@ public:
 
 	~Obstacle_Data() {}
 
+};
+
+class Obstacle_Data_GPU
+{
+public:
+
+	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
+	// and <obstacle is passed> (IP_0) indicators
+	TML::PDMatrix<bool, MAX_N_OBST, 1> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
+
+	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
+	TML::PDMatrix<ST, MAX_N_OBST, 1> ST_0, ST_i_0;
+
+	__host__ __device__ Obstacle_Data_GPU() {}
+
+	__host__ __device__ ~Obstacle_Data_GPU() {}
 };
 
 class Obstacle_Manager
