@@ -126,7 +126,7 @@ void Prediction_Obstacle::predict_independent_trajectory(
 	xs_k_p.resize(4, n_samples);
 	xs_k_p.set_col(0, xs_p.get_col(k));
 
-	A_CV = TML::Matrix4f::identity();
+	A_CV = TML::PDMatrix4f::identity(4, 4);
 	A_CV(0, 2) = dt;
 	A_CV(1, 3) = dt; 
 

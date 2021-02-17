@@ -23,11 +23,12 @@
 #ifndef _PREDICTION_OBSTACLE_CUH_
 #define _PREDICTION_OBSTACLE_CUH_
 
-#include "psbmpc_defines.h"
-#include "obstacle_sbmpc.cuh"
-#include "tracked_obstacle.cuh"
-#include <assert.h>
 #include <thrust/device_vector.h>
+#include <assert.h>
+#include "psbmpc_defines.h"
+#include "tracked_obstacle.cuh"
+
+
 
 class Obstacle_SBMPC;
 class Prediction_Obstacle : public Obstacle
@@ -41,7 +42,7 @@ private:
 	// the joint prediction currently considered
 	bool mu; 
 
-	TML::Matrix4f A_CV;
+	TML::PDMatrix4f A_CV;
 
 	// State and covariance at the current time or predicted time
 	TML::Vector4f xs_0;

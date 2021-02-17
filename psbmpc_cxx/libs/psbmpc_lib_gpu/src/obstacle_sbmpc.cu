@@ -175,7 +175,7 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	std::cout << "Cost at optimum : " << min_cost << std::endl; */
 }
 
-__host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(									
+__device__ void Obstacle_SBMPC::calculate_optimal_offsets(									
 	float &u_opt, 															// In/out: Optimal surge offset
 	float &chi_opt, 														// In/out: Optimal course offset
 	const float u_opt_last,													// In: Previous optimal surge offset

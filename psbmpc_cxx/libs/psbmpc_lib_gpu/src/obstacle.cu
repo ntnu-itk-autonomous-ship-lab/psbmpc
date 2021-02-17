@@ -24,7 +24,6 @@
 #include "assert.h"
 
 #include "obstacle.cuh"
-#include "utilities.cuh"
 
 /****************************************************************************************
 *  Name     : Obstacle
@@ -41,11 +40,10 @@ __host__ __device__ Obstacle::Obstacle(
 	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
 	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6))
 {
-
 }
 
 __host__ __device__ Obstacle::Obstacle(
-	const TML::MatrixXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const TML::PDMatrix<float, 9, 1> &xs_aug, 					// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const bool colav_on											// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
 	) : 
 	ID(xs_aug(8)), colav_on(colav_on),
@@ -53,5 +51,4 @@ __host__ __device__ Obstacle::Obstacle(
 	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
 	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6))
 {
-	assert(xs_aug.get_cols() == 1);
 }

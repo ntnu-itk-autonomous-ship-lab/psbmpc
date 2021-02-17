@@ -56,7 +56,7 @@ void Obstacle_Manager::update_obstacle_status(
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	for(int i = 0; i < n_obst; i++)
 	{
-		xs_i = data.obstacles[i].kf.get_state();
+		xs_i = data.obstacles[i].kf->get_state();
 
 		ID_0 = data.obstacles[i].get_ID();
 		

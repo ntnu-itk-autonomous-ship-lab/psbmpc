@@ -21,12 +21,11 @@
 #ifndef _PSBMPC_CUH_
 #define _PSBMPC_CUH_
 
+#include "psbmpc_defines.h"
 #include "psbmpc_index.h"
-#include "psbmpc_parameters.h"
-#include "obstacle_manager.cuh"
-//#include "cuda_obstacle.cuh"
 #include "ownship.cuh"
 #include "cpe.cuh"
+#include "mpc_cost.cuh"
 
 #include "Eigen/Dense"
 #include <vector>
@@ -49,6 +48,8 @@ class CB_Cost_Functor;
 class CB_Functor_Pars;
 class CB_Functor_Data;
 class Cuda_Obstacle;
+class Obstacle_Ship;
+class Obstacle_SBMPC;
 
 class PSBMPC
 {
@@ -93,6 +94,14 @@ private:
 	Prediction_Obstacle *pobstacles_device_ptr;
 
 	CPE_GPU *cpe_device_ptr;
+
+	Ownship *ownship_device_ptr;
+
+	Obstacle_Ship *obstacle_ship_device_ptr;
+
+	Obstacle_SBMPC *obstacle_sbmpc_device_ptr;
+
+	MPC_Cost<CB_Functor_Pars> *mpc_cost_device_ptr;
 	//=====================================================
 
 	void map_offset_sequences();
@@ -151,6 +160,8 @@ private:
 public:
 
 	PSBMPC_Parameters pars;
+
+	MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 	PSBMPC();
 

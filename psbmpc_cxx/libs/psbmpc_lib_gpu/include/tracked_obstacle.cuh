@@ -26,6 +26,7 @@
 #include <memory>
 #include "Eigen/Dense"
 
+#include "utilities.cuh"
 #include "obstacle.cuh"
 #include "mrou.cuh"
 #include "kf.cuh"
@@ -177,7 +178,7 @@ public:
 
 				if (!mu[ps])
 				{
-					mu[ps] = mpc.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
+					mu[ps] = mpc.mpc_cost.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
 				}
 			
 				switch (ps_ordering[ps])

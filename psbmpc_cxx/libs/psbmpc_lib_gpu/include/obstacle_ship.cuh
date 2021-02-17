@@ -64,7 +64,6 @@ private:
 
 	//===================================
 	// Pre-allocated temporaries
-	TML::Vector4f xs_p;
 	int n_samples, n_wps, man_count;
 	float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
 

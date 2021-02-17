@@ -129,7 +129,7 @@ inline TML::PDMatrix<T, Max_Rows, Max_Cols> read_matrix_from_file(const size_t n
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline double wrap_angle_to_pmpi(const double angle) 
+__host__ __device__ inline double wrap_angle_to_pmpi(const double angle) 
 {
 	double a = fmod(angle, 2 * M_PI);
 	if (a <= -M_PI) a += 2 * M_PI;
@@ -151,7 +151,7 @@ __host__ __device__ inline float wrap_angle_to_pmpi(const float angle)
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline double wrap_angle_to_02pi(const double angle) 
+__host__ __device__ inline double wrap_angle_to_02pi(const double angle) 
 {
 	double a = fmod(angle, 2 * M_PI);
 	if (a < 0) a += 2 * M_PI;
@@ -171,7 +171,7 @@ __host__ __device__ inline float wrap_angle_to_02pi(const float angle)
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-inline double angle_difference_pmpi(const double a_1, const double a_2) 
+__host__ __device__ inline double angle_difference_pmpi(const double a_1, const double a_2) 
 {
 	double diff = wrap_angle_to_pmpi(a_1) - wrap_angle_to_pmpi(a_2);
 	while (diff > M_PI) diff -= 2 * M_PI;
@@ -481,7 +481,7 @@ __host__ __device__ inline void calculate_cpa(
 {
 	float epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
 	float psi_A(0.0f), psi_B(0.0f);
-	TML::Vector2f v_A, v_B, p_A, p_B, L_AB;
+	TML::Vector2f v_A, v_B, p_A, p_B, L_AB, p_B_cpa;
 	p_A(0) = xs_A(0); p_A(1) = xs_A(1);
 	p_B(0) = xs_B(0); p_B(1) = xs_B(1);
 	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
@@ -501,8 +501,10 @@ __host__ __device__ inline void calculate_cpa(
 	else
 	{
 		t_cpa = - (p_A - p_B).dot(v_A - v_B) / powf((v_A - v_B).norm(), 2);
-		p_cpa = p_A + v_A * t_cpa;
-		d_cpa = (p_cpa - (p_B + v_B * t_cpa)).norm();
+		p_cpa = v_A * t_cpa; p_cpa += p_A;
+
+		p_B_cpa = v_B * t_cpa; p_B_cpa += p_B;
+		d_cpa = (p_cpa - p_B_cpa).norm();
 	}
 }
 
@@ -517,7 +519,7 @@ __host__ __device__ inline void calculate_cpa(
 
 	float epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
 	float psi_A(0.0f), psi_B(0.0f);
-	TML::Vector2f v_A, v_B, p_A, p_B, L_AB;
+	TML::Vector2f v_A, v_B, p_A, p_B, L_AB, p_B_cpa;
 	p_A(0) = xs_A(0); p_A(1) = xs_A(1);
 	p_B(0) = xs_B(0); p_B(1) = xs_B(1);
 	if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
@@ -537,8 +539,11 @@ __host__ __device__ inline void calculate_cpa(
 	else
 	{
 		t_cpa = - (p_A - p_B).dot(v_A - v_B) / powf((v_A - v_B).norm(), 2);
-		p_cpa = p_A + v_A * t_cpa;
-		d_cpa = (p_cpa - (p_B + v_B * t_cpa)).norm();
+		p_cpa(0) = v_A * t_cpa + p_A(0); 
+		p_cpa(1) = v_A * t_cpa + p_A(1);
+
+		p_B_cpa = v_B * (float)t_cpa; p_B_cpa += p_B;
+		d_cpa = (p_cpa - p_B_cpa).norm();
 	}
 }
 
