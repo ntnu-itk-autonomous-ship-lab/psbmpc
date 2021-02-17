@@ -14,6 +14,7 @@
 #======================================================================
 
 find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
+find_package(Boost)
 
 add_library(psbmpc_lib STATIC 
 	src/psbmpc.cpp 
@@ -31,12 +32,15 @@ add_library(psbmpc_lib STATIC
 	src/tracked_obstacle.cpp
 	src/prediction_obstacle.cpp 
 	src/mrou.cpp 
-	src/utilities.cpp)
+	src/utilities.cpp
+	src/shapefile_related/safileio.cpp
+	src/shapefile_related/shpopen.cpp)
 
 target_include_directories(psbmpc_lib PUBLIC 
 	include
 	${CMAKE_SOURCE_DIR}/libs/third_party_libs
 	${Matlab_INCLUDE_DIRS}
+	${Boost_INCLUDE_DIRS}
 	)
 
 target_compile_features(psbmpc_lib PRIVATE cxx_std_11)

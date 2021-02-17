@@ -27,6 +27,14 @@
 #include "prediction_obstacle.h"
 #include "Eigen/Dense"
 
+#include <boost/geometry/geometry.hpp>
+#include <boost/geometry/geometries/geometries.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/foreach.hpp>
+
+typedef boost::geometry::model::d2::point_xy<double> point_2D;
+typedef boost::geometry::model::polygon<point_2D> polygon_2D;
+
 template <typename Parameters>
 class MPC_Cost
 {
@@ -109,6 +117,7 @@ public:
 
 	double calculate_chattering_cost(const Eigen::VectorXd &offset_sequence, const Eigen::VectorXd &maneuver_times) const;
 
+	double calculate_grounding_cost(const Eigen::MatrixXd &trajectory, const std::vector<polygon_2D> &polygons, const int n_static_obst) const;
 	double calculate_grounding_cost(const Eigen::MatrixXd &trajectory, const Eigen::Matrix<double, 4, -1>& static_obstacles, const double ownship_length) const;
 };
 
@@ -677,6 +686,49 @@ double MPC_Cost<Parameters>::calculate_chattering_cost(
 		}
 	}
 	return cost / (double)(pars.n_M - 1);
+}
+
+/****************************************************************************************
+*  Name     : calculate_grounding_cost
+*  Function : Determines penalty due to grounding ownship on static obstacles (no-go zones)
+*  Author   : Tom Daniel Grande
+*  Modified :
+*****************************************************************************************/
+template <typename Parameters>
+double MPC_Cost<Parameters>::calculate_grounding_cost(
+	const Eigen::MatrixXd &trajectory,									// In: Predicted ownship trajectory
+	const std::vector<polygon_2D> &polygons,							// In: Static obstacle information
+	const int n_static_obst 											// In: Number of static obstacles
+	) const
+{
+	int n_static_samples = std::round(pars.T_static / pars.dt);
+	double g_cost 				= 0.0;	
+	double eta  				= 25.0;		  	  	 //grounding sensitivity
+	double my_1 				= 0.35; 		 	 //grounding cost
+	double my_2 				= 1.0; 			 	 // wind disturbance risk
+	double chi_j 				= 1.0; 			 	 // unit wind direction
+	double V_w 					= 0.0; 			 	 // absolute wind velocity
+	double K_omega 				= 50.0; 			 // horizon focus weight		 
+
+	double d2poly, exp_term, exp_calc;
+	point_2D p_os_k;
+	for (int k = 0; k < n_static_samples - 1; k++)
+	{
+		p_os_k = point_2D(trajectory(1, k), trajectory(0, k));
+
+		BOOST_FOREACH(polygon_2D const& poly, polygons)
+		{
+			d2poly = boost::geometry::distance(p_os_k, poly);
+
+			exp_term = (-1.0 / (eta * eta) ) * (d2poly * d2poly + K_omega * k);
+
+			exp_calc = ( my_1 + my_2 * chi_j * V_w * V_w) * std::exp(exp_term);
+
+			g_cost = g_cost + exp_calc;
+		}
+	}
+
+	return g_cost / (double) n_static_obst * pars.n_M;
 }
 
 /****************************************************************************************
