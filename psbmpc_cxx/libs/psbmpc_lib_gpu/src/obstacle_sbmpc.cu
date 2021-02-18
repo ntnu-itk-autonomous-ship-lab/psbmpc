@@ -98,9 +98,6 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 {
 	n_samples = std::round(pars.T / pars.dt);
 
-	trajectory.resize(4, n_samples);
-	trajectory.set_col(0, ownship_state);
-
 	n_obst = data.obstacles.size();
 	n_static_obst = static_obstacles.get_cols();
 
@@ -193,9 +190,6 @@ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 {
 	n_samples = std::round(pars.T / pars.dt);
 
-	trajectory.resize(4, n_samples);
-	trajectory.set_col(0, ownship_state);
-
 	n_obst = data.AH_0.size() + 1; // n_obst here includes obstacle i (the calling object)
 	n_static_obst = static_obstacles.get_cols();
 
@@ -216,18 +210,45 @@ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	{
 		cost = 0.0f; cost_i.set_zero();
 
-		ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+		//===========================================================================
+		// Predict and calculate dynamic obstacle cost (and (TBD) grounding cost ) 
+		// jointly to save memory
+		//===========================================================================
+		ownship.initialize_wp_following();
 
-		for (int i = 0; i < n_obst; i++)
-		{
-			if (i != i_caller)
+		man_count = 0;
+		u_m = 1; u_d_p = u_d;
+		chi_m = 0; chi_d_p = chi_d;
+
+		xs_k_p = ownship_state;
+		for (int k = 0; k < n_samples; k++)
+		{ 
+			if (k == maneuver_times[man_count]){
+				u_m = offset_sequence[2 * man_count];
+				chi_m = offset_sequence[2 * man_count + 1]; 
+				if (man_count < (int)maneuver_times.size() - 1) man_count += 1;
+			}  
+
+			for (int i = 0; i < n_obst; i++)
 			{
-				cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, data, obstacles, i, ownship.get_length());
-			}
-		}
+				if (i != i_caller)
+				{
+					xs_i_k_p = obstacles[i].get_predicted_trajectory_sample(k);
 
+					cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(xs_k_p, xs_i_k_p, offset_sequence, maneuver_times, data, obstacles, i, ownship.get_length());
+				}
+			}
+
+			ownship.update_guidance_references(u_d_p, chi_d_p, waypoints, xs_k_p, pars.dt, pars.guidance_method);
+
+			xs_k_p = ownship.predict(xs_k_p, u_m * u_d_p , chi_d_p + chi_m, pars.dt, pars.prediction_method);
+			
+		} 
 		cost += cost_i.max_coeff();
 
+		//===========================================================================
+
+		
 		//cost += mpc_cost.calculate_grounding_cost(trajectory, static_obstacles, ownship.get_length());
 
 		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
@@ -265,8 +286,6 @@ __host__ __device__ void Obstacle_SBMPC::assign_data(
 	this->min_cost = o_sbmpc.min_cost;
 
 	this->ownship = o_sbmpc.ownship;
-
-	this->trajectory = o_sbmpc.trajectory;
 
 	this->pars = o_sbmpc.pars;
 
@@ -396,18 +415,18 @@ __host__ __device__ void Obstacle_SBMPC::increment_control_behavior()
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ bool Obstacle_SBMPC::determine_colav_active(
+	const TML::Vector4f &xs_k_0,											// In: State of the ownship at the current time t_k0
 	const Obstacle_Data<Prediction_Obstacle> &data,							// In: Dynamic obstacle information
 	const int n_static_obst, 												// In: Number of static obstacles
 	const int k_0															// In: Index of the current (joint prediction) time t_k0
 	)
 {
-	xs = trajectory.get_col(0);
 	colav_active = false;
 	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
 		xs_i = data.obstacles[i].get_state(k_0);
-		d_0i(0) = xs_i(0) - xs(0);
-		d_0i(1) = xs_i(1) - xs(1);
+		d_0i(0) = xs_i(0) - xs_k_0(0);
+		d_0i(1) = xs_i(1) - xs_k_0(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 	}
 	colav_active = colav_active || n_static_obst > 0;
@@ -416,21 +435,21 @@ __host__ __device__ bool Obstacle_SBMPC::determine_colav_active(
 }
 
 __device__ bool Obstacle_SBMPC::determine_colav_active(
-	Prediction_Obstacle *obstacles, 									// In/out: Pointer to list of all prediction obstacles
+	const TML::Vector4f &xs_k_0,										// In: State of the ownship at the current time t_k0
+	Prediction_Obstacle *obstacles, 									// In: Pointer to list of all prediction obstacles
 	const int i_caller, 												// In: Index of calling obstacle
 	const int n_static_obst, 											// In: Number of static obstacles
 	const int k_0														// In: Index of the current (joint prediction) time t_k0
 	)
 {
-	xs = trajectory.get_col(0);
 	colav_active = false;
 	for (int i = 0; i < n_obst; i++)
 	{
 		if (i != i_caller)
 		{
 			xs_i = obstacles[i].get_state(k_0);
-			d_0i(0) = xs_i(0) - xs(0);
-			d_0i(1) = xs_i(1) - xs(1);
+			d_0i(0) = xs_i(0) - xs_k_0(0);
+			d_0i(1) = xs_i(1) - xs_k_0(1);
 			if (d_0i.norm() < pars.d_init) colav_active = true;
 		}
 	}
@@ -445,7 +464,7 @@ __device__ bool Obstacle_SBMPC::determine_colav_active(
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void Obstacle_SBMPC::assign_optimal_trajectory(
+/* __host__ __device__ void Obstacle_SBMPC::assign_optimal_trajectory(
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &optimal_trajectory 					// In/out: Optimal PSB-MPC trajectory
 	)
 {
@@ -466,4 +485,4 @@ __host__ __device__ void Obstacle_SBMPC::assign_optimal_trajectory(
 		optimal_trajectory.resize(4, n_samples);
 		optimal_trajectory = trajectory.get_block<4, MAX_N_SAMPLES>(0, 0, 4, n_samples);
 	}
-}
+} */

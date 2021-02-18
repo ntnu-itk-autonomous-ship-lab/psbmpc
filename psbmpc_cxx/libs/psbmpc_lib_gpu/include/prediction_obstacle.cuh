@@ -87,6 +87,9 @@ public:
 	__host__ __device__ inline TML::PDMatrix<float, 4, MAX_N_SAMPLES> get_trajectory() const { return xs_p; };
 	__host__ __device__ inline TML::PDMatrix<float, 4, MAX_N_SAMPLES> get_predicted_trajectory() const { return xs_k_p; };
 
+	__host__ __device__ inline TML::Vector4f get_trajectory_sample(const int k) const { return xs_p.get_col(k); }
+	__host__ __device__ inline TML::Vector4f get_predicted_trajectory_sample(const int k_p) const { return xs_k_p.get_col(k_p); }
+
 	__host__ __device__ inline TML::PDMatrix<float, 2, MAX_N_WPS> get_waypoints() const { return waypoints; }
 
 	__host__ __device__ inline void set_intention(const Intention a) {assert(a >= KCC && a <= PM); a_p = a; }
