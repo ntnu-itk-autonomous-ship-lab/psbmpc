@@ -58,6 +58,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	obstacle_ship(obstacle_ship), obstacle_sbmpc(obstacle_sbmpc),
 	mpc_cost(mpc_cost)
 {
+	
 }
 
 /****************************************************************************************
