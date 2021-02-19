@@ -3,7 +3,8 @@
 *  File name : obstacle_sbmpc.cuh
 *
 *  Function  : Header file for Scenario-based Model Predictive Control used by obstacles
-*			   in the PSB-MPC predictions.
+*			   in the PSB-MPC predictions. Because of memory considerations on the GPU,
+*			   it cannot store large trajectory matrices.
 *
 *  
 *	           ---------------------
@@ -45,13 +46,18 @@ private:
 
 	Obstacle_Ship ownship;
 
-	TML::PDMatrix<float, 4, MAX_N_SAMPLES> trajectory;
+	
 
 	//==============================================
 	// Pre-allocated temporaries
 	//==============================================
+	TML::Vector4f xs_k_p, xs_i_k_p;
+
 	TML::PDMatrix<float, MAX_N_OBST, 1> cost_i;
-	int n_samples, n_obst, n_static_obst, count;
+	int n_samples, n_obst, n_static_obst, count, man_count;
+
+	float u_m, u_d_p;
+	float chi_m, chi_d_p;
 
 	bool colav_active;
 
@@ -73,12 +79,20 @@ private:
 
 	__host__ __device__ void increment_control_behavior();
 
-	__host__ __device__ bool determine_colav_active(const Obstacle_Data<Prediction_Obstacle> &data, const int n_static_obst, const int k_0);
+	//
+	__host__ __device__ bool determine_colav_active(
+		const TML::Vector4f &xs_k_0, 
+		const Obstacle_Data<Prediction_Obstacle> &data, 
+		const int n_static_obst, 
+		const int k_0);
+
 	__device__ bool determine_colav_active(
+		const TML::Vector4f &xs_k_0,
 		Prediction_Obstacle *pobstacles,
 		const int i_caller,
 		const int n_static_obst,
 		const int k_0);
+	//
 
 	__host__ __device__ void assign_optimal_trajectory(TML::PDMatrix<float, 4, MAX_N_SAMPLES> &optimal_trajectory);
 

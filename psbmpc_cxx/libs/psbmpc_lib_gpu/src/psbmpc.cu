@@ -801,6 +801,11 @@ void PSBMPC::calculate_instantaneous_collision_probabilities(
 {
 	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
 	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
+	Eigen::MatrixXd xs_i_colav_p;
+	if (use_joint_prediction)
+	{
+		TML::assign_tml_object(xs_i_colav_p, pobstacles[i].get_trajectory());
+	}
 
 	// Increase safety zone by half the max obstacle dimension and ownship length
 	double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
@@ -810,7 +815,14 @@ void PSBMPC::calculate_instantaneous_collision_probabilities(
 	Eigen::Matrix<double, 1, -1> P_c_i_row(n_samples);
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		cpe_host.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
+		if (ps == n_ps[i] - 1 && use_joint_prediction)
+		{
+			cpe_host.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_colav_p, P_i_p, d_safe_i, dt, p_step);
+		}
+		else
+		{
+			cpe_host.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
+		}
 		
 		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
 	}		
@@ -868,10 +880,10 @@ void PSBMPC::calculate_ps_collision_consequences(
 	double collision_consequence(0.0), t(0.0), t_cpa(0.0), d_cpa(0.0);
 
 	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
-	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_i_colav_p;
+	Eigen::MatrixXd xs_i_colav_p;
 	if (use_joint_prediction)
 	{
-		xs_i_colav_p = pobstacles[i].get_trajectory();
+		TML::assign_tml_object(xs_i_colav_p, pobstacles[i].get_trajectory());
 	}
 
 	Eigen::Vector2d p_cpa, v_0_p, v_i_p;
@@ -1001,7 +1013,7 @@ void PSBMPC::predict_trajectories_jointly(
 	int n_samples = trajectory.cols();
 	int n_obst = pobstacles.size();
 	//Joint_Prediction_Manager jpm(n_obst); 
-	Obstacle_SBMPC osbmpc;
+	Obstacle_SBMPC obstacle_sbmpc;
 
 	TML::PDMatrix<float, MAX_N_OBST, 1> u_opt_i(n_obst), u_opt_last_i(n_obst), chi_opt_i(n_obst), chi_opt_last_i(n_obst), u_d_i(n_obst), chi_d_i(n_obst);
 	TML::Vector4f xs_i_p, xs_i_p_transformed;
@@ -1010,7 +1022,7 @@ void PSBMPC::predict_trajectories_jointly(
 	xs_os_aug_k(5) = ownship.get_width();
 	xs_os_aug_k(6) = n_obst;
 
-	std::vector<Obstacle_Ship> obstacle_ships(n_obst);
+	Obstacle_Ship obstacle_ship;
 	std::vector<Eigen::Matrix<double, 4, -1>> predicted_trajectory_i(n_obst);
 	TML::Vector4f xs_i_0;
  	for(int i = 0; i < n_obst; i++)
