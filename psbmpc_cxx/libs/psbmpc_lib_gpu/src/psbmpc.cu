@@ -509,7 +509,7 @@ void PSBMPC::initialize_prediction(
 	Eigen::Vector4d xs_i_0;
 	TML::PDMatrix<double, 2, MAX_N_WPS> waypoints_i;
 
-	// only use intelligent prediction n_a > 1 intentions are considered
+	// only use intelligent prediction if n_a > 1 intentions are considered
 	// and obstacle colav is on
 	use_joint_prediction = false; 
 	for (int i = 0; i < n_obst; i++)
@@ -557,7 +557,7 @@ void PSBMPC::initialize_prediction(
 		}
 		data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
 
-		data.obstacles[i].predict_independent_trajectories<PSBMPC>(pars.T, pars.dt, trajectory.col(0), *this);
+		data.obstacles[i].predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), *this);
 	}
 
 	if (use_joint_prediction)

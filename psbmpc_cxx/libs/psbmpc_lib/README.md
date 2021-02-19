@@ -25,7 +25,7 @@ The main function to use is the **calculate_optimal_offsets(..)** function, whic
 - Planned guidance references for surge and course
 - The waypoints that the own-ship is supposed to follow (curved/continuous path following is not implemented)
 - The current time own-ship state (3DOF) <img src="https://render.githubusercontent.com/render/math?math={[x, y, \psi, u, v, r]}^T">
-- Nearby static obstacles, parameterized as for instance polygons, lines or similar. Not fully specified yet.
+- Nearby static obstacles, parameterized as polygons or lines.
 - A data structure Obstacle_Data containing dynamic obstacle information.
 
 and has the following **outputs**:
@@ -41,11 +41,14 @@ The class has get/set functionality for each parameter according to an index fil
 
 ### SBMPC
 <p> The original SBMPC, made into a separate class for the library to enable easier comparison in simulation than what is possible if the PSBMPC/SBMPC were merged into the same class (due to lack of current programming skills and time constraints). </p>
+
 ### SBMPC_Parameters 
 <p> Parameter class for the SBMPC </p>
 
 ### MPC_Cost
 <p> Class responsible for evaluating the cost function in the PSBMPC (in the CB_Cost_Functor, SBMPC and obstacle SBMPC </p>
+
+
 ### Obstacle Manager
 
 <p> Is the class responsible for updating dynamic obstacle information, taking the following inputs in its main update functionality: </p>
