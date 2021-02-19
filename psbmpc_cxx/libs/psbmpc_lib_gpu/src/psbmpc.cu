@@ -36,6 +36,8 @@
 #include <chrono>
 #include "engine.h"
 
+#define BUFFSIZE 100000
+
 /****************************************************************************************
 *  Name     : PSBMPC
 *  Function : Class constructor, initializes parameters and variables
@@ -491,12 +493,28 @@ void PSBMPC::initialize_prediction(
 {
 	int n_obst = data.obstacles.size();
 	n_ps.resize(n_obst);
-	pobstacles.resize(n_obst);
+
+	// pobstacles with the ownship as the last element, for the joint prediction
+	pobstacles.resize(n_obst + 1);
 	int n_a(0);
 	if (n_obst > 0)
 	{
 		n_a = data.obstacles[0].get_intention_probabilities().size();
 	} 
+
+	// Add the ownship as the last prediction obstacle
+	TML::PDMatrix<float, 9, 1>  xs_aug(9, 1); TML::Vector2f v_os_0;
+	xs_aug(0) = trajectory(0, 0); xs_aug(1) = trajectory(1, 0);
+	v_os_0(0) = trajectory(3, 0); v_os_0(1) = trajectory(4, 0);
+	v_os_0 = rotate_vector_2D(v_os_0, trajectory(2, 0));
+	xs_aug(2) = v_os_0(0); xs_aug(3) = v_os_0(1);
+	xs_aug(4) = ownship.get_length() / 2; 
+	xs_aug(5) = ownship.get_length() / 2; 
+	xs_aug(6) = ownship.get_width() / 2; 
+	xs_aug(7) = ownship.get_width() / 2; 
+	xs_aug(8) = n_obst;
+
+	pobstacles[n_obst] = Prediction_Obstacle(xs_aug, pars.T, pars.dt);
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
@@ -540,7 +558,6 @@ void PSBMPC::initialize_prediction(
 			if (pars.obstacle_colav_on)
 			{
 				use_joint_prediction = true;
-				pobstacles[i].set_colav_on(false);
 
 				// Set obstacle waypoints to a straight line out from its current time position 
 				// if no future obstacle trajectory is available
@@ -998,6 +1015,214 @@ void PSBMPC::calculate_ps_collision_risks(
 }
 
 /****************************************************************************************
+*  Name     : determine_situation_type
+*  Function : Determines the situation type for vessel A and B  \in {A, B, C, D, E, F}
+*  Author   : Trym Tengesdal
+*  Modified :
+****************************************************************************************/
+void PSBMPC::determine_situation_type(
+	ST& st_A,																// In/out: Situation type of vessel A
+	ST& st_B,																// In/out: Situation type of vessel B	
+	const TML::Vector2f &v_A,												// In: (NE) Velocity vector of vessel A 
+	const float psi_A, 														// In: Heading of vessel A
+	const TML::Vector2f &v_B, 												// In: (NE) Velocity vector of vessel B
+	const TML::Vector2f &L_AB, 												// In: LOS vector pointing from vessel A to vessel B
+	const float d_AB 														// In: Distance from vessel A to vessel B
+	)
+{
+	// Crash situation or outside consideration range
+	if(d_AB < pars.d_safe || d_AB > pars.d_close)
+	{
+		st_A = A; st_B = A;
+		return;
+	} 
+	// Inside consideration range
+	else
+	{
+		bool is_ahead(false), is_head_on(false), is_crossing(false), is_passed(false);
+		bool A_is_overtaken(false), B_is_overtaken(false), B_is_starboard(false);
+		is_ahead = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
+
+		A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
+						v_A.norm() < v_B.norm()							  		&&
+						v_A.norm() > 0.25;
+
+		B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
+						v_B.norm() < v_A.norm()							  		&&
+						v_B.norm() > 0.25;
+
+		B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+
+		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+					!A_is_overtaken) 											||
+					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+					!B_is_overtaken)) 											&&
+					d_AB > pars.d_safe;
+
+		is_head_on = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() > 0.25											&&
+					v_B.norm() > 0.25											&&
+					is_ahead;
+
+		is_crossing = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
+					v_A.norm() > 0.25											&&
+					v_B.norm() > 0.25											&&
+					!is_head_on 												&&
+					!is_passed;
+		
+		if (A_is_overtaken) 
+		{ 
+			st_A = B; st_B = D;
+		} 
+		else if (B_is_overtaken) 
+		{ 
+			st_A = D; st_B = B; 
+		} 
+		else if (is_head_on) 
+		{ 
+			st_A = E; st_B = E; 
+		} 
+		else if (is_crossing)
+		{
+			if (B_is_starboard) 
+			{
+				st_A = F; st_B = C;
+			} else
+			{
+				st_A = C; st_B = F;
+			}
+		} 
+		else 
+		{
+			st_A = A; st_B = A;
+		}
+	}
+}
+
+/****************************************************************************************
+*  Name     : update_conditional_obstacle_data
+*  Function : Updates the situation type for the calling obstacle (wrt all other 
+*			   obstacles) and obstacles (wrt own-ship) and the transitional cost 
+*			   indicators O, Q, X, S at the current time t0 wrt all obstacles.
+*  Author   : Trym Tengesdal
+*  Modified :
+****************************************************************************************/
+void PSBMPC::update_conditional_obstacle_data(
+	Obstacle_Data<Prediction_Obstacle> &data, 										// In: Joint prediction information on other obstacles (including the own-ship) than obst i_caller
+	const int i_caller, 															// In: Index of obstacle asking for a situational awareness update
+	const int k																		// In: Index of the current predicted time t_k
+	)
+{
+	// A : Obstacle i_caller, B : Obstacle i
+	TML::Vector2f p_A, v_A, p_B, v_B, L_AB;
+	float psi_A, psi_B, d_AB;
+
+	p_A(0) = pobstacles[i_caller].get_state(k)(0);
+	p_A(1) = pobstacles[i_caller].get_state(k)(1);
+	v_A(0) = pobstacles[i_caller].get_state(k)(2);
+	v_A(1) = pobstacles[i_caller].get_state(k)(3);
+	psi_A = atan2(v_A(1), v_A(0));
+
+	int n_obst = n_ps.size(), i_count = 0;
+	data.ST_0.resize(n_obst);   data.ST_i_0.resize(n_obst);
+	
+	data.AH_0.resize(n_obst);   data.S_TC_0.resize(n_obst); data.S_i_TC_0.resize(n_obst); 
+	data.O_TC_0.resize(n_obst); data.Q_TC_0.resize(n_obst); data.IP_0.resize(n_obst); 
+	data.H_TC_0.resize(n_obst); data.X_TC_0.resize(n_obst);
+
+	bool is_close(false);
+	for (int i = 0; i < n_obst + 1; i++)
+	{
+		if (i != i_caller)
+		{
+			p_B(0) = pobstacles[i].get_state(k)(0);
+			p_B(1) = pobstacles[i].get_state(k)(1);
+			v_B(0) = pobstacles[i].get_state(k)(2);
+			v_B(1) = pobstacles[i].get_state(k)(3);
+			psi_B = atan2(v_B(1), v_B(0));
+
+			L_AB = p_B - p_A;
+			d_AB = L_AB.norm();
+
+			// Decrease the distance between the vessels by their respective max dimension
+			d_AB = d_AB - 0.5 * (pobstacles[i_caller].get_length() + pobstacles[i].get_length()); 				
+			L_AB = L_AB.normalized();
+
+			determine_situation_type(data.ST_0[i], data.ST_i_0[i], v_A, psi_A, v_B, L_AB, d_AB);
+			
+			//std::cout << "Obstacle i = " << i << " situation type wrt obst j = " << j << " ? " << data[i].ST_0[j] << std::endl;
+			//std::cout << "Obst j = " << j << " situation type wrt obstacle i = " << i << " ? " << data[i].ST_i_0[j] << std::endl;
+
+			//=====================================================================
+			// Transitional variable update
+			//=====================================================================
+			is_close = d_AB <= pars.d_close;
+
+			data.AH_0[i] = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
+
+			//std::cout << "Obst j = " << j << " ahead at t0 ? " << data[i].AH_0[j] << std::endl;
+			
+			// Obstacle on starboard side
+			data.S_TC_0[i] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+
+			//std::cout << "Obst i = " << i << " on starboard side at t0 ? " << data[i].S_TC_0[j] << std::endl;
+
+			// Ownship on starboard side of obstacle
+			data.S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
+
+			//std::cout << "Obstacle i = " << i << " on starboard side of obstacle j = " << j << " at t0 ? " << data[i].S_i_TC_0[j] << std::endl;
+
+			// Ownship overtaking the obstacle
+			data.O_TC_0[i] = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
+					v_B.norm() < v_A.norm()							    						&&
+					v_B.norm() > 0.25															&&
+					is_close 																	&&
+					data.AH_0[i];
+
+			//std::cout << "Own-ship overtaking obst j = " << j << " at t0 ? " << data[i].O_TC_0[j] << std::endl;
+
+			// Obstacle overtaking the ownship
+			data.Q_TC_0[i] = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() < v_B.norm()							  							&&
+					v_A.norm() > 0.25 															&&
+					is_close 																	&&
+					!data.AH_0[i];
+
+			//std::cout << "Obst j = " << j << " overtaking obstacle i = " << i << " at t0 ? " << data[i].Q_TC_0[j] << std::endl;
+
+			// Determine if the obstacle is passed by
+			data.IP_0[i_count] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
+					!data.Q_TC_0[i_count])		 											||
+					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 					&& // Obstacle's perspective	
+					!data.O_TC_0[i_count]))		 											&&
+					d_AB > pars.d_safe;
+			
+			//std::cout << "Obst j = " << j << " passed by at t0 ? " << data[i].IP_0[j] << std::endl;
+
+			// This is not mentioned in article, but also implemented here..				
+			data.H_TC_0[i_count] = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() > 0.25																&&
+					v_B.norm() > 0.25																&&
+					data.AH_0[i_count];
+			
+			//std::cout << "Head-on at t0 wrt obst j = " << j << " ? " << data[i].H_TC_0[j] << std::endl;
+
+			// Crossing situation, a bit redundant with the !is_passed condition also, 
+			// but better safe than sorry (could be replaced with B_is_ahead also)
+			data.X_TC_0[i_count] = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()		&&
+					!data.H_TC_0[i_count]															&& 
+					!data.IP_0[i_count]																&&
+					v_A.norm() > 0.25																&&
+					v_B.norm() > 0.25;
+
+			//std::cout << "Crossing at t0 wrt obst j = " << j << " ? " << data[i].X_TC_0[j] << std::endl;
+
+			i_count += 1;
+		}
+	}	
+}
+
+/****************************************************************************************
 *  Name     : predict_trajectories_jointly
 *  Function : Predicts the trajectory of the obstacles with an active COLAV system,  
 *		      considering the fixed current control behaviour, and adds or overwrites
@@ -1011,19 +1236,23 @@ void PSBMPC::predict_trajectories_jointly(
 	)
 {
 	int n_samples = trajectory.cols();
-	int n_obst = pobstacles.size();
-	//Joint_Prediction_Manager jpm(n_obst); 
+	int n_obst = data.obstacles.size();
+	
+	Obstacle_Data<Prediction_Obstacle> data_jp;
 	Obstacle_SBMPC obstacle_sbmpc;
+	Obstacle_Ship obstacle_ship;
+
+	std::vector<Eigen::Matrix<double, 4, -1>> predicted_trajectory_i(n_obst);
+	Eigen::MatrixXd traj_i;
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> pred_traj_i;
 
 	TML::PDMatrix<float, MAX_N_OBST, 1> u_opt_i(n_obst), u_opt_last_i(n_obst), chi_opt_i(n_obst), chi_opt_last_i(n_obst), u_d_i(n_obst), chi_d_i(n_obst);
 	TML::Vector4f xs_i_p, xs_i_p_transformed;
-	TML::PDMatrix<float, 1, 7> xs_os_aug_k(1, 7);
-	xs_os_aug_k(4) = ownship.get_length();
-	xs_os_aug_k(5) = ownship.get_width();
-	xs_os_aug_k(6) = n_obst;
+	
+	TML::PDMatrix<float, 4, MAX_N_OBST> static_obstacles_jp;
+	TML::assign_eigen_object(static_obstacles_jp, static_obstacles);
 
-	Obstacle_Ship obstacle_ship;
-	std::vector<Eigen::Matrix<double, 4, -1>> predicted_trajectory_i(n_obst);
+	Eigen::Matrix<double, 2, -1> waypoints_i;
 	TML::Vector4f xs_i_0;
  	for(int i = 0; i < n_obst; i++)
 	{
@@ -1034,11 +1263,10 @@ void PSBMPC::predict_trajectories_jointly(
 		pobstacles[i].set_intention(KCC);
 	}
 
-
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Engine *ep = engOpen(NULL);
+	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -1084,20 +1312,19 @@ void PSBMPC::predict_trajectories_jointly(
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engEvalString(ep, "joint_pred_init_plotting");
 
-	Eigen::Vector4d xs_i_0;
  	for(int i = 0; i < n_obst; i++)
 	{
+		TML::assign_tml_object(waypoints_i, pobstacles[i].get_waypoints());
 		wps_i_mx[i] = mxCreateDoubleMatrix(2, 2, mxREAL);
 		traj_i_mx[i] = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 
 		p_wps_i = mxGetPr(wps_i_mx[i]);
 		new (&map_wps_i) Eigen::Map<Eigen::MatrixXd>(p_wps_i, 2, n_wps_i);
-		map_wps_i = pobstacles[i].get_waypoints();
+		map_wps_i = waypoints_i;
 
 		engPutVariable(ep, "WPs_i", wps_i_mx[i]);
 		engEvalString(ep, "joint_pred_init_obstacle_plot");
-	}	 */
-	
+	}	
 	//===============================================================================================================
 	auto start = std::chrono::system_clock::now(), end = start;
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -1105,6 +1332,7 @@ void PSBMPC::predict_trajectories_jointly(
 
 	double t(0.0), u_c_i(0.0), chi_c_i(0.0), chi_i(0.0);
 	TML::Vector2f v_os_k, p_os_k;
+	TML::Vector4f xs_os_k;
 	for (int k = 0; k < n_samples; k++)
 	{	
 		t = k * pars.dt;
@@ -1112,19 +1340,20 @@ void PSBMPC::predict_trajectories_jointly(
 		v_os_k(0) = trajectory(3, k);
 		v_os_k(1) = trajectory(4, k);
 		v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
-		xs_os_aug_k(0) = trajectory(0, k);
-		xs_os_aug_k(1) = trajectory(1, k);
-		xs_os_aug_k(2) = v_os_k(0);
-		xs_os_aug_k(3) = v_os_k(1);
+		xs_os_k(0) = trajectory(0, k);
+		xs_os_k(1) = trajectory(1, k);
+		xs_os_k(2) = v_os_k(0);
+		xs_os_k(3) = v_os_k(1);
 
+		pobstacles[n_obst].set_state(xs_os_k, k);
 		//std::cout << "xs_os_aug_k = " << xs_os_aug_k.transpose() << std::endl;
-
-		// Update Obstacle Data for each prediction obstacle, taking all other obstacles
-		// including the ownship into account
-		//jpm(pars, pobstacles, xs_os_aug_k, k);
-
+	
 		for (int i = 0; i < n_obst; i++)
 		{
+			// Update Obstacle Data for each prediction obstacle, taking all other obstacles
+			// including the ownship into account
+			update_conditional_obstacle_data(data_jp, i, k);
+
 			xs_i_p = pobstacles[i].get_state(k);
 
 			//std::cout << "xs_i_p = " << xs_i_p.transpose() << std::endl;
@@ -1144,7 +1373,7 @@ void PSBMPC::predict_trajectories_jointly(
 				else if (chi_i < -15 * DEG2RAD)							{ pobstacles[i].set_intention(PM); }
 			}
 
-			obstacle_ships[i].update_guidance_references(
+			obstacle_ship.update_guidance_references(
 				u_d_i(i), 
 				chi_d_i(i), 
 				pobstacles[i].get_waypoints(),
@@ -1154,21 +1383,21 @@ void PSBMPC::predict_trajectories_jointly(
 
 			if (fmod(t, 5) == 0)
 			{
-				//start = std::chrono::system_clock::now();	
+				start = std::chrono::system_clock::now();	
 
-				/* osbmpc.calculate_optimal_offsets(
+				obstacle_sbmpc.calculate_optimal_offsets(
 					u_opt_i(i), 
 					chi_opt_i(i), 
-					predicted_trajectory_i[i],
+					pred_traj_i,
 					u_opt_last_i(i),
 					chi_opt_last_i(i),
 					u_d_i(i), 
 					chi_d_i(i),
 					pobstacles[i].get_waypoints(),
 					xs_i_p_transformed,
-					static_obstacles,
-					jpm.get_data(i),
-					k); */
+					static_obstacles_jp,
+					data_jp,
+					k);
 
 				end = std::chrono::system_clock::now();
 				elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -1183,7 +1412,7 @@ void PSBMPC::predict_trajectories_jointly(
 
 			if (k < n_samples - 1)
 			{
-				xs_i_p_transformed = obstacle_ships[i].predict(xs_i_p_transformed, u_c_i, chi_c_i, pars.dt, pars.prediction_method);
+				xs_i_p_transformed = obstacle_ship.predict(xs_i_p_transformed, u_c_i, chi_c_i, pars.dt, pars.prediction_method);
 				
 				// Convert from X_i = [x, y, chi, U] to X_i = [x, y, Vx, Vy]
 				xs_i_p(0) = xs_i_p_transformed(0);
@@ -1197,7 +1426,7 @@ void PSBMPC::predict_trajectories_jointly(
 		//============================================================================================
 		// Send data to matlab for live plotting
 		//============================================================================================
-			/*
+			
 			k_s_mx = mxCreateDoubleScalar(k + 1);
 			engPutVariable(ep, "k", k_s_mx);
 
@@ -1212,7 +1441,9 @@ void PSBMPC::predict_trajectories_jointly(
 			new (&map_traj_i) Eigen::Map<Eigen::MatrixXd>(p_traj_i, 4, n_samples);
 			new (&map_pred_traj_i) Eigen::Map<Eigen::MatrixXd>(p_pred_traj_i, 4, predicted_trajectory_i[i].cols());
 			
-			map_traj_i = pobstacles[i].get_trajectory();
+			TML::assign_tml_object(traj_i, pobstacles[i].get_trajectory());
+			TML::assign_tml_object(predicted_trajectory_i[i], pred_traj_i);
+			map_traj_i = traj_i;
 			map_pred_traj_i = predicted_trajectory_i[i];
 
 			i_mx = mxCreateDoubleScalar(i + 1);
@@ -1223,38 +1454,14 @@ void PSBMPC::predict_trajectories_jointly(
 
 			engEvalString(ep, "update_joint_pred_obstacle_plot");
 
-			printf("%s", buffer);	 */
+			printf("%s", buffer);	
 			//============================================================================================				
 			
 		}
 		
 
-		/* engEvalString(ep, "update_joint_pred_ownship_plot"); */
+		engEvalString(ep, "update_joint_pred_ownship_plot");
 		//============================================================================================
-	}
-
-/* 
-	engEvalString(ep, "store_joint_pred_ownship_data");
-
-	for (int i = 0; i < n_obst; i++)
-	{
-		i_mx = mxCreateDoubleScalar(i + 1);
-		engPutVariable(ep, "i", i_mx);
-
-		pred_traj_i_mx[i] = mxCreateDoubleMatrix(4, predicted_trajectory_i[i].cols(), mxREAL);
-
-		p_traj_i = mxGetPr(traj_i_mx[i]);
-		p_pred_traj_i = mxGetPr(pred_traj_i_mx[i]);
-
-		new (&map_traj_i) Eigen::Map<Eigen::MatrixXd>(p_traj_i, 4, n_samples);
-		new (&map_pred_traj_i) Eigen::Map<Eigen::MatrixXd>(p_pred_traj_i, 4, predicted_trajectory_i[i].cols());
-		
-		map_traj_i = pobstacles[i].get_trajectory();
-		map_pred_traj_i = predicted_trajectory_i[i];
-
-		engPutVariable(ep, "X_i", traj_i_mx[i]);			
-		engPutVariable(ep, "X_i_pred", pred_traj_i_mx[i]);
-		engEvalString(ep, "store_joint_pred_obstacle_data");
 	}
 
 	//============================================================================================
@@ -1274,7 +1481,7 @@ void PSBMPC::predict_trajectories_jointly(
 		mxDestroyArray(traj_i_mx[i]);
 		mxDestroyArray(pred_traj_i_mx[i]);
 	}
-	engClose(ep); */
+	engClose(ep);
 }
 
 /****************************************************************************************
