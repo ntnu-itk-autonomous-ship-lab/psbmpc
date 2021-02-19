@@ -64,10 +64,7 @@ public:
 
 	__host__ __device__ Prediction_Obstacle();
 
-	__host__ __device__ Prediction_Obstacle(const TML::PDMatrix<float, 1, 9> &xs_aug,	 
-			 const bool colav_on, 
-			 const double T, 
-			 const double dt);
+	__host__ __device__ Prediction_Obstacle(const TML::PDMatrix<float, 9, 1> &xs_aug, const double T, const double dt);
 
 	__host__ __device__ Prediction_Obstacle(const Prediction_Obstacle &po);
 	__host__ __device__ Prediction_Obstacle(const Tracked_Obstacle &to);

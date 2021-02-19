@@ -42,7 +42,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) :
-	Obstacle(xs_aug, false), 
+	Obstacle(xs_aug), 
 	duration_tracked(0.0), duration_lost(0.0)
 {
  	double psi = atan2(xs_aug(3), xs_aug(2));

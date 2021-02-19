@@ -34,12 +34,11 @@
 __host__ __device__ Prediction_Obstacle::Prediction_Obstacle() = default;
 
 __host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
-	const TML::PDMatrix<float, 1, 9>& xs_aug, 					// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
-	const bool colav_on,										// In: Boolean determining whether the obstacle uses a COLAV system or not in the MPC predictions
+	const TML::PDMatrix<float, 9, 1> &xs_aug, 					// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	Obstacle(xs_aug, colav_on)
+	Obstacle(xs_aug)
 {
 	int n_samples = std::round(T / dt);
 	
@@ -173,8 +172,6 @@ void Prediction_Obstacle::assign_data(
 {
 	this->ID = po.ID;
 
-	this->colav_on = po.colav_on;
-
 	this->A = po.A; this->B = po.B; this->C = po.C; this->D = po.D;
 	this->l = po.l; this->w = po.w;
 
@@ -199,8 +196,6 @@ void Prediction_Obstacle::assign_data(
 	)
 {
 	this->ID = to.ID;
-
-	this->colav_on = to.colav_on;
 
 	this->A = to.A; this->B = to.B; this->C = to.C; this->D = to.D;
 	this->l = to.l; this->w = to.w;

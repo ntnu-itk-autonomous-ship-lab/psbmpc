@@ -88,8 +88,6 @@ __host__ void Cuda_Obstacle::assign_data(
 {
 	this->ID = co.ID;
 
-	this->colav_on = co.colav_on;
-
 	this->A = co.A; this->B = co.B; this->C = co.C; this->D = co.D;
 
 	this->l = co.l; this->w = co.w;
@@ -125,8 +123,6 @@ __host__ void Cuda_Obstacle::assign_data(
 	)
 {
 	this->ID = to.ID;
-
-	this->colav_on = to.colav_on;
 
 	this->A = to.A; this->B = to.B; this->C = to.C; this->D = to.D;
 

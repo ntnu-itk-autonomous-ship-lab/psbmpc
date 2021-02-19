@@ -58,7 +58,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	obstacle_ship(obstacle_ship), obstacle_sbmpc(obstacle_sbmpc),
 	mpc_cost(mpc_cost)
 {
-	
+
 }
 
 /****************************************************************************************
@@ -507,7 +507,7 @@ __device__ void CB_Cost_Functor::update_conditional_obstacle_data(
 	data.H_TC_0.resize(fdata->n_obst, 1); data.X_TC_0.resize(fdata->n_obst, 1);
 
 	i_count = 0;
-	for (int i = 0; i < fdata->n_obst; i++)
+	for (int i = 0; i < fdata->n_obst + 1; i++)
 	{
 		if (i != i_caller)
 		{
@@ -521,8 +521,7 @@ __device__ void CB_Cost_Functor::update_conditional_obstacle_data(
 			d_AB = L_AB.norm();
 
 			// Decrease the distance between the vessels by their respective max dimension
-			d_AB = d_AB - 0.5 * (pobstacles[i_caller].get_length() + pobstacles[i].get_length()); 
-			
+			d_AB = d_AB - 0.5 * (pobstacles[i_caller].get_length() + pobstacles[i].get_length()); 				
 			L_AB = L_AB.normalized();
 
 			determine_situation_type(data.ST_0[i], data.ST_i_0[i], v_A, psi_A, v_B, L_AB, d_AB);
