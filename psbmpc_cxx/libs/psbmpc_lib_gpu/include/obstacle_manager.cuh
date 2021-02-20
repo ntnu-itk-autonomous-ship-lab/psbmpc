@@ -66,7 +66,7 @@ public:
 
 };
 
-class Obstacle_Data_GPU
+class Obstacle_Data_GPU_Friendly
 {
 public:
 
@@ -77,9 +77,9 @@ public:
 	// Situation type variables at the current time for the own-ship (wrt all nearby obstacles) and nearby obstacles
 	TML::PDMatrix<ST, MAX_N_OBST, 1> ST_0, ST_i_0;
 
-	__host__ __device__ Obstacle_Data_GPU() {}
+	__host__ __device__ Obstacle_Data_GPU_Friendly() {}
 
-	__host__ __device__ ~Obstacle_Data_GPU() {}
+	__host__ __device__ ~Obstacle_Data_GPU_Friendly() {}
 };
 
 class Obstacle_Manager

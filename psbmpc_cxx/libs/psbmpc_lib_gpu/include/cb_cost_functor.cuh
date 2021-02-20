@@ -97,16 +97,16 @@ private:
     TML::Matrix2f P_i_2D;
 
 	// Joint prediction related
-	TML::PDMatrix<float, MAX_N_OBST, 1> u_d_i, u_opt_i, u_opt_last_i, chi_d_i, chi_opt_i, chi_opt_last_i;
+	TML::PDMatrix<float, MAX_N_OBST, 1> u_d_i, u_opt_last_i, chi_d_i, chi_opt_last_i;
 
 	TML::PDMatrix<float, 7, 1> xs_os_aug_k;
 	
 	TML::Vector2f v_os_k, v_A, v_B, L_AB, p_A, p_B;
 	TML::Vector4f xs_i_p, xs_i_p_transformed;
 
-	float t, chi_i, psi_A, psi_B, d_AB; 
+	float t, chi_i, psi_A, psi_B, d_AB, u_opt_i, chi_opt_i; 
 
-	Obstacle_Data_GPU data;
+	Obstacle_Data_GPU_Friendly data;
 
 	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
 	bool is_close, is_ahead, is_passed, is_head_on, is_crossing;

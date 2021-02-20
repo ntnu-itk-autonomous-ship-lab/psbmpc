@@ -91,7 +91,7 @@ public:
 
 	__host__ __device__ inline void set_intention(const Intention a) {assert(a >= KCC && a <= PM); a_p = a; }
 
-	__host__ __device__ inline void set_state(const TML::Vector4f &xs_k, const int k) { assert(k < xs_p.get_cols() && k >= 0); xs_p.get_col(k) = xs_k; }
+	__host__ __device__ inline void set_state(const TML::Vector4f &xs_k, const int k) { assert(k < xs_p.get_cols() && k >= 0); xs_p.set_col(k, xs_k); }
 
 	__host__ __device__ inline void set_waypoints(const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints) { this->waypoints = waypoints; }
 
