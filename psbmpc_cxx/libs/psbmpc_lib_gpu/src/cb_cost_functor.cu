@@ -607,14 +607,23 @@ __device__ void CB_Cost_Functor::update_conditional_obstacle_data(
 //=======================================================================================
 __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 {
-	u_d_i.resize(fdata->n_obst, 1); u_opt_i.resize(fdata->n_obst, 1); u_opt_last_i.resize(fdata->n_obst, 1);
-	chi_d_i.resize(fdata->n_obst, 1); chi_opt_i.resize(fdata->n_obst, 1); chi_opt_last_i.resize(fdata->n_obst, 1);
+	u_d_i.resize(fdata->n_obst, 1); u_opt_last_i.resize(fdata->n_obst, 1);
+	chi_d_i.resize(fdata->n_obst, 1); chi_opt_last_i.resize(fdata->n_obst, 1);
 	for(int k = 0; k < n_samples; k++)
 	{
 		t = k * pars->dt;
 		for (int i = 0; i < fdata->n_obst; i++)
 		{
 			xs_i_p = pobstacles[i].get_state(k);
+
+			if (k == 0)
+			{
+				u_d_i(i) = xs_i_p.get_block<2, 1>(2, 0).norm();
+				chi_d_i(i) = atan2(xs_i_p(3), xs_i_p(2));
+				u_opt_last_i(i) = 1.0f; chi_opt_last_i(i) = 0.0f; 
+
+				pobstacles[i].set_intention(KCC);
+			}
 
 			// Update obstacle data for obstacle i using all other obstacles
 			update_conditional_obstacle_data(i, k);
@@ -646,8 +655,8 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 			if (fmod(t, 5) == 0)
 			{
 				obstacle_sbmpc[cb_index].calculate_optimal_offsets(
-					u_opt_i(i), 
-					chi_opt_i(i), 
+					u_opt_i, 
+					chi_opt_i, 
 					u_opt_last_i(i), 
 					chi_opt_last_i(i), 
 					u_d_i(i), 
@@ -660,16 +669,16 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 					i,
 					k);
 
-				u_opt_last_i(i) = u_opt_i(i);
-				chi_opt_last_i(i) = chi_opt_i(i);
+				u_opt_last_i(i) = u_opt_i;
+				chi_opt_last_i(i) = chi_opt_i;
 			}
 
 			if (k < n_samples - 1)
 			{
 				xs_i_p_transformed = obstacle_ship[cb_index].predict(
 					xs_i_p_transformed, 
-					u_d_i(i) * u_opt_i(i), 
-					chi_d_i(i) + chi_opt_i(i), 
+					u_d_i(i) * u_opt_i, 
+					chi_d_i(i) + chi_opt_i, 
 					pars->dt, 
 					pars->prediction_method);
 				

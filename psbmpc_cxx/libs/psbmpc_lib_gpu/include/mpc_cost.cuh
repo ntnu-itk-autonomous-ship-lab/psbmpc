@@ -452,13 +452,8 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
 
 	// SB-MPC formulation with ad-hoc collision risk
-	cost_k = C * R + pars.kappa * mu  + pars.kappa_TC * trans;
+	cost_do = C * R + pars.kappa * mu  + pars.kappa_TC * trans;
 
-	if (cost_k > cost_do)
-	{
-		cost_do = cost_k;
-	}
-	
 	/* if (cost > 5000)
 	{
 		std::cout << "v_0_p = " << v_0_p.transpose() << std::endl;
@@ -473,6 +468,7 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 		std::cout << "cost = " << cost << std::endl;
 		std::cout << "..." << std::endl;
 	}	 */	
+
 	return cost_do;
 }
 
@@ -512,17 +508,17 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_control_deviation_cost
 	)
 {
 	cost_cd = 0;
-	for (int i = 0; i < pars.n_M; i++)
+	for (int M = 0; M < pars.n_M; M++)
 	{
-		if (i == 0)
+		if (M == 0)
 		{
 			cost_cd += pars.K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_opt_last) +
 				    K_chi(offset_sequence[1])      + Delta_chi(offset_sequence[1], chi_opt_last);
 		}
 		else
 		{
-			cost_cd += pars.K_u * (1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
-				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
+			cost_cd += pars.K_u * (1 - offset_sequence[2 * M]) + Delta_u(offset_sequence[2 * M], offset_sequence[2 * M - 2]) +
+				    K_chi(offset_sequence[2 * M + 1])  + Delta_chi(offset_sequence[2 * M + 1], offset_sequence[2 * M - 1]);
 		}
 	}
 	
@@ -544,7 +540,7 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_chattering_cost(
 	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times                  // In: Time of each maneuver in the offset sequence
 	)
 {
-	cost_ch = 0;
+	cost_ch = 0.0f;
 	if (pars.n_M == 1) 
 	{
 		return cost_ch;

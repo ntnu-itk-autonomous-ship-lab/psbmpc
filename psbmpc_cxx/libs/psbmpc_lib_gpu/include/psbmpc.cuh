@@ -151,7 +151,7 @@ private:
 		const TML::Vector2f &L_AB,
 		const float d_AB);
 
-	void update_conditional_obstacle_data(Obstacle_Data<Prediction_Obstacle> &data, const int i_caller, const int k);
+	void update_conditional_obstacle_data(Obstacle_Data_GPU_Friendly &data, const int i_caller, const int k);
 
 	void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1>& static_obstacles);
 

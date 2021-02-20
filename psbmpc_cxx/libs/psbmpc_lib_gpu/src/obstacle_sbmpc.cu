@@ -91,7 +91,7 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,					// In: Next waypoints
 	const TML::Vector4f &ownship_state, 									// In: Current ship state
 	const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles,			// In: Static obstacle information
-	const Obstacle_Data_GPU &data,											// In: Dynamic obstacle information
+	const Obstacle_Data_GPU_Friendly &data,									// In: Dynamic obstacle information
 	Prediction_Obstacle *obstacles, 										// In: Pointer to list of all prediction obstacles, including the ownship
 	const int i_caller,														// In: Index of calling obstacle
 	const int k_0 															// In: Index of the current (joint prediction) time t_k0
@@ -178,6 +178,112 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	}
 }
 
+__host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(									
+	float &u_opt, 															// In/out: Optimal surge offset
+	float &chi_opt, 														// In/out: Optimal course offset
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &predicted_trajectory,			// In/out: Optimal predicted trajectory
+	const float u_opt_last,													// In: Previous optimal surge offset
+	const float chi_opt_last,												// In: Previous optimal course offset
+	const float u_d, 														// In: Surge reference
+	const float chi_d, 														// In: Course reference
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,					// In: Next waypoints
+	const TML::Vector4f &ownship_state, 									// In: Current ship state
+	const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles,			// In: Static obstacle information
+	const Obstacle_Data_GPU_Friendly &data,									// In: Dynamic obstacle information
+	Prediction_Obstacle *obstacles, 										// In: Pointer to list of all prediction obstacles, including the ownship
+	const int i_caller,														// In: Index of calling obstacle
+	const int k_0 															// In: Index of the current (joint prediction) time t_k0
+	)
+{
+	n_samples = std::round(pars.T / pars.dt); 
+
+	n_obst = data.AH_0.size();
+	n_static_obst = static_obstacles.get_cols();
+
+	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
+
+	cost_i.resize(n_obst, 1);
+
+	if (!determine_colav_active(ownship_state, obstacles, i_caller, n_static_obst, k_0))
+	{
+		u_opt = 1.0f;
+		chi_opt = 0.0f;
+		return;
+	}
+
+	initialize_prediction(obstacles, i_caller, k_0);
+
+	min_cost = 1e12;
+	reset_control_behavior();
+	for (int cb = 0; cb < pars.n_cbs; cb++)
+	{
+		cost = 0.0f; cost_i.set_zero(); cost_g = 0.0f;
+
+		//===========================================================================
+		// Predict and calculate dynamic obstacle cost (and (TBD) grounding cost ) 
+		// jointly to save memory
+		//===========================================================================
+		ownship.initialize_wp_following();
+
+		man_count = 0;
+		u_m = 1; u_d_p = u_d;
+		chi_m = 0; chi_d_p = chi_d;
+
+		xs_k_p = ownship_state;
+		for (int k = 0; k < n_samples; k++)
+		{ 	
+			// Determine active control behaviour
+			if (k == maneuver_times[man_count]){
+				u_m = offset_sequence[2 * man_count];
+				chi_m = offset_sequence[2 * man_count + 1]; 
+				if (man_count < (int)maneuver_times.size() - 1) man_count += 1;
+			}  
+
+			// Calculate dynamic obstacle cost and grounding cost
+			i_count = 0;
+			for (int i = 0; i < n_obst + 1; i++)
+			{
+				if (i != i_caller)
+				{
+					xs_i_k_p = obstacles[i].get_predicted_trajectory_sample(k);
+
+					cost_i_k = mpc_cost.calculate_dynamic_obstacle_cost(xs_k_p, xs_i_k_p, k, data, i_count, obstacles[i].get_length(), ownship.get_length(), chi_m);
+
+					if (cost_i(i_count) < cost_i_k)	{ cost_i(i_count) = cost_i_k; }
+
+					i_count += 1;
+				}
+			}
+
+			cost_g_k = mpc_cost.calculate_grounding_cost(xs_k_p, static_obstacles, ownship.get_length());
+			if (cost_g < cost_g_k) { cost_g = cost_g_k; }
+
+			// Predict ownship one step ahead
+			ownship.update_guidance_references(u_d_p, chi_d_p, waypoints, xs_k_p, pars.dt, pars.guidance_method);
+
+			xs_k_p = ownship.predict(xs_k_p, u_m * u_d_p , chi_d_p + chi_m, pars.dt, pars.prediction_method);
+			
+		} 
+		cost += cost_i.max_coeff();
+		cost += cost_g;
+
+		//===========================================================================
+		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
+
+		cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
+
+		if (cost < min_cost) 
+		{
+			min_cost = cost;
+			u_opt = offset_sequence(0);
+			chi_opt = offset_sequence(1);
+
+			assign_optimal_trajectory(predicted_trajectory, offset_sequence, waypoints, ownship_state, u_d, chi_d);
+		}
+		increment_control_behavior();
+	}
+}
+
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
@@ -212,30 +318,6 @@ __host__ __device__ void Obstacle_SBMPC::assign_data(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Obstacle_SBMPC::initialize_prediction(
-	Obstacle_Data<Prediction_Obstacle> &data,							// In: Dynamic obstacle information
-	const int k_0														// In: Index of the current (joint prediction) time t_k0	 
-	)
-{
-	n_obst = data.obstacles.size();
-
-	//***********************************************************************************
-	// Obstacle prediction initialization
-	//***********************************************************************************
-	for (int i = 0; i < n_obst; i++)
-	{
-		data.obstacles[i].predict_independent_trajectory(pars.T, pars.dt, k_0);
-	}
-	//***********************************************************************************
-	// Own-ship prediction initialization
-	//***********************************************************************************
-	maneuver_times.resize(pars.n_M, 1);
-	// First avoidance maneuver is always at t0, and n_M = 1 for Obstacle SBMPC
-	maneuver_times(0) = 0.0;
-	
-	//std::cout << maneuver_times.transpose() << std::endl;
-}
-
-__device__ void Obstacle_SBMPC::initialize_prediction(
 	Prediction_Obstacle *obstacles, 									// In/out: Pointer to list of all prediction obstacles
 	const int i_caller, 												// In: Index of calling obstacle
 	const int k_0														// In: Index of the current (joint prediction) time t_k0	 
@@ -244,7 +326,7 @@ __device__ void Obstacle_SBMPC::initialize_prediction(
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
-	for (int i = 0; i < n_obst; i++)
+	for (int i = 0; i < n_obst + 1; i++)
 	{
 		if (i != i_caller)
 		{
@@ -327,26 +409,6 @@ __host__ __device__ void Obstacle_SBMPC::increment_control_behavior()
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ bool Obstacle_SBMPC::determine_colav_active(
-	const TML::Vector4f &xs_k_0,											// In: State of the ownship at the current time t_k0
-	const Obstacle_Data<Prediction_Obstacle> &data,							// In: Dynamic obstacle information
-	const int n_static_obst, 												// In: Number of static obstacles
-	const int k_0															// In: Index of the current (joint prediction) time t_k0
-	)
-{
-	colav_active = false;
-	for (size_t i = 0; i < data.obstacles.size(); i++)
-	{
-		xs_i = data.obstacles[i].get_state(k_0);
-		d_0i(0) = xs_i(0) - xs_k_0(0);
-		d_0i(1) = xs_i(1) - xs_k_0(1);
-		if (d_0i.norm() < pars.d_init) colav_active = true;
-	}
-	colav_active = colav_active || n_static_obst > 0;
-
-	return colav_active;
-}
-
-__device__ bool Obstacle_SBMPC::determine_colav_active(
 	const TML::Vector4f &xs_k_0,										// In: State of the ownship at the current time t_k0
 	Prediction_Obstacle *obstacles, 									// In: Pointer to list of all prediction obstacles
 	const int i_caller, 												// In: Index of calling obstacle
@@ -355,7 +417,7 @@ __device__ bool Obstacle_SBMPC::determine_colav_active(
 	)
 {
 	colav_active = false;
-	for (int i = 0; i < n_obst; i++)
+	for (int i = 0; i < n_obst + 1; i++)
 	{
 		if (i != i_caller)
 		{
@@ -378,7 +440,7 @@ __device__ bool Obstacle_SBMPC::determine_colav_active(
 *****************************************************************************************/
 __host__ __device__ void Obstacle_SBMPC::assign_optimal_trajectory(
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &optimal_trajectory, 					// In/out: Optimal PSB-MPC trajectory
-	TML::PDMatrix<float, 2 * MAX_N_M, 1> opt_offset_sequence,						// In: Optimal control behaviour to follow
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> &opt_offset_sequence,						// In: Optimal control behaviour to follow
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,							// In: Next waypoints
 	const TML::Vector4f &ownship_state,												// In: Current ship state
 	const float u_d,																// In: Surge reference
@@ -409,6 +471,13 @@ __host__ __device__ void Obstacle_SBMPC::assign_optimal_trajectory(
 
 		xs_k_p = ownship.predict(xs_k_p, u_m * u_d_p , chi_d_p + chi_m, pars.dt, pars.prediction_method);
 		
-		if (k < n_samples - 1) { optimal_trajectory.set_col(0, xs_k_p); }
+		if (k < n_samples - 1) { optimal_trajectory.set_col(k + 1, xs_k_p); }
+
+		/* printf("opt_traj.col(k) = %.2f, %.2f, %.2f, %.2f\n", 
+			optimal_trajectory.get_col(k)(0), 
+			optimal_trajectory.get_col(k)(1), 
+			optimal_trajectory.get_col(k)(2), 
+			optimal_trajectory.get_col(k)(3)); */
 	} 
+	
 }

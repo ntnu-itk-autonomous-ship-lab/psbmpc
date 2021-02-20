@@ -1108,7 +1108,7 @@ void PSBMPC::determine_situation_type(
 *  Modified :
 ****************************************************************************************/
 void PSBMPC::update_conditional_obstacle_data(
-	Obstacle_Data<Prediction_Obstacle> &data, 										// In: Joint prediction information on other obstacles (including the own-ship) than obst i_caller
+	Obstacle_Data_GPU_Friendly &data, 												// In: Joint prediction information on other obstacles (including the own-ship) than obst i_caller
 	const int i_caller, 															// In: Index of obstacle asking for a situational awareness update
 	const int k																		// In: Index of the current predicted time t_k
 	)
@@ -1124,11 +1124,11 @@ void PSBMPC::update_conditional_obstacle_data(
 	psi_A = atan2(v_A(1), v_A(0));
 
 	int n_obst = n_ps.size(), i_count = 0;
-	data.ST_0.resize(n_obst);   data.ST_i_0.resize(n_obst);
+	data.ST_0.resize(n_obst, 1);   data.ST_i_0.resize(n_obst, 1);
 	
-	data.AH_0.resize(n_obst);   data.S_TC_0.resize(n_obst); data.S_i_TC_0.resize(n_obst); 
-	data.O_TC_0.resize(n_obst); data.Q_TC_0.resize(n_obst); data.IP_0.resize(n_obst); 
-	data.H_TC_0.resize(n_obst); data.X_TC_0.resize(n_obst);
+	data.AH_0.resize(n_obst, 1);   data.S_TC_0.resize(n_obst, 1); data.S_i_TC_0.resize(n_obst, 1); 
+	data.O_TC_0.resize(n_obst, 1); data.Q_TC_0.resize(n_obst, 1); data.IP_0.resize(n_obst, 1); 
+	data.H_TC_0.resize(n_obst, 1); data.X_TC_0.resize(n_obst, 1);
 
 	bool is_close(false);
 	for (int i = 0; i < n_obst + 1; i++)
@@ -1148,7 +1148,7 @@ void PSBMPC::update_conditional_obstacle_data(
 			d_AB = d_AB - 0.5 * (pobstacles[i_caller].get_length() + pobstacles[i].get_length()); 				
 			L_AB = L_AB.normalized();
 
-			determine_situation_type(data.ST_0[i], data.ST_i_0[i], v_A, psi_A, v_B, L_AB, d_AB);
+			determine_situation_type(data.ST_0[i_count], data.ST_i_0[i_count], v_A, psi_A, v_B, L_AB, d_AB);
 			
 			//std::cout << "Obstacle i = " << i << " situation type wrt obst j = " << j << " ? " << data[i].ST_0[j] << std::endl;
 			//std::cout << "Obst j = " << j << " situation type wrt obstacle i = " << i << " ? " << data[i].ST_i_0[j] << std::endl;
@@ -1158,35 +1158,35 @@ void PSBMPC::update_conditional_obstacle_data(
 			//=====================================================================
 			is_close = d_AB <= pars.d_close;
 
-			data.AH_0[i] = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
+			data.AH_0[i_count] = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
 
 			//std::cout << "Obst j = " << j << " ahead at t0 ? " << data[i].AH_0[j] << std::endl;
 			
 			// Obstacle on starboard side
-			data.S_TC_0[i] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+			data.S_TC_0[i_count] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
 
 			//std::cout << "Obst i = " << i << " on starboard side at t0 ? " << data[i].S_TC_0[j] << std::endl;
 
 			// Ownship on starboard side of obstacle
-			data.S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
+			data.S_i_TC_0[i_count] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
 
 			//std::cout << "Obstacle i = " << i << " on starboard side of obstacle j = " << j << " at t0 ? " << data[i].S_i_TC_0[j] << std::endl;
 
 			// Ownship overtaking the obstacle
-			data.O_TC_0[i] = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
+			data.O_TC_0[i_count] = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
 					v_B.norm() < v_A.norm()							    						&&
 					v_B.norm() > 0.25															&&
 					is_close 																	&&
-					data.AH_0[i];
+					data.AH_0[i_count];
 
 			//std::cout << "Own-ship overtaking obst j = " << j << " at t0 ? " << data[i].O_TC_0[j] << std::endl;
 
 			// Obstacle overtaking the ownship
-			data.Q_TC_0[i] = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
+			data.Q_TC_0[i_count] = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
 					v_A.norm() < v_B.norm()							  							&&
 					v_A.norm() > 0.25 															&&
 					is_close 																	&&
-					!data.AH_0[i];
+					!data.AH_0[i_count];
 
 			//std::cout << "Obst j = " << j << " overtaking obstacle i = " << i << " at t0 ? " << data[i].Q_TC_0[j] << std::endl;
 
@@ -1238,7 +1238,7 @@ void PSBMPC::predict_trajectories_jointly(
 	int n_samples = trajectory.cols();
 	int n_obst = data.obstacles.size();
 	
-	Obstacle_Data<Prediction_Obstacle> data_jp;
+	Obstacle_Data_GPU_Friendly data_jp;
 	Obstacle_SBMPC obstacle_sbmpc;
 	Obstacle_Ship obstacle_ship;
 
@@ -1246,7 +1246,7 @@ void PSBMPC::predict_trajectories_jointly(
 	Eigen::MatrixXd traj_i;
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> pred_traj_i;
 
-	TML::PDMatrix<float, MAX_N_OBST, 1> u_opt_i(n_obst), u_opt_last_i(n_obst), chi_opt_i(n_obst), chi_opt_last_i(n_obst), u_d_i(n_obst), chi_d_i(n_obst);
+	TML::PDMatrix<float, MAX_N_OBST, 1> u_opt_last_i(n_obst), chi_opt_last_i(n_obst), u_d_i(n_obst), chi_d_i(n_obst);
 	TML::Vector4f xs_i_p, xs_i_p_transformed;
 	
 	TML::PDMatrix<float, 4, MAX_N_OBST> static_obstacles_jp;
@@ -1259,6 +1259,8 @@ void PSBMPC::predict_trajectories_jointly(
 		xs_i_0 = pobstacles[i].get_initial_state();
 		u_d_i(i) = xs_i_0.get_block<2, 1>(2, 0).norm();
 		chi_d_i(i) = atan2(xs_i_0(3), xs_i_0(2));
+
+		u_opt_last_i(i) = 1.0f; chi_opt_last_i(i) = 0.0f;
 
 		pobstacles[i].set_intention(KCC);
 	}
@@ -1331,6 +1333,7 @@ void PSBMPC::predict_trajectories_jointly(
 	//double mean_t(0.0);
 
 	double t(0.0), u_c_i(0.0), chi_c_i(0.0), chi_i(0.0);
+	float chi_opt_i(0.0), u_opt_i(0.0);
 	TML::Vector2f v_os_k, p_os_k;
 	TML::Vector4f xs_os_k;
 	for (int k = 0; k < n_samples; k++)
@@ -1386,8 +1389,8 @@ void PSBMPC::predict_trajectories_jointly(
 				start = std::chrono::system_clock::now();	
 
 				obstacle_sbmpc.calculate_optimal_offsets(
-					u_opt_i(i), 
-					chi_opt_i(i), 
+					u_opt_i, 
+					chi_opt_i, 
 					pred_traj_i,
 					u_opt_last_i(i),
 					chi_opt_last_i(i),
@@ -1397,6 +1400,8 @@ void PSBMPC::predict_trajectories_jointly(
 					xs_i_p_transformed,
 					static_obstacles_jp,
 					data_jp,
+					pobstacles.data(),
+					i,
 					k);
 
 				end = std::chrono::system_clock::now();
@@ -1404,11 +1409,9 @@ void PSBMPC::predict_trajectories_jointly(
 
 				/* mean_t = elapsed.count();
 				std::cout << "Obstacle_SBMPC time usage : " << mean_t << " milliseconds" << std::endl; */
-
-				//jpm.update_obstacle_status(i, xs_i_p_transformed, k);
-				//jpm.display_obstacle_information(i);
+				u_opt_last_i(i) = u_opt_i; chi_opt_last_i(i) = chi_opt_i;
 			}
-			u_c_i = u_d_i(i) * u_opt_i(i); chi_c_i = chi_d_i(i) + chi_opt_i(i);
+			u_c_i = u_d_i(i) * u_opt_i; chi_c_i = chi_d_i(i) + chi_opt_i;
 
 			if (k < n_samples - 1)
 			{
@@ -1432,6 +1435,9 @@ void PSBMPC::predict_trajectories_jointly(
 
 			buffer[BUFFSIZE] = '\0';
 			engOutputBuffer(ep, buffer, BUFFSIZE);
+
+			TML::assign_tml_object(traj_i, pobstacles[i].get_trajectory());
+			TML::assign_tml_object(predicted_trajectory_i[i], pred_traj_i);
 			
 			pred_traj_i_mx[i] = mxCreateDoubleMatrix(4, predicted_trajectory_i[i].cols(), mxREAL);
 
@@ -1441,8 +1447,7 @@ void PSBMPC::predict_trajectories_jointly(
 			new (&map_traj_i) Eigen::Map<Eigen::MatrixXd>(p_traj_i, 4, n_samples);
 			new (&map_pred_traj_i) Eigen::Map<Eigen::MatrixXd>(p_pred_traj_i, 4, predicted_trajectory_i[i].cols());
 			
-			TML::assign_tml_object(traj_i, pobstacles[i].get_trajectory());
-			TML::assign_tml_object(predicted_trajectory_i[i], pred_traj_i);
+			
 			map_traj_i = traj_i;
 			map_pred_traj_i = predicted_trajectory_i[i];
 
