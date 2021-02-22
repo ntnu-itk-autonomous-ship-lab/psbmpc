@@ -28,14 +28,13 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC() :
-	pars(SBMPC_Parameters(true))
+__host__ __device__ Obstacle_SBMPC::Obstacle_SBMPC()
 {
 	offset_sequence_counter.resize(2 * pars.n_M, 1);
 	offset_sequence.resize(2 * pars.n_M, 1);
 	maneuver_times.resize(pars.n_M, 1);
 
-	mpc_cost = MPC_Cost<SBMPC_Parameters>(pars);
+	mpc_cost = MPC_Cost<Obstacle_SBMPC_Parameters>(pars);
 
 	min_cost = 1e12;
 }
@@ -99,7 +98,7 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 {
 	n_samples = std::round(pars.T / pars.dt);
 
-	n_obst = data.AH_0.size() + 1; // n_obst here includes obstacle i (the calling object)
+	n_obst = data.AH_0.size(); // n_obst here includes obstacle i (the calling object)
 	n_static_obst = static_obstacles.get_cols();
 
 	cost_i.resize(n_obst, 1);
@@ -140,7 +139,7 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 			}  
 
 			// Calculate dynamic obstacle cost and grounding cost
-			for (int i = 0; i < n_obst; i++)
+			for (int i = 0; i < n_obst + 1; i++)
 			{
 				if (i != i_caller)
 				{
@@ -355,8 +354,8 @@ __host__ __device__ void Obstacle_SBMPC::reset_control_behavior()
 	offset_sequence_counter.set_zero();
 	for (int M = 0; M < pars.n_M; M++)
 	{
-		offset_sequence(2 * M) = pars.u_offsets[M](0);
-		offset_sequence(2 * M + 1) = pars.chi_offsets[M](0);
+		offset_sequence(2 * M) = pars.u_offsets(M, 0);
+		offset_sequence(2 * M + 1) = pars.chi_offsets(M, 0);
 	}
 }
 
@@ -380,16 +379,16 @@ __host__ __device__ void Obstacle_SBMPC::increment_control_behavior()
 
 		// If one reaches the end of maneuver M's course offsets, reset corresponding
 		// counter and increment surge offset counter above
-		if (offset_sequence_counter(2 * M + 1) == pars.chi_offsets[M].size())
+		if (offset_sequence_counter(2 * M + 1) == pars.offsets_size(1, M))
 		{
 			offset_sequence_counter(2 * M + 1) = 0;
 			offset_sequence_counter(2 * M) += 1;
 		}
-		offset_sequence(2 * M + 1) = pars.chi_offsets[M](offset_sequence_counter(2 * M + 1));
+		offset_sequence(2 * M + 1) = pars.chi_offsets(M, offset_sequence_counter(2 * M + 1));
 
 		// If one reaches the end of maneuver M's surge offsets, reset corresponding
 		// counter and increment course offset counter above (if any)
-		if (offset_sequence_counter(2 * M) == pars.u_offsets[M].size())
+		if (offset_sequence_counter(2 * M) == pars.offsets_size(0, M))
 		{
 			offset_sequence_counter(2 * M) = 0;
 			if (M > 0)
@@ -397,7 +396,7 @@ __host__ __device__ void Obstacle_SBMPC::increment_control_behavior()
 				offset_sequence_counter(2 * M - 1) += 1;
 			}
 		}
-		offset_sequence(2 * M) = pars.u_offsets[M](offset_sequence_counter(2 * M));
+		offset_sequence(2 * M) = pars.u_offsets(M, offset_sequence_counter(2 * M));
 	}
 }
 

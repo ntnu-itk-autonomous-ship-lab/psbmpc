@@ -956,7 +956,7 @@ void PSBMPC::calculate_ps_collision_consequences(
 
 	Eigen::Vector2d p_cpa, v_0_p, v_i_p;
 
-	int n_samples = std::round(pars.T / dt);
+	int n_samples = xs_i_p[0].cols();
 
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
@@ -969,8 +969,7 @@ void PSBMPC::calculate_ps_collision_consequences(
 
 			if (ps == n_ps[i] - 1 && use_joint_prediction) // Intelligent prediction is the last prediction scenario
 			{
-				v_i_p(0) = xs_i_colav_p(3, k) * cos(xs_i_colav_p(2, k));
-				v_i_p(1) = xs_i_colav_p(3, k) * sin(xs_i_colav_p(2, k));
+				v_i_p = xs_i_colav_p.block<2, 1>(2, k);
 			}
 			else
 			{

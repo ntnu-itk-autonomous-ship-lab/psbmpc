@@ -905,7 +905,7 @@ void PSBMPC::calculate_ps_collision_consequences(
 
 	Eigen::Vector2d p_cpa, v_0_p, v_i_p;
 
-	int n_samples = std::round(pars.T / dt);
+	int n_samples = xs_i_p[0].cols();
 
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
@@ -918,15 +918,16 @@ void PSBMPC::calculate_ps_collision_consequences(
 
 			if (ps == n_ps[i] - 1 && use_joint_prediction) // Intelligent prediction is the last prediction scenario
 			{
-				v_i_p(0) = xs_i_colav_p(3, k) * cos(xs_i_colav_p(2, k));
-				v_i_p(1) = xs_i_colav_p(3, k) * sin(xs_i_colav_p(2, k));
+				v_i_p = xs_i_colav_p.block<2, 1>(2, k);
+
+				calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(k), xs_i_colav_p.col(k));
 			}
 			else
 			{
 				v_i_p = xs_i_p[ps].block<2, 1>(2, k);
-			}			
 
-			calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(k), xs_i_p[ps].col(k));
+				calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(k), xs_i_p[ps].col(k));
+			}			
 
 			collision_consequence = pow((v_0_p - v_i_p).norm(), 2) * exp(- abs(t - t_cpa));
 			//collision_consequence = pow((v_0_p - v_i_p).norm(), 2) * exp(- abs(t));
@@ -1608,17 +1609,24 @@ void PSBMPC::set_up_temporary_device_memory(
     cuda_check_errors("CudaMalloc of Cuda_Obstacle's failed.");
 
 	Cuda_Obstacle temp_transfer_cobstacle;
-	Prediction_Obstacle temp_transfer_pobstacle;
 	for (int i = 0; i < n_obst; i++)
 	{
 		temp_transfer_cobstacle = data.obstacles[i];
-		temp_transfer_pobstacle = data.obstacles[i];
 
 		cudaMemcpy(&obstacles_device_ptr[i], &temp_transfer_cobstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
+	}
 
-		cudaMemcpy(&pobstacles_device_ptr[i], &temp_transfer_pobstacle, sizeof(Prediction_Obstacle), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of Prediction_Obstacle i failed.");
+	Prediction_Obstacle temp_transfer_pobstacle;
+	if (use_joint_prediction)
+	{
+		for (int i = 0; i < n_obst + 1; i++)
+		{
+			temp_transfer_pobstacle = pobstacles[i];
+
+			cudaMemcpy(&pobstacles_device_ptr[i], &temp_transfer_pobstacle, sizeof(Prediction_Obstacle), cudaMemcpyHostToDevice);
+			cuda_check_errors("CudaMemCpy of Prediction_Obstacle i failed.");
+		}
 	}
 }
 

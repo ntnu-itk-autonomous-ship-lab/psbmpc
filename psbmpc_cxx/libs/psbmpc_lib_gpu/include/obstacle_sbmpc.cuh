@@ -25,7 +25,7 @@
 
 #include <thrust/device_vector.h>
 #include "psbmpc_index.h"
-#include "sbmpc_parameters.h"
+#include "obstacle_sbmpc_parameters.cuh"
 #include "obstacle_manager.cuh"
 #include "obstacle_ship.cuh"
 #include "mpc_cost.cuh"
@@ -91,9 +91,9 @@ private:
 
 public:
 
-	SBMPC_Parameters pars;
+	Obstacle_SBMPC_Parameters pars;
 
-	MPC_Cost<SBMPC_Parameters> mpc_cost;
+	MPC_Cost<Obstacle_SBMPC_Parameters> mpc_cost;
 
 	__host__ __device__ Obstacle_SBMPC();
 
