@@ -113,7 +113,11 @@ __device__ float CB_Cost_Functor::operator()(
 		pars->T, pars->dt);
 
 	// 1.2: Joint prediction with the current control behaviour
-	predict_trajectories_jointly();
+	if (fdata->use_joint_prediction)
+	{
+		predict_trajectories_jointly();
+	}
+	
 	//======================================================================================================================
 	// 2 : Cost calculation
 	// Not entirely optimal for loop configuration, but the alternative requires alot of memory
@@ -151,7 +155,15 @@ __device__ float CB_Cost_Functor::operator()(
 				P_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_covariance_sample(k));
 
 				xs_i_p_seg.shift_columns_left();
-				xs_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
+				if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
+				{
+					xs_i_p_seg.set_col(n_seg_samples - 1, pobstacles[i].get_state(k));
+				}
+				else
+				{
+					xs_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
+				}
+				
 
 				if (k == 0)
 				{
@@ -185,8 +197,8 @@ __device__ float CB_Cost_Functor::operator()(
 				// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
 				
 
-				/* printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", xs_p(0, 0), xs_p(1, 0), xs_p(2, 0), xs_p(3, 0), xs_p(4, 0), xs_p(5, 0));
-				printf("xs_i_p = %.1f, %.1f, %.1f, %.1f\n", xs_i_p(0, 0), xs_i_p(1, 0), xs_i_p(2, 0), xs_i_p(3, 0)); */
+				printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", xs_p_seg(0, 0), xs_p_seg(1, 0), xs_p_seg(2, 0), xs_p_seg(3, 0), xs_p_seg(4, 0), xs_p_seg(5, 0));
+				printf("xs_i_p = %.1f, %.1f, %.1f, %.1f\n", xs_i_p_seg(0, 0), xs_i_p_seg(1, 0), xs_i_p_seg(2, 0), xs_i_p_seg(3, 0));
 
 				/* printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_p(0, 0), P_i_p(1, 0), P_i_p(2, 0), P_i_p(3, 0));
 				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(4, 0), P_i_p(5, 0), P_i_p(6, 0), P_i_p(7, 0));

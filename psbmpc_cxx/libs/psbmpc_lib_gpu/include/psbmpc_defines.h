@@ -26,11 +26,14 @@
 #define DEG2RAD M_PI / 180.0f
 #define RAD2DEG 180.0f / M_PI
 
-#define MAX_N_M 5                      // Max number of avoidance maneuvers allowable
+#define MAX_N_M 5                       // Max number of avoidance maneuvers allowable for the PSBMPC
+
+#define MAX_N_U_OFFSETS_OSBMPC 3        // Max number of offset values considered in surge for the obstacle SBMPC
+#define MAX_N_CHI_OFFSETS_OSBMPC 13     // Max number of offset values considered in course for the obstacle SBMPC
 
 #define MAX_N_SAMPLES 500               // Max number of samples for trajectories and such allowable on the device
 
-#define MAX_N_WPS 6                    // Max number of waypoints for the waypoint matrix allowable on the device
+#define MAX_N_WPS 6                     // Max number of waypoints for the waypoint matrix allowable on the device
 
 #define MAX_N_OBST 10                   // Max number of obstacles allowable on the device
 #define MAX_N_PS 10                     // Max number of prediction scenarios allowable for obstacle trajectory matrices on the device
