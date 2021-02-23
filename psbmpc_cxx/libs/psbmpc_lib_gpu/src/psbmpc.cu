@@ -49,6 +49,8 @@ PSBMPC::PSBMPC()
 	ownship(Ownship()), pars(PSBMPC_Parameters()), fdata_device_ptr(nullptr), pobstacles_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
 	obstacle_ship_device_ptr(nullptr), obstacle_sbmpc_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
 {
+	maneuver_times.resize(pars.n_M);
+	
 	u_opt_last = 1.0; chi_opt_last = 0.0;
 
 	min_cost = 1e12;
@@ -67,14 +69,14 @@ PSBMPC::PSBMPC()
 	std::cout << "Prediction Obstacle size: " << sizeof(Prediction_Obstacle) << std::endl;
 	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
 	std::cout << "Obstacle SBMPC size: " << sizeof(Obstacle_SBMPC) << std::endl;
+	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl;
 
 	//================================================================================
 	// Cuda device memory allocation
 	//================================================================================
 	// CB_Functor_Data and Cuda_Obstacles are read-only and changed between each 
-	// PSBMPC iteration, so will only be allocated here, 
-	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
-    cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
+	// PSBMPC iteration, so are allocated before the thrust transform call 
+	
 
 	// Only need to allocate trajectory, ownship, CB_Functor_Pars, CPE and mpc cost device memory once 
 	// One trajectory, ownship, CB_Functor_Pars, CPE and mpc cost for each thread, as these are both read and write objects.
@@ -106,13 +108,13 @@ PSBMPC::PSBMPC()
 
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
-		cudaMemcpy(ownship_device_ptr, &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
+		cudaMemcpy(&ownship_device_ptr[cb], &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of Ownship failed.");
 
 		cudaMemcpy(&cpe_device_ptr[cb], &temp_cpe, sizeof(CPE_GPU), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of CPE failed.");
 
-		cudaMemcpy(&cpe_device_ptr[cb], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
+		cudaMemcpy(&mpc_cost_device_ptr[cb], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
 	}
 
@@ -154,18 +156,18 @@ PSBMPC::~PSBMPC()
 	cudaFree(trajectory_device_ptr);
 	cuda_check_errors("CudaFree of trajectory failed.");
 
-	cudaFree(ownship_device_ptr);
-	cuda_check_errors("CudaFree of Ownship failed.");
-
 	cudaFree(pars_device_ptr);
 	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
 
 	fdata_device_ptr = nullptr;
-	
+
 	obstacles_device_ptr = nullptr;	
 
 	cudaFree(cpe_device_ptr);
 	cuda_check_errors("CudaFree of CPE failed.");
+
+	cudaFree(ownship_device_ptr);
+	cuda_check_errors("CudaFree of Ownship failed.");	
 
 	if (pars.obstacle_colav_on)
 	{
@@ -746,8 +748,8 @@ void PSBMPC::prune_obstacle_scenarios(
 	int p_step = 2;   
 	double dt_r = (double)p_step * pars.dt;
 	int n_samples = std::round(pars.T / pars.dt);
-
-	int count_joint_pred_scenarios = 0;
+	int n_ps_new(0);
+	int relevant_joint_pred_scenarios_count(0);
 
 	Eigen::MatrixXd P_c_i;
 	Eigen::VectorXi risk_sorted_ps_indices_i;
@@ -779,6 +781,7 @@ void PSBMPC::prune_obstacle_scenarios(
 			kept_ps_indices_i = risk_sorted_ps_indices_i.block(0, 0, pars.n_r, 1);		
 		}
 
+		n_ps_new = kept_ps_indices_i.size(); 
 		// Sort indices of ps that are to be kept
 		std::sort(kept_ps_indices_i.data(), kept_ps_indices_i.data() + kept_ps_indices_i.size());
 		std::cout << kept_ps_indices_i.transpose() << std::endl;
@@ -786,15 +789,19 @@ void PSBMPC::prune_obstacle_scenarios(
 		// For n_a > 1: Joint prediction/intelligent scenario is the last one in the original set
 		if (use_joint_prediction && (kept_ps_indices_i(kept_ps_indices_i.size() - 1) == n_ps[i] - 1))
 		{
-			count_joint_pred_scenarios += 1;
+			relevant_joint_pred_scenarios_count += 1;
+			// The intelligent prediction scenario is not added to the tracked obstacle
+			// data structure in this GPU version, 
+			// so it should not be considered in the Tracked Obstacle
+			kept_ps_indices_i.conservativeResize(kept_ps_indices_i.size() - 1);
 		}
 
-		n_ps[i] = kept_ps_indices_i.size();
+		n_ps[i] = n_ps_new;
 		data.obstacles[i].prune_ps(kept_ps_indices_i);
 	}
 
 	// For n_a > 1: All intelligent obstacle scenarios are in this case pruned away
-	if (!count_joint_pred_scenarios) 
+	if (!relevant_joint_pred_scenarios_count) 
 	{
 		use_joint_prediction = false;
 	}
@@ -986,6 +993,10 @@ void PSBMPC::calculate_ps_collision_risks(
 		Pr_c_i_conditional(ps) = P_c_i_ps(ps) * Pr_ps_i_conditional;
 
 		R_c_i(ps) = C_i(ps) * Pr_c_i_conditional(ps);
+		if (ps == n_ps[i] - 1 && use_joint_prediction)
+		{
+			R_c_i(ps) = 1e12;
+		}
 	}
 
 	// Sort vector of ps indices to determine collision risk in sorted order
@@ -1118,10 +1129,10 @@ void PSBMPC::update_conditional_obstacle_data(
 	TML::Vector2f p_A, v_A, p_B, v_B, L_AB;
 	float psi_A, psi_B, d_AB;
 
-	p_A(0) = pobstacles[i_caller].get_state(k)(0);
-	p_A(1) = pobstacles[i_caller].get_state(k)(1);
-	v_A(0) = pobstacles[i_caller].get_state(k)(2);
-	v_A(1) = pobstacles[i_caller].get_state(k)(3);
+	p_A(0) = pobstacles[i_caller].get_trajectory_sample(k)(0);
+	p_A(1) = pobstacles[i_caller].get_trajectory_sample(k)(1);
+	v_A(0) = pobstacles[i_caller].get_trajectory_sample(k)(2);
+	v_A(1) = pobstacles[i_caller].get_trajectory_sample(k)(3);
 	psi_A = atan2(v_A(1), v_A(0));
 
 	int n_obst = n_ps.size(), i_count = 0;
@@ -1136,10 +1147,10 @@ void PSBMPC::update_conditional_obstacle_data(
 	{
 		if (i != i_caller)
 		{
-			p_B(0) = pobstacles[i].get_state(k)(0);
-			p_B(1) = pobstacles[i].get_state(k)(1);
-			v_B(0) = pobstacles[i].get_state(k)(2);
-			v_B(1) = pobstacles[i].get_state(k)(3);
+			p_B(0) = pobstacles[i].get_trajectory_sample(k)(0);
+			p_B(1) = pobstacles[i].get_trajectory_sample(k)(1);
+			v_B(0) = pobstacles[i].get_trajectory_sample(k)(2);
+			v_B(1) = pobstacles[i].get_trajectory_sample(k)(3);
 			psi_B = atan2(v_B(1), v_B(0));
 
 			L_AB = p_B - p_A;
@@ -1269,7 +1280,7 @@ void PSBMPC::predict_trajectories_jointly(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -1327,7 +1338,7 @@ void PSBMPC::predict_trajectories_jointly(
 
 		engPutVariable(ep, "WPs_i", wps_i_mx[i]);
 		engEvalString(ep, "joint_pred_init_obstacle_plot");
-	}	
+	}	 */
 	//===============================================================================================================
 	auto start = std::chrono::system_clock::now(), end = start;
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -1349,7 +1360,7 @@ void PSBMPC::predict_trajectories_jointly(
 		xs_os_k(2) = v_os_k(0);
 		xs_os_k(3) = v_os_k(1);
 
-		pobstacles[n_obst].set_state(xs_os_k, k);
+		pobstacles[n_obst].set_trajectory_sample(xs_os_k, k);
 		//std::cout << "xs_os_aug_k = " << xs_os_aug_k.transpose() << std::endl;
 	
 		for (int i = 0; i < n_obst; i++)
@@ -1358,7 +1369,7 @@ void PSBMPC::predict_trajectories_jointly(
 			// including the ownship into account
 			update_conditional_obstacle_data(data_jp, i, k);
 
-			xs_i_p = pobstacles[i].get_state(k);
+			xs_i_p = pobstacles[i].get_trajectory_sample(k);
 
 			//std::cout << "xs_i_p = " << xs_i_p.transpose() << std::endl;
 
@@ -1424,13 +1435,13 @@ void PSBMPC::predict_trajectories_jointly(
 				xs_i_p(2) = xs_i_p_transformed(3) * cos(xs_i_p_transformed(2));
 				xs_i_p(3) = xs_i_p_transformed(3) * sin(xs_i_p_transformed(2));
 
-				pobstacles[i].set_state(xs_i_p, k + 1);
+				pobstacles[i].set_trajectory_sample(xs_i_p, k + 1);
 			}
 			
 		//============================================================================================
 		// Send data to matlab for live plotting
 		//============================================================================================
-			
+		/* 	
 			k_s_mx = mxCreateDoubleScalar(k + 1);
 			engPutVariable(ep, "k", k_s_mx);
 
@@ -1460,20 +1471,20 @@ void PSBMPC::predict_trajectories_jointly(
 
 			engEvalString(ep, "update_joint_pred_obstacle_plot");
 
-			printf("%s", buffer);	
+			printf("%s", buffer);	 */
 			//============================================================================================				
 			
 		}
 		
 
-		engEvalString(ep, "update_joint_pred_ownship_plot");
+		/* engEvalString(ep, "update_joint_pred_ownship_plot"); */
 		//============================================================================================
 	}
 
 	//============================================================================================
 	// Clean up matlab arrays
 	//============================================================================================
-	mxDestroyArray(traj_os_mx);
+	/* mxDestroyArray(traj_os_mx);
 	mxDestroyArray(static_obst_mx);
 	mxDestroyArray(T_sim_mx);
 	mxDestroyArray(dt_sim_mx);
@@ -1487,7 +1498,7 @@ void PSBMPC::predict_trajectories_jointly(
 		mxDestroyArray(traj_i_mx[i]);
 		mxDestroyArray(pred_traj_i_mx[i]);
 	}
-	engClose(ep);
+	engClose(ep); */
 }
 
 /****************************************************************************************
@@ -1589,6 +1600,9 @@ void PSBMPC::set_up_temporary_device_memory(
 
 	// Allocation of device memory for control behaviour functor data and obstacles
 	// Both are read-only, so only need one on the device
+	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
+    cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
+
 	CB_Functor_Data temporary_fdata( 
 		trajectory, 
 		maneuver_times, 

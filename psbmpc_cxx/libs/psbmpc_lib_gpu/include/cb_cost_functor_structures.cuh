@@ -97,7 +97,7 @@ struct CB_Functor_Pars
 
 /****************************************************************************************
 *  Name     : CB_Functor_Data
-*  Function : Struct containing read-only data/classes/information needed to evaluate 
+*  Function : Class containing read-only data/classes/information needed to evaluate 
 *			  the cost of one PSB-MPC control behaviour.
 *  Author   : Trym Tengesdal
 *  Modified :
@@ -125,7 +125,8 @@ public:
 
 	int n_obst; 
 
-	// Number of prediction scenarios for each obstacle
+	// Number of prediction scenarios for each obstacle, includes the intelligent prediction scenario
+	// if not pruned away
 	TML::PDMatrix<int, MAX_N_OBST, 1> n_ps;
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)

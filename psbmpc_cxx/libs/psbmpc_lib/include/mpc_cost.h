@@ -376,7 +376,7 @@ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 		}
 		else if (ps_ordering[ps] == PM)
 		{
-			cost_a_weight_sums(1) += weights_ps(ps);
+			cost_a_weight_sums(2) += weights_ps(ps);
 		}
 	}
 
