@@ -63,7 +63,7 @@ __host__ __device__ CPE_GPU::CPE_GPU(
     n_MCSKF = 500;
 
     r = 0.001f;
-    q = 8e-4;
+    q = 8e-4f;
 
     dt_seg = dt;
 

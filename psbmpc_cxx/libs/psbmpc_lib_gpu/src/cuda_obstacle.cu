@@ -109,8 +109,6 @@ __host__ void Cuda_Obstacle::assign_data(
 
 	this->P_p = co.P_p;
 
-	//this->sbmpc = new Obstacle_SBMPC(*(co.sbmpc));
-
 	this->xs_p = co.xs_p;
 
 	this->ps_ordering = co.ps_ordering;
@@ -133,23 +131,21 @@ __host__ void Cuda_Obstacle::assign_data(
 	TML::assign_eigen_object(this->xs_0, to.xs_0);
 	TML::assign_eigen_object(this->P_0, to.P_0);
 
+	this->n_ps = to.ps_maneuver_times.size();
+
 	TML::assign_eigen_object(this->Pr_a, to.Pr_a);
 
 	this->Pr_CC = to.Pr_CC;
 
 	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
+
+	this->mu.resize(n_ps, 1);
 	
 	TML::assign_eigen_object(this->P_p, to.P_p);
 
-	//this->sbmpc = new Obstacle_SBMPC();
+	this->ps_ordering.resize(n_ps, 1);
 
-	TML::assign_eigen_object(ps_intention_count, to.ps_intention_count);
-
-	this->n_ps = to.ps_maneuver_times.size();
-	this->mu.resize(n_ps, 1);
-
-	TML::MatrixXf xs_p_ps;
-
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_p_ps;
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		this->mu[ps] = to.mu[ps];
@@ -157,5 +153,9 @@ __host__ void Cuda_Obstacle::assign_data(
 		TML::assign_eigen_object(xs_p_ps, to.xs_p[ps]);
 
 		xs_p.set_block(4 * ps, 0, xs_p_ps.get_rows(), xs_p_ps.get_cols(), xs_p_ps);
+
+		this->ps_ordering[ps] = to.ps_ordering[ps];
 	}
+	
+	TML::assign_eigen_object(ps_intention_count, to.ps_intention_count);
 }

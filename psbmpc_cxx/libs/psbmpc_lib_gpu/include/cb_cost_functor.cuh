@@ -40,6 +40,9 @@ class CB_Cost_Functor
 {
 private: 
 
+	//==============================================
+	// Members allocated in global device memory
+	//==============================================
 	CB_Functor_Pars *pars;
 
 	CB_Functor_Data *fdata;
@@ -59,10 +62,10 @@ private:
 	Obstacle_SBMPC *obstacle_sbmpc;
 
 	MPC_Cost<CB_Functor_Pars> *mpc_cost;
-	//==============================================
-	// Pre-allocated temporaries
-	//==============================================
 
+	//==============================================
+	// Pre-allocated temporaries (local to the thread stack)
+	//==============================================
 	unsigned int cb_index;
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
 
@@ -113,7 +116,7 @@ private:
 
 	int i_count;
 	//==============================================
-	//==============================================
+	
 	__device__ void determine_situation_type(
 		ST& st_A,
 		ST& st_B,

@@ -46,6 +46,8 @@ __host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 	A_CV(0, 2) = dt;
 	A_CV(1, 3) = dt; 
 
+	xs_0 = xs_aug.get_block<4, 1>(0, 0, 4, 1);
+
 	xs_p.resize(4, n_samples);
 	xs_p.set_col(0, xs_0);
 
@@ -181,14 +183,15 @@ void Prediction_Obstacle::assign_data(
 
 	this->mu = po.mu;
 
-	this->xs_0 = po.xs_0;
-	this->P_0 = po.P_0;
-
 	this->A_CV = po.A_CV;
+
+	this->xs_0 = po.xs_0;
 
 	this->xs_p = po.xs_p;
 
 	this->xs_k_p = po.xs_k_p;
+
+	this->waypoints = po.waypoints;
 }
 
 void Prediction_Obstacle::assign_data(
@@ -201,17 +204,16 @@ void Prediction_Obstacle::assign_data(
 	this->l = to.l; this->w = to.w;
 
 	this->x_offset = to.x_offset; this->y_offset = to.y_offset;
-	
-	TML::assign_eigen_object(this->xs_0, to.xs_0);
-	TML::assign_eigen_object(this->P_0, to.P_0);
 
 	A_CV = TML::Matrix4f::identity();
 	A_CV(0, 2) = 0.5f;
 	A_CV(1, 3) = 0.5f; 
-
-	this->waypoints.resize(2, 2);
+	
+	TML::assign_eigen_object(this->xs_0, to.xs_0);
 
 	TML::assign_eigen_object(this->xs_p, to.xs_p[0]);
 
 	TML::assign_eigen_object(this->xs_k_p, to.xs_p[0]);
+
+	this->waypoints.resize(2, 2); waypoints.set_zero();
 }

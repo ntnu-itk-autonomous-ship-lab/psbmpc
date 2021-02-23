@@ -38,6 +38,7 @@ private:
 	TML::Vector4f xs_0;
 	TML::Matrix4f P_0;
 
+	// Number of independent predictions scenarios
 	int n_ps;
 
 	// Vector of intention probabilities at the current time or last time of update
@@ -61,7 +62,7 @@ private:
 	TML::PDMatrix<float, 4 * MAX_N_PS, MAX_N_SAMPLES> xs_p;
 
 	// Prediction scenario ordering, size n_ps x 1 of intentions
-	TML::PDMatrix<Intention, 1, MAX_N_PS> ps_ordering;
+	TML::PDMatrix<Intention, MAX_N_PS, 1> ps_ordering;
 
 	// Number of prediction scenarios corresponding to intention a = 1, 2, 3, ..., n_a. Typically n_a = 3. 
 	TML::PDVector3i ps_intention_count;
@@ -86,7 +87,7 @@ public:
 
 	__device__ inline float get_a_priori_CC_probability() const { return Pr_CC; }
 
-	__device__ inline TML::PDMatrix<Intention, 1, MAX_N_PS> get_ps_ordering() const { return ps_ordering; }
+	__device__ inline TML::PDMatrix<Intention, MAX_N_PS, 1> get_ps_ordering() const { return ps_ordering; }
 
 	__device__ inline TML::PDVector3i get_ps_intention_count() const { return ps_intention_count; }
 

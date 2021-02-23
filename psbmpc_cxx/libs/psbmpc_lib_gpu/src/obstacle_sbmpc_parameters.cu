@@ -82,7 +82,7 @@ void Obstacle_SBMPC_Parameters::initialize_pars()
 	p_step = 1;
 	if (prediction_method == ERK1)
 	{ 
-		dt = 0.5; 
+		dt = 1; 
 		p_step = 10;
 	}
 	t_ts = 50;
@@ -90,14 +90,14 @@ void Obstacle_SBMPC_Parameters::initialize_pars()
 	d_init = 1500;								 
 	d_close = 1000;
 	d_safe = 50; 							
-	K_coll = 2.5;		  					
+	K_coll = 1.0;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 8.0;		  					
+	kappa = 3.0;		  					
 	kappa_TC = 10.0;						 
-	K_u = 4;		   						 
+	K_u = 10;		   						 
 	K_du = 2.5;		    					
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					

@@ -56,7 +56,7 @@
 class CPE_functor
 {
 private:
-	CPE *cpe;
+	CPE_GPU *cpe;
 	CPE_Method cpe_method;
 	float dt;
 
@@ -76,7 +76,7 @@ private:
 public:
 
 	__host__ CPE_functor(
-		CPE *cpe, 
+		CPE_GPU *cpe, 
 		CPE_Method cpe_method, 
 		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *xs_p,
 		TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p,
@@ -348,8 +348,8 @@ int main(){
 	//thrust::device_vector<float> P_c_i_dvec(n_samples);
 	thrust::device_vector<TML::PDMatrix<float, 1, MAX_N_SAMPLES>*> P_c_i_dvec(1);
 
-	CPE cpe(CE, dt);
-	CPE *cpe_device_ptr;
+	CPE_GPU cpe(CE, dt);
+	CPE_GPU *cpe_device_ptr;
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *xs_p_device_ptr;
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p_device_ptr;
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p_device_ptr;
@@ -364,12 +364,12 @@ int main(){
 	cuda_check_errors("Reading cudaLimitStackSize failed.");
 	std::cout << "Set device max stack size : " << limit << std::endl;
 
-	cudaMalloc((void**)&cpe_device_ptr, sizeof(CPE));
+	cudaMalloc((void**)&cpe_device_ptr, sizeof(CPE_GPU));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
-	std::cout << "sizeof(CPE) = " << sizeof(CPE) << std::endl;
+	std::cout << "sizeof(CPE) = " << sizeof(CPE_GPU) << std::endl;
 	
-	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(CPE_GPU), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CPE failed.");
 
 	cudaMalloc((void**)&xs_p_device_ptr, sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
@@ -439,7 +439,7 @@ int main(){
 	CPE_functor cpe_functor_MCSKF(cpe_device_ptr, MCSKF4D, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, P_c_i_device_ptr, (float)dt);
 	cpe.set_method(MCSKF4D);
 
-	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(CPE_GPU), cudaMemcpyHostToDevice);
 	cuda_check_errors("CudaMemCpy of CPE failed.");
 
 	//=======================================================================================

@@ -139,13 +139,19 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 			}  
 
 			// Calculate dynamic obstacle cost and grounding cost
+			i_count = 0;
 			for (int i = 0; i < n_obst + 1; i++)
 			{
 				if (i != i_caller)
 				{
 					xs_i_k_p = obstacles[i].get_predicted_trajectory_sample(k);
+					//printf("xs_i_k_p = %.2f, %.2f, %.2f, %.2f\n", xs_i_k_p(0), xs_i_k_p(1), xs_i_k_p(2), xs_i_k_p(3));
 
-					cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(xs_k_p, xs_i_k_p, k, data, i, obstacles[i].get_length(), ownship.get_length(), chi_m);
+					cost_i_k = mpc_cost.calculate_dynamic_obstacle_cost(xs_k_p, xs_i_k_p, k, data, i_count, obstacles[i].get_length(), ownship.get_length(), chi_m);
+
+					if (cost_i(i_count) < cost_i_k)	{ cost_i(i_count) = cost_i_k; }
+
+					i_count += 1;
 				}
 			}
 
@@ -164,7 +170,7 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 		//===========================================================================
 		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
 
-		//cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
+		cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
 
 		if (cost < min_cost) 
 		{
@@ -218,6 +224,8 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 	{
 		cost = 0.0f; cost_i.set_zero(); cost_g = 0.0f;
 
+		//printf("offset_sequence = %.2f, %.2f\n", offset_sequence(0), offset_sequence(1));
+
 		//===========================================================================
 		// Predict and calculate dynamic obstacle cost (and (TBD) grounding cost ) 
 		// jointly to save memory
@@ -245,6 +253,7 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 				if (i != i_caller)
 				{
 					xs_i_k_p = obstacles[i].get_predicted_trajectory_sample(k);
+					//printf("xs_i_k_p = %.2f, %.2f, %.2f, %.2f\n", xs_i_k_p(0), xs_i_k_p(1), xs_i_k_p(2), xs_i_k_p(3));
 
 					cost_i_k = mpc_cost.calculate_dynamic_obstacle_cost(xs_k_p, xs_i_k_p, k, data, i_count, obstacles[i].get_length(), ownship.get_length(), chi_m);
 
@@ -420,7 +429,7 @@ __host__ __device__ bool Obstacle_SBMPC::determine_colav_active(
 	{
 		if (i != i_caller)
 		{
-			xs_i = obstacles[i].get_state(k_0);
+			xs_i = obstacles[i].get_trajectory_sample(k_0);
 			d_0i(0) = xs_i(0) - xs_k_0(0);
 			d_0i(1) = xs_i(1) - xs_k_0(1);
 			if (d_0i.norm() < pars.d_init) colav_active = true;

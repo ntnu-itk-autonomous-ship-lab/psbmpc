@@ -44,9 +44,8 @@ private:
 
 	TML::PDMatrix4f A_CV;
 
-	// State and covariance at the current time or predicted time
+	// State at the current time or predicted time
 	TML::Vector4f xs_0;
-	TML::Matrix4f P_0;
 
 	// Actual state trajectory from the joint prediction scheme
 	// when the obstacle uses its own SB-MPC, used by the PSB-MPC,
@@ -79,19 +78,18 @@ public:
 	__host__ __device__ inline bool get_COLREGS_breach_indicator() const { return mu; }
 
 	__host__ __device__ inline TML::Vector4f get_initial_state() const { return xs_0; }; 
-	__host__ __device__ inline TML::Vector4f get_state(const int k) const { assert(k < xs_p.get_cols() && k >= 0); return xs_p.get_col(k); }; 
 
 	__host__ __device__ inline TML::PDMatrix<float, 4, MAX_N_SAMPLES> get_trajectory() const { return xs_p; };
 	__host__ __device__ inline TML::PDMatrix<float, 4, MAX_N_SAMPLES> get_predicted_trajectory() const { return xs_k_p; };
 
-	__host__ __device__ inline TML::Vector4f get_trajectory_sample(const int k) const { return xs_p.get_col(k); }
-	__host__ __device__ inline TML::Vector4f get_predicted_trajectory_sample(const int k_p) const { return xs_k_p.get_col(k_p); }
+	__host__ __device__ inline TML::Vector4f get_trajectory_sample(const int k) const { assert(k < xs_p.get_cols() && k >= 0); return xs_p.get_col(k); }
+	__host__ __device__ inline TML::Vector4f get_predicted_trajectory_sample(const int k_p) const { assert(k_p < xs_k_p.get_cols() && k_p >= 0); return xs_k_p.get_col(k_p); }
 
 	__host__ __device__ inline TML::PDMatrix<float, 2, MAX_N_WPS> get_waypoints() const { return waypoints; }
 
 	__host__ __device__ inline void set_intention(const Intention a) {assert(a >= KCC && a <= PM); a_p = a; }
 
-	__host__ __device__ inline void set_state(const TML::Vector4f &xs_k, const int k) { assert(k < xs_p.get_cols() && k >= 0); xs_p.set_col(k, xs_k); }
+	__host__ __device__ inline void set_trajectory_sample(const TML::Vector4f &xs_k, const int k) { assert(k < xs_p.get_cols() && k >= 0); xs_p.set_col(k, xs_k); }
 
 	__host__ __device__ inline void set_waypoints(const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints) { this->waypoints = waypoints; }
 

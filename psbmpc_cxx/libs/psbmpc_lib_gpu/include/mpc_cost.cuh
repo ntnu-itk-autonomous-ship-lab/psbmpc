@@ -65,9 +65,9 @@ private:
 
     __host__ __device__ inline float Delta_u(const float u_1, const float u_2) const 			{ return pars.K_du * fabs(u_1 - u_2); } 
 
-	__host__ __device__ inline float Delta_chi(const float chi_1, const float chi_2) const 		{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); }
+	__host__ __device__ inline float Delta_chi(const float chi_1, const float chi_2) const 		{ if (chi_1 > 0) return pars.K_dchi_strb * powf(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * powf(fabs(chi_1 - chi_2), 2); }
 
-	__host__ __device__ inline float K_chi(const float chi) const								{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); }
+	__host__ __device__ inline float K_chi(const float chi) const								{ if (chi > 0) return pars.K_chi_strb * powf(chi, 2); else return pars.K_chi_port * powf(chi, 2); }
 
     __host__ __device__ int find_triplet_orientation(const TML::Vector2f &p, const TML::Vector2f &q, const TML::Vector2f &r);                          
 
@@ -146,7 +146,11 @@ public:
     //
 
 	__host__ __device__ inline double calculate_collision_cost(const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) const { return pars.K_coll * pow((v_1 - v_2).norm(), 2); }
-    __host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const { return pars.K_coll * pow((v_1 - v_2).norm(), 2); }
+    __host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const 
+	{ 
+		//printf("pars.K_coll = %.2f	|	normv1v2 = %.2f\n", pars.K_coll, powf((v_1 - v_2).norm(), 2));
+		return pars.K_coll * powf((v_1 - v_2).norm(), 2); 
+	}
 
 	__host__ __device__ float calculate_ad_hoc_collision_risk(const float d_AB, const float t);
 
@@ -403,11 +407,11 @@ __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 
 	cost_do = l_i * C * P_c_i + pars.kappa * mu  + pars.kappa_TC * trans;
 
+	//printf("pars.T = %.2f | pars.K_coll = %.2f | pars.kappa = %.2f | pars.kappa_tc = %.2f\n", pars.T, pars.K_coll, pars.kappa, pars.kappa_TC);
 	/* printf("psi_0_p = %.2f | v_0_p = %.2f, %.2f\n", psi_0_p, v_0_p(0), v_0_p(1));
 	printf("psi_i_p = %.2f | v_i_p = %.2f, %.2f\n", psi_i_p, v_i_p(0), v_i_p(1));
 	printf("d_0i_p = %.2f  | L_0i_p = %.2f, %.2f\n", d_0i_p, L_0i_p(0), L_0i_p(1));
-	printf("C = %.4f       | mu = %d                 | trans = %d           | l_i = %.4f\n", C, mu, trans, l_i);
-	printf("cost_ps = %.4f\n", cost_do); */
+	printf("C = %.4f       | mu = %d                 | trans = %d           | l_i = %.4f\n", C, mu, trans, l_i); */
 	return cost_do;
 }
 

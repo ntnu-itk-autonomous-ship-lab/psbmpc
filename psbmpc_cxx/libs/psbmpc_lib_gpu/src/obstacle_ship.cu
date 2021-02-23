@@ -31,6 +31,9 @@
 *****************************************************************************************/
 __host__ __device__ Obstacle_Ship::Obstacle_Ship()
 {
+	l = 20;
+	w = 4;
+
 	T_chi = 3; 		// Ad hoc parameters, are very dependent on the ship type
 	T_U = 10;
 
@@ -42,6 +45,25 @@ __host__ __device__ Obstacle_Ship::Obstacle_Ship()
 	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
+}
+
+Obstacle_Ship::Obstacle_Ship(
+	const float T_U, 												// In: Ship first order speed time constant
+	const float T_chi, 												// In: Ship first order course time constant
+	const float R_a, 												// In: Ship radius of acceptance parameter in WP following
+	const float LOS_LD, 											// In: Ship lookahead distance parameter in LOS WP following
+	const float LOS_K_i 											// In: Ship integral gain parameter in LOS WP following
+	) : 
+	T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
+{
+	l = 20;
+	w = 4;
+
+	// Guidance parameters
+	e_int = 0;
+	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
+
+	wp_c_0 = 0;	wp_c_p = 0;	
 }
 
 /****************************************************************************************
