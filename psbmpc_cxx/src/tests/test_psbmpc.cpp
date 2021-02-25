@@ -326,6 +326,8 @@ int main()
 
 			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
 
+			std::cout << "u_d = " << u_d << " | chi_d = " << chi_d << std::endl;
+
 			obstacle_manager.update_obstacle_status(trajectory.col(k));
 			obstacle_manager.display_obstacle_information();
 		}

@@ -29,7 +29,7 @@
 #add_executable(tester test_prng.cpp)
 
 #add_executable(tester test_psbmpc_grounding.cpp)
-#add_executable(tester test_read_shapefile.cpp)
+#add_executable(tester test_#read_shapefile.cpp)
 #add_executable(tester test_polygons.cpp)
 
 # Test files for use with GPU-version of PSBMPC

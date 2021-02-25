@@ -212,7 +212,9 @@ __host__ void Obstacle_Ship::update_guidance_references(
 	TML::assign_eigen_object(waypoints_copy, waypoints); 
 	TML::assign_eigen_object(xs_copy, xs); 
 
-	update_guidance_references((float&)u_d, (float&)chi_d, waypoints_copy, xs_copy, (float)dt, guidance_method);
+	float u_d_copy = (float)u_d, chi_d_copy = (float)chi_d;	
+	update_guidance_references(u_d_copy, chi_d_copy, waypoints_copy, xs_copy, (float)dt, guidance_method);
+	u_d = (double)u_d_copy; chi_d = (double)chi_d_copy;
 }
 
 /****************************************************************************************
@@ -224,9 +226,9 @@ __host__ void Obstacle_Ship::update_guidance_references(
 *****************************************************************************************/
 __host__ __device__ TML::Vector4f Obstacle_Ship::predict(
 	const TML::Vector4f &xs_old, 									// In: State [x, y, chi, U] to predict forward
-	const double U_d, 												// In: Speed over ground (SOG) reference
-	const double chi_d, 											// In: Course (COG) reference
-	const double dt, 												// In: Time step
+	const float U_d, 												// In: Speed over ground (SOG) reference
+	const float chi_d, 												// In: Course (COG) reference
+	const float dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
 	)
 {
@@ -270,7 +272,7 @@ __host__ Eigen::Vector4d Obstacle_Ship::predict(
 	TML::Vector4f xs_old_copy;
 	TML::assign_eigen_object(xs_old_copy, xs_old);
 
-	TML::Vector4f result = predict(xs_old_copy, U_d, chi_d, dt, prediction_method);
+	TML::Vector4f result = predict(xs_old_copy, (float)U_d, (float)chi_d, (float)dt, prediction_method);
 	Eigen::Vector4d xs_new;
 	TML::assign_tml_object(xs_new, result);
 

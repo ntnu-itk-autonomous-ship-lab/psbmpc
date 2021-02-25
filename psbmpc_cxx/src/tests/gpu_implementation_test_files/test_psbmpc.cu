@@ -300,10 +300,10 @@ int main(){
 			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
 			mean_t = elapsed.count();
-			
-			std::cout << "u_opt = " << u_opt << " | chi_opt = " << chi_opt << std::endl;
 
 			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
+
+			std::cout << "u_d = " << u_d << " | chi_d = " << chi_d << std::endl;
 
 			obstacle_manager->display_obstacle_information();		
 		} 
