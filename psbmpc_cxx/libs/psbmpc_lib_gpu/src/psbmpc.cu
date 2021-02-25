@@ -568,7 +568,7 @@ void PSBMPC::initialize_prediction(
 				waypoints_i.set_col(0,xs_i_0_temp.get_block<2, 1>(0, 0));
 				waypoints_i.set_col(1, waypoints_i.get_col(0) + xs_i_0_temp.get_block<2, 1>(2, 0) * pars.T);
 				pobstacles[i].set_waypoints(waypoints_i);
-				std::cout << waypoints_i << std::endl;
+				
 				n_ps[i] += 1;
 			}
 
@@ -993,10 +993,10 @@ void PSBMPC::calculate_ps_collision_risks(
 		Pr_c_i_conditional(ps) = P_c_i_ps(ps) * Pr_ps_i_conditional;
 
 		R_c_i(ps) = C_i(ps) * Pr_c_i_conditional(ps);
-		if (ps == n_ps[i] - 1 && use_joint_prediction)
+		/* if (ps == n_ps[i] - 1 && use_joint_prediction)
 		{
 			R_c_i(ps) = 1e12;
-		}
+		} */
 	}
 
 	// Sort vector of ps indices to determine collision risk in sorted order

@@ -114,7 +114,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -183,7 +183,7 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	}
+	} */
 	
 	//===============================================================================================================
 	double cost(0.0);
@@ -226,7 +226,7 @@ void PSBMPC::calculate_optimal_offsets(
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
-			p_P_c_i = mxGetPr(P_c_i_mx[i]);
+			/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
 			Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 			map_P_c = P_c_i;
 
@@ -239,7 +239,7 @@ void PSBMPC::calculate_optimal_offsets(
 				ps_mx = mxCreateDoubleScalar(ps + 1);
 				engPutVariable(ep, "ps", ps_mx);
 				engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-			}
+			} */
 			//===============================================================================================================
 		}
 
@@ -270,14 +270,14 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
 		engPutVariable(ep, "k", k_s);
 
 		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
+		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
 		//===============================================================================================================
 	}
 
@@ -294,7 +294,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	//std::cout << "Cost at optimum : " << min_cost << std::endl;
 
-	engClose(ep); 
+	/* engClose(ep); */ 
 }
 
 /****************************************************************************************
@@ -363,7 +363,7 @@ void PSBMPC::calculate_optimal_offsets(
     //===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -432,7 +432,7 @@ void PSBMPC::calculate_optimal_offsets(
 	// Matrix with all costs
     Eigen::Matrix<double, -1, n_cost_terms> cost_matrix;
 	cost_matrix.resize(pars.n_cbs, n_cost_terms); 
-	
+	 */
 	//===============================================================================================================
 	double cost(0.0), cost_1(0.0), cost_2(0.0), cost_3(0.0), cost_4(0.0);
 	Eigen::VectorXd cost_i(n_obst);
@@ -474,7 +474,7 @@ void PSBMPC::calculate_optimal_offsets(
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
-			p_P_c_i = mxGetPr(P_c_i_mx[i]);
+			/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
 			Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 			map_P_c = P_c_i;
 
@@ -487,22 +487,22 @@ void PSBMPC::calculate_optimal_offsets(
 				ps_mx = mxCreateDoubleScalar(ps + 1);
 				engPutVariable(ep, "ps", ps_mx);
 				engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-			}
+			} */
 			//===============================================================================================================
 		}
 		
 		cost_4 += cost_i.maxCoeff(); //*0.1
-		cost_matrix(cb, 3)=cost_4;
+		//cost_matrix(cb, 3)=cost_4;
 
 		cost_1 += mpc_cost.calculate_grounding_cost(trajectory, polygons, n_static_obst);
 
-		cost_matrix(cb, 0)=cost_1;
+		//cost_matrix(cb, 0)=cost_1;
 
 		cost_2 += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last); // *0.02
-		cost_matrix(cb, 1)=cost_2;
+		//cost_matrix(cb, 1)=cost_2;
 
 		cost_3 += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
-		cost_matrix(cb, 2)=cost_3;
+		//cost_matrix(cb, 2)=cost_3;
 
 		cost = cost_1 + cost_2 + cost_3 + cost_4;
 
@@ -525,7 +525,7 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-		Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
@@ -543,7 +543,7 @@ void PSBMPC::calculate_optimal_offsets(
 			map_costs = cost_matrix;
 			engPutVariable(ep, "Costs", mat_multi_costs_ptr);
 			engEvalString(ep, "plot_costs_inside_psbmpc");
-		}
+		} */
 		//===============================================================================================================
 	}
 
@@ -560,7 +560,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	std::cout << "Cost at optimum : " << min_cost << std::endl;
 
-	engClose(ep);  
+	/* engClose(ep);   */
 }
 
 /****************************************************************************************

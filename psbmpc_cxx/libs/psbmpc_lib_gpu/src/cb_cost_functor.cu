@@ -117,6 +117,7 @@ __device__ float CB_Cost_Functor::operator()(
 	// 1.2: Joint prediction with the current control behaviour
 	if (fdata->use_joint_prediction)
 	{
+		printf("here\n");
 		predict_trajectories_jointly();
 	}
 
@@ -356,6 +357,9 @@ __device__ float CB_Cost_Functor::operator()(
 			// Weight by the intention probabilities
 			cost_i(i) = Pr_a.dot(cost_a);
 
+			//=======================================================================
+			// PRINTS FOR DEBUGGING PURPOSES
+			//=======================================================================
 			/* printf("mu_i = ");
 			for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 			{
@@ -416,6 +420,7 @@ __device__ float CB_Cost_Functor::operator()(
 			printf("Pr_a = %.4f, %.4f, %.4f\n", Pr_a(0), Pr_a(1), Pr_a(2));
 			printf("cost_a = %.4f, %.4f, %.4f | cb : %.1f, %.1f\n", cost_a(0), cost_a(1), cost_a(2), offset_sequence(0), RAD2DEG * offset_sequence(1));
 			printf("cost_i(i) = %.6f | cb : %.1f, %.1f\n", cost_i(i), offset_sequence(0), RAD2DEG * offset_sequence(1));  */
+			//=======================================================================
 		}
 		//==============================================================================================
 	}
@@ -440,7 +445,12 @@ __device__ float CB_Cost_Functor::operator()(
 	/* printf("chat cost = %.4f | cb : %.1f, %.1f\n", mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times),  
 		offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 	//==================================================================================================
-	printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
+	//printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
+	/* printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1), 
+		offset_sequence(2), RAD2DEG * offset_sequence(3));
+	printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1), 
+		offset_sequence(2), RAD2DEG * offset_sequence(3)), offset_sequence(4), RAD2DEG * offset_sequence(5); */
+
 	return cost_cb;
 }
  

@@ -7,6 +7,12 @@
 # This file connects the PSBMPC library target, and the test file
 # target (both objects in CMake sense).
 
+
+
+
+
+
+
 # Uncomment the add_subdirectory and target_link_libraries commands 
 # that correspond to the library version you want to use.
 
@@ -28,9 +34,9 @@ project(psbmpc_test LANGUAGES CUDA CXX)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # for debug compilation and profiling
-add_compile_options(-Wall -Wextra -fno-omit-frame-pointer -g )
+#add_compile_options(-Wall -Wextra -fno-omit-frame-pointer -g)
 
-#add_compile_options(-Wall -Wextra -Wno-deprecated-copy)
+add_compile_options(-Wall -Wextra -Wno-deprecated-copy)
 
 add_subdirectory(libs/psbmpc_lib_gpu)
 #add_subdirectory(libs/psbmpc_lib)

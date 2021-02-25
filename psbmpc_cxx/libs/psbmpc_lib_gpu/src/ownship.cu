@@ -164,7 +164,7 @@ __host__ void Ownship::determine_active_waypoint_segment(
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Ownship::update_guidance_references(
-	float &u_d,																// In/out: Surge reference
+	float &u_d,																	// In/out: Surge reference
 	float &chi_d,																// In/out: Course reference 
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,						// In: Waypoints to follow.
 	const TML::Vector6f &xs, 													// In: Ownship state	
@@ -256,7 +256,9 @@ __host__ void Ownship::update_guidance_references(
 	TML::assign_eigen_object(waypoints_copy, waypoints); 
 	TML::assign_eigen_object(xs_copy, xs); 
 
-	update_guidance_references((float&)u_d, (float&)chi_d, waypoints_copy, xs_copy, (float)dt, guidance_method);
+	float u_d_copy = (float)u_d, chi_d_copy = (float)chi_d;
+	update_guidance_references(u_d_copy, chi_d_copy, waypoints_copy, xs_copy, (float)dt, guidance_method);
+	u_d = (double)u_d_copy; chi_d = (double)chi_d_copy;
 }
 
 /****************************************************************************************

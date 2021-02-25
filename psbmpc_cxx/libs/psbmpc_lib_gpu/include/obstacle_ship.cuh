@@ -109,9 +109,9 @@ public:
 
 	__host__ __device__ TML::Vector4f predict(
 		const TML::Vector4f &xs_old, 
-		const double U_d,
-		const double chi_d,
-		const double dt, 
+		const float U_d,
+		const float chi_d,
+		const float dt, 
 		const Prediction_Method prediction_method);
 
 	__host__ Eigen::Vector4d predict(
