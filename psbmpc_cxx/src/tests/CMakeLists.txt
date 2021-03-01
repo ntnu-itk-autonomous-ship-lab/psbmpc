@@ -33,7 +33,7 @@
 #add_executable(tester test_polygons.cpp)
 
 # Test files for use with GPU-version of PSBMPC
-add_executable(tester gpu_implementation_test_files/test_psbmpc.cu)
+#add_executable(tester gpu_implementation_test_files/test_psbmpc.cu)
 #add_executable(tester gpu_implementation_test_files/test_ownship.cu)
 #add_executable(tester gpu_implementation_test_files/test_obstacle_ship.cu)
 #add_executable(tester gpu_implementation_test_files/test_cpe.cu)
@@ -43,6 +43,7 @@ add_executable(tester gpu_implementation_test_files/test_psbmpc.cu)
 #add_executable(tester gpu_implementation_test_files/test_tml_pdmatrix.cu)
 
 #add_executable(tester paper_simulations/test_psbmpc_psim.cpp)
+add_executable(tester paper_simulations/test_psbmpc_psim.cu)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include
