@@ -28,8 +28,8 @@
 #add_executable(tester test_kf.cpp)
 #add_executable(tester test_prng.cpp)
 
-#add_executable(tester test_psbmpc_grounding.cpp)
-#add_executable(tester test_#read_shapefile.cpp)
+add_executable(tester test_psbmpc_grounding.cpp)
+#add_executable(tester test_read_shapefile.cpp)
 #add_executable(tester test_polygons.cpp)
 
 # Test files for use with GPU-version of PSBMPC
@@ -43,7 +43,7 @@
 #add_executable(tester gpu_implementation_test_files/test_tml_pdmatrix.cu)
 
 #add_executable(tester paper_simulations/test_psbmpc_psim.cpp)
-add_executable(tester paper_simulations/test_psbmpc_psim.cu)
+#add_executable(tester paper_simulations/test_psbmpc_psim.cu)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include

@@ -39,7 +39,8 @@ PSBMPC_Node::PSBMPC_Node() :
 	asv_sub(NULL),
 	cmd_sub(NULL),
 	wp_sub(NULL),
-	obstacle_sub(NULL),
+	obstacle_state_sub(NULL),
+	obstacle_covariance_sub(NULL),
 	occupancy_grid_sub(NULL),
 	psbmpc_link(NULL)
 {
@@ -57,7 +58,8 @@ PSBMPC_Node::~PSBMPC_Node() {
 	delete asv_sub;
 	delete cmd_sub;
 	delete wp_sub;
-	delete obstacle_sub;
+	delete obstacle_state_sub;
+	delete obstacle_covariance_sub;
 	delete occupancy_grid_sub;
 	delete psbmpc_link;
 };
@@ -94,8 +96,8 @@ void PSBMPC_Node::initialize(
 	
 	this->psbmpc_link = psbmpc_link;
 
-	u_m = 1;
-	psi_m = 0;
+	u_m_opt = 1;
+	chi_m_opt = 0;
 	
 	// Set up link from the ROS node to the PSBMPC library
 	psbmpc_link = new PSBMPC_ROS_Link;
@@ -121,11 +123,11 @@ void PSBMPC_Node::run()
 	{
 		if (t > 5){
 			tick = clock();
-			psbmpc_link->get_optimal_offsets(u_m, psi_m);
+			psbmpc_link->calculate_optimal_offsets(u_m_opt, chi_m_opt);
 			tock = clock() - tick;
 
-			offset.P_ca = u_m; 
-			offset.Chi_ca = psi_m; // NB! negative for MR interface
+			offset.P_ca = u_m_opt; 
+			offset.Chi_ca = chi_m_opt; // NB! negative for MR interface
 
 			offset_pub->publish(offset);
 			
@@ -136,8 +138,8 @@ void PSBMPC_Node::run()
 
 		t += 1/rate;
 
-		cmd_vel.linear.x = u_m * u_d;
-		cmd_vel.angular.y = psi_m + psi_d; // NB! negative for MR interface
+		cmd_vel.linear.x = u_m_opt * u_d;
+		cmd_vel.angular.y = chi_m_opt + psi_d; // NB! negative for MR interface
 
 		cmd_pub->publish(cmd_vel);
 		
@@ -200,7 +202,7 @@ void PSBMPC_Node::wp_callback(
 *  Author   : 
 *****************************************************************************************/
 void PSBMPC_Node::obstacle_callback(
-	const asv_msgs::StateArray::ConstPtr &msg 						// In: ROS message containing obstacle states, n_obst x [x, y, psi, u, v, A, B, C, D, id]
+	const asv_msgs::StateArray::ConstPtr &msg 						// In: ROS message containing obstacle states, n_obst x [x, y, Vx, Vy, A, B, C, D, id]
 	)
 {
 	obstacle_states = msg->states;
@@ -230,7 +232,6 @@ void::PSBMPC_Node::map_callback(
 	const nav_msgs::OccupancyGrid::ConstPtr &msg 					// In: ROS message containing occupancy grid
 	)
 {
-  // Copy what we need
   map.info.resolution = msg->info.resolution;
   map.info.height = msg->info.height;
   map.info.width = msg->info.width;
@@ -273,38 +274,44 @@ int main(int argc, char *argv[])
 	
 	ros::Publisher offset_pub = n.advertise<asv_msgs::Offset>("asv/offset",10);
 
-    ros::Subscriber asv_sub	= n.subscribe("asv/state",
-										  1,
-										  &PSBMPC_Node::asv_callback,
-										  &psbmpc_node);
+    ros::Subscriber asv_sub	= n.subscribe(
+		"asv/state",
+		1,
+		&PSBMPC_Node::asv_callback,
+		&psbmpc_node);
 	
-	ros::Subscriber cmd_sub = n.subscribe("asv/LOS/cmd_vel",
-										  1,
-										  &PSBMPC_Node::cmd_callback,
-										  &psbmpc_node);
+	ros::Subscriber cmd_sub = n.subscribe(
+		"asv/LOS/cmd_vel",
+		1,
+		&PSBMPC_Node::cmd_callback,
+		&psbmpc_node);
 
-	ros::Subscriber wp_sub = n.subscribe("asv/next_waypoint",
-										 1,
-										 &PSBMPC_Node::wp_callback,
-										 &psbmpc_node);
+	ros::Subscriber wp_sub = n.subscribe(
+		"asv/next_waypoint",
+		1,
+		&PSBMPC_Node::wp_callback,
+		&psbmpc_node);
 
-	ros::Subscriber obstacle_sub = n.subscribe("obstacle_states", 
-											   1,
-											   &PSBMPC_Node::obstacle_callback,
-											   &psbmpc_node);
+	ros::Subscriber obstacle_sub = n.subscribe(
+		"obstacle_states", 
+		1,
+		&PSBMPC_Node::obstacle_callback,
+		&psbmpc_node);
 											   
-	ros::Subscriber occupancy_grid_sub = n.subscribe("/map",
-													 1,
-													 &PSBMPC_Node::map_callback,
-													 &psbmpc_node);
+	ros::Subscriber occupancy_grid_sub = n.subscribe(
+		"/map",
+		1,
+		&PSBMPC_Node::map_callback,
+		&psbmpc_node);
 
-	psbmpc_node.initialize( &cmd_pub, 
-							&offset_pub, 
-							&asv_sub, 
-							&cmd_sub, 
-							&wp_sub, 
-							&obstacle_sub,
-							&occupancy_grid_sub);
+	psbmpc_node.initialize( 
+		&cmd_pub, 
+		&offset_pub, 
+		&asv_sub, 
+		&cmd_sub, 
+		&wp_sub, 
+		&obstacle_sub,
+		&occupancy_grid_sub);
 
 	/************************************************************************************
 	*	Run the PSBMPC until aborted externally
