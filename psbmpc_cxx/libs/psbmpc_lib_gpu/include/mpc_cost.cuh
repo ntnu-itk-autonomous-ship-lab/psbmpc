@@ -450,9 +450,9 @@ __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	C = calculate_collision_cost(v_0_p, v_i_p);
 
 	mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
-	printf("herecostt\n");
+
 	trans = determine_transitional_cost_indicator(fdata, psi_0_p, psi_i_p, L_0i_p, i, chi_m);
-	printf("herecostt2\n");
+
 	// Track loss modifier to collision cost
 	if (obstacles[i].get_duration_lost() > pars.p_step)
 	{

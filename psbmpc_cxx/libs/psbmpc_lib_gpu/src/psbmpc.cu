@@ -1634,7 +1634,7 @@ void PSBMPC::set_up_temporary_device_memory(
 
 /****************************************************************************************
 *  Name     : clear_temporary_device_memory
-*  Function : Clears/frees CB Functor and obstacle device memory used in one iteration 
+*  Function : Clears/frees obstacle device memory used in one iteration 
 *			  in the PSB-MPC. 
 *  Author   :
 *  Modified :
