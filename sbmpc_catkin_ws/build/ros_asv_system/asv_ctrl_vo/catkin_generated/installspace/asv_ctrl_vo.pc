@@ -1,8 +1,0 @@
-prefix=/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/install
-
-Name: asv_ctrl_vo
-Description: Description of asv_ctrl_vo
-Version: 1.1.0
-Cflags: -I/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/install/include
-Libs: -L/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/install/lib 
-Requires: asv_simulator asv_msgs geometry_msgs nav_msgs roscpp rospy std_msgs

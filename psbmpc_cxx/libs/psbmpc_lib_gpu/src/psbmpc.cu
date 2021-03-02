@@ -46,7 +46,8 @@
 *****************************************************************************************/
 PSBMPC::PSBMPC() 
 	: 
-	ownship(Ownship()), pars(PSBMPC_Parameters()), fdata_device_ptr(nullptr), pobstacles_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
+	ownship(Ownship()), pars(PSBMPC_Parameters()), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), 
+	pobstacles_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
 	obstacle_ship_device_ptr(nullptr), obstacle_sbmpc_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
 {
 	maneuver_times.resize(pars.n_M);
@@ -74,15 +75,7 @@ PSBMPC::PSBMPC()
 	//================================================================================
 	// Cuda device memory allocation
 	//================================================================================
-	// CB_Functor_Data and Cuda_Obstacles are read-only and changed between each 
-	// PSBMPC iteration, so are allocated before the thrust transform call 
-	
-
-	// Only need to allocate trajectory, ownship, CB_Functor_Pars, CPE and mpc cost device memory once 
-	// One trajectory, ownship, CB_Functor_Pars, CPE and mpc cost for each thread, as these are both read and write objects.
-
-	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
-	cuda_check_errors("CudaMalloc of trajectory failed.");
+	// Cuda_Obstacles are read-only and of variable size, so are allocated before the thrust transform call 
 
 	// Allocate for use by all threads a control behaviour parameter object
 	CB_Functor_Pars temp_pars(pars); 
@@ -91,6 +84,14 @@ PSBMPC::PSBMPC()
 
 	cudaMemcpy(pars_device_ptr, &temp_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
+
+	// Allocate for use by all threads a control behaviour data object
+	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
+	cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
+	
+	// Allocate for each thread an own-ship trajectory
+	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
+	cuda_check_errors("CudaMalloc of trajectory failed.");
 
 	// Allocate for each thread an ownship
 	cudaMalloc((void**)&ownship_device_ptr, pars.n_cbs * sizeof(Ownship));
@@ -159,7 +160,8 @@ PSBMPC::~PSBMPC()
 	cudaFree(pars_device_ptr);
 	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
 
-	fdata_device_ptr = nullptr;
+	cudaFree(fdata_device_ptr); 
+	cuda_check_errors("cudaFree of fdata_device_ptr failed.");
 
 	obstacles_device_ptr = nullptr;	
 
@@ -171,7 +173,8 @@ PSBMPC::~PSBMPC()
 
 	if (pars.obstacle_colav_on)
 	{
-		pobstacles_device_ptr = nullptr;
+		cudaFree(pobstacles_device_ptr);
+		cuda_check_errors("CudaFree of Prediction_Obstacles failed.");	
 
 		cudaFree(obstacle_ship_device_ptr);
 		cuda_check_errors("CudaFree of Obstacle_Ship failed.");
@@ -234,6 +237,13 @@ void PSBMPC::calculate_optimal_offsets(
 	}
 	
 	initialize_prediction(data, static_obstacles);
+
+	if (use_joint_prediction)
+	{
+		predict_trajectories_jointly(data, static_obstacles);
+	}
+	
+	prune_obstacle_scenarios(data);
 
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
@@ -578,13 +588,6 @@ void PSBMPC::initialize_prediction(
 
 		data.obstacles[i].predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), *this);
 	}
-
-	if (use_joint_prediction)
-	{
-		predict_trajectories_jointly(data, static_obstacles);
-	}
-	
-	prune_obstacle_scenarios(data);
 
 	//***********************************************************************************
 	// Own-ship prediction initialization
@@ -1577,13 +1580,6 @@ void PSBMPC::set_up_temporary_device_memory(
 	)
 {
 	int n_obst = data.obstacles.size();
-
-	/* std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
-	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
-	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
-	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
-	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
-	std::cout << "Prediction Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; */
 	
 	size_t limit = 0;
 
@@ -1594,16 +1590,8 @@ void PSBMPC::set_up_temporary_device_memory(
 	cuda_check_errors("Reading cudaLimitStackSize failed.");
 	std::cout << "Set device max stack size : " << limit << std::endl;
 
-	/* cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize);
-	cuda_check_errors("Reading cudaLimitMallocHeapSize failed.");
-	std::cout << "Device max heap size : " << limit << std::endl; */
-
-	// Allocation of device memory for control behaviour functor data and obstacles
-	// Both are read-only, so only need one on the device
-	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
-    cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
-
-	CB_Functor_Data temporary_fdata( 
+	// Transfer Functor_Data to the kernels, which is read-only => only need one on the device
+	CB_Functor_Data temporary_fdata(
 		trajectory, 
 		maneuver_times, 
 		u_opt_last, 
@@ -1652,10 +1640,7 @@ void PSBMPC::set_up_temporary_device_memory(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::clear_temporary_device_memory()
-{
-	cudaFree(fdata_device_ptr); 
-	cuda_check_errors("cudaFree of fdata_device_ptr failed.");
-    
+{    
 	cudaFree(obstacles_device_ptr);
     cuda_check_errors("cudaFree of obstacles_device_ptr failed.");
 }

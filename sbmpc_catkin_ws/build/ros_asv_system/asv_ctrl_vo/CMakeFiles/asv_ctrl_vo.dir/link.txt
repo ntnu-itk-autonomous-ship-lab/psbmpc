@@ -1,1 +1,0 @@
-/usr/bin/c++  -fPIC    -shared -Wl,-soname,libasv_ctrl_vo.so -o /media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/devel/lib/libasv_ctrl_vo.so CMakeFiles/asv_ctrl_vo.dir/src/asv_ctrl_vo.cpp.o 

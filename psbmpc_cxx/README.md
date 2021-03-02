@@ -4,8 +4,8 @@
 ## Dependencies
 
 - Matlab C API for the debugging and plotting functionality. (Follow instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
-- Eigen >= 3.3.7 (already included in repo under libs/third_party_libs/)
-- CUDA 11.0 and Thrust >= 1.9.9 for the GPU stuff.
+- Eigen 3.3.7 (Already included in repo under libs/third_party_libs/. Not tested with other versions)
+- CUDA >= 10.0 and Thrust for the GPU stuff. Not tested for CUDA versions below 10.0.
 - xoshiro256+ random number generator used in the Collision Probability Estimator implemented for use in the CPU version (already included in repo under libs/third_party_libs/, implementation taken from <https://gist.github.com/imneme/3eb1bcc5418c4ae83c4c6a86d9cbb1cd#comments>). See <http://prng.di.unimi.it/> for more information. 
 
 ## PSB-MPC library usage
@@ -26,4 +26,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 
 
-<p> Trym Tengesdal, 19. October 2020.  </p>
+<p> Trym Tengesdal, 2. March 2021.  </p>
