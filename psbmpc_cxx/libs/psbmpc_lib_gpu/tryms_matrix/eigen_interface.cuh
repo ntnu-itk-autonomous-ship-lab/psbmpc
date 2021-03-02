@@ -58,8 +58,9 @@ namespace TML
 	template<class T, size_t Max_Rows, size_t Max_Cols, typename Eigen_Type_T>
 	__host__ __device__ void assign_eigen_object(PDMatrix<T, Max_Rows, Max_Cols> &lhs, const Eigen_Type_T &rhs)
 	{
-		assert(Max_Rows >= rhs.rows() && Max_Cols >= rhs.cols());
 		size_t n_rows = rhs.rows(), n_cols = rhs.cols();
+		assert(Max_Rows >= n_rows && Max_Cols >= n_cols);
+		
 		lhs.resize(n_rows, n_cols);
 		for (size_t i = 0; i < n_rows; i++)
 		{

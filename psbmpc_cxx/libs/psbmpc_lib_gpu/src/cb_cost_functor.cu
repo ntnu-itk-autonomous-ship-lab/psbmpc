@@ -117,7 +117,6 @@ __device__ float CB_Cost_Functor::operator()(
 	// 1.2: Joint prediction with the current control behaviour
 	if (fdata->use_joint_prediction)
 	{
-		printf("here\n");
 		predict_trajectories_jointly();
 	}
 
@@ -238,6 +237,7 @@ __device__ float CB_Cost_Functor::operator()(
 
 				//==========================================================================================
 				// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
+				printf("i = %d | AH_0.size() = %u | n_obst = %d | u_d = %.2f \n", i, fdata->AH_0.size(), fdata->n_obst, fdata->u_d);
 				cost_ps = mpc_cost[cb_index].calculate_dynamic_obstacle_cost(
 					fdata,
 					obstacles, 
