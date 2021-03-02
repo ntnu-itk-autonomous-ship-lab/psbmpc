@@ -113,7 +113,8 @@ int main(){
 //*****************************************************************************************************************
 // Static Obstacles Setup
 //*****************************************************************************************************************
-    std::string filename = "/home/tom/Desktop/MasterThesis/ENC/data/charts/land/land.shp";
+	// Input the path to the land data
+    std::string filename = "/home/trymte/Desktop/ENC (copy)/data/charts/land/land.shp";
     std::vector<polygon_2D> polygons;
 
     try

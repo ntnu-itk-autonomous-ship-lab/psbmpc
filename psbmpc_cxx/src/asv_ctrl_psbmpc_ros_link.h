@@ -54,6 +54,8 @@ private:
 
 	PSBMPC *psbmpc;
 
+	Obstacle_Manager obstacle_manager;
+
 public:
 
 	PSBMPC_ROS_Link();
@@ -65,10 +67,10 @@ public:
 					 const double *psi_d,
 					 const std::vector<asv_msgs::WP> *next_waypoint,
 					 const std::vector<asv_msgs::State> *obstacle_states, 
-					 const std::vector<asv_msgs::State> *obstacle_covariances,
+					 const std::vector<asv_msgs::Covariance> *obstacle_covariances,
 					 const nav_msgs::OccupancyGrid *map);
 
-	void get_optimal_offsets(double &u_m_opt, double &psi_m_opt);
+	void calculate_optimal_offsets(double &u_m_opt, double &chi_m_opt);
 
 };
 

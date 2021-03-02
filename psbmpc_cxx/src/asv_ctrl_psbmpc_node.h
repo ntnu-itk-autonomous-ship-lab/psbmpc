@@ -41,10 +41,10 @@ private:
 	Eigen::VectorXd asv_state(6);
 	
 	double u_d;
-	double u_m;
+	double u_m_opt;
 	
 	double psi_d;
-	double psi_m;
+	double chi_m_opt;
 
 	std::vector<asv_msgs::WP> next_waypoint;
 
