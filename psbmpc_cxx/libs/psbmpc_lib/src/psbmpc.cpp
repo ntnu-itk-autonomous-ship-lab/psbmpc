@@ -219,7 +219,7 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			
 			P_c_i.resize(n_ps[i], n_samples); P_c_i.setZero();
-			//calculate_instantaneous_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
+			calculate_instantaneous_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
 
 			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, P_c_i, data, i, ownship.get_length());
 

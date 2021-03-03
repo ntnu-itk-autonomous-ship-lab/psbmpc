@@ -28,7 +28,7 @@ add_executable(tester test_psbmpc.cpp)
 #add_executable(tester test_kf.cpp)
 #add_executable(tester test_prng.cpp)
 
-add_executable(tester test_psbmpc_grounding.cpp)
+#add_executable(tester test_psbmpc_grounding.cpp)
 #add_executable(tester test_read_shapefile.cpp)
 #add_executable(tester test_polygons.cpp)
 
