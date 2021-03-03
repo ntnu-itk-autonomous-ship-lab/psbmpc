@@ -59,7 +59,20 @@ private:
 
 	Eigen::VectorXd maneuver_times;
 
-	thrust::device_vector<TML::PDMatrix<float, 2 * MAX_N_M, 1>> control_behavior_dvec;
+	//Device vector of thread indices/ID's, size n_threads x 1
+	thrust::device_vector<unsigned int> thread_index_dvec;
+
+	// Device vector of control behaviours, size n_threads x 1
+	thrust::device_vector<TML::PDMatrix<float, 2 * MAX_N_M, 1>> cb_dvec;
+
+	// Device vector of control bevhaviour indices, obstacle indices and obstacle prediction scenario indices, size n_threads x 1
+	thrust::device_vector<unsigned int> cb_index_dvec, obstacle_index_dvec, obstacle_ps_index_dvec;
+
+	// Device vector of costs, size n_threads x 1. It is the dynamic obstacle cost when the own-ship
+	// follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, behaves as in
+	// prediction scenario <obstacle_ps_index>
+	thrust::device_vector<float> output_costs_dvec;
+
 	
 	double u_opt_last;
 	double chi_opt_last;
@@ -110,7 +123,7 @@ private:
 
 	void increment_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
-	void map_thrust_input_dvecs();
+	void map_thrust_dvecs();
 
 	void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
