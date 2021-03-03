@@ -451,7 +451,7 @@ __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 
 	mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
 
-	trans = determine_transitional_cost_indicator(fdata, psi_0_p, psi_i_p, L_0i_p, i, chi_m);
+	trans = determine_transitional_cost_indicator(fdata, psi_0_p, psi_i_p, L_0i_p, chi_m, i);
 
 	// Track loss modifier to collision cost
 	if (obstacles[i].get_duration_lost() > pars.p_step)
@@ -603,21 +603,6 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	// SB-MPC formulation with ad-hoc collision risk
 	cost_do = C * R + pars.kappa * mu  + pars.kappa_TC * trans;
 
-	/* if (cost > 5000)
-	{
-		std::cout << "v_0_p = " << v_0_p.transpose() << std::endl;
-		std::cout << "v_i_p = " << v_i_p.transpose() << std::endl;
-		std::cout << "d_0i_p = " << d_0i_p << std::endl;
-		std::cout << "psi_0_p = " << psi_0_p << std::endl;
-		std::cout << "psi_i_p = " << psi_i_p << std::endl;
-		std::cout << "C = " << C << std::endl;
-		std::cout << "mu = " << mu << std::endl;
-		std::cout << "trans = " << trans << std::endl;
-		std::cout << "R = " << R << std::endl;
-		std::cout << "cost = " << cost << std::endl;
-		std::cout << "..." << std::endl;
-	}	 */	
-
 	return cost_do;
 }
 
@@ -670,9 +655,6 @@ __host__ double MPC_Cost<Parameters>::calculate_control_deviation_cost(
 				    K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 		}
 	}
-	/* printf("K_u (1 - u_m_0) = %.4f | Delta_u(u_m_0, u_m_last) = %.4f | K_chi(chi_0) = %.4f | Delta_chi(chi_0, chi_last) = %.4f\n", 
-		pars.K_u * (1 - offset_sequence[0]), Delta_u(offset_sequence[0], u_m_last), K_chi(offset_sequence[1]), Delta_chi(offset_sequence[1], chi_m_last)); */
-
 	return cost / (double)pars.n_M;
 }
 

@@ -91,7 +91,7 @@ public:
         const Obstacle_Data<Tracked_Obstacle> &data, 
         const int i, 
         const double ownship_length) const;
-
+	
     double calculate_dynamic_obstacle_cost(
         const Eigen::MatrixXd &trajectory, 
 		const Eigen::VectorXd &offset_sequence,

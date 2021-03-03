@@ -46,8 +46,8 @@
 *****************************************************************************************/
 PSBMPC::PSBMPC() 
 	: 
-	ownship(Ownship()), pars(PSBMPC_Parameters()), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), 
-	pobstacles_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
+	ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), 
+	obstacles_device_ptr(nullptr), pobstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr),
 	obstacle_ship_device_ptr(nullptr), obstacle_sbmpc_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
 {
 	maneuver_times.resize(pars.n_M);
@@ -351,6 +351,7 @@ void PSBMPC::calculate_optimal_offsets(
 		obstacle_sbmpc_device_ptr,
 		mpc_cost_device_ptr));
     thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs.begin(), *cb_cost_functor);
+	cuda_check_errors("Thrust transform failed.");
 
 	// Extract minimum cost
 	thrust::device_vector<float>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
