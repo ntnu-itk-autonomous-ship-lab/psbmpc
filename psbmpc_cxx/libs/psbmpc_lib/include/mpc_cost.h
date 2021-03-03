@@ -66,13 +66,13 @@ public:
 
     MPC_Cost(const Parameters &pars) : pars(pars) {}
 
-	template <class Obstacle_Type>
+	template <class Obstacle_Data>
     bool determine_transitional_cost_indicator(
 		const double psi_A, 
 		const double psi_B, 
 		const Eigen::Vector2d &L_AB, 
 		const double chi_m,
-		const Obstacle_Data<Obstacle_Type> &data,
+		const Obstacle_Data &data,
 		const int i) const;
 
     bool determine_COLREGS_violation(
@@ -91,7 +91,7 @@ public:
         const Obstacle_Data<Tracked_Obstacle> &data, 
         const int i, 
         const double ownship_length) const;
-
+	
     double calculate_dynamic_obstacle_cost(
         const Eigen::MatrixXd &trajectory, 
 		const Eigen::VectorXd &offset_sequence,
@@ -129,13 +129,13 @@ public:
 *  Modified :
 *****************************************************************************************/
 template <typename Parameters>
-template <class Obstacle_Type>
+template <class Obstacle_Data>
 bool MPC_Cost<Parameters>::determine_transitional_cost_indicator(
 	const double psi_A, 													// In: Heading of vessel A
 	const double psi_B, 													// In: Heading of vessel B
 	const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
 	const double chi_m, 													// In: Candidate course offset currently followed
-	const Obstacle_Data<Obstacle_Type> &data,								// In: Dynamic obstacle information
+	const Obstacle_Data &data,												// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle
 	) const
 {
