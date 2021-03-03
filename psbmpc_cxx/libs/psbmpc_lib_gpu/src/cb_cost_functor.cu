@@ -443,7 +443,7 @@ __device__ float CB_Cost_Functor::operator()(
 	/* printf("chat cost = %.4f | cb : %.1f, %.1f\n", mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times),  
 		offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 	//==================================================================================================
-	printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
+	//printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	/* printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1), 
 		offset_sequence(2), RAD2DEG * offset_sequence(3));
 	printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1), 

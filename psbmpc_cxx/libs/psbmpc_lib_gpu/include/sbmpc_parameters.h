@@ -40,8 +40,11 @@ private:
 	friend class Obstacle_SBMPC;
 	friend class Obstacle_Manager;
 
+	// Number of control behaviours and sequential maneuvers for the ownship, respectively
 	int n_cbs, n_M;
 
+	// Finite sets of offsets considered to the own-ship surge and course references,
+	// for each maneuver in the horizon
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
 
