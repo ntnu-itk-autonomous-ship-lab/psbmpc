@@ -456,25 +456,21 @@ void PSBMPC::calculate_optimal_offsets_v2(
 	set_up_temporary_device_memory(u_d, chi_d, waypoints, static_obstacles, data);
     
 	Eigen::VectorXd HL_0(n_obst); HL_0.setZero();
-	
-	// Allocate device vector for computing maximum cost associated with control behaviour cb against obstacle i`s prediction scenario ps
-	thrust::device_vector<unsigned int> thread_index_dvec(pars.n_cbs);
 
-	thrust::device_vector<float> output_costs_dvec(pars.n_cbs);
-
-	// Allocate iterator for passing the index of the control behavior to the kernels
-	thrust::device_vector<unsigned int> cb_index_dvec(pars.n_cbs);
-	thrust::sequence(cb_index_dvec.begin(), cb_index_dvec.end(), 0);
-
-	map_thrust_input_dvecs(thread_index_dvec, cb_dvec, cb_index_dvec, obstacle_index_dvec, obstacle_ps_dvec, output_costs_dvec);
+	map_thrust_dvecs();
 
 	auto input_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(
 		thread_index_dvec.begin(), 
 		cb_dvec.begin(),
-		));
+		cb_index_dvec.begin(),
+		obstacle_index_dvec.begin(),
+		obstacle_ps_index_dvec.begin()));
     auto input_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(
 		thread_index_dvec.end(), 
-		cb_dvec.end()));
+		cb_dvec.end(),
+		cb_index_dvec.end(),
+		obstacle_index_dvec.end(),
+		obstacle_ps_index_dvec.end()));
 
 	// Perform the calculations on the GPU
 	cb_cost_functor.reset(new CB_Cost_Functor(
@@ -488,16 +484,16 @@ void PSBMPC::calculate_optimal_offsets_v2(
 		obstacle_ship_device_ptr,
 		obstacle_sbmpc_device_ptr,
 		mpc_cost_device_ptr));
-    thrust::transform(input_tuple_begin, input_tuple_end, cb_costs.begin(), *cb_cost_functor);
+    thrust::transform(input_tuple_begin, input_tuple_end, output_costs_dvec.begin(), *cb_cost_functor);
 	cuda_check_errors("Thrust transform failed.");
 
 	// Extract minimum cost
-	thrust::device_vector<float>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
+	thrust::device_vector<float>::iterator min_cost_iter = thrust::min_element(output_costs_dvec.begin(), output_costs_dvec.end());
 	min_index = min_cost_iter - cb_costs.begin();
 	min_cost = cb_costs[min_index];
 
 	// Assign optimal offset sequence/control behaviour
-	TML::PDMatrix<float, 2 * MAX_N_M, 1> opt_offset_sequence = control_behavior_dvec[min_index];
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> opt_offset_sequence = cb_dvec[min_index];
 	TML::assign_tml_object(opt_offset_sequence_e, opt_offset_sequence);
 
 	// Set the trajectory to the optimal one and assign to the output trajectory
@@ -538,12 +534,12 @@ void PSBMPC::map_offset_sequences()
 
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> tml_offset_sequence(2 * pars.n_M, 1);
 
-	control_behavior_dvec.resize(pars.n_cbs);
+	cb_dvec.resize(pars.n_cbs);
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
 		TML::assign_eigen_object(tml_offset_sequence, offset_sequence);
 
-		control_behavior_dvec[cb] = tml_offset_sequence;
+		cb_dvec[cb] = tml_offset_sequence;
 
 		increment_control_behaviour(offset_sequence_counter, offset_sequence);
 	}
@@ -611,6 +607,63 @@ void PSBMPC::increment_control_behaviour(
 			}
 		}
 		offset_sequence(2 * M) = pars.u_offsets[M](offset_sequence_counter(2 * M));
+	}
+}
+
+/****************************************************************************************
+*  Name     : map_thrust_input_dvecs
+*  Function : Fills the device vectors in/out of the thrust calls with the proper
+*			  flattened values. Number of threads will be 
+*			  n_threads = n_cbs * (n_ps^1 + ... + n_ps^n_obst)
+*			  
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::map_thrust_dvecs()
+{
+	// Figure out how many threads to schedule
+	int n_obst_ps_total(0);
+	for (int i = 0; i < n_ps.size(); i++)
+	{
+		n_obst_ps_total += n_ps[i];
+	}
+	int n_threads = pars.n_cbs * n_obst_ps_total;
+	thread_index_dvec.resize(n_threads);
+	thrust::sequence(thread_index_dvec.begin(), thread_index_dvec.end(), 0);
+
+	cb_index_dvec.resize(n_threads);
+	obstacle_index_dvec.resize(n_threads);
+	obstacle_ps_index_dvec.resize(n_threads);
+	output_costs_dvec.resize(n_threads);
+
+	unsigned int thread_index(0);
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_tml(2 * pars.n_M);
+
+	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
+	reset_control_behaviour(offset_sequence_counter, offset_sequence);
+	for (int cb = 0; cb << pars.n_cbs; cb++)
+	{
+		TML::assign_eigen_object(offset_sequence_tml, offset_sequence);
+
+		for (int i = 0; i < n_ps.size(); i++)
+		{
+			for (int ps = 0; ps < n_ps[i]; ps++)
+			{
+				cb_dvec[thread_index] = offset_sequence_tml;
+				cb_index_dvec[thread_index] = cb;
+				obstacle_index_dvec[thread_index] = i;
+				obstacle_ps_index_dvec[thread_index] = ps;
+				thread_index += 1;
+				printf("cb = ");
+				for (int M = 0; M < pars.n_M; M++)
+				{
+					printf("%.2f, %.2f", offset_sequence(2 * M), RAD2DEG * offset_sequence(2 * M + 1));
+					if (M < pars.n_M - 1) printf(", ");
+				}
+				printf("| cb_index = %d | i = %d | ps = %d\n", cb, i, ps);
+			}
+		}
+		increment_control_behaviour(offset_sequence_counter, offset_sequence);
 	}
 }
 
