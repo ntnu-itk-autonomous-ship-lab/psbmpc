@@ -30,18 +30,6 @@ template <typename Parameters> class MPC_Cost;
 class Obstacle_Manager;
 class Joint_Prediction_Manager;
 
-/* enum Par_Type 
-{
-	BPAR,					// Boolean type parameter
-	IPAR,					// Integer type parameter
-	DPAR,					// Double type parameter
-	OPAR,					// Offset/control behaviour related parameter
-	EVPAR,					// Eigen::Vector parameter
-	CPEM,					// CPE_Method parameter
-	PREDM,					// Prediction_Method parameter
-	GUIDM					// Guidance_Method parameter
-}; */
-
 // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
 enum CPE_Method 
@@ -73,8 +61,12 @@ private:
 	friend class Obstacle_Manager;
 	friend class Joint_Prediction_Manager;
 
+	// Number of control behaviours, sequential maneuvers and maximum allowable 
+	// prediction scenarios for an obstacle, respectively
 	int n_cbs, n_M, n_r;
 
+	// Finite sets of offsets considered to the own-ship surge and course references,
+	// for each maneuver in the horizon
 	std::vector<Eigen::VectorXd> u_offsets;
 	std::vector<Eigen::VectorXd> chi_offsets;
 
