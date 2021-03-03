@@ -46,7 +46,7 @@ int main(){
 //*****************************************************************************************************************
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 9, 0, 0;
-	double u_d = 9, chi_d, u_c, chi_c;
+	double u_d = 9.0, chi_d, u_c, chi_c;
 	
 	Ownship asv_sim;
 
