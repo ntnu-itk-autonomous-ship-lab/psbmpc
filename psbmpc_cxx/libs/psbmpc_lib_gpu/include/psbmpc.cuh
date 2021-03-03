@@ -189,6 +189,17 @@ public:
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		Obstacle_Data<Tracked_Obstacle> &data);
 
+	void calculate_optimal_offsets_v2(
+		double &u_opt, 
+		double &chi_opt, 
+		Eigen::Matrix<double, 2, -1> &predicted_trajectory,
+		const double u_d, 
+		const double chi_d, 
+		const Eigen::Matrix<double, 2, -1> &waypoints,
+		const Eigen::Matrix<double, 6, 1> &ownship_state,
+		const Eigen::Matrix<double, 4, -1> &static_obstacles,
+		Obstacle_Data<Tracked_Obstacle> &data);
+
 };
 
 #endif 

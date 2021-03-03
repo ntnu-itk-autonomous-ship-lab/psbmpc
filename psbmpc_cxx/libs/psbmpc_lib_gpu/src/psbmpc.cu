@@ -398,6 +398,129 @@ void PSBMPC::calculate_optimal_offsets(
 	std::cout << "Cost at optimum : " << min_cost << std::endl;
 }
 
+void PSBMPC::calculate_optimal_offsets_v2(									
+	double &u_opt, 															// In/out: Optimal surge offset
+	double &chi_opt, 														// In/out: Optimal course offset
+	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
+	const double u_d, 														// In: Surge reference
+	const double chi_d, 													// In: Course reference
+	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
+	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
+	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
+	)
+{	
+	int n_samples = std::round(pars.T / pars.dt);
+
+	trajectory.resize(6, n_samples);
+	trajectory.col(0) = ownship_state;
+
+	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
+
+	int n_obst = data.obstacles.size();
+	int n_static_obst = static_obstacles.cols();
+
+	Eigen::VectorXd opt_offset_sequence_e(2 * pars.n_M);
+	// Predict nominal trajectory first, assign as optimal if no need for
+	// COLAV, or use in the prediction initialization
+	for (int M = 0; M < pars.n_M; M++)
+	{
+		opt_offset_sequence_e(2 * M) = 1.0; opt_offset_sequence_e(2 * M + 1) = 0.0;
+	}
+	maneuver_times.setZero();
+	ownship.predict_trajectory(trajectory, opt_offset_sequence_e, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+
+	bool colav_active = determine_colav_active(data, n_static_obst);
+	if (!colav_active)
+	{
+		u_opt = 1.0; 		u_opt_last = u_opt;
+		chi_opt = 0.0; 		chi_opt_last = chi_opt;
+
+		assign_optimal_trajectory(predicted_trajectory);
+
+		return;
+	}
+	
+	initialize_prediction(data, static_obstacles);
+
+	if (use_joint_prediction)
+	{
+		predict_trajectories_jointly(data, static_obstacles);
+	}
+	
+	prune_obstacle_scenarios(data);
+
+	//===============================================================================================================
+	// Cost evaluation
+	//===============================================================================================================
+	set_up_temporary_device_memory(u_d, chi_d, waypoints, static_obstacles, data);
+    
+	Eigen::VectorXd HL_0(n_obst); HL_0.setZero();
+	
+	// Allocate device vector for computing maximum cost associated with control behaviour cb against obstacle i`s prediction scenario ps
+	thrust::device_vector<unsigned int> thread_index_dvec(pars.n_cbs);
+
+	thrust::device_vector<float> output_costs_dvec(pars.n_cbs);
+
+	// Allocate iterator for passing the index of the control behavior to the kernels
+	thrust::device_vector<unsigned int> cb_index_dvec(pars.n_cbs);
+	thrust::sequence(cb_index_dvec.begin(), cb_index_dvec.end(), 0);
+
+	map_thrust_input_dvecs(thread_index_dvec, cb_dvec, cb_index_dvec, obstacle_index_dvec, obstacle_ps_dvec, output_costs_dvec);
+
+	auto input_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(
+		thread_index_dvec.begin(), 
+		cb_dvec.begin(),
+		));
+    auto input_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(
+		thread_index_dvec.end(), 
+		cb_dvec.end()));
+
+	// Perform the calculations on the GPU
+	cb_cost_functor.reset(new CB_Cost_Functor(
+		pars_device_ptr, 
+		fdata_device_ptr, 
+		obstacles_device_ptr, 
+		pobstacles_device_ptr,
+		cpe_device_ptr, 
+		ownship_device_ptr,
+		trajectory_device_ptr, 
+		obstacle_ship_device_ptr,
+		obstacle_sbmpc_device_ptr,
+		mpc_cost_device_ptr));
+    thrust::transform(input_tuple_begin, input_tuple_end, cb_costs.begin(), *cb_cost_functor);
+	cuda_check_errors("Thrust transform failed.");
+
+	// Extract minimum cost
+	thrust::device_vector<float>::iterator min_cost_iter = thrust::min_element(cb_costs.begin(), cb_costs.end());
+	min_index = min_cost_iter - cb_costs.begin();
+	min_cost = cb_costs[min_index];
+
+	// Assign optimal offset sequence/control behaviour
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> opt_offset_sequence = control_behavior_dvec[min_index];
+	TML::assign_tml_object(opt_offset_sequence_e, opt_offset_sequence);
+
+	// Set the trajectory to the optimal one and assign to the output trajectory
+	ownship.predict_trajectory(trajectory, opt_offset_sequence_e, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+	assign_optimal_trajectory(predicted_trajectory);
+
+	clear_temporary_device_memory();
+	//===============================================================================================================
+
+	u_opt = opt_offset_sequence_e(0); 		u_opt_last = u_opt;
+	chi_opt = opt_offset_sequence_e(1); 	chi_opt_last = chi_opt;
+
+	std::cout << "Optimal offset sequence : ";
+	for (int M = 0; M < pars.n_M; M++)
+	{
+		std::cout << opt_offset_sequence_e(2 * M) << ", " << opt_offset_sequence_e(2 * M + 1) * RAD2DEG;
+		if (M < pars.n_M - 1) std::cout << ", ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "Cost at optimum : " << min_cost << std::endl;
+}
+
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
@@ -1600,6 +1723,7 @@ void PSBMPC::set_up_temporary_device_memory(
 		u_d, chi_d, 
 		use_joint_prediction, 
 		ownship.get_wp_counter(),
+		ownship.get_length(),
 		waypoints, 
 		static_obstacles, 
 		n_ps, 

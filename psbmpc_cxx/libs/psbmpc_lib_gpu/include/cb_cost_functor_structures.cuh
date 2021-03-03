@@ -105,6 +105,7 @@ struct CB_Functor_Pars
 class CB_Functor_Data
 {
 public:
+	float ownship_length;
 
 	TML::Vector6f ownship_state;
 
@@ -150,11 +151,14 @@ public:
 		const double chi_d, 
 		const bool use_joint_prediction,
 		const int wp_c_0,
+		const double ownship_length,
 		const Eigen::Matrix<double, 2, -1> &waypoints, 
 		const Eigen::Matrix<double, 4, -1> &static_obstacles,
 		const std::vector<int> &n_ps,
 		const Obstacle_Data<Tracked_Obstacle> &data)
 	{
+		this->ownship_length = ownship_length;
+		
 		this->wp_c_0 = wp_c_0;
 
 		TML::assign_eigen_object(ownship_state, trajectory.col(0));

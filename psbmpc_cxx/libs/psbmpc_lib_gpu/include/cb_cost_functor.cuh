@@ -116,6 +116,53 @@ private:
 
 	int i_count;
 	//==============================================
+
+	//==============================================
+	// Pre-allocated temporaries (local to the thread stack) v2
+	//==============================================
+	unsigned int thread_index;
+	unsigned int cb_index;
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
+	unsigned int i, ps;
+
+	int n_samples, n_seg_samples;
+
+	float cost_cb, cost_ps, cost_cd, cost_ch, delta_t, cost_g, ahcr;
+
+	float d_safe_i, chi_m;
+
+	float P_c_i, max_cost_ps;
+
+	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
+	// Only keeps n_seg_samples at a time, sliding window. Minimum 2
+	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
+	// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
+	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_p_seg; 
+	TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_p_seg;
+	TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_p_seg;
+
+	// For the CE-method:
+	TML::Vector2f p_os, p_i, v_os_prev, v_i_prev;
+    TML::Matrix2f P_i_2D;
+
+	// Joint prediction related
+	TML::PDMatrix<float, MAX_N_OBST, 1> u_d_i, u_opt_last_i, chi_d_i, chi_opt_last_i;
+
+	TML::PDMatrix<float, 7, 1> xs_os_aug_k;
+	
+	TML::Vector2f v_os_k, v_A, v_B, L_AB, p_A, p_B;
+	TML::Vector4f xs_i_p, xs_i_p_transformed;
+
+	float t, chi_i, psi_A, psi_B, d_AB, u_opt_i, chi_opt_i; 
+
+	Obstacle_Data_GPU_Friendly data;
+
+	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
+	bool is_close, is_ahead, is_passed, is_head_on, is_crossing;
+
+	int i_count;
+
+	//==============================================
 	
 	__device__ void determine_situation_type(
 		ST& st_A,
@@ -170,6 +217,8 @@ public:
 	}
 	
 	__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
+
+	__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>, const unsigned int, const unsigned int, const unsigned int> &input_tuple);
 	
 };
 	
