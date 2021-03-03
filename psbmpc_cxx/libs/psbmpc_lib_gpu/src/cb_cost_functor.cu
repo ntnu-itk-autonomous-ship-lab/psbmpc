@@ -69,7 +69,7 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ float CB_Cost_Functor::operator()(
+/* __device__ float CB_Cost_Functor::operator()(
 	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
@@ -196,13 +196,7 @@ __device__ float CB_Cost_Functor::operator()(
 		
 				//==========================================================================================
 				// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
-				/* printf("k = %d | xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", k, xs_p_seg(0, n_seg_samples - 1), xs_p_seg(1, n_seg_samples - 1), xs_p_seg(2, n_seg_samples - 1), xs_p_seg(3, n_seg_samples - 1), xs_p_seg(4, n_seg_samples - 1), xs_p_seg(5, n_seg_samples - 1));
-				printf("k = %d | xs_i_p = %.1f, %.1f, %.1f, %.1f\n", k, xs_i_p_seg(0, n_seg_samples - 1), xs_i_p_seg(1, n_seg_samples - 1), xs_i_p_seg(2, n_seg_samples - 1), xs_i_p_seg(3, n_seg_samples - 1));
- 				*/
-				/* printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_p(0, n_seg_samples - 1), P_i_p(1, n_seg_samples - 1), P_i_p(2, n_seg_samples - 1), P_i_p(3, n_seg_samples - 1));
-				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(4, n_seg_samples - 1), P_i_p(5, n_seg_samples - 1), P_i_p(6, n_seg_samples - 1), P_i_p(7, n_seg_samples - 1));
-				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(8, n_seg_samples - 1), P_i_p(9, n_seg_samples - 1), P_i_p(10, n_seg_samples - 1), P_i_p(11, n_seg_samples - 1));
-				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(12, n_seg_samples - 1), P_i_p(13, n_seg_samples - 1), P_i_p(14, n_seg_samples - 1), P_i_p(15, n_seg_samples - 1)); */
+
 				if (true)//fmod(k, 2) == 0)
 				{
 					switch(pars->cpe_method)
@@ -253,18 +247,6 @@ __device__ float CB_Cost_Functor::operator()(
 				//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i(ps), cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 			}
 		}
-		/* printf("max_cost_ps = ");
-		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
-		{
-			printf("%.4f", max_cost_ps(ps));
-			if (ps < fdata->n_ps[i] - 1)
-			{
-				printf(", ");
-			}
-		}
-		printf("\n"); */
-		
-		//printf("Pr_CC = %.4f\n", Pr_CC_i);
 		//==============================================================================================
 		// 2.3 : Calculate a weighted obstacle cost over all prediction scenarios
 
@@ -355,70 +337,7 @@ __device__ float CB_Cost_Functor::operator()(
 			// Weight by the intention probabilities
 			cost_i(i) = Pr_a.dot(cost_a);
 
-			//=======================================================================
-			// PRINTS FOR DEBUGGING PURPOSES
-			//=======================================================================
-			/* printf("mu_i = ");
-			for (int ps = 0; ps < fdata->n_ps[i]; ps++)
-			{
-				// Last prediction scenario is the joint prediction if not pruned away
-				if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)	{ mu_i_ps = pobstacles[i].get_COLREGS_breach_indicator(); }
-				else															{ mu_i_ps = mu_i(ps); }
-				printf("%d", mu_i_ps);
-				printf(", ");
-			}
-			printf("\n");
-			printf("ps_ordering = ");
-			for (int ps = 0; ps < fdata->n_ps[i]; ps++)
-			{
-				// Last prediction scenario is the joint prediction if not pruned away
-				if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)	{ a_i_ps = pobstacles[i].get_intention(); }
-				else															{ a_i_ps = ps_ordering(ps); }
-				printf("%u", a_i_ps);
-				printf(", ");
-			}
-			printf("\n");
 			
-			printf("cost_a_weight_sums = %.2f, %.2f, %.2f\n", cost_a_weight_sums(0), cost_a_weight_sums(1), cost_a_weight_sums(2));
-			printf("weights_ps = ");
-			for (int ps = 0; ps < fdata->n_ps[i]; ps++)
-			{
-				printf("%.4f", weights_ps(ps));
-				printf(", ");
-			}
-			printf("\n");
-			printf("weights_ps normalized = ");
-			for (int ps = 0; ps < fdata->n_ps[i]; ps++)
-			{
-				// Last prediction scenario is the joint prediction if not pruned away
-				if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
-				{
-					a_i_ps = pobstacles[i].get_intention();
-				}
-				else
-				{
-					a_i_ps = ps_ordering(ps);
-				}
-				if (a_i_ps == KCC)
-				{
-					printf("%.4f", weights_ps(ps) / cost_a_weight_sums(0));
-				}
-				else if (a_i_ps == SM)
-				{
-					printf("%.4f", weights_ps(ps) / cost_a_weight_sums(1));
-				}
-				else if (a_i_ps == PM)
-				{
-					printf("%.4f", weights_ps(ps) / cost_a_weight_sums(2));
-				}
-				printf(", ");
-			}
-			printf("\n");
-			printf("ps_intention_count = %.2f, %.2f, %.2f\n", ps_intention_count(0), ps_intention_count(1), ps_intention_count(2));
-			printf("Pr_a = %.4f, %.4f, %.4f\n", Pr_a(0), Pr_a(1), Pr_a(2));
-			printf("cost_a = %.4f, %.4f, %.4f | cb : %.1f, %.1f\n", cost_a(0), cost_a(1), cost_a(2), offset_sequence(0), RAD2DEG * offset_sequence(1));
-			printf("cost_i(i) = %.6f | cb : %.1f, %.1f\n", cost_i(i), offset_sequence(0), RAD2DEG * offset_sequence(1));  */
-			//=======================================================================
 		}
 		//==============================================================================================
 	}
@@ -434,22 +353,198 @@ __device__ float CB_Cost_Functor::operator()(
 	//==================================================================================================
 	// 2.6 : Calculate cost due to deviating from the nominal path
 	cost_cb += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
-	/* printf("dev cost = %.4f | cb : %.1f, %.1f\n", mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last),  
-		offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 
 	//==================================================================================================
 	// 2.7 : Calculate cost due to having a wobbly offset_sequence
 	cost_cb += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
-	/* printf("chat cost = %.4f | cb : %.1f, %.1f\n", mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times),  
-		offset_sequence(0), RAD2DEG * offset_sequence(1)); */
+	
 	//==================================================================================================
 	//printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
-	/* printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1), 
-		offset_sequence(2), RAD2DEG * offset_sequence(3));
-	printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1), 
-		offset_sequence(2), RAD2DEG * offset_sequence(3)), offset_sequence(4), RAD2DEG * offset_sequence(5); */
+	// printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1), 
+	//	offset_sequence(2), RAD2DEG * offset_sequence(3));
+	//printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1), 
+	//	offset_sequence(2), RAD2DEG * offset_sequence(3)), offset_sequence(4), RAD2DEG * offset_sequence(5); 
 
 	return cost_cb;
+} */
+
+__device__ float CB_Cost_Functor::operator()(
+	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>, const unsigned int, const unsigned int, const unsigned int> &input_tuple	
+	// In: Tuple consisting of the thread id, ownship control behaviour, the index of the obstacle and its corresponding 
+	// index of the prediction scenario to evaluate the cost with
+	)
+{
+	max_cost_ps = 0;
+
+	//======================================================================================================================
+	// 1.0 : Setup. Size temporaries accordingly to input data, etc..
+	thread_index = thrust::get<0>(input_tuple);
+	offset_sequence = thrust::get<1>(input_tuple);
+	cb_index = thrust::get<2>(input_tuple);
+	i = thrust::get<3>(input_tuple);
+	ps = thrust::get<4>(input_tuple);
+
+	n_samples = round(pars->T / pars->dt);
+
+	d_safe_i = 0.0; chi_m = 0.0; cost_ps = 0.0;
+	
+	cost_i.resize(fdata->n_obst, 1); cost_i.set_zero();
+
+	// Seed collision probability estimator using the cb index
+	cpe[thread_index].seed_prng(thread_index);
+
+	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
+	n_seg_samples = std::round(cpe[thread_index].get_segment_discretization_time() / pars->dt) + 1;
+	
+	xs_p_seg.resize(6, n_seg_samples);
+	xs_i_p_seg.resize(4, n_seg_samples);
+	P_i_p_seg.resize(16, n_seg_samples);
+
+	//======================================================================================================================
+	// 1.1: Predict own-ship trajectory with the current control behaviour
+	ownship[cb_index].predict_trajectory(
+		trajectory[cb_index], 
+		offset_sequence, 
+		fdata->maneuver_times, 
+		fdata->u_d, fdata->chi_d, 
+		fdata->waypoints, 
+		pars->prediction_method, 
+		pars->guidance_method, 
+		pars->T, pars->dt);
+
+	// 1.2: Joint prediction with the current control behaviour
+	if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
+	{
+		printf("here jp1\n");
+		predict_trajectories_jointly();
+	}
+	//printf("u_d = %.2f | n_obst = %d | \n", fdata->u_d, fdata->n_obst);
+	//======================================================================================================================
+	// 2 : Cost calculation
+	d_safe_i = pars->d_safe + 0.5 * (fdata->ownship_length + obstacles[i].get_length());
+
+	v_os_prev.set_zero(); v_i_prev.set_zero();
+	for (int k = 0; k < n_samples; k++)
+	{	
+		//==========================================================================================
+		// 2.0 : Extract states and information relevant for cost evaluation at sample k. 
+		xs_p_seg.shift_columns_left();
+		xs_p_seg.set_col(n_seg_samples - 1, trajectory[cb_index].get_col(k));
+
+		P_i_p_seg.shift_columns_left();
+		P_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_covariance_sample(k));
+
+		xs_i_p_seg.shift_columns_left();
+		if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
+		{
+			printf("here jp2\n");
+			xs_i_p_seg.set_col(n_seg_samples - 1, pobstacles[i].get_trajectory_sample(k));
+		}
+		else
+		{
+			xs_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
+		}
+
+		if (k == 0)
+		{
+			cpe[thread_index].initialize(
+				xs_p_seg.get_col(n_seg_samples - 1), 
+				xs_i_p_seg.get_col(n_seg_samples - 1), 
+				P_i_p_seg.get_col(n_seg_samples - 1), 
+				d_safe_i);
+		}
+
+		// Determine active course modification at sample k
+		for (int M = 0; M < pars->n_M; M++)
+		{
+			if (M < pars->n_M - 1)
+			{
+				if (k >= fdata->maneuver_times[M] && k < fdata->maneuver_times[M + 1])
+				{
+					chi_m = offset_sequence[2 * M + 1];
+				}
+			}
+			else
+			{
+				if (k >= fdata->maneuver_times[M])
+				{
+					chi_m = offset_sequence[2 * M + 1];
+				}
+			}
+		}
+
+		//==========================================================================================
+		// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
+		/* printf("k = %d | xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", k, xs_p_seg(0, n_seg_samples - 1), xs_p_seg(1, n_seg_samples - 1), xs_p_seg(2, n_seg_samples - 1), xs_p_seg(3, n_seg_samples - 1), xs_p_seg(4, n_seg_samples - 1), xs_p_seg(5, n_seg_samples - 1));
+		printf("k = %d | xs_i_p = %.1f, %.1f, %.1f, %.1f\n", k, xs_i_p_seg(0, n_seg_samples - 1), xs_i_p_seg(1, n_seg_samples - 1), xs_i_p_seg(2, n_seg_samples - 1), xs_i_p_seg(3, n_seg_samples - 1));
+		*/
+		/* printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_p(0, n_seg_samples - 1), P_i_p(1, n_seg_samples - 1), P_i_p(2, n_seg_samples - 1), P_i_p(3, n_seg_samples - 1));
+		printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(4, n_seg_samples - 1), P_i_p(5, n_seg_samples - 1), P_i_p(6, n_seg_samples - 1), P_i_p(7, n_seg_samples - 1));
+		printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(8, n_seg_samples - 1), P_i_p(9, n_seg_samples - 1), P_i_p(10, n_seg_samples - 1), P_i_p(11, n_seg_samples - 1));
+		printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(12, n_seg_samples - 1), P_i_p(13, n_seg_samples - 1), P_i_p(14, n_seg_samples - 1), P_i_p(15, n_seg_samples - 1)); */
+		if (true)//fmod(k, 2) == 0)
+		{
+			switch(pars->cpe_method)
+			{
+				case CE :	
+					if (k > 0)
+					{
+						v_os_prev = xs_p_seg.get_block<2, 1>(3, n_seg_samples - 2, 2, 1);
+						v_os_prev = rotate_vector_2D(v_os_prev, xs_p_seg(2, n_seg_samples - 2));
+						v_i_prev = xs_i_p_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
+					}
+					p_os = xs_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+					p_i = xs_i_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+
+					P_i_2D = reshape<16, 1, 4, 4>(P_i_p_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+
+					P_c_i = cpe[thread_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt);
+					break;
+				case MCSKF4D :                
+					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
+					{
+						P_c_i = cpe[thread_index].MCSKF4D_estimate(xs_p_seg, xs_i_p_seg, P_i_p_seg);						
+					}	
+					break;
+				default :
+					// Throw
+					break;
+			}
+		}
+
+		//==========================================================================================
+		// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
+		cost_ps = mpc_cost[cb_index].calculate_dynamic_obstacle_cost(
+			fdata,
+			obstacles, 
+			P_c_i, 
+			xs_p_seg.get_col(n_seg_samples - 1), 
+			xs_i_p_seg.get_col(n_seg_samples - 1), 
+			i, 
+			chi_m,
+			fdata->ownship_length);
+
+		if (max_cost_ps < cost_ps)
+		{
+			max_cost_ps = cost_ps;
+		}
+		//==========================================================================================
+		//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i(ps), cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
+
+		/* printf("max_cost_ps = ");
+		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
+		{
+			printf("%.4f", max_cost_ps(ps));
+			if (ps < fdata->n_ps[i] - 1)
+			{
+				printf(", ");
+			}
+		}
+		printf("\n"); */
+		//==============================================================================================
+	}
+	
+	return max_cost_ps;
 }
  
 //=======================================================================================
