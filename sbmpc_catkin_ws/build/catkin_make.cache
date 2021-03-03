@@ -1,2 +1,0 @@
-ros_asv_system/asv_ctrl_drvo:ros_asv_system/asv_ctrl_sb_mpc:ros_asv_system/asv_ctrl_vo:ros_asv_system/asv_msgs:ros_asv_system/asv_obstacle_tracker:ros_asv_system/asv_path_trackers:ros_asv_system/asv_simulator:ros_asv_system/asv_state_estimator:ros_asv_system/asv_system
--DCATKIN_DEVEL_PREFIX=/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/install -G Unix Makefiles

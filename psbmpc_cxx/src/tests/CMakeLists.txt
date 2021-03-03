@@ -19,7 +19,7 @@
 #======================================================================
 
 # Test files for use with CPU-version of PSBMPC
-#add_executable(tester test_psbmpc.cpp)
+add_executable(tester test_psbmpc.cpp)
 #add_executable(tester test_ownship.cpp)
 #add_executable(tester test_obstacle_ship.cpp)
 #add_executable(tester test_obstacle.cpp)

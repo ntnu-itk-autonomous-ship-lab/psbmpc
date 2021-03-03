@@ -1,8 +1,0 @@
-prefix=/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/install
-
-Name: asv_path_trackers
-Description: Description of asv_path_trackers
-Version: 1.1.0
-Cflags: 
-Libs: -L/media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/install/lib 
-Requires: 

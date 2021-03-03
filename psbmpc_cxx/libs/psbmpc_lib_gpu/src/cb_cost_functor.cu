@@ -53,7 +53,8 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 	MPC_Cost<CB_Functor_Pars> *mpc_cost								// In: Device pointer to the cost function keeper class, one for each thread
 	) :
 	pars(pars), fdata(fdata), 
-	obstacles(obstacles), pobstacles(pobstacles), 
+	obstacles(obstacles), 
+	pobstacles(pobstacles), 
 	cpe(cpe), ownship(ownship), trajectory(trajectory), 
 	obstacle_ship(obstacle_ship), obstacle_sbmpc(obstacle_sbmpc),
 	mpc_cost(mpc_cost)
@@ -78,8 +79,6 @@ __device__ float CB_Cost_Functor::operator()(
 	// 1.0 : Setup. Size temporaries accordingly to input data, etc..
 	cb_index = thrust::get<0>(cb_tuple);
 	offset_sequence = thrust::get<1>(cb_tuple);
-
-	//*mpc_cost = MPC_Cost<CB_Functor_Pars>(*pars);
 
 	n_samples = round(pars->T / pars->dt);
 
@@ -117,10 +116,10 @@ __device__ float CB_Cost_Functor::operator()(
 	// 1.2: Joint prediction with the current control behaviour
 	if (fdata->use_joint_prediction)
 	{
-		printf("here\n");
+		printf("here jp1\n");
 		predict_trajectories_jointly();
 	}
-
+	//printf("u_d = %.2f | n_obst = %d | \n", fdata->u_d, fdata->n_obst);
 	//======================================================================================================================
 	// 2 : Cost calculation
 	// Not entirely optimal for loop configuration, but the alternative requires alot of memory
@@ -159,6 +158,7 @@ __device__ float CB_Cost_Functor::operator()(
 				xs_i_p_seg.shift_columns_left();
 				if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
 				{
+					printf("here jp2\n");
 					xs_i_p_seg.set_col(n_seg_samples - 1, pobstacles[i].get_trajectory_sample(k));
 				}
 				else
@@ -196,16 +196,13 @@ __device__ float CB_Cost_Functor::operator()(
 		
 				//==========================================================================================
 				// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
-				
-				
-
-				/* printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", xs_p_seg(0, 0), xs_p_seg(1, 0), xs_p_seg(2, 0), xs_p_seg(3, 0), xs_p_seg(4, 0), xs_p_seg(5, 0));
-				printf("xs_i_p = %.1f, %.1f, %.1f, %.1f\n", xs_i_p_seg(0, 0), xs_i_p_seg(1, 0), xs_i_p_seg(2, 0), xs_i_p_seg(3, 0)); */
-
-				/* printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_p(0, 0), P_i_p(1, 0), P_i_p(2, 0), P_i_p(3, 0));
-				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(4, 0), P_i_p(5, 0), P_i_p(6, 0), P_i_p(7, 0));
-				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(8, 0), P_i_p(9, 0), P_i_p(10, 0), P_i_p(11, 0));
-				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(12, 0), P_i_p(13, 0), P_i_p(14, 0), P_i_p(15, 0)); */
+				/* printf("k = %d | xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", k, xs_p_seg(0, n_seg_samples - 1), xs_p_seg(1, n_seg_samples - 1), xs_p_seg(2, n_seg_samples - 1), xs_p_seg(3, n_seg_samples - 1), xs_p_seg(4, n_seg_samples - 1), xs_p_seg(5, n_seg_samples - 1));
+				printf("k = %d | xs_i_p = %.1f, %.1f, %.1f, %.1f\n", k, xs_i_p_seg(0, n_seg_samples - 1), xs_i_p_seg(1, n_seg_samples - 1), xs_i_p_seg(2, n_seg_samples - 1), xs_i_p_seg(3, n_seg_samples - 1));
+ 				*/
+				/* printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_p(0, n_seg_samples - 1), P_i_p(1, n_seg_samples - 1), P_i_p(2, n_seg_samples - 1), P_i_p(3, n_seg_samples - 1));
+				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(4, n_seg_samples - 1), P_i_p(5, n_seg_samples - 1), P_i_p(6, n_seg_samples - 1), P_i_p(7, n_seg_samples - 1));
+				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(8, n_seg_samples - 1), P_i_p(9, n_seg_samples - 1), P_i_p(10, n_seg_samples - 1), P_i_p(11, n_seg_samples - 1));
+				printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(12, n_seg_samples - 1), P_i_p(13, n_seg_samples - 1), P_i_p(14, n_seg_samples - 1), P_i_p(15, n_seg_samples - 1)); */
 				if (true)//fmod(k, 2) == 0)
 				{
 					switch(pars->cpe_method)
@@ -296,6 +293,7 @@ __device__ float CB_Cost_Functor::operator()(
 				// Last prediction scenario is the joint prediction if not pruned away
 				if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
 				{
+					printf("here jp3\n");
 					mu_i_ps = pobstacles[i].get_COLREGS_breach_indicator();
 					a_i_ps = pobstacles[i].get_intention();
 					ps_intention_count(a_i_ps) += 1;
@@ -329,7 +327,7 @@ __device__ float CB_Cost_Functor::operator()(
 			for(int ps = 0; ps < fdata->n_ps[i]; ps++)
 			{
 				// Last prediction scenario is the joint prediction if not pruned away
-				if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)	{ a_i_ps = pobstacles[i].get_intention(); }
+				if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)	{ printf("here jp4\n"); a_i_ps = pobstacles[i].get_intention(); }
 				else															{ a_i_ps = ps_ordering(ps); }
 
 				if (a_i_ps == KCC)
@@ -445,7 +443,7 @@ __device__ float CB_Cost_Functor::operator()(
 	/* printf("chat cost = %.4f | cb : %.1f, %.1f\n", mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times),  
 		offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 	//==================================================================================================
-	//printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
+	printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	/* printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1), 
 		offset_sequence(2), RAD2DEG * offset_sequence(3));
 	printf("Cost of cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", cb_index, cost_cb, offset_sequence(0), RAD2DEG * offset_sequence(1), 
@@ -565,7 +563,7 @@ __device__ void CB_Cost_Functor::update_conditional_obstacle_data(
 	data.AH_0.resize(fdata->n_obst, 1);   data.S_TC_0.resize(fdata->n_obst, 1); data.S_i_TC_0.resize(fdata->n_obst, 1); 
 	data.O_TC_0.resize(fdata->n_obst, 1); data.Q_TC_0.resize(fdata->n_obst, 1); data.IP_0.resize(fdata->n_obst, 1); 
 	data.H_TC_0.resize(fdata->n_obst, 1); data.X_TC_0.resize(fdata->n_obst, 1);
-	/* printf("p_A = %.2f, %.2f | v_A = %.2f, %.2f\n", p_A(0), p_A(1), v_A(0), v_A(1)); */
+	// printf("p_A = %.2f, %.2f | v_A = %.2f, %.2f\n", p_A(0), p_A(1), v_A(0), v_A(1)); 
 	i_count = 0;
 	for (int i = 0; i < fdata->n_obst + 1; i++)
 	{
@@ -580,7 +578,7 @@ __device__ void CB_Cost_Functor::update_conditional_obstacle_data(
 			L_AB = p_B - p_A;
 			d_AB = L_AB.norm();
 
-			/* printf("p_B = %.2f, %.2f | v_B = %.2f, %.2f\n", p_B(0), p_B(1), v_B(0), v_B(1)); */
+			// printf("p_B = %.2f, %.2f | v_B = %.2f, %.2f\n", p_B(0), p_B(1), v_B(0), v_B(1)); 
 			// Decrease the distance between the vessels by their respective max dimension
 			d_AB = d_AB - 0.5 * (pobstacles[i_caller].get_length() + pobstacles[i].get_length()); 				
 			L_AB = L_AB.normalized();
@@ -684,9 +682,8 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 				else if (chi_i < -15 * DEG2RAD)							{ pobstacles[i].set_intention(PM); }
 			}
 			
-			/* printf("waypoints_i = %.1f, %.1f |  %.1f, %.1f\n", 
-				pobstacles[i].get_waypoints()(0, 0), pobstacles[i].get_waypoints()(1, 0), pobstacles[i].get_waypoints()(0, 1), pobstacles[i].get_waypoints()(1, 1));
-			 */
+			// printf("waypoints_i = %.1f, %.1f |  %.1f, %.1f\n", 
+			//	pobstacles[i].get_waypoints()(0, 0), pobstacles[i].get_waypoints()(1, 0), pobstacles[i].get_waypoints()(0, 1), pobstacles[i].get_waypoints()(1, 1));
 			obstacle_ship[cb_index].update_guidance_references(
 				u_d_i(i), 
 				chi_d_i(i), 

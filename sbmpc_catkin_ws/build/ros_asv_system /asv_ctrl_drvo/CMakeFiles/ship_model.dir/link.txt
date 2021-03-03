@@ -1,1 +1,0 @@
-/usr/bin/c++  -fPIC -std=c++11   -shared -Wl,-soname,libship_model.so -o /media/psf/Home/svn/PhD/Autosea/sbmpc_catkin_ws/devel/lib/libship_model.so CMakeFiles/ship_model.dir/src/drvo_lib/ship_model.cpp.o 

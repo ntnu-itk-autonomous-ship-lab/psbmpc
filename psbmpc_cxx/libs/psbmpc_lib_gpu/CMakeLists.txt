@@ -20,6 +20,8 @@ find_package(CUDA COMPONENTS THRUST REQUIRED)
 add_library(psbmpc_lib_gpu STATIC 	
 	src/psbmpc.cu 
 	src/psbmpc_parameters.cpp
+	src/sbmpc.cu 
+	src/sbmpc_parameters.cpp 
 	src/cb_cost_functor.cu
 	src/obstacle_manager.cu
 	src/obstacle.cu
@@ -54,10 +56,10 @@ message("CUDA_LIBARIES: ${CUDA_LIBRARIES}")
 
 target_compile_options(psbmpc_lib_gpu
 	# debug compilation
-	#PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink> 
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink> 
 
 	# release compilation
-	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -Wall -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink> 
+	#PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -Wall -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink> 
 )
 
 target_link_libraries(psbmpc_lib_gpu 
