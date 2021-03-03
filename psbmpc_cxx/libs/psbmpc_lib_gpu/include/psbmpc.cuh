@@ -110,6 +110,8 @@ private:
 
 	void increment_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
+	void map_thrust_input_dvecs();
+
 	void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1> &static_obstacles);
 
 	void set_up_independent_obstacle_prediction(
