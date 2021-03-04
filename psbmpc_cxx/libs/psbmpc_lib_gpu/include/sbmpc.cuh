@@ -28,6 +28,9 @@
 #include "obstacle.cuh"
 #include "mpc_cost.cuh"
 
+#ifndef EIGEN_NO_CUDA
+#define EIGEN_NO_CUDA
+#endif
 #include "Eigen/Dense"
 #include <vector>
 

@@ -29,12 +29,15 @@
 #include "psbmpc_defines.h"
 
 #include "xoshiro.hpp"
-#include <Eigen/Dense>
 #include <random>
 #include "curand_kernel.h"
 #include <thrust/device_vector.h>
 #include "tml.cuh"
 
+#ifndef EIGEN_NO_CUDA
+#define EIGEN_NO_CUDA
+#endif
+#include <Eigen/Dense>
 // NOTE: If you want standalone use of this module, define the enum CPE_Method below
 /* // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE

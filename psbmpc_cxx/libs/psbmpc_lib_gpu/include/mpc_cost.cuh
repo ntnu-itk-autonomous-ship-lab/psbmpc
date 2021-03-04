@@ -131,7 +131,15 @@ public:
 		const float d_AB);
 	//
 
-    // CUDA kernel, SBMPC and Obstacle_SBMPC dynamic obstacle cost, respectively
+    // PSBMPC, CUDA kernel, SBMPC and Obstacle_SBMPC versions of dynamic obstacle cost calculation, respectively
+	__host__ double calculate_dynamic_obstacle_cost(
+        const Eigen::VectorXd &max_cost_ps, 
+        const Obstacle_Data<Tracked_Obstacle> &data, 
+		const Intention a_i_ps_jp,
+		const bool mu_i_ps_jp,
+        const int i,
+		const bool use_joint_prediction);
+
     __device__ inline float calculate_dynamic_obstacle_cost(
 		const CB_Functor_Data *fdata,
 		const Cuda_Obstacle *obstacles,
@@ -413,6 +421,118 @@ __host__ __device__ bool MPC_Cost<Parameters>::determine_COLREGS_violation(
 //  Author   : Trym Tengesdal
 //  Modified :
 //=======================================================================================
+template <typename Parameters>
+__host__ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
+    const Eigen::VectorXd &max_cost_ps,                         // In: Own-ship trajectory when following the current offset_sequence/control behaviour
+	const Obstacle_Data<Tracked_Obstacle> &data,				// In: Dynamic obstacle information
+	const Intention a_i_ps_jp,									// In: Intention of obstacle i if its intelligent prediction scenario is activated
+	const bool mu_i_ps_jp,										// In: COLREGS violation indicator for obstacle i if its intelligent prediction scenario is activated
+	const int i, 												// In: Index of obstacle
+	const bool use_joint_prediction 							// In: Boolean indicator of whether or not the intelligent prediction scenario is considered
+	)
+{
+	double cost_i = 0.0;
+
+	int n_ps = max_cost_ps.size();
+	Eigen::VectorXd Pr_a_i = data.obstacles[i].get_intention_probabilities();
+	Eigen::VectorXi ps_intention_count_i = data.obstacles[i].get_ps_intention_count();
+	std::vector<Intention> ps_ordering_i = data.obstacles[i].get_ps_ordering();
+	std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
+	double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
+	Intention a_i_ps;
+	bool mu_i_ps;
+	
+	// If only 1 prediction scenario: Original PSB-MPC formulation
+	if (n_ps == 1)
+	{
+		cost_i = max_cost_ps(0);
+	}
+	else // Three intentions to consider: KCC, SM and PM
+	{
+		// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
+		// which means that higher cost is applied if the obstacle follows COLREGS
+		// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
+		// and the own-ship breaches COLREGS
+
+		if (Pr_CC_i < 0.0001) // Should not be allowed to be strictly 0
+		{
+			Pr_CC_i = 0.0001;
+		}
+		
+		Eigen::Vector3d cost_a_weight_sums, cost_a; cost_a_weight_sums.setZero();
+		Eigen::VectorXd weights_ps(n_ps);
+		for (int ps = 0; ps < n_ps; ps++)
+		{
+			weights_ps(ps) = Pr_CC_i;
+
+			// Last prediction scenario is the joint prediction if not pruned away
+			if (ps == n_ps - 1 && use_joint_prediction)
+			{
+				a_i_ps = a_i_ps_jp;
+				mu_i_ps = mu_i_ps_jp;
+				
+				ps_intention_count_i(a_i_ps) += 1;
+			}
+			else
+			{
+				mu_i_ps = mu_i[ps];
+				a_i_ps = ps_ordering_i[ps];
+			}
+			if (mu_i_ps)
+			{
+				//printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
+				weights_ps(ps) = 1 - Pr_CC_i;
+			}
+			
+			if (a_i_ps == KCC)
+			{
+				cost_a_weight_sums(0) += weights_ps(ps);
+			}
+			else if (a_i_ps == SM)
+			{
+				cost_a_weight_sums(1) += weights_ps(ps);
+			}
+			else if (a_i_ps == PM)
+			{
+				cost_a_weight_sums(2) += weights_ps(ps);
+			}
+		}
+		
+		cost_a.setZero();
+		for(int ps = 0; ps < n_ps; ps++)
+		{
+			// Last prediction scenario is the joint prediction if not pruned away
+			if (ps == n_ps - 1 && use_joint_prediction)			{ a_i_ps = a_i_ps_jp; }
+			else												{ a_i_ps = ps_ordering_i[ps]; }
+
+			if (a_i_ps == KCC)
+			{
+				cost_a(0) += (weights_ps(ps) / cost_a_weight_sums(0)) * max_cost_ps(ps);
+			}
+			else if (a_i_ps == SM)
+			{
+				cost_a(1) +=  (weights_ps(ps) / cost_a_weight_sums(1)) * max_cost_ps(ps);
+			}
+			else if (a_i_ps == PM)
+			{
+				cost_a(2) +=  (weights_ps(ps) / cost_a_weight_sums(2)) * max_cost_ps(ps);
+			}
+		}
+
+		// Average the cost for the starboard and port maneuver type of intentions
+		if (ps_intention_count_i(0) > 0) 	{ cost_a(0) /= ps_intention_count_i(0); }
+		else 							{ cost_a(0) = 0.0; }
+		if (ps_intention_count_i(1) > 0)	{ cost_a(1) /= ps_intention_count_i(1); } 
+		else							{ cost_a(1) = 0.0; }
+		if (ps_intention_count_i(2) > 0)	{ cost_a(2) /= ps_intention_count_i(2); } 
+		else							{ cost_a(2) = 0.0; }
+
+		// Weight by the intention probabilities
+		cost_i = Pr_a_i.dot(cost_a);
+	}
+	return cost_i;
+}
+
 template <typename Parameters>
 __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	const CB_Functor_Data *fdata,												// In: Pointer to control behaviour functor data

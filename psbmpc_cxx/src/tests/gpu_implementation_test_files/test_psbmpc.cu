@@ -171,11 +171,11 @@ int main(){
 //*****************************************************************************************************************
 // Obstacle Manager setup
 //*****************************************************************************************************************	
-	std::unique_ptr<Obstacle_Manager> obstacle_manager = std::make_unique<Obstacle_Manager>();
+	Obstacle_Manager obstacle_manager;
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************	
-	std::unique_ptr<PSBMPC> psbmpc = std::make_unique<PSBMPC>();
+	PSBMPC psbmpc(true);
 	double u_opt, chi_opt;
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
@@ -268,8 +268,8 @@ int main(){
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
 
-		 obstacle_manager->operator()(
-			psbmpc->pars, 
+		 obstacle_manager.operator()(
+			psbmpc.pars, 
 			trajectory.col(k), 
 			asv_sim.get_length(),
 			obstacle_states, 
@@ -277,7 +277,7 @@ int main(){
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
 
-		obstacle_manager->update_obstacle_status(trajectory.col(k));
+		obstacle_manager.update_obstacle_status(trajectory.col(k));
 
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
 
@@ -285,7 +285,7 @@ int main(){
 		{
 			start = std::chrono::system_clock::now();		
 
-			psbmpc->calculate_optimal_offsets(
+			psbmpc.calculate_optimal_offsets_v2(
 				u_opt,
 				chi_opt, 
 				predicted_trajectory,
@@ -294,7 +294,7 @@ int main(){
 				waypoints,
 				trajectory.col(k),
 				static_obstacles,
-				obstacle_manager->get_data());
+				obstacle_manager.get_data());
 
 			end = std::chrono::system_clock::now();
 			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -305,7 +305,7 @@ int main(){
 
 			std::cout << "u_d = " << u_d << " | chi_d = " << chi_d << std::endl;
 
-			obstacle_manager->display_obstacle_information();		
+			obstacle_manager.display_obstacle_information();		
 		} 
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 		asv_sim.update_ctrl_input(u_c, chi_c, trajectory.col(k));

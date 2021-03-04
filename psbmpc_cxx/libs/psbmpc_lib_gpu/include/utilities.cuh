@@ -24,11 +24,15 @@
 
 #include "psbmpc_defines.h"
 #include <thrust/device_vector.h>
-#include "Eigen/Dense"
 #include "tml.cuh"
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+
+#ifndef EIGEN_NO_CUDA
+#define EIGEN_NO_CUDA
+#endif
+#include <Eigen/Dense>
 
 enum Axis 
 	{
