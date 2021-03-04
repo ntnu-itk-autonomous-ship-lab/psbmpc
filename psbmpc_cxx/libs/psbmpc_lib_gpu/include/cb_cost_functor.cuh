@@ -66,7 +66,7 @@ private:
 	//==============================================
 	// Pre-allocated temporaries (local to the thread stack)
 	//==============================================
-	unsigned int cb_index;
+	/* unsigned int cb_index;
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
 
 	int n_samples, n_seg_samples;
@@ -114,7 +114,7 @@ private:
 	bool B_is_starboard, A_is_overtaken, B_is_overtaken;
 	bool is_close, is_ahead, is_passed, is_head_on, is_crossing;
 
-	int i_count;
+	int i_count; */
 	//==============================================
 
 	//==============================================
@@ -131,7 +131,8 @@ private:
 
 	float d_safe_i, chi_m;
 
-	float P_c_i, max_cost_ps;
+	float P_c_i, max_cost_ps, cost_cb_ch_g;
+	Intention a_i_ps_jp; bool mu_i_ps_jp;
 
 	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 	// Only keeps n_seg_samples at a time, sliding window. Minimum 2
@@ -216,10 +217,100 @@ public:
 		mpc_cost = nullptr;
 	}
 	
-	__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
+	// Used when performing nested for loops to calculate the total cost with one control behaviour
+	//__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 
-	__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>, const unsigned int, const unsigned int, const unsigned int> &input_tuple);
+	// Used when flattening the nested for loops over obstacles and their prediction scenario into a single loop 
+	// merged with the control behaviour loop => then calulate the maximum dynamic obstacle cost of a control behaviour for the own-ship
+	// considering obstacle i in prediction scenario ps. 
+	// The intention and COLREGS violation indicator for the intelligent obstacle prediction (if active) is also returned from the thread.
+	__device__ thrust::tuple<float, float, Intention, bool> operator()(const thrust::tuple<
+		const unsigned int, 
+		TML::PDMatrix<float, 2 * MAX_N_M, 1>, 
+		const unsigned int, 
+		const unsigned int, 
+		const unsigned int, 
+		const unsigned int> &input_tuple);
 	
+};
+
+/****************************************************************************************
+*  Name     : Trajectory_Prediction_Functor
+*  Function : Functor used to predict the own-ship trajectory
+*			  following a certain control behaviour
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+class Trajectory_Prediction_Functor
+{
+private: 
+
+	//==============================================
+	// Members allocated in global device memory
+	//==============================================
+	CB_Functor_Pars *pars;
+
+	CB_Functor_Data *fdata;
+
+	Ownship *ownship;
+
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory;
+
+	//==============================================
+	// Pre-allocated temporaries (local to the thread stack)
+	//==============================================
+	unsigned int cb_index;
+	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
+
+	int n_samples;
+
+public: 
+	__host__ Trajectory_Prediction_Functor() : 
+		pars(nullptr), 
+		fdata(nullptr), 
+		ownship(nullptr), 
+		trajectory(nullptr)
+	{}
+
+	__host__ Trajectory_Prediction_Functor(
+		CB_Functor_Pars *pars, 
+		CB_Functor_Data *fdata, 
+		Ownship *ownship,
+		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory) :
+		pars(pars), fdata(fdata), ownship(ownship), trajectory(trajectory)
+	{}
+
+	__host__ __device__ ~Trajectory_Prediction_Functor() 
+	{ 
+		pars = nullptr; 
+		fdata = nullptr; 
+		ownship = nullptr;
+		trajectory = nullptr; 
+	}
+	
+	__device__ void operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple)
+	{
+		cb_index = thrust::get<0>(cb_tuple);
+		offset_sequence = thrust::get<1>(cb_tuple);
+
+		n_samples = round(pars->T / pars->dt);
+
+		ownship[cb_index].set_wp_counter(fdata->wp_c_0);
+
+		trajectory[cb_index].resize(6, n_samples);
+		trajectory[cb_index].set_col(0, fdata->ownship_state);
+
+		ownship[cb_index].predict_trajectory(
+			trajectory[cb_index], 
+			offset_sequence, 
+			fdata->maneuver_times, 
+			fdata->u_d, fdata->chi_d, 
+			fdata->waypoints, 
+			pars->prediction_method, 
+			pars->guidance_method, 
+			pars->T, pars->dt);
+	}
+
 };
 	
 #endif 

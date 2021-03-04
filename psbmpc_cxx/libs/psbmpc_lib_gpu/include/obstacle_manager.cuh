@@ -26,10 +26,9 @@
 
 #include "psbmpc_parameters.h"
 #include "prediction_obstacle.cuh"
-#include "Eigen/Dense"
 #include <vector>
 #include <string>
-
+#include <Eigen/Dense>
 enum ST 
 {
 	A, 														// Non-COLREGS situation	(ST = Ø)

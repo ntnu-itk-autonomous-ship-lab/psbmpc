@@ -24,7 +24,6 @@
 
 #include <vector>
 #include <memory>
-#include "Eigen/Dense"
 
 #include "utilities.cuh"
 #include "obstacle.cuh"
