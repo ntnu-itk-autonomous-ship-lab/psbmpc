@@ -592,6 +592,8 @@ void PSBMPC::calculate_optimal_offsets_v2(
 		obstacle_ship_device_ptr,
 		obstacle_sbmpc_device_ptr,
 		mpc_cost_device_ptr));
+
+	
     thrust::transform(input_tuple_begin, input_tuple_end, output_costs_dvec.begin(), *cb_cost_functor);
 	cuda_check_errors("Thrust transform failed.");
 
