@@ -54,9 +54,6 @@ private:
 	TML::Matrix3f M_inv;
 	TML::Vector3f Cvv;
 	TML::Vector3f Dvv;
-
-	// Own-ship state at the predicted time
-	TML::Vector6f xs_p;
 	
 	// Counter variables to keep track of the active WP segment at the current 
 	// time and predicted time
@@ -112,10 +109,10 @@ private:
 	int n_samples, n_wps, man_count;
 	float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
 
-	TML::Vector2d d_next_wp, L_wp_segment;
+	TML::Vector2f d_next_wp, L_wp_segment;
 	bool segment_passed;
 
-	TML::Vector6f xs_new;
+	TML::Vector6f xs_new, xs_p;
 	TML::Vector3f eta, nu;
 
 	float Fx, Fy, psi_diff;

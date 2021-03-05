@@ -439,8 +439,8 @@ __host__ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	std::vector<Intention> ps_ordering_i = data.obstacles[i].get_ps_ordering();
 	std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
 	double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
-	Intention a_i_ps;
-	bool mu_i_ps;
+	Intention a_i_ps(KCC);
+	bool mu_i_ps(false);
 	
 	// If only 1 prediction scenario: Original PSB-MPC formulation
 	if (n_ps == 1)
@@ -484,18 +484,9 @@ __host__ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 				weights_ps(ps) = 1 - Pr_CC_i;
 			}
 			
-			if (a_i_ps == KCC)
-			{
-				cost_a_weight_sums(0) += weights_ps(ps);
-			}
-			else if (a_i_ps == SM)
-			{
-				cost_a_weight_sums(1) += weights_ps(ps);
-			}
-			else if (a_i_ps == PM)
-			{
-				cost_a_weight_sums(2) += weights_ps(ps);
-			}
+			if 		(a_i_ps == KCC)		{ cost_a_weight_sums(0) += weights_ps(ps); }
+			else if (a_i_ps == SM)		{ cost_a_weight_sums(1) += weights_ps(ps); }
+			else if (a_i_ps == PM)		{ cost_a_weight_sums(2) += weights_ps(ps); }
 		}
 		
 		cost_a.setZero();
@@ -505,30 +496,29 @@ __host__ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 			if (ps == n_ps - 1 && use_joint_prediction)			{ a_i_ps = a_i_ps_jp; }
 			else												{ a_i_ps = ps_ordering_i[ps]; }
 
-			if (a_i_ps == KCC)
-			{
-				cost_a(0) += (weights_ps(ps) / cost_a_weight_sums(0)) * max_cost_ps(ps);
-			}
-			else if (a_i_ps == SM)
-			{
-				cost_a(1) +=  (weights_ps(ps) / cost_a_weight_sums(1)) * max_cost_ps(ps);
-			}
-			else if (a_i_ps == PM)
-			{
-				cost_a(2) +=  (weights_ps(ps) / cost_a_weight_sums(2)) * max_cost_ps(ps);
-			}
+			if (a_i_ps == KCC)		{ cost_a(0) += (weights_ps(ps) / cost_a_weight_sums(0)) * max_cost_ps(ps); }
+			else if (a_i_ps == SM)	{ cost_a(1) += (weights_ps(ps) / cost_a_weight_sums(1)) * max_cost_ps(ps); }
+			else if (a_i_ps == PM)	{ cost_a(2) += (weights_ps(ps) / cost_a_weight_sums(2)) * max_cost_ps(ps);	}
 		}
 
 		// Average the cost for the starboard and port maneuver type of intentions
 		if (ps_intention_count_i(0) > 0) 	{ cost_a(0) /= ps_intention_count_i(0); }
-		else 							{ cost_a(0) = 0.0; }
+		else 								{ cost_a(0) = 0.0; }
 		if (ps_intention_count_i(1) > 0)	{ cost_a(1) /= ps_intention_count_i(1); } 
-		else							{ cost_a(1) = 0.0; }
+		else								{ cost_a(1) = 0.0; }
 		if (ps_intention_count_i(2) > 0)	{ cost_a(2) /= ps_intention_count_i(2); } 
-		else							{ cost_a(2) = 0.0; }
+		else								{ cost_a(2) = 0.0; }
 
 		// Weight by the intention probabilities
 		cost_i = Pr_a_i.dot(cost_a);
+
+		/* std::cout << "ps_intention_count = " << ps_intention_count_i.transpose() << std::endl;
+		std::cout << "cost_a_weight_sums = " << cost_a_weight_sums.transpose() << std::endl;
+		std::cout << "weights_ps = " << weights_ps.transpose() << std::endl;
+		std::cout << "max_cost_ps = " << max_cost_ps.transpose() << std::endl;
+		std::cout << "Pr_a = " << Pr_a_i.transpose() << std::endl;
+		std::cout << "cost a = " << cost_a.transpose() << std::endl;
+		std::cout << "cost_i = " << cost_i << std::endl; */
 	}
 	return cost_i;
 }

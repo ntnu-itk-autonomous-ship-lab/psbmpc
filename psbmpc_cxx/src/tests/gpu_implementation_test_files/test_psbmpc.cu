@@ -147,7 +147,7 @@ int main(){
 		/* Pr_a[i].resize(1);
 		Pr_a[i] << 1;  */
 
-		Pr_CC[i] = 0.5; 
+		Pr_CC[i] = 0.1; 
 
 		n_wps_i = 2;
 		waypoints_i[i].resize(2, n_wps_i); 

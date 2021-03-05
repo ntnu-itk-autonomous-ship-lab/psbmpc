@@ -333,8 +333,8 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 1;
-	n_r = 1;
+	n_M = 3;
+	n_r = 5;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -342,15 +342,15 @@ void PSBMPC_Parameters::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(1);
-			u_offsets[M] << 1.0;
-			//u_offsets[M] << 1.0, 0.5, 0.0;
+			u_offsets[M].resize(3);
+			//u_offsets[M] << 1.0;
+			u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(1);
-			chi_offsets[M] << 0.0;
+			chi_offsets[M].resize(13);
+			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -375,7 +375,7 @@ void PSBMPC_Parameters::initialize_pars()
 	obstacle_course_changes.resize(3);
 	obstacle_course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 
-	cpe_method = MCSKF4D;
+	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
@@ -394,7 +394,7 @@ void PSBMPC_Parameters::initialize_pars()
 	d_init = 1500;								 
 	d_close = 1000;
 	d_safe = 50; 							
-	K_coll = 1.0;		  					
+	K_coll = 0.5;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		

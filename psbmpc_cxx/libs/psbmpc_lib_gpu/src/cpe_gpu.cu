@@ -111,75 +111,6 @@ __device__ void CPE_GPU::initialize(
     }
 }
 
-
-/****************************************************************************************
-*  Name     : estimate_over_trajectories
-*  Function : Takes in own-ship and obstacle trajectories, plus the associated obstacle
-*             covariances, and estimates the collision probabilities using a chosen 
-*             method.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__device__ void CPE_GPU::estimate_over_trajectories(
-		TML::PDMatrix<float, 1, MAX_N_SAMPLES> &P_c_i,                              // In/out: Collision probability row vector: 1 x n_samples
-		const TML::PDMatrix<float, 6, MAX_N_SAMPLES> &xs_p,                         // In: Ownship predicted trajectory
-		const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &xs_i_p,                       // In: Obstacle i predicted trajectory
-		const TML::PDMatrix<float, 16, MAX_N_SAMPLES> &P_i_p,                       // In: Obstacle i associated predicted covariances
-        const float d_safe_i,                                                       // In: Safety zone around own-ship when facing obstacle i,
-        const float dt                                                              // In: Prediction time step
-    )
-{
-    int n_traj_samples = xs_p.get_cols();
-    TML::Vector2f p_os, p_i;
-    TML::Matrix2f P_i_2D;
-
-    int n_seg_samples_temp = roundf(dt_seg / dt) + 1, k_j_(0), k_j(0);
-	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_os_seg(6, n_seg_samples_temp);
-    TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_seg(4, n_seg_samples_temp);
-    TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_seg(16, n_seg_samples_temp);
-    
-    initialize(xs_p.get_col(0), xs_i_p.get_col(0), P_i_p.get_col(0), d_safe_i);
-
-    v_os_prev.set_zero(); v_i_prev.set_zero();
-    for (int k = 0; k < n_traj_samples; k++)
-    {
-        switch(method)
-        {
-            case CE :	
-                if (k > 0)
-                {
-                    v_os_prev = xs_p.get_block<2, 1>(3, k - 1, 2, 1);
-                    v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, k - 1));
-                    v_i_prev = xs_i_p.get_block<2, 1>(2, k - 1, 2, 1);
-                }
-                p_os = xs_p.get_block<2, 1>(0, k, 2, 1);
-                p_i = xs_i_p.get_block<2, 1>(0, k, 2, 1);
-
-                P_i_2D = reshape<16, 1, 4, 4>(P_i_p.get_col(k), 4, 4).get_block<2, 2>(0, 0, 2, 2);
-
-                P_c_i(0, k) = CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, dt);
-                break;
-            case MCSKF4D :                
-                if (fmod(k, n_seg_samples_temp - 1) == 0 && k > 0)
-                {
-                    k_j_ = k_j; k_j = k;
-                    xs_os_seg = xs_p.get_block<6, MAX_N_SEG_SAMPLES>(0, k_j_, 6, n_seg_samples_temp);
-                    xs_i_seg = xs_i_p.get_block<4, MAX_N_SEG_SAMPLES>(0, k_j_, 4, n_seg_samples_temp);
-
-                    P_i_seg = P_i_p.get_block<16, MAX_N_SEG_SAMPLES>(0, k_j_, 16, n_seg_samples_temp);
-
-                    P_c_i(0, k_j_) = MCSKF4D_estimate(xs_os_seg, xs_i_seg, P_i_seg);
-                    // Collision probability on this active segment are all equal
-                    P_c_i.set_block(0, k_j_, 1, n_seg_samples_temp, P_c_i(0, k_j_) * TML::PDMatrix<float, 1, MAX_N_SEG_SAMPLES>::ones(1, k_j - k_j_ + 1));
-                }	
-                break;
-            default :
-                // Throw
-                break;
-        }
-    }
-}
-
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
@@ -651,12 +582,7 @@ __device__ void CPE_GPU::determine_best_performing_samples(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ void CPE_GPU::update_importance_density(
-    TML::Vector2f &mu_CE,                                                   // In/out: Expectation of the current importance density
-    TML::Matrix2f &P_CE,                                                    // In/out: Covariance of the current importance density
-    TML::Vector2f &mu_CE_prev,                                              // In/out: Expectation of the previous importance density
-    TML::Matrix2f &P_CE_prev                                                // In/out: Covariance of the previous importance density
-    )
+__device__ void CPE_GPU::update_importance_density()
 {
     // Set previous importance density parameters to the old current ones
     mu_CE_prev = mu_CE;
@@ -668,8 +594,8 @@ __device__ void CPE_GPU::update_importance_density(
     P_CE.set_zero();
     for (int j = 0; j < N_e; j++)
     {
-        elite_sample_innovation = elite_samples.get_col(j) - mu_CE;
-        P_CE += elite_sample_innovation * elite_sample_innovation.transposed();
+        sample_innovation = elite_samples.get_col(j) - mu_CE;
+        P_CE += sample_innovation * sample_innovation.transposed();
     }
     P_CE /= (float)N_e;
 
@@ -766,7 +692,7 @@ __device__ float CPE_GPU::CE_estimate(
         // to insufficient sample amounts)
         else if (N_e > 3)
         {
-            update_importance_density(mu_CE, P_CE, mu_CE_prev, P_CE_prev);
+            update_importance_density();
         }
     }
     mu_CE_last = mu_CE; P_CE_last = P_CE;
