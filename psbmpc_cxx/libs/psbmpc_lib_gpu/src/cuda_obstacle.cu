@@ -99,21 +99,11 @@ __host__ void Cuda_Obstacle::assign_data(
 
 	this->n_ps = co.n_ps;
 
-	this->Pr_a = co.Pr_a;
-
-	this->Pr_CC = co.Pr_CC;
-
 	this->duration_tracked = co.duration_tracked; this->duration_lost = co.duration_lost;
-	
-	this->mu = co.mu;
 
 	this->P_p = co.P_p;
 
 	this->xs_p = co.xs_p;
-
-	this->ps_ordering = co.ps_ordering;
-
-	this->ps_intention_count = co.ps_intention_count;
 }
 
 __host__ void Cuda_Obstacle::assign_data(
@@ -133,29 +123,18 @@ __host__ void Cuda_Obstacle::assign_data(
 
 	this->n_ps = to.ps_maneuver_times.size();
 
-	TML::assign_eigen_object(this->Pr_a, to.Pr_a);
-
-	this->Pr_CC = to.Pr_CC;
-
 	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
-
-	this->mu.resize(n_ps, 1);
 	
 	TML::assign_eigen_object(this->P_p, to.P_p);
 
-	this->ps_ordering.resize(n_ps, 1);
 
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_p_ps;
 	for (int ps = 0; ps < n_ps; ps++)
 	{
-		this->mu[ps] = to.mu[ps];
 
 		TML::assign_eigen_object(xs_p_ps, to.xs_p[ps]);
 
 		xs_p.set_block(4 * ps, 0, xs_p_ps.get_rows(), xs_p_ps.get_cols(), xs_p_ps);
-
-		this->ps_ordering[ps] = to.ps_ordering[ps];
 	}
 	
-	TML::assign_eigen_object(ps_intention_count, to.ps_intention_count);
 }

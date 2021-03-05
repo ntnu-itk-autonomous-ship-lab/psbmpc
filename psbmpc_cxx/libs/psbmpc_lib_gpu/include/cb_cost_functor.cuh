@@ -123,7 +123,7 @@ private:
 	unsigned int thread_index;
 	unsigned int cb_index;
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
-	unsigned int i, ps;
+	unsigned int i, ps, jp_thread_index;
 
 	int n_samples, n_seg_samples;
 
@@ -288,28 +288,7 @@ public:
 		trajectory = nullptr; 
 	}
 	
-	__device__ void operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple)
-	{
-		cb_index = thrust::get<0>(cb_tuple);
-		offset_sequence = thrust::get<1>(cb_tuple);
-
-		n_samples = round(pars->T / pars->dt);
-
-		ownship[cb_index].set_wp_counter(fdata->wp_c_0);
-
-		trajectory[cb_index].resize(6, n_samples);
-		trajectory[cb_index].set_col(0, fdata->ownship_state);
-
-		ownship[cb_index].predict_trajectory(
-			trajectory[cb_index], 
-			offset_sequence, 
-			fdata->maneuver_times, 
-			fdata->u_d, fdata->chi_d, 
-			fdata->waypoints, 
-			pars->prediction_method, 
-			pars->guidance_method, 
-			pars->T, pars->dt);
-	}
+	__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 
 };
 	

@@ -249,7 +249,6 @@ private:
 
 	// Temporaries:
 	int N_e, e_count;
-	TML::Vector2d elite_sample_innovation;
 	TML::PDMatrix<float, 2, MAX_N_CPE_SAMPLES> elite_samples;
 
 	TML::Vector2f mu_CE_prev, mu_CE;
@@ -296,7 +295,7 @@ private:
 	TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> valid;
 	
 	// Safety zone parameter
-	double d_safe;
+	float d_safe;
 
 	// Cholesky decomposition matrix
 	float sum;
@@ -344,17 +343,9 @@ private:
 		const TML::Vector2d &p_i, 
 		const TML::Matrix2d &P_i_inv);
 
-	__device__ void update_importance_density(
-		TML::Vector2f &mu_CE,
-		TML::Matrix2f &P_CE, 
-		TML::Vector2f &mu_CE_prev, 
-		TML::Matrix2f &P_CE_prev);
+	__device__ void update_importance_density();
 
 public:
-
-	// Temporary
-	__host__ __device__ void set_samples(const TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> &samples) { this->samples = samples; }
-	//
 
 	__host__ __device__ CPE_GPU() {}
 
@@ -385,14 +376,6 @@ public:
 		const TML::Matrix2f &P_i,
 		const TML::Vector2f &v_os_prev,
 		const TML::Vector2f &v_i_prev,
-		const float dt);
-
-	__device__ void estimate_over_trajectories(
-		TML::PDMatrix<float, 1, MAX_N_SAMPLES> &P_c_i,
-		const TML::PDMatrix<float, 6, MAX_N_SAMPLES> &xs_p,
-		const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &xs_i_p,
-		const TML::PDMatrix<float, 16, MAX_N_SAMPLES> &P_i_p,
-		const float d_safe_i,
 		const float dt);
 };
 
