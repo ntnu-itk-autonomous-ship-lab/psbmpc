@@ -38,9 +38,6 @@ private:
 	TML::Vector4f xs_0;
 	TML::Matrix4f P_0;
 
-	// Number of independent predictions scenarios
-	int n_ps;
-
 	// If the tracker-based KF is on, the obstacle is tracked until it dies
 	// while the duration lost may be reset if new measurements are aquired
 	float duration_tracked, duration_lost;
@@ -72,7 +69,7 @@ public:
 
 	__device__ inline float get_duration_tracked() const { return duration_tracked; }	
 
-	__device__ inline TML::PDMatrix<float, 16, 1> get_trajectory_covariance_sample(const int k) { return P_p.get_col(k); }
+	__device__ inline TML::PDVector16f get_trajectory_covariance_sample(const int k) { return P_p.get_col(k); }
 
 	__device__ inline TML::PDVector4f get_trajectory_sample(const int ps, const int k) { return xs_p.get_block<4, 1>(4 * ps, k, 4, 1); }
 };
