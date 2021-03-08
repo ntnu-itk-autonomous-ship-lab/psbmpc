@@ -41,7 +41,7 @@ private:
 	float cost_cd, cost_ch, delta_t, cost_g, ahcr;
 
 	// Dynamic obstacle cost related (do cost)
-	float cost_k, cost_do, R, C, l_i;
+	float cost_k, cost_do, R, cost_coll, l_i;
 
 	TML::Vector2f v_0_p, v_i_p, L_0i_p;
 	float chi_m, psi_0_p, psi_i_p, d_0i_p;
@@ -86,6 +86,15 @@ public:
     __host__ __device__ MPC_Cost() {}
 
     __host__ __device__ MPC_Cost(const Parameters &pars) : pars(pars) {}
+
+	__host__ __device__ void determine_situation_type(
+		ST& st_A,
+		ST& st_B,
+		const TML::Vector2f &v_A,
+		const float psi_A,
+		const TML::Vector2f &v_B,
+		const TML::Vector2f &L_AB,
+		const float d_AB);
 
 	// PSBMPC, SBMPC and CUDA kernel/Obstacle_SBMPC versions of the transitional cost function
 	template <class Obstacle_Data>
@@ -144,7 +153,7 @@ public:
 		const CB_Functor_Data *fdata,
 		const Cuda_Obstacle *obstacles,
 		const float P_c_i,
-		const TML::PDVector6f xs_p,
+		const TML::PDVector4f xs_p,
 		const TML::PDVector4f xs_i_p,
 		const int i,
 		const float chi_m,
@@ -183,6 +192,90 @@ public:
 
 	__host__ __device__ float calculate_grounding_cost(const TML::Vector4f &xs_k_p, const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles, const float ownship_length);
 };
+
+//=======================================================================================
+//  Name     : determine_situation_type
+//  Function : Determines the situation type for vessel A and B  \in {A, B, C, D, E, F}
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
+template <typename Parameters>
+__host__ __device__ void MPC_Cost<Parameters>::determine_situation_type(
+	ST& st_A,																// In/out: Situation type of vessel A
+	ST& st_B,																// In/out: Situation type of vessel B	
+	const TML::Vector2f &v_A,												// In: (NE) Velocity vector of vessel A 
+	const float psi_A, 														// In: Heading of vessel A
+	const TML::Vector2f &v_B, 												// In: (NE) Velocity vector of vessel B
+	const TML::Vector2f &L_AB, 												// In: LOS vector pointing from vessel A to vessel B
+	const float d_AB 														// In: Distance from vessel A to vessel B
+	)
+{
+	// Crash situation or outside consideration range
+	if(d_AB < pars.d_safe || d_AB > pars.d_close)
+	{
+		st_A = A; st_B = A;
+		return;
+	} 
+	// Inside consideration range
+	else
+	{
+		is_ahead = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
+
+		A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
+						v_A.norm() < v_B.norm()							  		&&
+						v_A.norm() > 0.25;
+
+		B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
+						v_B.norm() < v_A.norm()							  		&&
+						v_B.norm() > 0.25;
+
+		B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+
+		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
+					!A_is_overtaken) 											||
+					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
+					!B_is_overtaken)) 											&&
+					d_AB > pars.d_safe;
+
+		is_head_on = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
+					v_A.norm() > 0.25											&&
+					v_B.norm() > 0.25											&&
+					is_ahead;
+
+		is_crossing = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
+					v_A.norm() > 0.25											&&
+					v_B.norm() > 0.25											&&
+					!is_head_on 												&&
+					!is_passed;
+		
+		if (A_is_overtaken) 
+		{ 
+			st_A = B; st_B = D;
+		} 
+		else if (B_is_overtaken) 
+		{ 
+			st_A = D; st_B = B; 
+		} 
+		else if (is_head_on) 
+		{ 
+			st_A = E; st_B = E; 
+		} 
+		else if (is_crossing)
+		{
+			if (B_is_starboard) 
+			{
+				st_A = F; st_B = C;
+			} else
+			{
+				st_A = C; st_B = F;
+			}
+		} 
+		else 
+		{
+			st_A = A; st_B = A;
+		}
+	}
+}
 
 /****************************************************************************************
 *  Name     : determine_transitional_cost_indicator
@@ -528,22 +621,21 @@ __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	const CB_Functor_Data *fdata,												// In: Pointer to control behaviour functor data
 	const Cuda_Obstacle *obstacles, 											// In: Pointer to Cuda_Obstacle array
 	const float P_c_i,															// In: Predicted obstacle collision probabilities for obstacle in prediction scenario ps
-	const TML::PDVector6f xs_p, 												// In: Predicted own-ship state at time step k
+	const TML::PDVector4f xs_p, 												// In: Predicted own-ship state at time step k
 	const TML::PDVector4f xs_i_p, 												// In: Predicted obstacle state at time step k in prediction scenario ps
 	const int i, 																// In: Index of obstacle
 	const float chi_m,														 	// In: Course offset used by the own-ship at time step k
 	const float ownship_length													// In: Length of the own-ship
 	)
 {
-	cost_do = 0.0;
+	cost_do = 0.0f;
 	
 	// l_i is the collision cost modifier depending on the obstacle track loss.
-	C = 0.0; l_i = 0.0;
+	cost_coll = 0.0f; l_i = 0.0f;
 
-	psi_0_p = xs_p(2); 
-	v_0_p(0) = xs_p(3); 
-	v_0_p(1) = xs_p(4); 
-	v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
+	v_0_p(0) = xs_p(2); 
+	v_0_p(1) = xs_p(3); 
+	psi_0_p = atan2(v_0_p(1), v_0_p(0)); 
 
 	L_0i_p = xs_i_p.get_block<2, 1>(0, 0, 2, 1) - xs_p.get_block<2, 1>(0, 0, 2, 1);
 	d_0i_p = L_0i_p.norm();
@@ -557,7 +649,7 @@ __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	v_i_p(1) = xs_i_p(3);
 	psi_i_p = atan2(v_i_p(1), v_i_p(0));
 
-	C = calculate_collision_cost(v_0_p, v_i_p);
+	cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
 	mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
 
@@ -573,7 +665,7 @@ __device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 		l_i = 1;
 	}
 
-	cost_do = l_i * C * P_c_i + pars.kappa * mu  + pars.kappa_TC * trans;
+	cost_do = l_i * cost_coll * P_c_i + pars.kappa * mu  + pars.kappa_TC * trans;
 
 	//printf("pars.T = %.2f | pars.K_coll = %.2f | pars.kappa = %.2f | pars.kappa_tc = %.2f\n", pars.T, pars.K_coll, pars.kappa, pars.kappa_TC);
 	/* printf("psi_0_p = %.2f | v_0_p = %.2f, %.2f\n", psi_0_p, v_0_p(0), v_0_p(1));
@@ -594,7 +686,7 @@ __host__ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	)
 {
 	// l_i is the collision cost modifier depending on the obstacle track loss.
-	double cost(0.0), max_cost(0.0), C(0.0), l_i(0.0), R(0.0);
+	double cost(0.0), max_cost(0.0), cost_coll(0.0), l_i(0.0), R(0.0);
 
 	int n_samples = trajectory.cols();
 
@@ -642,7 +734,7 @@ __host__ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 		v_i_p(1) = xs_i_p[0](3, k);
 		psi_i_p = atan2(v_i_p(1), v_i_p(0));
 
-		C = calculate_collision_cost(v_0_p, v_i_p);
+		cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
 		mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
 
@@ -660,7 +752,7 @@ __host__ double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 		}
 		
 		// SB-MPC formulation with ad-hoc collision risk
-		cost = l_i * C * R + pars.kappa * mu  + pars.kappa_TC * trans;
+		cost = l_i * cost_coll * R + pars.kappa * mu  + pars.kappa_TC * trans;
 
 		if (cost > max_cost)
 		{
@@ -702,7 +794,7 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	v_i_p(1) = xs_i_k_p(3);
 	psi_i_p = atan2(v_i_p(1), v_i_p(0));
 
-	C = calculate_collision_cost(v_0_p, v_i_p);
+	cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
 	mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
 
@@ -711,7 +803,7 @@ __host__ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 	R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
 
 	// SB-MPC formulation with ad-hoc collision risk
-	cost_do = C * R + pars.kappa * mu  + pars.kappa_TC * trans;
+	cost_do = cost_coll * R + pars.kappa * mu  + pars.kappa_TC * trans;
 
 	return cost_do;
 }

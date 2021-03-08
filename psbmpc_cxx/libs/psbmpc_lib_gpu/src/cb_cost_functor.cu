@@ -2,7 +2,7 @@
 *
 *  File name : cb_cost_functor.cu
 *
-*  Function  : Class functions for the control behaviour cost evaluation functor. Used in
+*  Function  : Class functions for the control behaviour cost evaluation functors. Used in
 *			   the thrust framework for GPU calculations.
 *
 *	           ---------------------
@@ -34,20 +34,78 @@
 #include <iostream>
 
 
+//=======================================================================================
+//  CB COST FUNCTOR 1 METHODS
+//=======================================================================================
+
+//=======================================================================================
+//  Name     : operator()
+//  Function : Predicts the trajectory of the ownship for a certain control behaviour,
+//			   and calculates the static obstacle and path related costs
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
+__device__ float CB_Cost_Functor_1::operator()(
+	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
+	)
+{
+	cost_cb = 0.0f;
+	cb_index = thrust::get<0>(cb_tuple);
+	offset_sequence = thrust::get<1>(cb_tuple);
+
+	//======================================================================================================================
+	// 1.1 : Setup and own-ship trajectory prediction with the control behaviour cb_index
+	n_samples = round(pars->T / pars->dt);
+
+	ownship[cb_index].set_wp_counter(fdata->wp_c_0);
+
+	trajectory[cb_index].resize(4, n_samples);
+
+	ownship[cb_index].predict_trajectory(
+		trajectory[cb_index], 
+		fdata->ownship_state,
+		offset_sequence, 
+		fdata->maneuver_times, 
+		fdata->u_d, fdata->chi_d, 
+		fdata->waypoints, 
+		pars->prediction_method, 
+		pars->guidance_method, 
+		pars->T, pars->dt);
+
+	//==================================================================================================
+	// 2.1 : Calculate cost due to driving the boat on land or static objects
+	//cost_cb += mpc_cost[cb_index].calculate_grounding_cost(); 
+
+	//==================================================================================================
+	// 2.2 : Calculate cost due to deviating from the nominal path
+	cost_cb += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
+
+	//==================================================================================================
+	// 2.3 : Calculate cost due to having a wobbly offset_sequence
+	cost_cb += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
+
+	return cost_cb;
+}
+
+
+//=======================================================================================
+//  CB COST FUNCTOR 2 METHODS
+//=======================================================================================
+
 /****************************************************************************************
 *  Name     : CB_Cost_Functor
 *  Function : Class constructor
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ CB_Cost_Functor::CB_Cost_Functor(
+__host__ CB_Cost_Functor_2::CB_Cost_Functor_2(
 	CB_Functor_Pars *pars,  										// In: Device pointer to functor parameters, one for all threads
 	CB_Functor_Data *fdata,  										// In: Device pointer to functor data, one for all threads
 	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, one for all threads
 	Prediction_Obstacle *pobstacles,  								// In: Device pointer to prediction_obstacles, one for each thread
 	CPE_GPU *cpe, 		 											// In: Device pointer to the collision probability estimator, one for each thread
 	Ownship *ownship, 												// In: Device pointer to the ownship class, one for each thread
-	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
 	Obstacle_Ship *obstacle_ship,									// In: Device pointer to the obstacle ship for joint prediction, one for each thread
 	Obstacle_SBMPC *obstacle_sbmpc,									// In: Device pointer to the obstacle sbmpc for joint prediction, one for each thread
 	MPC_Cost<CB_Functor_Pars> *mpc_cost								// In: Device pointer to the cost function keeper class, one for each thread
@@ -69,19 +127,18 @@ __host__ CB_Cost_Functor::CB_Cost_Functor(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ thrust::tuple<float, float, Intention, bool> CB_Cost_Functor::operator()(const thrust::tuple<
+__device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(const thrust::tuple<
 	const unsigned int, 
 	TML::PDMatrix<float, 2 * MAX_N_M, 1>, 
 	const unsigned int, 
 	const unsigned int, 
 	const unsigned int, 
-	const unsigned int> &input_tuple	
+	const int> &input_tuple	
 	// In: Tuple consisting of the thread id, ownship control behaviour, the index of the obstacle and its corresponding 
 	// prediction scenario index to evaluate the cost with
 	)
 {
 	max_cost_ps = 0.0f;
-	cost_cb_ch_g = 0.0f;
 	a_i_ps_jp = KCC;
 	mu_i_ps_jp = false;
 
@@ -97,13 +154,13 @@ __device__ thrust::tuple<float, float, Intention, bool> CB_Cost_Functor::operato
 
 	d_safe_i = 0.0; chi_m = 0.0; cost_ps = 0.0;
 
-	// Seed collision probability estimator using the cb index
+	// Seed collision probability estimator using the thread index
 	cpe[thread_index].seed_prng(thread_index);
 
 	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
 	n_seg_samples = std::round(cpe[thread_index].get_segment_discretization_time() / pars->dt) + 1;
 	
-	xs_p_seg.resize(6, n_seg_samples);
+	xs_p_seg.resize(4, n_seg_samples);
 	xs_i_p_seg.resize(4, n_seg_samples);
 	P_i_p_seg.resize(16, n_seg_samples);
 
@@ -243,117 +300,22 @@ __device__ thrust::tuple<float, float, Intention, bool> CB_Cost_Functor::operato
 	}
 	
 	//==================================================================================================
-	// 2.5 : Calculate cost due to driving the boat on land or static objects
-	//cost_cb_ch_g += calculate_grounding_cost(); 
-
-	//==================================================================================================
-	// 2.6 : Calculate cost due to deviating from the nominal path
-	cost_cb_ch_g += mpc_cost[thread_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
-
-	//==================================================================================================
-	// 2.7 : Calculate cost due to having a wobbly offset_sequence
-	cost_cb_ch_g += mpc_cost[thread_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
-	
-	//==================================================================================================
-	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f, %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_ps, cost_cb_ch_g, offset_sequence(0), RAD2DEG * offset_sequence(1));
-	/* printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f, %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, cost_cb_ch_g, offset_sequence(0), RAD2DEG * offset_sequence(1), 
+	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
+	/* printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1), 
 		offset_sequence(2), RAD2DEG * offset_sequence(3)); */
-	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f, %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, cost_cb_ch_g, offset_sequence(0), RAD2DEG * offset_sequence(1), 
+	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1), 
 	//	offset_sequence(2), RAD2DEG * offset_sequence(3)), offset_sequence(4), RAD2DEG * offset_sequence(5)); 
 
 	//==================================================================================================
 	// 2.7 : Put dynamic obstacle related cost and static + path related cost into output tuple
 	//thrust::tuple<float, float> out(thrust::make_tuple(max_cost_ps, cost_cb_ch_g));
 
-	return thrust::tuple<float, float, Intention, bool>(thrust::make_tuple(max_cost_ps, cost_cb_ch_g, a_i_ps_jp, mu_i_ps_jp));
+	return thrust::tuple<float, Intention, bool>(thrust::make_tuple(max_cost_ps, a_i_ps_jp, mu_i_ps_jp));
 }
  
 //=======================================================================================
 //	Private functions
 //=======================================================================================
-//=======================================================================================
-//  Name     : determine_situation_type
-//  Function : Determines the situation type for vessel A and B  \in {A, B, C, D, E, F}
-//  Author   : Trym Tengesdal
-//  Modified :
-//=======================================================================================
-__device__ void CB_Cost_Functor::determine_situation_type(
-	ST& st_A,																// In/out: Situation type of vessel A
-	ST& st_B,																// In/out: Situation type of vessel B	
-	const TML::Vector2f &v_A,												// In: (NE) Velocity vector of vessel A 
-	const float psi_A, 														// In: Heading of vessel A
-	const TML::Vector2f &v_B, 												// In: (NE) Velocity vector of vessel B
-	const TML::Vector2f &L_AB, 												// In: LOS vector pointing from vessel A to vessel B
-	const float d_AB 														// In: Distance from vessel A to vessel B
-	)
-{
-	// Crash situation or outside consideration range
-	if(d_AB < pars->d_safe || d_AB > pars->d_close)
-	{
-		st_A = A; st_B = A;
-		return;
-	} 
-	// Inside consideration range
-	else
-	{
-		is_ahead = v_A.dot(L_AB) > cos(pars->phi_AH) * v_A.norm();
-
-		A_is_overtaken = v_A.dot(v_B) > cos(pars->phi_OT) * v_A.norm() * v_B.norm() 	&&
-						v_A.norm() < v_B.norm()							  		&&
-						v_A.norm() > 0.25;
-
-		B_is_overtaken = v_B.dot(v_A) > cos(pars->phi_OT) * v_B.norm() * v_A.norm() 	&&
-						v_B.norm() < v_A.norm()							  		&&
-						v_B.norm() > 0.25;
-
-		B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-					!A_is_overtaken) 											||
-					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-					!B_is_overtaken)) 											&&
-					d_AB > pars->d_safe;
-
-		is_head_on = v_A.dot(v_B) < - cos(pars->phi_HO) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() > 0.25											&&
-					v_B.norm() > 0.25											&&
-					is_ahead;
-
-		is_crossing = v_A.dot(v_B) < cos(pars->phi_CR) * v_A.norm() * v_B.norm()  	&&
-					v_A.norm() > 0.25											&&
-					v_B.norm() > 0.25											&&
-					!is_head_on 												&&
-					!is_passed;
-		
-		if (A_is_overtaken) 
-		{ 
-			st_A = B; st_B = D;
-		} 
-		else if (B_is_overtaken) 
-		{ 
-			st_A = D; st_B = B; 
-		} 
-		else if (is_head_on) 
-		{ 
-			st_A = E; st_B = E; 
-		} 
-		else if (is_crossing)
-		{
-			if (B_is_starboard) 
-			{
-				st_A = F; st_B = C;
-			} else
-			{
-				st_A = C; st_B = F;
-			}
-		} 
-		else 
-		{
-			st_A = A; st_B = A;
-		}
-	}
-}
-
 //=======================================================================================
 //  Name     : update_conditional_obstacle_data
 //  Function : Updates the situation type for the calling obstacle (wrt all other 
@@ -362,7 +324,7 @@ __device__ void CB_Cost_Functor::determine_situation_type(
 //  Author   : Trym Tengesdal
 //  Modified :
 //=======================================================================================
-__device__ void CB_Cost_Functor::update_conditional_obstacle_data(
+__device__ void CB_Cost_Functor_2::update_conditional_obstacle_data(
 	const int i_caller, 															// In: Index of obstacle asking for a situational awareness update
 	const int k																		// In: Index of the current predicted time t_k
 	)
@@ -399,13 +361,11 @@ __device__ void CB_Cost_Functor::update_conditional_obstacle_data(
 			d_AB = d_AB - 0.5 * (pobstacles[i_caller].get_length() + pobstacles[i].get_length()); 				
 			L_AB = L_AB.normalized();
 
-			determine_situation_type(data.ST_0[i_count], data.ST_i_0[i_count], v_A, psi_A, v_B, L_AB, d_AB);
+			mpc_cost[thread_index].determine_situation_type(data.ST_0[i_count], data.ST_i_0[i_count], v_A, psi_A, v_B, L_AB, d_AB);
 			
 			//=====================================================================
 			// Transitional variable update
 			//=====================================================================
-			is_close = d_AB <= pars->d_close;
-
 			data.AH_0[i_count] = v_A.dot(L_AB) > cos(pars->phi_AH) * v_A.norm();
 			
 			// Obstacle on starboard side
@@ -418,14 +378,14 @@ __device__ void CB_Cost_Functor::update_conditional_obstacle_data(
 			data.O_TC_0[i_count] = v_B.dot(v_A) > cos(pars->phi_OT) * v_B.norm() * v_A.norm() 	&&
 					v_B.norm() < v_A.norm()							    						&&
 					v_B.norm() > 0.25															&&
-					is_close 																	&&
+					d_AB <= pars->d_close 														&&
 					data.AH_0[i_count];
 
 			// Obstacle overtaking the ownship
 			data.Q_TC_0[i_count] = v_A.dot(v_B) > cos(pars->phi_OT) * v_A.norm() * v_B.norm() 	&&
 					v_A.norm() < v_B.norm()							  							&&
 					v_A.norm() > 0.25 															&&
-					is_close 																	&&
+					d_AB <= pars->d_close														&&
 					!data.AH_0[i_count];
 
 			// Determine if the obstacle is passed by
@@ -461,7 +421,7 @@ __device__ void CB_Cost_Functor::update_conditional_obstacle_data(
 //  Author   : Trym Tengesdal
 //  Modified :
 //=======================================================================================
-__device__ void CB_Cost_Functor::predict_trajectories_jointly()
+__device__ void CB_Cost_Functor_2::predict_trajectories_jointly()
 {
 	u_d_i.resize(fdata->n_obst, 1); u_opt_last_i.resize(fdata->n_obst, 1);
 	chi_d_i.resize(fdata->n_obst, 1); chi_opt_last_i.resize(fdata->n_obst, 1);
@@ -550,42 +510,4 @@ __device__ void CB_Cost_Functor::predict_trajectories_jointly()
 			}
 		}
 	}
-}
-
-
-//=======================================================================================
-//  TRAJECTORY PREDICTION FUNCTOR METHODS
-//=======================================================================================
-
-//=======================================================================================
-//  Name     : operator()
-//  Function : Predicts the trajectory of the ownship for a certain control behaviour
-//  Author   : Trym Tengesdal
-//  Modified :
-//=======================================================================================
-__device__ float Trajectory_Prediction_Functor::operator()(
-	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
-	)
-{
-	cb_index = thrust::get<0>(cb_tuple);
-	offset_sequence = thrust::get<1>(cb_tuple);
-
-	n_samples = round(pars->T / pars->dt);
-
-	ownship[cb_index].set_wp_counter(fdata->wp_c_0);
-
-	trajectory[cb_index].resize(6, n_samples);
-	trajectory[cb_index].set_col(0, fdata->ownship_state);
-
-	ownship[cb_index].predict_trajectory(
-		trajectory[cb_index], 
-		offset_sequence, 
-		fdata->maneuver_times, 
-		fdata->u_d, fdata->chi_d, 
-		fdata->waypoints, 
-		pars->prediction_method, 
-		pars->guidance_method, 
-		pars->T, pars->dt);
-
-	return 0.0f; // dont care output
 }

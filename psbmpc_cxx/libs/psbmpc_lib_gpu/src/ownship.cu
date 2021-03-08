@@ -418,6 +418,54 @@ __host__ __device__ void Ownship::predict_trajectory(
 	}
 }
 
+__host__ __device__ void Ownship::predict_trajectory(
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 						// In/out: Own-ship trajectory with states [x, y, Vx, Vy]^T
+	const TML::Vector6f &ownship_state,											// In: Initial own-ship state [x, y, psi, u, v, r]^T
+	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,	 			// In: Sequence of offsets in the candidate control behavior
+	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,						// In: Time indices for each ownship avoidance maneuver
+	const float u_d, 															// In: Surge reference
+	const float chi_d, 															// In: Course reference
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 						// In: Ownship waypoints
+	const Prediction_Method prediction_method,									// In: Type of prediction method to be used, typically an explicit method
+	const Guidance_Method guidance_method, 										// In: Type of guidance to be used
+	const float T,																// In: Prediction horizon
+	const float dt 																// In: Prediction time step
+	)
+{
+	n_samples = round(T / dt);
+
+	initialize_wp_following();
+
+	man_count = 0;
+	u_m = 1, u_d_p = u_d;
+	chi_m = 0, chi_d_p = chi_d;
+	xs_p = ownship_state;
+	
+	for (int k = 0; k < n_samples; k++)
+	{ 
+		if (k == maneuver_times[man_count]){
+			u_m = offset_sequence[2 * man_count];
+			chi_m = offset_sequence[2 * man_count + 1]; 
+			if (man_count < (int)maneuver_times.size() - 1) man_count += 1;
+		}  
+
+		update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
+
+		update_ctrl_input(u_m * u_d_p, chi_m + chi_d_p, xs_p);
+
+		v_p(0) = xs_p(3); v_p(1) = xs_p(4);
+		v_p = rotate_vector_2D(v_p, xs_p(2));
+		trajectory(0, k) = xs_p(0);
+		trajectory(1, k) = xs_p(1);
+		trajectory(2, k) = v_p(0);
+		trajectory(3, k) = v_p(1);
+
+		xs_p = predict(xs_p, dt, prediction_method);
+
+		//printf("xs = %f %f %f %f %f %f \n", xs(0), xs(1), xs(2), xs(3), xs(4), xs(5));
+	}
+}
+
 __host__ void Ownship::predict_trajectory(
 	Eigen::Matrix<double, 6, -1> &trajectory, 						// In/out: Own-ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
