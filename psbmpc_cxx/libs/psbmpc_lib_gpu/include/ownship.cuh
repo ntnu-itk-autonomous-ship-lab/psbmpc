@@ -109,7 +109,7 @@ private:
 	int n_samples, n_wps, man_count;
 	float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
 
-	TML::Vector2f d_next_wp, L_wp_segment;
+	TML::Vector2f d_next_wp, L_wp_segment, v_p;
 	bool segment_passed;
 
 	TML::Vector6f xs_new, xs_p;
@@ -161,6 +161,20 @@ public:
 	
 	__host__ __device__ void predict_trajectory(
 		TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory,
+		const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
+		const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
+		const float u_d,
+		const float chi_d,
+		const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
+		const Prediction_Method prediction_method,
+		const Guidance_Method guidance_method,
+		const float T,
+		const float dt
+	);
+
+	__host__ __device__ void predict_trajectory(
+		TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
+		const TML::Vector6f &ownship_state,
 		const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
 		const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
 		const float u_d,
