@@ -97,8 +97,6 @@ __host__ void Cuda_Obstacle::assign_data(
 	this->xs_0 = co.xs_0;
 	this->P_0 = co.P_0;
 
-	this->n_ps = co.n_ps;
-
 	this->duration_tracked = co.duration_tracked; this->duration_lost = co.duration_lost;
 
 	this->P_p = co.P_p;
@@ -121,20 +119,15 @@ __host__ void Cuda_Obstacle::assign_data(
 	TML::assign_eigen_object(this->xs_0, to.xs_0);
 	TML::assign_eigen_object(this->P_0, to.P_0);
 
-	this->n_ps = to.ps_maneuver_times.size();
-
 	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
 	
 	TML::assign_eigen_object(this->P_p, to.P_p);
 
-
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_p_ps;
-	for (int ps = 0; ps < n_ps; ps++)
+	for (size_t ps = 0; ps < to.ps_maneuver_times.size(); ps++)
 	{
-
 		TML::assign_eigen_object(xs_p_ps, to.xs_p[ps]);
 
 		xs_p.set_block(4 * ps, 0, xs_p_ps.get_rows(), xs_p_ps.get_cols(), xs_p_ps);
 	}
-	
 }
