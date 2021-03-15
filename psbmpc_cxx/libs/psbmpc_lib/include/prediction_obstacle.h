@@ -1,10 +1,10 @@
 /****************************************************************************************
 *
-*  File name : prediction_obstacle.h
+*  File name : prediction_obstacle_cpu.h
 *
-*  Function  : Header file for the predicion obstacle class. Derived simpler variant of  
-*			   the obstacle class, specifically made for the PSB-MPC
-*			   predictions with active obstacle COLAV systems.
+*  Function  : Header file for the predicion obstacle class. Lightweight class  
+*			   specifically made for the PSB-MPC predictions with active
+*			   obstacle COLAV systems.
 *  
 *	           ---------------------
 *
@@ -20,19 +20,27 @@
 *****************************************************************************************/
 
 
-#ifndef _PREDICTION_OBSTACLE_H_
-#define _PREDICTION_OBSTACLE_H_
+#pragma once
 
 #include "Eigen/Dense"
-#include "tracked_obstacle.h"
+
 #include <memory>
 #include <assert.h>
 
+
+#include "tracked_obstacle.h"
 class Obstacle_SBMPC;
 
-class Prediction_Obstacle : public Obstacle
+class Prediction_Obstacle
 {
 private:
+
+	int ID;
+
+	// Obstacle dimension quantifiers, length (l) and width (w)
+	double A, B, C, D, l, w;
+
+	double x_offset, y_offset;
 
 	// Intention of this obstacle when behaving intelligently
 	Intention a_p;
@@ -61,10 +69,7 @@ public:
 
 	Prediction_Obstacle();
 
-	Prediction_Obstacle(const Eigen::VectorXd &xs_aug,	 
-			 const bool colav_on, 
-			 const double T, 
-			 const double dt);
+	Prediction_Obstacle(const Eigen::VectorXd &xs_aug, const double T, const double dt);
 
 	Prediction_Obstacle(const Prediction_Obstacle &po);
 	Prediction_Obstacle(const Tracked_Obstacle &to);
@@ -73,6 +78,12 @@ public:
 
 	Prediction_Obstacle& operator=(const Prediction_Obstacle &rhs);
 	Prediction_Obstacle& operator=(const Tracked_Obstacle &rhs);
+
+	inline int get_ID() const { return ID; };
+
+	inline double get_length() const { return l; };
+
+	inline double get_width() const { return w; };
 
 	inline Intention get_intention() const { return a_p; }
 

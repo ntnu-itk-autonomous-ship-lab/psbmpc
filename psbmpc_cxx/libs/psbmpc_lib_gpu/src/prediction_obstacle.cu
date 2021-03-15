@@ -22,7 +22,7 @@
 
 #include <thrust/device_vector.h>
 #include "prediction_obstacle.cuh"
-#include "utilities.cuh"
+#include "utilities_gpu.cuh"
 #include <iostream>
 
 /****************************************************************************************
@@ -31,14 +31,17 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ Prediction_Obstacle::Prediction_Obstacle() = default;
+__host__ __device__ PSBMPC_LIB::GPU::Prediction_Obstacle::Prediction_Obstacle() = default;
 
-__host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
+__host__ __device__ PSBMPC_LIB::GPU::Prediction_Obstacle::Prediction_Obstacle(
 	const TML::PDMatrix<float, 9, 1> &xs_aug, 					// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) : 
-	Obstacle(xs_aug)
+	ID(xs_aug(8)),
+	A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
+	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
+	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6))
 {
 	int n_samples = std::round(T / dt);
 	
@@ -61,23 +64,21 @@ __host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Prediction_Obstacle::Prediction_Obstacle(
+PSBMPC_LIB::GPU::Prediction_Obstacle::Prediction_Obstacle(
 	const Prediction_Obstacle &po 												// In: Prediction obstacle to copy
-	) :
-	Obstacle(po)
+	)
 {
 	assign_data(po);
 }
 
-Prediction_Obstacle::Prediction_Obstacle(
+PSBMPC_LIB::GPU::Prediction_Obstacle::Prediction_Obstacle(
 	const Tracked_Obstacle &to 													// In: Tracked obstacle to copy
-	) :
-	Obstacle(to)
+	)
 {
 	assign_data(to);
 }
 
-Prediction_Obstacle::~Prediction_Obstacle() = default;
+PSBMPC_LIB::GPU::Prediction_Obstacle::~Prediction_Obstacle() = default;
 
 /****************************************************************************************
 *  Name     : operator=
@@ -85,8 +86,8 @@ Prediction_Obstacle::~Prediction_Obstacle() = default;
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-Prediction_Obstacle& Prediction_Obstacle::operator=(
-	const Prediction_Obstacle &rhs 										// In: Rhs prediction obstacle to assign
+PSBMPC_LIB::GPU::Prediction_Obstacle& PSBMPC_LIB::GPU::Prediction_Obstacle::operator=(
+	const PSBMPC_LIB::GPU::Prediction_Obstacle &rhs 										// In: Rhs prediction obstacle to assign
 	)
 {
 	if (this == &rhs)
@@ -99,8 +100,8 @@ Prediction_Obstacle& Prediction_Obstacle::operator=(
 	return *this;
 }
 
-Prediction_Obstacle& Prediction_Obstacle::operator=(
-	const Tracked_Obstacle &rhs 										// In: Rhs tracked obstacle to assign
+PSBMPC_LIB::GPU::Prediction_Obstacle& PSBMPC_LIB::GPU::Prediction_Obstacle::operator=(
+	const PSBMPC_LIB::Tracked_Obstacle &rhs 										// In: Rhs tracked obstacle to assign
 	)
 {
 	assign_data(rhs);
@@ -117,7 +118,7 @@ Prediction_Obstacle& Prediction_Obstacle::operator=(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Prediction_Obstacle::predict_independent_trajectory(						
+void PSBMPC_LIB::GPU::Prediction_Obstacle::predict_independent_trajectory(						
 	const double T, 											// In: Time horizon
 	const double dt, 											// In: Time step
 	const int k													// In: Index of the current predicted time
@@ -147,12 +148,12 @@ void Prediction_Obstacle::predict_independent_trajectory(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Prediction_Obstacle::update(
+void PSBMPC_LIB::GPU::Prediction_Obstacle::update(
 	const TML::Vector4f &xs, 								// In: Predicted obstacle state [x, y, V_x, V_y]
 	const int k												// In: Index of the current predicted time
 	)
 {
-	double psi = atan2(xs(3), xs(2));
+	float psi = atan2(xs(3), xs(2));
 	xs_p(0, k) = xs(0) + x_offset * cos(psi) - y_offset * sin(psi); 
 	xs_p(1, k) = xs(1) + x_offset * cos(psi) + y_offset * sin(psi);
 	xs_p(2, k) = xs(2);
@@ -168,7 +169,7 @@ void Prediction_Obstacle::update(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Prediction_Obstacle::assign_data(
+void PSBMPC_LIB::GPU::Prediction_Obstacle::assign_data(
 	const Prediction_Obstacle &po 													// In: Prediction_Obstacle whose data to assign to *this
 	)
 {
@@ -194,7 +195,7 @@ void Prediction_Obstacle::assign_data(
 	this->waypoints = po.waypoints;
 }
 
-void Prediction_Obstacle::assign_data(
+void PSBMPC_LIB::GPU::Prediction_Obstacle::assign_data(
 	const Tracked_Obstacle &to 														// In: Tracked_Obstacle whose data to assign to *this
 	)
 {

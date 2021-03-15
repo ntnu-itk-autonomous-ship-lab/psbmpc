@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : cpe_cpu.cu
+*  File name : cpe_cpu.cpp
 *
 *  Function  : Class functions for the CPU collision probability estimator
 *
@@ -18,8 +18,8 @@
 *
 *****************************************************************************************/
 
-#include "cpe.cuh"
-#include "utilities.cuh"
+#include "cpe.h"
+#include "utilities_cpu.h"
 #include <iostream>
 
 /****************************************************************************************

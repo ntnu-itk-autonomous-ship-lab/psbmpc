@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : obstacle_manager.cu
+*  File name : obstacle_manager.cpp
 *
 *  Function  : Class functions for the obstacle management interface, modified with
 *			   .cu for this GPU-implementation.
@@ -17,8 +17,8 @@
 *
 *****************************************************************************************/
 
-#include "utilities.cuh"
-#include "obstacle_manager.cuh"
+#include "utilities_cpu.h"
+#include "obstacle_manager.h"
 #include <string>
 #include <iostream>
 #include <iomanip>

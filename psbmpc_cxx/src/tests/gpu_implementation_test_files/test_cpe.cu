@@ -60,7 +60,7 @@ private:
 	CPE_Method cpe_method;
 	float dt;
 
-	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *xs_p; 
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_p; 
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p;
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p;
 
@@ -69,7 +69,7 @@ private:
 	// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 	// If cpe_method = MCSKF, then dt_seg must be equal to dt;
 	// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
-	TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> xs_seg; 
+	TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_seg; 
 	TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_seg;
 	TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_seg;
 
@@ -78,7 +78,7 @@ public:
 	__host__ CPE_functor(
 		CPE_GPU *cpe, 
 		CPE_Method cpe_method, 
-		TML::PDMatrix<float, 6, MAX_N_SAMPLES> *xs_p,
+		TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_p,
 		TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p,
 		TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p, 
 		TML::PDMatrix<float, 1, MAX_N_SAMPLES> *P_c_i,
@@ -96,7 +96,7 @@ public:
 		int n_samples = xs_p->get_cols();
 		int n_seg_samples = round(cpe->get_segment_discretization_time() / dt) + 1;
 
-		xs_seg.resize(6, n_seg_samples);
+		xs_seg.resize(4, n_seg_samples);
 		xs_i_seg.resize(4, n_seg_samples);
 		P_i_seg.resize(16, n_seg_samples);
 
@@ -337,10 +337,21 @@ int main(){
 	double t = 0;
 	int n_seg_samples = std::round(dt_seg / dt) + 1;
 
-	TML::PDMatrix<float, 6, MAX_N_SAMPLES> xs_p_copy(6, n_samples);
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_p_copy(4, n_samples);
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_i_p_copy(4, n_samples);
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> P_i_p_copy(16, n_samples);
-	TML::assign_eigen_object(xs_p_copy, trajectory);
+
+	Eigen::Vector2d v_os_p;
+	for (int k = 0; k < n_samples; k++)
+	{
+		v_os_p = trajectory.block<2, 1>(3, k);
+		v_os_p = rotate_vector_2D(v_os_p, trajectory(2, k));
+		xs_p_copy(0, k) = trajectory(0, k);
+		xs_p_copy(1, k) = trajectory(1, k);
+		xs_p_copy(2, k) = v_os_p(0);
+		xs_p_copy(3, k) = v_os_p(1);
+	}
+	
 
 	//===========================================================================================
 	// Allocate and copy data for use on the device
@@ -350,7 +361,7 @@ int main(){
 
 	CPE_GPU cpe(CE, dt);
 	CPE_GPU *cpe_device_ptr;
-	TML::PDMatrix<float, 6, MAX_N_SAMPLES> *xs_p_device_ptr;
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_p_device_ptr;
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p_device_ptr;
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p_device_ptr;
 	TML::PDMatrix<float, 1, MAX_N_SAMPLES> *P_c_i_device_ptr, P_c_i_host_CE, P_c_i_host_MCSKF, *P_c_i_temp;

@@ -20,9 +20,9 @@
 *
 *****************************************************************************************/
 
-#include "prediction_obstacle.cuh"
-#include "utilities.cuh"
-#include "tml.cuh"
+#include "utilities_cpu.h"
+#include "tracked_obstacle.h"
+
 
 #include "assert.h"
 #include <iostream> 
@@ -33,7 +33,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Tracked_Obstacle::Tracked_Obstacle(
+PSBMPC_LIB::Tracked_Obstacle::Tracked_Obstacle(
 	const Eigen::VectorXd &xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
 	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
@@ -42,7 +42,10 @@ Tracked_Obstacle::Tracked_Obstacle(
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
 	) :
-	Obstacle(xs_aug), 
+	ID(xs_aug(8)),
+	A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
+	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
+	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
 	duration_tracked(0.0), duration_lost(0.0)
 {
  	double psi = atan2(xs_aug(3), xs_aug(2));
@@ -87,7 +90,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::resize_trajectories(const int n_samples)
+void PSBMPC_LIB::Tracked_Obstacle::resize_trajectories(const int n_samples)
 {
 	int n_ps = ps_ordering.size();
 	xs_p.resize(n_ps);
@@ -108,7 +111,7 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::initialize_independent_prediction(
+void PSBMPC_LIB::Tracked_Obstacle::initialize_independent_prediction(
 	const std::vector<Intention> &ps_ordering, 						// In: Prediction scenario ordering
 	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
 	const Eigen::VectorXd &ps_maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios	
@@ -150,7 +153,7 @@ void Tracked_Obstacle::initialize_independent_prediction(
 *			  input vector.
 *  Modified : Trym Tengesdal
 *****************************************************************************************/
-void Tracked_Obstacle::prune_ps(
+void PSBMPC_LIB::Tracked_Obstacle::prune_ps(
 	const Eigen::VectorXi &ps_indices
 	)
 {
@@ -210,7 +213,7 @@ void Tracked_Obstacle::prune_ps(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::update(
+void PSBMPC_LIB::Tracked_Obstacle::update(
 	const bool filter_on, 										// In: Indicator of whether the KF is active
 	const double dt 											// In: Prediction time step
 	)
@@ -234,7 +237,7 @@ void Tracked_Obstacle::update(
 	}
 }
 
-void Tracked_Obstacle::update(
+void PSBMPC_LIB::Tracked_Obstacle::update(
 	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
 	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector

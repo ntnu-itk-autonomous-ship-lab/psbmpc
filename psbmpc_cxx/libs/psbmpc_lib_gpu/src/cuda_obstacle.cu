@@ -20,8 +20,7 @@
 *****************************************************************************************/
 
 #include "cuda_obstacle.cuh"
-//#include "obstacle_sbmpc.cuh"
-#include "utilities.cuh"
+#include "utilities_gpu.cuh"
 #include <iostream> 
 
 /****************************************************************************************
@@ -30,18 +29,16 @@
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ Cuda_Obstacle::Cuda_Obstacle(
+__host__ PSBMPC_LIB::GPU::Cuda_Obstacle::Cuda_Obstacle(
 	const Cuda_Obstacle &co 													// In: Obstacle to copy
-	) : 
-	Obstacle(co)
+	)
 {
 	assign_data(co);
 }
 
-__host__ Cuda_Obstacle::Cuda_Obstacle(
+__host__ PSBMPC_LIB::GPU::Cuda_Obstacle::Cuda_Obstacle(
 	const Tracked_Obstacle &to 													// In: Obstacle to copy
-	) : 
-	Obstacle(to)
+	)
 {
 	assign_data(to);
 }
@@ -53,7 +50,7 @@ __host__ Cuda_Obstacle::Cuda_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
+__host__ PSBMPC_LIB::GPU::Cuda_Obstacle& PSBMPC_LIB::GPU::Cuda_Obstacle::operator=(
 	const Cuda_Obstacle &rhs 										// In: Rhs to assign
 	)
 {
@@ -64,7 +61,7 @@ __host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 	return *this;
 }
 
-__host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
+__host__ PSBMPC_LIB::GPU::Cuda_Obstacle& PSBMPC_LIB::GPU::Cuda_Obstacle::operator=(
 	const Tracked_Obstacle &rhs 									// In: Rhs Tracked_Obstacle whose data to assign
 	)
 {		
@@ -82,7 +79,7 @@ __host__ Cuda_Obstacle& Cuda_Obstacle::operator=(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ void Cuda_Obstacle::assign_data(
+__host__ void PSBMPC_LIB::GPU::Cuda_Obstacle::assign_data(
 	const Cuda_Obstacle &co 												// In: Cuda_Obstacle whose data to assign to *this
 	)
 {
@@ -97,8 +94,6 @@ __host__ void Cuda_Obstacle::assign_data(
 	this->xs_0 = co.xs_0;
 	this->P_0 = co.P_0;
 
-	this->n_ps = co.n_ps;
-
 	this->duration_tracked = co.duration_tracked; this->duration_lost = co.duration_lost;
 
 	this->P_p = co.P_p;
@@ -106,8 +101,8 @@ __host__ void Cuda_Obstacle::assign_data(
 	this->xs_p = co.xs_p;
 }
 
-__host__ void Cuda_Obstacle::assign_data(
-	const Tracked_Obstacle &to 										// In: Tracked_Obstacle ptr whose data to assign to *this
+__host__ void PSBMPC_LIB::GPU::Cuda_Obstacle::assign_data(
+	const PSBMPC_LIB::Tracked_Obstacle &to 										// In: Tracked_Obstacle ptr whose data to assign to *this
 	)
 {
 	this->ID = to.ID;
@@ -121,20 +116,15 @@ __host__ void Cuda_Obstacle::assign_data(
 	TML::assign_eigen_object(this->xs_0, to.xs_0);
 	TML::assign_eigen_object(this->P_0, to.P_0);
 
-	this->n_ps = to.ps_maneuver_times.size();
-
 	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
 	
 	TML::assign_eigen_object(this->P_p, to.P_p);
 
-
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_p_ps;
-	for (int ps = 0; ps < n_ps; ps++)
+	for (size_t ps = 0; ps < to.ps_maneuver_times.size(); ps++)
 	{
-
 		TML::assign_eigen_object(xs_p_ps, to.xs_p[ps]);
 
 		xs_p.set_block(4 * ps, 0, xs_p_ps.get_rows(), xs_p_ps.get_cols(), xs_p_ps);
 	}
-	
 }

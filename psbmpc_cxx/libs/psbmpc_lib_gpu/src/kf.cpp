@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : kf.cu
+*  File name : kf.cpp
 *
 *  Function  : Class functions for a "hardcoded" Kalman Filter (KF). Alternative version
 *			   of the one created by Giorgio D. Kwame Minde Kufoalor through the Autosea
@@ -20,7 +20,7 @@
 *
 *****************************************************************************************/
 
-#include "kf.cuh"
+#include "kf.h"
 #include <stdexcept>
 
 /****************************************************************************************
@@ -29,7 +29,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-KF::KF() : 
+PSBMPC_LIB::KF::KF() : 
 	ID(0), t_0(0.0), t(0.0), initialized(false) 
 {
 	xs_p.setZero();
@@ -67,7 +67,7 @@ KF::KF() :
 	P_upd = P_0;
 }
 
-KF::KF(
+PSBMPC_LIB::KF::KF(
 	const Eigen::Vector4d& xs_0, 				// In: Initial filter state
 	const Eigen::Matrix4d& P_0,					// In: Initial filter covariance
 	const int ID, 								// In: Filter ID
@@ -106,7 +106,7 @@ KF::KF(
 
 // Use the constructor below for simulations where the KF is used as a tracking system outside the COLAV algorithm
 // where typically only position measurements of vessels are used.
-KF::KF(
+PSBMPC_LIB::KF::KF(
 	const Eigen::Vector4d &xs_0, 				// In: Initial filter state
 	const Eigen::Matrix4d &P_0,					// In: Initial filter covariance
 	const int ID, 								// In: Filter ID
@@ -146,7 +146,7 @@ KF::KF(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
- void KF::reset(
+void PSBMPC_LIB::KF::reset(
  	const Eigen::Vector4d& xs_0,				// In: Initial filter state
 	const Eigen::Matrix4d& P_0,					// In: Initial filter covariance
  	const double t_0 							// In: Initial time
@@ -172,7 +172,7 @@ KF::KF(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void KF::predict(
+void PSBMPC_LIB::KF::predict(
 	const double dt 							// In: Sampling interval
 	)
 {
@@ -193,7 +193,7 @@ void KF::predict(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void KF::update(
+void PSBMPC_LIB::KF::update(
 	const Eigen::Vector4d &y_m, 				// In: Measurement of cartesian position and velocity
 	const double duration_lost, 				// In: How long a track on an obstacle has been lost
 	const double dt 							// In: Sampling interval
@@ -223,7 +223,7 @@ void KF::update(
 
 // Use this update function when the KF is used as a tracking system outside the COLAV algorithm
 // where typically only position measurements of vessels are used.
-void KF::update(
+void PSBMPC_LIB::KF::update(
 	const Eigen::Vector2d &y_m, 				// In: Measurement of cartesian position
 	const double dt, 							// In: Sampling interval	
 	const bool dead_reckon						// In: Boolean flag to determine whether to use measurements or not

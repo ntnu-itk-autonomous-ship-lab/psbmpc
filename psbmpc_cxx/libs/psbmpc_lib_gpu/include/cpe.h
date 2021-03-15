@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : cpe.cuh
+*  File name : cpe.h
 *
 *  Function  : Header file for the Collision Probability Estimator (CPE).
 *			   The module estimates the collision probability wrt all nearby
@@ -23,21 +23,17 @@
 *
 *****************************************************************************************/
 
-#ifndef _CPE_CUH_
-#define _CPE_CUH_
+#pragma once
 
 #include "psbmpc_defines.h"
 
 #include "xoshiro.hpp"
-#include <random>
+#include "tml.cuh"
+#include "Eigen/Dense"
 #include "curand_kernel.h"
 #include <thrust/device_vector.h>
-#include "tml.cuh"
+#include <random>
 
-#ifndef EIGEN_NO_CUDA
-#define EIGEN_NO_CUDA
-#endif
-#include <Eigen/Dense>
 // NOTE: If you want standalone use of this module, define the enum CPE_Method below
 /* // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
@@ -248,8 +244,7 @@ private:
 	TML::Matrix2f P_CE_last;
 
 	// Temporaries:
-	int N_e, e_count;
-	TML::PDMatrix<float, 2, MAX_N_CPE_SAMPLES> elite_samples;
+	int N_e;
 
 	TML::Vector2f mu_CE_prev, mu_CE;
 	TML::Matrix2f P_CE_prev, P_CE;
@@ -258,8 +253,7 @@ private:
 	float d_0i, var_P_i_largest;
 	bool inside_safety_zone, inside_alpha_p_confidence_ellipse;
 
-	TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> weights, integrand, importance;
-	TML::Vector2f v_os_prev, v_i_prev;
+	TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> weights, pdf_values;
 	//====================================
 
 	//====================================
@@ -276,7 +270,7 @@ private:
 	int n_seg_samples;
 
 	// Speed and course/heading for the vessels along their linear segments
-    float U_os_sl, U_i_sl, psi_os_sl, psi_i_sl;
+    float U, psi;
 
 	TML::Vector4f xs_os_sl, xs_i_sl;
 	TML::Matrix4f P_i_sl;
@@ -303,7 +297,7 @@ private:
 	
 	//====================================
 	// Other pre-allocated temporaries:
-	float P_c_est, P_c_CE, y_P_c;
+	float P_c_CE, y_P_c;
 	int n, n_samples;	
 
 	// These temps are also double due to being
@@ -360,13 +354,13 @@ public:
 	__device__ inline void seed_prng(const unsigned int seed) { curand_init(seed, 0, 0, &prng_state); }
 
 	__device__ void initialize(
-		const TML::PDVector6f &xs_os, 
+		const TML::PDVector4f &xs_os, 
 		const TML::PDVector4f &xs_i, 
 		const TML::PDVector16f &P_i,
 		const float d_safe_i);
 
 	__device__ float MCSKF4D_estimate(
-		const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,  
+		const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_os,  
 		const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_i, 
 		const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i);	
 
@@ -378,5 +372,3 @@ public:
 		const TML::Vector2f &v_i_prev,
 		const float dt);
 };
-
-#endif
