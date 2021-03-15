@@ -80,7 +80,7 @@ __host__ __device__ CPE_GPU::CPE_GPU(
 *  Modified :
 *****************************************************************************************/
 __device__ void CPE_GPU::initialize(
-    const TML::PDVector6f &xs_os,                                                     // In: Own-ship state vector
+    const TML::PDVector4f &xs_os,                                                     // In: Own-ship state vector
     const TML::PDVector4f &xs_i,                                                      // In: Obstacle i state vector
     const TML::PDVector16f &P_i,                                                      // In: Obstacle i covariance flattened into n^2 x 1
     const float d_safe_i                                                             // In: Safety zone around own-ship when facing obstacle i
@@ -126,10 +126,9 @@ __host__ __device__ void CPE_GPU::resize_matrices()
     {
         case CE :
             samples.resize(2, n_CE);
-            elite_samples.resize(2, n_CE);
             valid.resize(1, n_CE);
             L.resize(2, 2);
-            weights.resize(1, n_CE); integrand.resize(1, n_CE); importance.resize(1, n_CE);
+            weights.resize(1, n_CE); pdf_values.resize(1, n_CE);
             break;
         case MCSKF4D :
             samples.resize(4, n_MCSKF);
@@ -416,7 +415,7 @@ __host__ __device__ void CPE_GPU::determine_sample_validity_4D(
 *  Modified :
 *****************************************************************************************/
 __device__ float CPE_GPU::MCSKF4D_estimate(
-	const TML::PDMatrix<float, 6, MAX_N_SEG_SAMPLES> &xs_os,                                               // In: Own-ship states for the active segment
+	const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_os,                                               // In: Own-ship states for the active segment
     const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_i,                                                // In: Obstacle i states for the active segment
     const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i                                                 // In: Obstacle i covariance for the active segment
     )
@@ -430,25 +429,25 @@ __device__ float CPE_GPU::MCSKF4D_estimate(
     {    
         // Own-ship segment
         // Find average velocity along segment
-        U_os_sl = xs_os.get_block<2, MAX_N_SEG_SAMPLES>(3, 0, 2, n_seg_samples).rwise_mean().norm();
+        U = xs_os.get_block<2, MAX_N_SEG_SAMPLES>(2, 0, 2, n_seg_samples).rwise_mean().norm();
         // Find angle of the segment
-        psi_os_sl = atan2(xs_os(1, n_seg_samples - 1) - xs_os(1, 0), xs_os(0, n_seg_samples - 1) - xs_os(0, 0));
+        psi = atan2(xs_os(1, n_seg_samples - 1) - xs_os(1, 0), xs_os(0, n_seg_samples - 1) - xs_os(0, 0));
         // Set initial position to be that of the own-ship at the start of the segment
         xs_os_sl(0) = xs_os(0, 0); 
         xs_os_sl(1) = xs_os(1, 0);
         // Rotate velocity vector to be parallel to the straight line
-        xs_os_sl(2) = U_os_sl * cos(psi_os_sl);
-        xs_os_sl(3) = U_os_sl * sin(psi_os_sl);
+        xs_os_sl(2) = U * cos(psi);
+        xs_os_sl(3) = U * sin(psi);
 
         // Obstacle segment
         // Same procedure as every year James
-        U_i_sl = xs_i.get_block<2, MAX_N_SEG_SAMPLES>(2, 0, 2, n_seg_samples).rwise_mean().norm();
-        psi_i_sl = atan2(xs_i(1, n_seg_samples - 1) - xs_i(1, 0), xs_i(0, n_seg_samples - 1) - xs_i(0, 0));
+        U = xs_i.get_block<2, MAX_N_SEG_SAMPLES>(2, 0, 2, n_seg_samples).rwise_mean().norm();
+        psi = atan2(xs_i(1, n_seg_samples - 1) - xs_i(1, 0), xs_i(0, n_seg_samples - 1) - xs_i(0, 0));
 
         xs_i_sl(0) = xs_i(0, 0); 
         xs_i_sl(1) = xs_i(1, 0);
-        xs_i_sl(2) = U_i_sl * cos(psi_i_sl);
-        xs_i_sl(3) = U_i_sl * sin(psi_i_sl);
+        xs_i_sl(2) = U * cos(psi);
+        xs_i_sl(3) = U * sin(psi);
     }
     else 
     {
@@ -588,14 +587,25 @@ __device__ void CPE_GPU::update_importance_density()
     mu_CE_prev = mu_CE;
     P_CE_prev = P_CE;
 
-    // Update the current parameters using the elite samples
-    mu_CE = elite_samples.rwise_mean();
+    // Update the current parameters using the elite samples (those which are valid/best performing)
+    mu_CE.set_zero();
+    for (int j = 0; j < n_CE; j++)
+    {
+        if (valid(j) > 0.99f)
+        {
+            mu_CE += samples.get_col(j);
+        }
+    }
+    mu_CE /= (float)N_e;
 
     P_CE.set_zero();
-    for (int j = 0; j < N_e; j++)
+    for (int j = 0; j < n_CE; j++)
     {
-        sample_innovation = elite_samples.get_col(j) - mu_CE;
-        P_CE += sample_innovation * sample_innovation.transposed();
+        if (valid(j) > 0.99f)
+        {
+            sample_innovation = samples.get_col(j) - mu_CE;
+            P_CE += sample_innovation * sample_innovation.transposed();
+        }
     }
     P_CE /= (float)N_e;
 
@@ -674,17 +684,6 @@ __device__ float CPE_GPU::CE_estimate(
 
         determine_best_performing_samples(p_os, p_i, P_i_inv);
 
-        elite_samples.resize(2, N_e);
-        e_count = 0;
-        for (int j = 0; j < n_CE; j++)
-        {
-            if (valid(j) > 0.99f)
-            {
-                elite_samples.set_col(e_count, samples.get_col(j));
-                e_count++;
-            }
-        }
-
         // Terminate iterative optimization if enough elite samples are collected
         if (N_e >= n_CE * rho) { converged_last = true; break; }
         // Otherwise, improve importance density parameters (given N_e > 3 to prevent zero-matrix 
@@ -705,18 +704,21 @@ __device__ float CPE_GPU::CE_estimate(
     
     determine_sample_validity_2D(p_os);
 
-    norm_pdf_log(integrand, p_i, P_i);
-    norm_pdf_log(importance, mu_CE, P_CE);
+    // Use the last set of samples to:
+    // Fill weights vector with the values for the integrand pdf
+    norm_pdf_log(weights, p_i, P_i);
+    // Fill "pdf_values" vector with the values for the importance pdf
+    norm_pdf_log(pdf_values, mu_CE, P_CE);
 
-    // Calculate importance weights for estimating the integral \Int_S_2 {p^i(x, y, t_k) dx dy}
+    // Calculate importance weights (weights = integrand / importance) for estimating the integral \Int_S_2 {p^i(x, y, t_k) dx dy}
     // where p^i = Norm_distr(p_i, P_i; t_k) is the obstacle positional uncertainty (or combined uncertainty
     // if the own-ship uncertainty is also considered). 
     // Divide using log-values as this is more robust against underflow
-    weights = (integrand - importance).exp();
+    weights = (weights - pdf_values).exp();
     weights = weights.cwise_product(valid);
 
     P_c_CE = weights.rwise_mean();
-    if (P_c_CE > 1) return 1;
+    if (P_c_CE > 1) return 1.0f;
     else return P_c_CE;
 
     return 0;

@@ -334,7 +334,7 @@ void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 3;
-	n_r = 5;
+	n_r = 6;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);

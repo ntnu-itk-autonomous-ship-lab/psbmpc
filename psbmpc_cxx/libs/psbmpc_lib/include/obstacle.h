@@ -41,8 +41,6 @@ protected:
 
 	int ID;
 
-	bool colav_on;
-
 	// Obstacle dimension quantifiers, length (l) and width (w)
 	double A, B, C, D, l, w;
 
@@ -67,8 +65,6 @@ public:
 	Obstacle& operator=(const Obstacle &rhs);
 
 	inline int get_ID() const { return ID; };
-
-	inline void set_colav_on(const bool colav_on) { this->colav_on = colav_on; };
 
 	inline double get_length() const { return l; };
 

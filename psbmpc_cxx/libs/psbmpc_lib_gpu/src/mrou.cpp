@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : mrou.cu
+*  File name : mrou.cpp
 *
 *  Function  : Implements class functions for the Mean-Reverting Ornstein-Uhlenbeck 
 *			   process, modified with .cu for this GPU-implementation.
@@ -18,7 +18,7 @@
 *
 *****************************************************************************************/
 
-#include "mrou.cuh"
+#include "mrou.h"
 #include <cmath>
 #include <iostream>
 
@@ -30,7 +30,7 @@
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-MROU::MROU() :
+PSBMPC_LIB::MROU::MROU() :
 	sigma_x(0.1), 						
 	sigma_xy(0.0), 
 	sigma_y(0.1), 
@@ -47,7 +47,7 @@ MROU::MROU() :
 				2 * sigma_xy / gamma_x, pow(sigma_y, 2) / (2 * pow(gamma_y, 2)), 2 * sigma_xy / (gamma_x + gamma_y), pow(sigma_y, 2) / gamma_y;
 }
 
-MROU::MROU(
+PSBMPC_LIB::MROU::MROU(
 	const double sigma_x, 						// In: Wiener process standard deviations sigma
 	const double sigma_xy, 
 	const double sigma_y, 
@@ -78,21 +78,21 @@ MROU::MROU(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-double MROU::f(
+double PSBMPC_LIB::MROU::f(
 	const double t 								// In: Prediction time		
 	) const 
 {
 	return 0.5 * (2 * t + 4 * exp(-t) - exp(- 2 * t) - 3);
 }
 
-double MROU::g(
+double PSBMPC_LIB::MROU::g(
 	const double t 								// In: Prediction time	
 	) const 
 {
 	return 0.5 * (1 - exp(- 2 * t));
 }
 
-double MROU::h(
+double PSBMPC_LIB::MROU::h(
 	const double t 								// In: Prediction time	
 	) const 
 {
@@ -100,7 +100,7 @@ double MROU::h(
 		(1 - exp( - t * (gamma_x + gamma_y))) / (gamma_x + gamma_y);
 }
 
-double MROU::k(
+double PSBMPC_LIB::MROU::k(
 	const double t 								// In: Prediction time
 	) const 
 {
@@ -114,7 +114,7 @@ double MROU::k(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Eigen::Vector4d MROU::predict_state(
+Eigen::Vector4d PSBMPC_LIB::MROU::predict_state(
 	const Eigen::Vector4d& xs_old, 				// In: Old state
 	const Eigen::Vector2d& v, 					// In: Typical mean velocity for the process at the current time
 	const double t								// In: Prediction time t	
@@ -146,7 +146,7 @@ Eigen::Vector4d MROU::predict_state(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Eigen::Matrix4d MROU::predict_covariance(
+Eigen::Matrix4d PSBMPC_LIB::MROU::predict_covariance(
 	const Eigen::Matrix<double, 4, 4> &P_old, 	// In: Old covariance
 	const double t 								// In: Prediction time
 	)
