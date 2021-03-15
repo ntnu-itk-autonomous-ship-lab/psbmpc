@@ -19,8 +19,7 @@
 *
 *****************************************************************************************/
 
-#ifndef _SBMPC_CUH_
-#define _SBMPC_CUH_
+#pragma once
 
 #include "psbmpc_index.h"
 #include "sbmpc_parameters.h"
@@ -28,9 +27,6 @@
 #include "obstacle.cuh"
 #include "mpc_cost.cuh"
 
-#ifndef EIGEN_NO_CUDA
-#define EIGEN_NO_CUDA
-#endif
 #include "Eigen/Dense"
 #include <vector>
 

@@ -21,14 +21,15 @@
 *
 *****************************************************************************************/
 
-#ifndef _OBSTACLE_MANAGER_CUH_
-#define _OBSTACLE_MANAGER_CUH_
+#pragma once
 
 #include "psbmpc_parameters.h"
 #include "prediction_obstacle.cuh"
 #include <vector>
 #include <string>
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
+
 enum ST 
 {
 	A, 														// Non-COLREGS situation	(ST = Ø)
@@ -43,6 +44,7 @@ template <class Obstacle_Type>
 class Obstacle_Data
 {
 public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)
 	// and <obstacle is passed> (IP_0) indicators
@@ -54,15 +56,14 @@ public:
 	// Obstacle hazard levels, on a scale from 0 to 1 (output from PSBMPC)
 	Eigen::VectorXd HL_0;
 
-	std::vector<Obstacle_Type> obstacles;
-	std::vector<Obstacle_Type> new_obstacles;
+	std::vector<Obstacle_Type, Eigen::aligned_allocator<Obstacle_Type>> obstacles;
+	std::vector<Obstacle_Type, Eigen::aligned_allocator<Obstacle_Type>> new_obstacles;
 
 	Eigen::MatrixXd obstacle_status;
 
 	Obstacle_Data() {}
 
 	~Obstacle_Data() {}
-
 };
 
 class Obstacle_Data_GPU_Friendly
@@ -383,6 +384,7 @@ private:
 	}
 
 public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	Obstacle_Manager();
 
@@ -416,5 +418,3 @@ public:
 	}
 
 };
-
-#endif 

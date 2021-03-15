@@ -18,9 +18,7 @@
 *
 *****************************************************************************************/
 
-
-#ifndef _OBSTACLE_CUH_
-#define _OBSTACLE_CUH_
+#pragma once
 
 #include <thrust/device_vector.h>
 #include <vector>
@@ -34,7 +32,7 @@ enum Intention
 	SM, 					// Starboard maneuver
 	PM 						// Port maneuver
 };
-class Obstacle 
+class __align__(16) Obstacle 
 {
 protected:
 
@@ -59,5 +57,3 @@ public:
 
 	__host__ __device__ float get_width() const { return w; };
 };
-
-#endif

@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : cpe.cuh
+*  File name : cpe.h
 *
 *  Function  : Header file for the Collision Probability Estimator (CPE).
 *			   The module estimates the collision probability wrt all nearby
@@ -23,21 +23,18 @@
 *
 *****************************************************************************************/
 
-#ifndef _CPE_CUH_
-#define _CPE_CUH_
+#ifndef _CPE_H_
+#define _CPE_H_
 
 #include "psbmpc_defines.h"
 
 #include "xoshiro.hpp"
-#include <random>
+#include "tml.cuh"
+#include "Eigen/Dense"
 #include "curand_kernel.h"
 #include <thrust/device_vector.h>
-#include "tml.cuh"
+#include <random>
 
-#ifndef EIGEN_NO_CUDA
-#define EIGEN_NO_CUDA
-#endif
-#include <Eigen/Dense>
 // NOTE: If you want standalone use of this module, define the enum CPE_Method below
 /* // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE

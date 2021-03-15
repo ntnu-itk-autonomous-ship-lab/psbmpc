@@ -25,14 +25,14 @@
 #include <vector>
 #include <memory>
 
-#include "utilities.cuh"
+#include "utilities_cpu.h"
 #include "obstacle.cuh"
-#include "mrou.cuh"
-#include "kf.cuh"
+#include "mrou.h"
+#include "kf.h"
 
 class Cuda_Obstacle;
 
-class Tracked_Obstacle : public Obstacle
+class __align__(16) Tracked_Obstacle : public Obstacle
 {
 private:
 
@@ -77,6 +77,7 @@ private:
 	Eigen::VectorXi ps_intention_count;
 	
 public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	std::unique_ptr<KF> kf;
 
