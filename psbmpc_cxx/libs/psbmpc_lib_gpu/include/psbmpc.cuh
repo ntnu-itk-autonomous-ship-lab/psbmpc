@@ -69,7 +69,8 @@ private:
 
 	// Device vector of control bevhaviour indices, obstacle indices, obstacle prediction scenario indices,
 	// intelligent obstacle prediction scenario indices,  size n_threads x 1
-	thrust::device_vector<unsigned int> cb_index_dvec, obstacle_index_dvec, obstacle_ps_index_dvec, jp_obstacle_ps_index_dvec;
+	thrust::device_vector<unsigned int> cb_index_dvec, obstacle_index_dvec, obstacle_ps_index_dvec;
+	thrust::device_vector<int> jp_obstacle_ps_index_dvec;
 
 	// Device vector of costs, size n_threads x 1. It is the dynamic obstacle cost when the own-ship
 	// follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, behaves as in
@@ -198,7 +199,6 @@ public:
 	MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 	PSBMPC();
-	PSBMPC(const bool use_v2);
 
 	~PSBMPC();
 

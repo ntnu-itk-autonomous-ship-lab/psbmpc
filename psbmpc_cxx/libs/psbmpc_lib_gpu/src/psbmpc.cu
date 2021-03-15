@@ -57,112 +57,6 @@ PSBMPC::PSBMPC()
 
 	min_cost = 1e12;
 
-	map_offset_sequences();
-
-	cpe_host = CPE_CPU(pars.cpe_method, pars.dt);
-
-	mpc_cost = MPC_Cost<PSBMPC_Parameters>(pars);
-
-	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
-	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
-	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
-	std::cout << "Ownship trajectory size: " << sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>) << std::endl; 
-	std::cout << "CPE size: " << sizeof(CPE_GPU) << std::endl;
-	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
-	std::cout << "Prediction Obstacle size: " << sizeof(Prediction_Obstacle) << std::endl;
-	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
-	std::cout << "Obstacle SBMPC size: " << sizeof(Obstacle_SBMPC) << std::endl;
-	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl;
-
-	//================================================================================
-	// Cuda device memory allocation
-	//================================================================================
-	// Cuda_Obstacles are read-only and of variable size, so are allocated before the thrust transform call 
-
-	// Allocate for use by all threads a control behaviour parameter object
-	CB_Functor_Pars temp_pars(pars); 
-	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
-	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
-
-	cudaMemcpy(pars_device_ptr, &temp_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
-    cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
-
-	// Allocate for use by all threads a control behaviour data object
-	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
-	cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
-	
-	// Allocate for each thread an own-ship trajectory
-	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
-	cuda_check_errors("CudaMalloc of trajectory failed.");
-
-	// Allocate for each thread an ownship
-	cudaMalloc((void**)&ownship_device_ptr, pars.n_cbs * sizeof(Ownship));
-	cuda_check_errors("CudaMalloc of Ownship failed.");
-
-	// Allocate for each thread a Collision Probability Estimator
-	CPE_GPU temp_cpe(pars.cpe_method, pars.dt);
-	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * sizeof(CPE_GPU));
-    cuda_check_errors("CudaMalloc of CPE failed.");
-
-	// Allocate for each thread an mpc cost object
-	MPC_Cost<CB_Functor_Pars> temp_mpc_cost(temp_pars);
-	cudaMalloc((void**)&mpc_cost_device_ptr, pars.n_cbs * sizeof(MPC_Cost<CB_Functor_Pars>));
-	cuda_check_errors("CudaMalloc of MPC_Cost failed.");
-
-	for (int cb = 0; cb < pars.n_cbs; cb++)
-	{
-		cudaMemcpy(&ownship_device_ptr[cb], &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of Ownship failed.");
-
-		cudaMemcpy(&cpe_device_ptr[cb], &temp_cpe, sizeof(CPE_GPU), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of CPE failed.");
-
-		cudaMemcpy(&mpc_cost_device_ptr[cb], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
-	}
-
-	if (pars.obstacle_colav_on)
-	{
-		// Allocate for each thread a max number of prediction obstacles
-		Prediction_Obstacle temp_pobstacle;
-		cudaMalloc((void**)&pobstacles_device_ptr, MAX_N_OBST * pars.n_cbs * sizeof(Prediction_Obstacle));
-		cuda_check_errors("CudaMalloc of Prediction obstacles failed.");
-
-		// Allocate for each thread an obstacle ship and obstacle sbmpc
-		Obstacle_Ship obstacle_ship; 
-		cudaMalloc((void**)&obstacle_ship_device_ptr, pars.n_cbs * sizeof(Obstacle_Ship));
-		cuda_check_errors("CudaMalloc of Obstacle_Ship failed.");
-
-		Obstacle_SBMPC obstacle_sbmpc;
-		cudaMalloc((void**)&obstacle_sbmpc_device_ptr, pars.n_cbs * sizeof(Obstacle_SBMPC));
-		cuda_check_errors("CudaMalloc of Obstacle_SBMPC failed.");
-
-		for (int cb = 0; cb < pars.n_cbs; cb++)
-		{
-			cudaMemcpy(&obstacle_ship_device_ptr[cb], &obstacle_ship, sizeof(Obstacle_Ship), cudaMemcpyHostToDevice);
-			cuda_check_errors("CudaMemCpy of Obstacle_Ship failed.");
-
-			cudaMemcpy(&obstacle_sbmpc_device_ptr[cb], &obstacle_sbmpc, sizeof(Obstacle_SBMPC), cudaMemcpyHostToDevice);
-			cuda_check_errors("CudaMemCpy of Obstacle_SBMPC failed.");
-		}
-	}
-}
-
-PSBMPC::PSBMPC(
-	const bool use_v2
-	) 
-	: 
-	ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), 
-	obstacles_device_ptr(nullptr), pobstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr),
-	obstacle_ship_device_ptr(nullptr), obstacle_sbmpc_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
-{
-	opt_offset_sequence.resize(2 * pars.n_M);
-	maneuver_times.resize(pars.n_M);
-	
-	u_opt_last = 1.0; chi_opt_last = 0.0;
-
-	min_cost = 1e12;
-
 	cpe_host = CPE_CPU(pars.cpe_method, pars.dt);
 
 	mpc_cost = MPC_Cost<PSBMPC_Parameters>(pars);
@@ -204,6 +98,8 @@ PSBMPC::PSBMPC(
 	cudaMalloc((void**)&ownship_device_ptr, pars.n_cbs * sizeof(Ownship));
 	cuda_check_errors("CudaMalloc of Ownship failed.");
 
+	// A max number of allocations is considered to prevent memory allocation and transfer
+	// during iterations of the PSBMPC
 	// Allocate for each thread a Collision Probability Estimator
 	CPE_GPU temp_cpe(pars.cpe_method, pars.dt);
 	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_OBST * pars.n_r * sizeof(CPE_GPU));
@@ -647,7 +543,8 @@ void PSBMPC::map_thrust_dvecs()
 	jp_obstacle_ps_index_dvec.resize(n_threads);
 	output_costs_dvec.resize(n_threads);
 
-	unsigned int thread_index(0), jp_thread_index(0);
+	unsigned int thread_index(0);
+	int jp_thread_index(0);
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_tml(2 * pars.n_M);
 
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
@@ -672,7 +569,7 @@ void PSBMPC::map_thrust_dvecs()
 				}
 				else
 				{
-
+					jp_obstacle_ps_index_dvec[thread_index] = -1;
 				}
 
 				

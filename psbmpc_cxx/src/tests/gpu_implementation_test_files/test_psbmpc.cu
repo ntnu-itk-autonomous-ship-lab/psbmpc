@@ -175,7 +175,7 @@ int main(){
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************	
-	PSBMPC psbmpc(true);
+	PSBMPC psbmpc;
 	double u_opt, chi_opt;
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
@@ -285,7 +285,7 @@ int main(){
 		{
 			start = std::chrono::system_clock::now();		
 
-			psbmpc.calculate_optimal_offsets_v2(
+			psbmpc.calculate_optimal_offsets(
 				u_opt,
 				chi_opt, 
 				predicted_trajectory,
