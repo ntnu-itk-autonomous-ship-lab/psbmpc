@@ -20,23 +20,22 @@ find_package(CUDA COMPONENTS THRUST REQUIRED)
 add_library(psbmpc_lib_gpu STATIC 	
 	src/psbmpc.cu 
 	src/psbmpc_parameters.cpp
-	src/sbmpc.cu 
+	src/sbmpc.cpp 
 	src/sbmpc_parameters.cpp 
 	src/cb_cost_functor.cu
-	src/obstacle_manager.cu
+	src/obstacle_manager.cpp
 	src/obstacle.cu
 	src/obstacle_ship.cu 
 	src/obstacle_sbmpc.cu 
 	src/obstacle_sbmpc_parameters.cu
-	src/tracked_obstacle.cu
+	src/tracked_obstacle.cpp
 	src/cuda_obstacle.cu
 	src/prediction_obstacle.cu
 	src/ownship.cu 
-	src/cpe_cpu.cu
+	src/cpe_cpu.cpp
 	src/cpe_gpu.cu
-	src/kf.cu  
-	src/mrou.cu 
-	src/utilities.cu
+	src/kf.cpp  
+	src/mrou.cpp 
 )
 
 set_target_properties(psbmpc_lib_gpu PROPERTIES
@@ -54,7 +53,8 @@ target_include_directories(psbmpc_lib_gpu PUBLIC
 message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
 message("CUDA_LIBARIES: ${CUDA_LIBRARIES}")
 
-target_compile_options(psbmpc_lib_gpu
+target_compile_options(psbmpc_lib_gpu 
+	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -DEIGEN_MAX_STATIC_ALIGN_BYTES=16>
 	# debug compilation
 	#PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink> 
 

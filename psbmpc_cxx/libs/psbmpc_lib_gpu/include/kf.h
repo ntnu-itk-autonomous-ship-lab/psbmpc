@@ -1,13 +1,12 @@
 /****************************************************************************************
 *
-*  File name : kf.cuh
+*  File name : kf.h
 *
 *  Function  : Header file for a hardcoded Kalman Filter (KF) to add extra robustness
 *              against track loss. See "Autonomous COLREGS compliant decision
 *              making using maritime radar tracking and model predictive control". 
 *              This is an alternative version of the one created by Giorgio D. Kwame 
-*              Minde Kufoalor through the Autosea project, modified with .cuh for this 
-*              GPU-implementation.
+*              Minde Kufoalor through the Autosea project.
 *  
 *            ---------------------
 *
@@ -22,9 +21,8 @@
 *
 *****************************************************************************************/
 
-#ifndef _KF_CUH_
-#define _KF_CUH_
-
+#ifndef _KF_H_
+#define _KF_H_
 
 #include "Eigen/Dense"
 
@@ -44,6 +42,7 @@ private:
   Eigen::Matrix4d P_0, P_p, P_upd;
 
 public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   KF();
 

@@ -1,9 +1,9 @@
 /****************************************************************************************
 *
-*  File name : mpc_cost.cuh
+*  File name : mpc_cost_gpu.cuh
 *
-*  Function  : Header file for the MPC Cost class (PSB/SB-MPC), which contains
-*              implementations for the COLAV MPC cost functions.
+*  Function  : Header file for the device compatible MPC Cost class (PSB/SB-MPC), which 
+*              contains implementations for the COLAV MPC cost functions.
 *  
 *            ---------------------
 *
@@ -18,11 +18,10 @@
 *
 *****************************************************************************************/
 
-#ifndef _MPC_COST_CUH_
-#define _MPC_COST_CUH_
+#pragma once
 
-#include "utilities.cuh"
 #include "psbmpc_parameters.h"
+#include "utilities_gpu.cuh"
 #include "obstacle_manager.cuh"
 #include "cb_cost_functor_structures.cuh"
 #include "cuda_obstacle.cuh"

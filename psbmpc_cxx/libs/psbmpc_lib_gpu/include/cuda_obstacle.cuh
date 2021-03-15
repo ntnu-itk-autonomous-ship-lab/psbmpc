@@ -18,15 +18,13 @@
 *
 *****************************************************************************************/
 
-
-#ifndef _CUDA_OBSTACLE_CUH_
-#define _CUDA_OBSTACLE_CUH_
+#pragma once
 
 #include "psbmpc_defines.h"
 #include <thrust/device_vector.h>
 #include "tml.cuh"
 #include "obstacle.cuh"
-#include "tracked_obstacle.cuh"
+#include "tracked_obstacle.h"
 
 //class Obstacle_SBMPC;
 
@@ -73,5 +71,3 @@ public:
 
 	__device__ inline TML::PDVector4f get_trajectory_sample(const int ps, const int k) { return xs_p.get_block<4, 1>(4 * ps, k, 4, 1); }
 };
-
-#endif

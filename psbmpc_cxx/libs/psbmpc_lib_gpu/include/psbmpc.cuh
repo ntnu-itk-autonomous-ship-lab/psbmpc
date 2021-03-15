@@ -18,13 +18,12 @@
 *
 *****************************************************************************************/
 
-#ifndef _PSBMPC_CUH_
-#define _PSBMPC_CUH_
+#pragma once
 
 #include "psbmpc_defines.h"
 #include "psbmpc_index.h"
 #include "ownship.cuh"
-#include "cpe.cuh"
+#include "cpe.h"
 #include "mpc_cost.cuh"
 
 
@@ -214,5 +213,3 @@ public:
 		Obstacle_Data<Tracked_Obstacle> &data);
 
 };
-
-#endif 

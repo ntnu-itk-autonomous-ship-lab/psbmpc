@@ -19,14 +19,12 @@
 *
 *****************************************************************************************/
 
-
-#ifndef _PREDICTION_OBSTACLE_CUH_
-#define _PREDICTION_OBSTACLE_CUH_
+#pragma once
 
 #include <thrust/device_vector.h>
 #include <assert.h>
 #include "psbmpc_defines.h"
-#include "tracked_obstacle.cuh"
+#include "tracked_obstacle.h"
 
 
 
@@ -97,5 +95,3 @@ public:
 
 	__host__ __device__ void update(const TML::Vector4f &xs, const int k);
 };
-
-#endif

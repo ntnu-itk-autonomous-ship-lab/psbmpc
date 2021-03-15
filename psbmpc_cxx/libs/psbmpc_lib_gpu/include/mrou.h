@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : mrou.cuh
+*  File name : mrou.h
 *
 *  Function  : Header file for the Mean-Reverting Ornstein-Uhlenbeck process predictor,
 *			   modified with .cuh for this GPU-implementation.
@@ -19,8 +19,8 @@
 *
 *****************************************************************************************/
 
-#ifndef _MROU_CUH_
-#define _MROU_CUH_
+#ifndef _MROU_H_
+#define _MROU_H_
 
 #include "Eigen/Dense"
 
@@ -34,7 +34,6 @@ private:
 	double gamma_x;
 	double gamma_y;
 
-
 	Eigen::Matrix4d Sigma_1;
 
 	double f(const double t) const;
@@ -46,6 +45,7 @@ private:
 	double k(const double t) const;
 
 public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	MROU();
 
