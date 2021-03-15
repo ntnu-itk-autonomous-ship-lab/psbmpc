@@ -75,7 +75,7 @@ __device__ thrust::tuple<float, float, Intention, bool> CB_Cost_Functor::operato
 	const unsigned int, 
 	const unsigned int, 
 	const unsigned int, 
-	const unsigned int> &input_tuple	
+	int> &input_tuple	
 	// In: Tuple consisting of the thread id, ownship control behaviour, the index of the obstacle and its corresponding 
 	// prediction scenario index to evaluate the cost with
 	)
