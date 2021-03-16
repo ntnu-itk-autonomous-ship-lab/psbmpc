@@ -36,6 +36,12 @@ namespace PSBMPC_LIB
 		PM 						// Port maneuver
 	};
 
+	namespace GPU
+	{
+		class Cuda_Obstacle;
+		class Prediction_Obstacle;
+	}
+
 	class Tracked_Obstacle
 	{
 	private:

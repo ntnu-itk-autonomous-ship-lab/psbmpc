@@ -27,15 +27,23 @@
 
 namespace PSBMPC_LIB
 {
+	class SBMPC;
+	class Obstacle_Manager;
+	namespace CPU
+	{
+		template <typename Parameters> class MPC_Cost;
+		class Obstacle_SBMPC;
+	}
+
 	class SBMPC_Parameters
 	{
 	private:
 
 		friend class SBMPC;
-		friend class MPC_Cost<SBMPC_Parameters>;
-		friend class Obstacle_SBMPC;
 		friend class Obstacle_Manager;
-
+		friend class CPU::MPC_Cost<SBMPC_Parameters>;
+		friend class CPU::Obstacle_SBMPC;
+		
 		// Number of control behaviours and sequential maneuvers for the ownship, respectively
 		int n_cbs, n_M;
 

@@ -25,8 +25,6 @@
 #include <vector>
 
 
-
-
 namespace PSBMPC_LIB
 {
 	// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
@@ -51,17 +49,31 @@ namespace PSBMPC_LIB
 		CH 														// Course Hold
 	};
 
-	class PSBMPC;
-	template <typename Parameters> class MPC_Cost;
+
 	class Obstacle_Manager;
 	class Joint_Prediction_Manager;
 	class CB_Functor_Pars;
+	namespace CPU
+	{
+		class PSBMPC;
+		template <typename Parameters> class MPC_Cost;
+		class Obstacle_SBMPC;
+	}
+	namespace GPU
+	{
+		class PSBMPC;
+		template <typename Parameters> class MPC_Cost;
+		class Obstacle_SBMPC;
+	}
+	
 	class PSBMPC_Parameters
 	{
 	private:
 
-		friend class PSBMPC;
-		friend class MPC_Cost<PSBMPC_Parameters>;
+		friend class CPU::PSBMPC;
+		friend class CPU::MPC_Cost<PSBMPC_Parameters>;
+		friend class GPU::PSBMPC;
+		friend class GPU::MPC_Cost<PSBMPC_Parameters>;
 		friend class Obstacle_Manager;
 		friend class Joint_Prediction_Manager;
 		friend class CB_Functor_Pars;

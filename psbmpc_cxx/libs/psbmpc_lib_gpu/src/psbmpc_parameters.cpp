@@ -17,11 +17,13 @@
 *
 *****************************************************************************************/
 
-#include "utilities.cuh"
+#include "utilities_cpu.h"
 #include "psbmpc_parameters.h"
 #include "Eigen/Dense"
 #include <vector>
 
+namespace PSBMPC_LIB
+{
 
 /****************************************************************************************
 	Public functions
@@ -414,4 +416,6 @@ void PSBMPC_Parameters::initialize_pars()
 	p = 1.0;
 
 	obstacle_colav_on = false;
+}
+
 }

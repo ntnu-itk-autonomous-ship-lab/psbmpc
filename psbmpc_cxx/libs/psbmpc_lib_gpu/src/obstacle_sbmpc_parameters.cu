@@ -20,6 +20,8 @@
 
 #include "obstacle_sbmpc_parameters.cuh"
 
+namespace PSBMPC_LIB
+{
 
 /****************************************************************************************
 	Public functions
@@ -108,4 +110,6 @@ void Obstacle_SBMPC_Parameters::initialize_pars()
 	G = 1e3;		         					 
 	q = 4.0;
 	p = 1.0;
+}
+
 }

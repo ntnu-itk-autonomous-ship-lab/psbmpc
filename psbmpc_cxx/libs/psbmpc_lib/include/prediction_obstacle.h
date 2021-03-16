@@ -29,86 +29,94 @@
 
 
 #include "tracked_obstacle.h"
-class Obstacle_SBMPC;
 
-class Prediction_Obstacle
+namespace PSBMPC_LIB
 {
-private:
+	namespace CPU
+	{
+		class Obstacle_SBMPC;
 
-	int ID;
+		class Prediction_Obstacle
+		{
+		private:
 
-	// Obstacle dimension quantifiers, length (l) and width (w)
-	double A, B, C, D, l, w;
+			int ID;
 
-	double x_offset, y_offset;
+			// Obstacle dimension quantifiers, length (l) and width (w)
+			double A, B, C, D, l, w;
 
-	// Intention of this obstacle when behaving intelligently
-	Intention a_p;
+			double x_offset, y_offset;
 
-	// Indicator of whether or not the prediction obstacle breaches COLREGS in
-	// the joint prediction currently considered
-	bool mu; 
+			// State at the current time or predicted time (depending on the derived class usage)
+			Eigen::Vector4d xs_0;
 
-	Eigen::Matrix4d A_CV;
+			// Intention of this obstacle when behaving intelligently
+			Intention a_p;
 
-	// Actual state trajectory from the joint prediction scheme
-	// when the obstacle uses its own SB-MPC, used by the PSB-MPC,
-	// and the predicted trajectory from the Obstacle_SBMPC
-	// at the current predicted time t_k
-	Eigen::MatrixXd xs_p, xs_k_p;
+			// Indicator of whether or not the prediction obstacle breaches COLREGS in
+			// the joint prediction currently considered
+			bool mu; 
 
-	// In use when using the Obstacle_SBMPC
-	Eigen::Matrix<double, 2, -1> waypoints; 
+			Eigen::Matrix4d A_CV;
 
-	void assign_data(const Prediction_Obstacle &po);
-	void assign_data(const Tracked_Obstacle &to);
-	
-public:
+			// Actual state trajectory from the joint prediction scheme
+			// when the obstacle uses its own SB-MPC, used by the PSB-MPC,
+			// and the predicted trajectory from the Obstacle_SBMPC
+			// at the current predicted time t_k
+			Eigen::MatrixXd xs_p, xs_k_p;
 
-	std::unique_ptr<Obstacle_SBMPC> sbmpc;
+			// In use when using the Obstacle_SBMPC
+			Eigen::Matrix<double, 2, -1> waypoints; 
 
-	Prediction_Obstacle();
+			void assign_data(const Prediction_Obstacle &po);
+			void assign_data(const Tracked_Obstacle &to);
+			
+		public:
 
-	Prediction_Obstacle(const Eigen::VectorXd &xs_aug, const double T, const double dt);
+			std::unique_ptr<Obstacle_SBMPC> sbmpc;
 
-	Prediction_Obstacle(const Prediction_Obstacle &po);
-	Prediction_Obstacle(const Tracked_Obstacle &to);
+			Prediction_Obstacle();
 
-	~Prediction_Obstacle();
+			Prediction_Obstacle(const Eigen::VectorXd &xs_aug, const double T, const double dt);
 
-	Prediction_Obstacle& operator=(const Prediction_Obstacle &rhs);
-	Prediction_Obstacle& operator=(const Tracked_Obstacle &rhs);
+			Prediction_Obstacle(const Prediction_Obstacle &po);
+			Prediction_Obstacle(const Tracked_Obstacle &to);
 
-	inline int get_ID() const { return ID; };
+			~Prediction_Obstacle();
 
-	inline double get_length() const { return l; };
+			Prediction_Obstacle& operator=(const Prediction_Obstacle &rhs);
+			Prediction_Obstacle& operator=(const Tracked_Obstacle &rhs);
 
-	inline double get_width() const { return w; };
+			inline int get_ID() const { return ID; };
 
-	inline Intention get_intention() const { return a_p; }
+			inline double get_length() const { return l; };
 
-	inline bool get_COLREGS_breach_indicator() const { return mu; }
+			inline double get_width() const { return w; };
 
-	// State at the current predicted time in the joint predictions
-	inline Eigen::Vector4d get_initial_state() const { return xs_0; }; 
-	// State at the current predicted time + k time steps in the joint predictions
-	inline Eigen::Vector4d get_state(const int k) const { assert(k < xs_p.cols() && k >= 0); return xs_p.col(k); }; 
+			inline Intention get_intention() const { return a_p; }
 
-	inline Eigen::MatrixXd get_trajectory() const { return xs_p; };
-	inline Eigen::MatrixXd get_predicted_trajectory() const { return xs_k_p; };
+			inline bool get_COLREGS_breach_indicator() const { return mu; }
 
-	inline Eigen::Matrix<double, 2, -1> get_waypoints() const { return waypoints; }
+			// State at the current predicted time in the joint predictions
+			inline Eigen::Vector4d get_initial_state() const { return xs_0; }; 
+			// State at the current predicted time + k time steps in the joint predictions
+			inline Eigen::Vector4d get_state(const int k) const { assert(k < xs_p.cols() && k >= 0); return xs_p.col(k); }; 
 
-	inline void set_intention(const Intention a) {assert(a >= KCC && a <= PM); a_p = a; }
+			inline Eigen::MatrixXd get_trajectory() const { return xs_p; };
+			inline Eigen::MatrixXd get_predicted_trajectory() const { return xs_k_p; };
 
-	inline void set_state(const Eigen::Vector4d &xs_k, const int k) { assert(k < xs_p.cols() && k >= 0); xs_p.col(k) = xs_k; }
+			inline Eigen::Matrix<double, 2, -1> get_waypoints() const { return waypoints; }
 
-	inline void set_waypoints(const Eigen::Matrix<double, 2, -1> &waypoints) { this->waypoints = waypoints; }
+			inline void set_intention(const Intention a) {assert(a >= KCC && a <= PM); a_p = a; }
 
-	void predict_independent_trajectory(const double T, const double dt, const int k);
+			inline void set_state(const Eigen::Vector4d &xs_k, const int k) { assert(k < xs_p.cols() && k >= 0); xs_p.col(k) = xs_k; }
 
-	void update(const Eigen::Vector4d &xs, const int k);
+			inline void set_waypoints(const Eigen::Matrix<double, 2, -1> &waypoints) { this->waypoints = waypoints; }
 
-};
+			void predict_independent_trajectory(const double T, const double dt, const int k);
 
-#endif
+			void update(const Eigen::Vector4d &xs, const int k);
+
+		};
+	}
+}

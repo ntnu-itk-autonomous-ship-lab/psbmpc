@@ -25,6 +25,11 @@
 #include "utilities.h"
 #include <iostream>
 
+namespace PSBMPC_LIB
+{
+
+namespace CPU
+{
 /****************************************************************************************
 *  Name     : Prediction_Obstacle
 *  Function : Class constructor, initializes parameters, variables and objects
@@ -53,6 +58,12 @@ Prediction_Obstacle::Prediction_Obstacle(
 		 0, 1, 0, dt,
 		 0, 0, 1, 0,
 		 0, 0, 0, 1;
+
+	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
 
 	xs_p.resize(4, n_samples);
 	xs_p.col(0) = xs_0;
@@ -181,8 +192,6 @@ void Prediction_Obstacle::assign_data(
 {
 	this->ID = po.ID;
 
-	this->colav_on = po.colav_on;
-
 	this->A = po.A; this->B = po.B; this->C = po.C; this->D = po.D;
 	this->l = po.l; this->w = po.w;
 
@@ -232,4 +241,7 @@ void Prediction_Obstacle::assign_data(
 	this->xs_k_p = to.xs_p[0];
 
 	this->sbmpc.reset(new Obstacle_SBMPC());
+}
+
+}
 }
