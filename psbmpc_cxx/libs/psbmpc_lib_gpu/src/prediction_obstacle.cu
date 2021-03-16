@@ -25,15 +25,20 @@
 #include "utilities_gpu.cuh"
 #include <iostream>
 
+namespace PSBMPC_LIB
+{
+
+namespace GPU
+{
 /****************************************************************************************
 *  Name     : Prediction_Obstacle
 *  Function : Class constructor, initializes parameters, variables and objects
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ PSBMPC_LIB::GPU::Prediction_Obstacle::Prediction_Obstacle() = default;
+__host__ __device__ Prediction_Obstacle::Prediction_Obstacle() = default;
 
-__host__ __device__ PSBMPC_LIB::GPU::Prediction_Obstacle::Prediction_Obstacle(
+__host__ __device__ Prediction_Obstacle::Prediction_Obstacle(
 	const TML::PDMatrix<float, 9, 1> &xs_aug, 					// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
@@ -64,21 +69,21 @@ __host__ __device__ PSBMPC_LIB::GPU::Prediction_Obstacle::Prediction_Obstacle(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-PSBMPC_LIB::GPU::Prediction_Obstacle::Prediction_Obstacle(
+Prediction_Obstacle::Prediction_Obstacle(
 	const Prediction_Obstacle &po 												// In: Prediction obstacle to copy
 	)
 {
 	assign_data(po);
 }
 
-PSBMPC_LIB::GPU::Prediction_Obstacle::Prediction_Obstacle(
+Prediction_Obstacle::Prediction_Obstacle(
 	const Tracked_Obstacle &to 													// In: Tracked obstacle to copy
 	)
 {
 	assign_data(to);
 }
 
-PSBMPC_LIB::GPU::Prediction_Obstacle::~Prediction_Obstacle() = default;
+Prediction_Obstacle::~Prediction_Obstacle() = default;
 
 /****************************************************************************************
 *  Name     : operator=
@@ -86,8 +91,8 @@ PSBMPC_LIB::GPU::Prediction_Obstacle::~Prediction_Obstacle() = default;
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-PSBMPC_LIB::GPU::Prediction_Obstacle& PSBMPC_LIB::GPU::Prediction_Obstacle::operator=(
-	const PSBMPC_LIB::GPU::Prediction_Obstacle &rhs 										// In: Rhs prediction obstacle to assign
+Prediction_Obstacle& Prediction_Obstacle::operator=(
+	const Prediction_Obstacle &rhs 										// In: Rhs prediction obstacle to assign
 	)
 {
 	if (this == &rhs)
@@ -100,8 +105,8 @@ PSBMPC_LIB::GPU::Prediction_Obstacle& PSBMPC_LIB::GPU::Prediction_Obstacle::oper
 	return *this;
 }
 
-PSBMPC_LIB::GPU::Prediction_Obstacle& PSBMPC_LIB::GPU::Prediction_Obstacle::operator=(
-	const PSBMPC_LIB::Tracked_Obstacle &rhs 										// In: Rhs tracked obstacle to assign
+Prediction_Obstacle& Prediction_Obstacle::operator=(
+	const Tracked_Obstacle &rhs 										// In: Rhs tracked obstacle to assign
 	)
 {
 	assign_data(rhs);
@@ -118,7 +123,7 @@ PSBMPC_LIB::GPU::Prediction_Obstacle& PSBMPC_LIB::GPU::Prediction_Obstacle::oper
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC_LIB::GPU::Prediction_Obstacle::predict_independent_trajectory(						
+void Prediction_Obstacle::predict_independent_trajectory(						
 	const double T, 											// In: Time horizon
 	const double dt, 											// In: Time step
 	const int k													// In: Index of the current predicted time
@@ -148,7 +153,7 @@ void PSBMPC_LIB::GPU::Prediction_Obstacle::predict_independent_trajectory(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC_LIB::GPU::Prediction_Obstacle::update(
+void Prediction_Obstacle::update(
 	const TML::Vector4f &xs, 								// In: Predicted obstacle state [x, y, V_x, V_y]
 	const int k												// In: Index of the current predicted time
 	)
@@ -169,7 +174,7 @@ void PSBMPC_LIB::GPU::Prediction_Obstacle::update(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void PSBMPC_LIB::GPU::Prediction_Obstacle::assign_data(
+void Prediction_Obstacle::assign_data(
 	const Prediction_Obstacle &po 													// In: Prediction_Obstacle whose data to assign to *this
 	)
 {
@@ -195,7 +200,7 @@ void PSBMPC_LIB::GPU::Prediction_Obstacle::assign_data(
 	this->waypoints = po.waypoints;
 }
 
-void PSBMPC_LIB::GPU::Prediction_Obstacle::assign_data(
+void Prediction_Obstacle::assign_data(
 	const Tracked_Obstacle &to 														// In: Tracked_Obstacle whose data to assign to *this
 	)
 {
@@ -217,4 +222,7 @@ void PSBMPC_LIB::GPU::Prediction_Obstacle::assign_data(
 	TML::assign_eigen_object(this->xs_k_p, to.xs_p[0]);
 
 	this->waypoints.resize(2, 2); waypoints.set_zero();
+}
+
+}
 }

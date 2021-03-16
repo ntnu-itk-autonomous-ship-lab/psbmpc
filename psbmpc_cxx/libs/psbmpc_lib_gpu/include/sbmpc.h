@@ -24,7 +24,7 @@
 #include "psbmpc_index.h"
 #include "sbmpc_parameters.h"
 #include "ownship.h"
-#include "mpc_cost.h"
+#include "mpc_cost_cpu.h"
 
 #include "Eigen/Dense"
 #include <vector>
@@ -64,7 +64,7 @@ namespace PSBMPC_LIB
 
 		SBMPC_Parameters pars;
 
-		MPC_Cost<SBMPC_Parameters> mpc_cost;
+		CPU::MPC_Cost<SBMPC_Parameters> mpc_cost;
 
 		SBMPC();
 			
@@ -78,6 +78,5 @@ namespace PSBMPC_LIB
 			const Eigen::Matrix<double, 6, 1> &ownship_state,
 			const Eigen::Matrix<double, 4, -1> &static_obstacles,
 			Obstacle_Data<Tracked_Obstacle> &data);
-
 	};
 } 

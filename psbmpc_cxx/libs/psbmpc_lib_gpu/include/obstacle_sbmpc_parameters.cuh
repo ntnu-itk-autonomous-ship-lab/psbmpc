@@ -18,52 +18,56 @@
 *
 *****************************************************************************************/
 
-#ifndef _OBSTACLE_SBMPC_PARAMETERS_CUH_
-#define _OBSTACLE_SBMPC_PARAMETERS_CUH_
+#pragma once
 
 #include "psbmpc_parameters.h"
 #include "psbmpc_defines.h"
 #include "tml.cuh"
 
-template <typename Parameters> class MPC_Cost;
-class Obstacle_SBMPC;
-
-class Obstacle_SBMPC_Parameters
+namespace PSBMPC_LIB
 {
-private:
-	friend class MPC_Cost<Obstacle_SBMPC_Parameters>;
-	friend class Obstacle_SBMPC;
+	namespace GPU
+	{
+		template <typename Parameters> class MPC_Cost;
+		class Obstacle_SBMPC;
+	}
 
-	int n_cbs, n_M;
+	class Obstacle_SBMPC_Parameters
+	{
+	private:
+		friend class GPU::MPC_Cost<Obstacle_SBMPC_Parameters>;
+		friend class GPU::Obstacle_SBMPC;
 
-	TML::PDMatrix<float, MAX_N_M, MAX_N_U_OFFSETS_OSBMPC> u_offsets;
-	TML::PDMatrix<float, MAX_N_M, MAX_N_CHI_OFFSETS_OSBMPC> chi_offsets;
-	TML::PDMatrix<int, 2, MAX_N_M> offsets_size;
+		int n_cbs, n_M;
 
-	Prediction_Method prediction_method;
+		TML::PDMatrix<float, MAX_N_M, MAX_N_U_OFFSETS_OSBMPC> u_offsets;
+		TML::PDMatrix<float, MAX_N_M, MAX_N_CHI_OFFSETS_OSBMPC> chi_offsets;
+		TML::PDMatrix<int, 2, MAX_N_M> offsets_size;
 
-	Guidance_Method guidance_method;
+		Prediction_Method prediction_method;
 
-	float T, T_static, dt, p_step;
-	float t_ts;
-	float d_safe, d_close, d_init;
-	float K_coll;
-	float phi_AH, phi_OT, phi_HO, phi_CR;
-	float kappa, kappa_TC;
-	float K_u, K_du;
-	float K_chi_strb, K_dchi_strb;
-	float K_chi_port, K_dchi_port; 
-	float K_sgn, T_sgn;
-	float G;
-	float q, p;
+		Guidance_Method guidance_method;
 
-	void initialize_pars();
+		float T, T_static, dt, p_step;
+		float t_ts;
+		float d_safe, d_close, d_init;
+		float K_coll;
+		float phi_AH, phi_OT, phi_HO, phi_CR;
+		float kappa, kappa_TC;
+		float K_u, K_du;
+		float K_chi_strb, K_dchi_strb;
+		float K_chi_port, K_dchi_port; 
+		float K_sgn, T_sgn;
+		float G;
+		float q, p;
 
-public:
+		void initialize_pars();
 
-	Obstacle_SBMPC_Parameters() { initialize_pars(); }
+	public:
 
-	Obstacle_SBMPC_Parameters(std::string tuning_file); // Not implemented yet
-};
+		Obstacle_SBMPC_Parameters() { initialize_pars(); }
 
-#endif 
+		Obstacle_SBMPC_Parameters(std::string tuning_file); // Not implemented yet
+	};
+
+}
