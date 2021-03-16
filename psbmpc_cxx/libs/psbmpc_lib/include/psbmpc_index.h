@@ -18,8 +18,7 @@
 *
 *****************************************************************************************/
 
-#ifndef _PSBMPC_INDEX_H_
-#define _PSBMPC_INDEX_H_
+#pragma once
 
 #define N_BPAR						1							// Number of boolean tyoe parameters in PSBMPC
 #define N_IPAR						2 							// Number of integer type parameters in PSBMPC
@@ -78,8 +77,3 @@
 
 // Indices for offset/control behaviour parameters of type Eigen::VectorXd
 #define i_evpar_obstacle_course_changes 0
-
-
-
-
-#endif

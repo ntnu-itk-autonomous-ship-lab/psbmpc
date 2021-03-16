@@ -23,7 +23,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "obstacle_ship.h"
+#include "gpu/obstacle_ship_gpu.cuh"
 #include <iostream>
 #include <memory>
 #include "Eigen/Dense"
@@ -56,7 +56,7 @@ int main(){
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
 	
-	std::unique_ptr<Obstacle_Ship> obstacle_ship(new Obstacle_Ship()); 
+	std::unique_ptr<PSBMPC_LIB::GPU::Obstacle_Ship> obstacle_ship(new PSBMPC_LIB::GPU::Obstacle_Ship()); 
 
 	Eigen::Matrix<double, 4, -1> trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
@@ -78,7 +78,7 @@ int main(){
 	//*****************************************************************************************************************
 	obstacle_ship->determine_active_waypoint_segment(waypoints, trajectory.col(0));
 
-	obstacle_ship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
+	obstacle_ship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
 	//*****************************************************************************************************************
 	// Send data to matlab

@@ -17,7 +17,7 @@
 *
 *****************************************************************************************/
 
-#include "utilities_cpu.h"
+#include "psbmpc_defines.h"
 #include "psbmpc_parameters.h"
 #include "Eigen/Dense"
 #include <vector>

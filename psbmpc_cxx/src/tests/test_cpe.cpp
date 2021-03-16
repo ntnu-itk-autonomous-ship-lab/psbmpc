@@ -23,10 +23,10 @@
 #endif
 
 
-#include "cpe.h"
-#include "utilities.h"
+#include "cpu/cpe_cpu.h"
+#include "cpu/utilities_cpu.h"
 #include "mrou.h"
-#include "ownship.h"
+#include "cpu/ownship_cpu.h"
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -62,7 +62,7 @@ int main(){
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
 
-	std::unique_ptr<Ownship> asv(new Ownship()); 
+	std::unique_ptr<PSBMPC_LIB::CPU::Ownship> asv(new PSBMPC_LIB::CPU::Ownship()); 
 
 	Eigen::Matrix<double, 6, -1> trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
@@ -103,13 +103,13 @@ int main(){
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step
 	Eigen::MatrixXd P_p; 
 
-	std::unique_ptr<MROU> mrou(new MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
+	std::unique_ptr<PSBMPC_LIB::MROU> mrou(new PSBMPC_LIB::MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
 
 	// n_ps = 1
 	xs_p.resize(1); xs_p[0].resize(4, n_samples);
 	xs_p[0].col(0) = xs_0;
 	P_p.resize(16, n_samples);
-	P_p.col(0) = flatten(P_0);
+	P_p.col(0) = PSBMPC_LIB::CPU::flatten(P_0);
 
 	v_p.resize(1); v_p[0].resize(2, n_samples);
 	
@@ -145,13 +145,13 @@ int main(){
 
 	Eigen::MatrixXd P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
 	Eigen::Matrix<double, 1, -1> P_c_i_temp(1, n_samples);
-	std::unique_ptr<CPE> cpe(new CPE(CE, dt));
+	std::unique_ptr<PSBMPC_LIB::CPU::CPE> cpe(new PSBMPC_LIB::CPU::CPE(PSBMPC_LIB::CE, dt));
 
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
 
-	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
+	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
 	double t = 0;
 
@@ -166,18 +166,18 @@ int main(){
 			if (k < n_samples - 1)
 			{
 				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p[ps].col(k), dt);
-				P_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
+				P_p.col(k + 1) = PSBMPC_LIB::CPU::flatten(mrou->predict_covariance(P_0, t));
 			}
 		}
 		//=======================================================================================
 		// CE Estimation
 		//=======================================================================================
-
-		cpe->set_method(CE);
+		int p_step = 1;
+		cpe->set_method(PSBMPC_LIB::CE);
 
 		auto start = std::chrono::system_clock::now();
 
-		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, dt);
+		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, dt, p_step);
 		P_c_i_CE.row(ps) = P_c_i_temp;
 
 		auto end = std::chrono::system_clock::now();
@@ -188,11 +188,11 @@ int main(){
 		//=======================================================================================
 		// MCSKF4D Estimation
 		//=======================================================================================
-		cpe->set_method(MCSKF4D);
+		cpe->set_method(PSBMPC_LIB::MCSKF4D);
 
 		start = std::chrono::system_clock::now();
 		
-		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, dt);
+		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, dt, p_step);
 		P_c_i_MCSKF.row(ps) = P_c_i_temp;
 
 		end = std::chrono::system_clock::now();

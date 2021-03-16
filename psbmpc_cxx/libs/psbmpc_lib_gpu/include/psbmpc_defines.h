@@ -18,8 +18,7 @@
 *
 *****************************************************************************************/
 
-#ifndef _PSBMPC_DEFINES_H_
-#define _PSBMPC_DEFINES_H_
+#pragma once
 
 #define M_PI 3.14159265358979323846
 
@@ -33,12 +32,10 @@
 
 #define MAX_N_SAMPLES 400               // Max number of samples for trajectories and such allowable on the device
 
-#define MAX_N_WPS 6                     // Max number of waypoints for the waypoint matrix allowable on the device
+#define MAX_N_WPS 8                     // Max number of waypoints for the waypoint matrix allowable on the device
 
 #define MAX_N_OBST 5                   // Max number of obstacles allowable on the device
 #define MAX_N_PS 10                    // Max number of prediction scenarios allowable for obstacle trajectory matrices on the device
 
 #define MAX_N_SEG_SAMPLES 4             // Max number of samples in segment considered in the CPE method MCSKF4D
 #define MAX_N_CPE_SAMPLES 500           // Max number of samples allowable to draw in the CPE. 
-
-#endif

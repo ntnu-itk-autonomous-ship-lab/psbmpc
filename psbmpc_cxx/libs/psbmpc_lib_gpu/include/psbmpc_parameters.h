@@ -52,7 +52,7 @@ namespace PSBMPC_LIB
 
 	class Obstacle_Manager;
 	class Joint_Prediction_Manager;
-	class CB_Functor_Pars;
+	
 	namespace CPU
 	{
 		class PSBMPC;
@@ -64,6 +64,7 @@ namespace PSBMPC_LIB
 		class PSBMPC;
 		template <typename Parameters> class MPC_Cost;
 		class Obstacle_SBMPC;
+		class CB_Functor_Pars;
 	}
 	
 	class PSBMPC_Parameters
@@ -76,7 +77,7 @@ namespace PSBMPC_LIB
 		friend class GPU::MPC_Cost<PSBMPC_Parameters>;
 		friend class Obstacle_Manager;
 		friend class Joint_Prediction_Manager;
-		friend class CB_Functor_Pars;
+		friend class GPU::CB_Functor_Pars;
 
 		// Number of control behaviours, sequential maneuvers and maximum allowable 
 		// prediction scenarios for an obstacle, respectively

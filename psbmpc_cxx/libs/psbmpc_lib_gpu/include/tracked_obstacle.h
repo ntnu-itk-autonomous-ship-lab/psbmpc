@@ -3,6 +3,8 @@
 *  File name : tracked_obstacle.h
 *
 *  Function  : Header file for the tracked obstacle class used by the PSB-MPC.
+*			   Contains dynamic obstacle information from the tracking system, intention 
+*			   inference modules etc., managed by the Obstacle_Manager.
 *  
 *	           ---------------------
 *
@@ -17,15 +19,14 @@
 *
 *****************************************************************************************/
 
-
 #pragma once
+
+#include "cpu/utilities_cpu.h"
+#include "kf.h"
+#include "mrou.h"
 
 #include <vector>
 #include <memory>
-
-#include "utilities_cpu.h"
-#include "mrou.h"
-#include "kf.h"
 
 namespace PSBMPC_LIB
 {
@@ -36,6 +37,10 @@ namespace PSBMPC_LIB
 		PM 						// Port maneuver
 	};
 
+	namespace CPU
+	{
+		class Prediction_Obstacle;
+	}
 	namespace GPU
 	{
 		class Cuda_Obstacle;
@@ -46,8 +51,8 @@ namespace PSBMPC_LIB
 	{
 	private:
 
-		// To make transfer of data from cpu to gpu obstacle objects easier
 		friend class GPU::Cuda_Obstacle;
+		friend class CPU::Prediction_Obstacle;
 		friend class GPU::Prediction_Obstacle;
 
 		int ID;
@@ -171,7 +176,7 @@ namespace PSBMPC_LIB
 			int n_ps_independent = ps_course_changes.size();
 			
 			Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
-			P_p.col(0) = flatten(kf->get_covariance());
+			P_p.col(0) = CPU::flatten(kf->get_covariance());
 
 			Eigen::Vector2d v_p_new, v_A, v_B, L_AB;
 			double chi_ps, t = 0, psi_A, d_AB;
@@ -192,7 +197,7 @@ namespace PSBMPC_LIB
 
 					v_B(0) = ownship_state_sl(3);
 					v_B(1) = ownship_state_sl(4);
-					v_B = rotate_vector_2D(v_B, ownship_state_sl(2));
+					v_B = CPU::rotate_vector_2D(v_B, ownship_state_sl(2));
 
 					psi_A = atan2(xs_p[ps](4), xs_p[ps](0));
 					L_AB = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl.block<2, 1>(0, 0);
@@ -237,11 +242,11 @@ namespace PSBMPC_LIB
 					{
 						xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p, dt);
 
-						if (ps == 0) P_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
+						if (ps == 0) P_p.col(k + 1) = CPU::flatten(mrou->predict_covariance(P_0, t));
 
 						// Propagate ownship assuming straight line trajectory
 						ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
-							dt * rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
+							dt * CPU::rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
 						ownship_state_sl.block<4, 1>(2, 0) = ownship_state_sl.block<4, 1>(2, 0);
 					}
 				}
@@ -249,6 +254,8 @@ namespace PSBMPC_LIB
 		}
 
 		void prune_ps(const Eigen::VectorXi &ps_indices);
+
+		void add_intelligent_prediction(const CPU::Prediction_Obstacle *po, const bool overwrite); // only used in the CPU PSBMPC implementation
 
 		void update(
 			const Eigen::VectorXd &xs_aug, 
