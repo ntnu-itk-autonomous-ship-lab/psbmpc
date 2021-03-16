@@ -31,25 +31,22 @@
 cmake_minimum_required(VERSION 3.17.3)
 project(psbmpc_test LANGUAGES CUDA CXX)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # for debug compilation and profiling
 add_compile_options(-Wall -Wextra -fno-omit-frame-pointer -g -DEIGEN_MAX_STATIC_ALIGN_BYTES=16)
 
 #add_compile_options(-Wall -Wextra -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16)
 
-add_subdirectory(libs/psbmpc_lib_gpu)
-#add_subdirectory(libs/psbmpc_lib)
+add_subdirectory(libs/psbmpc_lib)
 
 add_subdirectory(src/tests)
 
 # Use these set commands when building the GPU version
-set_property(TARGET psbmpc_lib_gpu PROPERTY CUDA_ARCHITECTURES 61 86)
-set_property(TARGET tester PROPERTY CUDA_ARCHITECTURES 61 86)
+set_property(TARGET psbmpc_lib PROPERTY CUDA_ARCHITECTURES 61 86)
+#set_property(TARGET tester PROPERTY CUDA_ARCHITECTURES 61 86)
 
-target_link_libraries(tester PRIVATE psbmpc_lib_gpu)
-#target_link_libraries(tester PRIVATE psbmpc_lib)
-
+target_link_libraries(tester PRIVATE psbmpc_lib)
 
 #message("Your C++ compiler supports these C++ features:")
 #foreach(i ${CMAKE_CXX_COMPILE_FEATURES})

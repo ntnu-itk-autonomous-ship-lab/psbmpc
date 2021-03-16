@@ -4,7 +4,7 @@
 *
 *  Function  : Class functions for a "hardcoded" Kalman Filter (KF). Alternative version
 *			   of the one created by Giorgio D. Kwame Minde Kufoalor through the Autosea
-*		       project
+*		       project, modified with .cu for this GPU-implementation.
 *
 *  
 *            ---------------------
@@ -23,7 +23,8 @@
 #include "kf.h"
 #include <stdexcept>
 
-
+namespace PSBMPC_LIB
+{
 /****************************************************************************************
 *  Name     : KF
 *  Function : Class constructors, initializes parameters and variables 
@@ -147,7 +148,7 @@ KF::KF(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
- void KF::reset(
+void KF::reset(
  	const Eigen::Vector4d& xs_0,				// In: Initial filter state
 	const Eigen::Matrix4d& P_0,					// In: Initial filter covariance
  	const double t_0 							// In: Initial time
@@ -252,4 +253,5 @@ void KF::update(
 	}
 	
 	t += dt; // Time used for fault detection (measurement loss)
+}
 }

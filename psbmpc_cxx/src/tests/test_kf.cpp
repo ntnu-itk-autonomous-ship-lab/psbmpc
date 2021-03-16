@@ -17,12 +17,7 @@
 *
 *****************************************************************************************/
 
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-#include "utilities.h"
+#include "cpu/utilities_cpu.h"
 #include "kf.h"
 #include <iostream>
 #include <vector>
@@ -47,7 +42,7 @@ int main()
 
 	int ID_i(0);
 
-	std::unique_ptr<KF> kf(new KF(xs_i, P_i, ID_i, dt, t_0));
+	std::unique_ptr<PSBMPC_LIB::KF> kf(new PSBMPC_LIB::KF(xs_i, P_i, ID_i, dt, t_0));
 
 	double duration_lost(0.0);
 
@@ -66,7 +61,7 @@ int main()
 			  << xs_i_upd(3) << "]" << std::endl;
 	
 	std::cout << "P_i = " << std::endl;
-	std::cout << kf->get_covariance() << std::endl;;
+	std::cout << kf->get_covariance() << std::endl;
 
 	return 0;
 }

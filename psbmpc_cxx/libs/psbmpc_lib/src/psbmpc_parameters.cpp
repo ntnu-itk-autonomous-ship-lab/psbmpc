@@ -17,11 +17,13 @@
 *
 *****************************************************************************************/
 
-#include "utilities.h"
+#include "psbmpc_defines.h"
 #include "psbmpc_parameters.h"
 #include "Eigen/Dense"
 #include <vector>
 
+namespace PSBMPC_LIB
+{
 
 /****************************************************************************************
 	Public functions
@@ -292,7 +294,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 		ipar_high[i] = 1e12;
 	}
 	ipar_low[i_ipar_n_M] = 1; ipar_high[i_ipar_n_M] = 10; 
-	ipar_low[i_ipar_n_r] = 1; ipar_high[i_ipar_n_r] = 20; 
+	ipar_low[i_ipar_n_r] = 1; ipar_high[i_ipar_n_r] = MAX_N_PS; 
 
 	//std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
 	//std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
@@ -350,7 +352,6 @@ void PSBMPC_Parameters::initialize_pars()
 			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
 			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
@@ -376,7 +377,7 @@ void PSBMPC_Parameters::initialize_pars()
 	obstacle_course_changes.resize(3);
 	obstacle_course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 
-	cpe_method = MCSKF4D;
+	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
@@ -395,7 +396,7 @@ void PSBMPC_Parameters::initialize_pars()
 	d_init = 1500;								 
 	d_close = 1000;
 	d_safe = 50; 							
-	K_coll = 1.0;		  					
+	K_coll = 0.5;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
@@ -415,4 +416,6 @@ void PSBMPC_Parameters::initialize_pars()
 	p = 1.0;
 
 	obstacle_colav_on = false;
+}
+
 }

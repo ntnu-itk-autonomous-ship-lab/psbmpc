@@ -18,12 +18,6 @@
 *
 *****************************************************************************************/
 
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
 #include "cpu/utilities_cpu.h"

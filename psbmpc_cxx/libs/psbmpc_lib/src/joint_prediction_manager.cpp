@@ -21,6 +21,8 @@
 #include <iostream>
 #include <iomanip>
 
+namespace PSBMPC_LIB
+{
 /****************************************************************************************
 *  Name     : Class constructor
 *  Function : 
@@ -67,11 +69,11 @@ void Joint_Prediction_Manager::update_obstacle_status(
 
 		SOG_0 = xs_j.block<2, 1>(2, 0).norm();
 
-		RB_0 = angle_difference_pmpi(atan2(d_ij(1), d_ij(0)), obstacle_i_state(2));
+		RB_0 = CPU::angle_difference_pmpi(atan2(d_ij(1), d_ij(0)), obstacle_i_state(2));
 
 		data[i].obstacle_status.col(j) << ID_0, 										// Obstacle ID
 								  SOG_0, 												// Speed over ground of obstacle
-								  wrap_angle_to_02pi(COG_0) * RAD2DEG, 					// Course over ground of obstacle
+								  CPU::wrap_angle_to_02pi(COG_0) * RAD2DEG, 			// Course over ground of obstacle
 								  RB_0 * RAD2DEG, 										// Relative bearing
 								  d_ij.norm(),											// Range
 								  data[i].HL_0[j], 										// Hazard level of obstacle at optimum
@@ -126,3 +128,4 @@ void Joint_Prediction_Manager::display_obstacle_information(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+}

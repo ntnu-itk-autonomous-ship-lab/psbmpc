@@ -1,4 +1,4 @@
-#include "shapefil.h"
+#include "shapefile_related/shapefil.h"
 #include <iostream>
 #include <boost/geometry/geometry.hpp>
 #include <boost/geometry/geometries/geometries.hpp>
@@ -70,7 +70,7 @@ void convert(SHPObject* psShape, T& polygon)
 int main()
 {   
 
-    std::string filename = "/home/tom/Desktop/MasterThesis/ENC/data/charts/land/land.shp";
+    std::string filename = "/home/trymte/Desktop/ENC (copy)/data/charts/land/land.shp";
     typedef model::d2::point_xy<double> point_2d;
     typedef model::polygon< point_2d> polygon_2d;
     std::vector<polygon_2d> polygons;

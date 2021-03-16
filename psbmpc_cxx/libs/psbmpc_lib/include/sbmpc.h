@@ -5,7 +5,6 @@
 *  Function  : Header file for the original Scenario-based Model Predictive Control.
 *			   
 *
-*  
 *	           ---------------------
 *
 *  Version 1.0
@@ -19,68 +18,60 @@
 *
 *****************************************************************************************/
 
-#ifndef _SBMPC_H_
-#define _SBMPC_H_
+#pragma once
 
-#include "psbmpc_index.h"
 #include "sbmpc_parameters.h"
-#include "obstacle_manager.h"
-#include "ownship.h"
-#include "obstacle.h"
-#include "mpc_cost.h"
+#include "cpu/ownship_cpu.h"
+#include "cpu/mpc_cost_cpu.h"
 
-#include "Eigen/Dense"
-#include <vector>
-#include <memory>	
-
-class SBMPC
+namespace PSBMPC_LIB
 {
-private:
-	// Control behavior related vectors and the own-ship maneuver times in the prediction horizon
-	Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
+	class SBMPC
+	{
+	private:
+		// Control behavior related vectors and the own-ship maneuver times in the prediction horizon
+		Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
 
-	// Previous optimal offsets/modifications
-	double u_opt_last;
-	double chi_opt_last;
+		// Previous optimal offsets/modifications
+		double u_opt_last;
+		double chi_opt_last;
 
-	// Cost at the optimal solution
-	double min_cost;
+		// Cost at the optimal solution
+		double min_cost;
 
-	// Own-ship predicted trajectory
-	Eigen::Matrix<double, 6, -1> trajectory;
+		// Own-ship predicted trajectory
+		Eigen::Matrix<double, 6, -1> trajectory;
 
-	Ownship ownship;
+		CPU::Ownship ownship;
 
-	void reset_control_behaviour();
+		void reset_control_behaviour();
 
-	void increment_control_behaviour();
+		void increment_control_behaviour();
 
-	void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data);
+		void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 
-	bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
+		bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 
-	//
-	void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
+		//
+		void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
-public:
+	public:
 
-	SBMPC_Parameters pars;
+		SBMPC_Parameters pars;
 
-	MPC_Cost<SBMPC_Parameters> mpc_cost;
+		CPU::MPC_Cost<SBMPC_Parameters> mpc_cost;
 
-	SBMPC();
-		
-	void calculate_optimal_offsets(
-		double &u_opt, 
-		double &chi_opt, 
-		Eigen::Matrix<double, 2, -1> &predicted_trajectory,
-		const double u_d, 
-		const double chi_d, 
-		const Eigen::Matrix<double, 2, -1> &waypoints,
-		const Eigen::Matrix<double, 6, 1> &ownship_state,
-		const Eigen::Matrix<double, 4, -1> &static_obstacles,
-		Obstacle_Data<Tracked_Obstacle> &data);
-
-};
-
-#endif 
+		SBMPC();
+			
+		void calculate_optimal_offsets(
+			double &u_opt, 
+			double &chi_opt, 
+			Eigen::Matrix<double, 2, -1> &predicted_trajectory,
+			const double u_d, 
+			const double chi_d, 
+			const Eigen::Matrix<double, 2, -1> &waypoints,
+			const Eigen::Matrix<double, 6, 1> &ownship_state,
+			const Eigen::Matrix<double, 4, -1> &static_obstacles,
+			Obstacle_Data<Tracked_Obstacle> &data);
+	};
+} 

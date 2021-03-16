@@ -18,8 +18,8 @@
 *
 *****************************************************************************************/
 
-#include "psbmpc.h"
-#include "utilities.h"
+#include "cpu/psbmpc_cpu.h"
+#include "cpu/utilities_cpu.h"
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -45,7 +45,7 @@ int main()
 	xs_os_0 << 0, 0, 0, 9, 0, 0;
 	double u_d(9.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 	
-	Ownship asv_sim;
+	PSBMPC_LIB::CPU::Ownship asv_sim;
 
 	Eigen::Matrix<double, 6, -1> trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
@@ -83,7 +83,7 @@ int main()
 	std::vector<double> Pr_CC(n_obst);
 
 	// Simulate obstacles using an ownship model
-	Ownship obstacle_sim;
+	PSBMPC_LIB::CPU::Ownship obstacle_sim;
 
 	std::vector<double> u_d_i(n_obst);
 	std::vector<double> chi_d_i(n_obst);
@@ -134,7 +134,7 @@ int main()
 		ID[i] = i;
 
 		trajectory_covariances_i[i].resize(16, 1);
-		trajectory_covariances_i[i].col(0) = flatten(P_0);
+		trajectory_covariances_i[i].col(0) = PSBMPC_LIB::CPU::flatten(P_0);
 
 		Pr_a[i].resize(3);
 		Pr_a[i] << 0.05, 0.9, 0.05;
@@ -180,17 +180,17 @@ int main()
 		maneuver_times_i[i] << 0, 100, 150;
 
 		// Simulate obstacle trajectory independent on the ownship
-		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], ERK1, LOS, T_sim, dt);
+		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T_sim, dt);
 	}
 
 //*****************************************************************************************************************
 // Obstacle Manager setup
 //*****************************************************************************************************************	
-	Obstacle_Manager obstacle_manager;
+	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************	
-	PSBMPC psbmpc;
+	PSBMPC_LIB::CPU::PSBMPC psbmpc;
 	double u_opt(1.0), chi_opt(0.0);
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
@@ -284,10 +284,10 @@ int main()
 		for (int i = 0; i < n_obst; i++)
 		{
 			xs_i_k.block<2, 1>(0, 0) = trajectory_i[i].block<2, 1>(0, k);
-			xs_i_k.block<2, 1>(2, 0) = rotate_vector_2D(trajectory_i[i].block<2, 1>(3, k), trajectory_i[i](2, k));
+			xs_i_k.block<2, 1>(2, 0) = PSBMPC_LIB::CPU::rotate_vector_2D(trajectory_i[i].block<2, 1>(3, k), trajectory_i[i](2, k));
 			obstacle_states.col(i) << xs_i_k, A, B, C, D, ID[i];
 
-			obstacle_covariances.col(i) = flatten(P_0);
+			obstacle_covariances.col(i) = PSBMPC_LIB::CPU::flatten(P_0);
 
 			obstacle_intention_probabilities.col(i) = Pr_a[i];
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
@@ -302,7 +302,7 @@ int main()
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
 
-		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, LOS);
+		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, PSBMPC_LIB::LOS);
 
 		if (fmod(t, 5) == 0)
 		{
@@ -334,7 +334,7 @@ int main()
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 		asv_sim.update_ctrl_input(u_c, chi_c, trajectory.col(k));
 		
-		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), dt, ERK1); }
+		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), dt, PSBMPC_LIB::ERK1); }
 
 		//===========================================
 		// Send trajectory data to matlab

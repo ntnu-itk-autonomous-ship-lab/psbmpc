@@ -2,9 +2,7 @@
 *
 *  File name : tracked_obstacle.cpp
 *
-*  Function  : Tracked bstacle class functions. Derived class of base Obstacle class,
-*		  	   used in the PSB-MPC obstacle management.
-*
+*  Function  : Tracked obstacle class functions.
 *  
 *	           ---------------------
 *
@@ -20,10 +18,12 @@
 *****************************************************************************************/
 
 #include "tracked_obstacle.h"
-#include "prediction_obstacle.h"
-
+#include "cpu/prediction_obstacle_cpu.h"
 #include "assert.h"
 #include <iostream> 
+
+namespace PSBMPC_LIB
+{
 
 /****************************************************************************************
 *  Name     : Tracked_Obstacle
@@ -32,75 +32,53 @@
 *  Modified :
 *****************************************************************************************/
 Tracked_Obstacle::Tracked_Obstacle(
-	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::VectorXd &xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
 	const Eigen::VectorXd &Pr_a,								// In: Obstacle intention probability vector
 	const double Pr_CC, 										// In: A priori COLREGS compliance probability
 	const bool filter_on, 										// In: Indicator of whether the KF is active
 	const double T, 											// In: Prediction horizon
 	const double dt 											// In: Sampling interval
-	) : 
-	Obstacle(xs_aug, P, false), 
-	duration_lost(0.0),
-	kf(new KF(xs_0, P_0, ID, dt, 0.0)),
-	mrou(new MROU(0.8, 0.0, 0.8, 0.1, 0.1))
+	) :
+	ID(xs_aug(8)),
+	A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
+	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
+	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
+	duration_tracked(0.0), duration_lost(0.0)
 {
+ 	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
+
+	P_0 = CPU::reshape(P, 4, 4); 
+
+	this->kf.reset(new KF(xs_0, P_0, ID, dt, 0.0));
+
+	this->mrou.reset(new MROU());
+
 	this->Pr_a = Pr_a / Pr_a.sum(); 
 	
 	if (Pr_CC > 1) 	{ this->Pr_CC = 1;}
 	else 			{ this->Pr_CC = Pr_CC; }
 
-	int n_samples = std::round(T / dt);
+ 	int n_samples = std::round(T / dt);
 
-	// n = 4 states in obstacle model for independent trajectory prediction, using MROU
-	xs_p.resize(1);
-	xs_p[0].resize(4, n_samples);
+	// n = 4 states in obstacle model for independent trajectories, using MROU
+	this->xs_p.resize(1);
+	this->xs_p[0].resize(4, n_samples);
+	this->xs_p[0].col(0) = xs_0;
 
-	P_p.resize(16, n_samples);
-	P_p.col(0) = P;
-	
-	xs_p[0].col(0) = xs_0;
+	this->P_p.resize(16, n_samples);
+	this->P_p.col(0) = P; 
 
 	if(filter_on) 
 	{
-		kf->update(xs_0, duration_lost, dt);
+		this->kf->update(xs_0, duration_lost, dt);
 
-		duration_tracked = kf->get_time();
+		this->duration_tracked = kf->get_time();
 	}
-}
-
-/****************************************************************************************
-*  Name     : Tracked_Obstacle
-*  Function : Copy constructor, prevents shallow copies and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-Tracked_Obstacle::Tracked_Obstacle(
-	const Tracked_Obstacle &to 													// In: Tracked obstacle to copy
-	) : 
-	Obstacle(to)
-{
-	assign_data(to);
-}
-
-/****************************************************************************************
-*  Name     : operator=
-*  Function : Assignment operator to prevent shallow assignments and bad pointer management
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-Tracked_Obstacle& Tracked_Obstacle::operator=(
-	const Tracked_Obstacle &rhs 										// In: Rhs tracked obstacle to assign
-	)
-{
-	if (this == &rhs)
-	{
-		return *this;
-	}
-
-	assign_data(rhs);
-
-	return *this;
 }
 
 /****************************************************************************************
@@ -119,12 +97,15 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 		xs_p[ps].resize(4, n_samples); 	xs_p[ps].col(0) = kf->get_state();
 	}
 	P_p.resize(16, n_samples);
-	P_p.col(0) 	= flatten(kf->get_covariance());
+	P_p.col(0) 	= CPU::flatten(kf->get_covariance());
 }
 
 /****************************************************************************************
-*  Name     : initialize_independent_prediction
-*  Function : 
+*  Name     : initialize_prediction
+*  Function : Sets up independent or dependent obstacle prediction, depending on if
+*		      colav is active or not. For the dependent obstacle prediction,
+*			  ps_course_changes and ps_maneuver_times are "dont care" variables, hence
+*		      two overloads.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
@@ -133,7 +114,7 @@ void Tracked_Obstacle::initialize_independent_prediction(
 	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
 	const Eigen::VectorXd &ps_maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios	
 	)
-{	
+{
 	// the size of ps_ordering is greater than the size of ps_course_changes and ps_maneuver_times
 	// when intelligent obstacle predictions are considered (joint predictions are active)
 	// Thus n_ps_i = length(ps_ordering) = n_ps_i_independent + n_ps_i_dependent
@@ -161,7 +142,7 @@ void Tracked_Obstacle::initialize_independent_prediction(
 			else if (ps_ordering[ps] == PM)	{ ps_intention_count(2) += 1; }
 		}
 	}	
-	//std::cout << ps_intention_count.transpose() << std::endl;
+	std::cout << ps_intention_count.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -223,7 +204,7 @@ void Tracked_Obstacle::prune_ps(
 }
 
 /****************************************************************************************
-*  Name     : add_intelligent_prediction
+*  Name     : add_intelligent_prediction (CPU PSBMPC only)
 *  Function : Only used when obstacle predictions with their own COLAV system is enabled.
 *			  Adds prediction data for this obstacle`s intelligent prediction to the set
 *			  of trajectories. If an intelligent prediction has already been added before,
@@ -232,25 +213,25 @@ void Tracked_Obstacle::prune_ps(
 *  Modified :
 *****************************************************************************************/
 void Tracked_Obstacle::add_intelligent_prediction(
-	const Prediction_Obstacle &po,					// In: Prediction obstacle with intelligent prediction information
-	const bool overwrite							// In: Flag to choose whether or not to add the first intelligent prediction, or overwrite the previous
+	const CPU::Prediction_Obstacle *po,					// In: Pointer to prediction obstacle with intelligent prediction information
+	const bool overwrite								// In: Flag to choose whether or not to add the first intelligent prediction, or overwrite the previous
 	)
 {
 	if (mu.size() > 0 && overwrite)
 	{
-		mu.back() = po.get_COLREGS_breach_indicator();
+		mu.back() = po->get_COLREGS_breach_indicator();
 
-		xs_p.back() = po.get_trajectory();
+		xs_p.back() = po->get_trajectory();
 
-		ps_ordering.back() = po.get_intention();
+		ps_ordering.back() = po->get_intention();
 	}
 	else
 	{
-		mu.push_back(po.get_COLREGS_breach_indicator());
+		mu.push_back(po->get_COLREGS_breach_indicator());
 
-		xs_p.push_back(po.get_trajectory());
+		xs_p.push_back(po->get_trajectory());
 		
-		ps_ordering.push_back(po.get_intention());
+		ps_ordering.push_back(po->get_intention());
 	}
 
 	if (ps_ordering.back() == KCC) 	{ ps_intention_count(0) += 1;}
@@ -305,7 +286,7 @@ void Tracked_Obstacle::update(
 	xs_0(2) = xs_aug(2);
 	xs_0(3) = xs_aug(3);
 
-	P_0 = reshape(P, 4, 4);
+	P_0 = CPU::reshape(P, 4, 4);
 
 	// Depending on if the KF is on/off, the state and
 	// covariance are updated, or just reset directly to the input
@@ -334,45 +315,4 @@ void Tracked_Obstacle::update(
 /****************************************************************************************
 *  Private functions
 *****************************************************************************************/
-/****************************************************************************************
-*  Name     : assign_data
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-void Tracked_Obstacle::assign_data(
-	const Tracked_Obstacle &to 												// In: Tracked_Obstacle whose data to assign to *this
-	)
-{
-	// Boring non-pointer class member copy
-	this->ID = to.ID;
-
-	this->colav_on = to.colav_on;
-
-	this->A = to.A; this->B = to.B; this->C = to.C; this->D = to.D;
-	this->l = to.l; this->w = to.w;
-
-	this->x_offset = to.x_offset; this->y_offset = to.y_offset;
-
-	this->xs_0 = to.xs_0;
-	this->P_0 = to.P_0;
-
-	this->Pr_a = to.Pr_a; 
-
-	this->Pr_CC = to.Pr_CC;
-
-	this->duration_tracked = to.duration_tracked; this->duration_lost = to.duration_lost;
-	
-	this->mu = to.mu;
-
-	this->P_p = to.P_p;
-	this->xs_p = to.xs_p;
-	this->v_p = to.v_p;
-
-	this->ps_ordering = to.ps_ordering;
-	this->ps_course_changes = to.ps_course_changes; this->ps_maneuver_times = to.ps_maneuver_times;
-	this->ps_intention_count = to.ps_intention_count;
-
-	this->kf.reset(new KF(*(to.kf)));
-	this->mrou.reset(new MROU(*(to.mrou)));
 }

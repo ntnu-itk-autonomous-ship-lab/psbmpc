@@ -2,7 +2,8 @@
 *
 *  File name : obstacle_manager.cpp
 *
-*  Function  : Class functions for the obstacle management interface
+*  Function  : Class functions for the obstacle management interface, modified with
+*			   .cu for this GPU-implementation.
 *	           ---------------------
 *
 *  Version 1.0
@@ -16,11 +17,15 @@
 *
 *****************************************************************************************/
 
+#include "cpu/utilities_cpu.h"
 #include "obstacle_manager.h"
 #include <string>
 #include <iostream>
 #include <iomanip>
 
+namespace PSBMPC_LIB
+{
+	
 /****************************************************************************************
 *  Name     : Class constructor
 *  Function : 
@@ -47,7 +52,7 @@ void Obstacle_Manager::update_obstacle_status(
 {
 	int n_obst = data.obstacles.size();
 	data.obstacle_status.resize(13, n_obst);
-	double ID_0(0.0), RB_0(0.0), COG_0(0.0), SOG_0(0.0); 
+	double ID_0, RB_0, COG_0, SOG_0; 
 	Eigen::Vector2d d_0i;
 	Eigen::Vector4d xs_i;
 
@@ -64,11 +69,11 @@ void Obstacle_Manager::update_obstacle_status(
 
 		SOG_0 = xs_i.block<2, 1>(2, 0).norm();
 
-		RB_0 = angle_difference_pmpi(atan2(d_0i(1), d_0i(0)), ownship_state(2));
+		RB_0 = CPU::angle_difference_pmpi(atan2(d_0i(1), d_0i(0)), ownship_state(2));
 
 		data.obstacle_status.col(i) << ID_0, 											// Obstacle ID
 								  SOG_0, 												// Speed over ground of obstacle
-								  wrap_angle_to_02pi(COG_0) * RAD2DEG, 					// Course over ground of obstacle
+								  CPU::wrap_angle_to_02pi(COG_0) * RAD2DEG, 			// Course over ground of obstacle
 								  RB_0 * RAD2DEG, 										// Relative bearing
 								  d_0i.norm(),											// Range
 								  data.HL_0[i], 										// Hazard level of obstacle at optimum
@@ -121,3 +126,4 @@ void Obstacle_Manager::display_obstacle_information()
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+}

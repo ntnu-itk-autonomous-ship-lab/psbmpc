@@ -18,15 +18,9 @@
 *
 *****************************************************************************************/
 
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-#include "ownship.h"
+#include "cpu/ownship_cpu.h"
 #include <iostream>
 #include <memory>
-#include "Eigen/Dense"
 #include "engine.h"
 
 #define BUFSIZE 1000000
@@ -56,7 +50,7 @@ int main(){
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
 	
-	std::unique_ptr<Ownship> asv(new Ownship()); 
+	std::unique_ptr<PSBMPC_LIB::CPU::Ownship> asv(new PSBMPC_LIB::CPU::Ownship()); 
 
 	Eigen::Matrix<double, 6, -1> trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
@@ -72,7 +66,7 @@ int main(){
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
-	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
+	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
 	//*****************************************************************************************************************
 	// Send data to matlab
