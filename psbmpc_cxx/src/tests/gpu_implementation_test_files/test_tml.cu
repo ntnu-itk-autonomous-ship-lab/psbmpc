@@ -2,7 +2,7 @@
 *
 *  File name : test_cmatrix.cpp
 *
-*  Function  : Test file for the Cuda Matrix Library (CML) meant for use in CUDA kernels.
+*  Function  : Test file for the Cuda Matrix Library (TML) meant for use in CUDA kernels.
 *			   
 *	           ---------------------
 *
@@ -22,17 +22,17 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "cml.cuh"
+#include "tml.cuh"
 #include <iostream>
 #include <random>
 #include "Eigen/Dense"
 
 // Conversion does not work with non-const parameters, because the implicit conversion is temporary.
-void test_conversion(const CML::MatrixXd &m) { std::cout << m << std::endl; }
+void test_conversion(const TML::MatrixXd &m) { std::cout << m << std::endl; }
 
-void test_conversion2(const CML::Vector3d &v3d) { std::cout << v3d << std::endl; }
+void test_conversion2(const TML::Vector3d &v3d) { std::cout << v3d << std::endl; }
 
-void test_conversion3(const CML::PDMatrix<double, 100, 100> &pdm) { std::cout << pdm << std::endl; }
+void test_conversion3(const TML::PDMatrix<double, 100, 100> &pdm) { std::cout << pdm << std::endl; }
 
 
 int main()
@@ -50,17 +50,17 @@ int main()
 	//================================================================================
 	// Assignment operator + copy constructor test
 	//================================================================================
-	CML::MatrixXd t1(3);
-	CML::MatrixXd t2(2);
+	TML::MatrixXd t1(3);
+	TML::MatrixXd t2(2);
 	t1 = t2;
 
-	CML::MatrixXd t3 = t1;
+	TML::MatrixXd t3 = t1;
 
 	//================================================================================
 	// 2x2 inverse test
 	//================================================================================
 	size_t n_rows = 2, n_cols = 2;
-	CML::MatrixXd M1(n_rows, n_cols), M1_inv = M1;
+	TML::MatrixXd M1(n_rows, n_cols), M1_inv = M1;
 	Eigen::MatrixXd M2(n_rows, n_cols); 
 	Eigen::MatrixXd M_diff(n_rows, n_cols);
 
@@ -76,11 +76,11 @@ int main()
 			M1(i, j) = M2(i, j);
 		}
 	}
-	std::cout << "CML 2x2 = " << std::endl;
+	std::cout << "TML 2x2 = " << std::endl;
 	std::cout << M1 << std::endl;
 
 	std::cout << "Eigen 2x2 determinant= " << M2.determinant() << std::endl;
-	std::cout << "CML 2x2 determinant= " << M1.determinant() << std::endl;
+	std::cout << "TML 2x2 determinant= " << M1.determinant() << std::endl;
 
 	M1_inv = M1.inverse();
 
@@ -117,11 +117,11 @@ int main()
 		}
 	}
 	
-	std::cout << "CML 3x3 = " << std::endl;
+	std::cout << "TML 3x3 = " << std::endl;
 	std::cout << M1 << std::endl;
 
 	std::cout << "Eigen 3x3 determinant= " << M2.determinant() << std::endl;
-	std::cout << "CML 3x3 determinant= " << M1.determinant() << std::endl;
+	std::cout << "TML 3x3 determinant= " << M1.determinant() << std::endl;
 
 	M1_inv = M1.inverse();
 	for (size_t i = 0; i < n_rows; i++)
@@ -157,11 +157,11 @@ int main()
 			}
 		}
 	}
-	std::cout << "CML 4x4 = " << std::endl;
+	std::cout << "TML 4x4 = " << std::endl;
 	std::cout << M1 << std::endl;
 
 	std::cout << "Eigen 4x4 determinant= " << M2.determinant() << std::endl;
-	std::cout << "CML 4x4 determinant= " << M1.determinant() << std::endl;
+	std::cout << "TML 4x4 determinant= " << M1.determinant() << std::endl;
 
 	M1_inv = M1.inverse();
 
@@ -178,7 +178,7 @@ int main()
 	// Transpose test
 	//================================================================================
 	n_rows = 4; n_cols = 2;
-	CML::MatrixXd O = CML::MatrixXd::ones(n_rows, n_cols);
+	TML::MatrixXd O = TML::MatrixXd::ones(n_rows, n_cols);
 	std::cout << "Original = " << std::endl;
 	std::cout << O << std::endl;
 
@@ -188,7 +188,7 @@ int main()
 	// Dot product test
 	//================================================================================
 	n_rows = 4; n_cols = 1;
-	CML::MatrixXd v1(n_rows, n_cols), v2(n_rows, n_cols);
+	TML::MatrixXd v1(n_rows, n_cols), v2(n_rows, n_cols);
 	Eigen::VectorXd v1_e(n_rows), v2_e(n_rows);
 	for (size_t i = 0; i < n_rows; i++)
 	{
@@ -226,7 +226,7 @@ int main()
 	// Operator tests
 	//================================================================================
 	n_rows = 4; n_cols = 4;
-	CML::MatrixXd A(n_rows, n_cols), B(n_rows, n_cols), C;
+	TML::MatrixXd A(n_rows, n_cols), B(n_rows, n_cols), C;
 	Eigen::MatrixXd A_e(n_rows, n_cols), B_e(n_rows, n_cols), C_e(n_rows, n_cols);
 	M_diff.resize(n_rows, n_cols);
 
@@ -336,7 +336,7 @@ int main()
 	std::cout << "scalar - A= " << std::endl; 
 	std::cout << scalar - A << std::endl;
 
-	CML::MatrixXd a_vec(A.get_rows(), 1);
+	TML::MatrixXd a_vec(A.get_rows(), 1);
 	for (size_t i = 0; i < A.get_rows(); i++)
 	{
 		a_vec(i) = i + 1;
@@ -364,9 +364,9 @@ int main()
 	// Quadratic form calculation test
 	//================================================================================
 	n_rows = 4; n_cols = 4;
-	CML::MatrixXd x(n_rows, 1);
+	TML::MatrixXd x(n_rows, 1);
 	A.resize(n_rows, n_cols); A.set_zero();
-	CML::MatrixXd res;
+	TML::MatrixXd res;
 	A_e.resize(n_rows, n_cols);
 	Eigen::VectorXd x_e(n_rows);
 	double qf, qf_e;
@@ -402,7 +402,7 @@ int main()
 	Eigen::VectorXd r_e1(n_rows);
 
 	A.resize(n_rows, n_cols); A_e.resize(n_rows, n_cols);
-	CML::MatrixXd r2(n_rows, n_cols);
+	TML::MatrixXd r2(n_rows, n_cols);
 	Eigen::MatrixXd r2_e(n_rows, n_cols);
 
 	for (size_t i = 0; i < n_rows; i++)
@@ -431,11 +431,11 @@ int main()
 	// Set function tests
 	//================================================================================
 	n_rows = 6; n_cols = 6;
-	CML::MatrixXd T(n_rows, n_cols), T_sub(n_rows - 3, n_cols - 3);
+	TML::MatrixXd T(n_rows, n_cols), T_sub(n_rows - 3, n_cols - 3);
 	T.set_zero(); T_sub.set_all_coeffs(3);
 	std::cout << "T before set = " << std::endl;
 	std::cout << T << std::endl;
-	CML::MatrixXd row_vec(1, n_cols), col_vec(n_rows, 1);
+	TML::MatrixXd row_vec(1, n_cols), col_vec(n_rows, 1);
 	for (size_t i = 0; i < n_rows; i++)
 	{
 		col_vec(i) = 1;
@@ -476,7 +476,7 @@ int main()
 	//================================================================================
 	// 2x2 inverse test
 	//================================================================================
-	CML::Matrix2d M2d, M2d_inv = M2d;
+	TML::Matrix2d M2d, M2d_inv = M2d;
 	Eigen::Matrix2d M2e; 
 	Eigen::Matrix2d M_diff2;
 
@@ -492,11 +492,11 @@ int main()
 			M2d(i, j) = M2e(i, j);
 		}
 	}
-	std::cout << "CML 2x2 = " << std::endl;
+	std::cout << "TML 2x2 = " << std::endl;
 	std::cout << M2d << std::endl;
 
 	std::cout << "Eigen 2x2 determinant= " << M2e.determinant() << std::endl;
-	std::cout << "CML 2x2 determinant= " << M2d.determinant() << std::endl;
+	std::cout << "TML 2x2 determinant= " << M2d.determinant() << std::endl;
 
 	M2d_inv = M2d.inverse();
 
@@ -513,7 +513,7 @@ int main()
 	//================================================================================
 	// 3x3 inverse test
 	//================================================================================
-	CML::Matrix3d M3d, M3d_inv = M3d;
+	TML::Matrix3d M3d, M3d_inv = M3d;
 	Eigen::Matrix3d M3; 
 	Eigen::Matrix3d M_diff3;
 	while (M3d.determinant() <= 0)
@@ -532,11 +532,11 @@ int main()
 		}
 	}
 	
-	std::cout << "CML 3x3 = " << std::endl;
+	std::cout << "TML 3x3 = " << std::endl;
 	std::cout << M3d << std::endl;
 
 	std::cout << "Eigen 3x3 determinant= " << M3.determinant() << std::endl;
-	std::cout << "CML 3x3 determinant= " << M3d.determinant() << std::endl;
+	std::cout << "TML 3x3 determinant= " << M3d.determinant() << std::endl;
 
 	M3d_inv = M3d.inverse();
 	for (size_t i = 0; i < 3; i++)
@@ -551,7 +551,7 @@ int main()
 	//================================================================================
 	// 4x4 inverse test
 	//================================================================================
-	CML::Matrix4d M4d, M4d_inv = M4d;
+	TML::Matrix4d M4d, M4d_inv = M4d;
 	Eigen::Matrix4d M4; 
 	Eigen::Matrix4d M_diff4;
 
@@ -571,11 +571,11 @@ int main()
 			}
 		}
 	}
-	std::cout << "CML 4x4 = " << std::endl;
+	std::cout << "TML 4x4 = " << std::endl;
 	std::cout << M4d << std::endl;
 
 	std::cout << "Eigen 4x4 determinant = " << M4.determinant() << std::endl;
-	std::cout << "CML 4x4 determinant = " << M4d.determinant() << std::endl;
+	std::cout << "TML 4x4 determinant = " << M4d.determinant() << std::endl;
 
 	M4d_inv = M4d.inverse();
 
@@ -591,7 +591,7 @@ int main()
 	//================================================================================
 	// Transpose test
 	//================================================================================
-	CML::Static_Matrix<double, 4, 2> s_t = CML::Static_Matrix<double, 4, 2>::ones();
+	TML::Static_Matrix<double, 4, 2> s_t = TML::Static_Matrix<double, 4, 2>::ones();
 	std::cout << "Original static matrix = " << std::endl;
 	std::cout << s_t << std::endl;
 
@@ -600,7 +600,7 @@ int main()
 	//================================================================================
 	// Dot product test
 	//================================================================================
-	CML::Vector4d v1s, v2s;
+	TML::Vector4d v1s, v2s;
 	Eigen::Vector4d v1s_e, v2s_e;
 	for (size_t i = 0; i < 4; i++)
 	{
@@ -614,7 +614,7 @@ int main()
 	//================================================================================
 	// Cross product test
 	//================================================================================
-	CML::Vector3d v1c, v2c;
+	TML::Vector3d v1c, v2c;
 	Eigen::Vector3d v1s_e3, v2s_e3;
 	Eigen::Vector3d v_diff1s, v_diff2s; 
 	for (size_t i = 0; i < 3; i++)
@@ -636,7 +636,7 @@ int main()
 	// Operator tests
 	//================================================================================
 	n_rows = 4; n_cols = 4;
-	CML::Matrix4d As, Bs, Cs;
+	TML::Matrix4d As, Bs, Cs;
 	Eigen::Matrix4d As_e, Bs_e, Cs_e, Ms_diff;
 
 	for (size_t i = 0; i < n_rows; i++)
@@ -749,7 +749,7 @@ int main()
 	// Quadratic form calculation test
 	//================================================================================
 	n_rows = 4; n_cols = 4;
-	CML::Vector4d xs;
+	TML::Vector4d xs;
 	Eigen::Vector4d xs_e;
 	double qfs, qfs_e;
 	for (size_t i = 0; i < n_rows; i++)
@@ -779,11 +779,11 @@ int main()
 	// Norm and normalization test
 	//================================================================================
 	n_rows = 3; n_cols = 3;
-	CML::Vector3d xs3;
+	TML::Vector3d xs3;
 	Eigen::Vector3d xs3_e;
 	Eigen::Vector3d rs_e3;
 
-	CML::Matrix3d A2s, r3s;
+	TML::Matrix3d A2s, r3s;
 	Eigen::Matrix3d A2s_e, r3s_e;
 
 	for (size_t i = 0; i < n_rows; i++)
@@ -812,14 +812,14 @@ int main()
 	// Set function tests
 	//================================================================================
 	n_rows = 6; n_cols = 6;
-	CML::Static_Matrix<double, 6, 6> Ts;
-	CML::Static_Matrix<double, 3, 3> Ts_sub;
+	TML::Static_Matrix<double, 6, 6> Ts;
+	TML::Static_Matrix<double, 3, 3> Ts_sub;
 	Ts.set_zero(); Ts_sub.set_all_coeffs(3);
 	std::cout << "T before set = " << std::endl;
 	std::cout << Ts << std::endl;
 
-	CML::Static_Matrix<double, 1, 6> rvec_s;
-	CML::Vector6d cvec_s;
+	TML::Static_Matrix<double, 1, 6> rvec_s;
+	TML::Vector6d cvec_s;
 	for (size_t j = 0; j < n_cols; j++)
 	{
 		cvec_s(j) = 1;
@@ -857,60 +857,60 @@ int main()
 	// Eigen interface tests
 	//================================================================================
 	Eigen::MatrixXd test1(4, 10); test1.setZero();
-	CML::MatrixXd assign_to_1; 
-	CML::assign_eigen_object(assign_to_1, test1);
+	TML::MatrixXd assign_to_1; 
+	TML::assign_eigen_object(assign_to_1, test1);
 	std::cout << assign_to_1 << std::endl;
 
 	Eigen::Matrix<double, 1, -1> test2(1, 20); test2.setZero();
-	CML::assign_eigen_object(assign_to_1, test2);
+	TML::assign_eigen_object(assign_to_1, test2);
 	std::cout << assign_to_1 << std::endl;
 
 	Eigen::Matrix<int, -1, 10> test3(10, 10); test3.setZero();
-	CML::MatrixXi assign_to_2;
-	CML::assign_eigen_object(assign_to_2, test3);
+	TML::MatrixXi assign_to_2;
+	TML::assign_eigen_object(assign_to_2, test3);
 	std::cout << assign_to_2 << std::endl;
 
 	Eigen::VectorXd test4(10); test4.setZero();
-	CML::assign_eigen_object(assign_to_1, test4);
+	TML::assign_eigen_object(assign_to_1, test4);
 	std::cout << assign_to_1.transposed() << std::endl;
 
 	Eigen::Vector2d test5; test5.setZero(); 
-	CML::assign_eigen_object(assign_to_1, test5);
+	TML::assign_eigen_object(assign_to_1, test5);
 	std::cout << assign_to_1 << std::endl;
 
 	Eigen::Matrix2d test6; test6.setZero();
-	CML::assign_eigen_object(assign_to_1, test6);
+	TML::assign_eigen_object(assign_to_1, test6);
 	std::cout << assign_to_1 << std::endl;
 	//================================================================================
 	// PDMatrix tests
 	//================================================================================
-	CML::MatrixXd samples_d(4, 10); samples_d.set_ones();
+	TML::MatrixXd samples_d(4, 10); samples_d.set_ones();
 	Eigen::MatrixXd transfer(4, 10); transfer.setZero();
-	CML::PDMatrix<double, 4, 100> samples = samples_d, samples_2;
+	TML::PDMatrix<double, 4, 100> samples = samples_d, samples_2;
 	std::cout << samples << std::endl;
-	CML::assign_eigen_object(samples_2, transfer);
+	TML::assign_eigen_object(samples_2, transfer);
 	std::cout << samples_2 << std::endl;
 	
-	CML::Static_Matrix<double, 4, 4> testc1; testc1.set_ones();
-	CML::PDMatrix<double, 200, 1000> testc1_pdm(2, 2); testc1_pdm.set_all_coeffs(2.0);
+	TML::Static_Matrix<double, 4, 4> testc1; testc1.set_ones();
+	TML::PDMatrix<double, 200, 1000> testc1_pdm(2, 2); testc1_pdm.set_all_coeffs(2.0);
 	test_conversion(testc1);
 	test_conversion(testc1_pdm);
 
 
-	CML::MatrixXd testc2(3, 1); testc2.set_ones();
-	CML::PDMatrix<double, 100, 1000> testc2_pdm(3, 1); testc2_pdm.set_all_coeffs(2.0);
+	TML::MatrixXd testc2(3, 1); testc2.set_ones();
+	TML::PDMatrix<double, 100, 1000> testc2_pdm(3, 1); testc2_pdm.set_all_coeffs(2.0);
 	test_conversion2(testc2);
 	test_conversion2(testc2_pdm);
 
-	CML::MatrixXd testc3(3, 3); testc3.set_ones();
-	CML::Vector4d testc3_sm; testc3_sm.set_all_coeffs(2.0);
+	TML::MatrixXd testc3(3, 3); testc3.set_ones();
+	TML::Vector4d testc3_sm; testc3_sm.set_all_coeffs(2.0);
 	test_conversion3(testc3);
 	test_conversion3(testc3_sm);
 
 
-	CML::PDMatrix<double, 8, 30> bigone(1, 1);
+	TML::PDMatrix<double, 8, 30> bigone(1, 1);
 
-	CML::MatrixXd assign_to(2, 20); assign_to.set_all_coeffs(3.0);
+	TML::MatrixXd assign_to(2, 20); assign_to.set_all_coeffs(3.0);
 	bigone.set_block(0, 0, assign_to.get_rows(), assign_to.get_cols(), assign_to);
 
 	std::cout << bigone << std::endl;
@@ -933,11 +933,11 @@ int main()
 
 	std::cout << bigone.get_col(2) << std::endl;
 
-	bigone.set_block(0, 0, 3, 3, CML::Matrix3d::identity());
+	bigone.set_block(0, 0, 3, 3, TML::Matrix3d::identity());
 
 	std::cout << bigone << std::endl;
 
-	CML::MatrixXd test222(6, 3), ones(6, 1), twos(6, 1), threes(6, 1);
+	TML::MatrixXd test222(6, 3), ones(6, 1), twos(6, 1), threes(6, 1);
 	ones.set_ones(); twos.set_all_coeffs(2.0); threes.set_all_coeffs(3.0);
 	test222.set_col(0, ones);
 	test222.set_col(1, twos);
@@ -952,8 +952,8 @@ int main()
 	//================================================================================
 	// Other tests
 	//================================================================================
-	//std::cout << CML::Dynamic_Matrix<double>::identity(3, 3) << std::endl;
-	//std::cout << CML::Dynamic_Matrix<double>::ones(3, 3) << std::endl;
+	//std::cout << TML::Dynamic_Matrix<double>::identity(3, 3) << std::endl;
+	//std::cout << TML::Dynamic_Matrix<double>::ones(3, 3) << std::endl;
 
 	//Eigen::Matrix<double, 4, 2> m42; m42.transpose();
 	return 0;

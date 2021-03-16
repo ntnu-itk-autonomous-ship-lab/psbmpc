@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : cpe.h
+*  File name : cpe_cpu.h
 *
 *  Function  : Header file for the Collision Probability Estimator (CPE).
 *			   The module estimates the collision probability wrt all nearby
@@ -23,11 +23,6 @@
 
 #pragma once
 
-#include "xoshiro.hpp"
-#include <Eigen/Dense>
-
-#include <random>
-
 // NOTE: If you want standalone use of this module, define the enum CPE_Method below
 /* // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
 // "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
@@ -37,7 +32,10 @@ enum CPE_Method
 	MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments 
 }; */
 // Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
-#include "psbmpc_parameters.h"
+#include "../psbmpc_parameters.h"
+#include "xoshiro.hpp"
+
+#include <random>
 
 namespace PSBMPC_LIB
 {

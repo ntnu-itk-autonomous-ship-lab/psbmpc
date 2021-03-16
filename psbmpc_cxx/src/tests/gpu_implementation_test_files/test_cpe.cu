@@ -24,10 +24,11 @@
 #endif
 
 
-#include "cpe.cuh"
-#include "utilities.cuh"
-#include "mrou.cuh"
-#include "ownship.cuh"
+#include "gpu/cpe_gpu.cuh"
+#include "gpu/utilities_gpu.cuh"
+#include "cpu/utilities_cpu.h"
+#include "mrou.h"
+#include "gpu/ownship_gpu.cuh"
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -56,8 +57,8 @@
 class CPE_functor
 {
 private:
-	CPE_GPU *cpe;
-	CPE_Method cpe_method;
+	PSBMPC_LIB::GPU::CPE *cpe;
+	PSBMPC_LIB::CPE_Method cpe_method;
 	float dt;
 
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_p; 
@@ -76,8 +77,8 @@ private:
 public:
 
 	__host__ CPE_functor(
-		CPE_GPU *cpe, 
-		CPE_Method cpe_method, 
+		PSBMPC_LIB::GPU::CPE *cpe, 
+		PSBMPC_LIB::CPE_Method cpe_method, 
 		TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_p,
 		TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p,
 		TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p, 
@@ -142,23 +143,23 @@ public:
 
 			switch(cpe_method)
 			{
-				case CE :	
+				case PSBMPC_LIB::CE :	
 					if (k > 0)
 					{
 						v_os_prev = xs_seg.get_block<2, 1>(3, n_seg_samples - 2, 2, 1);
-						v_os_prev = rotate_vector_2D(v_os_prev, xs_seg(2, n_seg_samples - 2));
+						v_os_prev = PSBMPC_LIB::GPU::rotate_vector_2D(v_os_prev, xs_seg(2, n_seg_samples - 2));
                     	v_i_prev = xs_i_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
 					}
 					p_os = xs_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 					p_i = xs_i_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 
-					P_i_2D = reshape<16, 1, 4, 4>(P_i_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+					P_i_2D = PSBMPC_LIB::GPU::reshape<16, 1, 4, 4>(P_i_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
 					P_c_i->operator()(k) = cpe->CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, dt);
 					printf("k = %d | P_c_i = %.6f\n", k, P_c_i->operator()(k));
 					
 					break;
-				case MCSKF4D :                
+				case PSBMPC_LIB::MCSKF4D :                
 					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 					{
 						P_c_i->operator()(k) = cpe->MCSKF4D_estimate(xs_seg, xs_i_seg, P_i_seg);						
@@ -243,7 +244,7 @@ int main(){
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
 
-	std::unique_ptr<Ownship> asv(new Ownship()); 
+	std::unique_ptr<PSBMPC_LIB::GPU::Ownship> asv(new PSBMPC_LIB::GPU::Ownship()); 
 
 	Eigen::Matrix<double, 6, -1> trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
@@ -284,13 +285,13 @@ int main(){
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step
 	Eigen::MatrixXd P_i_p; 
 
-	std::unique_ptr<MROU> mrou(new MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
+	std::unique_ptr<PSBMPC_LIB::MROU> mrou(new PSBMPC_LIB::MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
 
 	// n_ps = 1
 	xs_i_p.resize(1); xs_i_p[0].resize(4, n_samples);
 	xs_i_p[0].col(0) = xs_0;
 	P_i_p.resize(16, n_samples);
-	P_i_p.col(0) = flatten(P_0);
+	P_i_p.col(0) = PSBMPC_LIB::CPU::flatten(P_0);
 
 	v_p.resize(1); v_p[0].resize(2, n_samples);
 	
@@ -332,7 +333,7 @@ int main(){
 	// Prediction
 	//*****************************************************************************************************************
 
-	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
+	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
 	double t = 0;
 	int n_seg_samples = std::round(dt_seg / dt) + 1;
@@ -345,7 +346,7 @@ int main(){
 	for (int k = 0; k < n_samples; k++)
 	{
 		v_os_p = trajectory.block<2, 1>(3, k);
-		v_os_p = rotate_vector_2D(v_os_p, trajectory(2, k));
+		v_os_p = PSBMPC_LIB::CPU::rotate_vector_2D(v_os_p, trajectory(2, k));
 		xs_p_copy(0, k) = trajectory(0, k);
 		xs_p_copy(1, k) = trajectory(1, k);
 		xs_p_copy(2, k) = v_os_p(0);
@@ -359,8 +360,8 @@ int main(){
 	//thrust::device_vector<float> P_c_i_dvec(n_samples);
 	thrust::device_vector<TML::PDMatrix<float, 1, MAX_N_SAMPLES>*> P_c_i_dvec(1);
 
-	CPE_GPU cpe(CE, dt);
-	CPE_GPU *cpe_device_ptr;
+	PSBMPC_LIB::GPU::CPE cpe(PSBMPC_LIB::CE, dt);
+	PSBMPC_LIB::GPU::CPE *cpe_device_ptr;
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_p_device_ptr;
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p_device_ptr;
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> *P_i_p_device_ptr;
@@ -375,12 +376,12 @@ int main(){
 	cuda_check_errors("Reading cudaLimitStackSize failed.");
 	std::cout << "Set device max stack size : " << limit << std::endl;
 
-	cudaMalloc((void**)&cpe_device_ptr, sizeof(CPE_GPU));
+	cudaMalloc((void**)&cpe_device_ptr, sizeof(PSBMPC_LIB::GPU::CPE));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
-	std::cout << "sizeof(CPE) = " << sizeof(CPE_GPU) << std::endl;
+	std::cout << "sizeof(CPE) = " << sizeof(PSBMPC_LIB::GPU::CPE) << std::endl;
 	
-	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(CPE_GPU), cudaMemcpyHostToDevice);
+	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(PSBMPC_LIB::GPU::CPE), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CPE failed.");
 
 	cudaMalloc((void**)&xs_p_device_ptr, sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
@@ -399,7 +400,7 @@ int main(){
 	cuda_check_errors("CudaMalloc of P_c_i failed.");
 
 
-	CPE_functor cpe_functor_CE(cpe_device_ptr, CE, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, P_c_i_device_ptr, (float)dt);
+	CPE_functor cpe_functor_CE(cpe_device_ptr, PSBMPC_LIB::CE, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, P_c_i_device_ptr, (float)dt);
 
 	thrust::device_vector<unsigned int> sample_dvec(1);
 	thrust::sequence(sample_dvec.begin(), sample_dvec.end(), distribution(eng1));
@@ -420,7 +421,7 @@ int main(){
 			if (k < n_samples - 1)
 			{
 				xs_i_p[ps].col(k + 1) = mrou->predict_state(xs_i_p[ps].col(k), v_p[ps].col(k), dt);
-				P_i_p.col(k + 1) = flatten(mrou->predict_covariance(P_0, t));
+				P_i_p.col(k + 1) = PSBMPC_LIB::CPU::flatten(mrou->predict_covariance(P_0, t));
 			}
 		}
 		TML::assign_eigen_object(xs_i_p_copy, xs_i_p[ps]);
@@ -447,10 +448,10 @@ int main(){
 		}
 	}
 
-	CPE_functor cpe_functor_MCSKF(cpe_device_ptr, MCSKF4D, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, P_c_i_device_ptr, (float)dt);
-	cpe.set_method(MCSKF4D);
+	CPE_functor cpe_functor_MCSKF(cpe_device_ptr, PSBMPC_LIB::MCSKF4D, xs_p_device_ptr, xs_i_p_device_ptr, P_i_p_device_ptr, P_c_i_device_ptr, (float)dt);
+	cpe.set_method(PSBMPC_LIB::MCSKF4D);
 
-	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(CPE_GPU), cudaMemcpyHostToDevice);
+	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(PSBMPC_LIB::GPU::CPE), cudaMemcpyHostToDevice);
 	cuda_check_errors("CudaMemCpy of CPE failed.");
 
 	//=======================================================================================

@@ -1,11 +1,8 @@
 /****************************************************************************************
 *
-*  File name : tracked_obstacle.cu
+*  File name : tracked_obstacle.cpp
 *
-*  Function  : Tracked bstacle class functions. Derived class of base Obstacle class,
-*		  	   used in the PSB-MPC obstacle management. Modified with .cu for this 
-*			   GPU-implementation.
-*
+*  Function  : Tracked obstacle class functions.
 *  
 *	           ---------------------
 *
@@ -20,16 +17,14 @@
 *
 *****************************************************************************************/
 
-#include "utilities_cpu.h"
 #include "tracked_obstacle.h"
-
-
+#include "cpu/prediction_obstacle_cpu.h"
 #include "assert.h"
 #include <iostream> 
 
 namespace PSBMPC_LIB
 {
-	
+
 /****************************************************************************************
 *  Name     : Tracked_Obstacle
 *  Function : Class constructor, initializes parameters, variables and objects
@@ -57,7 +52,7 @@ Tracked_Obstacle::Tracked_Obstacle(
 	xs_0(2) = xs_aug(2);
 	xs_0(3) = xs_aug(3);
 
-	P_0 = reshape(P, 4, 4); 
+	P_0 = CPU::reshape(P, 4, 4); 
 
 	this->kf.reset(new KF(xs_0, P_0, ID, dt, 0.0));
 
@@ -102,7 +97,7 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 		xs_p[ps].resize(4, n_samples); 	xs_p[ps].col(0) = kf->get_state();
 	}
 	P_p.resize(16, n_samples);
-	P_p.col(0) 	= flatten(kf->get_covariance());
+	P_p.col(0) 	= CPU::flatten(kf->get_covariance());
 }
 
 /****************************************************************************************
@@ -209,6 +204,42 @@ void Tracked_Obstacle::prune_ps(
 }
 
 /****************************************************************************************
+*  Name     : add_intelligent_prediction (CPU PSBMPC only)
+*  Function : Only used when obstacle predictions with their own COLAV system is enabled.
+*			  Adds prediction data for this obstacle`s intelligent prediction to the set
+*			  of trajectories. If an intelligent prediction has already been added before,
+*			  it is overwritten.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void Tracked_Obstacle::add_intelligent_prediction(
+	const CPU::Prediction_Obstacle *po,					// In: Pointer to prediction obstacle with intelligent prediction information
+	const bool overwrite								// In: Flag to choose whether or not to add the first intelligent prediction, or overwrite the previous
+	)
+{
+	if (mu.size() > 0 && overwrite)
+	{
+		mu.back() = po->get_COLREGS_breach_indicator();
+
+		xs_p.back() = po->get_trajectory();
+
+		ps_ordering.back() = po->get_intention();
+	}
+	else
+	{
+		mu.push_back(po->get_COLREGS_breach_indicator());
+
+		xs_p.push_back(po->get_trajectory());
+		
+		ps_ordering.push_back(po->get_intention());
+	}
+
+	if (ps_ordering.back() == KCC) 	{ ps_intention_count(0) += 1;}
+	else if (ps_ordering.back() == SM) { ps_intention_count(1) += 1;}
+	else if (ps_ordering.back() == PM) { ps_intention_count(2) += 1;}
+}
+
+/****************************************************************************************
 *  Name     : update
 *  Function : Updates the obstacle state, covariance, intention probabilities, a priori
 * 			  COLREGS compliance probability at the current time prior to a run of the
@@ -255,7 +286,7 @@ void Tracked_Obstacle::update(
 	xs_0(2) = xs_aug(2);
 	xs_0(3) = xs_aug(3);
 
-	P_0 = reshape(P, 4, 4);
+	P_0 = CPU::reshape(P, 4, 4);
 
 	// Depending on if the KF is on/off, the state and
 	// covariance are updated, or just reset directly to the input

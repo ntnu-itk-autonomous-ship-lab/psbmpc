@@ -1,11 +1,10 @@
 /****************************************************************************************
 *
-*  File name : sbmpc.cuh
+*  File name : sbmpc.h
 *
 *  Function  : Header file for the original Scenario-based Model Predictive Control.
 *			   
 *
-*  
 *	           ---------------------
 *
 *  Version 1.0
@@ -21,13 +20,9 @@
 
 #pragma once
 
-#include "psbmpc_index.h"
 #include "sbmpc_parameters.h"
-#include "ownship.h"
-#include "mpc_cost_cpu.h"
-
-#include "Eigen/Dense"
-#include <vector>
+#include "cpu/ownship_cpu.h"
+#include "cpu/mpc_cost_cpu.h"
 
 namespace PSBMPC_LIB
 {
@@ -47,7 +42,7 @@ namespace PSBMPC_LIB
 		// Own-ship predicted trajectory
 		Eigen::Matrix<double, 6, -1> trajectory;
 
-		Ownship ownship;
+		CPU::Ownship ownship;
 
 		void reset_control_behaviour();
 

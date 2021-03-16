@@ -20,10 +20,7 @@
 
 #pragma once
 
-#include "psbmpc_index.h"
 #include "psbmpc_parameters.h"
-#include "Eigen/Dense"
-#include <vector>
 
 namespace PSBMPC_LIB
 {

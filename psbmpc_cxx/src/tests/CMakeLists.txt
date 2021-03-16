@@ -33,9 +33,9 @@
 #add_executable(tester test_polygons.cpp)
 
 # Test files for use with GPU-version of PSBMPC
-add_executable(tester gpu_implementation_test_files/test_psbmpc.cu)
+#add_executable(tester gpu_implementation_test_files/test_psbmpc.cpp)
 #add_executable(tester gpu_implementation_test_files/test_ownship.cu)
-#add_executable(tester gpu_implementation_test_files/test_obstacle_ship.cu)
+add_executable(tester gpu_implementation_test_files/test_obstacle_ship.cu)
 #add_executable(tester gpu_implementation_test_files/test_cpe.cu)
 #add_executable(tester gpu_implementation_test_files/stack_overflow.cu)
 #add_executable(tester gpu_implementation_test_files/test_thrust.cu)

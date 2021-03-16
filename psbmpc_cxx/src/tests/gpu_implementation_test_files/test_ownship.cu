@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : test_ownship.cpp
+*  File name : test_ownship.cu
 *
-*  Function  : Test file for the Ownship class for PSB-MPC, using Matlab for 
+*  Function  : Test file for the Ownship class for GPU PSB-MPC, using Matlab for 
 *			   visualization 
 *			   
 *	           ---------------------
@@ -18,7 +18,7 @@
 *
 *****************************************************************************************/
 
-#include "ownship.cuh"
+#include "gpu/ownship_gpu.cuh"
 #include <iostream>
 #include <memory>
 #include "Eigen/Dense"
@@ -41,7 +41,7 @@ int main(){
 	Eigen::Matrix<double, 6, 1> xs;
 	xs << 0, 0, 0, 6, 0, 0;
 
-	double T = 250; double dt = 0.5;
+	double T = 200; double dt = 0.5;
 
 	double u_d = 6.0; double chi_d = 0.0;
 
@@ -51,7 +51,7 @@ int main(){
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
 	
-	std::unique_ptr<Ownship> asv(new Ownship()); 
+	std::unique_ptr<PSBMPC_LIB::GPU::Ownship> asv(new PSBMPC_LIB::GPU::Ownship()); 
 
 	Eigen::Matrix<double, 6, -1> trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
@@ -67,7 +67,7 @@ int main(){
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
-	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
+	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
 	//*****************************************************************************************************************
 	// Send data to matlab
@@ -91,7 +91,6 @@ int main(){
 	engPutVariable(ep, "WPs", wps_mx);
 
 	engEvalString(ep, "test_ownship_plot");
-	
 	printf("%s", buffer);
 	mxDestroyArray(traj_mx);
 	mxDestroyArray(wps_mx);
