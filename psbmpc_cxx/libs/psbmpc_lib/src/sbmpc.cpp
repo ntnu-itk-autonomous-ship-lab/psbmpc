@@ -17,16 +17,14 @@
 *
 *****************************************************************************************/
 
-#include "utilities.h"
+#include "cpu/utilities_cpu.h"
 #include "sbmpc.h"
-
-#include "obstacle_manager.h"
-#include "ownship.h"
 
 #include <iostream>
 #include "engine.h"
 
-
+namespace PSBMPC_LIB
+{
 /****************************************************************************************
 *  Name     : SBMPC
 *  Function : Class constructor, initializes parameters and variables
@@ -40,7 +38,7 @@ SBMPC::SBMPC()
 	offset_sequence_counter.resize(2 * pars.n_M);
 	offset_sequence.resize(2 * pars.n_M);
 
-	mpc_cost = MPC_Cost<SBMPC_Parameters>(pars);
+	mpc_cost = CPU::MPC_Cost<SBMPC_Parameters>(pars);
 
 	chi_opt_last = 0; u_opt_last = 1;
 }
@@ -216,7 +214,7 @@ void SBMPC::calculate_optimal_offsets(
 
 		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
 
-		//cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
+		cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
 
 		if (cost < min_cost) 
 		{
@@ -353,7 +351,7 @@ void SBMPC::initialize_prediction(
 	Eigen::Vector2d p_cpa;
 	for (int i = 0; i < n_obst; i++)
 	{
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf->get_state());
+		CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf->get_state());
 
 		ps_ordering_i.resize(1); 
 		ps_ordering_i[0] = KCC;		
@@ -474,4 +472,6 @@ void SBMPC::assign_optimal_trajectory(
 		optimal_trajectory.resize(2, n_samples);
 		optimal_trajectory = trajectory.block(0, 0, 2, n_samples);
 	}
+}
+
 }

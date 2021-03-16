@@ -18,14 +18,9 @@
 *
 *****************************************************************************************/
 
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 #include "tracked_obstacle.h"
-#include "ownship.h"
-#include "utilities.h"
+#include "sbmpc.h"
+#include "cpu/ownship_cpu.h"
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -72,7 +67,7 @@ int main(){
 	waypoints << 0, 1000,
 				 0, 0;
 
-	std::unique_ptr<Ownship> ownship(new Ownship());
+	std::unique_ptr<PSBMPC_LIB::CPU::Ownship> ownship(new PSBMPC_LIB::CPU::Ownship());
 	
 	//*****************************************************************************************************************
 	// Obstacle setup
@@ -93,18 +88,17 @@ int main(){
 
 	double Pr_CC = 0.9;
 
-	bool filter_on = true, colav_on = false;
+	bool filter_on = true;
 
-	std::unique_ptr<Tracked_Obstacle> obstacle(new Tracked_Obstacle(xs_aug, flatten(P), Pr_a, Pr_CC, filter_on, T, dt));
+	std::unique_ptr<PSBMPC_LIB::Tracked_Obstacle> obstacle(new PSBMPC_LIB::Tracked_Obstacle(xs_aug, PSBMPC_LIB::CPU::flatten(P), Pr_a, Pr_CC, filter_on, T, dt));
 
 	//*****************************************************************************************************************
 	// Test obstacle functionality
 	//*****************************************************************************************************************
-	double d_close = 1000, d_safe = 100; 
-	double phi_AH = 68.5 * DEG2RAD, phi_OT = 68.5 * DEG2RAD, phi_HO = 22.5 * DEG2RAD, phi_CR = 68.5 * DEG2RAD;	
+	PSBMPC_LIB::SBMPC sbmpc;
 	
 	int n_ps = 5; 	// KCC, two alternative maneuvers to starboard and port, only one course change of 45 deg
-	std::vector<Intention> ps_ordering;
+	std::vector<PSBMPC_LIB::Intention> ps_ordering;
 	Eigen::VectorXd ps_course_changes, ps_weights, ps_maneuver_times;
 	ps_ordering.resize(n_ps); ps_course_changes.resize(n_ps);
 	ps_weights.resize(n_ps); ps_maneuver_times.resize(n_ps);
@@ -114,20 +108,20 @@ int main(){
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
-		if (ps == 0) { ps_ordering[ps] = KCC; }
-		else if (ps > 0 && ps < (n_ps - 1) / 2 + 1) { ps_ordering[ps] = SM; }
-		else { ps_ordering[ps] = PM; }
+		if (ps == 0) { ps_ordering[ps] = PSBMPC_LIB::KCC; }
+		else if (ps > 0 && ps < (n_ps - 1) / 2 + 1) { ps_ordering[ps] = PSBMPC_LIB::SM; }
+		else { ps_ordering[ps] = PSBMPC_LIB::PM; }
 	}
 	// Lets say a head-on situation, assign weights accordingly:
 	ps_maneuver_times << 0, 0, 100, 0, 100;
 	ps_course_changes << 0, 45 * DEG2RAD, 45 * DEG2RAD, - 45 * DEG2RAD, - 45 * DEG2RAD;
 	ps_weights << (1 - Pr_CC_i_test), Pr_CC_i_test, Pr_CC_i_test, (1 - Pr_CC_i_test), (1 - Pr_CC_i_test);
 
-	ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
+	ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
-	obstacle->initialize_prediction(ps_ordering, ps_course_changes, ps_weights, ps_maneuver_times);
+	obstacle->initialize_independent_prediction(ps_ordering, ps_course_changes, ps_maneuver_times);
 
-	obstacle->predict_independent_trajectories(T, dt, trajectory.col(0), phi_AH, phi_CR, phi_HO, phi_OT, d_close, d_safe);
+	obstacle->predict_independent_trajectories(T, dt, trajectory.col(0), sbmpc);
 
 	std::vector<Eigen::MatrixXd> xs_p = obstacle->get_trajectories();
 
@@ -152,7 +146,7 @@ int main(){
 
 	obstacle->increment_duration_tracked(dt);
 
-	obstacle->update(xs_aug_new, flatten(P_new), Pr_a_new, Pr_CC_new, !filter_on, dt);
+	obstacle->update(xs_aug_new, PSBMPC_LIB::CPU::flatten(P_new), Pr_a_new, Pr_CC_new, !filter_on, dt);
 
 	std::cout << "xs_upd = " << obstacle->kf->get_state().transpose() << std::endl;
 
@@ -199,21 +193,21 @@ int main(){
 
 	engEvalString(ep, "test_ownship_plot");
 
-	mxArray *ps_count = mxCreateDoubleScalar(1);
-	double *ps_ptr = mxGetPr(ps_count);
+	mxArray *ps_count(nullptr);
 
 	map_P_traj_i = P_p;
 	engPutVariable(ep, "P_i_flat", P_traj_i_mx);
 
 	for (int ps = 0; ps < n_ps; ps++)
 	{
+		ps_count = mxCreateDoubleScalar(ps + 1);
+
 		std::cout << "Obstacle breaches COLREGS in prediction scenario " << ps << " ? " << mu[ps] << std::endl;
 		std::cout << xs_p[ps].col(300).transpose() << std::endl;
 		map_traj_i = xs_p[ps];
 		engPutVariable(ep, "X_i", traj_i_mx);
 
 		engPutVariable(ep, "ps_counter", ps_count);
-		*ps_ptr++;
 
 		engEvalString(ep, "test_obstacle_plot");
 

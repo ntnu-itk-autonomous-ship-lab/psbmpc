@@ -18,12 +18,7 @@
 *
 *****************************************************************************************/
 
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-#include "utilities.h"
+#include "cpu/utilities_cpu.h"
 #include "mrou.h"
 #include <iostream>
 #include <vector>
@@ -66,13 +61,13 @@ int main()
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step
 	Eigen::MatrixXd P_p; 
 
-	std::unique_ptr<MROU> mrou(new MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
+	std::unique_ptr<PSBMPC_LIB::MROU> mrou(new PSBMPC_LIB::MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
 
 	// n_ps = 1
 	xs_p.resize(1); xs_p[0].resize(4, n_samples);
 	xs_p[0].col(0) = xs_0;
 	P_p.resize(16, n_samples);
-	P_p.col(0) = flatten(P_0);
+	P_p.col(0) = PSBMPC_LIB::CPU::flatten(P_0);
 
 	v_p.resize(1); v_p[0].resize(2, n_samples);
 	
@@ -122,7 +117,7 @@ int main()
 			if (k < n_samples - 1)
 			{
 				xs_p[ps].col(k + 1) = xs;
-				P_p.col(k + 1) = flatten(P);
+				P_p.col(k + 1) = PSBMPC_LIB::CPU::flatten(P);
 			}
 		}
 	}

@@ -18,11 +18,13 @@
 *
 *****************************************************************************************/
 
-#include "utilities.h"
+#include "psbmpc_defines.h"
 #include "sbmpc_parameters.h"
 #include "Eigen/Dense"
 #include <vector>
 
+namespace PSBMPC_LIB
+{
 
 /****************************************************************************************
 	Public functions
@@ -425,4 +427,6 @@ void SBMPC_Parameters::initialize_pars(
 		p = 1.0;
 	}
 	
+}
+
 }

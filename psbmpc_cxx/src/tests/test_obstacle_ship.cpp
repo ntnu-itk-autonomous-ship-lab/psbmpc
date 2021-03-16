@@ -19,8 +19,8 @@
 *****************************************************************************************/
 
 
-#include "utilities.h"
-#include "obstacle_ship.h"
+#include "cpu/utilities_cpu.h"
+#include "cpu/obstacle_ship_cpu.h"
 #include <iostream>
 #include <memory>
 #include "Eigen/Dense"
@@ -54,7 +54,7 @@ int main(){
 	maneuver_times << 0, 100, 150;
 	
 	double T_U = 10, T_chi = 7.5, R_a = 30.0, LOS_LD = 200.0;
-	Obstacle_Ship obstacle_ship(T_U, T_chi, R_a, LOS_LD, 0); // xs = [x, y, chi, U]^T for this ship
+	PSBMPC_LIB::CPU::Obstacle_Ship obstacle_ship(T_U, T_chi, R_a, LOS_LD, 0); // xs = [x, y, chi, U]^T for this ship
 
 	Eigen::Matrix<double, 4, -1> trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
@@ -78,7 +78,7 @@ int main(){
 	//*****************************************************************************************************************
 	obstacle_ship.determine_active_waypoint_segment(waypoints, trajectory.col(0));
 
-	obstacle_ship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, ERK1, LOS, T, dt);
+	obstacle_ship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
 	//*****************************************************************************************************************
 	// Send data to matlab

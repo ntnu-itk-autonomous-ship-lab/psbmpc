@@ -2,11 +2,11 @@
 *
 *  File name : kf.h
 *
-*  Function  : Header file for a hardcoded (n=4) Kalman Filter (KF) to add extra robustness
+*  Function  : Header file for a hardcoded Kalman Filter (KF) to add extra robustness
 *              against track loss. See "Autonomous COLREGS compliant decision
 *              making using maritime radar tracking and model predictive control". 
 *              This is an alternative version of the one created by Giorgio D. Kwame 
-*              Minde Kufoalor through the Autosea project
+*              Minde Kufoalor through the Autosea project.
 *  
 *            ---------------------
 *
@@ -21,64 +21,65 @@
 *
 *****************************************************************************************/
 
-#ifndef _KF_H_
-#define _KF_H_
+#pragma once
 
 #include "Eigen/Dense"
 
-class KF
+namespace PSBMPC_LIB
 {
-private:
+  class KF
+  {
+  private:
 
-  int ID;
+    int ID;
 
-  double t_0, t;
+    double t_0, t;
 
-  bool initialized;
+    bool initialized;
 
-  Eigen::Vector4d xs_p, xs_upd;
+    Eigen::Vector4d xs_p, xs_upd;
 
-  Eigen::Matrix4d A, C, Q, R, I;
+    Eigen::Matrix4d A, C, Q, R, I;
 
-  Eigen::Matrix4d P_0, P_p, P_upd;
+    Eigen::Matrix4d P_0, P_p, P_upd;
 
-public:
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  KF();
+    KF();
 
-  KF(const Eigen::Vector4d &xs_0, const Eigen::Matrix4d &P_0, const int ID, const double dt, const double t_0);
+    KF(const Eigen::Vector4d& xs_0, const Eigen::Matrix4d& P_0, const int ID, const double dt, const double t_0);
 
-  // Use the constructor below for simulations where the KF is used as a tracking system outside the COLAV algorithm
-  // where typically only position measurements of vessels are used.
-  KF(
-    const Eigen::Vector4d &xs_0, 
-    const Eigen::Matrix4d &P_0, 
-    const int ID, 
-    const double dt, 
-    const double t_0, 
-    const Eigen::Matrix4d &Q,
-    const Eigen::Matrix4d &R);
+    // Use the constructor below for simulations where the KF is used as a tracking system outside the COLAV algorithm
+    // where typically only position measurements of vessels are used.
+    KF(
+      const Eigen::Vector4d &xs_0, 
+      const Eigen::Matrix4d &P_0, 
+      const int ID, 
+      const double dt, 
+      const double t_0, 
+      const Eigen::Matrix4d &Q,
+      const Eigen::Matrix4d &R);
 
-  int get_ID() const { return ID; };
+    int get_ID() const { return ID; };
 
-  double get_time() const { return t; };
+    double get_time() const { return t; };
 
-  Eigen::Vector4d get_predicted_state() const { return xs_p; }
-  Eigen::Vector4d get_state() const { return xs_upd; };
+    Eigen::Vector4d get_predicted_state() const { return xs_p; }
+    Eigen::Vector4d get_state() const { return xs_upd; };
 
-  Eigen::Matrix4d get_predicted_covariance() const { return P_p; }
-  Eigen::Matrix4d get_covariance() const { return P_upd; };
+    Eigen::Matrix4d get_predicted_covariance() const { return P_p; }
+    Eigen::Matrix4d get_covariance() const { return P_upd; };
 
-  void reset(const Eigen::Vector4d &xs_0, const Eigen::Matrix4d &P_0, const double t_0);
+    void reset(const Eigen::Vector4d &xs_0, const Eigen::Matrix4d &P_0, const double t_0);
 
-  void predict(const double dt);
+    void predict(const double dt);
 
-  void update(const Eigen::Vector4d &y_m, const double duration_lost, const double dt);
+    void update(const Eigen::Vector4d &y_m, const double duration_lost, const double dt);
 
-  // Use this update function when the KF is used as a tracking system outside the COLAV algorithm
-  // where typically only position measurements of vessels are used.
-  void update(const Eigen::Vector2d &y_m, const double dt, const bool dead_reckon);
+    // Use this update function when the KF is used as a tracking system outside the COLAV algorithm
+    // where typically only position measurements of vessels are used.
+    void update(const Eigen::Vector2d &y_m, const double dt, const bool dead_reckon);
 
-};
-
-#endif
+  };
+}

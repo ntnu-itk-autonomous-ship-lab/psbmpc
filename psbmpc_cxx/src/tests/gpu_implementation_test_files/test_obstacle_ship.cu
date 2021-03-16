@@ -19,10 +19,6 @@
 *****************************************************************************************/
 
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 #include "gpu/obstacle_ship_gpu.cuh"
 #include <iostream>
 #include <memory>
@@ -46,7 +42,7 @@ int main(){
 	Eigen::Matrix<double, 4, 1> xs;
 	xs << 0, 0, 0, 6;
 
-	double T = 400; double dt = 0.5;
+	double T = 200; double dt = 0.5;
 
 	double u_d = 6.0; double chi_d = 0.0;
 

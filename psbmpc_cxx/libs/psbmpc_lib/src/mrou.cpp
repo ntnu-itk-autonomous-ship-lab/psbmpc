@@ -3,7 +3,7 @@
 *  File name : mrou.cpp
 *
 *  Function  : Implements class functions for the Mean-Reverting Ornstein-Uhlenbeck 
-*			   process
+*			   process, modified with .cu for this GPU-implementation.
 *  
 *	           ---------------------
 *
@@ -19,10 +19,12 @@
 *****************************************************************************************/
 
 #include "mrou.h"
-#include "math.h"
+#include <cmath>
 #include <iostream>
 
-
+namespace PSBMPC_LIB
+{
+	
 /****************************************************************************************
 *  Name     : MROU
 *  Function : Class constructor, initializes parameters and variables
@@ -32,13 +34,12 @@
 *****************************************************************************************/
 MROU::MROU() :
 	sigma_x(0.1), 						
-	sigma_xy(0), 
+	sigma_xy(0.0), 
 	sigma_y(0.1), 
 	gamma_x(0.1), 						
 	gamma_y(0.1)
 {
-
-	// Calculate constant part of OU predictor covariance
+	// Constant part of OU predictor covariance
 	Sigma_1 << pow(sigma_x, 2) / pow(gamma_x, 3), sigma_xy / (gamma_x * gamma_y), pow(sigma_x, 2) / (2 * pow(gamma_x, 2)), 2 * sigma_xy / gamma_x,
 
 				sigma_xy / (gamma_x * gamma_y), pow(sigma_y, 2) / pow(gamma_y, 3),  2 * sigma_xy / gamma_y, pow(sigma_y, 2) / (2 * pow(gamma_y, 2)),
@@ -164,4 +165,6 @@ Eigen::Matrix4d MROU::predict_covariance(
 	P = P_old + Sigma_1.cwiseProduct(Sigma_2); 
 
 	return P;
+}
+
 }

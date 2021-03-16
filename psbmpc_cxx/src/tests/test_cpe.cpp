@@ -18,20 +18,14 @@
 *
 *****************************************************************************************/
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-
 #include "cpu/cpe_cpu.h"
 #include "cpu/utilities_cpu.h"
-#include "mrou.h"
 #include "cpu/ownship_cpu.h"
+#include "mrou.h"
 #include <iostream>
 #include <vector>
 #include <memory>
 #include <chrono>
-#include "Eigen/Dense"
 #include "engine.h"
 
 #define BUFSIZE 1000000
