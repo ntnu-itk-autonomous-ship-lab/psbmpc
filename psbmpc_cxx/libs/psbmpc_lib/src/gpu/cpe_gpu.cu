@@ -87,7 +87,6 @@ __host__ __device__ CPE::CPE(
 __device__ void CPE::initialize(
     const TML::PDVector4f &xs_os,                                                     // In: Own-ship state vector
     const TML::PDVector4f &xs_i,                                                      // In: Obstacle i state vector
-    const TML::PDVector16f &P_i,                                                      // In: Obstacle i covariance flattened into n^2 x 1
     const float d_safe_i                                                             // In: Safety zone around own-ship when facing obstacle i
     )
 {

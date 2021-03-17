@@ -686,7 +686,7 @@ void PSBMPC::initialize_prediction(
 		}
 		else
 		{
-			set_up_independent_obstacle_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, t_cpa(i), data, i);
+			set_up_independent_obstacle_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, t_cpa(i), i);
 
 			pobstacles[i] = Prediction_Obstacle(data.obstacles[i]);
 			if (pars.obstacle_colav_on)
@@ -772,7 +772,6 @@ void PSBMPC::set_up_independent_obstacle_prediction(
 	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
 	const double t_cpa_i, 													// In: Time to Closest Point of Approach for obstacle i wrt own-ship
-	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
@@ -898,6 +897,39 @@ void PSBMPC::prune_obstacle_scenarios(
 	{
 		use_joint_prediction = false;
 	}
+}
+
+/****************************************************************************************
+*  Name     : calculate_collision_probabilities
+*  Function : Estimates collision probabilities for the own-ship and an obstacle i in
+*			  consideration. Can use a larger sample time than used in predicting
+*			  the vessel trajectories.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::calculate_instantaneous_collision_probabilities(
+	Eigen::MatrixXd &P_c_i,								// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
+	const Obstacle_Data<Tracked_Obstacle> &data,		// In: Dynamic obstacle information
+	const int i, 										// In: Index of obstacle
+	const double dt, 									// In: Sample time for estimation
+	const int p_step                                    // In: Step between trajectory samples, matches the input prediction time step
+	)
+{
+	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
+	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
+
+	// Increase safety zone by half the max obstacle dimension and ownship length
+	double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
+
+	int n_samples = P_i_p.cols();
+	// Non-optimal temporary row-vector storage solution
+	Eigen::Matrix<double, 1, -1> P_c_i_row(n_samples);
+	for (int ps = 0; ps < n_ps[i]; ps++)
+	{
+		cpe.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
+		
+		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
+	}		
 }
 
 /****************************************************************************************
@@ -1454,39 +1486,6 @@ bool PSBMPC::determine_colav_active(
 	colav_active = colav_active || n_static_obst > 0;
 
 	return colav_active;
-}
-
-/****************************************************************************************
-*  Name     : calculate_collision_probabilities
-*  Function : Estimates collision probabilities for the own-ship and an obstacle i in
-*			  consideration. Can use a larger sample time than used in predicting
-*			  the vessel trajectories.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::calculate_instantaneous_collision_probabilities(
-	Eigen::MatrixXd &P_c_i,								// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
-	const Obstacle_Data<Tracked_Obstacle> &data,		// In: Dynamic obstacle information
-	const int i, 										// In: Index of obstacle
-	const double dt, 									// In: Sample time for estimation
-	const int p_step                                    // In: Step between trajectory samples, matches the input prediction time step
-	)
-{
-	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
-	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
-
-	// Increase safety zone by half the max obstacle dimension and ownship length
-	double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
-
-	int n_samples = P_i_p.cols();
-	// Non-optimal temporary row-vector storage solution
-	Eigen::Matrix<double, 1, -1> P_c_i_row(n_samples);
-	for (int ps = 0; ps < n_ps[i]; ps++)
-	{
-		cpe.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
-		
-		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
-	}		
 }
 
 /****************************************************************************************

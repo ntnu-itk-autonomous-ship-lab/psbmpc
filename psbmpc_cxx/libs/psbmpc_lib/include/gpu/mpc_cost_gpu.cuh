@@ -155,7 +155,7 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ float calculate_chattering_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times);
 
-			__host__ __device__ float calculate_grounding_cost(const TML::Vector4f &xs_k_p, const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles, const float ownship_length);
+			//__host__ __device__ float calculate_grounding_cost(const TML::Vector4f &xs_k_p, const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles, const float ownship_length);
 		};
 
 		//=======================================================================================
@@ -588,7 +588,7 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal & Giorgio D. Kwame Minde Kufoalor
 		*  Modified :
 		*****************************************************************************************/
-		template <typename Parameters>
+		/* template <typename Parameters>
 		__host__ __device__ float MPC_Cost<Parameters>::calculate_grounding_cost(
 			const TML::Vector4f &xs_k_p,												// In: Calling obstacle ownship state at the current (joint) predicted time
 			const TML::PDMatrix<float, 4, MAX_N_OBST> &static_obstacles, 				// In: Static obstacle information parametrized as no-go lines/straight lines
@@ -598,7 +598,7 @@ namespace PSBMPC_LIB
 			cost_g = 0;
 
 			return cost_g;
-		}
+		} */
 
 		/****************************************************************************************
 			Private functions

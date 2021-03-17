@@ -125,7 +125,8 @@ __host__ void Cuda_Obstacle::assign_data(
 	TML::assign_eigen_object(this->P_p, to.P_p);
 
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_p_ps;
-	for (size_t ps = 0; ps < to.ps_maneuver_times.size(); ps++)
+	int n_ps_independent = to.ps_maneuver_times.size();
+	for (int ps = 0; ps < n_ps_independent; ps++)
 	{
 		TML::assign_eigen_object(xs_p_ps, to.xs_p[ps]);
 
@@ -134,5 +135,4 @@ __host__ void Cuda_Obstacle::assign_data(
 }
 
 }
-
 }

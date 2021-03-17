@@ -71,7 +71,6 @@ namespace PSBMPC_LIB
 				Eigen::VectorXd &ps_course_changes,
 				Eigen::VectorXd &ps_maneuver_times,
 				const double t_cpa_i,
-				const Obstacle_Data<Tracked_Obstacle> &data,
 				const int i);
 
 			// Obstacle prediction scenario pruning related methods

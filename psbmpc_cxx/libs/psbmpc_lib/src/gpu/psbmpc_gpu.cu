@@ -249,7 +249,7 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 	
-	initialize_prediction(data, static_obstacles);
+	initialize_prediction(data);
 
 	if (use_joint_prediction)
 	{
@@ -660,8 +660,7 @@ void PSBMPC::find_optimal_control_behaviour(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::initialize_prediction(
-	Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
-	const Eigen::Matrix<double, 4, -1> &static_obstacles			// In: Static obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data							// In: Dynamic obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
@@ -725,7 +724,7 @@ void PSBMPC::initialize_prediction(
 		}
 		else
 		{
-			set_up_independent_obstacle_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, t_cpa(i), data, i);
+			set_up_independent_obstacle_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, t_cpa(i), i);
 
 			pobstacles[i] = Prediction_Obstacle(data.obstacles[i]);
 			if (pars.obstacle_colav_on)
@@ -811,40 +810,12 @@ void PSBMPC::set_up_independent_obstacle_prediction(
 	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
 	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
 	const double t_cpa_i, 													// In: Time to Closest Point of Approach for obstacle i wrt own-ship
-	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
 	const int i 															// In: Index of obstacle in consideration
 	)
 {
 	int turn_count(0), turn_start(0), n_turns(0), course_change_count(0);
 
-	// The out-commented stuff is too ad-hoc to be used.
-	/*
-	double d_AB, d_AB_prev;
-	Eigen::Vector4d xs_i_0 = data.obstacles[i].kf->get_state();
-	Eigen::Vector2d v_0, v_i_0;
-
-	d_AB = (trajectory.col(0).block<2, 1>(0, 0) - xs_i_0.block<2, 1>(0, 0)).norm();
-	v_0 = rotate_vector_2D(trajectory.col(0).block<2, 1>(3, 0), trajectory(2, 0));
-	v_i_0 = xs_i_0.block<2, 1>(2, 0);
-
-	
-	 // Alternative obstacle maneuvers (other than the straight line prediction) 
-	// are only allowed inside the COLREGS consideration zone, i.e. inside d_close
-	while (d_AB > pars.d_close)
-	{
-		d_AB_prev = d_AB;
-		turn_start += 1;
-		// calculate new distance between own-ship and obstacle i, given that both keep
-		// their course for k * t_ts seconds, k = 1, 2, 3, ...
-		d_AB = ((trajectory.col(0).block<2, 1>(0, 0) + v_0 * turn_start * pars.t_ts) - 
-				(xs_i_0.block<2, 1>(0, 0) + v_i_0 * turn_start * pars.t_ts)).norm();
-		if (d_AB > d_AB_prev)
-		{
-			turn_start = -1;
-			break;
-		}
-	} */
-	if (turn_start >= 0) // and alternative maneuvers are only up until cpa with the own-ship
+	if (turn_start >= 0) // Alternative maneuvers are only up until cpa with the own-ship
 	{
 		n_turns = std::ceil((t_cpa_i - turn_start * pars.t_ts) / pars.t_ts);
 	}

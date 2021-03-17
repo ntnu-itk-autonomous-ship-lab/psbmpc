@@ -115,7 +115,6 @@ CPE& CPE::operator=(
 void CPE::initialize(
     const Eigen::Matrix<double, 6, 1> &xs_os,                                   // In: Own-ship state vector
     const Eigen::Vector4d &xs_i,                                                // In: Obstacle i state vector
-    const Eigen::VectorXd &P_i,                                                 // In: Obstacle i covariance flattened into n^2 x 1
     const double d_safe_i                                                      // In: Safety zone around own-ship when facing obstacle i
     )
 {
@@ -168,7 +167,7 @@ void CPE::estimate_over_trajectories(
 
     xs_os_seg.resize(6, n_seg_samples); xs_i_seg.resize(4, n_seg_samples); P_i_seg.resize(16, n_seg_samples);
 
-    initialize(xs_p.col(0), xs_i_p.col(0), P_i_p.col(0), d_safe_i);
+    initialize(xs_p.col(0), xs_i_p.col(0), d_safe_i);
 
     P_c_i.setZero(); v_os_prev.setZero(); v_i_prev.setZero();
     k_j_ = 0; k_j = 0; sample_count = 0;
