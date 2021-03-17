@@ -134,14 +134,13 @@ namespace PSBMPC_LIB
 
 			void find_optimal_control_behaviour(Obstacle_Data<Tracked_Obstacle> &data);
 
-			void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1> &static_obstacles);
+			void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 
 			void set_up_independent_obstacle_prediction(
 				std::vector<Intention> &ps_ordering,
 				Eigen::VectorXd &ps_course_changes,
 				Eigen::VectorXd &ps_maneuver_times,
 				const double t_cpa_i,
-				const Obstacle_Data<Tracked_Obstacle> &data,
 				const int i);
 			
 			// Obstacle prediction scenario pruning related methods

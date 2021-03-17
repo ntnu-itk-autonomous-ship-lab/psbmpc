@@ -161,8 +161,8 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 				}
 			}
 
-			cost_g_k = mpc_cost.calculate_grounding_cost(xs_k_p, static_obstacles, ownship.get_length());
-			if (cost_g < cost_g_k) { cost_g = cost_g_k; }
+			//cost_g_k = mpc_cost.calculate_grounding_cost(xs_k_p, static_obstacles, ownship.get_length());
+			//if (cost_g < cost_g_k) { cost_g = cost_g_k; }
 
 			// Predict ownship one step ahead
 			ownship.update_guidance_references(u_d_p, chi_d_p, waypoints, xs_k_p, pars.dt, pars.guidance_method);
@@ -269,8 +269,8 @@ __host__ __device__ void Obstacle_SBMPC::calculate_optimal_offsets(
 				}
 			}
 
-			cost_g_k = mpc_cost.calculate_grounding_cost(xs_k_p, static_obstacles, ownship.get_length());
-			if (cost_g < cost_g_k) { cost_g = cost_g_k; }
+			//cost_g_k = mpc_cost.calculate_grounding_cost(xs_k_p, static_obstacles, ownship.get_length());
+			//if (cost_g < cost_g_k) { cost_g = cost_g_k; }
 
 			// Predict ownship one step ahead
 			ownship.update_guidance_references(u_d_p, chi_d_p, waypoints, xs_k_p, pars.dt, pars.guidance_method);

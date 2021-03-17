@@ -203,8 +203,7 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 		{
 			cpe[thread_index].initialize(
 				xs_p_seg.get_col(n_seg_samples - 1), 
-				xs_i_p_seg.get_col(n_seg_samples - 1), 
-				P_i_p_seg.get_col(n_seg_samples - 1), 
+				xs_i_p_seg.get_col(n_seg_samples - 1),  
 				d_safe_i);
 		}
 

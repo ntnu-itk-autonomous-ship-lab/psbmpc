@@ -229,7 +229,6 @@ namespace TML
 				(self.get_cols() == other.get_cols() && other.get_rows() == 1));
 
 		Derived result = self;
-
 		for (size_t i = 0; i < self.get_rows(); i++)
 		{
 			for (size_t j = 0; j < self.get_cols() ; j++)

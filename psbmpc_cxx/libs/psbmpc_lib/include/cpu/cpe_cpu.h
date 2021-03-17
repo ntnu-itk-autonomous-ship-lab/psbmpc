@@ -201,7 +201,6 @@ namespace PSBMPC_LIB
 			void initialize(
 				const Eigen::Matrix<double, 6, 1> &xs_os, 
 				const Eigen::Vector4d &xs_i, 
-				const Eigen::VectorXd &P_i,
 				const double d_safe_i);
 
 			void estimate_over_trajectories(

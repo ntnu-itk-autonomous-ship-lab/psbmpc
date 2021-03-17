@@ -183,7 +183,6 @@ namespace PSBMPC_LIB
 			__device__ void initialize(
 				const TML::PDVector4f &xs_os, 
 				const TML::PDVector4f &xs_i, 
-				const TML::PDVector16f &P_i,
 				const float d_safe_i);
 
 			__device__ float MCSKF4D_estimate(
