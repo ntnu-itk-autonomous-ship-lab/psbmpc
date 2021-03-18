@@ -39,6 +39,7 @@ enum Guidance_Method
 }; */
 // Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
 #include "psbmpc_parameters.h"
+#include "ctrl_cpu.h"
 
 namespace PSBMPC_LIB
 {
@@ -47,34 +48,32 @@ namespace PSBMPC_LIB
 		class Ownship
 		{
 		private:
+			
+			Ship_Type type;
 
 			Eigen::Vector3d tau;
-			Eigen::Matrix3d M_inv;
-			Eigen::Vector3d Cvv;
-			Eigen::Vector3d Dvv;
 
-			// Model Parameters
-			double l_r;
-			double m; 	// [kg]
-			double I_z; // [kg/m2]
+			// Inertia matrix, sum of the rigid body mass matrix M_RB 
+			// and the added mass matrix M_A
+			Eigen::Matrix3d M;
 
-			// Added mass terms
-			double X_udot;
-			double Y_vdot, Y_rdot;
-			double N_vdot, N_rdot;
+			// Vector results of performing C(v)*v and D(v)*v
+			Eigen::Vector3d Cvv, Dvv;
 
-			// Linear damping terms [X_u, Y_v, Y_r, N_v, N_r]
-			double X_u;
-			double Y_v, Y_r;
-			double N_v, N_r;
+			// Matrix of linear damping coefficients
+			/* 	  {X_u, X_v, X_r}
+			D_l = {Y_u, Y_v, Y_r}
+				  {N_u, N_v, N_r} */
+			Eigen::Matrix3d D_l;
 
-			// Nonlinear damping terms [X_|u|u, Y_|v|v, N_|r|r, X_uuu, Y_vvv, N_rrr]
-			double X_uu;
-			double Y_vv;
-			double N_rr;
-			double X_uuu;
-			double Y_vvv;
-			double N_rrr;
+			// Nonlinear damping terms
+			double X_uu, X_uuu;
+			double Y_vv, Y_vr, Y_rv, Y_vvv;
+			double N_rr, N_vr, N_rv, N_rrr;
+
+			// Model parameters
+			double l_r; // distance from CG to thruster/rudder (assume symmetric for n=2 thrusters)
+			double A, B, C, D, l, w; // Ship dimension headers, and length/width
 
 			//Force limits
 			double Fx_min;
@@ -111,7 +110,7 @@ namespace PSBMPC_LIB
 
 		public:
 
-			Ownship();
+			Ownship(const Ship_Type type);
 
 			void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 

@@ -34,56 +34,61 @@ namespace CPU
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Ownship::Ownship()
+Ownship::Ownship(const Ship_Type type)
 {
+	if (type == Telemetron)
+	{
+		// Model parameters
+		double l_r = 4.0; // distance from rudder to CG
+		double A = 5; // [m]  in reality the length is 14,5 m.
+		double B = 5; // [m]
+		double C = 1.5; // [m]
+		double D = 1.5; // [m]
+		double l = (A + B);
+		double w = (C + D);
+		calculate_position_offsets();
+
+		double m = 3980.0; // [kg]
+		double I_z = 19703.0; // [kg m2]
+
+		Eigen::Matrix3d M_RB;
+		M_RB << m, 0.0, 0.0,
+				0.0, m, 0.0,
+				0.0, 0.0, I_z;
+
+		// Zero added mass:
+		Eigen::Matrix3d M_A = Eigen::Matrix3d::Zero();
+		
+		// Total inertia matrix
+		M = M_RB + M_A;
+
+		D_l << -50, 0.0, 0.0,
+			    0.0, -200.0, 0.0,
+				0.0, 0.0, -1281.0;
+
+		// Nonlinear damping terms [X_|u|u, Y_|v|v, N_|r|r, X_uuu, Y_vvv, N_rrr]
+		X_uu = -135.0;
+		Y_vv = -2000.0; Y_vr = 0.0, Y_rv = 0.0;
+		N_rr = 0.0;	N_vr = 0.0, N_rv = 0.0;
+		X_uuu = 0.0;
+		Y_vvv = 0.0;
+		N_rrr = -3224.0;
+
+		//Force limits
+		double Fx_min = -6550.0;
+		double Fx_max = 13100.0;
+		double Fy_min = -645.0;
+		double Fy_max = 645.0;
+	}
+	else if(type == MilliAmpere)
+	{
+
+	}
+	else
+	{
+
+	}
 	tau = Eigen::Vector3d::Zero();
-
-	// Model parameters
-	l_r = 4.0; // distance from rudder to CG
-	A = 5; // [m]  in reality the length is 14,5 m.
-	B = 5; // [m]
-	C = 1.5; // [m]
-	D = 1.5; // [m]
-	l = (A + B);
-	w = (C + D);
-	calculate_position_offsets();
-
-	m = 3980.0; // [kg]
-	I_z = 19703.0; // [kg m2]
-
-	// Added M terms
-	X_udot = 0.0;
-	Y_vdot = 0.0;
-	Y_rdot = 0.0;
-	N_vdot = 0.0;
-	N_rdot = 0.0;
-
-	// Linear damping terms [X_u, Y_v, Y_r, N_v, N_r]
-	X_u	= -50.0;
-	Y_v = -200.0;
-	Y_r = 0.0;
-	N_v = 0.0;
-	N_r = -1281.0;//-3224.0;
-
-	// Nonlinear damping terms [X_|u|u, Y_|v|v, N_|r|r, X_uuu, Y_vvv, N_rrr]
-	X_uu = -135.0;
-	Y_vv = -2000.0;
-	N_rr = 0.0;
-	X_uuu = 0.0;
-	Y_vvv = 0.0;
-	N_rrr = -3224.0;
-
-	Eigen::Matrix3d M_tot;
-	M_tot << m - X_udot, 0, 0,
-	        0, m - Y_vdot, -Y_rdot,
-	        0, -Y_rdot, I_z - N_rdot;
-	M_inv = M_tot.inverse();
-
-	//Force limits
-	Fx_min = -6550.0;
-	Fx_max = 13100.0;
-	Fy_min = -645.0;
-	Fy_max = 645.0;
 
 	// Guidance parameters
 	e_int = 0;
