@@ -39,18 +39,21 @@ enum Guidance_Method
 }; */
 // Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
 #include "psbmpc_parameters.h"
-#include "ctrl_cpu.h"
+
 
 namespace PSBMPC_LIB
 {
 	namespace CPU
 	{
-		class Ownship
+		#if USE_SHIP_TYPE == 1
+			using Ownship = MilliAmpere;
+		#elif USE_SHIP_TYPE == 2
+			using Ownship = Telemetron;
+		#endif
+		class Ownship_Base
 		{
-		private:
-			
-			Ship_Type type;
-
+		protected:
+			// Control input vector
 			Eigen::Vector3d tau;
 
 			// Inertia matrix, sum of the rigid body mass matrix M_RB 
@@ -68,18 +71,12 @@ namespace PSBMPC_LIB
 
 			// Nonlinear damping terms
 			double X_uu, X_uuu;
-			double Y_vv, Y_vr, Y_rv, Y_vvv;
-			double N_rr, N_vr, N_rv, N_rrr;
+			double Y_vv, Y_vr, Y_rv, Y_rr, Y_vvv;
+			double N_vv, N_vr, N_rv, N_rr, N_rrr;
 
 			// Model parameters
-			double l_r; // distance from CG to thruster/rudder (assume symmetric for n=2 thrusters)
 			double A, B, C, D, l, w; // Ship dimension headers, and length/width
-
-			//Force limits
-			double Fx_min;
-			double Fx_max;
-			double Fy_min;
-			double Fy_max; 
+			double x_offset, y_offset;
 
 			// Guidance parameters
 			double e_int, e_int_max; 
@@ -90,17 +87,6 @@ namespace PSBMPC_LIB
 			// time and predicted time
 			int wp_c_0, wp_c_p;
 
-			// Controller parameters
-			double Kp_u;
-			double Kp_psi;
-			double Kd_psi;
-			double Kp_r;
-			
-			double r_max; 
-
-			double A, B, C, D, l, w;
-			double x_offset, y_offset;
-
 			// Calculates the offsets according to the position of the GPS receiver
 			inline void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
 
@@ -109,8 +95,7 @@ namespace PSBMPC_LIB
 			void update_Dvv(const Eigen::Vector3d &nu);
 
 		public:
-
-			Ownship(const Ship_Type type);
+			Ownship_Base();
 
 			void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 
@@ -122,7 +107,7 @@ namespace PSBMPC_LIB
 				const double dt,
 				const Guidance_Method guidance_method);
 
-			void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
+			//void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
 			Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
@@ -136,13 +121,83 @@ namespace PSBMPC_LIB
 				const Prediction_Method prediction_method,
 				const Guidance_Method guidance_method,
 				const double T,
-				const double dt
-			);
+				const double dt);
 
 			inline double get_length() const { return l; };
 
 			inline double get_width() const { return w; };
 
+		};
+
+		class MilliAmpere : public Ownship_Base
+		{
+		private:
+			double l_1, l_2; // distance from CG to front (1) and back (2) thrusters (symmetric here)
+
+			double min_rpm, max_rpm, min_thrust, max_thrust;
+
+			Eigen::Vector2d alpha, omega;
+
+			Eigen::VectorXd rpm_to_force_polynomial, force_to_rpm_polynomial;
+
+			void update_alpha();
+
+			void update_omega();
+		public:
+			MilliAmpere();
+
+			void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
+
+			void predict_trajectory(
+				Eigen::Matrix<double, 6, -1> &trajectory,
+				const Eigen::VectorXd &offset_sequence,
+				const Eigen::VectorXd &maneuver_times,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const double T,
+				const double dt);
+		};
+
+		class Telemetron : public Ownship_Base
+		{
+		private:
+			// Specific model parameters used for control
+			double m, I_z;
+			double l_r; // distance from CG to rudder
+
+			// Controller parameters
+			double Kp_u;
+			double Kp_psi;
+			double Kd_psi;
+			double Kp_r;
+			
+			double r_max; 
+
+            //Force limits
+			double Fx_min;
+			double Fx_max;
+			double Fy_min;
+			double Fy_max; 
+
+		public:
+			Telemetron();
+
+			void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
+
+			void predict_trajectory(
+				Eigen::Matrix<double, 6, -1> &trajectory,
+				const Eigen::VectorXd &offset_sequence,
+				const Eigen::VectorXd &maneuver_times,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const double T,
+				const double dt);
 		};
 	}	
 }
