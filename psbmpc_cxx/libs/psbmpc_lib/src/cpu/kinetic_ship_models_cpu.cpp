@@ -1,17 +1,15 @@
 /****************************************************************************************
 *
-*  File name : ownship_cpu.cpp
+*  File name : kinetic_ship_models_cpu.cpp
 *
-*  Function  : Class functions for the CPU used ownship base and derived versions. 
-*			   Modified and extended version of the "Ship_Model" class created for 
-*			   SBMPC by Inger Berge Hagen and  Giorgio D.  Kwame Minde Kufoalor through 
-*			   the Autosea project.
+*  Function  : Class functions for the CPU used kinetic ship models. 
+*			   
 *  
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim. 
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
@@ -21,7 +19,7 @@
 *****************************************************************************************/
 
 #include "cpu/utilities_cpu.h"
-#include "cpu/ownship_cpu.h"
+#include "cpu/kinetic_ship_models_cpu.h"
 #include <vector>
 #include <iostream>
 
@@ -35,7 +33,7 @@ namespace CPU
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Ship_Base_3DOF::Ship_Base_3DOF()
+Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
 {
 	tau = Eigen::Vector3d::Zero();
 	Cvv = Eigen::Vector3d::Zero();
@@ -59,7 +57,7 @@ Ship_Base_3DOF::Ship_Base_3DOF()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ship_Base_3DOF::determine_active_waypoint_segment(
+void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segment(
 	const Eigen::Matrix<double, 2, -1> &waypoints,  			// In: Waypoints to follow
 	const Eigen::Matrix<double, 6, 1> &xs 						// In: Ownship state
 	)	
@@ -95,7 +93,7 @@ void Ship_Base_3DOF::determine_active_waypoint_segment(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ship_Base_3DOF::update_guidance_references(
+void Kinetic_Ship_Base_3DOF::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
 	double &chi_d,												// In/out: Course reference 
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
@@ -185,7 +183,7 @@ void Ship_Base_3DOF::update_guidance_references(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Eigen::Matrix<double, 6, 1> Ship_Base_3DOF::predict(
+Eigen::Matrix<double, 6, 1> Kinetic_Ship_Base_3DOF::predict(
 	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
 	const double dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
@@ -237,7 +235,7 @@ Eigen::Matrix<double, 6, 1> Ship_Base_3DOF::predict(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ship_Base_3DOF::update_Cvv(
+void Kinetic_Ship_Base_3DOF::update_Cvv(
 	const Eigen::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
 	)
 {	
@@ -271,7 +269,7 @@ void Ship_Base_3DOF::update_Cvv(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Ship_Base_3DOF::update_Dvv(
+void Kinetic_Ship_Base_3DOF::update_Dvv(
 	const Eigen::Vector3d &nu 									// In: BODY velocity vector nu = [u, v, r]^T
 	)
 {

@@ -19,8 +19,7 @@
 *
 *****************************************************************************************/
 
-#ifndef _DYNAMIC_MATRIX_CUH_
-#define _DYNAMIC_MATRIX_CUH_
+#pragma once
 
 #include <thrust/device_vector.h>
 #include <assert.h>

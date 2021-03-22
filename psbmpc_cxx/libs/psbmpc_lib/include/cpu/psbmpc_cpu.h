@@ -21,9 +21,10 @@
 
 #pragma once
 
-#include "../psbmpc_parameters.h"
+#include "psbmpc_defines.h"
+#include "psbmpc_parameters.h"
 #include "obstacle_sbmpc_cpu.h"
-#include "ownship_cpu.h"
+#include "kinetic_ship_models_cpu.h"
 #include "cpe_cpu.h"
 
 #include <vector>

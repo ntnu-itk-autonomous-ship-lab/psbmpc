@@ -50,3 +50,6 @@ target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/libs/
 )
 
+if (USE_GPU_PSBMPC)
+	set_property(TARGET tester PROPERTY CUDA_ARCHITECTURES 61 86)
+endif()

@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : obstacle_ship_cpu.h
+*  File name : kinematic_ship_models_cpu.h
 *
 *  Function  : Header file for the CPU used simple kinematic model based obstacle ship, 
 *			   used as base for the obstacle collision avoidance system.
@@ -18,32 +18,15 @@
 *
 *****************************************************************************************/
 
-
 #pragma once
 
-// NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below
-/* enum Prediction_Method
-{
-	Linear,													// Linear prediction
-	ERK1, 													// Explicit Runge Kutta 1 = Eulers method
-	ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
-};
-
-enum Guidance_Method 
-{
-	LOS, 													// Line-of-sight		
-	WPP,													// Waypoint-Pursuit
-	CH 														// Course Hold
-}; */
-// Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
 #include "psbmpc_parameters.h"
 
 namespace PSBMPC_LIB
 {
-	using Obstacle_Ship =
 	namespace CPU
-	{		
-		class Obstacle_Ship
+	{			
+		class Kinematic_Ship
 		{
 		private:
 
@@ -64,9 +47,9 @@ namespace PSBMPC_LIB
 
 		public:
 
-			Obstacle_Ship();
+			Kinematic_Ship();
 
-			Obstacle_Ship(const double T_U, const double  T_chi, const double R_a, const double LOS_LD, const double LOS_K_i);
+			Kinematic_Ship(const double T_U, const double  T_chi, const double R_a, const double LOS_LD, const double LOS_K_i);
 
 			double get_length() const { return l; }
 
@@ -101,6 +84,25 @@ namespace PSBMPC_LIB
 				const double T,
 				const double dt);
 
+			void predict_trajectory(
+				Eigen::Matrix<double, 6, -1> &trajectory,
+				const Eigen::VectorXd &offset_sequence,
+				const Eigen::VectorXd &maneuver_times,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const double T,
+				const double dt);
 		};
+
+		// The default ownship is the simple kinematic_ship class
+		#if OWNSHIP_TYPE == 0
+			using Ownship = Kinematic_Ship;
+		#endif
+
+		// The default obstacle ship is the Kinematic_Ship class
+		using Obstacle_Ship = Kinematic_Ship;	
 	}
 }

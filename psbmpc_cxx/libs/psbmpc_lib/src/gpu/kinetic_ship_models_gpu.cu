@@ -1,10 +1,8 @@
 /****************************************************************************************
 *
-*  File name : ownship_gpu.cu
+*  File name : kinetic_ship_models_gpu.cu
 *
-*  Function  : Class functions for the GPU used ownship. Modified and extended version
-*			   of the "Ship_Model" class created for SBMPC by Inger Berge Hagen and 
-*			   Giorgio D.  Kwame Minde Kufoalor through the Autosea project.
+*  Function  : Class functions for the GPU used kinetic ship models. 
 *  
 *	           ---------------------
 *
@@ -20,7 +18,7 @@
 *****************************************************************************************/
 
 #include "gpu/utilities_gpu.cuh"
-#include "gpu/ownship_gpu.cuh"
+#include "gpu/kinetic_ship_models_gpu.cuh"
 
 #include <thrust/device_vector.h>
 #include <vector>
@@ -34,79 +32,27 @@ namespace GPU
 {
 	
 /****************************************************************************************
-*  Name     : Ownship
+*  Name     : Kinetic_Ship_Base_3DOF
 *  Function : Class constructors
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ Ownship::Ownship()
+__host__ __device__ Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
 {
-
-	// Model parameters
-	l_r = 4.0f; // distance from rudder to CG
-	A = 5.0f; // [m]  in reality the length is 14,5 m.
-	B = 5.0f; // [m]
-	C = 1.5f; // [m]
-	D = 1.5f; // [m]
-	l = (A + B);
-	w = (C + D);
-	calculate_position_offsets();
-
-	m = 3980.0; // [kg]
-	I_z = 19703.0; // [kg m2]
-
-	// Added M terms
-	X_udot = 0.0f;
-	Y_vdot = 0.0f;
-	Y_rdot = 0.0f;
-	N_vdot = 0.0f;
-	N_rdot = 0.0f;
-
-	// Linear damping terms [X_u, Y_v, Y_r, N_v, N_r]
-	X_u	= -50.0f;
-	Y_v = -200.0f;
-	Y_r = 0.0f;
-	N_v = 0.0f;
-	N_r = -1281.0f;//-3224.0;
-
-	// Nonlinear damping terms [X_|u|u, Y_|v|v, N_|r|r, X_uuu, Y_vvv, N_rrr]
-	X_uu = -135.0f;
-	Y_vv = -2000.0f;
-	N_rr = 0.0f;
-	X_uuu = 0.0f;
-	Y_vvv = 0.0f;
-	N_rrr = -3224.0f;
-
-	TML::Matrix3f M_tot;
-	M_tot(0, 0) =  m - X_udot; M_tot(0, 1) = 0.0f; M_tot(0, 2) = 0.0f;
-	M_tot(1, 0) = 0.0f; M_tot(1, 1) = m - Y_vdot; M_tot(1, 2) = -Y_rdot;
-	M_tot(2, 0) = 0.0f; M_tot(2, 1) = -Y_rdot; M_tot(2, 2) = I_z - N_rdot;
-
-	M_inv = M_tot.inverse();
-
-	//Force limits
-	Fx_min = -6550.0f;
-	Fx_max = 13100.0f;
-	Fy_min = -645.0f;
-	Fy_max = 645.0f;
+	tau.set_zero();
+	Cvv.set_zero();
+	Dvv.set_zero();
 
 	// Guidance parameters
-	e_int = 0.0f;
-	e_int_max = 20 * M_PI / 180.0f; // Maximum integral correction in LOS guidance
-	R_a = 20.0f; 			    // WP acceptance radius (20.0)
-	LOS_LD = 150.0f; 			// LOS lookahead distance (100.0) 
-	LOS_K_i = 0.0f; 			    // LOS integral gain (0.0)
+	e_int = 0;
+	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
+	R_a = 20.0; 			    // WP acceptance radius (20.0)
+	LOS_LD = 250.0; 			// LOS lookahead distance (100.0) 
+	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
 
-	// Controller parameters
-	Kp_u = 1.0f;
-	Kp_psi = 5.0f;
-	Kd_psi = 1.0f;
-	Kp_r = 8.0f;
-		
-	//Motion limits
-	r_max = 0.34f * DEG2RAD; // [rad/s] default max yaw rate
+	// The model parameters are derived class dependent, and therefore set in the derived class constructors
 }
 
 /****************************************************************************************
@@ -115,9 +61,9 @@ __host__ __device__ Ownship::Ownship()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void Ownship::determine_active_waypoint_segment(
+__host__ __device__ void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segment(
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,  			// In: Waypoints to follow
-	const TML::Vector6f &xs 										// In: Ownship state
+	const TML::Vector6f &xs 										// In: Ship state
 	)	
 {
 	n_wps = waypoints.get_cols();
@@ -143,9 +89,9 @@ __host__ __device__ void Ownship::determine_active_waypoint_segment(
 	wp_c_p = wp_c_0;
 }
 
-__host__ void Ownship::determine_active_waypoint_segment(
+__host__ void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segment(
 	const Eigen::Matrix<double, 2, -1> &waypoints,  			// In: Waypoints to follow
-	const Eigen::Matrix<double, 6, 1> &xs 						// In: Ownship state
+	const Eigen::Matrix<double, 6, 1> &xs 						// In: Ship state
 	)	
 {
 	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints_copy;
@@ -162,11 +108,11 @@ __host__ void Ownship::determine_active_waypoint_segment(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void Ownship::update_guidance_references(
+__host__ __device__ void Kinetic_Ship_Base_3DOF::update_guidance_references(
 	float &u_d,																	// In/out: Surge reference
 	float &chi_d,																// In/out: Course reference 
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,						// In: Waypoints to follow.
-	const TML::Vector6f &xs, 													// In: Ownship state	
+	const TML::Vector6f &xs, 													// In: Ship state	
 	const float dt, 															// In: Time step
 	const Guidance_Method guidance_method										// In: Type of guidance used	
 	)
@@ -241,11 +187,11 @@ __host__ __device__ void Ownship::update_guidance_references(
 	}
 }
 
-__host__ void Ownship::update_guidance_references(
+__host__ void Kinetic_Ship_Base_3DOF::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
 	double &chi_d,												// In/out: Course reference 
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
-	const Eigen::Matrix<double, 6, 1> &xs, 						// In: Ownship state	
+	const Eigen::Matrix<double, 6, 1> &xs, 						// In: Ship state	
 	const double dt, 											// In: Time step
 	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
@@ -261,57 +207,13 @@ __host__ void Ownship::update_guidance_references(
 }
 
 /****************************************************************************************
-*  Name     : update_ctrl_input
-*  Function : 
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-__host__ void Ownship::update_ctrl_input(
-	const float u_d,										// In: Surge reference
-	const float psi_d, 										// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
-	const TML::Vector6f &xs 								// In: State
-	)
-{
-	update_Cvv(xs.get_block<3, 1>(3, 0));
-	update_Dvv(xs.get_block<3, 1>(3, 0));
-
-	Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
-	
-	psi_diff = angle_difference_pmpi(psi_d, xs(2));
-	Fy = (Kp_psi * I_z ) * (psi_diff - Kd_psi * xs(5));
-    Fy *= 1.0 / l_r;
-
-	// Saturate
-	if (Fx < Fx_min)  Fx = Fx_min;
-	if (Fx > Fx_max)  Fx = Fx_max;
-	if (Fy < Fy_min)  Fy = Fy_min;
-	if (Fy > Fy_max)  Fy = Fy_max;
-
-	tau(0) = Fx;
-	tau(1) = Fy;
-	tau(2) = l_r * Fy;
-}
-
-__host__ void Ownship::update_ctrl_input(
-	const double u_d,										// In: Surge reference
-	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
-	const Eigen::Matrix<double, 6, 1> &xs 					// In: State
-	)
-{
-	TML::Vector6f xs_copy;
-	TML::assign_eigen_object(xs_copy, xs);
-
-	update_ctrl_input(u_d, psi_d, xs_copy);
-}
-
-/****************************************************************************************
 *  Name     : predict
-*  Function : Predicts ownship state xs a number of dt units forward in time with the 
+*  Function : Predicts the ship state xs a number of dt units forward in time with the 
 *			  chosen prediction method
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ TML::Vector6f Ownship::predict(
+__host__ __device__ TML::Vector6f Kinetic_Ship_Base_3DOF::predict(
 	const TML::Vector6f &xs_old, 									// In: State to predict forward
 	const float dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
@@ -349,7 +251,7 @@ __host__ __device__ TML::Vector6f Ownship::predict(
 	return xs_new;
 }
 
-__host__ Eigen::Matrix<double, 6, 1> Ownship::predict(
+__host__ Eigen::Matrix<double, 6, 1> Kinetic_Ship_Base_3DOF::predict(
 	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
 	const double dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
@@ -366,19 +268,200 @@ __host__ Eigen::Matrix<double, 6, 1> Ownship::predict(
 }
 
 /****************************************************************************************
+		Private functions
+*****************************************************************************************/
+
+/****************************************************************************************
+*  Name     : Cvv
+*  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on 
+*			  Fossen 2011.
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void Kinetic_Ship_Base_3DOF::update_Cvv(
+	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
+	)
+{	
+	/* C(nu) = [ 0 		0 		c13(nu)]
+			   [ 0 		0 		c23(nu)]
+			   [c31(nu) c32(nu) 	0] 
+	with 
+	c13(nu) = -m21 * u - m22 * v - m23 * r,
+	c23(nu) = 	m11 * u + m12 * v + m13 * r
+	c31(nu) = -c13(nu), c32(nu) = -c23(nu)	 
+	Written out (without temporaries c13 and c23 introduced):  
+	Cvv(0) = - (M(1, 0) * nu(0) + M(1, 1) * nu(1) + M(1, 2) * nu(2)) * nu(2);
+	Cvv(1) = (M(0, 0) * nu(0) + M(0, 1) * nu(1) + M(0, 2) * nu(2)) * nu(2);
+	Cvv(2) = M(1, 0) * nu(0) * nu(0) 			+ 
+			(M(1, 1) - M(0, 0)) * nu(0) * nu(1) - 
+			M(0, 1) * nu(1) * nu(1) 			+ 
+			M(1, 2) * nu(0) * nu(2) 			- 
+			M(0, 2) * nu(1) * nu(2);
+	*/ 
+	float c13 = - (M(1, 0) * nu(0) + M(1, 1) * nu(1) + M(1, 2) * nu(2));
+	float c23 = (M(0, 0) * nu(0) + M(0, 1) * nu(1) + M(0, 2) * nu(2));
+	Cvv(0) = c13 * nu(2);
+	Cvv(1) = c23 * nu(2);
+	Cvv(2) = -c13 * nu(0) - c23 * nu(1);
+}
+
+/****************************************************************************************
+*  Name     : Dvv
+*  Function : Calculates the "damping vector" for the 3DOF surface vessel based on 
+*			  Fossen 2011
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+void Kinetic_Ship_Base_3DOF::update_Dvv(
+	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T
+	)
+{
+	Dvv(0) = 	- D_l(0, 0) * nu(0) - D_l(0, 1) * nu(1) - D_l(0, 2) * nu(2) 	
+			 	- X_uu * fabs(nu(0)) * nu(0) - X_uuu * nu(0) * nu(0) * nu(0);
+
+	Dvv(1) = 	- D_l(1, 0) * nu(0) - D_l(1, 1) * nu(1) - D_l(1, 2) * nu(2)
+				- Y_vv * fabs(nu(1)) * nu(1) - Y_rv * fabs(nu(2)) * nu(1) - Y_vr * fabs(nu(1)) * nu(2) - Y_rr * fabs(nu(2)) * nu(2)
+				- Y_vvv * nu(1) * nu(1) * nu(1); 
+
+	Dvv(2) = 	- D_l(2, 0) * nu(0) - D_l(2, 1) * nu(1) - D_l(2, 2) * nu(2) 	
+				- N_vv * fabs(nu(1)) * nu(1) - N_rv * fabs(nu(2)) * nu(1) - N_vr * fabs(nu(1)) * nu(2) - N_rr * fabs(nu(2)) * nu(2)
+				- N_rrr * nu(2) * nu(2) * nu(2);
+}
+
+
+
+
+//=======================================================================================
+// Telemetron class methods
+//=======================================================================================
+/****************************************************************************************
+*  Name     : Telemetron
+*  Function : Class constructor
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+Telemetron::Telemetron()
+{
+	tau.set_zero();
+	Cvv.set_zero();
+	Dvv.set_zero();
+
+	// Guidance parameters
+	e_int = 0.0f;
+	e_int_max = 20.0f * M_PI / 180.0f; // Maximum integral correction in LOS guidance
+	R_a = 20.0f; 			    // WP acceptance radius (20.0)
+	LOS_LD = 250.0f; 			// LOS lookahead distance (100.0) 
+	LOS_K_i = 0.0f; 			    // LOS integral gain (0.0)
+
+	wp_c_0 = 0;	wp_c_p = 0;
+
+	// Model parameters
+	l_r = 4.0f; // [m] distance from rudder to CG
+	A = 5.0f; // [m]  in reality the length is 14,5 m.
+	B = 5.0f; // [m]
+	C = 1.5f; // [m]
+	D = 1.5f; // [m]
+	l = (A + B);
+	w = (C + D);
+	calculate_position_offsets();
+
+	m = 3980.0f; // [kg]
+	I_z = 19703.0f; // [kg m2]
+
+	TML::Matrix3f M_RB;
+	M_RB.set_zero();
+	M_RB(0, 0) = m; M_RB(1, 1) = m; M_RB(2, 2) = I_z;
+
+	TML::Matrix3f M_A; M_A.set_zero();
+	
+	// Total inertia matrix
+	M = M_RB + M_A;
+
+	D_l.set_zero();
+	D_l(0, 0) = -50.0f; D_l(1, 1) = -200.0f; D_l(2, 2) = -1281.0f;
+
+	// Nonlinear damping terms
+	X_uu = -135.0f;
+	Y_vv = -2000.0f; Y_vr = 0.0f, Y_rv = 0.0f, Y_rr = 0.0f;
+	N_vv = 0.0f;	N_vr = 0.0f, N_rv = 0.0f, N_rr = 0.0f;
+	X_uuu = 0.0f;
+	Y_vvv = 0.0f;
+	N_rrr = -3224.0f;
+
+	//Force limits
+	Fx_min = -6550.0f;
+	Fx_max = 13100.0f;
+	Fy_min = -645.0f;
+	Fy_max = 645.0f;
+
+	// Controller parameters
+	Kp_u = 1.0f;
+	Kp_psi = 5.0f;
+	Kd_psi = 1.0f;
+	Kp_r = 8.0f;
+		
+	//Motion limits
+	r_max = 0.34f * DEG2RAD; // [rad/s] default max yaw rate
+}
+
+/****************************************************************************************
+*  Name     : update_ctrl_input
+*  Function : 
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+__host__ void Telemetron::update_ctrl_input(
+	const float u_d,										// In: Surge reference
+	const float psi_d, 										// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
+	const TML::Vector6f &xs 								// In: State
+	)
+{
+	update_Cvv(xs.get_block<3, 1>(3, 0));
+	update_Dvv(xs.get_block<3, 1>(3, 0));
+
+	Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
+	
+	psi_diff = angle_difference_pmpi(psi_d, xs(2));
+	Fy = (Kp_psi * I_z ) * (psi_diff - Kd_psi * xs(5));
+    Fy *= 1.0 / l_r;
+
+	// Saturate
+	if (Fx < Fx_min)  Fx = Fx_min;
+	if (Fx > Fx_max)  Fx = Fx_max;
+	if (Fy < Fy_min)  Fy = Fy_min;
+	if (Fy > Fy_max)  Fy = Fy_max;
+
+	tau(0) = Fx;
+	tau(1) = Fy;
+	tau(2) = l_r * Fy;
+}
+
+__host__ void Telemetron::update_ctrl_input(
+	const double u_d,										// In: Surge reference
+	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
+	const Eigen::Matrix<double, 6, 1> &xs 					// In: State
+	)
+{
+	TML::Vector6f xs_copy;
+	TML::assign_eigen_object(xs_copy, xs);
+
+	update_ctrl_input(u_d, psi_d, xs_copy);
+}
+
+/****************************************************************************************
 *  Name     : predict_trajectory
-*  Function : Predicts the ownship trajectory for a sequence of avoidance maneuvers in the 
+*  Function : Predicts the ship trajectory for a sequence of avoidance maneuvers in the 
 *			  offset sequence. Two overloads depending on matrix library used. 
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void Ownship::predict_trajectory(
-	TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory, 						// In/out: Own-ship trajectory
+__host__ __device__ void Telemetron::predict_trajectory(
+	TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory, 						// In/out: Ship trajectory
 	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,	 			// In: Sequence of offsets in the candidate control behavior
-	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,						// In: Time indices for each ownship avoidance maneuver
+	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,						// In: Time indices for each ship avoidance maneuver
 	const float u_d, 															// In: Surge reference
 	const float chi_d, 															// In: Course reference
-	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 						// In: Ownship waypoints
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 						// In: Ship waypoints
 	const Prediction_Method prediction_method,									// In: Type of prediction method to be used, typically an explicit method
 	const Guidance_Method guidance_method, 										// In: Type of guidance to be used
 	const float T,																// In: Prediction horizon
@@ -417,14 +500,14 @@ __host__ __device__ void Ownship::predict_trajectory(
 	}
 }
 
-__host__ __device__ void Ownship::predict_trajectory(
-	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 						// In/out: Own-ship trajectory with states [x, y, Vx, Vy]^T
-	const TML::Vector6f &ownship_state,											// In: Initial own-ship state [x, y, psi, u, v, r]^T
+__host__ __device__ void Telemetron::predict_trajectory(
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 						// In/out: Ship trajectory with states [x, y, Vx, Vy]^T
+	const TML::Vector6f &ship_state,											// In: Initial ship state [x, y, psi, u, v, r]^T
 	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,	 			// In: Sequence of offsets in the candidate control behavior
-	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,						// In: Time indices for each ownship avoidance maneuver
+	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,						// In: Time indices for each ship avoidance maneuver
 	const float u_d, 															// In: Surge reference
 	const float chi_d, 															// In: Course reference
-	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 						// In: Ownship waypoints
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 						// In: Ship waypoints
 	const Prediction_Method prediction_method,									// In: Type of prediction method to be used, typically an explicit method
 	const Guidance_Method guidance_method, 										// In: Type of guidance to be used
 	const float T,																// In: Prediction horizon
@@ -438,7 +521,7 @@ __host__ __device__ void Ownship::predict_trajectory(
 	man_count = 0;
 	u_m = 1, u_d_p = u_d;
 	chi_m = 0, chi_d_p = chi_d;
-	xs_p = ownship_state;
+	xs_p = ship_state;
 	
 	for (int k = 0; k < n_samples; k++)
 	{ 
@@ -465,10 +548,10 @@ __host__ __device__ void Ownship::predict_trajectory(
 	}
 }
 
-__host__ void Ownship::predict_trajectory(
-	Eigen::Matrix<double, 6, -1> &trajectory, 						// In/out: Own-ship trajectory
+__host__ void Telemetron::predict_trajectory(
+	Eigen::Matrix<double, 6, -1> &trajectory, 						// In/out: Ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
-	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
+	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ship avoidance maneuver
 	const double u_d, 												// In: Surge reference
 	const double chi_d, 											// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Waypoints to follow
@@ -491,43 +574,6 @@ __host__ void Ownship::predict_trajectory(
 	predict_trajectory(trajectory_copy, offset_sequence_copy, maneuver_times_copy, u_d, chi_d, waypoints_copy, prediction_method, guidance_method, T, dt);
 
 	TML::assign_tml_object(trajectory, trajectory_copy);
-}
-
-
-/****************************************************************************************
-		Private functions
-*****************************************************************************************/
-
-/****************************************************************************************
-*  Name     : Cvv
-*  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on 
-*			  Fossen 2011. Use the equations for C_RB and C_A in Section 7.1
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-__host__ __device__ void Ownship::update_Cvv(
-	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
-	)
-{
-	Cvv(0) = ((Y_vdot - m) * nu(1) + Y_rdot * nu(2)) * nu(2);
-	Cvv(1) = (m      - X_udot) * nu(0) * nu(2);
-	Cvv(2) = (X_udot - Y_vdot) * nu(0) * nu(1) - Y_rdot * nu(0) * nu(2);
-}
-
-/****************************************************************************************
-*  Name     : Dvv
-*  Function : Calculates the "damping vector" for the 3DOF surface vessel based on 
-*			  Fossen 2011
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-__host__ __device__ void Ownship::update_Dvv(
-	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T
-	)
-{
-	Dvv(0) = - (X_u + 						+  X_uu * fabs(nu(0))  		  + X_uuu * nu(0) * nu(0)) * nu(0);
-	Dvv(1) = - ((Y_v * nu(1) + Y_r * nu(2)) + (Y_vv * fabs(nu(1)) * nu(1) + Y_vvv * nu(1) * nu(1) * nu(1)));
-	Dvv(2) = - ((N_v * nu(1) + N_r * nu(2)) + (N_rr * fabs(nu(2)) * nu(2) + N_rrr * nu(2) * nu(2) * nu(2)));
 }
 
 }
