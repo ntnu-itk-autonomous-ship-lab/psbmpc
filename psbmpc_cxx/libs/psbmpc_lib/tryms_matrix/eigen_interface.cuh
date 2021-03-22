@@ -18,8 +18,7 @@
 *
 *****************************************************************************************/
 
-#ifndef _EIGEN_INTERFACE_CUH_
-#define _EIGEN_INTERFACE_CUH_
+#pragma once
 
 #include <thrust/device_vector.h>
 #include <assert.h>

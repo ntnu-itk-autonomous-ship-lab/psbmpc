@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "../obstacle_manager.h"
+#include "obstacle_manager.h"
 #include "cpu/prediction_obstacle_cpu.h"
 
 #include <boost/geometry/geometry.hpp>

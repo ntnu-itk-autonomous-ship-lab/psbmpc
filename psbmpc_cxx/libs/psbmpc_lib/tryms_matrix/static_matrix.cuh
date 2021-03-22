@@ -18,8 +18,7 @@
 *
 *****************************************************************************************/
 
-#ifndef _STATIC_MATRIX_CUH_
-#define _STATIC_MATRIX_CUH_
+#pragma once
 
 #include <thrust/device_vector.h>
 #include <assert.h>
@@ -742,5 +741,3 @@ namespace TML
 	using Vector6f = Static_Matrix<float, 6, 1>;
 	using Vector16f = Static_Matrix<float, 16, 1>;
 }
-
-#endif

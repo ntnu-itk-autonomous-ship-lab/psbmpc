@@ -19,8 +19,7 @@
 *
 *****************************************************************************************/
 
-#ifndef _PSEUDO_DYNAMIC_MATRIX_CUH_
-#define _PSEUDO_DYNAMIC_MATRIX_CUH_
+#pragma once
 
 #include <thrust/device_vector.h>
 #include <assert.h>
@@ -877,7 +876,3 @@ namespace TML
 	using PDVector6f = PDMatrix<float, 6, 1>;
 	using PDVector16f = PDMatrix<float, 16, 1>;
 }
-
-	
-
-#endif

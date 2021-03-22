@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : TML.cuh
+*  File name : tml.cuh
 *
 *  Function  : Header file for a simple Tryms Matrix Library (TML)
 *			   used inside the Cuda kernels for the PSB-MPC GPU calculations. Can contain 
@@ -20,8 +20,7 @@
 *
 *****************************************************************************************/
 
-#ifndef _TML_CUH_
-#define _TML_CUH_
+#pragma once
 
 #include <thrust/device_vector.h>
 #include <assert.h>
@@ -804,5 +803,3 @@ namespace TML
 		}
 	}
 }
-
-#endif

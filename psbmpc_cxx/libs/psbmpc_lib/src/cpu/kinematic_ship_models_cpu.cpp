@@ -1,8 +1,8 @@
 /****************************************************************************************
 *
-*  File name : obstacle_ship_cpu.cpp
+*  File name : kinematic_ship_models_cpu.cpp
 *
-*  Function  : Class functions for the obstacle ship used in the obstacle
+*  Function  : Class functions for the CPU based kinematic ship model used in the obstacle
 *			   collision avoidance system predictions.
 *  
 *	           ---------------------
@@ -19,7 +19,7 @@
 *****************************************************************************************/
 
 #include "cpu/utilities_cpu.h"
-#include "cpu/obstacle_ship_cpu.h"
+#include "cpu/kinematic_ship_models_cpu.h"
 #include <vector>
 #include <iostream>
 
@@ -28,12 +28,12 @@ namespace PSBMPC_LIB
 namespace CPU
 {
 /****************************************************************************************
-*  Name     : Obstacle_Model
+*  Name     : Kinematic_Ship
 *  Function : Class constructor
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Obstacle_Ship::Obstacle_Ship()
+Kinematic_Ship::Kinematic_Ship()
 {
 	l = 20;
 	w = 4;
@@ -52,7 +52,7 @@ Obstacle_Ship::Obstacle_Ship()
 		
 }
 
-Obstacle_Ship::Obstacle_Ship(
+Kinematic_Ship::Kinematic_Ship(
 	const double T_U, 												// In: Ship first order speed time constant
 	const double T_chi, 											// In: Ship first order course time constant
 	const double R_a, 												// In: Ship radius of acceptance parameter in WP following
@@ -77,7 +77,7 @@ Obstacle_Ship::Obstacle_Ship(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Ship::determine_active_waypoint_segment(
+void Kinematic_Ship::determine_active_waypoint_segment(
 	const Eigen::Matrix<double, 2, -1> &waypoints,  				// In: Waypoints to follow
 	const Eigen::Vector4d &xs 										// In: Ownship state
 	)	
@@ -113,7 +113,7 @@ void Obstacle_Ship::determine_active_waypoint_segment(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Ship::update_guidance_references(
+void Kinematic_Ship::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
 	double &chi_d,												// In/out: Course reference 
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
@@ -203,7 +203,7 @@ void Obstacle_Ship::update_guidance_references(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Eigen::Vector4d Obstacle_Ship::predict(
+Eigen::Vector4d Kinematic_Ship::predict(
 	const Eigen::Vector4d &xs_old, 									// In: State [x, y, chi, U] to predict forward
 	const double U_d, 												// In: Speed over ground (SOG) reference
 	const double chi_d, 											// In: Course (COG) reference
@@ -247,10 +247,10 @@ Eigen::Vector4d Obstacle_Ship::predict(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void Obstacle_Ship::predict_trajectory(
+void Kinematic_Ship::predict_trajectory(
 	Eigen::Matrix<double, 4, -1>& trajectory, 						// In/out: Obstacle ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
-	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each Obstacle_Ship avoidance maneuver
+	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each collision avoidance maneuver
 	const double u_d, 												// In: Surge reference
 	const double chi_d, 											// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Obstacle waypoints
@@ -284,6 +284,60 @@ void Obstacle_Ship::predict_trajectory(
 		xs = predict(xs, u_m * u_d_p , chi_d_p + chi_m, dt, prediction_method);
 		
 		if (k < n_samples - 1) trajectory.col(k + 1) = xs;
+	}
+}
+
+void Kinematic_Ship::predict_trajectory(
+	Eigen::Matrix<double, 6, -1>& trajectory, 						// In/out: Obstacle ship trajectory
+	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
+	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each collision avoidance maneuver
+	const double u_d, 												// In: Surge reference
+	const double chi_d, 											// In: Course reference
+	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Obstacle waypoints
+	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
+	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
+	const double T,													// In: Prediction horizon
+	const double dt 												// In: Prediction time step
+	)
+{
+	int n_samples = std::round(T / dt);
+	
+	trajectory.conservativeResize(4, n_samples);
+
+	wp_c_p = wp_c_0;
+
+	int man_count = 0;
+	double u_m = 1, u_d_p = u_d;
+	double chi_m = 0, chi_d_p = chi_d;
+	Eigen::Matrix<double, 6, 1> xs_6d = trajectory.col(0);
+
+	Eigen::Vector4d xs; 
+	Eigen::Vector2d v;
+	double chi = xs_6d(2);
+	xs.block<2, 1>(0, 0) = xs_6d.block<2, 1>(0, 0);
+	v = xs_6d.block<2, 1>(3, 0);
+	v = rotate_vector_2D(v, chi);
+
+	for (int k = 0; k < n_samples; k++)
+	{ 
+		if (k == maneuver_times[man_count]){
+			u_m = offset_sequence[2 * man_count];
+			chi_m = offset_sequence[2 * man_count + 1]; 
+			if (man_count < maneuver_times.size() - 1) man_count += 1;
+		}  
+
+		update_guidance_references(u_d_p, chi_d_p, waypoints, xs, dt, guidance_method);
+
+		xs = predict(xs, u_m * u_d_p , chi_d_p + chi_m, dt, prediction_method);
+		
+		v = xs.block<2, 1>(2, 0);
+		chi = atan2(v(1), v(0));
+		rotate_vector_2D(v, -chi);
+		xs_6d.block<2, 1>(0, 0) = xs.block<2, 1>(0, 0);
+		xs_6d(2) = chi;
+		xs_6d.block<2, 1>(3, 0) = v;
+
+		if (k < n_samples - 1) trajectory.col(k + 1) = xs_6d;
 	}
 }
 

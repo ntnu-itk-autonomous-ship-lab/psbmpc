@@ -1,17 +1,18 @@
 /****************************************************************************************
 *
-*  File name : ownship.h
+*  File name : kinetic_ship_models.h
 *
-*  Function  : Header file for the CPU ownship class. Modified and extended version of the
-*			   "Ship_Model" class created for SBMPC by Inger Berge Hagen and Giorgio D. 
-*			   Kwame Minde Kufoalor through the Autosea project. Facilitates Guidance,
-*			   Navigation and Control (GNC) of a surface vessel in 3DOF. Uses mainly
-*  			   Eigen for matrix functionality.
+*  Function  : Header file for the CPU used kinetic ship model(s).
+*			   Facilitates Guidance, Navigation and Control (GNC) of a surface vessel
+*			   Uses mainly Eigen for matrix functionality.
+*  			   
+*			   Implements a base Ship class, on which (atm) 2 derived variants are 
+*			   implemented.
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim. 
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
@@ -20,40 +21,16 @@
 *
 *****************************************************************************************/
 
-
 #pragma once
 
-
+#include "psbmpc_defines.h"
 #include "psbmpc_parameters.h"
-
 
 namespace PSBMPC_LIB
 {
-	// NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below
-	/* enum Prediction_Method
-	{
-		Linear,													// Linear prediction
-		ERK1, 													// Explicit Runge Kutta 1 = Eulers method
-		ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
-	};
-
-	enum Guidance_Method 
-	{
-		LOS, 													// Line-of-sight		
-		WPP,													// Waypoint-Pursuit
-		CH 														// Course Hold
-	}; */
-	// Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h" as done above
 	namespace CPU
 	{
-		#if USE_SHIP_TYPE == 1
-			using Ownship = MilliAmpere;
-		#elif USE_SHIP_TYPE == 2
-			using Ownship = Telemetron;
-		#elif USE_SHIP_TYPE == 3
-			using Ownship = Kinematic;
-		#endif
-		class Ship_Base_3DOF
+		class Kinetic_Ship_Base_3DOF
 		{
 		protected:
 			// Control input vector
@@ -98,7 +75,7 @@ namespace PSBMPC_LIB
 			void update_Dvv(const Eigen::Vector3d &nu);
 
 		public:
-			Ship_Base_3DOF();
+			Kinetic_Ship_Base_3DOF();
 
 			void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 
@@ -114,58 +91,13 @@ namespace PSBMPC_LIB
 
 			Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
-			void predict_trajectory(
-				Eigen::Matrix<double, 6, -1> &trajectory,
-				const Eigen::VectorXd &offset_sequence,
-				const Eigen::VectorXd &maneuver_times,
-				const double u_d,
-				const double chi_d,
-				const Eigen::Matrix<double, 2, -1> &waypoints,
-				const Prediction_Method prediction_method,
-				const Guidance_Method guidance_method,
-				const double T,
-				const double dt);
-
 			inline double get_length() const { return l; };
 
 			inline double get_width() const { return w; };
 
 		};
 
-		// 3DOF milliampere class is NOT finished 
-		class MilliAmpere : public Ship_Base_3DOF
-		{
-		private:
-			double l_1, l_2; // distance from CG to front (1) and back (2) thrusters (symmetric here)
-
-			double min_rpm, max_rpm, min_thrust, max_thrust;
-
-			Eigen::Vector2d alpha, omega;
-
-			Eigen::Matrix<double, 5, 1> rpm_to_force_polynomial, force_to_rpm_polynomial;
-
-			void update_alpha();
-
-			void update_omega();
-		public:
-			MilliAmpere();
-
-			void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
-
-			void predict_trajectory(
-				Eigen::Matrix<double, 6, -1> &trajectory,
-				const Eigen::VectorXd &offset_sequence,
-				const Eigen::VectorXd &maneuver_times,
-				const double u_d,
-				const double chi_d,
-				const Eigen::Matrix<double, 2, -1> &waypoints,
-				const Prediction_Method prediction_method,
-				const Guidance_Method guidance_method,
-				const double T,
-				const double dt);
-		};
-
-		class Telemetron : public Ship_Base_3DOF
+		class Telemetron : public Kinetic_Ship_Base_3DOF
 		{
 		private:
 			// Specific model parameters used for control
@@ -203,5 +135,45 @@ namespace PSBMPC_LIB
 				const double T,
 				const double dt);
 		};
+
+		// 3DOF milliampere class is NOT finished 
+		class MilliAmpere : public Kinetic_Ship_Base_3DOF
+		{
+		private:
+			double l_1, l_2; // distance from CG to front (1) and back (2) thrusters (symmetric here)
+
+			double min_rpm, max_rpm, min_thrust, max_thrust;
+
+			Eigen::Vector2d alpha, omega;
+
+			Eigen::Matrix<double, 5, 1> rpm_to_force_polynomial, force_to_rpm_polynomial;
+
+			void update_alpha();
+
+			void update_omega();
+		public:
+			MilliAmpere();
+
+			void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
+
+			void predict_trajectory(
+				Eigen::Matrix<double, 6, -1> &trajectory,
+				const Eigen::VectorXd &offset_sequence,
+				const Eigen::VectorXd &maneuver_times,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const double T,
+				const double dt);
+		};
+
+		// Default ownship type is Kinematic_Ship
+		#if OWNSHIP_TYPE == 1
+			using Ownship = Telemetron;
+		#elif OWNSHIP_TYPE == 2
+			using Ownship = MilliAmpere;
+		#endif
 	}	
 }

@@ -20,7 +20,12 @@
 #pragma once
 
 #include "../obstacle_manager.h"
-#include "ownship_gpu.cuh"
+#if OWNSHIP_TYPE == 0
+	#include "kinematic_ship_models_gpu.cuh"
+#else
+	#include "kinetic_ship_models_gpu.cuh"
+#endif
+
 #include "tml.cuh"
 #include <thrust/device_vector.h>
 

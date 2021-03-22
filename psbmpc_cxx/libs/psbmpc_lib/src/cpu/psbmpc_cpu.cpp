@@ -75,7 +75,7 @@ void PSBMPC::calculate_optimal_offsets(
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
-
+	
 	trajectory.resize(6, n_samples);
 	trajectory.col(0) = ownship_state;
 

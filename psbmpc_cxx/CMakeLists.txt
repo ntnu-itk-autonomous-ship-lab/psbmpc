@@ -34,10 +34,6 @@ add_subdirectory(libs/psbmpc_lib)
 
 add_subdirectory(src/tests)
 
-# Use these set commands when building the GPU version
-set_property(TARGET psbmpc_lib PROPERTY CUDA_ARCHITECTURES 61 86)
-#set_property(TARGET tester PROPERTY CUDA_ARCHITECTURES 61 86)
-
 target_link_libraries(tester PRIVATE psbmpc_lib)
 
 #message("Your C++ compiler supports these C++ features:")

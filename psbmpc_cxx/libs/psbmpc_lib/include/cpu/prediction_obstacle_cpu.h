@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "../tracked_obstacle.h"
+#include "tracked_obstacle.h"
 #include <assert.h>
 
 

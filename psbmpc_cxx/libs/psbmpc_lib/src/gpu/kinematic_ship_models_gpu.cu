@@ -1,10 +1,10 @@
 /****************************************************************************************
 *
-*  File name : obstacle_ship_gpu.cu
+*  File name : kinematic_ship_models_gpu.cu
 *
-*  Function  : Class functions for the obstacle ship used in the obstacle
+*  Function  : Class functions for the GPU based kinematic ship model used in the obstacle
 *			   collision avoidance system predictions.
-*  
+
 *	           ---------------------
 *
 *  Version 1.0
@@ -19,7 +19,7 @@
 *****************************************************************************************/
 
 #include "gpu/utilities_gpu.cuh"
-#include "gpu/obstacle_ship_gpu.cuh"
+#include "gpu/kinematic_ship_models_gpu.cuh"
 #include <thrust/device_vector.h>
 #include <iostream>
 
@@ -28,30 +28,30 @@ namespace PSBMPC_LIB
 namespace GPU
 {
 /****************************************************************************************
-*  Name     : Obstacle_Model
+*  Name     : Kinematic_Ship
 *  Function : Class constructor
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ Obstacle_Ship::Obstacle_Ship()
+__host__ __device__ Kinematic_Ship::Kinematic_Ship()
 {
-	l = 20;
-	w = 4;
+	l = 20.0f;
+	w = 4.0f;
 
-	T_chi = 3; 		// Ad hoc parameters, are very dependent on the ship type
-	T_U = 10;
+	T_chi = 3.0f; 		
+	T_U = 10.0f;
 
 	// Guidance parameters
-	e_int = 0;
-	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
-	R_a = 20.0; 			    // WP acceptance radius (20.0)
-	LOS_LD = 150.0; 			// LOS lookahead distance (100.0) 
-	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
+	e_int = 0.0f;
+	e_int_max = 20.0f * M_PI / 180.0f; // Maximum integral correction in LOS guidance
+	R_a = 20.0f; 			    // WP acceptance radius (20.0)
+	LOS_LD = 150.0f; 			// LOS lookahead distance (100.0) 
+	LOS_K_i = 0.0f; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
 }
 
-Obstacle_Ship::Obstacle_Ship(
+Kinematic_Ship::Kinematic_Ship(
 	const float T_U, 												// In: Ship first order speed time constant
 	const float T_chi, 												// In: Ship first order course time constant
 	const float R_a, 												// In: Ship radius of acceptance parameter in WP following
@@ -60,12 +60,12 @@ Obstacle_Ship::Obstacle_Ship(
 	) : 
 	T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
 {
-	l = 20;
-	w = 4;
+	l = 20.0f;
+	w = 4.0f;
 
 	// Guidance parameters
-	e_int = 0;
-	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
+	e_int = 0.0f;
+	e_int_max = 20.0f * M_PI / 180.0f; // Maximum integral correction in LOS guidance
 
 	wp_c_0 = 0;	wp_c_p = 0;	
 }
@@ -76,7 +76,7 @@ Obstacle_Ship::Obstacle_Ship(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
+__host__ __device__ void Kinematic_Ship::determine_active_waypoint_segment(
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,  			// In: Waypoints to follow
 	const TML::Vector4f &xs 										// In: Ownship state
 	)	
@@ -104,7 +104,7 @@ __host__ __device__ void Obstacle_Ship::determine_active_waypoint_segment(
 	wp_c_p = wp_c_0;
 }
 
-__host__ void Obstacle_Ship::determine_active_waypoint_segment(
+__host__ void Kinematic_Ship::determine_active_waypoint_segment(
 	const Eigen::Matrix<double, 2, -1> &waypoints,  			// In: Waypoints to follow
 	const Eigen::Vector4d &xs 						// In: Ownship state
 	)	
@@ -123,7 +123,7 @@ __host__ void Obstacle_Ship::determine_active_waypoint_segment(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void Obstacle_Ship::update_guidance_references(
+__host__ __device__ void Kinematic_Ship::update_guidance_references(
 	float &u_d,																	// In/out: Surge reference
 	float &chi_d,																// In/out: Course reference 
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,						// In: Waypoints to follow.
@@ -202,7 +202,7 @@ __host__ __device__ void Obstacle_Ship::update_guidance_references(
 	}
 }
 
-__host__ void Obstacle_Ship::update_guidance_references(
+__host__ void Kinematic_Ship::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
 	double &chi_d,												// In/out: Course reference 
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
@@ -228,7 +228,7 @@ __host__ void Obstacle_Ship::update_guidance_references(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ TML::Vector4f Obstacle_Ship::predict(
+__host__ __device__ TML::Vector4f Kinematic_Ship::predict(
 	const TML::Vector4f &xs_old, 									// In: State [x, y, chi, U] to predict forward
 	const float U_d, 												// In: Speed over ground (SOG) reference
 	const float chi_d, 												// In: Course (COG) reference
@@ -265,7 +265,7 @@ __host__ __device__ TML::Vector4f Obstacle_Ship::predict(
 	return xs_new;
 }
 
-__host__ Eigen::Vector4d Obstacle_Ship::predict(
+__host__ Eigen::Vector4d Kinematic_Ship::predict(
 	const Eigen::Vector4d &xs_old, 									// In: State to predict forward
 	const double U_d, 												// In: Speed over ground (SOG) reference
 	const double chi_d, 											// In: Course (COG) reference
@@ -290,7 +290,7 @@ __host__ Eigen::Vector4d Obstacle_Ship::predict(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ void Obstacle_Ship::predict_trajectory(
+__host__ __device__ void Kinematic_Ship::predict_trajectory(
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 			// In/out: Obstacle ship trajectory
 	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, 	// In: Sequence of offsets in the candidate control behavior
 	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,			// In: Time indices for each Obstacle_Model avoidance maneuver
@@ -330,7 +330,7 @@ __host__ __device__ void Obstacle_Ship::predict_trajectory(
 	}
 }
 
-__host__ void Obstacle_Ship::predict_trajectory(
+__host__ void Kinematic_Ship::predict_trajectory(
 	Eigen::Matrix<double, 4, -1> &trajectory, 						// In/out: Own-ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver

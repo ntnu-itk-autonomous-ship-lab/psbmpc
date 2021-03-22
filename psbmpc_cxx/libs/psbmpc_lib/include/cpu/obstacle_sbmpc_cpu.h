@@ -23,7 +23,7 @@
 
 #include "../sbmpc_parameters.h"
 #include "../joint_prediction_manager.h"
-#include "obstacle_ship_cpu.h"
+#include "kinematic_ship_models_cpu.h"
 #include "mpc_cost_cpu.h"
 
 #include "Eigen/Dense"
