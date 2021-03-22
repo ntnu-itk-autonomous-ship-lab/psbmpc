@@ -23,34 +23,37 @@
 
 #pragma once
 
-// NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below
-/* enum Prediction_Method
-{
-	Linear,													// Linear prediction
-	ERK1, 													// Explicit Runge Kutta 1 = Eulers method
-	ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
-};
 
-enum Guidance_Method 
-{
-	LOS, 													// Line-of-sight		
-	WPP,													// Waypoint-Pursuit
-	CH 														// Course Hold
-}; */
-// Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
 #include "psbmpc_parameters.h"
 
 
 namespace PSBMPC_LIB
 {
+	// NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below
+	/* enum Prediction_Method
+	{
+		Linear,													// Linear prediction
+		ERK1, 													// Explicit Runge Kutta 1 = Eulers method
+		ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
+	};
+
+	enum Guidance_Method 
+	{
+		LOS, 													// Line-of-sight		
+		WPP,													// Waypoint-Pursuit
+		CH 														// Course Hold
+	}; */
+	// Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h" as done above
 	namespace CPU
 	{
 		#if USE_SHIP_TYPE == 1
 			using Ownship = MilliAmpere;
 		#elif USE_SHIP_TYPE == 2
 			using Ownship = Telemetron;
+		#elif USE_SHIP_TYPE == 3
+			using Ownship = Kinematic;
 		#endif
-		class Ownship_Base
+		class Ship_Base_3DOF
 		{
 		protected:
 			// Control input vector
@@ -95,7 +98,7 @@ namespace PSBMPC_LIB
 			void update_Dvv(const Eigen::Vector3d &nu);
 
 		public:
-			Ownship_Base();
+			Ship_Base_3DOF();
 
 			void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 
@@ -129,7 +132,8 @@ namespace PSBMPC_LIB
 
 		};
 
-		class MilliAmpere : public Ownship_Base
+		// 3DOF milliampere class is NOT finished 
+		class MilliAmpere : public Ship_Base_3DOF
 		{
 		private:
 			double l_1, l_2; // distance from CG to front (1) and back (2) thrusters (symmetric here)
@@ -138,7 +142,7 @@ namespace PSBMPC_LIB
 
 			Eigen::Vector2d alpha, omega;
 
-			Eigen::VectorXd rpm_to_force_polynomial, force_to_rpm_polynomial;
+			Eigen::Matrix<double, 5, 1> rpm_to_force_polynomial, force_to_rpm_polynomial;
 
 			void update_alpha();
 
@@ -161,7 +165,7 @@ namespace PSBMPC_LIB
 				const double dt);
 		};
 
-		class Telemetron : public Ownship_Base
+		class Telemetron : public Ship_Base_3DOF
 		{
 		private:
 			// Specific model parameters used for control
