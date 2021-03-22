@@ -40,6 +40,7 @@ enum Guidance_Method
 
 namespace PSBMPC_LIB
 {
+	using Obstacle_Ship =
 	namespace CPU
 	{		
 		class Obstacle_Ship
