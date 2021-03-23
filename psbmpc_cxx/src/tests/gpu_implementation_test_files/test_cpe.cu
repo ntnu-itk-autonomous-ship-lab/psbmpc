@@ -155,14 +155,14 @@ public:
 
 					P_i_2D = PSBMPC_LIB::GPU::reshape<16, 1, 4, 4>(P_i_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-					P_c_i->operator()(k) = cpe->CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, dt);
+					P_c_i(k) = cpe->CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, dt);
 					printf("k = %d | P_c_i = %.6f\n", k, P_c_i->operator()(k));
 					
 					break;
 				case PSBMPC_LIB::MCSKF4D :                
 					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 					{
-						P_c_i->operator()(k) = cpe->MCSKF4D_estimate(xs_seg, xs_i_seg, P_i_seg);						
+						P_c_i(k) = cpe->MCSKF4D_estimate(xs_seg, xs_i_seg, P_i_seg);						
 						printf("k = %d | P_c_i = %.6f\n", k, P_c_i->operator()(k));
 					}
 					break;
@@ -328,7 +328,6 @@ int main(){
 	//*****************************************************************************************************************
 	double dt_seg = 0.5;
 
-	//Eigen::MatrixXf P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
 	Eigen::MatrixXd P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
 	
 
@@ -348,12 +347,22 @@ int main(){
 	Eigen::Vector2d v_os_p;
 	for (int k = 0; k < n_samples; k++)
 	{
-		v_os_p = trajectory.block<2, 1>(3, k);
-
-		xs_p_copy(0, k) = trajectory(0, k);
-		xs_p_copy(1, k) = trajectory(1, k);
-		xs_p_copy(2, k) = trajectory(2, k);
-		xs_p_copy(3, k) = v_os_p.norm();
+		// xs = [x, y, chi, U]^T
+		if (trajectory.rows() == 6)
+		{
+			v_os_p = trajectory.block<2, 1>(3, k);
+			xs_p_copy(0, k) = trajectory(0, k);
+			xs_p_copy(1, k) = trajectory(1, k);
+			xs_p_copy(2, k) = trajectory(2, k);
+			xs_p_copy(3, k) = v_os_p.norm();
+		}
+		else
+		{
+			xs_p_copy(0, k) = trajectory(0, k);
+			xs_p_copy(1, k) = trajectory(1, k);
+			xs_p_copy(2, k) = trajectory(2, k);
+			xs_p_copy(3, k) = trajectory(3, k);
+		}		
 	}
 	
 
