@@ -945,7 +945,3 @@ namespace TML
 	using MatrixXf = Dynamic_Matrix<float>;
 	using MatrixXd = Dynamic_Matrix<double>;
 }
-
-	
-
-#endif

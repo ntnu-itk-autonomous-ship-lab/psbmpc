@@ -242,8 +242,10 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 				case CE :	
 					if (k > 0)
 					{
-						v_os_prev = xs_p_seg.get_block<2, 1>(3, n_seg_samples - 2, 2, 1);
-						v_os_prev = rotate_vector_2D(v_os_prev, xs_p_seg(2, n_seg_samples - 2));
+						// Map [chi, U]^T to [Vx, Vy]
+						v_os_prev(0) = xs_p_seg(3, n_seg_samples - 2) * cos(xs_p_seg(2, n_seg_samples - 2));
+						v_os_prev(1) = xs_p_seg(3, n_seg_samples - 2) * sin(xs_p_seg(2, n_seg_samples - 2));
+						
 						v_i_prev = xs_i_p_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
 					}
 					p_os = xs_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);

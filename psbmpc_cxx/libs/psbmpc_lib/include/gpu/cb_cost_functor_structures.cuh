@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "../obstacle_manager.h"
+#include "obstacle_manager.h"
 #if OWNSHIP_TYPE == 0
 	#include "kinematic_ship_models_gpu.cuh"
 #else

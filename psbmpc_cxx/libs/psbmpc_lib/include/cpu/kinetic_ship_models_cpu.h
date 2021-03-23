@@ -87,10 +87,6 @@ namespace PSBMPC_LIB
 				const double dt,
 				const Guidance_Method guidance_method);
 
-			//void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
-
-			Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
-
 			inline double get_length() const { return l; };
 
 			inline double get_width() const { return w; };
@@ -123,8 +119,19 @@ namespace PSBMPC_LIB
 
 			void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
+			Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
+
+			// Overloaded the predict function to match that of the kinematic ship model,
+			// to get an equal interface in the simulations
+			Eigen::Matrix<double, 6, 1> predict(
+				const Eigen::Matrix<double, 6, 1> &xs_old, 
+				const double u_d, 
+				const double chi_d, 
+				const double dt, 
+				const Prediction_Method prediction_method);
+
 			void predict_trajectory(
-				Eigen::Matrix<double, 6, -1> &trajectory,
+				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
 				const Eigen::VectorXd &maneuver_times,
 				const double u_d,
@@ -156,8 +163,17 @@ namespace PSBMPC_LIB
 
 			void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
+			Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
+			
+			Eigen::Matrix<double, 6, 1> predict(
+				const Eigen::Matrix<double, 6, 1> &xs_old, 
+				const double u_d, 
+				const double chi_d, 
+				const double dt, 
+				const Prediction_Method prediction_method);
+
 			void predict_trajectory(
-				Eigen::Matrix<double, 6, -1> &trajectory,
+				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
 				const Eigen::VectorXd &maneuver_times,
 				const double u_d,

@@ -555,10 +555,19 @@ namespace PSBMPC_LIB
 			bool mu, trans;
 			for(int k = 0; k < n_samples; k++)
 			{
-				psi_0_p = trajectory(2, k); 
-				v_0_p(0) = trajectory(3, k); 
-				v_0_p(1) = trajectory(4, k); 
-				v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
+				if (trajectory.cols() == 4)
+				{
+					v_0_p(0) = trajectory(2, k);
+					v_0_p(1) = trajectory(3, k);
+					psi_0_p = atan2(v_0_p(1), v_0_p(0));
+				}
+				else
+				{
+					psi_0_p = trajectory(2, k); 
+					v_0_p(0) = trajectory(3, k); 
+					v_0_p(1) = trajectory(4, k); 
+					v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
+				}
 
 				// Determine active course modification at sample k
 				for (int M = 0; M < pars.n_M; M++)

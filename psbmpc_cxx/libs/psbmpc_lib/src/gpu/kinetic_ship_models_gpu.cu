@@ -501,7 +501,7 @@ __host__ __device__ void Telemetron::predict_trajectory(
 }
 
 __host__ __device__ void Telemetron::predict_trajectory(
-	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 						// In/out: Ship trajectory with states [x, y, Vx, Vy]^T
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 						// In/out: Ship trajectory with states [x, y, chi, U]^T
 	const TML::Vector6f &ship_state,											// In: Initial ship state [x, y, psi, u, v, r]^T
 	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,	 			// In: Sequence of offsets in the candidate control behavior
 	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,						// In: Time indices for each ship avoidance maneuver
@@ -536,11 +536,10 @@ __host__ __device__ void Telemetron::predict_trajectory(
 		update_ctrl_input(u_m * u_d_p, chi_m + chi_d_p, xs_p);
 
 		v_p(0) = xs_p(3); v_p(1) = xs_p(4);
-		v_p = rotate_vector_2D(v_p, xs_p(2));
 		trajectory(0, k) = xs_p(0);
 		trajectory(1, k) = xs_p(1);
-		trajectory(2, k) = v_p(0);
-		trajectory(3, k) = v_p(1);
+		trajectory(2, k) = xs_p(2);
+		trajectory(3, k) = v_p.norm();
 
 		xs_p = predict(xs_p, dt, prediction_method);
 

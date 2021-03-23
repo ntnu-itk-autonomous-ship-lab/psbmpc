@@ -20,7 +20,11 @@
 
 #include "tracked_obstacle.h"
 #include "sbmpc.h"
-#include "cpu/ownship_cpu.h"
+#if OWNSHIP_TYPE == 0
+	#include "cpu/kinematic_ship_models_cpu.h"
+#else 
+	#include "cpu/kinetic_ship_models_cpu.h"
+#endif
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -55,11 +59,16 @@ int main(){
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
 
-	Eigen::Matrix<double, 6, -1> trajectory; 
+	Eigen::MatrixXd trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
 
-	trajectory.resize(6, n_samples);
-	trajectory.block<6, 1>(0, 0) << xs_os_0;
+	#if OWNSHIP_TYPE == 0
+		trajectory.resize(4, n_samples);
+		trajectory.col(0) = xs_os_0.block<4, 1>(0, 0);
+	#else
+		trajectory.resize(6, n_samples);
+		trajectory.col(0) = xs_os_0;
+	#endif
 
 	waypoints.resize(2, 2); 
 	//waypoints << 0, 200, 200, 0,    0, 300, 1000,
@@ -164,7 +173,7 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
-	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_mx = mxCreateDoubleMatrix(2, 7, mxREAL);
 
 	double *p_traj_os_mx = mxGetPr(traj_os_mx);
@@ -176,7 +185,7 @@ int main(){
 	double *p_traj_i_mx = mxGetPr(traj_i_mx);
 	double *p_P_traj_i_mx = mxGetPr(P_traj_i_mx);
 
-	Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os_mx, 6, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os_mx, trajectory.rows(), n_samples);
 	map_traj_os = trajectory;
 	
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_mx, 2, 2);

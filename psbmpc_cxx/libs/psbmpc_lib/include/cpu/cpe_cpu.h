@@ -23,16 +23,7 @@
 
 #pragma once
 
-// NOTE: If you want standalone use of this module, define the enum CPE_Method below
-/* // See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
-// "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
-enum CPE_Method 
-{
-	CE,														// Consider positional uncertainty only
-	MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments 
-}; */
-// Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
-#include "../psbmpc_parameters.h"
+#include "psbmpc_parameters.h"
 #include "xoshiro.hpp"
 
 #include <random>
@@ -199,13 +190,13 @@ namespace PSBMPC_LIB
 			double get_segment_discretization_time() const { return dt_seg; };
 
 			void initialize(
-				const Eigen::Matrix<double, 6, 1> &xs_os, 
+				const Eigen::VectorXd &xs_os, 
 				const Eigen::Vector4d &xs_i, 
 				const double d_safe_i);
 
 			void estimate_over_trajectories(
 				Eigen::Matrix<double, 1, -1> &P_c_i,
-				const Eigen::Matrix<double, 6, -1> &xs_p,
+				const Eigen::MatrixXd &xs_p,
 				const Eigen::Matrix<double, 4, -1> &xs_i_p,
 				const Eigen::Matrix<double, 16, -1> &P_i_p,
 				const double d_safe_i,

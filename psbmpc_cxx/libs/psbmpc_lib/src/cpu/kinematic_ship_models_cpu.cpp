@@ -248,7 +248,7 @@ Eigen::Vector4d Kinematic_Ship::predict(
 *  Modified :
 *****************************************************************************************/
 void Kinematic_Ship::predict_trajectory(
-	Eigen::Matrix<double, 4, -1>& trajectory, 						// In/out: Obstacle ship trajectory
+	Eigen::MatrixXd &trajectory, 									// In/out: Obstacle ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each collision avoidance maneuver
 	const double u_d, 												// In: Surge reference
@@ -262,6 +262,7 @@ void Kinematic_Ship::predict_trajectory(
 {
 	int n_samples = std::round(T / dt);
 	
+	assert(trajectory.rows() == 4);
 	trajectory.conservativeResize(4, n_samples);
 
 	wp_c_p = wp_c_0;
@@ -286,61 +287,6 @@ void Kinematic_Ship::predict_trajectory(
 		if (k < n_samples - 1) trajectory.col(k + 1) = xs;
 	}
 }
-
-void Kinematic_Ship::predict_trajectory(
-	Eigen::Matrix<double, 6, -1>& trajectory, 						// In/out: Obstacle ship trajectory
-	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
-	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each collision avoidance maneuver
-	const double u_d, 												// In: Surge reference
-	const double chi_d, 											// In: Course reference
-	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Obstacle waypoints
-	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
-	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
-	const double T,													// In: Prediction horizon
-	const double dt 												// In: Prediction time step
-	)
-{
-	int n_samples = std::round(T / dt);
-	
-	trajectory.conservativeResize(4, n_samples);
-
-	wp_c_p = wp_c_0;
-
-	int man_count = 0;
-	double u_m = 1, u_d_p = u_d;
-	double chi_m = 0, chi_d_p = chi_d;
-	Eigen::Matrix<double, 6, 1> xs_6d = trajectory.col(0);
-
-	Eigen::Vector4d xs; 
-	Eigen::Vector2d v;
-	double chi = xs_6d(2);
-	xs.block<2, 1>(0, 0) = xs_6d.block<2, 1>(0, 0);
-	v = xs_6d.block<2, 1>(3, 0);
-	v = rotate_vector_2D(v, chi);
-
-	for (int k = 0; k < n_samples; k++)
-	{ 
-		if (k == maneuver_times[man_count]){
-			u_m = offset_sequence[2 * man_count];
-			chi_m = offset_sequence[2 * man_count + 1]; 
-			if (man_count < maneuver_times.size() - 1) man_count += 1;
-		}  
-
-		update_guidance_references(u_d_p, chi_d_p, waypoints, xs, dt, guidance_method);
-
-		xs = predict(xs, u_m * u_d_p , chi_d_p + chi_m, dt, prediction_method);
-		
-		v = xs.block<2, 1>(2, 0);
-		chi = atan2(v(1), v(0));
-		rotate_vector_2D(v, -chi);
-		xs_6d.block<2, 1>(0, 0) = xs.block<2, 1>(0, 0);
-		xs_6d(2) = chi;
-		xs_6d.block<2, 1>(3, 0) = v;
-
-		if (k < n_samples - 1) trajectory.col(k + 1) = xs_6d;
-	}
-}
-
 
 /****************************************************************************************
 		Private functions

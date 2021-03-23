@@ -47,11 +47,16 @@ int main()
 	
 	PSBMPC_LIB::CPU::Ownship asv_sim;
 
-	Eigen::Matrix<double, 6, -1> trajectory; 
+	Eigen::MatrixXd trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
 
-	trajectory.resize(6, N);
-	trajectory.col(0) = xs_os_0;
+	#if OWNSHIP_TYPE == 0
+		trajectory.resize(4, N);
+		trajectory.col(0) = xs_os_0.block<4, 1>(0, 0);
+	#else
+		trajectory.resize(6, N);
+		trajectory.col(0) = xs_os_0;
+	#endif
 
 	int n_wps_os = 2;
 	waypoints.resize(2, n_wps_os); 
@@ -92,7 +97,7 @@ int main()
 
 	std::vector<Eigen::VectorXd> maneuver_times_i(n_obst);
 
-	std::vector<Eigen::Matrix<double, 6, -1>> trajectory_i(n_obst); 
+	std::vector<Eigen::MatrixXd> trajectory_i(n_obst); 
 	std::vector<Eigen::Matrix<double, 16, -1>> trajectory_covariances_i(n_obst);
 	std::vector<Eigen::Matrix<double, 2, -1>> waypoints_i(n_obst);
 
@@ -126,7 +131,6 @@ int main()
 	
 	
 	//=====================================================================
-
 	int n_wps_i(0);
 
 	for (int i = 0; i < n_obst; i++)
@@ -170,8 +174,15 @@ int main()
 			u_d_i[i] = 8.0; chi_d_i[i] = 180 * DEG2RAD;
 		}
 
-		trajectory_i[i].resize(6, N);
-		trajectory_i[i].col(0) = xs_i_0[i];
+		#if OWNSHIP_TYPE == 0
+			trajectory_i[i].resize(4, N);
+			trajectory_i[i].block<2, 1>(0, 0) = xs_i_0[i].block<2, 1>(0, 0);
+			trajectory_i[i](2, 0) = xs_i_0[i](2);
+			trajectory_i[i](3) = xs_i_0[i].block<2, 1>(3, 0).norm();
+		#else
+			trajectory_i[i].resize(6, N);
+			trajectory_i[i].col(0) = xs_i_0[i];
+		#endif
 		
 		offset_sequence_i[i].resize(6);
 		offset_sequence_i[i] << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
@@ -230,7 +241,7 @@ int main()
 	for (int i = 0; i < n_obst; i++)
 	{
 		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
-		traj_i_mx[i] = mxCreateDoubleMatrix(6, N, mxREAL);
+		traj_i_mx[i] = mxCreateDoubleMatrix(trajectory_i[i].rows(), N, mxREAL);
 		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
 	
@@ -283,8 +294,15 @@ int main()
 		// Aquire obstacle information
 		for (int i = 0; i < n_obst; i++)
 		{
-			xs_i_k.block<2, 1>(0, 0) = trajectory_i[i].block<2, 1>(0, k);
-			xs_i_k.block<2, 1>(2, 0) = PSBMPC_LIB::CPU::rotate_vector_2D(trajectory_i[i].block<2, 1>(3, k), trajectory_i[i](2, k));
+			if (trajectory_i[i].rows() == 4)
+			{
+				xs_i_k = trajectory_i[i].col(k);
+			}
+			else
+			{
+				xs_i_k.block<2, 1>(0, 0) = trajectory_i[i].block<2, 1>(0, k);
+				xs_i_k.block<2, 1>(2, 0) = PSBMPC_LIB::CPU::rotate_vector_2D(trajectory_i[i].block<2, 1>(3, k), trajectory_i[i](2, k));
+			}
 			obstacle_states.col(i) << xs_i_k, A, B, C, D, ID[i];
 
 			obstacle_covariances.col(i) = PSBMPC_LIB::CPU::flatten(P_0);
@@ -332,9 +350,8 @@ int main()
 			obstacle_manager.display_obstacle_information();
 		}
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
-		asv_sim.update_ctrl_input(u_c, chi_c, trajectory.col(k));
 		
-		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), dt, PSBMPC_LIB::ERK1); }
+		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), u_c, chi_c, dt, PSBMPC_LIB::ERK1); }
 
 		//===========================================
 		// Send trajectory data to matlab

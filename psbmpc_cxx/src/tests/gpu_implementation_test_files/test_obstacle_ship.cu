@@ -3,7 +3,7 @@
 *  File name : test_obstacle_ship.cu
 *
 *  Function  : Test file for the Obstacle_Ship class for PSB-MPC, using Matlab for 
-*			   visualization. Not complete yet. 
+*			   visualization.
 *			   
 *	           ---------------------
 *
@@ -19,7 +19,7 @@
 *****************************************************************************************/
 
 
-#include "gpu/obstacle_ship_gpu.cuh"
+#include "gpu/kinematic_ship_models_gpu.cuh"
 #include <iostream>
 #include <memory>
 #include "Eigen/Dense"
@@ -54,7 +54,7 @@ int main(){
 	
 	std::unique_ptr<PSBMPC_LIB::GPU::Obstacle_Ship> obstacle_ship(new PSBMPC_LIB::GPU::Obstacle_Ship()); 
 
-	Eigen::Matrix<double, 4, -1> trajectory; 
+	Eigen::MatrixXd trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
 
 	int n_samples = std::round(T / dt);

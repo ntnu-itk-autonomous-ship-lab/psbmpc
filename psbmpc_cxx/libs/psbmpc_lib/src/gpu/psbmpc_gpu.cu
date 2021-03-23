@@ -214,14 +214,14 @@ void PSBMPC::calculate_optimal_offsets(
 	const double u_d, 														// In: Surge reference
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
+	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
 	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
 
-	trajectory.resize(6, n_samples);
+	trajectory.resize(ownship_state.size(), n_samples);
 	trajectory.col(0) = ownship_state;
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
@@ -431,6 +431,37 @@ void PSBMPC::calculate_optimal_offsets(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : determine_colav_active
+*  Function : Uses the dynamic obstacle vector and the number of static 
+*			  obstacles to determine whether it is necessary to run the PSBMPC
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+bool PSBMPC::determine_colav_active(
+	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
+	const int n_static_obst 												// In: Number of static obstacles
+	)
+{
+	Eigen::VectorXd xs = trajectory.col(0);
+	bool colav_active = false;
+	Eigen::Vector2d d_0i;
+	for (size_t i = 0; i < data.obstacles.size(); i++)
+	{
+		d_0i(0) = data.obstacles[i].kf->get_state()(0) - xs(0);
+		d_0i(1) = data.obstacles[i].kf->get_state()(1) - xs(1);
+		if (d_0i.norm() < pars.d_init) colav_active = true;
+
+		// If all obstacles are passed, even though inside colav range,
+		// then no need for colav
+		if (data.IP_0[i]) 	{ colav_active = false; }
+		else 				{ colav_active = true; }
+	}
+	colav_active = colav_active || n_static_obst > 0;
+
+	return colav_active;
+}
+
 /****************************************************************************************
 *  Name     : map_offset_sequences
 *  Function : Maps the currently set surge and course modifications into a matrix of 
@@ -1634,37 +1665,6 @@ void PSBMPC::predict_trajectories_jointly(
 		mxDestroyArray(pred_traj_i_mx[i]);
 	}
 	engClose(ep); */
-}
-
-/****************************************************************************************
-*  Name     : determine_colav_active
-*  Function : Uses the dynamic obstacle vector and the number of static 
-*			  obstacles to determine whether it is necessary to run the PSBMPC
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-bool PSBMPC::determine_colav_active(
-	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
-	const int n_static_obst 												// In: Number of static obstacles
-	)
-{
-	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
-	bool colav_active = false;
-	Eigen::Vector2d d_0i;
-	for (size_t i = 0; i < data.obstacles.size(); i++)
-	{
-		d_0i(0) = data.obstacles[i].kf->get_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].kf->get_state()(1) - xs(1);
-		if (d_0i.norm() < pars.d_init) colav_active = true;
-
-		// If all obstacles are passed, even though inside colav range,
-		// then no need for colav
-		if (data.IP_0[i]) 	{ colav_active = false; }
-		else 				{ colav_active = true; }
-	}
-	colav_active = colav_active || n_static_obst > 0;
-
-	return colav_active;
 }
 
 /****************************************************************************************

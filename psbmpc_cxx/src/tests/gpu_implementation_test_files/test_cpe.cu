@@ -22,7 +22,11 @@
 #include "gpu/utilities_gpu.cuh"
 #include "cpu/utilities_cpu.h"
 #include "mrou.h"
-#include "gpu/ownship_gpu.cuh"
+#if OWNSHIP_TYPE == 0
+	#include "gpu/kinematic_ship_models_gpu.cuh"
+#else 
+	#include "gpu/kinetic_ship_models_gpu.cuh"
+#endif
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -114,7 +118,7 @@ public:
 
 			if (k == 0)
 			{
-				cpe->initialize(xs_seg.get_col(n_seg_samples - 1), xs_i_seg.get_col(n_seg_samples - 1), P_i_seg.get_col(n_seg_samples - 1), d_safe_i);
+				cpe->initialize(xs_seg.get_col(n_seg_samples - 1), xs_i_seg.get_col(n_seg_samples - 1), d_safe_i);
 			}
 
 			/* printf("xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", 
@@ -140,9 +144,11 @@ public:
 				case PSBMPC_LIB::CE :	
 					if (k > 0)
 					{
-						v_os_prev = xs_seg.get_block<2, 1>(3, n_seg_samples - 2, 2, 1);
-						v_os_prev = PSBMPC_LIB::GPU::rotate_vector_2D(v_os_prev, xs_seg(2, n_seg_samples - 2));
-                    	v_i_prev = xs_i_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
+						// Map [chi, U]^T to [Vx, Vy]
+						v_os_prev(0) = xs_seg(3, n_seg_samples - 2) * cos(xs_seg(2, n_seg_samples - 2));
+						v_os_prev(1) = xs_seg(3, n_seg_samples - 2) * sin(xs_seg(2, n_seg_samples - 2));
+						
+						v_i_prev = xs_i_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
 					}
 					p_os = xs_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 					p_i = xs_i_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
@@ -167,8 +173,6 @@ public:
 		}
 		return P_c_i;
 	}
-
-	
 };
 
 int main(){
@@ -240,14 +244,19 @@ int main(){
 
 	std::unique_ptr<PSBMPC_LIB::GPU::Ownship> asv(new PSBMPC_LIB::GPU::Ownship()); 
 
-	Eigen::Matrix<double, 6, -1> trajectory; 
-	Eigen::Matrix<double, 2, -1> waypoints;
-
 	int n_samples = std::round(T / dt);
 	std::cout << "n_samples = " << n_samples << std::endl;
 
-	trajectory.resize(6, n_samples);
-	trajectory.block<6, 1>(0, 0) << xs_os_0;
+	Eigen::MatrixXd trajectory; 
+	Eigen::Matrix<double, 2, -1> waypoints;
+
+	#if OWNSHIP_TYPE == 0
+		trajectory.resize(4, n_samples);
+		trajectory.col(0) = xs_os_0.block<4, 1>(0, 0);
+	#else
+		trajectory.resize(6, n_samples);
+		trajectory.col(0) = xs_os_0;
+	#endif
 
 	waypoints.resize(2, 2); 
 	//waypoints << 0, 200, 200, 0,    0, 300, 1000,
@@ -340,11 +349,11 @@ int main(){
 	for (int k = 0; k < n_samples; k++)
 	{
 		v_os_p = trajectory.block<2, 1>(3, k);
-		v_os_p = PSBMPC_LIB::CPU::rotate_vector_2D(v_os_p, trajectory(2, k));
+
 		xs_p_copy(0, k) = trajectory(0, k);
 		xs_p_copy(1, k) = trajectory(1, k);
-		xs_p_copy(2, k) = v_os_p(0);
-		xs_p_copy(3, k) = v_os_p(1);
+		xs_p_copy(2, k) = trajectory(2, k);
+		xs_p_copy(3, k) = v_os_p.norm();
 	}
 	
 
@@ -378,10 +387,10 @@ int main(){
 	cudaMemcpy(cpe_device_ptr, &cpe, sizeof(PSBMPC_LIB::GPU::CPE), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CPE failed.");
 
-	cudaMalloc((void**)&xs_p_device_ptr, sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>));
+	cudaMalloc((void**)&xs_p_device_ptr, sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>));
 	cuda_check_errors("CudaMalloc of xs_p failed.");
 
-	cudaMemcpy(xs_p_device_ptr, &xs_p_copy, sizeof(TML::PDMatrix<float, 6, MAX_N_SAMPLES>), cudaMemcpyHostToDevice);
+	cudaMemcpy(xs_p_device_ptr, &xs_p_copy, sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>), cudaMemcpyHostToDevice);
 	cuda_check_errors("CudaMemCpy of xs_p failed.");
 
 	cudaMalloc((void**)&xs_i_p_device_ptr, sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>));
@@ -489,7 +498,7 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
-	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_mx = mxCreateDoubleMatrix(2, 7, mxREAL);
 
 	double *p_traj_os = mxGetPr(traj_os_mx);
@@ -514,7 +523,7 @@ int main(){
 	double *p_CE = mxGetPr(Pcoll_CE);
 	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
-	Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os, 6, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os, trajectory.rows(), n_samples);
 	map_traj_os = trajectory;
 
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps, 2, 2);
