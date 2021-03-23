@@ -183,6 +183,7 @@ namespace TML
 			else 					{ return n_cols; } 
 		}
 
+		// Is a conservative resize by default
 		__host__ __device__ inline void resize(const size_t n_rows, const size_t n_cols)
 		{
 			assert(n_rows <= Max_Rows && n_cols <= Max_Cols);

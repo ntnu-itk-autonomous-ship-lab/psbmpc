@@ -52,7 +52,7 @@ namespace PSBMPC_LIB
 			int n_samples, n_wps, man_count;
 			float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
 
-			TML::Vector2f d_next_wp, L_wp_segment;
+			TML::Vector2f d_next_wp, L_wp_segment, v_p;
 			bool segment_passed;
 
 			TML::Vector4f xs_p, xs_new;
@@ -69,6 +69,10 @@ namespace PSBMPC_LIB
 			__host__ __device__ float get_length() const { return l; }
 			
 			__host__ __device__ float get_width() const { return w; }
+
+			__host__ __device__ inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; }
+
+			__host__ __device__ inline int get_wp_counter() const { return wp_c_0; }
 
 			__host__ __device__ inline void initialize_wp_following() { wp_c_p = wp_c_0; }
 
@@ -118,8 +122,21 @@ namespace PSBMPC_LIB
 				const float T,
 				const float dt);
 
+			__host__ __device__ void predict_trajectory(
+				TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
+				const TML::Vector6f &ship_state,
+				const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
+				const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
+				const float u_d,
+				const float chi_d,
+				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const float T,
+				const float dt);
+
 			__host__ void predict_trajectory(
-				Eigen::Matrix<double, 4, -1> &trajectory,
+				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
 				const Eigen::VectorXd &maneuver_times,
 				const double u_d,

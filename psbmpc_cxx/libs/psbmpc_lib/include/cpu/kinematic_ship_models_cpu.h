@@ -73,19 +73,7 @@ namespace PSBMPC_LIB
 				const Prediction_Method prediction_method);
 
 			void predict_trajectory(
-				Eigen::Matrix<double, 4, -1> &trajectory,
-				const Eigen::VectorXd &offset_sequence,
-				const Eigen::VectorXd &maneuver_times,
-				const double u_d,
-				const double chi_d,
-				const Eigen::Matrix<double, 2, -1> &waypoints,
-				const Prediction_Method prediction_method,
-				const Guidance_Method guidance_method,
-				const double T,
-				const double dt);
-
-			void predict_trajectory(
-				Eigen::Matrix<double, 6, -1> &trajectory,
+				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
 				const Eigen::VectorXd &maneuver_times,
 				const double u_d,

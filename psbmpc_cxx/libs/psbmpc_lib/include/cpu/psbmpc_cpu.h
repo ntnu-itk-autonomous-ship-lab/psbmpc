@@ -24,7 +24,11 @@
 #include "psbmpc_defines.h"
 #include "psbmpc_parameters.h"
 #include "obstacle_sbmpc_cpu.h"
-#include "kinetic_ship_models_cpu.h"
+#if OWNSHIP_TYPE == 0
+	#include "cpu/kinematic_ship_models_cpu.h"
+#else 
+	#include "cpu/kinetic_ship_models_cpu.h"
+#endif
 #include "cpe_cpu.h"
 
 #include <vector>
@@ -51,7 +55,7 @@ namespace PSBMPC_LIB
 			double min_cost;
 
 			// Own-ship predicted trajectory
-			Eigen::Matrix<double, 6, -1> trajectory;
+			Eigen::MatrixXd trajectory;
 
 			Ownship ownship;
 
@@ -60,6 +64,8 @@ namespace PSBMPC_LIB
 			std::vector<Prediction_Obstacle> pobstacles;
 
 			bool use_joint_prediction;
+
+			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 
 			void reset_control_behaviour();
 
@@ -99,10 +105,6 @@ namespace PSBMPC_LIB
 			void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1>& static_obstacles, const bool overwrite);
 			void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const std::vector<polygon_2D> &polygons, const int n_static_obst, const bool overwrite);
 
-			double find_time_of_passing(const Obstacle_Data<Tracked_Obstacle> &data, const int i);
-
-			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
-
 			void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
 		public:
@@ -121,7 +123,7 @@ namespace PSBMPC_LIB
 				const double u_d, 
 				const double chi_d, 
 				const Eigen::Matrix<double, 2, -1> &waypoints,
-				const Eigen::Matrix<double, 6, 1> &ownship_state,
+				const Eigen::VectorXd &ownship_state,
 				const Eigen::Matrix<double, 4, -1> &static_obstacles,
 				Obstacle_Data<Tracked_Obstacle> &data);
 
@@ -133,7 +135,7 @@ namespace PSBMPC_LIB
 				const double u_d, 
 				const double chi_d, 
 				const Eigen::Matrix<double, 2, -1> &waypoints,
-				const Eigen::Matrix<double, 6, 1> &ownship_state,
+				const Eigen::VectorXd &ownship_state,
 				const std::vector<polygon_2D> &polygons,
 				Obstacle_Data<Tracked_Obstacle> &data);
 

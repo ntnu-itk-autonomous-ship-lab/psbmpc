@@ -20,7 +20,12 @@
 
 #include "cpu/cpe_cpu.h"
 #include "cpu/utilities_cpu.h"
-#include "cpu/ownship_cpu.h"
+#if OWNSHIP_TYPE == 0
+	#include "cpu/kinematic_ship_models_cpu.h"
+#else
+	#include "cpu/kinetic_ship_models_cpu.h"
+#endif
+
 #include "mrou.h"
 #include <iostream>
 #include <vector>
@@ -58,14 +63,19 @@ int main(){
 
 	std::unique_ptr<PSBMPC_LIB::CPU::Ownship> asv(new PSBMPC_LIB::CPU::Ownship()); 
 
-	Eigen::Matrix<double, 6, -1> trajectory; 
-	Eigen::Matrix<double, 2, -1> waypoints;
-
 	int n_samples = std::round(T / dt);
 	std::cout << "n_samples = " << n_samples << std::endl;
 
-	trajectory.resize(6, n_samples);
-	trajectory.block<6, 1>(0, 0) << xs_os_0;
+	Eigen::MatrixXd trajectory; 
+	Eigen::Matrix<double, 2, -1> waypoints;
+
+	#if OWNSHIP_TYPE == 0
+		trajectory.resize(4, n_samples);
+		trajectory.col(0) = xs_os_0.block<4, 1>(0, 0);
+	#else
+		trajectory.resize(6, n_samples);
+		trajectory.col(0) = xs_os_0;
+	#endif
 
 	waypoints.resize(2, 2); 
 	//waypoints << 0, 200, 200, 0,    0, 300, 1000,
@@ -198,7 +208,7 @@ int main(){
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
-	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_mx = mxCreateDoubleMatrix(2, 7, mxREAL);
 
 	double *p_traj_os = mxGetPr(traj_os_mx);
@@ -218,7 +228,7 @@ int main(){
 	double *p_CE = mxGetPr(Pcoll_CE);
 	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
-	Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os, 6, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os, trajectory.rows(), n_samples);
 	map_traj_os = trajectory;
 
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps, 2, 2);

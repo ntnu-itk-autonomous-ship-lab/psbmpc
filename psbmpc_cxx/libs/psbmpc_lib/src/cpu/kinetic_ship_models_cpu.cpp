@@ -2,7 +2,8 @@
 *
 *  File name : kinetic_ship_models_cpu.cpp
 *
-*  Function  : Class functions for the CPU used kinetic ship models. 
+*  Function  : Class functions for the CPU used kinetic ship models: The base class,
+*			   Telemetron and MilliAmpere(unfinished). 
 *			   
 *  
 *	           ---------------------
@@ -176,53 +177,6 @@ void Kinetic_Ship_Base_3DOF::update_guidance_references(
 	}
 }
 
-/****************************************************************************************
-*  Name     : predict
-*  Function : Predicts ownship state xs a number of dt units forward in time with the 
-*			  chosen prediction method
-*  Author   : 
-*  Modified :
-*****************************************************************************************/
-Eigen::Matrix<double, 6, 1> Kinetic_Ship_Base_3DOF::predict(
-	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
-	const double dt, 												// In: Time step
-	const Prediction_Method prediction_method 						// In: Method used for prediction
-	)
-{
-	Eigen::Matrix<double, 6, 1> xs_new;
-	Eigen::Vector3d eta, nu;
-	eta = xs_old.block<3, 1>(0, 0);
-	nu = xs_old.block<3, 1>(3, 0);
-
-	switch (prediction_method)
-	{
-		case Linear : 
-			// Straight line trajectory with the current heading and surge speed
-			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
-			nu(0) = nu(0);
-			nu(1) = 0;
-			nu(2) = 0;
-			xs_new.block<3, 1>(0, 0) = eta; 
-			xs_new.block<3, 1>(3, 0) = nu;
-			break;
-		case ERK1 : 
-			update_Cvv(nu); 
-			update_Dvv(nu);
-
-			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
-			nu  = nu  + dt * M.inverse() * (- Cvv - Dvv + tau);
-			
-			xs_new.block<3, 1>(0, 0) = eta; 
-			xs_new.block<3, 1>(3, 0) = nu;
-			break;
-		default :
-			// Throw
-			xs_new.setZero(); 
-	}
-	xs_new(2) = wrap_angle_to_pmpi(xs_new(2));
-	return xs_new;
-}
-
 
 /****************************************************************************************
 		Private functions
@@ -382,6 +336,67 @@ void Telemetron::update_ctrl_input(
 }
 
 /****************************************************************************************
+*  Name     : predict
+*  Function : Predicts ownship state xs a number of dt units forward in time with the 
+*			  chosen prediction method. Overloaded depending on if the input vector
+*			  is updated or not.
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+Eigen::Matrix<double, 6, 1> Telemetron::predict(
+	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
+	const double dt, 												// In: Time step
+	const Prediction_Method prediction_method 						// In: Method used for prediction
+	)
+{
+	Eigen::Matrix<double, 6, 1> xs_new;
+	Eigen::Vector3d eta, nu;
+	eta = xs_old.block<3, 1>(0, 0);
+	nu = xs_old.block<3, 1>(3, 0);
+
+	switch (prediction_method)
+	{
+		case Linear : 
+			// Straight line trajectory with the current heading and surge speed
+			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
+			nu(0) = nu(0);
+			nu(1) = 0;
+			nu(2) = 0;
+			xs_new.block<3, 1>(0, 0) = eta; 
+			xs_new.block<3, 1>(3, 0) = nu;
+			break;
+		case ERK1 : 
+			update_Cvv(nu); 
+			update_Dvv(nu);
+
+			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
+			nu  = nu  + dt * M.inverse() * (- Cvv - Dvv + tau);
+			
+			xs_new.block<3, 1>(0, 0) = eta; 
+			xs_new.block<3, 1>(3, 0) = nu;
+			break;
+		default :
+			// Throw
+			xs_new.setZero(); 
+	}
+	xs_new(2) = wrap_angle_to_pmpi(xs_new(2));
+	return xs_new;
+}
+
+Eigen::Matrix<double, 6, 1> Telemetron::predict(
+	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
+	const double u_d, 												// In: Surge reference
+	const double chi_d, 											// In: Course reference
+	const double dt, 												// In: Time step
+	const Prediction_Method prediction_method 						// In: Method used for prediction
+	)
+{	
+	update_ctrl_input(u_d, chi_d, xs_old);
+
+	return predict(xs_old, dt, prediction_method);
+}
+
+/****************************************************************************************
 *  Name     : predict_trajectory
 *  Function : Predicts the ownship trajectory for a sequence of avoidance maneuvers in the 
 *			  offset sequence.
@@ -389,7 +404,7 @@ void Telemetron::update_ctrl_input(
 *  Modified :
 *****************************************************************************************/
 void Telemetron::predict_trajectory(
-	Eigen::Matrix<double, 6, -1>& trajectory, 						// In/out: Own-ship trajectory
+	Eigen::MatrixXd &trajectory, 									// In/out: Own-ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference
@@ -403,6 +418,7 @@ void Telemetron::predict_trajectory(
 {
 	int n_samples = T / dt;
 	
+	assert(trajectory.rows() == 6);
 	trajectory.conservativeResize(6, n_samples);
 
 	wp_c_p = wp_c_0;
@@ -481,7 +497,7 @@ MilliAmpere::MilliAmpere()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void MilliAmpere::update_ctrl_input(
+/* void MilliAmpere::update_ctrl_input(
 	const double u_d,										// In: Surge reference
 	const double psi_d, 									// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
 	const Eigen::Matrix<double, 6, 1> &xs 					// In: State
@@ -493,7 +509,7 @@ void MilliAmpere::update_ctrl_input(
 	// Update thruster dynamics
 
 
-	double f_1, f_2, X_1, X_2, Y_1, Y_2, Z_1, Z_2;
+	//double f_1, f_2, X_1, X_2, Y_1, Y_2, Z_1, Z_2;
 	// f_1 = map rpm to thrust force for thruster 1
 	// f_2 = -||- for thruster 2
 	// X_1 = cos(alpha(0)) * f_1;
@@ -503,6 +519,66 @@ void MilliAmpere::update_ctrl_input(
 	// tau(0) = X_1 + X_2;
 	// tau(1) = Y_1 + Y_2;
 	// tau(2) = l_1 * Y_1 + l_2 * Y_2;
+} */
+
+/****************************************************************************************
+*  Name     : predict
+*  Function : Predicts ownship state xs a number of dt units forward in time with the 
+*			  chosen prediction method and the current input vector.
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+Eigen::Matrix<double, 6, 1> MilliAmpere::predict(
+	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
+	const double dt, 												// In: Time step
+	const Prediction_Method prediction_method 						// In: Method used for prediction
+	)
+{
+	Eigen::Matrix<double, 6, 1> xs_new;
+	Eigen::Vector3d eta, nu;
+	eta = xs_old.block<3, 1>(0, 0);
+	nu = xs_old.block<3, 1>(3, 0);
+
+	switch (prediction_method)
+	{
+		case Linear : 
+			// Straight line trajectory with the current heading and surge speed
+			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
+			nu(0) = nu(0);
+			nu(1) = 0;
+			nu(2) = 0;
+			xs_new.block<3, 1>(0, 0) = eta; 
+			xs_new.block<3, 1>(3, 0) = nu;
+			break;
+		case ERK1 : 
+			update_Cvv(nu); 
+			update_Dvv(nu);
+
+			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
+			nu  = nu  + dt * M.inverse() * (- Cvv - Dvv + tau);
+			
+			xs_new.block<3, 1>(0, 0) = eta; 
+			xs_new.block<3, 1>(3, 0) = nu;
+			break;
+		default :
+			// Throw
+			xs_new.setZero(); 
+	}
+	xs_new(2) = wrap_angle_to_pmpi(xs_new(2));
+	return xs_new;
+}
+
+Eigen::Matrix<double, 6, 1> MilliAmpere::predict(
+	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
+	const double u_d, 												// In: Surge reference
+	const double chi_d, 											// In: Course reference
+	const double dt, 												// In: Time step
+	const Prediction_Method prediction_method 						// In: Method used for prediction
+	)
+{	
+	update_ctrl_input(u_d, chi_d, xs_old);
+
+	return predict(xs_old, dt, prediction_method);
 }
 
 /****************************************************************************************
@@ -513,7 +589,7 @@ void MilliAmpere::update_ctrl_input(
 *  Modified :
 *****************************************************************************************/
 void MilliAmpere::predict_trajectory(
-	Eigen::Matrix<double, 6, -1>& trajectory, 						// In/out: Own-ship trajectory
+	Eigen::MatrixXd &trajectory, 									// In/out: Own-ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference
@@ -527,6 +603,7 @@ void MilliAmpere::predict_trajectory(
 {
 	int n_samples = T / dt;
 	
+	assert(trajectory.cols() == 6);
 	trajectory.conservativeResize(6, n_samples);
 
 	wp_c_p = wp_c_0;

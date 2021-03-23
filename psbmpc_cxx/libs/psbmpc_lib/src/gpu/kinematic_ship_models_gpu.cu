@@ -286,7 +286,7 @@ __host__ Eigen::Vector4d Kinematic_Ship::predict(
 /****************************************************************************************
 *  Name     : predict_trajectory
 *  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
-*			  in the offset sequence. Two overloads depending on matrix library used.
+*			  in the offset sequence. Three overloads
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -305,7 +305,7 @@ __host__ __device__ void Kinematic_Ship::predict_trajectory(
 {
 	n_samples = T / dt;
 	
-	trajectory.resize(4, n_samples);
+	trajectory.resize(4, n_samples); // conserves existing values inside 4 x n_samples by default
 
 	initialize_wp_following();
 
@@ -330,8 +330,66 @@ __host__ __device__ void Kinematic_Ship::predict_trajectory(
 	}
 }
 
+__host__ __device__ void Kinematic_Ship::predict_trajectory(
+	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 			// In/out: Ship trajectory
+	const TML::Vector6f &ship_state,								// In: Initial ship state potentially a 6-dimensional state vector [x, y, psi, u, v, r]^T is used by the caller (CB_Cost_Functor_1)
+	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, 	// In: Sequence of offsets in the candidate control behavior
+	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,			// In: Time indices for each Obstacle_Model avoidance maneuver
+	const float u_d, 												// In: Surge reference
+	const float chi_d, 												// In: Course reference
+	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 			// In: Obstacle waypoints
+	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
+	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
+	const float T,													// In: Prediction horizon
+	const float dt 													// In: Prediction time step
+	)
+{
+	n_samples = T / dt;
+	
+	trajectory.resize(4, n_samples); // conserves existing values inside 4 x n_samples by default
+
+	initialize_wp_following();
+
+	man_count = 0;
+	u_m = 1, u_d_p = u_d;
+	chi_m = 0, chi_d_p = chi_d;
+	xs_p(0) = ship_state(0);
+	xs_p(1) = ship_state(1);
+
+	if (ship_state.get_rows() == 4)
+	{
+		v_p(0) = ship_state(2);
+		v_p(1) = ship_state(3);
+	}
+	else
+	{
+		v_p(0) = ship_state(3);
+		v_p(1) = ship_state(4);
+		rotate_vector_2D(v_p, ship_state(2));
+	}
+	xs_p(2) = v_p(0);
+	xs_p(3) = v_p(1);
+
+	for (int k = 0; k < n_samples; k++)
+	{ 
+		if (k == maneuver_times[man_count]){
+			u_m = offset_sequence[2 * man_count];
+			chi_m = offset_sequence[2 * man_count + 1]; 
+			if (man_count < (int)maneuver_times.size() - 1) man_count += 1;
+		}  
+
+		update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
+
+		xs_p = predict(xs_p, u_m * u_d_p , chi_d_p + chi_m, dt, prediction_method);
+		
+		if (k < n_samples - 1) trajectory.set_col(k + 1, xs_p);
+	}
+}
+
+//
+
 __host__ void Kinematic_Ship::predict_trajectory(
-	Eigen::Matrix<double, 4, -1> &trajectory, 						// In/out: Own-ship trajectory
+	Eigen::MatrixXd &trajectory, 									// In/out: Own-ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
 	const double u_d, 												// In: Surge reference
@@ -343,6 +401,7 @@ __host__ void Kinematic_Ship::predict_trajectory(
 	const double dt 												// In: Prediction time step
 	)
 {
+	assert(trajectory.rows() == 4);
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> trajectory_copy;
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_copy;
 	TML::PDMatrix<float, MAX_N_M, 1> maneuver_times_copy;

@@ -22,7 +22,7 @@
 #pragma once
 
 // Can be specified by e.g CMAKE
-// OWNSHIP_TYPE = 0 : Kinematic_Ship | 1 : MilliAmpere (NOT FINISHED IMPLEMENTATION YET) | 2 : Telemetron
+// OWNSHIP_TYPE = 0 : Kinematic_Ship | 1 : Telemetron | 2 : MilliAmpere (NOT FINISHED IMPLEMENTATION YET)
 #ifndef OWNSHIP_TYPE
 #define OWNSHIP TYPE 0
 #endif
