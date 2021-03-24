@@ -41,7 +41,7 @@ namespace PSBMPC_LIB
 
 			// Inertia matrix, sum of the rigid body mass matrix M_RB 
 			// and the added mass matrix M_A
-			TML::Vector3f M, M_inv;
+			TML::Matrix3f M, M_inv;
 
 			// Vector results of performing C(v)*v and D(v)*v
 			TML::Vector3f Cvv, Dvv;
@@ -173,7 +173,7 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ void predict_trajectory(
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
-				const TML::Vector6f &ownship_state,
+				const TML::PDVector6f &ownship_state,
 				const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
 				const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
 				const float u_d,
@@ -185,7 +185,7 @@ namespace PSBMPC_LIB
 				const float dt);
 
 			__host__ void predict_trajectory(
-				Eigen::Matrix<double, 6, -1> &trajectory,
+				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
 				const Eigen::VectorXd &maneuver_times,
 				const double u_d,
@@ -233,7 +233,7 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ void predict_trajectory(
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
-				const TML::Vector6f &ownship_state,
+				const TML::PDVector6f &ownship_state,
 				const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
 				const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
 				const float u_d,
@@ -245,7 +245,7 @@ namespace PSBMPC_LIB
 				const float dt);
 
 			__host__ void predict_trajectory(
-				Eigen::Matrix<double, 6, -1> &trajectory,
+				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
 				const Eigen::VectorXd &maneuver_times,
 				const double u_d,

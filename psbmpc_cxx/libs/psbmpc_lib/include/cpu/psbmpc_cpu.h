@@ -23,13 +23,13 @@
 
 #include "psbmpc_defines.h"
 #include "psbmpc_parameters.h"
-#include "obstacle_sbmpc_cpu.h"
+#include "cpu/obstacle_sbmpc_cpu.h"
 #if OWNSHIP_TYPE == 0
 	#include "cpu/kinematic_ship_models_cpu.h"
 #else 
 	#include "cpu/kinetic_ship_models_cpu.h"
 #endif
-#include "cpe_cpu.h"
+#include "cpu/cpe_cpu.h"
 
 #include <vector>
 #include <memory>	

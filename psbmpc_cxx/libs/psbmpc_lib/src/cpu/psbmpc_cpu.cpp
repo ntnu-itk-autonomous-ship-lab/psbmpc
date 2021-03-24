@@ -1031,8 +1031,16 @@ void PSBMPC::calculate_ps_collision_consequences(
 		{
 			t = k * dt;
 
-			v_0_p = trajectory.block<2, 1>(3, k);
-			v_0_p = rotate_vector_2D(v_0_p, trajectory(2, k));
+			if (trajectory.rows() == 4)
+			{
+				v_0_p(0) = trajectory(3, k) * cos(trajectory(2, k));
+				v_0_p(1) = trajectory(3, k) * sin(trajectory(2, k));
+			}
+			else
+			{
+				v_0_p = trajectory.block<2, 1>(3, k);
+				v_0_p = CPU::rotate_vector_2D(v_0_p, trajectory(2, k));
+			}
 
 			if (ps == n_ps[i] - 1 && use_joint_prediction) // Intelligent prediction is the last prediction scenario
 			{
@@ -1244,8 +1252,17 @@ void PSBMPC::predict_trajectories_jointly(
 	{	
 		t = k * pars.dt;
 
-		v_os_k = trajectory.block<2, 1>(3, k);
-		v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
+		if (trajectory.rows() == 4)
+		{
+			v_os_k(0) = trajectory(3, k) * cos(trajectory(2, k));
+			v_os_k(1) = trajectory(3, k) * sin(trajectory(2, k));
+		}
+		else
+		{
+			v_os_k(0) = trajectory(3, k); 
+			v_os_k(1) = trajectory(4, k); 
+			v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
+		}
 		xs_os_aug_k.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, k);
 		xs_os_aug_k.block<2, 1>(2, 0) = v_os_k;
 

@@ -9,6 +9,8 @@ ylim(ax1, ylimits_ne);
 ylimits_d = [0 500];
 tlim = [0 T_sim];
 
+warning('off');
+
 Lx = 0.02*ylimits_ne(2);
 Ly = 0.002*(xlimits_ne(2) - xlimits_ne(1));
 % drawn boat dimensions

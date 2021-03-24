@@ -124,7 +124,7 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ void predict_trajectory(
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
-				const TML::Vector6f &ship_state,
+				const TML::PDVector6f &ship_state,
 				const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
 				const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
 				const float u_d,
