@@ -290,6 +290,7 @@ void Kinetic_Ship_Base_3DOF::update_Cvv(
 	c23(nu) = 	m11 * u + m12 * v + m13 * r
 	c31(nu) = -c13(nu), c32(nu) = -c23(nu)	 
 	Written out (without temporaries c13 and c23 introduced):  
+	*/
 	Cvv(0) = - (M(1, 0) * nu(0) + M(1, 1) * nu(1) + M(1, 2) * nu(2)) * nu(2);
 	Cvv(1) = (M(0, 0) * nu(0) + M(0, 1) * nu(1) + M(0, 2) * nu(2)) * nu(2);
 	Cvv(2) = M(1, 0) * nu(0) * nu(0) 			+ 
@@ -297,12 +298,15 @@ void Kinetic_Ship_Base_3DOF::update_Cvv(
 			M(0, 1) * nu(1) * nu(1) 			+ 
 			M(1, 2) * nu(0) * nu(2) 			- 
 			M(0, 2) * nu(1) * nu(2);
-	*/ 
+
+	
+	/* 
+	Alternative requiring more memory
 	float c13 = - (M(1, 0) * nu(0) + M(1, 1) * nu(1) + M(1, 2) * nu(2));
 	float c23 = (M(0, 0) * nu(0) + M(0, 1) * nu(1) + M(0, 2) * nu(2));
 	Cvv(0) = c13 * nu(2);
 	Cvv(1) = c23 * nu(2);
-	Cvv(2) = -c13 * nu(0) - c23 * nu(1);
+	Cvv(2) = -c13 * nu(0) - c23 * nu(1); */
 }
 
 /****************************************************************************************
@@ -376,6 +380,7 @@ Telemetron::Telemetron()
 	
 	// Total inertia matrix
 	M = M_RB + M_A;
+	M_inv = M.inverse();
 
 	D_l.set_zero();
 	D_l(0, 0) = -50.0f; D_l(1, 1) = -200.0f; D_l(2, 2) = -1281.0f;
@@ -502,7 +507,7 @@ __host__ __device__ void Telemetron::predict_trajectory(
 
 __host__ __device__ void Telemetron::predict_trajectory(
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 						// In/out: Ship trajectory with states [x, y, chi, U]^T
-	const TML::Vector6f &ship_state,											// In: Initial ship state [x, y, psi, u, v, r]^T
+	const TML::PDVector6f &ship_state,											// In: Initial ship state [x, y, psi, u, v, r]^T
 	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,	 			// In: Sequence of offsets in the candidate control behavior
 	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,						// In: Time indices for each ship avoidance maneuver
 	const float u_d, 															// In: Surge reference
@@ -548,7 +553,7 @@ __host__ __device__ void Telemetron::predict_trajectory(
 }
 
 __host__ void Telemetron::predict_trajectory(
-	Eigen::Matrix<double, 6, -1> &trajectory, 						// In/out: Ship trajectory
+	Eigen::MatrixXd &trajectory, 									// In/out: Ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ship avoidance maneuver
 	const double u_d, 												// In: Surge reference
@@ -560,6 +565,7 @@ __host__ void Telemetron::predict_trajectory(
 	const double dt 												// In: Prediction time step
 	)
 {
+	
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> trajectory_copy;
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_copy;
 	TML::PDMatrix<float, MAX_N_M, 1> maneuver_times_copy;

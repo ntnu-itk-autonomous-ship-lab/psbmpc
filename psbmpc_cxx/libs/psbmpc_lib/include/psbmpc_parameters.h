@@ -72,8 +72,8 @@ namespace PSBMPC_LIB
 	private:
 
 		friend class CPU::PSBMPC;
-		friend class CPU::MPC_Cost<PSBMPC_Parameters>;
 		friend class GPU::PSBMPC;
+		friend class CPU::MPC_Cost<PSBMPC_Parameters>;
 		friend class GPU::MPC_Cost<PSBMPC_Parameters>;
 		friend class Obstacle_Manager;
 		friend class Joint_Prediction_Manager;

@@ -455,7 +455,7 @@ void Telemetron::predict_trajectory(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-MilliAmpere::MilliAmpere()
+/* MilliAmpere::MilliAmpere()
 {
 	l_1 = 1.8; l_2 = l_1;
 	A = 2.5; 
@@ -488,9 +488,8 @@ MilliAmpere::MilliAmpere()
 	X_uuu = 0.0;
 	Y_vvv = 0.0;
 	N_rrr = -3224.0;
+} */
 
-
-}
 /****************************************************************************************
 *  Name     : update_ctrl_input
 *  Function : 
@@ -528,7 +527,7 @@ MilliAmpere::MilliAmpere()
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-Eigen::Matrix<double, 6, 1> MilliAmpere::predict(
+/* Eigen::Matrix<double, 6, 1> MilliAmpere::predict(
 	const Eigen::Matrix<double, 6, 1> &xs_old, 						// In: State to predict forward
 	const double dt, 												// In: Time step
 	const Prediction_Method prediction_method 						// In: Method used for prediction
@@ -579,7 +578,7 @@ Eigen::Matrix<double, 6, 1> MilliAmpere::predict(
 	update_ctrl_input(u_d, chi_d, xs_old);
 
 	return predict(xs_old, dt, prediction_method);
-}
+} */
 
 /****************************************************************************************
 *  Name     : predict_trajectory
@@ -588,7 +587,7 @@ Eigen::Matrix<double, 6, 1> MilliAmpere::predict(
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-void MilliAmpere::predict_trajectory(
+/* void MilliAmpere::predict_trajectory(
 	Eigen::MatrixXd &trajectory, 									// In/out: Own-ship trajectory
 	const Eigen::VectorXd &offset_sequence, 						// In: Sequence of offsets in the candidate control behavior
 	const Eigen::VectorXd &maneuver_times,							// In: Time indices for each ownship avoidance maneuver
@@ -629,7 +628,7 @@ void MilliAmpere::predict_trajectory(
 		
 		if (k < n_samples - 1) trajectory.col(k + 1) = xs;
 	}
-}
+} */
 
 }
 }

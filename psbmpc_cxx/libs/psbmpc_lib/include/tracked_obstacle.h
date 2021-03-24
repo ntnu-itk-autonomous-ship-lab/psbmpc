@@ -86,9 +86,6 @@ namespace PSBMPC_LIB
 		// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 		std::vector<Eigen::MatrixXd> xs_p;
 
-		// Mean predicted velocity for the obstacle (MROU): 
-		Eigen::Vector2d v_p;
-
 		// Prediction scenario ordering, size n_ps x 1 of intentions
 		std::vector<Intention> ps_ordering;
 
@@ -178,7 +175,7 @@ namespace PSBMPC_LIB
 			Eigen::VectorXd ownship_state_sl = ownship_state;
 			P_p.col(0) = CPU::flatten(kf->get_covariance());
 
-			Eigen::Vector2d v_p_new, v_A, v_B, L_AB;
+			Eigen::Vector2d v_p, v_p_new, v_A, v_B, L_AB;
 			double chi_ps, t = 0, psi_A, d_AB;
 			bool have_turned;
 			for(int ps = 0; ps < n_ps_independent; ps++)

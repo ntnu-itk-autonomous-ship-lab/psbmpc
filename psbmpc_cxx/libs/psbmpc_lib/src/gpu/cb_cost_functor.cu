@@ -428,6 +428,14 @@ __device__ void CB_Cost_Functor_2::predict_trajectories_jointly()
 	for(int k = 0; k < n_samples; k++)
 	{
 		t = k * pars->dt;
+
+		// Set trajectory sample k for the ownship prediction obstacle
+		xs_i_p(0) = trajectory[cb_index](0, k);
+		xs_i_p(1) = trajectory[cb_index](1, k);
+		xs_i_p(2) = trajectory[cb_index](3, k) * cos(trajectory[cb_index](2, k));
+		xs_i_p(3) = trajectory[cb_index](3, k) * sin(trajectory[cb_index](2, k));
+		pobstacles[fdata->n_obst].set_trajectory_sample(xs_i_p, k);
+		
 		for (int i = 0; i < fdata->n_obst; i++)
 		{
 			xs_i_p = pobstacles[jp_thread_index + i].get_trajectory_sample(k);

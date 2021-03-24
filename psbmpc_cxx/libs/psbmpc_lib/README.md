@@ -90,17 +90,6 @@ The obstacle classes maintains information about the obstacle, in addition to it
 - Prediction_Obstacle: More minimalistic class than the Tracked_Obstacle, used by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system
 - Cuda_Obstacle: Used as a GPU-friendly data container of relevant Tracked_Obstacle data needed on the GPU. Read-only when processing on the GPU.
 
-### Obstacle_Ship 
-
-<p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with some first order time constant delay.  </p>
-The model is on the form <br>
-
-<img src="https://render.githubusercontent.com/render/math?math=x_{k%2B1} = x_{k} %2B \Delta_t U_k \cos(\chi_{k})"> <br>
-<img src="https://render.githubusercontent.com/render/math?math=y_{k%2B1} = y_{k} %2B \Delta_t U_k \sin(\chi_{k})"> <br>
-<img src="https://render.githubusercontent.com/render/math?math=\chi_{k%2B1} = \chi_{k} %2B \Delta_t \frac{1}{T_{\chi}}(\chi_d - \chi_{k})"> <br>
-<img src="https://render.githubusercontent.com/render/math?math=U_{k%2B1} = U_{k} %2B \Delta_t \frac{1}{T_{U}}(U_d - U_{k})"> <br>
-
-<p> One version each for the CPU/GPU implementation. </p>
 
 ### Obstacle_SBMPC_Parameters
 
@@ -110,9 +99,21 @@ The model is on the form <br>
 
 A simple SB-MPC meant for use by obstacles in the PSB-MPC prediction when considering intelligent obstacles. One version each for the CPU/GPU implementation.
 
-### Ownship
+### Kinetic_Ship_Models
 
-This module implements a 3DOF surface vessel model with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. Should naturally match the underlying vessel. One version each for the CPU/GPU implementation.
+Implements a 3DOF surface vessel base model class with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. One version each for the CPU/GPU implementation. By specifying the compile time flag OWNSHIP_TYPE, one can choose between the derived versions Telemetron and MilliAmpere(NOT FINISHED).
+
+### Kinematic_Ship_Models
+
+<p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with some first order time constant delay.  </p>
+The model is on the form <br>
+
+<img src="https://render.githubusercontent.com/render/math?math=x_{k%2B1} = x_{k} %2B \Delta_t U_k \cos(\chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=y_{k%2B1} = y_{k} %2B \Delta_t U_k \sin(\chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=\chi_{k%2B1} = \chi_{k} %2B \Delta_t \frac{1}{T_{\chi}}(\chi_d - \chi_{k})"> <br>
+<img src="https://render.githubusercontent.com/render/math?math=U_{k%2B1} = U_{k} %2B \Delta_t \frac{1}{T_{U}}(U_d - U_{k})"> <br>
+
+<p> One version each for the CPU/GPU implementation. By specifying the compile time flag OWNSHIP_TYPE, one can choose to use this model for the Ownship. This kinematic model is the default for the Obstacle Ship. </p> 
 
 ### KF
 

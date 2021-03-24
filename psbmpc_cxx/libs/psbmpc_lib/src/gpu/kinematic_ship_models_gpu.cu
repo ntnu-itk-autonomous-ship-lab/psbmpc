@@ -332,7 +332,7 @@ __host__ __device__ void Kinematic_Ship::predict_trajectory(
 
 __host__ __device__ void Kinematic_Ship::predict_trajectory(
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, 			// In/out: Ship trajectory
-	const TML::Vector6f &ship_state,								// In: Initial ship state potentially a 6-dimensional state vector [x, y, psi, u, v, r]^T is used by the caller (CB_Cost_Functor_1)
+	const TML::PDVector6f &ship_state,								// In: Initial ship state potentially a 6-dimensional state vector [x, y, psi, u, v, r]^T is used by the caller (CB_Cost_Functor_1)
 	const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, 	// In: Sequence of offsets in the candidate control behavior
 	const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,			// In: Time indices for each Obstacle_Model avoidance maneuver
 	const float u_d, 												// In: Surge reference

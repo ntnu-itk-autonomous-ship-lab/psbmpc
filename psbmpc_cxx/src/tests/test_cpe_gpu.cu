@@ -155,14 +155,14 @@ public:
 
 					P_i_2D = PSBMPC_LIB::GPU::reshape<16, 1, 4, 4>(P_i_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-					P_c_i(k) = cpe->CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, dt);
+					P_c_i->operator()(k) = cpe->CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, dt);
 					printf("k = %d | P_c_i = %.6f\n", k, P_c_i->operator()(k));
 					
 					break;
 				case PSBMPC_LIB::MCSKF4D :                
 					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 					{
-						P_c_i(k) = cpe->MCSKF4D_estimate(xs_seg, xs_i_seg, P_i_seg);						
+						P_c_i->operator()(k) = cpe->MCSKF4D_estimate(xs_seg, xs_i_seg, P_i_seg);						
 						printf("k = %d | P_c_i = %.6f\n", k, P_c_i->operator()(k));
 					}
 					break;
@@ -182,6 +182,7 @@ int main(){
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
+	
 	char buffer[BUFSIZE+1];
 
 	std::random_device seed;
@@ -191,40 +192,6 @@ int main(){
 	std::normal_distribution<float> std_norm_pdf(0, 1);
 	std::uniform_int_distribution<int> distribution(0, 1000);
 
-	/* // test div cpe functions
-	CPE cpe1(MCSKF4D, 0.5);
-	TML::PDMatrix<float, 4, MAX_N_CPE_SAMPLES> samples(4, 1000);
-
-	TML::PDVector4f mu(4, 1);
-	mu(0) = 68.0f; mu(1) = 75.0f; mu(2) = -2.0f; mu(3) = 0.0f;
-
-	TML::PDMatrix4f sigma(4, 4);
-	sigma(0, 0) = 108.6589f; 	sigma(0, 1) = 0.0f; 		sigma(0, 2) = 3.1344f; 		sigma(0, 3) = 0.0f;
-	sigma(1, 0) = 0.0f; 		sigma(1, 1) = 108.6589f; 	sigma(1, 2) = 0.0f; 		sigma(1, 3) = 3.1344f;
-	sigma(2, 0) = 3.1344f; 		sigma(2, 1) = 0.0f; 		sigma(2, 2) = 1.9365f;	 	sigma(2, 3) = 0.0f;
-	sigma(3, 0) = 0.0f; 		sigma(3, 1) = 3.1344f; 		sigma(3, 2) = 0.0f; 		sigma(3, 3) = 1.9365f;
-
-	save_matrix_to_file<float, 4, 4>(sigma);
-
-	cpe1.update_L(sigma);
-	for (size_t i = 0; i < 4; i++)
-	{
-		for (size_t j = 0; j < 1000; j++)
-		{
-			samples(i, j) = std_norm_pdf(eng1);
-		}
-	}
-	samples = cpe1.L * samples + mu;
-
-	save_matrix_to_file<float, 4, 1000>(samples);
-
-	TML::Vector2f p_cpa; p_cpa(0) = 24.0f; p_cpa(1) = 0.0f; 
-	float t_cpa = 0.5;
-	
-	cpe1.set_samples(samples);
-	cpe1.determine_sample_validity_4D(p_cpa, t_cpa);
-
-	save_matrix_to_file<float, 1, 1000>(cpe1.valid); */
 	//*****************************************************************************************************************
 	// Own-ship prediction setup
 	//*****************************************************************************************************************
@@ -238,11 +205,10 @@ int main(){
 
 	Eigen::VectorXd offset_sequence(6);
 	Eigen::Vector3d maneuver_times;
-	offset_sequence << 1, -90 * M_PI / 180.0, 1, -30 * M_PI / 180.0, 1, 0;
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
-
-	std::unique_ptr<PSBMPC_LIB::GPU::Ownship> asv(new PSBMPC_LIB::GPU::Ownship()); 
+	
+	PSBMPC_LIB::GPU::Ownship asv; 
 
 	int n_samples = std::round(T / dt);
 	std::cout << "n_samples = " << n_samples << std::endl;
@@ -268,8 +234,6 @@ int main(){
 	// Obstacle prediction setup
 	//*****************************************************************************************************************
 
-	double sigma_x(0.8), sigma_xy(0),sigma_y(0.8), gamma_x(0.1), gamma_y(0.1);
-
 	Eigen::Vector4d xs_0;
 	xs_0 << 75, 75, -2, 0;
 
@@ -287,9 +251,11 @@ int main(){
 
 	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step
 	Eigen::MatrixXd P_i_p; 
+	
+	double sigma_x(0.8), sigma_xy(0),sigma_y(0.8), gamma_x(0.1), gamma_y(0.1);
 
-	std::unique_ptr<PSBMPC_LIB::MROU> mrou(new PSBMPC_LIB::MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
-
+	PSBMPC_LIB::MROU mrou(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y);
+	
 	// n_ps = 1
 	xs_i_p.resize(1); xs_i_p[0].resize(4, n_samples);
 	xs_i_p[0].col(0) = xs_0;
@@ -322,7 +288,7 @@ int main(){
 		}
 		if (k < n_samples - 1)	v_p[0].col(k + 1) = v;
 	}
-
+	
 	//*****************************************************************************************************************
 	// Collision Probability Estimator setup
 	//*****************************************************************************************************************
@@ -334,8 +300,8 @@ int main(){
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
-
-	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
+	
+	asv.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
 	double t = 0;
 	int n_seg_samples = std::round(dt_seg / dt) + 1;
@@ -344,7 +310,7 @@ int main(){
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> xs_i_p_copy(4, n_samples);
 	TML::PDMatrix<float, 16, MAX_N_SAMPLES> P_i_p_copy(16, n_samples);
 
-	Eigen::Vector2d v_os_p;
+ 	Eigen::Vector2d v_os_p;
 	for (int k = 0; k < n_samples; k++)
 	{
 		// xs = [x, y, chi, U]^T
@@ -432,8 +398,8 @@ int main(){
 			t = (k + 1) * dt;
 			if (k < n_samples - 1)
 			{
-				xs_i_p[ps].col(k + 1) = mrou->predict_state(xs_i_p[ps].col(k), v_p[ps].col(k), dt);
-				P_i_p.col(k + 1) = PSBMPC_LIB::CPU::flatten(mrou->predict_covariance(P_0, t));
+				xs_i_p[ps].col(k + 1) = mrou.predict_state(xs_i_p[ps].col(k), v_p[ps].col(k), dt);
+				P_i_p.col(k + 1) = PSBMPC_LIB::CPU::flatten(mrou.predict_covariance(P_0, t));
 			}
 		}
 		TML::assign_eigen_object(xs_i_p_copy, xs_i_p[ps]);
@@ -521,14 +487,9 @@ int main(){
 	double *p_v_traj_i = mxGetPr(v_traj_i_mx);
 	double *p_P_traj_i = mxGetPr(P_traj_i_mx);
 
-	mwSize dims[1] = {n_samples};
-	mxArray *fPcoll_CE = mxCreateNumericArray(1, dims, mxSINGLE_CLASS, mxREAL);
-	mxArray *fPcoll_MCSKF = mxCreateNumericArray(1, dims, mxSINGLE_CLASS, mxREAL);
 	mxArray *Pcoll_CE = mxCreateDoubleMatrix(1, n_samples, mxREAL);
 	mxArray *Pcoll_MCSKF = mxCreateDoubleMatrix(1, n_samples, mxREAL);
 	
-	float *fp_CE = mxGetSingles(fPcoll_CE);
-	float *fp_MCSKF = mxGetSingles(fPcoll_MCSKF);
 	double *p_CE = mxGetPr(Pcoll_CE);
 	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
@@ -547,13 +508,9 @@ int main(){
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 	map_P_traj_i = P_i_p;
 
-	/* Eigen::Map<Eigen::MatrixXf> map_Pcoll_CE(fp_CE, 1, n_samples);
-	map_Pcoll_CE = P_c_i_CE; */
 	Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, 1, n_samples);
 	map_Pcoll_CE = P_c_i_CE;
 
-	/* Eigen::Map<Eigen::MatrixXf> map_Pcoll_MCSKF(fp_MCSKF, 1, n_samples);
-	map_Pcoll_MCSKF = P_c_i_MCSKF; */
 	Eigen::Map<Eigen::MatrixXd> map_Pcoll_MCSKF(p_MCSKF, 1, n_samples);
 	map_Pcoll_MCSKF = P_c_i_MCSKF;
 
@@ -582,10 +539,8 @@ int main(){
 	mxDestroyArray(v_traj_i_mx);
 	mxDestroyArray(P_traj_i_mx);
 
-	mxDestroyArray(fPcoll_CE);
-	mxDestroyArray(fPcoll_MCSKF);
 	mxDestroyArray(Pcoll_CE);
-	mxDestroyArray(Pcoll_MCSKF);
+	mxDestroyArray(Pcoll_MCSKF); 
 	engClose(ep);
 
 	return 0;
