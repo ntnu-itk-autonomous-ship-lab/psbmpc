@@ -21,8 +21,13 @@
 #pragma once
 
 #include "sbmpc_parameters.h"
-#include "cpu/ownship_cpu.h"
 #include "cpu/mpc_cost_cpu.h"
+#if OWNSHIP_TYPE == 0
+	#include "cpu/kinematic_ship_models_cpu.h"
+#else 
+	#include "cpu/kinetic_ship_models_cpu.h"
+#endif
+
 
 namespace PSBMPC_LIB
 {
@@ -40,7 +45,7 @@ namespace PSBMPC_LIB
 		double min_cost;
 
 		// Own-ship predicted trajectory
-		Eigen::Matrix<double, 6, -1> trajectory;
+		Eigen::MatrixXd trajectory;
 
 		CPU::Ownship ownship;
 
@@ -70,7 +75,7 @@ namespace PSBMPC_LIB
 			const double u_d, 
 			const double chi_d, 
 			const Eigen::Matrix<double, 2, -1> &waypoints,
-			const Eigen::Matrix<double, 6, 1> &ownship_state,
+			const Eigen::VectorXd &ownship_state,
 			const Eigen::Matrix<double, 4, -1> &static_obstacles,
 			Obstacle_Data<Tracked_Obstacle> &data);
 	};

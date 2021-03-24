@@ -21,9 +21,9 @@
 
 #pragma once
 
-#include "../sbmpc_parameters.h"
-#include "../joint_prediction_manager.h"
-#include "obstacle_ship_cpu.h"
+#include "sbmpc_parameters.h"
+#include "joint_prediction_manager.h"
+#include "kinematic_ship_models_cpu.h"
 #include "mpc_cost_cpu.h"
 
 #include "Eigen/Dense"
@@ -47,7 +47,7 @@ namespace PSBMPC_LIB
 
 			Obstacle_Ship ownship;
 
-			Eigen::Matrix<double, 4, -1> trajectory;
+			Eigen::MatrixXd trajectory;
 
 			void assign_data(const Obstacle_SBMPC &o_sbmpc);
 

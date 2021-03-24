@@ -113,8 +113,8 @@ CPE& CPE::operator=(
 *  Modified :
 *****************************************************************************************/
 void CPE::initialize(
-    const Eigen::Matrix<double, 6, 1> &xs_os,                                   // In: Own-ship state vector
-    const Eigen::Vector4d &xs_i,                                                // In: Obstacle i state vector
+    const Eigen::VectorXd &xs_os,                                              // In: Own-ship state vector
+    const Eigen::Vector4d &xs_i,                                               // In: Obstacle i state vector
     const double d_safe_i                                                      // In: Safety zone around own-ship when facing obstacle i
     )
 {
@@ -152,7 +152,7 @@ void CPE::initialize(
 *****************************************************************************************/
 void CPE::estimate_over_trajectories(
 		Eigen::Matrix<double, 1, -1> &P_c_i,                // In/out: Collision probability row vector: 1 x n_samples
-		const Eigen::Matrix<double, 6, -1> &xs_p,           // In: Ownship predicted trajectory
+		const Eigen::MatrixXd &xs_p,                        // In: Ownship predicted trajectory
 		const Eigen::Matrix<double, 4, -1> &xs_i_p,         // In: Obstacle i predicted trajectory
 		const Eigen::Matrix<double, 16, -1> &P_i_p,         // In: Obstacle i associated predicted covariances
         const double d_safe_i,                              // In: Safety zone around own-ship when facing obstacle i,
@@ -165,7 +165,7 @@ void CPE::estimate_over_trajectories(
     n_samples_traj = xs_p.cols();
     n_seg_samples = std::round(dt_seg / dt) + 1;
 
-    xs_os_seg.resize(6, n_seg_samples); xs_i_seg.resize(4, n_seg_samples); P_i_seg.resize(16, n_seg_samples);
+    xs_os_seg.resize(xs_p.rows(), n_seg_samples); xs_i_seg.resize(4, n_seg_samples); P_i_seg.resize(16, n_seg_samples);
 
     initialize(xs_p.col(0), xs_i_p.col(0), d_safe_i);
 
@@ -176,14 +176,20 @@ void CPE::estimate_over_trajectories(
         switch(method)
         {
             case CE :	
-                // If CE is used, (typically when n_cols = 1)
-                // The last column gives the current prediction time information
                 P_i_2D = reshape(P_i_p.col(k), 4, 4).block<2, 2>(0, 0);
 
                 if (k > 0)
                 {   
-                    v_os_prev = xs_p.block<2, 1>(3, k - p_step);
-                    v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, k - p_step));
+                    if (xs_p.rows() == 4)
+                    {
+                        v_os_prev(0) = xs_p(3, k - p_step) * cos(xs_p(2, k - p_step));
+                        v_os_prev(1) = xs_p(3, k - p_step) * sin(xs_p(2, k - p_step));
+                    }
+                    else
+                    {
+                        v_os_prev = xs_p.block<2, 1>(3, k - p_step);
+                        v_os_prev = rotate_vector_2D(v_os_prev, xs_p(2, k - p_step));
+                    }
                     v_i_prev = xs_i_p.block<2, 1>(2, k - p_step);
                 }
 
@@ -536,9 +542,15 @@ double CPE::MCSKF4D_estimation(
     if (n_seg_samples > 1)
     {
         // Own-ship segment
-        // Find average velocity along segment
-        U_os_sl = xs_os.block(3, 0, 2, n_seg_samples).rowwise().mean().norm();
-        // Find angle of the segment
+        // Find average velocity along segment and angle of the segment
+        if (xs_os.rows() == 4)
+        {
+            U_os_sl = xs_os.block(3, 0, 1, n_seg_samples).rowwise().mean().norm();
+        }
+        else
+        {
+            U_os_sl = xs_os.block(3, 0, 2, n_seg_samples).rowwise().mean().norm();
+        }
         psi_os_sl = atan2(xs_os(1, n_seg_samples - 1) - xs_os(1, 0), xs_os(0, n_seg_samples - 1) - xs_os(0, 0));
         // Set initial position to be that of the own-ship at the start of the segment
         xs_os_sl(0) = xs_os(0, 0); 

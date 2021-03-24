@@ -86,9 +86,6 @@ namespace PSBMPC_LIB
 		// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 		std::vector<Eigen::MatrixXd> xs_p;
 
-		// Mean predicted velocity for the obstacle (MROU): 
-		Eigen::Vector2d v_p;
-
 		// Prediction scenario ordering, size n_ps x 1 of intentions
 		std::vector<Intention> ps_ordering;
 
@@ -167,7 +164,7 @@ namespace PSBMPC_LIB
 		void predict_independent_trajectories(
 			const double T, 
 			const double dt, 
-			const Eigen::Matrix<double, 6, 1> &ownship_state,
+			const Eigen::VectorXd &ownship_state,
 			const MPC_Type &mpc)
 		{
 			int n_samples = std::round(T / dt);
@@ -175,10 +172,10 @@ namespace PSBMPC_LIB
 
 			int n_ps_independent = ps_course_changes.size();
 			
-			Eigen::Matrix<double, 6, 1> ownship_state_sl = ownship_state;
+			Eigen::VectorXd ownship_state_sl = ownship_state;
 			P_p.col(0) = CPU::flatten(kf->get_covariance());
 
-			Eigen::Vector2d v_p_new, v_A, v_B, L_AB;
+			Eigen::Vector2d v_p, v_p_new, v_A, v_B, L_AB;
 			double chi_ps, t = 0, psi_A, d_AB;
 			bool have_turned;
 			for(int ps = 0; ps < n_ps_independent; ps++)
@@ -195,9 +192,17 @@ namespace PSBMPC_LIB
 				{
 					t = (k + 1) * dt;
 
-					v_B(0) = ownship_state_sl(3);
-					v_B(1) = ownship_state_sl(4);
-					v_B = CPU::rotate_vector_2D(v_B, ownship_state_sl(2));
+					if (ownship_state_sl.size() == 4)
+					{
+						v_B(0) = ownship_state_sl(2);
+						v_B(1) = ownship_state_sl(3);
+					}
+					else
+					{
+						v_B(0) = ownship_state_sl(3);
+						v_B(1) = ownship_state_sl(4);
+						v_B = CPU::rotate_vector_2D(v_B, ownship_state_sl(2));
+					}
 
 					psi_A = atan2(xs_p[ps](4), xs_p[ps](0));
 					L_AB = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl.block<2, 1>(0, 0);
@@ -245,9 +250,18 @@ namespace PSBMPC_LIB
 						if (ps == 0) P_p.col(k + 1) = CPU::flatten(mrou->predict_covariance(P_0, t));
 
 						// Propagate ownship assuming straight line trajectory
-						ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
-							dt * CPU::rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
-						ownship_state_sl.block<4, 1>(2, 0) = ownship_state_sl.block<4, 1>(2, 0);
+						if (ownship_state_sl.size() == 4)
+						{
+							ownship_state_sl(0) = ownship_state_sl(0) + dt * ownship_state_sl(3) * cos(ownship_state_sl(2));
+							ownship_state_sl(1) = ownship_state_sl(1) + dt * ownship_state_sl(3) * sin(ownship_state_sl(2));
+							ownship_state_sl.block<2, 1>(2, 0) = ownship_state_sl.block<2, 1>(2, 0);
+						}
+						else
+						{
+							ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
+								dt * CPU::rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
+							ownship_state_sl.block<4, 1>(2, 0) = ownship_state_sl.block<4, 1>(2, 0);
+						}
 					}
 				}
 			}

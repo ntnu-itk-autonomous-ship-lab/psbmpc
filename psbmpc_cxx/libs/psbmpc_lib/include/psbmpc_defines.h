@@ -3,7 +3,8 @@
 *  File name : psbmpc_defines.h
 *
 *  Function  : File for Probabilistic Scneario-based Model Predictive Control, defining
-*              constants, max thresholds on size parameters for gpu matrices. 
+*              compile time flags, constants, max thresholds on size parameters for gpu
+*              gpu matrices.
 *  
 *	           ---------------------
 *
@@ -19,6 +20,12 @@
 *****************************************************************************************/
 
 #pragma once
+
+// Can be specified by e.g CMAKE
+// OWNSHIP_TYPE = 0 : Kinematic_Ship | 1 : Telemetron | 2 : MilliAmpere (NOT FINISHED IMPLEMENTATION YET)
+#ifndef OWNSHIP_TYPE
+#define OWNSHIP TYPE 0
+#endif
 
 #define M_PI 3.14159265358979323846
 

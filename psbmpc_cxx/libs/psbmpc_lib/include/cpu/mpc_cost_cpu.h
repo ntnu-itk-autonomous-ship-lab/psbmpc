@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "../obstacle_manager.h"
+#include "obstacle_manager.h"
 #include "cpu/prediction_obstacle_cpu.h"
 
 #include <boost/geometry/geometry.hpp>
@@ -373,10 +373,19 @@ namespace PSBMPC_LIB
 			bool mu(false), trans(false);
 			for(int k = 0; k < n_samples; k++)
 			{
-				psi_0_p = trajectory(2, k); 
-				v_0_p(0) = trajectory(3, k); 
-				v_0_p(1) = trajectory(4, k); 
-				v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
+				if (trajectory.rows() == 4)
+				{
+					v_0_p(0) = trajectory(3, k) * cos(trajectory(2, k));
+					v_0_p(1) = trajectory(3, k) * sin(trajectory(2, k));
+					psi_0_p = trajectory(2, k);
+				}
+				else
+				{
+					psi_0_p = trajectory(2, k); 
+					v_0_p(0) = trajectory(3, k); 
+					v_0_p(1) = trajectory(4, k); 
+					v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
+				}
 
 				// Determine active course modification at sample k
 				for (int M = 0; M < pars.n_M; M++)
@@ -555,10 +564,19 @@ namespace PSBMPC_LIB
 			bool mu, trans;
 			for(int k = 0; k < n_samples; k++)
 			{
-				psi_0_p = trajectory(2, k); 
-				v_0_p(0) = trajectory(3, k); 
-				v_0_p(1) = trajectory(4, k); 
-				v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
+				if (trajectory.rows() == 4)
+				{
+					v_0_p(0) = trajectory(3, k) * cos(trajectory(2, k));
+					v_0_p(1) = trajectory(3, k) * sin(trajectory(2, k));
+					psi_0_p = trajectory(2, k);
+				}
+				else
+				{
+					psi_0_p = trajectory(2, k); 
+					v_0_p(0) = trajectory(3, k); 
+					v_0_p(1) = trajectory(4, k); 
+					v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
+				}
 
 				// Determine active course modification at sample k
 				for (int M = 0; M < pars.n_M; M++)
@@ -642,9 +660,19 @@ namespace PSBMPC_LIB
 			bool mu, trans;
 			for(int k = 0; k < n_samples; k++)
 			{
-				psi_0_p = trajectory(2, k); 
-				v_0_p(0) = trajectory(3, k) * cos(trajectory(2, k)); 
-				v_0_p(1) = trajectory(3, k) * sin(trajectory(2, k));
+				if (trajectory.rows() == 4)
+				{
+					v_0_p(0) = trajectory(3, k) * cos(trajectory(2, k));
+					v_0_p(1) = trajectory(3, k) * sin(trajectory(2, k));
+					psi_0_p = trajectory(2, k);
+				}
+				else
+				{
+					psi_0_p = trajectory(2, k); 
+					v_0_p(0) = trajectory(3, k); 
+					v_0_p(1) = trajectory(4, k); 
+					v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
+				}
 
 				// Determine active course modification at sample k
 				for (int M = 0; M < pars.n_M; M++)

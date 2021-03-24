@@ -1,6 +1,6 @@
 /****************************************************************************************
 *
-*  File name : obstacle_ship_gpu.cuh
+*  File name : kinematic_ship_models_gpu.cuh
 *
 *  Function  : Header file for the GPU used simple kinematic model based obstacle ship, 
 *			   used as base for the obstacle collision avoidance system.
@@ -9,7 +9,7 @@
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim. 
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
@@ -20,23 +20,8 @@
 
 #pragma once
 
-// NOTE: If you want standalone use of this module, define the enums Prediction_Method and Guidance_Method below
-/* enum Prediction_Method
-{
-	Linear,													// Linear prediction
-	ERK1, 													// Explicit Runge Kutta 1 = Eulers method
-	ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
-};
-
-enum Guidance_Method 
-{
-	LOS, 													// Line-of-sight		
-	WPP,													// Waypoint-Pursuit
-	CH 														// Course Hold
-}; */
-// Otherwise, for usage with the PSB-MPC, include "psbmpc_parameters.h":
-#include "../psbmpc_parameters.h"
-#include "../psbmpc_defines.h"
+#include "psbmpc_defines.h"
+#include "psbmpc_parameters.h"
 #include "tml.cuh"
 #include <thrust/device_vector.h>
 
@@ -44,7 +29,7 @@ namespace PSBMPC_LIB
 {
 	namespace GPU
 	{
-		class Obstacle_Ship
+		class Kinematic_Ship
 		{
 		private:	
 			// Ship length and width
@@ -67,7 +52,7 @@ namespace PSBMPC_LIB
 			int n_samples, n_wps, man_count;
 			float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
 
-			TML::Vector2f d_next_wp, L_wp_segment;
+			TML::Vector2f d_next_wp, L_wp_segment, v_p;
 			bool segment_passed;
 
 			TML::Vector4f xs_p, xs_new;
@@ -77,13 +62,17 @@ namespace PSBMPC_LIB
 
 		public:
 
-			__host__ __device__ Obstacle_Ship();
+			__host__ __device__ Kinematic_Ship();
 
-			__host__ __device__ Obstacle_Ship(const float T_U, const float  T_chi, const float R_a, const float LOS_LD, const float LOS_K_i);
+			__host__ __device__ Kinematic_Ship(const float T_U, const float  T_chi, const float R_a, const float LOS_LD, const float LOS_K_i);
 
 			__host__ __device__ float get_length() const { return l; }
 			
 			__host__ __device__ float get_width() const { return w; }
+
+			__host__ __device__ inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; }
+
+			__host__ __device__ inline int get_wp_counter() const { return wp_c_0; }
 
 			__host__ __device__ inline void initialize_wp_following() { wp_c_p = wp_c_0; }
 
@@ -131,11 +120,23 @@ namespace PSBMPC_LIB
 				const Prediction_Method prediction_method,
 				const Guidance_Method guidance_method,
 				const float T,
-				const float dt
-			);
+				const float dt);
+
+			__host__ __device__ void predict_trajectory(
+				TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
+				const TML::PDVector6f &ship_state,
+				const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
+				const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
+				const float u_d,
+				const float chi_d,
+				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const float T,
+				const float dt);
 
 			__host__ void predict_trajectory(
-				Eigen::Matrix<double, 4, -1> &trajectory,
+				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
 				const Eigen::VectorXd &maneuver_times,
 				const double u_d,
@@ -144,8 +145,15 @@ namespace PSBMPC_LIB
 				const Prediction_Method prediction_method,
 				const Guidance_Method guidance_method,
 				const double T,
-				const double dt
-			);
+				const double dt);
 		};
+
+		// The default ownship is the simple kinematic_ship class
+		#if OWNSHIP_TYPE == 0
+			using Ownship = Kinematic_Ship;
+		#endif
+
+		// The default obstacle ship is the Kinematic_Ship class
+		using Obstacle_Ship = Kinematic_Ship;	
 	}
 }

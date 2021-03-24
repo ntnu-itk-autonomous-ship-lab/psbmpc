@@ -56,14 +56,14 @@ void SBMPC::calculate_optimal_offsets(
 	const double u_d, 														// In: Surge reference
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
+	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
 	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
 
-	trajectory.resize(6, n_samples);
+	trajectory.resize(ownship_state.size(), n_samples);
 	trajectory.col(0) = ownship_state;
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);

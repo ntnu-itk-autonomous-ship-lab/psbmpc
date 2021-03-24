@@ -1,63 +1,235 @@
 /****************************************************************************************
 *
-*  File name : test_psbmpc.cu
+*  File name : test_psbmpc.cpp
 *
-*  Function  : Test file for the Probabilistic Scenario-based Model Predictive Control
-*			   using Matlab for visualization. GPU version
+*  Function  : Test file for the Probabilistic Scenario-based Model Predictive Control with anti-grounding
+*			   using Matlab for visualization 
 *			   
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Tom Daniel Grande, Trym Tengsedal NTNU Trondheim. 
 *  All rights reserved.
 *
-*  Author    : Trym Tengesdal
+*  Author    : Tom Daniel Grande, Trym Tengsedal
 *
 *  Modified  : 
 *
 *****************************************************************************************/
 
+#include "shapefile_related/shapefil.h"
 #include "cpu/psbmpc_cpu.h"
-#include "gpu/psbmpc_gpu.cuh"
-#include "gpu/utilities_gpu.cuh"
+#include "cpu/utilities_cpu.h"
+#include "engine.h"
+
 #include <iostream>
 #include <vector>
 #include <chrono>
-#include "Eigen/Dense"
-#include "engine.h"
+#include <memory>
+#include <string>
 
+#include <boost/geometry/geometry.hpp>
+#include <boost/geometry/geometries/geometries.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/foreach.hpp>
 
 #define BUFSIZE 1000000
 
+template <typename T, typename F>
+void read_shapefile(const std::string &filename, std::vector<T> &polygons, F functor)
+{
+    try
+    {
+        SHPHandle handle = SHPOpen(filename.c_str(), "rb");
+        if (handle <= (SHPHandle)0)
+        {
+            throw std::string("File " + filename + " not found");
+        }
+
+        int nShapeType, nEntities;
+        double adfMinBound[4], adfMaxBound[4];
+        SHPGetInfo(handle, &nEntities, &nShapeType, adfMinBound, adfMaxBound );
+
+        for (int i = 0; i < nEntities; i++)
+        {
+            SHPObject* psShape = SHPReadObject(handle, i );
+
+            // Read only polygons, and only those without holes
+            if (psShape->nSHPType == SHPT_POLYGON && psShape->nParts == 1)
+            {
+                T polygon;
+                functor(psShape, polygon);
+                polygons.push_back(polygon);
+            }
+            SHPDestroyObject( psShape );
+        }
+        SHPClose(handle);
+    }
+    catch(const std::string &s)
+    {
+        throw s;
+    }
+    catch(...)
+    {
+        throw std::string("Other exception");
+    }
+}
+
+
+template <typename T>
+void convert(SHPObject *psShape, T &polygon)
+{
+    double* x = psShape->padfX;
+    double* y = psShape->padfY;
+    for (int v = 0; v < psShape->nVertices; v++)
+    {
+        typename boost::geometry::point_type<T>::type point;
+        boost::geometry::assign_values(point, x[v], y[v]);
+        boost::geometry::append(polygon, point);
+    }
+}
+
+//*****************************************************************************************************************
+// Main program:
+//*****************************************************************************************************************
 int main(){
+	// Matlab engine setup
+ 	Engine *ep = engOpen(NULL);
+	if (ep == NULL)
+	{
+		std::cout << "engine start failed!" << std::endl;
+	}
+    
+	char buffer[BUFSIZE+1]; 
+
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
-	double T_sim = 150; double dt = 0.5;
+	double T_sim = 1000; double dt = 0.5;
 	int N = std::round(T_sim / dt);
 
+
+//*****************************************************************************************************************
+// Static Obstacles Setup
+//*****************************************************************************************************************
+	// Input the path to the land data
+    std::string filename = "/home/trymte/Desktop/ENC (copy)/data/charts/land/land.shp";
+    std::vector<polygon_2D> polygons;
+
+    try
+    {
+        read_shapefile(filename, polygons, convert<polygon_2D>);
+    }
+    catch(const std::string& s)
+    {
+        std::cout << s << std::endl;
+        return 1;
+    }
+
+    //Make matlab polygons type friendly array:
+    Eigen::Matrix<double, -1, 2> polygon_matrix;
+    int n_static_obst = 0;
+    BOOST_FOREACH(polygon_2D const &poly, polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			n_static_obst += 1;
+		}
+		n_static_obst += 1;
+    }
+    polygon_matrix.resize(n_static_obst,2); 
+
+    /*format polygon_matrix array for matlab plotting*/
+    int pcount = 0 ; 
+    BOOST_FOREACH(polygon_2D const& poly, polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			polygon_matrix(pcount, 0) = boost::geometry::get<0>(*it);
+			polygon_matrix(pcount, 1) = boost::geometry::get<1>(*it);
+			
+			pcount += 1;
+		}
+		// each polygon is separated with (-1, -1)
+		polygon_matrix(pcount, 0) = -1;
+		polygon_matrix(pcount, 1) = -1;
+		pcount += 1;
+    }
+	//remove polygons which are irrelevantly far away for code speed. 
+	point_2D p1(316868,7087612);
+	point_2D p2(318807,7087612);
+	point_2D p3(318807,7087552);
+	
+	int d_irrelevant = 2000; 		//The polygons are so far away we can remove them from SB-MPC calculations. 
+	int iterator = 0;
+	bool isdone = false;
+	bool isbreak =false;
+	while (isdone == false)
+	{
+		isdone = true;
+		BOOST_FOREACH(polygon_2D const& poly, polygons)
+		{
+			isbreak = false;
+			double distance_to_point_1 = boost::geometry::distance(p1, poly);
+			double distance_to_point_2 = boost::geometry::distance(p2, poly);
+			double distance_to_point_3 = boost::geometry::distance(p3, poly);
+
+			if ((distance_to_point_1 > d_irrelevant) && (distance_to_point_2 > d_irrelevant) && (distance_to_point_3 > d_irrelevant))
+			{
+				polygons.erase(polygons.begin() + iterator);
+				iterator=0;
+				isbreak = true;
+				break;
+			}
+			else
+			{
+				iterator += 1;
+				isbreak = false;
+			}
+		}
+		if(isbreak==true)
+		{
+			isdone = false;
+			iterator = 0;
+		}
+	}
+
+    
+    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_static_obst, 2, mxREAL);
+    double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_static_obst, 2);
+	map_polygon_matrix = polygon_matrix;
+
+	engPutVariable(ep, "P", polygon_matrix_mx);
 //*****************************************************************************************************************
 // Own-ship sim setup
 //*****************************************************************************************************************
+
+	/*coordinates are given in wgs-84 use https://finnposisjon.test.geonorge.no/ */
 	Eigen::Matrix<double, 6, 1> xs_os_0;
-	xs_os_0 << 0, 0, 0, 9, 0, 0;
-	double u_d = 9.0, chi_d, u_c, chi_c;
+	xs_os_0 << 7087612, 316868, 0, 9, 0, 0;
+	double u_d = 9, chi_d, u_c, chi_c;
 	
 	PSBMPC_LIB::CPU::Ownship asv_sim;
 
-	Eigen::Matrix<double, 6, -1> trajectory; 
+	Eigen::MatrixXd trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
 
-	trajectory.resize(6, N);
-	trajectory.col(0) = xs_os_0;
+	#if OWNSHIP_TYPE == 0
+		trajectory.resize(4, N);
+		trajectory.col(0) = xs_os_0.block<4, 1>(0, 0);
+	#else
+		trajectory.resize(6, N);
+		trajectory.col(0) = xs_os_0;
+	#endif
 
 	int n_wps_os = 2;
 	waypoints.resize(2, n_wps_os); 
 	/* waypoints << 0, 200, 200, 400, 600,  300, 500,
 				 0, 0,   200, 200,  0,  0, -200; */
-	waypoints << 0, 1000,
-				 0, 0;
+	waypoints << 7087612,7087552,
+				 316868, 318807;
 	
 //*****************************************************************************************************************
 // Obstacle sim setup
@@ -66,8 +238,6 @@ int main(){
 	std::vector<int> ID(n_obst);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_obst);
-	xs_i_0[0].resize(6);
-	xs_i_0[0] << 500, 300, -90 * DEG2RAD, 5, 0, 0;
 
 	// Use constant obstacle uncertainty throughout the simulation, for simplicity
 	Eigen::MatrixXd P_0(4, 4);
@@ -93,24 +263,17 @@ int main(){
 
 	std::vector<Eigen::VectorXd> maneuver_times_i(n_obst);
 
-	std::vector<Eigen::Matrix<double, 6, -1>> trajectory_i(n_obst); 
+	std::vector<Eigen::MatrixXd> trajectory_i(n_obst); 
 	std::vector<Eigen::Matrix<double, 16, -1>> trajectory_covariances_i(n_obst);
 	std::vector<Eigen::Matrix<double, 2, -1>> waypoints_i(n_obst);
 
 	//=====================================================================
-	// Matlab engine and array setup for the ownship and obstacle, ++
+	// Matlab array setup for the ownship and obstacle, ++
 	//=====================================================================
- 	Engine *ep = engOpen(NULL);
-	if (ep == NULL)
-	{
-		std::cout << "engine start failed!" << std::endl;
-	}
-	char buffer[BUFSIZE+1]; 
-
 	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, N, mxREAL);
 	mxArray *wps_os_mx = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
 
-	double *p_traj_os = mxGetPr(traj_os_mx); 
+	double *ptraj_os = mxGetPr(traj_os_mx); 
 	double *p_wps_os = mxGetPr(wps_os_mx); 
 
 	Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_os, 2, n_wps_os);
@@ -120,35 +283,46 @@ int main(){
 	std::vector<mxArray*> P_traj_i_mx(n_obst); 
 	std::vector<mxArray*> wps_i_mx(n_obst);
 
-	double* p_traj_i; 
+	double* ptraj_i; 
 	double* p_P_traj_i; 
 	double* p_wps_i;
 	int n_wps_i;
 
 	for (int i = 0; i < n_obst; i++)
 	{
+		
 		ID[i] = i;
 
-		u_d_i[i] = 5.0; chi_d_i[i] = 0.0;
+		u_d_i[i] = 3.0; chi_d_i[i] = 0.0;
 
-		trajectory_i[i].resize(6, N);
-		trajectory_i[i].col(0) = xs_i_0[i];
+		#if OWNSHIP_TYPE == 0
+			xs_i_0[0].resize(4);
+			xs_i_0[0] << 7087569, 317514, -60 * DEG2RAD, 5;
+			trajectory_i[i].resize(4, N);
+			trajectory_i[i].col(0) = xs_i_0[i];
+		#else
+			xs_i_0[0].resize(6);
+			xs_i_0[0] << 7087569, 317514, -60 * DEG2RAD, 5, 0, 0;
+			trajectory_i[i].resize(6, N);
+			trajectory_i[i].col(0) = xs_i_0[i];
+		#endif
+		
 
 		trajectory_covariances_i[i].resize(16, 1);
 		trajectory_covariances_i[i].col(0) = PSBMPC_LIB::CPU::flatten(P_0);
 
-		Pr_a[i].resize(3);
+		/* Pr_a[i].resize(3);
 		Pr_a[i] << 1, 1, 1;
-		Pr_a[i] = Pr_a[0] / Pr_a[0].sum();
-		/* Pr_a[i].resize(1);
-		Pr_a[i] << 1;  */
+		Pr_a[i] = Pr_a[0] / Pr_a[0].sum(); */
+		Pr_a[i].resize(1);
+		Pr_a[i] << 1;
 
-		Pr_CC[i] = 0.1; 
+		Pr_CC[i] = 1;
 
 		n_wps_i = 2;
 		waypoints_i[i].resize(2, n_wps_i); 
-		waypoints_i[i] << 500, 500,
-					300, -300;
+		waypoints_i[i] << 7087569, 7087662,
+					317514, 316773;
 		
 		offset_sequence_i[i].resize(6);
 		offset_sequence_i[i] << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
@@ -158,10 +332,6 @@ int main(){
 
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T_sim, dt);
-
-		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
-		traj_i_mx[i] = mxCreateDoubleMatrix(6, N, mxREAL);
-		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
 
 //*****************************************************************************************************************
@@ -171,10 +341,13 @@ int main(){
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************	
-	PSBMPC_LIB::GPU::PSBMPC psbmpc;
+	PSBMPC_LIB::CPU::PSBMPC psbmpc;
 	double u_opt, chi_opt;
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
+
+	Eigen::Matrix<double,-1,-1> obstacle_status; 				
+	Eigen::Matrix<double,-1, 1> colav_status; 
 
 	Eigen::Matrix<double, 9, -1> obstacle_states;
 	obstacle_states.resize(9, n_obst);
@@ -183,17 +356,9 @@ int main(){
 	obstacle_covariances.resize(16, n_obst);
 
 	Eigen::MatrixXd obstacle_intention_probabilities;
-	obstacle_intention_probabilities.resize(3, n_obst);
+	obstacle_intention_probabilities.resize(1, n_obst);
 
 	Eigen::VectorXd obstacle_a_priori_CC_probabilities(n_obst);
-
-	int n_static_obst = 1;
-	Eigen::Matrix<double, 4, -1> static_obstacles;
-
-	// Format of each column: v_0, v_1, where v_0 and v_1 are the (x,y) coordinates of the start and end
-	// of the static obstacle no-go zone
-	static_obstacles.resize(4, n_static_obst);
-    static_obstacles.col(0) << 500.0, 300.0, 1000.0, 50.0;
 
 //*****************************************************************************************************************
 // Simulation
@@ -204,28 +369,28 @@ int main(){
 	//=========================================================
 	// Matlab plot setup
 	//=========================================================
-	mxArray *T_sim_mx(nullptr), *n_obst_mx(nullptr), *n_static_obst_mx(nullptr);
+
+	for (int i = 0; i < n_obst; i++)
+	{
+		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
+		traj_i_mx[i] = mxCreateDoubleMatrix(trajectory_i[i].rows(), N, mxREAL);
+		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
+	}
+	
+	mxArray *T_sim_mx, *n_obst_mx;
 	T_sim_mx = mxCreateDoubleScalar(T_sim);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
-	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
 
 	mxArray *pred_traj_mx;
 	double *p_pred_traj;
 
-	mxArray *static_obst_mx = mxCreateDoubleMatrix(4, n_static_obst, mxREAL);
-	double *p_static_obst_mx = mxGetPr(static_obst_mx); 
 
-	Eigen::Map<Eigen::MatrixXd> map_static_obst(p_static_obst_mx, 4, n_static_obst);
-	map_static_obst = static_obstacles;
-
-	engPutVariable(ep, "X_static", static_obst_mx);
-	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engPutVariable(ep, "WPs", wps_os_mx);
 
-	engEvalString(ep, "init_psbmpc_plotting");
-	mxArray *i_mx(nullptr), *k_s_mx(nullptr);
+	engEvalString(ep, "init_psbmpc_plotting_grounding");
+	mxArray *i_mx, *k_s_mx;
 
 	for (int i = 0; i < n_obst; i++)
 	{
@@ -253,18 +418,24 @@ int main(){
 		// Aquire obstacle information
 		for (int i = 0; i < n_obst; i++)
 		{
-			xs_i_k.block<2, 1>(0, 0) = trajectory_i[i].block<2, 1>(0, k);
-			xs_i_k.block<2, 1>(2, 0) = PSBMPC_LIB::CPU::rotate_vector_2D(trajectory_i[i].block<2, 1>(3, k), trajectory_i[i](2, k));
+			if (trajectory_i[i].rows() == 4)
+			{
+				xs_i_k = trajectory_i[i].col(k);
+			}
+			else
+			{
+				xs_i_k.block<2, 1>(0, 0) = trajectory_i[i].block<2, 1>(0, k);
+				xs_i_k.block<2, 1>(2, 0) = PSBMPC_LIB::CPU::rotate_vector_2D(trajectory_i[i].block<2, 1>(3, k), trajectory_i[i](2, k));
+			}
 			obstacle_states.col(i) << xs_i_k, A, B, C, D, ID[i];
 
 			obstacle_covariances.col(i) = PSBMPC_LIB::CPU::flatten(P_0);
 
 			obstacle_intention_probabilities.col(i) = Pr_a[i];
-
 			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
 
-		 obstacle_manager.operator()(
+		obstacle_manager.operator()(
 			psbmpc.pars, 
 			trajectory.col(k), 
 			asv_sim.get_length(),
@@ -272,8 +443,6 @@ int main(){
 			obstacle_covariances, 
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
-
-		obstacle_manager.update_obstacle_status(trajectory.col(k));
 
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, PSBMPC_LIB::LOS);
 
@@ -289,7 +458,7 @@ int main(){
 				chi_d,
 				waypoints,
 				trajectory.col(k),
-				static_obstacles,
+				polygons,
 				obstacle_manager.get_data());
 
 			end = std::chrono::system_clock::now();
@@ -299,15 +468,13 @@ int main(){
 
 			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
 
-			std::cout << "u_d = " << u_d << " | chi_d = " << chi_d << std::endl;
-
-			obstacle_manager.display_obstacle_information();		
-		} 
+			obstacle_manager.update_obstacle_status(trajectory.col(k));
+			obstacle_manager.display_obstacle_information();
+		
+		}
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
-		asv_sim.update_ctrl_input(u_c, chi_c, trajectory.col(k));
 		
-		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), dt, PSBMPC_LIB::ERK1); }
-		
+		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), u_c, chi_c, dt, PSBMPC_LIB::ERK1); }
 
 		//===========================================
 		// Send trajectory data to matlab
@@ -324,7 +491,7 @@ int main(){
 		Eigen::Map<Eigen::MatrixXd> map_pred_traj_os(p_pred_traj, 2, predicted_trajectory.cols());
 		map_pred_traj_os = predicted_trajectory;
 
-		Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os, 6, N);
+		Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, N);
 		map_traj_os = trajectory;
 
 		engPutVariable(ep, "X_pred", pred_traj_mx);
@@ -334,10 +501,10 @@ int main(){
 
 		for(int i = 0; i < n_obst; i++)
 		{
-			p_traj_i = mxGetPr(traj_i_mx[i]);
+			ptraj_i = mxGetPr(traj_i_mx[i]);
 			p_P_traj_i = mxGetPr(P_traj_i_mx[i]);
 
-			Eigen::Map<Eigen::MatrixXd> map_traj_i(p_traj_i, 6, N);
+			Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 6, N);
 			Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, 1);
 			
 			map_traj_i = trajectory_i[i];
@@ -362,7 +529,7 @@ int main(){
 	mxDestroyArray(k_s_mx);
 	mxDestroyArray(T_sim_mx);
 	mxDestroyArray(n_obst_mx);
-	mxDestroyArray(n_static_obst_mx);
+	mxDestroyArray(pred_traj_mx);
 	for (int i = 0; i < n_obst; i++)
 	{
 		mxDestroyArray(traj_i_mx[i]);

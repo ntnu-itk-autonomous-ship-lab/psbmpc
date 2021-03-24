@@ -69,14 +69,14 @@ void PSBMPC::calculate_optimal_offsets(
 	const double u_d, 														// In: Surge reference
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
+	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacles parametrized as no-go lines/straight lines
 	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
-
-	trajectory.resize(6, n_samples);
+	
+	trajectory.resize(ownship_state.size(), n_samples);
 	trajectory.col(0) = ownship_state;
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
@@ -315,14 +315,14 @@ void PSBMPC::calculate_optimal_offsets(
 	const double u_d, 														// In: Surge reference
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
+	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
 	const std::vector<polygon_2D> &polygons,								// In: Static obstacles parametrized as polygons
 	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
-
-	trajectory.resize(6, n_samples);
+	
+	trajectory.resize(ownship_state.size(), n_samples);
 	trajectory.col(0) = ownship_state;
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
@@ -571,6 +571,37 @@ void PSBMPC::calculate_optimal_offsets(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : determine_colav_active
+*  Function : Uses the freshly updated obstacles vector and the number of static 
+*			  obstacles to determine whether it is necessary to run the PSBMPC
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+bool PSBMPC::determine_colav_active(
+	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
+	const int n_static_obst 												// In: Number of static obstacles
+	)
+{
+	Eigen::VectorXd xs = trajectory.col(0);
+	bool colav_active = false;
+	Eigen::Vector2d d_0i;
+	for (size_t i = 0; i < data.obstacles.size(); i++)
+	{
+		d_0i(0) = data.obstacles[i].kf->get_state()(0) - xs(0);
+		d_0i(1) = data.obstacles[i].kf->get_state()(1) - xs(1);
+		if (d_0i.norm() < pars.d_init) colav_active = true;
+
+		// If all obstacles are passed, even though inside colav range,
+		// then no need for colav
+		if (data.IP_0[i]) 	{ colav_active = false; }
+		else 				{ colav_active = true; }
+	}
+	colav_active = colav_active || n_static_obst > 0;
+
+	return colav_active;
+}
+
 /****************************************************************************************
 *  Name     : reset_control_behavior
 *  Function : Sets the offset sequence back to the initial starting point, i.e. the 
@@ -1000,8 +1031,16 @@ void PSBMPC::calculate_ps_collision_consequences(
 		{
 			t = k * dt;
 
-			v_0_p = trajectory.block<2, 1>(3, k);
-			v_0_p = rotate_vector_2D(v_0_p, trajectory(2, k));
+			if (trajectory.rows() == 4)
+			{
+				v_0_p(0) = trajectory(3, k) * cos(trajectory(2, k));
+				v_0_p(1) = trajectory(3, k) * sin(trajectory(2, k));
+			}
+			else
+			{
+				v_0_p = trajectory.block<2, 1>(3, k);
+				v_0_p = CPU::rotate_vector_2D(v_0_p, trajectory(2, k));
+			}
 
 			if (ps == n_ps[i] - 1 && use_joint_prediction) // Intelligent prediction is the last prediction scenario
 			{
@@ -1213,8 +1252,17 @@ void PSBMPC::predict_trajectories_jointly(
 	{	
 		t = k * pars.dt;
 
-		v_os_k = trajectory.block<2, 1>(3, k);
-		v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
+		if (trajectory.rows() == 4)
+		{
+			v_os_k(0) = trajectory(3, k) * cos(trajectory(2, k));
+			v_os_k(1) = trajectory(3, k) * sin(trajectory(2, k));
+		}
+		else
+		{
+			v_os_k(0) = trajectory(3, k); 
+			v_os_k(1) = trajectory(4, k); 
+			v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
+		}
 		xs_os_aug_k.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, k);
 		xs_os_aug_k.block<2, 1>(2, 0) = v_os_k;
 
@@ -1397,95 +1445,6 @@ void PSBMPC::predict_trajectories_jointly(
 {
 	Eigen::Matrix<double, 4, -1> static_obstacles(4, 1); static_obstacles.setZero();
 	predict_trajectories_jointly(data, static_obstacles, overwrite);
-}
-
-/****************************************************************************************
-*  Name     : find_time_of_passing
-*  Function : Finds the time when an obstacle is passed by the own-ship, assuming both 
-*			  vessels keeps their current course
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-double PSBMPC::find_time_of_passing(
-	const Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
-	const int i 														// In: Index of relevant obstacle
-	)
-{
-	double t_obst_passed(1e12), t(0.0), psi_A(0.0), d_AB(0.0);
-	Eigen::VectorXd xs_A = trajectory.col(0);
-	Eigen::VectorXd xs_B = data.obstacles[i].kf->get_state();
-	Eigen::Vector2d p_A, p_B, v_A, v_B, L_AB;
-	p_A(0) = xs_A(0); p_A(1) = xs_A(1); psi_A = xs_A(2);
-	v_A(0) = xs_A(3); v_A(1) = xs_A(4); 
-	v_A = rotate_vector_2D(v_A, psi_A);
-	p_B(0) = xs_B(0); p_B(1) = xs_B(1);
-	v_B(0) = xs_B(2); v_B(1) = xs_B(3); 
-
-	bool A_is_overtaken(false), B_is_overtaken(false), is_passed(false);
-
-	int n_samples = pars.T / pars.dt;
-	for (int k = 0; k < n_samples; k++)
-	{
-		t = k * pars.dt;
-		p_A = p_A + v_A * t;
-		p_B = p_B + v_B * t;
-
-		L_AB = p_B - p_A;
-		d_AB = L_AB.norm();
-		L_AB = L_AB.normalized();
-
-		A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-						v_A.norm() < v_B.norm()							  		&&
-						v_A.norm() > 0.25;
-
-		B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-						v_B.norm() < v_A.norm()							  		&&
-						v_B.norm() > 0.25;
-
-		is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-					!A_is_overtaken) 											||
-					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-					!B_is_overtaken)) 											&&
-					d_AB > pars.d_safe;
-		
-		if (is_passed) 
-		{
-			t_obst_passed = t; 
-			break;
-		}
-	}
-	return t_obst_passed;
-}
-
-/****************************************************************************************
-*  Name     : determine_colav_active
-*  Function : Uses the freshly updated obstacles vector and the number of static 
-*			  obstacles to determine whether it is necessary to run the PSBMPC
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-bool PSBMPC::determine_colav_active(
-	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
-	const int n_static_obst 												// In: Number of static obstacles
-	)
-{
-	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
-	bool colav_active = false;
-	Eigen::Vector2d d_0i;
-	for (size_t i = 0; i < data.obstacles.size(); i++)
-	{
-		d_0i(0) = data.obstacles[i].kf->get_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].kf->get_state()(1) - xs(1);
-		if (d_0i.norm() < pars.d_init) colav_active = true;
-
-		// If all obstacles are passed, even though inside colav range,
-		// then no need for colav
-		if (data.IP_0[i]) 	{ colav_active = false; }
-		else 				{ colav_active = true; }
-	}
-	colav_active = colav_active || n_static_obst > 0;
-
-	return colav_active;
 }
 
 /****************************************************************************************
