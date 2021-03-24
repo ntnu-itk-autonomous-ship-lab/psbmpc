@@ -19,8 +19,9 @@
 
 #pragma once
 
-#include "../obstacle_manager.h"
-#include "ownship_gpu.cuh"
+#include "obstacle_manager.h"
+#include "kinematic_ship_models_gpu.cuh"
+#include "kinetic_ship_models_gpu.cuh"
 #include "tml.cuh"
 #include <thrust/device_vector.h>
 
@@ -129,7 +130,7 @@ namespace PSBMPC_LIB
 		public:
 			float ownship_length;
 
-			TML::Vector6f ownship_state;
+			TML::PDVector6f ownship_state;
 
 			TML::PDMatrix<float, MAX_N_M, 1> maneuver_times;
 

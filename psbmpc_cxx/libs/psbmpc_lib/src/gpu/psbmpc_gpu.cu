@@ -133,6 +133,7 @@ PSBMPC::PSBMPC()
     	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
 	}
 
+	// NOT FINISHED YET, NEED TO FIX INDEXING OPERATION ON PREDICTION OBSTACLES ON THE DEVICE(CB_COST_FUNCTOR_2)
 	if (pars.obstacle_colav_on)
 	{
 		// Allocate for each thread that considers the intelligent prediction a max number of MAX_N_OBST * (MAX_N_OBST + 1) * pars.n_cbs prediction obstacles
@@ -214,14 +215,14 @@ void PSBMPC::calculate_optimal_offsets(
 	const double u_d, 														// In: Surge reference
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
-	const Eigen::Matrix<double, 6, 1> &ownship_state, 						// In: Current ship state
+	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
 	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
 	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
 
-	trajectory.resize(6, n_samples);
+	trajectory.resize(ownship_state.size(), n_samples);
 	trajectory.col(0) = ownship_state;
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
@@ -402,7 +403,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
+	/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, trajectory.rows(), n_samples);
 	map_traj = trajectory;
 
 	k_s = mxCreateDoubleScalar(n_samples);
@@ -431,6 +432,37 @@ void PSBMPC::calculate_optimal_offsets(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : determine_colav_active
+*  Function : Uses the dynamic obstacle vector and the number of static 
+*			  obstacles to determine whether it is necessary to run the PSBMPC
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+bool PSBMPC::determine_colav_active(
+	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
+	const int n_static_obst 												// In: Number of static obstacles
+	)
+{
+	Eigen::VectorXd xs = trajectory.col(0);
+	bool colav_active = false;
+	Eigen::Vector2d d_0i;
+	for (size_t i = 0; i < data.obstacles.size(); i++)
+	{
+		d_0i(0) = data.obstacles[i].kf->get_state()(0) - xs(0);
+		d_0i(1) = data.obstacles[i].kf->get_state()(1) - xs(1);
+		if (d_0i.norm() < pars.d_init) colav_active = true;
+
+		// If all obstacles are passed, even though inside colav range,
+		// then no need for colav
+		if (data.IP_0[i]) 	{ colav_active = false; }
+		else 				{ colav_active = true; }
+	}
+	colav_active = colav_active || n_static_obst > 0;
+
+	return colav_active;
+}
+
 /****************************************************************************************
 *  Name     : map_offset_sequences
 *  Function : Maps the currently set surge and course modifications into a matrix of 
@@ -677,8 +709,16 @@ void PSBMPC::initialize_prediction(
 	// Add the ownship as the last prediction obstacle
 	TML::PDMatrix<float, 9, 1>  xs_aug(9, 1); TML::Vector2f v_os_0;
 	xs_aug(0) = trajectory(0, 0); xs_aug(1) = trajectory(1, 0);
-	v_os_0(0) = trajectory(3, 0); v_os_0(1) = trajectory(4, 0);
-	v_os_0 = rotate_vector_2D(v_os_0, trajectory(2, 0));
+	if (trajectory.rows() == 4)
+	{
+		v_os_0(0) = trajectory(3, 0) * cos(trajectory(2, 0));
+		v_os_0(1) = trajectory(3, 0) * sin(trajectory(2, 0));
+	}
+	else
+	{
+		v_os_0(0) = trajectory(3, 0); v_os_0(1) = trajectory(4, 0);
+		v_os_0 = rotate_vector_2D(v_os_0, trajectory(2, 0));
+	}
 	xs_aug(2) = v_os_0(0); xs_aug(3) = v_os_0(1);
 	xs_aug(4) = ownship.get_length() / 2; 
 	xs_aug(5) = ownship.get_length() / 2; 
@@ -741,8 +781,6 @@ void PSBMPC::initialize_prediction(
 				
 				n_ps[i] += 1;
 			}
-
-			
 		}
 		data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
 
@@ -1055,8 +1093,16 @@ void PSBMPC::calculate_ps_collision_consequences(
 		{
 			t = k * dt;
 
-			v_0_p = trajectory.block<2, 1>(3, k);
-			v_0_p = CPU::rotate_vector_2D(v_0_p, trajectory(2, k));
+			if (trajectory.rows() == 4)
+			{
+				v_0_p(0) = trajectory(3, k) * cos(trajectory(2, k));
+				v_0_p(1) = trajectory(3, k) * sin(trajectory(2, k));
+			}
+			else
+			{
+				v_0_p = trajectory.block<2, 1>(3, k);
+				v_0_p = CPU::rotate_vector_2D(v_0_p, trajectory(2, k));
+			}
 
 			if (ps == n_ps[i] - 1 && use_joint_prediction) // Intelligent prediction is the last prediction scenario
 			{
@@ -1487,9 +1533,17 @@ void PSBMPC::predict_trajectories_jointly(
 	{	
 		t = k * pars.dt;
 
-		v_os_k(0) = trajectory(3, k);
-		v_os_k(1) = trajectory(4, k);
-		v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
+		if (trajectory.rows() == 4)
+		{
+			v_os_k(0) = trajectory(3, k) * cos(trajectory(2, k));
+			v_os_k(1) = trajectory(3, k) * sin(trajectory(2, k));
+		}
+		else
+		{
+			v_os_k(0) = trajectory(3, k); 
+			v_os_k(1) = trajectory(4, k); 
+			v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
+		}
 		xs_os_k(0) = trajectory(0, k);
 		xs_os_k(1) = trajectory(1, k);
 		xs_os_k(2) = v_os_k(0);
@@ -1637,37 +1691,6 @@ void PSBMPC::predict_trajectories_jointly(
 }
 
 /****************************************************************************************
-*  Name     : determine_colav_active
-*  Function : Uses the dynamic obstacle vector and the number of static 
-*			  obstacles to determine whether it is necessary to run the PSBMPC
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-bool PSBMPC::determine_colav_active(
-	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
-	const int n_static_obst 												// In: Number of static obstacles
-	)
-{
-	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
-	bool colav_active = false;
-	Eigen::Vector2d d_0i;
-	for (size_t i = 0; i < data.obstacles.size(); i++)
-	{
-		d_0i(0) = data.obstacles[i].kf->get_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].kf->get_state()(1) - xs(1);
-		if (d_0i.norm() < pars.d_init) colav_active = true;
-
-		// If all obstacles are passed, even though inside colav range,
-		// then no need for colav
-		if (data.IP_0[i]) 	{ colav_active = false; }
-		else 				{ colav_active = true; }
-	}
-	colav_active = colav_active || n_static_obst > 0;
-
-	return colav_active;
-}
-
-/****************************************************************************************
 *  Name     : assign_optimal_trajectory
 *  Function : Set the optimal trajectory to the current predicted trajectory
 *  Author   :
@@ -1679,7 +1702,7 @@ void PSBMPC::assign_optimal_trajectory(
 {
 	int n_samples = std::round(pars.T / pars.dt);
 	// Set current optimal x-y position trajectory, downsample if linear prediction was not used
-	if (pars.prediction_method > Linear)
+	if (false) //(pars.prediction_method > Linear)
 	{
 		int count = 0;
 		optimal_trajectory.resize(2, n_samples / pars.p_step);

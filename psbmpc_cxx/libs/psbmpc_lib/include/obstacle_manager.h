@@ -259,7 +259,7 @@ namespace PSBMPC_LIB
 		template <class Parameter_Object>
 		void update_situation_type_and_transitional_variables(
 			const Parameter_Object &mpc_pars,								// In: Parameters of the obstacle manager boss
-			const Eigen::Matrix<double, 6, 1> &ownship_state,				// In: Current time own-ship state
+			const Eigen::VectorXd &ownship_state,							// In: Current time own-ship state
 			const double ownship_length										// In: Dimension of ownship along longest axis
 			)
 		{
@@ -268,11 +268,20 @@ namespace PSBMPC_LIB
 			// A : Own-ship, B : Obstacle i
 			Eigen::Vector2d v_A, v_B, L_AB;
 			double psi_A, psi_B, d_AB;
-			v_A(0) = ownship_state(3);
-			v_A(1) = ownship_state(4);
-			psi_A = CPU::wrap_angle_to_pmpi(ownship_state(2));
-			v_A = CPU::rotate_vector_2D(v_A, psi_A);
-
+			if (ownship_state.size() == 4)
+			{
+				v_A(0) = ownship_state(2);
+				v_A(1) = ownship_state(3);
+				psi_A = atan2(v_A(1), v_A(0));
+			}
+			else
+			{
+				v_A(0) = ownship_state(3);
+				v_A(1) = ownship_state(4);
+				psi_A = ownship_state(2);
+				v_A = CPU::rotate_vector_2D(v_A, psi_A);
+			}
+			
 			int n_obst = data.obstacles.size();
 			data.ST_0.resize(n_obst);   data.ST_i_0.resize(n_obst);
 			
@@ -375,7 +384,7 @@ namespace PSBMPC_LIB
 
 		Obstacle_Data<Tracked_Obstacle>& get_data() { return data; }
 
-		void update_obstacle_status(const Eigen::Matrix<double, 6, 1> &ownship_state);
+		void update_obstacle_status(const Eigen::VectorXd &ownship_state);
 
 		void display_obstacle_information();
 
@@ -389,7 +398,7 @@ namespace PSBMPC_LIB
 		template <class Parameter_Object>
 		void operator()(
 			const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
-			const Eigen::Matrix<double, 6, 1> &ownship_state,									// In: Current time own-ship state
+			const Eigen::VectorXd &ownship_state,												// In: Current time own-ship state
 			const double ownship_length,														// In: Dimension of ownship along longest axis
 			const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
 			const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances

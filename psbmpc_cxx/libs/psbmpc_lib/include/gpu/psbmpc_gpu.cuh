@@ -20,9 +20,9 @@
 
 #pragma once
 
-#include "../psbmpc_parameters.h"
-#include "../cpu/cpe_cpu.h"
-#include "../cpu/mpc_cost_cpu.h"
+#include "psbmpc_parameters.h"
+#include "cpu/cpe_cpu.h"
+#include "cpu/mpc_cost_cpu.h"
 #include "cb_cost_functor_structures.cuh"
 
 namespace PSBMPC_LIB
@@ -49,7 +49,6 @@ namespace PSBMPC_LIB
 		
 		class CPE;
 		class Cuda_Obstacle;
-		class Obstacle_Ship;
 		class Obstacle_SBMPC;
 		template <typename Parameters> class MPC_Cost;
 
@@ -69,7 +68,7 @@ namespace PSBMPC_LIB
 
 			Ownship ownship;
 
-			Eigen::Matrix<double, 6, -1> trajectory;
+			Eigen::MatrixXd trajectory;
 
 			CPU::CPE cpe_host;
 
@@ -123,7 +122,8 @@ namespace PSBMPC_LIB
 
 			MPC_Cost<CB_Functor_Pars> *mpc_cost_device_ptr;
 			//=====================================================
-
+			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
+			
 			void map_offset_sequences();
 
 			void reset_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
@@ -178,8 +178,6 @@ namespace PSBMPC_LIB
 
 			void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1>& static_obstacles);
 
-			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
-
 			void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
 			void set_up_temporary_device_memory(
@@ -208,7 +206,7 @@ namespace PSBMPC_LIB
 				const double u_d, 
 				const double chi_d, 
 				const Eigen::Matrix<double, 2, -1> &waypoints,
-				const Eigen::Matrix<double, 6, 1> &ownship_state,
+				const Eigen::VectorXd &ownship_state,
 				const Eigen::Matrix<double, 4, -1> &static_obstacles,
 				Obstacle_Data<Tracked_Obstacle> &data);
 

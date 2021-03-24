@@ -433,7 +433,7 @@ __device__ float CPE::MCSKF4D_estimate(
     {    
         // Own-ship segment
         // Find average velocity along segment
-        U = xs_os.get_block<2, MAX_N_SEG_SAMPLES>(2, 0, 2, n_seg_samples).rwise_mean().norm();
+        U = xs_os.get_block<1, MAX_N_SEG_SAMPLES>(3, 0, 1, n_seg_samples).rwise_mean().norm();
         // Find angle of the segment
         psi = atan2(xs_os(1, n_seg_samples - 1) - xs_os(1, 0), xs_os(0, n_seg_samples - 1) - xs_os(0, 0));
         // Set initial position to be that of the own-ship at the start of the segment

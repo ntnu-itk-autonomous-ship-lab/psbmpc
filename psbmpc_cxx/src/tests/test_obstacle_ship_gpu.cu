@@ -1,9 +1,9 @@
 /****************************************************************************************
 *
-*  File name : test_ownship.cu
+*  File name : test_obstacle_ship.cu
 *
-*  Function  : Test file for the Ownship class for GPU PSB-MPC, using Matlab for 
-*			   visualization 
+*  Function  : Test file for the Obstacle_Ship class for PSB-MPC, using Matlab for 
+*			   visualization.
 *			   
 *	           ---------------------
 *
@@ -18,7 +18,8 @@
 *
 *****************************************************************************************/
 
-#include "gpu/ownship_gpu.cuh"
+
+#include "gpu/kinematic_ship_models_gpu.cuh"
 #include <iostream>
 #include <memory>
 #include "Eigen/Dense"
@@ -38,8 +39,8 @@ int main(){
 	//*****************************************************************************************************************
 	// Own-ship prediction setup
 	//*****************************************************************************************************************
-	Eigen::Matrix<double, 6, 1> xs;
-	xs << 0, 0, 0, 6, 0, 0;
+	Eigen::Matrix<double, 4, 1> xs;
+	xs << 0, 0, 0, 6;
 
 	double T = 200; double dt = 0.5;
 
@@ -51,37 +52,45 @@ int main(){
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
 	
-	std::unique_ptr<PSBMPC_LIB::GPU::Ownship> asv(new PSBMPC_LIB::GPU::Ownship()); 
+	std::unique_ptr<PSBMPC_LIB::GPU::Obstacle_Ship> obstacle_ship(new PSBMPC_LIB::GPU::Obstacle_Ship()); 
 
-	Eigen::Matrix<double, 6, -1> trajectory; 
+	Eigen::MatrixXd trajectory; 
 	Eigen::Matrix<double, 2, -1> waypoints;
 
 	int n_samples = std::round(T / dt);
-	trajectory.resize(6, n_samples);
-	trajectory.block<6, 1>(0, 0) << xs;
+	trajectory.resize(4, n_samples);
+	trajectory.block<4, 1>(0, 0) << xs;
 
-	waypoints.resize(2, 7); 
+	int n_wps = 7;
+	waypoints.resize(2, n_wps); 
 	waypoints << 0, 200, 200, 0,    0, 300, 1000,
 				 0, -50,  -200, -200,  0, 300, 0;
+
+	waypoints << 0, 200, 200, 0,    0, 300, 1000,
+				 0, 50,  200, 200,  0, -300, 0;
 
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
-	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
+	obstacle_ship->determine_active_waypoint_segment(waypoints, trajectory.col(0));
+
+	obstacle_ship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
-	mxArray *traj_mx = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	mxArray *traj_mx = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 	mxArray *wps_mx = mxCreateDoubleMatrix(2, 7, mxREAL);
+	mxArray *T_sim_mx = mxCreateDoubleScalar(T);
+	mxArray *dt_sim_mx = mxCreateDoubleScalar(dt);
 
 	double *p_traj_mx = mxGetPr(traj_mx);
 	double *p_wps_mx = mxGetPr(wps_mx);
 
-	Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_mx, 6, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_mx, 4, n_samples);
 	map_traj = trajectory;
 
-	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_mx, 2, 7);
+	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_mx, 2, n_wps);
 	map_wps = waypoints;
 
 	buffer[BUFSIZE] = '\0';
@@ -89,8 +98,11 @@ int main(){
 
 	engPutVariable(ep, "X", traj_mx);
 	engPutVariable(ep, "WPs", wps_mx);
+	engPutVariable(ep, "T_sim", T_sim_mx);
+	engPutVariable(ep, "dt_sim", dt_sim_mx);
 
-	engEvalString(ep, "test_ownship_plot");
+	engEvalString(ep, "test_obstacle_ship_plot");
+	
 	printf("%s", buffer);
 	mxDestroyArray(traj_mx);
 	mxDestroyArray(wps_mx);

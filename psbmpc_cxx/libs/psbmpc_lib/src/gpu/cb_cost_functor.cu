@@ -242,8 +242,10 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 				case CE :	
 					if (k > 0)
 					{
-						v_os_prev = xs_p_seg.get_block<2, 1>(3, n_seg_samples - 2, 2, 1);
-						v_os_prev = rotate_vector_2D(v_os_prev, xs_p_seg(2, n_seg_samples - 2));
+						// Map [chi, U]^T to [Vx, Vy]
+						v_os_prev(0) = xs_p_seg(3, n_seg_samples - 2) * cos(xs_p_seg(2, n_seg_samples - 2));
+						v_os_prev(1) = xs_p_seg(3, n_seg_samples - 2) * sin(xs_p_seg(2, n_seg_samples - 2));
+						
 						v_i_prev = xs_i_p_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
 					}
 					p_os = xs_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
@@ -426,6 +428,14 @@ __device__ void CB_Cost_Functor_2::predict_trajectories_jointly()
 	for(int k = 0; k < n_samples; k++)
 	{
 		t = k * pars->dt;
+
+		// Set trajectory sample k for the ownship prediction obstacle
+		xs_i_p(0) = trajectory[cb_index](0, k);
+		xs_i_p(1) = trajectory[cb_index](1, k);
+		xs_i_p(2) = trajectory[cb_index](3, k) * cos(trajectory[cb_index](2, k));
+		xs_i_p(3) = trajectory[cb_index](3, k) * sin(trajectory[cb_index](2, k));
+		pobstacles[fdata->n_obst].set_trajectory_sample(xs_i_p, k);
+		
 		for (int i = 0; i < fdata->n_obst; i++)
 		{
 			xs_i_p = pobstacles[jp_thread_index + i].get_trajectory_sample(k);

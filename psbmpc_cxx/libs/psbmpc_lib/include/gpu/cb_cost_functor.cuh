@@ -29,8 +29,6 @@ namespace PSBMPC_LIB
 		class Cuda_Obstacle;
 		class Prediction_Obstacle;
 		class CPE;
-		class Ownship;
-		class Obstacle_Ship;
 		class Obstacle_SBMPC;
 		template <typename Parameters> class MPC_Cost;
 

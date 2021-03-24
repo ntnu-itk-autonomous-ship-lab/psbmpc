@@ -47,12 +47,21 @@ Obstacle_Manager::Obstacle_Manager()
 *  Modified :
 *****************************************************************************************/
 void Obstacle_Manager::update_obstacle_status(
-	const Eigen::Matrix<double, 6, 1> &ownship_state						// In: Current time own-ship state
+	const Eigen::VectorXd &ownship_state						// In: Current time own-ship state
 	)
 {
 	int n_obst = data.obstacles.size();
 	data.obstacle_status.resize(13, n_obst);
-	double ID_0, RB_0, COG_0, SOG_0; 
+	double ID_0, RB_0, COG_0, SOG_0, psi_0;
+
+	if (ownship_state.size() == 4)
+	{
+		psi_0 = atan2(ownship_state(3), ownship_state(2));
+	} 
+	else
+	{
+		psi_0 = ownship_state(2);
+	}
 	Eigen::Vector2d d_0i;
 	Eigen::Vector4d xs_i;
 
@@ -69,7 +78,7 @@ void Obstacle_Manager::update_obstacle_status(
 
 		SOG_0 = xs_i.block<2, 1>(2, 0).norm();
 
-		RB_0 = CPU::angle_difference_pmpi(atan2(d_0i(1), d_0i(0)), ownship_state(2));
+		RB_0 = CPU::angle_difference_pmpi(atan2(d_0i(1), d_0i(0)), psi_0);
 
 		data.obstacle_status.col(i) << ID_0, 											// Obstacle ID
 								  SOG_0, 												// Speed over ground of obstacle
