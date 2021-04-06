@@ -22,21 +22,14 @@
 cmake_minimum_required(VERSION 3.17.3)
 project(psbmpc_test LANGUAGES CUDA CXX)
 
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+
 
 # for debug compilation and profiling
-add_compile_options(-Wall -Wextra -fno-omit-frame-pointer -g)
-
-# normal compilation
-#add_compile_options(-Wall -Wextra -Wno-deprecated-copy)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
+#add_compile_options(-fno-omit-frame-pointer -g)
 
 add_subdirectory(libs/psbmpc_lib)
 
 add_subdirectory(src/tests)
 
 target_link_libraries(tester PRIVATE psbmpc_lib)
-
-#message("Your C++ compiler supports these C++ features:")
-#foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
-#  message("${i}")
-#endforeach()

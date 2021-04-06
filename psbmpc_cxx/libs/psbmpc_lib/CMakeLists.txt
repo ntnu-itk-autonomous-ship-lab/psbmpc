@@ -91,7 +91,7 @@ target_link_libraries(psbmpc_lib PRIVATE ${Matlab_LIBRARIES})
 
 # OWNSHIP_TYPE = 0 : Kinematic_Ship | = 1 : Telemetron | = 2 : MilliAmpere(NOT FINISHED YET)
 target_compile_options(psbmpc_lib 
-	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
+	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
 	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
 
 	# debug compilation
