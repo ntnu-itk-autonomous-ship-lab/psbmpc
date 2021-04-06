@@ -18,9 +18,12 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(cse_interfaces REQUIRED)
 
-rosidl_generate_interfaces(${PROJECT_NAME}
+set(msg_files
   "msg/Trajectory2D.msg"
   "msg/Trajectory6D.msg"
   "msg/Vector2.msg"
@@ -29,7 +32,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/KinematicEstimate.msg"
   "msg/KinematicEstimateStamped.msg"
   "msg/Offset.msg"
-  DEPENDENCIES cse_interfaces
+)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  ${msg_files}
+  DEPENDENCIES builtin_interfaces std_msgs geometry_msgs cse_interfaces 
  )
 
 if(BUILD_TESTING)
