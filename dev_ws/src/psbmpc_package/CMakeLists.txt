@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(psbmpc_package LANGUAGES CUDA CXX)
 
-# Default to C99
-if(NOT CMAKE_C_STANDARD)
-  set(CMAKE_C_STANDARD 99)
-endif()
-
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
@@ -22,21 +17,24 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(psbmpc_interfaces REQUIRED)
 
-add_subdirectory(src/libs/psbmpc_lib)
+add_subdirectory(libs/psbmpc_lib)
 
 add_executable(psbmpc_node src/psbmpc_node.cpp)
-
-ament_target_dependencies(psbmpc_node 
-  rclcpp 
-  psbmpc_interfaces)
-
-target_link_libraries(psbmpc_node PRIVATE psbmpc_lib)
+ament_target_dependencies(psbmpc_node rclcpp psbmpc_interfaces)
 
 target_include_directories(psbmpc_node PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/libs>
+  $<INSTALL_INTERFACE:include>
+)
 
-install(TARGETS psbmpc_node
+target_link_libraries(psbmpc_node psbmpc_lib)
+
+if (USE_GPU_PSBMPC)
+	set_property(TARGET psbmpc_node PROPERTY CUDA_ARCHITECTURES 86)
+endif()
+
+install(TARGETS 
+  psbmpc_node
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

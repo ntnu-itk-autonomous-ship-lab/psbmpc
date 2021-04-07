@@ -1,0 +1,5 @@
+source;share/psbmpc_package/local_setup.bash
+source;share/psbmpc_package/local_setup.dsv
+source;share/psbmpc_package/local_setup.ps1
+source;share/psbmpc_package/local_setup.sh
+source;share/psbmpc_package/local_setup.zsh

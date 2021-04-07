@@ -1,0 +1,26 @@
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/shapefile_related/safileio.cpp:77:70:[m[K [01;35m[Kwarning: [m[Kextra ‘[01m[K;[m[K’ [[01;35m[K-Wpedantic[m[K]
+   77 | SHP_CVSID("$Id: safileio.c,v 1.6 2018-06-15 19:56:32 erouault Exp $")[01;35m[K;[m[K
+      |                                                                      [01;35m[K^[m[K
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/mpc_cost_cpu.h:29[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/obstacle_sbmpc_cpu.h:27[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/psbmpc_cpu.h:26[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/psbmpc_cpu.cpp:21[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/psbmpc_cpu.cpp:[m[K In member function ‘[01m[Kvoid PSBMPC_LIB::CPU::PSBMPC::calculate_optimal_offsets(double&, double&, Eigen::Matrix<double, 2, -1>&, double, double, const Eigen::Matrix<double, 2, -1>&, const VectorXd&, const std::vector<boost::geometry::model::polygon<boost::geometry::model::d2::point_xy<double> > >&, PSBMPC_LIB::Obstacle_Data<PSBMPC_LIB::Tracked_Obstacle>&)[m[K’:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/psbmpc_cpu.cpp:332:34:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kpoly[m[K’ [[01;35m[K-Wunused-variable[m[K]
+  332 |  BOOST_FOREACH(polygon_2D const& [01;35m[Kpoly[m[K, polygons)
+      |                                  [01;35m[K^~~~[m[K
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/psbmpc_cpu.cpp:[m[K In member function ‘[01m[Kvoid PSBMPC_LIB::CPU::PSBMPC::predict_trajectories_jointly(PSBMPC_LIB::Obstacle_Data<PSBMPC_LIB::Tracked_Obstacle>&, const std::vector<boost::geometry::model::polygon<boost::geometry::model::d2::point_xy<double> > >&, int, bool)[m[K’:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/psbmpc_cpu.cpp:1441:33:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kpolygons[m[K’ [[01;35m[K-Wunused-parameter[m[K]
+ 1441 |  [01;35m[Kconst std::vector<polygon_2D> &polygons[m[K,     // In: Static obstacles parametrized as polygons
+      |  [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~[m[K
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/psbmpc_cpu.cpp:1442:12:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kn_static_obst[m[K’ [[01;35m[K-Wunused-parameter[m[K]
+ 1442 |  [01;35m[Kconst int n_static_obst[m[K,         // In: Number of polygons/static obstacles
+      |  [01;35m[K~~~~~~~~~~^~~~~~~~~~~~~[m[K
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/src/psbmpc_node.cpp:21[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/include/psbmpc_node.h:24:10:[m[K [01;31m[Kfatal error: [m[Kpsbmpc_interfaces/Trajectory2D.hpp: No such file or directory
+   24 | #include [01;31m[K"psbmpc_interfaces/Trajectory2D.hpp"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+make[2]: *** [CMakeFiles/psbmpc_node.dir/build.make:82: CMakeFiles/psbmpc_node.dir/src/psbmpc_node.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:117: CMakeFiles/psbmpc_node.dir/all] Error 2
+make: *** [Makefile:160: all] Error 2

@@ -1,0 +1,154 @@
+[0.000000] (-) TimerEvent: {}
+[0.000263] (-) JobUnselected: {'identifier': 'psbmpc_interfaces'}
+[0.000327] (psbmpc_package) JobQueued: {'identifier': 'psbmpc_package', 'dependencies': OrderedDict([('psbmpc_interfaces', '/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_interfaces')])}
+[0.000350] (psbmpc_package) JobStarted: {'identifier': 'psbmpc_package'}
+[0.008320] (psbmpc_package) JobProgress: {'identifier': 'psbmpc_package', 'progress': 'cmake'}
+[0.008826] (psbmpc_package) JobProgress: {'identifier': 'psbmpc_package', 'progress': 'build'}
+[0.009380] (psbmpc_package) Command: {'cmd': ['/usr/local/bin/cmake', '--build', '/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package', '--', '-j20', '-l20'], 'cwd': '/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'trymte'), ('LC_TIME', 'nb_NO.UTF-8'), ('SSH_AGENT_PID', '1684'), ('XDG_SESSION_TYPE', 'x11'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_interfaces/lib:/opt/ros/foxy/opt/yaml_cpp_vendor/lib:/opt/ros/foxy/opt/rviz_ogre_vendor/lib:/opt/ros/foxy/lib/x86_64-linux-gnu:/opt/ros/foxy/lib:/opt/qt515/lib/:/usr/local/cuda-11.1/lib64:/usr/local/MATLAB/R2020b/bin/glnxa64:/usr/local/MATLAB/R2020b/sys/os/glnxa64'), ('HOME', '/home/trymte'), ('OLDPWD', '/home/trymte'), ('DESKTOP_SESSION', 'ubuntu'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('LC_MONETARY', 'nb_NO.UTF-8'), ('MANAGERPID', '1506'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('COLORTERM', 'truecolor'), ('_colcon_cd_root', '/home/trymte/ros2_install'), ('IM_CONFIG_PHASE', '1'), ('COLCON_PREFIX_PATH', '/home/trymte/Desktop/thecolavrepo/dev_ws/install'), ('ROS_DISTRO', 'foxy'), ('LOGNAME', 'trymte'), ('JOURNAL_STREAM', '8:52767'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('USERNAME', 'trymte'), ('TERM', 'xterm-256color'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/usr/local/cuda-11.1/bin:/home/trymte/.local/bin:/home/trymte/bin:/opt/ros/foxy/bin:/usr/local/cuda-11.1/bin:/home/trymte/.local/bin:/home/trymte/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin'), ('SESSION_MANAGER', 'local/GPUbeast9000:@/tmp/.ICE-unix/1719,unix/GPUbeast9000:/tmp/.ICE-unix/1719'), ('INVOCATION_ID', '5bdc2a91e9ed42bc85cd3bc686a20049'), ('XDG_MENU_PREFIX', 'gnome-'), ('LC_ADDRESS', 'nb_NO.UTF-8'), ('GNOME_TERMINAL_SCREEN', '/org/gnome/Terminal/screen/150f2ceb_cc36_4c88_930d_d3ba1739d28d'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('DISPLAY', ':1'), ('LANG', 'en_US.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('LC_TELEPHONE', 'nb_NO.UTF-8'), ('XMODIFIERS', '@im=ibus'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('GNOME_TERMINAL_SERVICE', ':1.92'), ('CUDA_DEBUGGER_SOFTWARE_PREEMPTION', '1'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('AMENT_PREFIX_PATH', '/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_interfaces:/opt/ros/foxy'), ('SHELL', '/bin/bash'), ('LC_NAME', 'nb_NO.UTF-8'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('LC_MEASUREMENT', 'nb_NO.UTF-8'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('LC_IDENTIFICATION', 'nb_NO.UTF-8'), ('QT_IM_MODULE', 'ibus'), ('PWD', '/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_interfaces/lib/python3.8/site-packages:/opt/ros/kinetic/lib/python2.7/dist-packages:/opt/ros/kinetic/lib/python2.7/dist-packages:/opt/ros/foxy/lib/python3.8/site-packages'), ('LC_NUMERIC', 'nb_NO.UTF-8'), ('LC_PAPER', 'nb_NO.UTF-8'), ('COLCON', '1'), ('VTE_VERSION', '6003'), ('CMAKE_PREFIX_PATH', '/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_interfaces:/opt/ros/foxy')]), 'shell': False}
+[0.019433] (psbmpc_package) StdoutLine: {'line': b'-- Found ament_cmake: 0.9.8 (/opt/ros/foxy/share/ament_cmake/cmake)\n'}
+[0.034765] (psbmpc_package) StdoutLine: {'line': b'-- Using PYTHON_EXECUTABLE: /usr/bin/python3\n'}
+[0.099464] (-) TimerEvent: {}
+[0.156148] (psbmpc_package) StdoutLine: {'line': b'-- Found rclcpp: 2.3.0 (/opt/ros/foxy/share/rclcpp/cmake)\n'}
+[0.175919] (psbmpc_package) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[0.177745] (psbmpc_package) StdoutLine: {'line': b'-- Found rosidl_adapter: 1.2.0 (/opt/ros/foxy/share/rosidl_adapter/cmake)\n'}
+[0.199555] (-) TimerEvent: {}
+[0.244802] (psbmpc_package) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[0.270883] (psbmpc_package) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 1.0.2 (/opt/ros/foxy/share/rmw_implementation_cmake/cmake)\n'}
+[0.271639] (psbmpc_package) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_fastrtps_cpp' as default\n"}
+[0.299648] (-) TimerEvent: {}
+[0.347569] (psbmpc_package) StdoutLine: {'line': b'-- Found psbmpc_interfaces: 0.0.0 (/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_interfaces/share/psbmpc_interfaces/cmake)\n'}
+[0.399781] (-) TimerEvent: {}
+[0.408077] (psbmpc_package) StdoutLine: {'line': b'-- Found ament_lint_auto: 0.9.6 (/opt/ros/foxy/share/ament_lint_auto/cmake)\n'}
+[0.447174] (psbmpc_package) StdoutLine: {'line': b"-- Added test 'copyright' to check source files copyright and LICENSE\n"}
+[0.454249] (psbmpc_package) StdoutLine: {'line': b"-- Added test 'cppcheck' to perform static code analysis on C / C++ code\n"}
+[0.454428] (psbmpc_package) StdoutLine: {'line': b'-- Configured cppcheck include dirs: /home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/$<BUILD_INTERFACE:/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/include;/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs>\n'}
+[0.454502] (psbmpc_package) StdoutLine: {'line': b'-- Configured cppcheck exclude dirs and/or files: \n'}
+[0.461103] (psbmpc_package) StdoutLine: {'line': b"-- Added test 'cpplint' to check C / C++ code against the Google style\n"}
+[0.461181] (psbmpc_package) StdoutLine: {'line': b'-- Configured cpplint exclude dirs and/or files: \n'}
+[0.463732] (psbmpc_package) StdoutLine: {'line': b"-- Added test 'lint_cmake' to check CMake code style\n"}
+[0.471274] (psbmpc_package) StdoutLine: {'line': b"-- Added test 'uncrustify' to check C / C++ code style\n"}
+[0.471350] (psbmpc_package) StdoutLine: {'line': b'-- Configured uncrustify additional arguments: \n'}
+[0.472425] (psbmpc_package) StdoutLine: {'line': b"-- Added test 'xmllint' to check XML markup files\n"}
+[0.472886] (psbmpc_package) StdoutLine: {'line': b'-- Configuring done\n'}
+[0.482682] (psbmpc_package) StdoutLine: {'line': b'-- Generating done\n'}
+[0.483722] (psbmpc_package) StdoutLine: {'line': b'-- Build files have been written to: /home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package\n'}
+[0.498802] (psbmpc_package) StdoutLine: {'line': b'\x1b[35m\x1b[1mScanning dependencies of target psbmpc_lib\x1b[0m\n'}
+[0.499871] (-) TimerEvent: {}
+[0.511046] (psbmpc_package) StdoutLine: {'line': b'[  5%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/psbmpc_cpu.cpp.o\x1b[0m\n'}
+[0.511230] (psbmpc_package) StdoutLine: {'line': b'[ 10%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/cpe_cpu.cpp.o\x1b[0m\n'}
+[0.511392] (psbmpc_package) StdoutLine: {'line': b'[ 15%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/kinetic_ship_models_cpu.cpp.o\x1b[0m\n'}
+[0.511565] (psbmpc_package) StdoutLine: {'line': b'[ 21%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/kinematic_ship_models_cpu.cpp.o\x1b[0m\n'}
+[0.511733] (psbmpc_package) StdoutLine: {'line': b'[ 26%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/obstacle_sbmpc_cpu.cpp.o\x1b[0m\n'}
+[0.511975] (psbmpc_package) StdoutLine: {'line': b'[ 31%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/prediction_obstacle_cpu.cpp.o\x1b[0m\n'}
+[0.512499] (psbmpc_package) StdoutLine: {'line': b'[ 36%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc_parameters.cpp.o\x1b[0m\n'}
+[0.512771] (psbmpc_package) StdoutLine: {'line': b'[ 42%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc_parameters.cpp.o\x1b[0m\n'}
+[0.512953] (psbmpc_package) StdoutLine: {'line': b'[ 47%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc.cpp.o\x1b[0m\n'}
+[0.513343] (psbmpc_package) StdoutLine: {'line': b'[ 57%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_manager.cpp.o\x1b[0m\n'}
+[0.513471] (psbmpc_package) StdoutLine: {'line': b'[ 57%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/joint_prediction_manager.cpp.o\x1b[0m\n'}
+[0.513585] (psbmpc_package) StdoutLine: {'line': b'[ 63%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/tracked_obstacle.cpp.o\x1b[0m\n'}
+[0.514309] (psbmpc_package) StdoutLine: {'line': b'[ 68%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o\x1b[0m\n'}
+[0.514503] (psbmpc_package) StdoutLine: {'line': b'[ 73%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o\x1b[0m\n'}
+[0.514808] (psbmpc_package) StdoutLine: {'line': b'[ 84%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/shapefile_related/shpopen.cpp.o\x1b[0m\n'}
+[0.514915] (psbmpc_package) StdoutLine: {'line': b'[ 84%] \x1b[32mBuilding CXX object libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/shapefile_related/safileio.cpp.o\x1b[0m\n'}
+[0.516858] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/obstacle_sbmpc_cpu.cpp:21\x1b[m\x1b[K:\n'}
+[0.517091] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.517273] (psbmpc_package) StderrLine: {'line': b'   25 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.517432] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.517533] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.517626] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/psbmpc_cpu.cpp:20\x1b[m\x1b[K:\n'}
+[0.517762] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.517848] (psbmpc_package) StderrLine: {'line': b'   25 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.517933] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.518062] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.518164] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/kinetic_ship_models_cpu.cpp:22\x1b[m\x1b[K:\n'}
+[0.518250] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.518341] (psbmpc_package) StderrLine: {'line': b'   25 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.518486] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.518572] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.518653] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/tracked_obstacle.h:24\x1b[m\x1b[K,\n'}
+[0.518735] (psbmpc_package) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/prediction_obstacle_cpu.h:24\x1b[m\x1b[K,\n'}
+[0.518815] (psbmpc_package) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/prediction_obstacle_cpu.cpp:23\x1b[m\x1b[K:\n'}
+[0.518939] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.519069] (psbmpc_package) StderrLine: {'line': b'   25 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.519201] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.519307] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.519390] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/cpe_cpu.h:26\x1b[m\x1b[K,\n'}
+[0.519471] (psbmpc_package) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/cpe_cpu.cpp:21\x1b[m\x1b[K:\n'}
+[0.519597] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/psbmpc_parameters.h:24:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.519717] (psbmpc_package) StderrLine: {'line': b'   24 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.519808] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.519896] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.520000] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/kinematic_ship_models_cpu.cpp:21\x1b[m\x1b[K:\n'}
+[0.520097] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.520181] (psbmpc_package) StderrLine: {'line': b'   25 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.520262] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.520342] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.520420] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/sbmpc.cpp:20\x1b[m\x1b[K:\n'}
+[0.520499] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.520579] (psbmpc_package) StderrLine: {'line': b'   25 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.520658] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.520735] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.520812] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:82: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/psbmpc_cpu.cpp.o] Error 1\n'}
+[0.520895] (psbmpc_package) StderrLine: {'line': b'make[2]: *** Waiting for unfinished jobs....\n'}
+[0.520973] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:95: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/cpe_cpu.cpp.o] Error 1\n'}
+[0.521052] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:108: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/kinetic_ship_models_cpu.cpp.o] Error 1\n'}
+[0.521146] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:121: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/kinematic_ship_models_cpu.cpp.o] Error 1\n'}
+[0.521225] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:134: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/obstacle_sbmpc_cpu.cpp.o] Error 1\n'}
+[0.521304] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:147: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/prediction_obstacle_cpu.cpp.o] Error 1\n'}
+[0.521382] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:186: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc.cpp.o] Error 1\n'}
+[0.521465] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/psbmpc_parameters.cpp:21\x1b[m\x1b[K:\n'}
+[0.521542] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/psbmpc_parameters.h:24:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.521622] (psbmpc_package) StderrLine: {'line': b'   24 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.521702] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.521779] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.521856] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/tracked_obstacle.h:24\x1b[m\x1b[K,\n'}
+[0.521934] (psbmpc_package) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/tracked_obstacle.cpp:20\x1b[m\x1b[K:\n'}
+[0.522015] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.522095] (psbmpc_package) StderrLine: {'line': b'   25 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.522171] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.522250] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.522327] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:160: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc_parameters.cpp.o] Error 1\n'}
+[0.522405] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:225: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/tracked_obstacle.cpp.o] Error 1\n'}
+[0.522483] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/obstacle_manager.cpp:20\x1b[m\x1b[K:\n'}
+[0.522561] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.522640] (psbmpc_package) StderrLine: {'line': b'   25 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.522718] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.522796] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.522874] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/sbmpc_parameters.h:23\x1b[m\x1b[K,\n'}
+[0.522957] (psbmpc_package) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/sbmpc_parameters.cpp:22\x1b[m\x1b[K:\n'}
+[0.523040] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/psbmpc_parameters.h:24:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.523120] (psbmpc_package) StderrLine: {'line': b'   24 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.523199] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.523276] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.523354] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/mrou.cpp:21\x1b[m\x1b[K:\n'}
+[0.523432] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/mrou.h:24:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.523511] (psbmpc_package) StderrLine: {'line': b'   24 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.523594] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.523673] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.523751] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/kf.cpp:23\x1b[m\x1b[K:\n'}
+[0.523829] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/kf.h:26:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.523912] (psbmpc_package) StderrLine: {'line': b'   26 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.523989] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.524067] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.524144] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:212: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_manager.cpp.o] Error 1\n'}
+[0.524223] (psbmpc_package) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/tracked_obstacle.h:24\x1b[m\x1b[K,\n'}
+[0.524307] (psbmpc_package) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/prediction_obstacle_cpu.h:24\x1b[m\x1b[K,\n'}
+[0.524390] (psbmpc_package) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/joint_prediction_manager.h:25\x1b[m\x1b[K,\n'}
+[0.524474] (psbmpc_package) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/joint_prediction_manager.cpp:19\x1b[m\x1b[K:\n'}
+[0.524559] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:\x1b[m\x1b[K \x1b[01;31m\x1b[Kfatal error: \x1b[m\x1b[KEigen/Dense: No such file or directory\n'}
+[0.524649] (psbmpc_package) StderrLine: {'line': b'   25 | #include \x1b[01;31m\x1b[K"Eigen/Dense"\x1b[m\x1b[K\n'}
+[0.524729] (psbmpc_package) StderrLine: {'line': b'      |          \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[0.524807] (psbmpc_package) StderrLine: {'line': b'compilation terminated.\n'}
+[0.524886] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:173: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc_parameters.cpp.o] Error 1\n'}
+[0.524966] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:238: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o] Error 1\n'}
+[0.525044] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:251: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o] Error 1\n'}
+[0.525131] (psbmpc_package) StderrLine: {'line': b'make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:199: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/joint_prediction_manager.cpp.o] Error 1\n'}
+[0.549127] (psbmpc_package) StderrLine: {'line': b'\x1b[01m\x1b[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/shapefile_related/safileio.cpp:77:70:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kextra \xe2\x80\x98\x1b[01m\x1b[K;\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K-Wpedantic\x1b[m\x1b[K]\n'}
+[0.549289] (psbmpc_package) StderrLine: {'line': b'   77 | SHP_CVSID("$Id: safileio.c,v 1.6 2018-06-15 19:56:32 erouault Exp $")\x1b[01;35m\x1b[K;\x1b[m\x1b[K\n'}
+[0.549386] (psbmpc_package) StderrLine: {'line': b'      |                                                                      \x1b[01;35m\x1b[K^\x1b[m\x1b[K\n'}
+[0.599956] (-) TimerEvent: {}
+[0.634751] (psbmpc_package) StderrLine: {'line': b'make[1]: *** [CMakeFiles/Makefile2:198: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/all] Error 2\n'}
+[0.634986] (psbmpc_package) StderrLine: {'line': b'make: *** [Makefile:160: all] Error 2\n'}
+[0.635563] (psbmpc_package) CommandEnded: {'returncode': 2}
+[0.651787] (psbmpc_package) JobEnded: {'identifier': 'psbmpc_package', 'rc': 2}
+[0.662076] (-) EventReactorShutdown: {}

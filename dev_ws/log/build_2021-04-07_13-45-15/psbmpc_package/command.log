@@ -1,0 +1,2 @@
+Invoking command in '/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/local/bin/cmake --build /home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package -- -j20 -l20
+Invoked command in '/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/local/bin/cmake --build /home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package -- -j20 -l20

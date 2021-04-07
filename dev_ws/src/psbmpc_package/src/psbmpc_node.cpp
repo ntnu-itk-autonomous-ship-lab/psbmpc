@@ -18,14 +18,36 @@
 *
 *****************************************************************************************/
 
-#include <cstdio>
 #include "psbmpc_node.h"
+
+
+#include <cstdio>
+
+
 
 int main(int argc, char ** argv)
 {
-  PSBMPC_Node node;
+  int r = 0;
+  try
+  {
+    rclcpp::init(argc, argv);
 
-  node.run();
+    std::shared_ptr<rclcpp::Node> psbmpc_node_ptr = std::make_shared<rclcpp::Node>("psbmpc_node");
 
-  
+    rclcpp::spin(psbmpc_node_ptr);
+
+    rclcpp::shutdown();
+  }
+  catch(const std::exception& e)
+  {
+    RCLCPP_INFO(rclcpp::get_logger("psbmpc"), e.what());
+    r = 3;
+  } 
+  catch (...) 
+  {
+    RCLCPP_INFO(rclcpp::get_logger("psbmpc"), "Unknown exception caught. ""Exiting...");
+    r = -1;
+  }
+
+  return r; 
 }
