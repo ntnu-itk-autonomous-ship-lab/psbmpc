@@ -45,3 +45,11 @@
 *.7z
 *.dmg
 *.jar
+
+# Folders
+.vscode/*
+dev_ws/build/*
+dev_ws/install/*
+dev_ws/log/*
+psbmpc_cxx/debug/*
+psbmpc_cxx/release/*

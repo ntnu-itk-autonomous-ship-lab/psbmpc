@@ -18,15 +18,15 @@
 *
 *****************************************************************************************/
 
-#include "cpu/cpe_cpu.h"
-#include "cpu/utilities_cpu.h"
+#include "cpu/cpe_cpu.hpp"
+#include "cpu/utilities_cpu.hpp"
 #if OWNSHIP_TYPE == 0
-	#include "cpu/kinematic_ship_models_cpu.h"
+	#include "cpu/kinematic_ship_models_cpu.hpp"
 #else
-	#include "cpu/kinetic_ship_models_cpu.h"
+	#include "cpu/kinetic_ship_models_cpu.hpp"
 #endif
+#include "mrou.hpp"
 
-#include "mrou.h"
 #include <iostream>
 #include <vector>
 #include <memory>

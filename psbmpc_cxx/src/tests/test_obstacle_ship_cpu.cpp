@@ -19,8 +19,8 @@
 *****************************************************************************************/
 
 
-#include "cpu/utilities_cpu.h"
-#include "cpu/kinematic_ship_models_cpu.h"
+#include "cpu/utilities_cpu.hpp"
+#include "cpu/kinematic_ship_models_cpu.hpp"
 #include <iostream>
 #include <memory>
 #include "Eigen/Dense"

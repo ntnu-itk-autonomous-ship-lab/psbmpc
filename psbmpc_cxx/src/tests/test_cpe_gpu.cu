@@ -20,7 +20,7 @@
 
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
-#include "cpu/utilities_cpu.h"
+#include "cpu/utilities_cpu.hpp"
 #include "mrou.h"
 #if OWNSHIP_TYPE == 0
 	#include "gpu/kinematic_ship_models_gpu.cuh"

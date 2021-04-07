@@ -17,8 +17,8 @@
 *
 *****************************************************************************************/
 
-#include "cpu/utilities_cpu.h"
-#include "kf.h"
+#include "cpu/utilities_cpu.hpp"
+#include "kf.hpp"
 #include <iostream>
 #include <vector>
 #include <memory>

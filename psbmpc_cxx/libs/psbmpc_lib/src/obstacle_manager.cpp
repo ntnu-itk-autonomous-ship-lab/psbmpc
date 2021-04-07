@@ -17,8 +17,8 @@
 *
 *****************************************************************************************/
 
-#include "cpu/utilities_cpu.h"
-#include "obstacle_manager.h"
+#include "cpu/utilities_cpu.hpp"
+#include "obstacle_manager.hpp"
 #include <string>
 #include <iostream>
 #include <iomanip>

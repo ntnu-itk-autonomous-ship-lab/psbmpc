@@ -18,7 +18,7 @@
 *
 *****************************************************************************************/
 
-#include "psbmpc_defines.h"
+#include "psbmpc_defines.hpp"
 #include "gpu/cb_cost_functor.cuh"
 #include "gpu/cuda_obstacle.cuh"
 #include "gpu/cpe_gpu.cuh"

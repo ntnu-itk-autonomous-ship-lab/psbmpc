@@ -18,12 +18,12 @@
 *
 *****************************************************************************************/
 
-#include "tracked_obstacle.h"
-#include "sbmpc.h"
+#include "tracked_obstacle.hpp"
+#include "sbmpc.hpp"
 #if OWNSHIP_TYPE == 0
-	#include "cpu/kinematic_ship_models_cpu.h"
+	#include "cpu/kinematic_ship_models_cpu.hpp"
 #else 
-	#include "cpu/kinetic_ship_models_cpu.h"
+	#include "cpu/kinetic_ship_models_cpu.hpp"
 #endif
 #include <iostream>
 #include <vector>

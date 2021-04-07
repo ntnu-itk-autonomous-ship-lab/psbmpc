@@ -17,8 +17,8 @@
 *
 *****************************************************************************************/
 
-#include "tracked_obstacle.h"
-#include "cpu/prediction_obstacle_cpu.h"
+#include "tracked_obstacle.hpp"
+#include "cpu/prediction_obstacle_cpu.hpp"
 #include "assert.h"
 #include <iostream> 
 

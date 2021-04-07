@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "obstacle_manager.h"
+#include "obstacle_manager.hpp"
 #include "kinematic_ship_models_gpu.cuh"
 #include "kinetic_ship_models_gpu.cuh"
 #include "tml.cuh"

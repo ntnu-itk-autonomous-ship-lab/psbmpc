@@ -20,7 +20,7 @@
 
 #include "gpu/psbmpc_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
-#include "cpu/utilities_cpu.h"
+#include "cpu/utilities_cpu.hpp"
 #include "gpu/cuda_obstacle.cuh"
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/obstacle_sbmpc_gpu.cuh"

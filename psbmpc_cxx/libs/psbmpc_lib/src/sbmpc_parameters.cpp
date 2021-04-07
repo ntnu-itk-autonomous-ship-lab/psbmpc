@@ -18,8 +18,8 @@
 *
 *****************************************************************************************/
 
-#include "psbmpc_defines.h"
-#include "sbmpc_parameters.h"
+#include "psbmpc_defines.hpp"
+#include "sbmpc_parameters.hpp"
 #include "Eigen/Dense"
 #include <vector>
 

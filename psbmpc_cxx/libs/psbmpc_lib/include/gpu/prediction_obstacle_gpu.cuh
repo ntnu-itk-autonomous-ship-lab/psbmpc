@@ -21,8 +21,8 @@
 
 #pragma once
 
-#include "../psbmpc_defines.h"
-#include "../tracked_obstacle.h"
+#include "psbmpc_defines.hpp"
+#include "tracked_obstacle.hpp"
 #include "tml.cuh"
 #include <thrust/device_vector.h>
 #include <assert.h>

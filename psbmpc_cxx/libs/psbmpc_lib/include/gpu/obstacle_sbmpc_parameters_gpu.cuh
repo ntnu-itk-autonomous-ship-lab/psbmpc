@@ -20,8 +20,8 @@
 
 #pragma once
 
-#include "../psbmpc_parameters.h"
-#include "../psbmpc_defines.h"
+#include "psbmpc_parameters.hpp"
+#include "psbmpc_defines.hpp"
 #include "tml.cuh"
 
 namespace PSBMPC_LIB

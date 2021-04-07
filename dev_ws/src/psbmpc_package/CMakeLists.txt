@@ -15,22 +15,31 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(psbmpc_interfaces REQUIRED)
 
+set(dependencies 
+  rclcpp
+  nav_msgs
+  psbmpc_interfaces)
+
+# Toggle usage of the CPU(0)/GPU(1) version of PSBMPC
+set(USE_GPU_PSBMPC 1)
 add_subdirectory(libs/psbmpc_lib)
 
 add_executable(psbmpc_node src/psbmpc_node.cpp)
-ament_target_dependencies(psbmpc_node rclcpp psbmpc_interfaces)
 
-target_include_directories(psbmpc_node PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/libs>
-  $<INSTALL_INTERFACE:include>
-)
+ament_target_dependencies(psbmpc_node ${dependencies})
 
 target_link_libraries(psbmpc_node psbmpc_lib)
 
-if (USE_GPU_PSBMPC)
-	set_property(TARGET psbmpc_node PROPERTY CUDA_ARCHITECTURES 86)
+target_include_directories(psbmpc_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+if(USE_GPU_PSBMPC)
+	set_property(TARGET psbmpc_node PROPERTY CUDA_ARCHITECTURES 61 86)
 endif()
 
 install(TARGETS 

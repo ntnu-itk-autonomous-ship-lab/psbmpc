@@ -17,8 +17,8 @@
 *
 *****************************************************************************************/
 
-#include "cpu/utilities_cpu.h"
-#include "cpu/psbmpc_cpu.h"
+#include "cpu/utilities_cpu.hpp"
+#include "cpu/psbmpc_cpu.hpp"
 
 #include <iostream>
 #include <iomanip>

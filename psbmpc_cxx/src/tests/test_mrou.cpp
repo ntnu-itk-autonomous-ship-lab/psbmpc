@@ -19,7 +19,7 @@
 *****************************************************************************************/
 
 #include "cpu/utilities_cpu.h"
-#include "mrou.h"
+#include "mrou.hpp"
 #include <iostream>
 #include <vector>
 #include <memory>

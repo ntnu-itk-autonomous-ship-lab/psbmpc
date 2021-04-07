@@ -17,8 +17,8 @@
 *
 *****************************************************************************************/
 
-#include "cpu/utilities_cpu.h"
-#include "sbmpc.h"
+#include "cpu/utilities_cpu.hpp"
+#include "sbmpc.hpp"
 
 #include <iostream>
 #include "engine.h"
