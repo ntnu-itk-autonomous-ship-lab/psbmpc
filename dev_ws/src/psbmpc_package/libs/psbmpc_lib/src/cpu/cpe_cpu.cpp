@@ -18,8 +18,8 @@
 *
 *****************************************************************************************/
 
-#include "cpu/cpe_cpu.h"
-#include "cpu/utilities_cpu.h"
+#include "cpu/cpe_cpu.hpp"
+#include "cpu/utilities_cpu.hpp"
 #include <iostream>
 
 namespace PSBMPC_LIB

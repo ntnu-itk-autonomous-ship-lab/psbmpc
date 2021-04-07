@@ -20,9 +20,9 @@
 
 #pragma once
 
-#include "psbmpc_parameters.h"
-#include "cpu/cpe_cpu.h"
-#include "cpu/mpc_cost_cpu.h"
+#include "psbmpc_parameters.hpp"
+#include "cpu/cpe_cpu.hpp"
+#include "cpu/mpc_cost_cpu.hpp"
 #include "cb_cost_functor_structures.cuh"
 
 namespace PSBMPC_LIB

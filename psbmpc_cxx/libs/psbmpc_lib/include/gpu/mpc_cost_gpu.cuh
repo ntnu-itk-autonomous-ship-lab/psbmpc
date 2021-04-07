@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "psbmpc_parameters.h"
+#include "psbmpc_parameters.hpp"
 #include "utilities_gpu.cuh"
 #include "cb_cost_functor_structures.cuh"
 #include "cuda_obstacle.cuh"

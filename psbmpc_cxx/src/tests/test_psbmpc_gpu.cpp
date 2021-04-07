@@ -18,7 +18,7 @@
 *
 *****************************************************************************************/
 
-#include "cpu/psbmpc_cpu.h"
+#include "cpu/psbmpc_cpu.hpp"
 #include "gpu/psbmpc_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
 #include <iostream>

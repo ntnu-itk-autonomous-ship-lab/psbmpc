@@ -82,12 +82,9 @@ endif()
 find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-message("Eigen include dir: ${Eigen_INCLUDE_DIRS}")
-
-set(third_party_libs /home/Desktop/thecolavrepo/psbmpc_cxx/)
 target_include_directories(psbmpc_lib PUBLIC 
 	include
-	${Eigen_INCLUDE_DIRS}
+	tryms_matrix
 	${Matlab_INCLUDE_DIRS}
 )
 

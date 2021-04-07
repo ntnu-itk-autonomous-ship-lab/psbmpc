@@ -80,26 +80,19 @@ endif()
 
 
 find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
-find_library(Eigen_PATH Eigen)
-find_file(xoshiro_PATH xoshiro)
-message("Eigen include dir: ${Eigen_PATH}")
-message("xoshiro include dir: ${xoshiro_PATH}")
+find_package(Eigen3 REQUIRED)
 
-set(third_party_libs /home/Desktop/thecolavrepo/psbmpc_cxx/)
 target_include_directories(psbmpc_lib PUBLIC 
 	include
-	${Eigen_PATH}
-	${xoshiro_PATH}
 	${Matlab_INCLUDE_DIRS}
-	
 )
 
-target_link_libraries(psbmpc_lib PRIVATE ${Matlab_LIBRARIES})
+target_link_libraries(psbmpc_lib PRIVATE ${Matlab_LIBRARIES} PUBLIC Eigen3::Eigen)
 
 # OWNSHIP_TYPE = 0 : Kinematic_Ship | = 1 : Telemetron | = 2 : MilliAmpere(NOT FINISHED YET)
 target_compile_options(psbmpc_lib 
-	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
-	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
+	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe="--diag_suppress=2886" -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
 
 	# debug compilation
 	#PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink> 

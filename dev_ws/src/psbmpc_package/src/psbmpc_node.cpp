@@ -18,13 +18,28 @@
 *
 *****************************************************************************************/
 
-#include "psbmpc_node.h"
-
+#include "psbmpc_node.hpp"
 
 #include <cstdio>
 
+/****************************************************************************************
+*  Name     : Class constructor
+*  Function : Initializor
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+PSBMPC_Node::PSBMPC_Node()
+{
+  trajectory_publisher = rclcpp::i
+}
 
 
+/****************************************************************************************
+*  Name     : main
+*  Function : Starts and runs the PSBMPC node
+*  Author   :
+*  Modified :
+*****************************************************************************************/
 int main(int argc, char ** argv)
 {
   int r = 0;

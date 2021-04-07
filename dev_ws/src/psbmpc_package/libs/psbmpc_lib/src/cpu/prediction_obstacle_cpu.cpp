@@ -20,8 +20,8 @@
 *
 *****************************************************************************************/
 
-#include "cpu/prediction_obstacle_cpu.h"
-#include "cpu/obstacle_sbmpc_cpu.h"
+#include "cpu/prediction_obstacle_cpu.hpp"
+#include "cpu/obstacle_sbmpc_cpu.hpp"
 #include <iostream>
 
 namespace PSBMPC_LIB

@@ -20,7 +20,7 @@
 *
 *****************************************************************************************/
 
-#include "kf.h"
+#include "kf.hpp"
 #include <stdexcept>
 
 namespace PSBMPC_LIB

@@ -16,8 +16,8 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 set(msg_files
-  "msg/Trajectory2D.msg"
-  "msg/Trajectory6D.msg"
+  "msg/Trajectory2.msg"
+  "msg/Trajectory6.msg"
   "msg/Reference.msg"
   "msg/Offset.msg"
   "msg/Vector2.msg"

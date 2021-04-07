@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "../psbmpc_defines.h"
+#include "psbmpc_defines.hpp"
 #include "Eigen/Dense"
 #include "tml.cuh"
 #include <thrust/device_vector.h>

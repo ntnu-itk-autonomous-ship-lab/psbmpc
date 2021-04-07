@@ -16,7 +16,7 @@
 *
 *****************************************************************************************/
 
-#include "joint_prediction_manager.h"
+#include "joint_prediction_manager.hpp"
 #include <string>
 #include <iostream>
 #include <iomanip>
