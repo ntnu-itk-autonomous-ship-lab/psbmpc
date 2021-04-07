@@ -1,9 +1,0 @@
-/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_interfaces/rosidl_adapter/psbmpc_interfaces:msg/Trajectory2D.idl
-/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_interfaces/rosidl_adapter/psbmpc_interfaces:msg/Trajectory6D.idl
-/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_interfaces/rosidl_adapter/psbmpc_interfaces:msg/Reference.idl
-/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_interfaces/rosidl_adapter/psbmpc_interfaces:msg/Offset.idl
-/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_interfaces/rosidl_adapter/psbmpc_interfaces:msg/Vector2.idl
-/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_interfaces/rosidl_adapter/psbmpc_interfaces:msg/Covariance2.idl
-/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_interfaces/rosidl_adapter/psbmpc_interfaces:msg/CrossCovariance2.idl
-/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_interfaces/rosidl_adapter/psbmpc_interfaces:msg/KinematicEstimate.idl
-/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_interfaces/rosidl_adapter/psbmpc_interfaces:msg/KinematicEstimateStamped.idl
