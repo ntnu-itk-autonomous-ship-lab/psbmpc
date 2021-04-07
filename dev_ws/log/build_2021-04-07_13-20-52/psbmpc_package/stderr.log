@@ -1,8 +1,0 @@
-In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/src/psbmpc_node.cpp:21[m[K:
-[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/include/psbmpc_node.h:24:10:[m[K [01;31m[Kfatal error: [m[Kpsbmpc_interfaces/Trajectory2D.hpp: No such file or directory
-   24 | #include [01;31m[K"psbmpc_interfaces/Trajectory2D.hpp"[m[K
-      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
-compilation terminated.
-make[2]: *** [CMakeFiles/psbmpc_node.dir/build.make:82: CMakeFiles/psbmpc_node.dir/src/psbmpc_node.cpp.o] Error 1
-make[1]: *** [CMakeFiles/Makefile2:117: CMakeFiles/psbmpc_node.dir/all] Error 2
-make: *** [Makefile:160: all] Error 2
