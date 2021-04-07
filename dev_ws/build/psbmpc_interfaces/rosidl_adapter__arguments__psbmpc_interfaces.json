@@ -1,0 +1,14 @@
+{
+  "package_name": "psbmpc_interfaces",
+  "non_idl_tuples": [
+    "/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_interfaces:msg/Trajectory2D.msg",
+    "/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_interfaces:msg/Trajectory6D.msg",
+    "/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_interfaces:msg/Reference.msg",
+    "/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_interfaces:msg/Offset.msg",
+    "/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_interfaces:msg/Vector2.msg",
+    "/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_interfaces:msg/Covariance2.msg",
+    "/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_interfaces:msg/CrossCovariance2.msg",
+    "/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_interfaces:msg/KinematicEstimate.msg",
+    "/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_interfaces:msg/KinematicEstimateStamped.msg"
+  ]
+}

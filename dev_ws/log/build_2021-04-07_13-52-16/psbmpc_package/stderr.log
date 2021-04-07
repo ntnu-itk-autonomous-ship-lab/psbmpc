@@ -1,0 +1,98 @@
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/psbmpc_cpu.cpp:20[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   25 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/cpe_cpu.h:26[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/cpe_cpu.cpp:21[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/psbmpc_parameters.h:24:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   24 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/obstacle_sbmpc_cpu.cpp:21[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   25 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/kinetic_ship_models_cpu.cpp:22[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   25 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/sbmpc.cpp:20[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   25 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:82: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/psbmpc_cpu.cpp.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:95: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/cpe_cpu.cpp.o] Error 1
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:134: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/obstacle_sbmpc_cpu.cpp.o] Error 1
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/kinematic_ship_models_cpu.cpp:21[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   25 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/sbmpc_parameters.h:23[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/sbmpc_parameters.cpp:22[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/psbmpc_parameters.h:24:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   24 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/psbmpc_parameters.cpp:21[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/psbmpc_parameters.h:24:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   24 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/tracked_obstacle.h:24[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/prediction_obstacle_cpu.h:24[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/cpu/prediction_obstacle_cpu.cpp:23[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   25 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+compilation terminated.
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:108: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/kinetic_ship_models_cpu.cpp.o] Error 1
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:121: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/kinematic_ship_models_cpu.cpp.o] Error 1
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:173: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc_parameters.cpp.o] Error 1
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:147: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/cpu/prediction_obstacle_cpu.cpp.o] Error 1
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:160: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/psbmpc_parameters.cpp.o] Error 1
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/tracked_obstacle.h:24[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/tracked_obstacle.cpp:20[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   25 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:225: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/tracked_obstacle.cpp.o] Error 1
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/obstacle_manager.cpp:20[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   25 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/tracked_obstacle.h:24[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/prediction_obstacle_cpu.h:24[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/joint_prediction_manager.h:25[m[K,
+                 from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/joint_prediction_manager.cpp:19[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/cpu/utilities_cpu.h:25:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   25 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:186: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/sbmpc.cpp.o] Error 1
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/kf.cpp:23[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/kf.h:26:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   26 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:212: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/obstacle_manager.cpp.o] Error 1
+compilation terminated.
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:199: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/joint_prediction_manager.cpp.o] Error 1
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:238: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/kf.cpp.o] Error 1
+In file included from [01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/mrou.cpp:21[m[K:
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/include/mrou.h:24:10:[m[K [01;31m[Kfatal error: [m[KEigen/Dense: No such file or directory
+   24 | #include [01;31m[K"Eigen/Dense"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~[m[K
+compilation terminated.
+make[2]: *** [libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/build.make:251: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/src/mrou.cpp.o] Error 1
+[01m[K/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/psbmpc_lib/src/shapefile_related/safileio.cpp:77:70:[m[K [01;35m[Kwarning: [m[Kextra ‘[01m[K;[m[K’ [[01;35m[K-Wpedantic[m[K]
+   77 | SHP_CVSID("$Id: safileio.c,v 1.6 2018-06-15 19:56:32 erouault Exp $")[01;35m[K;[m[K
+      |                                                                      [01;35m[K^[m[K
+make[1]: *** [CMakeFiles/Makefile2:198: libs/psbmpc_lib/CMakeFiles/psbmpc_lib.dir/all] Error 2
+make: *** [Makefile:160: all] Error 2

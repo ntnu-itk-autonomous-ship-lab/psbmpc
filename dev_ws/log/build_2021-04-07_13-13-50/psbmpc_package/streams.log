@@ -1,0 +1,36 @@
+[0.010s] Invoking command in '/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/local/bin/cmake /home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package -DCMAKE_INSTALL_PREFIX=/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_package
+[0.015s] -- Found ament_cmake: 0.9.8 (/opt/ros/foxy/share/ament_cmake/cmake)
+[0.028s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[0.155s] -- Found rclcpp: 2.3.0 (/opt/ros/foxy/share/rclcpp/cmake)
+[0.175s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.176s] -- Found rosidl_adapter: 1.2.0 (/opt/ros/foxy/share/rosidl_adapter/cmake)
+[0.243s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.269s] -- Found rmw_implementation_cmake: 1.0.2 (/opt/ros/foxy/share/rmw_implementation_cmake/cmake)
+[0.270s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.346s] -- Found psbmpc_interfaces: 0.0.0 (/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_interfaces/share/psbmpc_interfaces/cmake)
+[0.406s] CMake Error at CMakeLists.txt:27 (target_link_libraries):
+[0.406s]   The plain signature for target_link_libraries has already been used with
+[0.406s]   the target "psbmpc_node".  All uses of target_link_libraries with a target
+[0.407s]   must be either all-keyword or all-plain.
+[0.407s] 
+[0.407s]   The uses of the plain signature are here:
+[0.407s] 
+[0.407s]    * /opt/ros/foxy/share/ament_cmake_target_dependencies/cmake/ament_target_dependencies.cmake:145 (target_link_libraries)
+[0.407s] 
+[0.407s] 
+[0.407s] 
+[0.407s] -- Found ament_lint_auto: 0.9.6 (/opt/ros/foxy/share/ament_lint_auto/cmake)
+[0.447s] -- Added test 'copyright' to check source files copyright and LICENSE
+[0.455s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[0.455s] -- Configured cppcheck include dirs: $<BUILD_INTERFACE:/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/include>;/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/
+[0.455s] -- Configured cppcheck exclude dirs and/or files: 
+[0.462s] -- Added test 'cpplint' to check C / C++ code against the Google style
+[0.462s] -- Configured cpplint exclude dirs and/or files: 
+[0.464s] -- Added test 'lint_cmake' to check CMake code style
+[0.472s] -- Added test 'uncrustify' to check C / C++ code style
+[0.472s] -- Configured uncrustify additional arguments: 
+[0.473s] -- Added test 'xmllint' to check XML markup files
+[0.474s] -- Configuring incomplete, errors occurred!
+[0.474s] See also "/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package/CMakeFiles/CMakeOutput.log".
+[0.474s] See also "/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package/CMakeFiles/CMakeError.log".
+[0.477s] Invoked command in '/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package' returned '1': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/local/bin/cmake /home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package -DCMAKE_INSTALL_PREFIX=/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_package

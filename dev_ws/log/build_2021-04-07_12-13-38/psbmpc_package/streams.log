@@ -1,0 +1,61 @@
+[0.009s] Invoking command in '/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/local/bin/cmake /home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package -DCMAKE_INSTALL_PREFIX=/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_package
+[0.384s] -- The CUDA compiler identification is NVIDIA 11.1.105
+[0.416s] -- The CXX compiler identification is GNU 9.3.0
+[0.420s] -- Detecting CUDA compiler ABI info
+[0.753s] -- Detecting CUDA compiler ABI info - done
+[0.766s] -- Check for working CUDA compiler: /usr/local/cuda-11.1/bin/nvcc - skipped
+[0.766s] -- Detecting CUDA compile features
+[0.766s] -- Detecting CUDA compile features - done
+[0.768s] -- Detecting CXX compiler ABI info
+[0.805s] -- Detecting CXX compiler ABI info - done
+[0.811s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.811s] -- Detecting CXX compile features
+[0.811s] -- Detecting CXX compile features - done
+[0.813s] -- Found ament_cmake: 0.9.8 (/opt/ros/foxy/share/ament_cmake/cmake)
+[0.828s] -- Found PythonInterp: /usr/bin/python3 (found suitable version "3.8.5", minimum required is "3") 
+[0.828s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[0.959s] -- Found rclcpp: 2.3.0 (/opt/ros/foxy/share/rclcpp/cmake)
+[0.987s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.991s] -- Found rosidl_adapter: 1.2.0 (/opt/ros/foxy/share/rosidl_adapter/cmake)
+[1.030s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "1.1.1f")  
+[1.047s] -- Found FastRTPS: /opt/ros/foxy/include  
+[1.090s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.124s] -- Found rmw_implementation_cmake: 1.0.2 (/opt/ros/foxy/share/rmw_implementation_cmake/cmake)
+[1.125s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.126s] -- Looking for C++ include pthread.h
+[1.165s] -- Looking for C++ include pthread.h - found
+[1.165s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[1.205s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+[1.205s] -- Looking for pthread_create in pthreads
+[1.233s] -- Looking for pthread_create in pthreads - not found
+[1.233s] -- Looking for pthread_create in pthread
+[1.270s] -- Looking for pthread_create in pthread - found
+[1.271s] -- Found Threads: TRUE  
+[1.358s] -- Found psbmpc_interfaces: 0.0.0 (/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_interfaces/share/psbmpc_interfaces/cmake)
+[4.695s] -- Found Matlab: /usr/local/MATLAB/R2020b/extern/include (found version "9.9") found components: MX_LIBRARY ENG_LIBRARY 
+[4.696s] CMake Error at CMakeLists.txt:27 (target_link_libraries):
+[4.696s]   The plain signature for target_link_libraries has already been used with
+[4.696s]   the target "psbmpc_node".  All uses of target_link_libraries with a target
+[4.696s]   must be either all-keyword or all-plain.
+[4.696s] 
+[4.696s]   The uses of the plain signature are here:
+[4.696s] 
+[4.696s]    * /opt/ros/foxy/share/ament_cmake_target_dependencies/cmake/ament_target_dependencies.cmake:145 (target_link_libraries)
+[4.696s] 
+[4.696s] 
+[4.696s] 
+[4.696s] -- Found ament_lint_auto: 0.9.6 (/opt/ros/foxy/share/ament_lint_auto/cmake)
+[4.740s] -- Added test 'copyright' to check source files copyright and LICENSE
+[4.747s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[4.748s] -- Configured cppcheck include dirs: $<BUILD_INTERFACE:/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/include>;/home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package/libs/
+[4.748s] -- Configured cppcheck exclude dirs and/or files: 
+[4.754s] -- Added test 'cpplint' to check C / C++ code against the Google style
+[4.754s] -- Configured cpplint exclude dirs and/or files: 
+[4.757s] -- Added test 'lint_cmake' to check CMake code style
+[4.765s] -- Added test 'uncrustify' to check C / C++ code style
+[4.765s] -- Configured uncrustify additional arguments: 
+[4.766s] -- Added test 'xmllint' to check XML markup files
+[4.766s] -- Configuring incomplete, errors occurred!
+[4.766s] See also "/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package/CMakeFiles/CMakeOutput.log".
+[4.767s] See also "/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package/CMakeFiles/CMakeError.log".
+[4.772s] Invoked command in '/home/trymte/Desktop/thecolavrepo/dev_ws/build/psbmpc_package' returned '1': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/local/bin/cmake /home/trymte/Desktop/thecolavrepo/dev_ws/src/psbmpc_package -DCMAKE_INSTALL_PREFIX=/home/trymte/Desktop/thecolavrepo/dev_ws/install/psbmpc_package
