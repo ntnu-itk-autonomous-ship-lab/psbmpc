@@ -30,7 +30,7 @@
 *****************************************************************************************/
 PSBMPC_Node::PSBMPC_Node()
 {
-  trajectory_publisher = rclcpp::i
+  trajectory_publisher = rclcpp::create_publisher(&this, );
 }
 
 

@@ -18,10 +18,11 @@
 # Modified 	: 
 #======================================================================
 
+find_package(Eigen3 REQUIRED)
 #TODO: Merge the gpu/cpu test files for gpu/cpu specific classes together
 
 # Test files for use with CPU-version of PSBMPC
-add_executable(tester test_psbmpc_cpu.cpp)
+#add_executable(tester test_psbmpc_cpu.cpp)
 #add_executable(tester test_ownship_cpu.cpp)
 #add_executable(tester test_obstacle_ship_cpu.cpp)
 #add_executable(tester test_obstacle_cpu.cpp)
@@ -43,11 +44,12 @@ add_executable(tester test_psbmpc_cpu.cpp)
 #add_executable(tester test_tml.cu)
 #add_executable(tester test_tml_pdmatrix.cu)
 
-#add_executable(tester paper_simulations/test_psbmpc_psim.cpp)
+add_executable(tester paper_simulations/test_psbmpc_psim.cpp)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_SOURCE_DIR}/libs/
+	${EIGEN3_INCLUDE_DIRS}
 )
 
 if (USE_GPU_PSBMPC)

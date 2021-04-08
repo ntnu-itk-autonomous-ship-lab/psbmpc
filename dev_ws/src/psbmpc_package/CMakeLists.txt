@@ -38,10 +38,6 @@ target_include_directories(psbmpc_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-if(USE_GPU_PSBMPC)
-	set_property(TARGET psbmpc_node PROPERTY CUDA_ARCHITECTURES 61 86)
-endif()
-
 install(TARGETS 
   psbmpc_node
   DESTINATION lib/${PROJECT_NAME})

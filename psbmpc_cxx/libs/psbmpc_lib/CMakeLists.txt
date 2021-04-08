@@ -86,21 +86,22 @@ target_include_directories(psbmpc_lib PUBLIC
 	include
 	tryms_matrix
 	${Matlab_INCLUDE_DIRS}
+	${EIGEN3_INCLUDE_DIRS}
 )
 
 target_link_libraries(psbmpc_lib PRIVATE ${Matlab_LIBRARIES} PUBLIC Eigen3::Eigen)
 
 # OWNSHIP_TYPE = 0 : Kinematic_Ship | = 1 : Telemetron | = 2 : MilliAmpere(NOT FINISHED YET)
-target_compile_options(psbmpc_lib 
-	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
-	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe="--diag_suppress=2886" -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
+# Common build commands
+target_compile_options(psbmpc_lib
+	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=1>
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=1 -Xlinker -dlink>)
 
-	# debug compilation
-	#PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -G -Xcompiler -g -lineinfo -Wall -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink> 
-
-	# release compilation
-	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -Wall -Wno-pedantic -dc --expt-relaxed-constexpr -Xlinker -dlink> 
-)
+if(CMAKE_BUILD_TYPE EQUAL release)
+	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -j4>)
+else()
+	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -g -lineinfo -Wall -Wno-pedantic>)
+endif()
 
 # Use these set commands when building the GPU version
 set_property(TARGET psbmpc_lib PROPERTY CUDA_ARCHITECTURES 61 86)
