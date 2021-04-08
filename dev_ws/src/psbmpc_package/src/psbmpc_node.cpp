@@ -28,9 +28,13 @@
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-PSBMPC_Node::PSBMPC_Node()
+PSBMPC_Node::PSBMPC_Node(
+  const std::string &node_name,
+  const rclcpp::NodeOptions &options
+  )
+  : Node(node_name, options)
 {
-  trajectory_publisher = rclcpp::create_publisher(&this, );
+  trajectory_publisher = this->create_publisher<psbmpc_interfaces::msg::Trajectory6>("guidance/reference_trajectory", rclcpp::SystemDefaultsQoS());
 }
 
 
