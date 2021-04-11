@@ -47,7 +47,7 @@ __host__ __device__ Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
 	e_int = 0;
 	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
 	R_a = 20.0; 			    // WP acceptance radius (20.0)
-	LOS_LD = 250.0; 			// LOS lookahead distance (100.0) 
+	LOS_LD = 450.0; 			// LOS lookahead distance (100.0) 
 	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;

@@ -142,7 +142,7 @@ namespace PSBMPC_LIB
 			TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
 			unsigned int i, ps, jp_thread_index;
 
-			int n_samples, n_seg_samples;
+			int n_samples, n_seg_samples, p_step;
 
 			float max_cost_ps, cost_ps, P_c_i;
 

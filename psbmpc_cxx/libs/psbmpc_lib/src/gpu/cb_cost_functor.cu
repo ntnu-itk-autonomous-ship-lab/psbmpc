@@ -177,8 +177,9 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 	// 2 : Max cost calculation considering own-ship control behaviour <cb_index> and prediction scenario ps for obstacle i
 	d_safe_i = pars->d_safe + 0.5 * (fdata->ownship_length + obstacles[i].get_length());
 
+	p_step = 2;
 	v_os_prev.set_zero(); v_i_prev.set_zero();
-	for (int k = 0; k < n_samples; k++)
+	for (int k = 0; k < n_samples; k += p_step)
 	{	
 		//==========================================================================================
 		// 2.0 : Extract states and information relevant for cost evaluation at sample k. 
@@ -235,36 +236,34 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 		printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(4, n_seg_samples - 1), P_i_p(5, n_seg_samples - 1), P_i_p(6, n_seg_samples - 1), P_i_p(7, n_seg_samples - 1));
 		printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(8, n_seg_samples - 1), P_i_p(9, n_seg_samples - 1), P_i_p(10, n_seg_samples - 1), P_i_p(11, n_seg_samples - 1));
 		printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(12, n_seg_samples - 1), P_i_p(13, n_seg_samples - 1), P_i_p(14, n_seg_samples - 1), P_i_p(15, n_seg_samples - 1)); */
-		if (true)//fmod(k, 2) == 0)
+		
+		switch(pars->cpe_method)
 		{
-			switch(pars->cpe_method)
-			{
-				case CE :	
-					if (k > 0)
-					{
-						// Map [chi, U]^T to [Vx, Vy]
-						v_os_prev(0) = xs_p_seg(3, n_seg_samples - 2) * cos(xs_p_seg(2, n_seg_samples - 2));
-						v_os_prev(1) = xs_p_seg(3, n_seg_samples - 2) * sin(xs_p_seg(2, n_seg_samples - 2));
-						
-						v_i_prev = xs_i_p_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
-					}
-					p_os = xs_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
-					p_i = xs_i_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+			case CE :	
+				if (k > 0)
+				{
+					// Map [chi, U]^T to [Vx, Vy]
+					v_os_prev(0) = xs_p_seg(3, n_seg_samples - 2) * cos(xs_p_seg(2, n_seg_samples - 2));
+					v_os_prev(1) = xs_p_seg(3, n_seg_samples - 2) * sin(xs_p_seg(2, n_seg_samples - 2));
+					
+					v_i_prev = xs_i_p_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
+				}
+				p_os = xs_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+				p_i = xs_i_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 
-					P_i_2D = reshape<16, 1, 4, 4>(P_i_p_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
+				P_i_2D = reshape<16, 1, 4, 4>(P_i_p_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-					P_c_i = cpe[thread_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt);
-					break;
-				case MCSKF4D :                
-					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
-					{
-						P_c_i = cpe[thread_index].MCSKF4D_estimate(xs_p_seg, xs_i_p_seg, P_i_p_seg);						
-					}	
-					break;
-				default :
-					// Throw
-					break;
-			}
+				P_c_i = cpe[thread_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt);
+				break;
+			case MCSKF4D :                
+				if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
+				{
+					P_c_i = cpe[thread_index].MCSKF4D_estimate(xs_p_seg, xs_i_p_seg, P_i_p_seg);						
+				}	
+				break;
+			default :
+				// Throw
+				break;
 		}
 
 		//==========================================================================================
