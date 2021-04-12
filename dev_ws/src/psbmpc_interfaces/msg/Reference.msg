@@ -1,5 +1,7 @@
 # Reference at a given time step from the PSBMPC
-# configuration = [x, y, psi]^T, velocity = [u, v, r]^T
+# north, east, course (over ground), speed (over ground)
 
-geometry_msgs/Vector3 configuration
-geometry_msgs/Vector3 velocity
+float64 north
+float64 east
+float64 course
+float64 speed
