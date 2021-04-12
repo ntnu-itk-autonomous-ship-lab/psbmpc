@@ -37,23 +37,29 @@
 class PSBMPC_Node : public rclcpp::Node
 {
 private:
+  double u_opt, chi_opt;
+  Eigen::MatrixXd predicted_trajectory;
 
-  nav_msgs::msg::Odometry ownship_state;
+  double u_d, chi_d;
+  Eigen::VectorXd ownship_state;
 
-  psbmpc_interfaces::msg::Trajectory2 waypoints;
-
-  psbmpc_interfaces::msg::Trajectory6 predicted_trajectory;
+  Eigen::MatrixXd waypoints;
 
   std::unique_ptr<psbmpc_interfaces::msg::KinematicEstimate> obstacles;
+  Eigen::MatrixXd obstacle_states, obstacle_covariances;
 
   std::shared_ptr<rclcpp::Subscription<nav_msgs::msg::Odometry>> state_subscription;
   std::shared_ptr<rclcpp::Subscription<psbmpc_interfaces::msg::Trajectory2>> waypoints_subscription;
+  
+  //std::shared_ptr<rclcpp::Publisher<psbmpc_interfaces::msg::Offset>> trajectory_publisher;
   std::shared_ptr<rclcpp::Publisher<psbmpc_interfaces::msg::Trajectory6>> trajectory_publisher;
 
-  //psbmpc_interfaces::Offset offset;
-  //std::shared_ptr<rclcpp::Publisher<psbmpc_interfaces::msg::Offset>> trajectory_publisher;
+  rclcpp::TimerBase::SharedPtr timer;
 
+  PSBMPC_LIB::Obstacle_Manager obstacle_manager;
   PSBMPC_LIB::GPU::PSBMPC psbmpc;
+
+  publish_reference_trajectory();
 
 public:
 
