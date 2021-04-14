@@ -54,21 +54,15 @@ void Obstacle_Manager::update_obstacle_status(
 	data.obstacle_status.resize(13, n_obst);
 	double ID_0, RB_0, COG_0, SOG_0, psi_0;
 
-	if (ownship_state.size() == 4)
-	{
-		psi_0 = atan2(ownship_state(3), ownship_state(2));
-	} 
-	else
-	{
-		psi_0 = ownship_state(2);
-	}
+	if (ownship_state.size() == 4)	{ psi_0 = ownship_state(2); } 
+	else							{ psi_0 = ownship_state(2); }
 	Eigen::Vector2d d_0i;
 	Eigen::Vector4d xs_i;
 
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	for(int i = 0; i < n_obst; i++)
 	{
-		xs_i = data.obstacles[i].kf->get_state();
+		xs_i = data.obstacles[i].kf.get_state();
 
 		ID_0 = data.obstacles[i].get_ID();
 		

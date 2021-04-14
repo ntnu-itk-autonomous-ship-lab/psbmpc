@@ -100,7 +100,7 @@ target_compile_options(psbmpc_lib
 if(CMAKE_BUILD_TYPE EQUAL release)
 	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -j4>)
 else()
-	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -g -lineinfo -Wall -Wno-pedantic>)
+	#target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -g -lineinfo -Wall -Wno-pedantic>)
 endif()
 
 # Use these set commands when building the GPU version

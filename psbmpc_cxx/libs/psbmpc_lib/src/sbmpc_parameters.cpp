@@ -275,7 +275,7 @@ void SBMPC_Parameters::initialize_pars(
 	if (!is_obstacle_sbmpc) // Tuning for SB-MPC
 	{
 		n_cbs = 1;
-		n_M = 1;
+		n_M = 2;
 
 		chi_offsets.resize(n_M);
 		u_offsets.resize(n_M);
@@ -305,7 +305,8 @@ void SBMPC_Parameters::initialize_pars(
 				//chi_offsets[M] << 0.0;
 				//chi_offsets[M] << -30.0, 0.0, 30.0;
 				//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
-				chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
 				//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 				chi_offsets[M] *= DEG2RAD;
 			}
@@ -325,25 +326,25 @@ void SBMPC_Parameters::initialize_pars(
 			dt = 0.5; 
 			p_step = 10;
 		}
-		t_ts = 50;
+		t_ts = 35;
 
 		d_init = 1500;								 
 		d_close = 1000;
 		d_safe = 50; 							
-		K_coll = 1.0;		  					
+		K_coll = 1.5;		  					
 		phi_AH = 68.5 * DEG2RAD;		 	
 		phi_OT = 68.5 * DEG2RAD;		 		 
 		phi_HO = 22.5 * DEG2RAD;		 		
 		phi_CR = 68.5 * DEG2RAD;	     		
-		kappa = 0.0;		  					
-		kappa_TC = 20.0;						 
-		K_u = 4;		   						 
+		kappa = 8.0;		  					
+		kappa_TC = 0.0;						 
+		K_u = 8;		   						 
 		K_du = 2.5;		    					
 		K_chi_strb = 1.3;	  					
 		K_chi_port =  1.6;	  					
 		K_dchi_strb = 0.9;	 			
 		K_dchi_port = 1.2;
-		K_sgn = 5;
+		K_sgn = 8;
 		T_sgn = 4 * t_ts;	  					
 		G = 1e3;		         					 
 		q = 4.0;
@@ -382,7 +383,8 @@ void SBMPC_Parameters::initialize_pars(
 				//chi_offsets[M] << 0.0;
 				//chi_offsets[M] << -30.0, 0.0, 30.0;
 				//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
-				chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
 				//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 				chi_offsets[M] *= DEG2RAD;
 			}
@@ -392,7 +394,7 @@ void SBMPC_Parameters::initialize_pars(
 		prediction_method = ERK1;
 		guidance_method = LOS;
 
-		T = 150.0;
+		T = 120.0;
 		dt = 5.0;
 		T_static = 60.0;
 
@@ -413,7 +415,7 @@ void SBMPC_Parameters::initialize_pars(
 		phi_HO = 22.5 * DEG2RAD;		 		
 		phi_CR = 68.5 * DEG2RAD;	     		
 		kappa = 8.0;		  					
-		kappa_TC = 10.0;						 
+		kappa_TC = 0.0;						 
 		K_u = 4;		   						 
 		K_du = 2.5;		    					
 		K_chi_strb = 1.3;	  					

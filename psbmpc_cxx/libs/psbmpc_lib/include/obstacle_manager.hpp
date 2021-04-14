@@ -235,7 +235,7 @@ namespace PSBMPC_LIB
 					data.obstacles[j].increment_duration_lost(mpc_pars.dt * mpc_pars.p_step);
 
 					if (data.obstacles[j].get_duration_tracked() >= T_tracked_limit 	&&
-						(data.obstacles[j].get_duration_lost() < T_lost_limit || data.obstacles[j].kf->get_covariance()(0,0) <= 5.0))
+						(data.obstacles[j].get_duration_lost() < T_lost_limit || data.obstacles[j].kf.get_covariance()(0,0) <= 5.0))
 					{
 						data.obstacles[j].update(obstacle_filter_on, mpc_pars.dt);
 
@@ -270,9 +270,9 @@ namespace PSBMPC_LIB
 			double psi_A, psi_B, d_AB;
 			if (ownship_state.size() == 4)
 			{
-				v_A(0) = ownship_state(2);
-				v_A(1) = ownship_state(3);
-				psi_A = atan2(v_A(1), v_A(0));
+				v_A(0) = ownship_state(3) * cos(ownship_state(2));
+				v_A(1) = ownship_state(3) * sin(ownship_state(2));
+				psi_A = ownship_state(2);
 			}
 			else
 			{
@@ -293,12 +293,12 @@ namespace PSBMPC_LIB
 			//std::cout << A << std::endl;
 			for (int i = 0; i < n_obst; i++)
 			{
-				v_B(0) = data.obstacles[i].kf->get_state()(2);
-				v_B(1) = data.obstacles[i].kf->get_state()(3);
+				v_B(0) = data.obstacles[i].kf.get_state()(2);
+				v_B(1) = data.obstacles[i].kf.get_state()(3);
 				psi_B = atan2(v_B(1), v_B(0));
 
-				L_AB(0) = data.obstacles[i].kf->get_state()(0) - ownship_state(0);
-				L_AB(1) = data.obstacles[i].kf->get_state()(1) - ownship_state(1);
+				L_AB(0) = data.obstacles[i].kf.get_state()(0) - ownship_state(0);
+				L_AB(1) = data.obstacles[i].kf.get_state()(1) - ownship_state(1);
 				d_AB = L_AB.norm();
 
 				// Decrease the distance between the vessels by their respective max dimension

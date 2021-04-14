@@ -588,8 +588,8 @@ bool PSBMPC::determine_colav_active(
 	Eigen::Vector2d d_0i;
 	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
-		d_0i(0) = data.obstacles[i].kf->get_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].kf->get_state()(1) - xs(1);
+		d_0i(0) = data.obstacles[i].kf.get_state()(0) - xs(0);
+		d_0i(1) = data.obstacles[i].kf.get_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 
 		// If all obstacles are passed, even though inside colav range,
@@ -688,8 +688,20 @@ void PSBMPC::initialize_prediction(
 	Eigen::VectorXd ps_maneuver_times_i;
 
 	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
-	Eigen::Vector2d p_cpa, d_AB, v_0;
-	Eigen::Vector4d xs_i_0;
+	Eigen::Vector2d p_cpa, v_os_0;
+	Eigen::Vector4d xs_i_0, xs_0;
+	if (trajectory.rows() == 4)
+	{
+		v_os_0(0) = trajectory(3, 0) * cos(trajectory(2, 0));
+		v_os_0(1) = trajectory(3, 0) * sin(trajectory(2, 0));
+	}
+	else
+	{
+		v_os_0(0) = trajectory(3, 0); v_os_0(1) = trajectory(4, 0);
+		v_os_0 = rotate_vector_2D(v_os_0, trajectory(2, 0));
+	}
+	xs_0.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, 0);
+	xs_0(2) = v_os_0(0); xs_0(3) = v_os_0(1);
 	Eigen::Matrix<double, 2, -1> waypoints_i;
 
 	// only use intelligent prediction n_a > 1 intentions are considered
@@ -699,15 +711,16 @@ void PSBMPC::initialize_prediction(
 	{
 		n_ps[i] = 1;
 		
-		xs_i_0 = data.obstacles[i].kf->get_state();
+		xs_i_0 = data.obstacles[i].kf.get_state();
 		/* std::cout << "xs_i_0 = " << xs_i_0.transpose() << std::endl;
-		std::cout << "xs_0 = " << trajectory.col(0).transpose() << std::endl; */
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), xs_i_0);
+		std::cout << "xs_0 = " << xs_0.transpose() << std::endl; */
+		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
 		/* std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
 		std::cout << "t_cpa(i) = " << t_cpa(i) << std::endl;
 		std::cout << "d_cpa(i) = " << d_cpa(i)<< std::endl; */
 		if (n_a == 1 || data.IP_0[i])
 		{
+			/* std::cout << "Obstacle i = " << i << "is passed => 1 PS only" << std::endl; */
 			ps_ordering_i.resize(1);
 			ps_ordering_i[0] = KCC;			
 			ps_course_changes_i.resize(1);
@@ -818,6 +831,8 @@ void PSBMPC::set_up_independent_obstacle_prediction(
 	}
 	n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
 
+	//std::cout << "obst i = " << i << " | t_cpa = " << t_cpa_i << "n_turns = " << n_turns << std::endl;
+
 	ps_ordering_i.resize(n_ps[i]);
 	ps_ordering_i[0] = KCC;
 	ps_maneuver_times_i.resize(n_ps[i]);
@@ -897,7 +912,7 @@ void PSBMPC::prune_obstacle_scenarios(
 
 		calculate_ps_collision_risks(R_c_i, risk_sorted_ps_indices_i, C_i, P_c_i_ps, data, i);
 
-		std::cout << risk_sorted_ps_indices_i.transpose() << std::endl;
+		//std::cout << risk_sorted_ps_indices_i.transpose() << std::endl;
 
 		// Keep only the n_r prediction scenarios with the highest collision risk
 		if (n_ps[i] < pars.n_r)
@@ -911,7 +926,7 @@ void PSBMPC::prune_obstacle_scenarios(
 
 		// Sort indices of ps that are to be kept
 		std::sort(kept_ps_indices_i.data(), kept_ps_indices_i.data() + kept_ps_indices_i.size());
-		std::cout << kept_ps_indices_i.transpose() << std::endl;
+		//std::cout << kept_ps_indices_i.transpose() << std::endl;
 
 		// For n_a > 1: Joint prediction/intelligent scenario is the last one in the original set
 		if (use_joint_prediction && (kept_ps_indices_i(kept_ps_indices_i.size() - 1) == n_ps[i] - 1))

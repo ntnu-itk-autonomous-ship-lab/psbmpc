@@ -47,8 +47,8 @@
 *.jar
 
 # Folders
-dev_ws/build/*
-dev_ws/install/*
-dev_ws/log/*
+ros2_ws/build/*
+ros2_ws/install/*
+ros2_ws/log/*
 psbmpc_cxx/debug/*
 psbmpc_cxx/release/*

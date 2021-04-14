@@ -45,6 +45,7 @@ find_package(Eigen3 REQUIRED)
 #add_executable(tester test_tml_pdmatrix.cu)
 
 add_executable(tester paper_simulations/test_psbmpc_psim.cpp)
+#add_executable(tester paper_simulations/test_psbmpc_psim_intelligent.cpp)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include
