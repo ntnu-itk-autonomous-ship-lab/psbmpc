@@ -355,6 +355,8 @@ namespace PSBMPC_LIB
 			TML::Vector2f v_A, v_B, p_A, p_B, L_AB, p_B_cpa;
 			p_A(0) = xs_A(0); p_A(1) = xs_A(1);
 			p_B(0) = xs_B(0); p_B(1) = xs_B(1);
+
+			// Either xs = [x, y, psi, u, v, r]^T or [x, y, Vx, Vy]
 			if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
 			else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
 			
@@ -393,6 +395,8 @@ namespace PSBMPC_LIB
 			TML::Vector2f v_A, v_B, p_A, p_B, L_AB, p_B_cpa;
 			p_A(0) = xs_A(0); p_A(1) = xs_A(1);
 			p_B(0) = xs_B(0); p_B(1) = xs_B(1);
+
+			// Either xs = [x, y, psi, u, v, r]^T or [x, y, Vx, Vy]
 			if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
 			else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
 			

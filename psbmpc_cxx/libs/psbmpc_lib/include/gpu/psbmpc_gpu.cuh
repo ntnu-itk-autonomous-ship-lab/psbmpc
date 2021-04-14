@@ -187,8 +187,6 @@ namespace PSBMPC_LIB
 				const Eigen::Matrix<double, 4, -1> &static_obstacles,
 				const Obstacle_Data<Tracked_Obstacle> &data);
 
-			void clear_temporary_device_memory();
-
 		public:
 
 			PSBMPC_Parameters pars;

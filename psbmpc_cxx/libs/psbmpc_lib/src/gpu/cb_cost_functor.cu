@@ -165,6 +165,7 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 
 	//======================================================================================================================
 	// 1.1: Joint prediction with the current control behaviour if the obstacle prediction scenario is the intelligent one
+	// NOT FINISHED YET
 	if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
 	{
 		printf("here jp1\n");
@@ -177,7 +178,7 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 	// 2 : Max cost calculation considering own-ship control behaviour <cb_index> and prediction scenario ps for obstacle i
 	d_safe_i = pars->d_safe + 0.5 * (fdata->ownship_length + obstacles[i].get_length());
 
-	p_step = 2;
+	p_step = 1;
 	v_os_prev.set_zero(); v_i_prev.set_zero();
 	for (int k = 0; k < n_samples; k += p_step)
 	{	

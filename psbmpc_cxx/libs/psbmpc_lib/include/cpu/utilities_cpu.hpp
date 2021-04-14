@@ -229,6 +229,8 @@ namespace PSBMPC_LIB
 			double psi_A(0.0), psi_B(0.0);
 			Eigen::Vector2d v_A, v_B, p_A, p_B, L_AB;
 			p_A = xs_A.block<2, 1>(0, 0); p_B = xs_B.block<2, 1>(0, 0);
+
+			// Either xs = [x, y, psi, u, v, r]^T or [x, y, Vx, Vy]
 			if (xs_A.size() == 6) { psi_A = xs_A(2); v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
 			else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
 			

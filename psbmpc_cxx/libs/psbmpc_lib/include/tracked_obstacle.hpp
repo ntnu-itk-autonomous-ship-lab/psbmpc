@@ -98,9 +98,9 @@ namespace PSBMPC_LIB
 	public:
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-		std::unique_ptr<KF> kf;
+		KF kf;
 
-		std::unique_ptr<MROU> mrou;
+		MROU mrou;
 
 		Tracked_Obstacle() {}
 
@@ -173,7 +173,7 @@ namespace PSBMPC_LIB
 			int n_ps_independent = ps_course_changes.size();
 			
 			Eigen::VectorXd ownship_state_sl = ownship_state;
-			P_p.col(0) = CPU::flatten(kf->get_covariance());
+			P_p.col(0) = CPU::flatten(kf.get_covariance());
 
 			Eigen::Vector2d v_p, v_p_new, v_A, v_B, L_AB;
 			double chi_ps, t = 0, psi_A, d_AB;
@@ -182,10 +182,10 @@ namespace PSBMPC_LIB
 			{
 				ownship_state_sl = ownship_state;
 
-				v_p(0) = kf->get_state()(2);
-				v_p(1) = kf->get_state()(3);
+				v_p(0) = kf.get_state()(2);
+				v_p(1) = kf.get_state()(3);
 
-				xs_p[ps].col(0) = kf->get_state();
+				xs_p[ps].col(0) = kf.get_state();
 				
 				have_turned = false;	
 				for(int k = 0; k < n_samples; k++)
@@ -245,9 +245,9 @@ namespace PSBMPC_LIB
 
 					if (k < n_samples - 1)
 					{
-						xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p, dt);
+						xs_p[ps].col(k + 1) = mrou.predict_state(xs_p[ps].col(k), v_p, dt);
 
-						if (ps == 0) P_p.col(k + 1) = CPU::flatten(mrou->predict_covariance(P_0, t));
+						if (ps == 0) P_p.col(k + 1) = CPU::flatten(mrou.predict_covariance(P_0, t));
 
 						// Propagate ownship assuming straight line trajectory
 						if (ownship_state_sl.size() == 4)

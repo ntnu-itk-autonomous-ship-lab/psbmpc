@@ -351,7 +351,7 @@ void SBMPC::initialize_prediction(
 	Eigen::Vector2d p_cpa;
 	for (int i = 0; i < n_obst; i++)
 	{
-		CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf->get_state());
+		CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf.get_state());
 
 		ps_ordering_i.resize(1); 
 		ps_ordering_i[0] = KCC;		
@@ -426,13 +426,13 @@ bool SBMPC::determine_colav_active(
 	const int n_static_obst 												// In: Number of static obstacles
 	)
 {
-	Eigen::Matrix<double, 6, 1> xs = trajectory.col(0);
+	Eigen::VectorXd xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
 	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
-		d_0i(0) = data.obstacles[i].kf->get_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].kf->get_state()(1) - xs(1);
+		d_0i(0) = data.obstacles[i].kf.get_state()(0) - xs(0);
+		d_0i(1) = data.obstacles[i].kf.get_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 
 		// If all obstacles are passed, even though inside colav range,

@@ -335,8 +335,8 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
-	n_r = 3;
+	n_M = 1;
+	n_r = 5;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -397,20 +397,20 @@ void PSBMPC_Parameters::initialize_pars()
 	d_init = 1500;								 
 	d_close = 1000;
 	d_safe = 50; 							
-	K_coll = 1.0;		  					
+	K_coll = 0.5;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 0.0;		  					
-	kappa_TC = 20.0;						 
-	K_u = 4;		   						 
+	kappa = 8.0;		  					
+	kappa_TC = 0.0;						 
+	K_u = 8;		   						 
 	K_du = 2.5;		    					
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					
 	K_dchi_strb = 0.9;	 			
 	K_dchi_port = 1.2;
-	K_sgn = 5;
+	K_sgn = 8;
 	T_sgn = 4 * t_ts;	  					
 	G = 1e3;		         					 
 	q = 4.0;
