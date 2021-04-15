@@ -5,6 +5,8 @@ The **sbmpc_catkin_ws** contains the ROS-based colav implemented by Inger Hagen 
 
 The **psbmpc_cxx** implements the Probabilistic Scenario-based MPC [[2]](#2) in C/C++, which is an extended and improved version of the original SB-MPC, with more focus on probabilistic risk assessment, and which allows any given number of avoidance maneuvers in the prediction horizon. Here, one version is implemented for the CPU and another experimental for the GPU. </p>
 
+Lastly, **ros2_ws** creates ROS2 packages for using the PSBMPC in a robotic system/autonomous ship, still a work in progress.
+
 ## Git Workflow
 
 All cooperators are obligated to follow the methods outlined in <https://www.atlassian.com/git/tutorials/comparing-workflows/feature-branch-workflow> for ensuring a pain-free workflow with thecolavrepo. 

@@ -321,15 +321,15 @@ namespace PSBMPC_LIB
 
 					if (a_i_ps == KCC)		{ cost_a(0) += (weights_ps(ps) / cost_a_weight_sums(0)) * max_cost_ps(ps); }
 					else if (a_i_ps == SM)	{ cost_a(1) += (weights_ps(ps) / cost_a_weight_sums(1)) * max_cost_ps(ps); }
-					else if (a_i_ps == PM)	{ cost_a(2) += (weights_ps(ps) / cost_a_weight_sums(2)) * max_cost_ps(ps);	}
+					else if (a_i_ps == PM)	{ cost_a(2) += (weights_ps(ps) / cost_a_weight_sums(2)) * max_cost_ps(ps); }
 				}
 
 				// Average the cost for the starboard and port maneuver type of intentions
-				if (ps_intention_count_i(0) > 0) 	{ cost_a(0) /= ps_intention_count_i(0); }
+				if (ps_intention_count_i(0) > 0) 	{ cost_a(0) /= 1.0; } //ps_intention_count_i(0); }
 				else 								{ cost_a(0) = 0.0; }
-				if (ps_intention_count_i(1) > 0)	{ cost_a(1) /= ps_intention_count_i(1); } 
+				if (ps_intention_count_i(1) > 0)	{ cost_a(1) /= 1.0; } //ps_intention_count_i(1); } 
 				else								{ cost_a(1) = 0.0; }
-				if (ps_intention_count_i(2) > 0)	{ cost_a(2) /= ps_intention_count_i(2); } 
+				if (ps_intention_count_i(2) > 0)	{ cost_a(2) /= 1.0; } //ps_intention_count_i(2); } 
 				else								{ cost_a(2) = 0.0; }
 
 				// Weight by the intention probabilities
