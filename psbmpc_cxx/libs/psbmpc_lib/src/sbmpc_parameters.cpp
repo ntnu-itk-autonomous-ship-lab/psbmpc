@@ -275,7 +275,7 @@ void SBMPC_Parameters::initialize_pars(
 	if (!is_obstacle_sbmpc) // Tuning for SB-MPC
 	{
 		n_cbs = 1;
-		n_M = 2;
+		n_M = 1;
 
 		chi_offsets.resize(n_M);
 		u_offsets.resize(n_M);

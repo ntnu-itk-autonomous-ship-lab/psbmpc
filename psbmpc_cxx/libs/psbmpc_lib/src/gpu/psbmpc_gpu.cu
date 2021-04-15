@@ -650,10 +650,17 @@ void PSBMPC::find_optimal_control_behaviour(
 	thrust::tuple<float, Intention, bool> tup;
 	min_cost = 1e12;
 
+	Eigen::MatrixXd cost_i_matrix(n_obst, pars.n_cbs), max_cost_ps_matrix(n_obst * pars.n_r, pars.n_cbs), cb_matrix(2 * pars.n_M, pars.n_cbs);
+	Eigen::Matrix<double, 1, -1> total_cost_matrix(1, pars.n_cbs), cost_cb_ch_g_matrix(1, pars.n_cbs), n_ps_matrix(1, n_obst);
+	for (int i = 0; i < n_obst; i++)
+	{
+		n_ps_matrix(0, i) = n_ps[i];
+	}
+	int curr_max_cost_ps_index(0);
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -672,12 +679,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	double *ptr_n_ps = mxGetPr(n_ps_mx); 
 	double *ptr_cb_matrix = mxGetPr(cb_matrix_mx); 
 
-	Eigen::MatrixXd cost_i_matrix(n_obst, pars.n_cbs), max_cost_ps_matrix(n_obst * pars.n_r, pars.n_cbs), cb_matrix(2 * pars.n_M, pars.n_cbs);
-	Eigen::Matrix<double, 1, -1> total_cost_matrix(1, pars.n_cbs), cost_cb_ch_g_matrix(1, pars.n_cbs), n_ps_matrix(1, n_obst);
-	for (int i = 0; i < n_obst; i++)
-	{
-		n_ps_matrix(0, i) = n_ps[i];
-	}
+	
 	Eigen::Map<Eigen::Matrix<double, 1, -1>> map_total_cost(ptr_total_cost, 1, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_cost_i(ptr_cost_i, n_obst, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_max_cost_ps(ptr_max_cost_ps, n_obst * pars.n_r, pars.n_cbs);
@@ -685,9 +687,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	Eigen::Map<Eigen::Matrix<double, 1, -1>> map_n_ps(ptr_n_ps, 1, n_obst);
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
 
-	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr);
-
-	int curr_max_cost_ps_index(0);
+	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
 	//==================================================================
 
 	for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -741,7 +741,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-	opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+	/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 	map_total_cost = total_cost_matrix;
 	map_cost_i = cost_i_matrix;
 	map_max_cost_ps = max_cost_ps_matrix;
@@ -765,7 +765,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	mxDestroyArray(cost_cb_ch_g_mx);
 	mxDestroyArray(n_obst_mx);
 	mxDestroyArray(n_ps_mx);
-	engClose(ep);
+	engClose(ep); */
 	//==================================================================
 }
 
