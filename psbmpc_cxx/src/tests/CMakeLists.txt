@@ -44,7 +44,7 @@ find_package(Eigen3 REQUIRED)
 #add_executable(tester test_tml.cu)
 #add_executable(tester test_tml_pdmatrix.cu)
 
-add_executable(tester paper_simulations/test_psbmpc_psim.cpp)
+add_executable(tester paper_simulations/test_psbmpc_psim_intelligent.cpp)
 #add_executable(tester paper_simulations/test_psbmpc_psim_intelligent.cpp)
 
 target_include_directories(tester PRIVATE

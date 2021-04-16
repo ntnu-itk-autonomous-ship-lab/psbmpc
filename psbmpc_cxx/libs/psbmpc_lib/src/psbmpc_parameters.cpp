@@ -335,8 +335,8 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 1;
-	n_r = 5;
+	n_M = 2;
+	n_r = 9;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -382,7 +382,7 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 120.0; 	     
+	T = 110.0; 	     
 	dt = 5.0;
   	T_static = 60.0;
 
@@ -397,15 +397,15 @@ void PSBMPC_Parameters::initialize_pars()
 	d_init = 1500;								 
 	d_close = 1000;
 	d_safe = 50; 							
-	K_coll = 0.5;		  					
+	K_coll = 0.2;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 8.0;		  					
-	kappa_TC = 0.0;						 
-	K_u = 8;		   						 
-	K_du = 2.5;		    					
+	kappa = 10.0;		  					
+	kappa_TC = 20.0;						 
+	K_u = 15;		   						 
+	K_du = 6;		    					
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					
 	K_dchi_strb = 0.9;	 			

@@ -924,7 +924,7 @@ void PSBMPC::initialize_prediction(
 		}
 	}
 	
-	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
+	//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -993,8 +993,8 @@ void PSBMPC::set_up_independent_obstacle_prediction(
 			} 
 		}	
 	}
-	std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
-	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
+	//std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
+	//std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -1275,7 +1275,7 @@ void PSBMPC::calculate_ps_collision_risks(
 	// Sort vector of ps indices to determine collision risk in sorted order
 	std::sort(ps_indices_i.data(), ps_indices_i.data() + n_ps[i], [&](const int index_lhs, const int index_rhs) { return R_c_i(index_lhs) > R_c_i(index_rhs); });
 	
-	 std::ios::fmtflags old_settings = std::cout.flags();
+	/*std::ios::fmtflags old_settings = std::cout.flags();
 	int old_precision = std::cout.precision(); 
 	int cw = 20;
 	//std::cout.setf(std::ios::fixed, std::ios::floatfield);
@@ -1296,7 +1296,7 @@ void PSBMPC::calculate_ps_collision_risks(
 	}
 	std::cout.flags(old_settings);
 	std::cout << std::setprecision(old_precision);
-	std::cout << "-------------------------------------------------------------------------------------------------------------------------------" << std::endl;
+	std::cout << "-------------------------------------------------------------------------------------------------------------------------------" << std::endl; */
 }
 
 /****************************************************************************************
