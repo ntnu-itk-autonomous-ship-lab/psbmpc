@@ -115,7 +115,7 @@ void PSBMPC::calculate_optimal_offsets(
 		predict_trajectories_jointly(data, static_obstacles, false);
 	}
 	
-	prune_obstacle_scenarios(data);
+	//prune_obstacle_scenarios(data);
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
@@ -123,7 +123,8 @@ void PSBMPC::calculate_optimal_offsets(
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
-	}
+	} */
+	/*
  	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
@@ -188,21 +189,65 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	} */
+	} 
+	*/
+	// COST PLOTTING
+	/* mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
+ 	mxArray *cost_i_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
+	mxArray *max_cost_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
+	mxArray *cost_cb_ch_g_mx = mxCreateDoubleMatrix(3, pars.n_cbs, mxREAL);
+	mxArray *n_ps_mx = mxCreateDoubleMatrix(1, n_obst, mxREAL);
+	mxArray *cb_matrix_mx = mxCreateDoubleMatrix(2 * pars.n_M, pars.n_cbs, mxREAL);
+
+	double *ptr_total_cost = mxGetPr(total_cost_mx); 
+	double *ptr_cost_i = mxGetPr(cost_i_mx); 
+	double *ptr_max_cost_ps = mxGetPr(max_cost_ps_mx); 
+	double *ptr_cost_cb_ch_g = mxGetPr(cost_cb_ch_g_mx); 
+	double *ptr_n_ps = mxGetPr(n_ps_mx); 
+	double *ptr_cb_matrix = mxGetPr(cb_matrix_mx); 
 	
+	Eigen::Map<Eigen::Matrix<double, 1, -1>> map_total_cost(ptr_total_cost, 1, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_cost_i(ptr_cost_i, n_obst, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_max_cost_ps(ptr_max_cost_ps, n_obst * pars.n_r, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_cost_cb_ch_g(ptr_cost_cb_ch_g, 3, pars.n_cbs);
+	Eigen::Map<Eigen::Matrix<double, 1, -1>> map_n_ps(ptr_n_ps, 1, n_obst);
+	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
+
+	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
+
+	/* Eigen::MatrixXd cost_i_matrix(n_obst, pars.n_cbs), max_cost_ps_matrix(n_obst * pars.n_r, pars.n_cbs), 
+					cb_matrix(2 * pars.n_M, pars.n_cbs), cost_cb_ch_g_matrix(3, pars.n_cbs);
+	Eigen::Matrix<double, 1, -1> total_cost_matrix(1, pars.n_cbs), n_ps_matrix(1, n_obst);
+	Eigen::VectorXd max_cost_ps;
+	for (int i = 0; i < n_obst; i++)
+	{
+		n_ps_matrix(0, i) = n_ps[i];
+	}
+	cost_cb_ch_g_matrix.setZero();
+	int curr_max_cost_ps_index(0); */
 	//===============================================================================================================
+
 	double cost(0.0);
 	Eigen::VectorXd cost_i(n_obst);
 	Eigen::MatrixXd P_c_i;
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	min_cost = 1e12;
+	int min_index = 0;
 	int p_step_cpe = 2; // step between calculated collision probability samples
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
 		cost = 0.0;
+		/* for (int M = 0; M < pars.n_M; M++)
+		{
+			cb_matrix(2 * M, cb) = offset_sequence(2 * M);
+			cb_matrix(2 * M + 1, cb) = RAD2DEG * offset_sequence(2 * M + 1);
+		}
+		
+		curr_max_cost_ps_index = 0; */
 		//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
 		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
+		
 
 		ownship.predict_trajectory(
 			trajectory, 
@@ -228,6 +273,9 @@ void PSBMPC::calculate_optimal_offsets(
 
 			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, P_c_i, data, i, ownship.get_length());
 
+			/* cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_ps, trajectory, offset_sequence, maneuver_times, P_c_i, data, i, ownship.get_length());
+			max_cost_ps_matrix.block(curr_max_cost_ps_index, cb, n_ps[i], 1) = max_cost_ps;
+			curr_max_cost_ps_index += n_ps[i]; */
 			//===============================================================================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
@@ -249,16 +297,23 @@ void PSBMPC::calculate_optimal_offsets(
 		}
 
 		cost += cost_i.maxCoeff();
-
-		//cost += mpc_cost.calculate_grounding_cost(trajectory, static_obstacles, ownship.get_length());
+		//cost_i_matrix.col(cb) = cost_i;
+		
 
 		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
+		//cost_cb_ch_g_matrix(0, cb) = cost - cost_i.maxCoeff();
 
 		cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
+		//cost_cb_ch_g_matrix(1, cb) = cost - cost_i.maxCoeff() - cost_cb_ch_g_matrix(0, cb);
 
+		//cost += mpc_cost.calculate_grounding_cost(trajectory, static_obstacles, ownship.get_length());
+		//cost_cb_ch_g_matrix(1, cb) = cost - cost_i.maxCoeff() - cost_cb_ch_g_matrix(0, cb) - cost_cb_ch_g_matrix(1, cb);
+		
+		//total_cost_matrix(cb) = cost;
 		if (cost < min_cost) 
 		{
 			min_cost = cost;
+			min_index = cb;
 			opt_offset_sequence = offset_sequence;
 
 			assign_optimal_trajectory(predicted_trajectory);
@@ -285,6 +340,35 @@ void PSBMPC::calculate_optimal_offsets(
 		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
 		//===============================================================================================================
 	}
+	//==================================================================
+	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
+	//==================================================================
+	/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+	map_total_cost = total_cost_matrix;
+	map_cost_i = cost_i_matrix;
+	map_max_cost_ps = max_cost_ps_matrix;
+	map_cost_cb_ch_g = cost_cb_ch_g_matrix;
+	map_n_ps = n_ps_matrix;
+	map_cb_matrix = cb_matrix;
+
+	engPutVariable(ep, "total_cost", total_cost_mx);
+	engPutVariable(ep, "cost_i", cost_i_mx);
+	engPutVariable(ep, "max_cost_ps", max_cost_ps_mx);
+	engPutVariable(ep, "cost_cb_ch_g", cost_cb_ch_g_mx);
+	engPutVariable(ep, "n_ps", n_ps_mx);
+	engPutVariable(ep, "cb_matrix", cb_matrix_mx);
+	engPutVariable(ep, "n_obst", n_obst_mx);
+	engPutVariable(ep, "opt_cb_index", opt_cb_index_mx);
+	engEvalString(ep, "cpu_psbmpc_cost_plotting");
+
+	mxDestroyArray(total_cost_mx);
+	mxDestroyArray(cost_i_mx);
+	mxDestroyArray(max_cost_ps_mx);
+	mxDestroyArray(cost_cb_ch_g_mx);
+	mxDestroyArray(n_obst_mx);
+	mxDestroyArray(n_ps_mx);
+	engClose(ep); */
+	//==================================================================
 
 	u_opt = opt_offset_sequence(0); 	u_opt_last = u_opt;
 	chi_opt = opt_offset_sequence(1); 	chi_opt_last = chi_opt;
@@ -298,8 +382,6 @@ void PSBMPC::calculate_optimal_offsets(
 	std::cout << std::endl;
 
 	//std::cout << "Cost at optimum : " << min_cost << std::endl;
-
-	/* engClose(ep); */ 
 }
 
 /****************************************************************************************
@@ -802,7 +884,7 @@ void PSBMPC::initialize_prediction(
 		}
 	}
 	
-	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
+	//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -1130,7 +1212,7 @@ void PSBMPC::calculate_ps_collision_risks(
 	// Sort vector of ps indices to determine collision risk in sorted order
 	std::sort(ps_indices_i.data(), ps_indices_i.data() + n_ps[i], [&](const int index_lhs, const int index_rhs) { return R_c_i(index_lhs) > R_c_i(index_rhs); });
 	
-	 std::ios::fmtflags old_settings = std::cout.flags();
+	/* std::ios::fmtflags old_settings = std::cout.flags();
 	int old_precision = std::cout.precision(); 
 	int cw = 20;
 	//std::cout.setf(std::ios::fixed, std::ios::floatfield);
@@ -1151,7 +1233,7 @@ void PSBMPC::calculate_ps_collision_risks(
 	}
 	std::cout.flags(old_settings);
 	std::cout << std::setprecision(old_precision);
-	std::cout << "-------------------------------------------------------------------------------------------------------------------------------" << std::endl;
+	std::cout << "-------------------------------------------------------------------------------------------------------------------------------" << std::endl; */
 }
 
 /****************************************************************************************
