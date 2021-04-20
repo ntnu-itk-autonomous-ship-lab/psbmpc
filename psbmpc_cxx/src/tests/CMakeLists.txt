@@ -36,7 +36,7 @@ find_package(Eigen3 REQUIRED)
 #add_executable(tester test_polygons.cpp)
 
 # Test files for use with GPU-version of PSBMPC
-#add_executable(tester test_psbmpc_gpu.cpp)
+add_executable(tester test_psbmpc_gpu.cpp)
 #add_executable(tester test_ownship_gpu.cu)
 #add_executable(tester test_obstacle_ship_gpu.cu)
 #add_executable(tester test_cpe_gpu.cu)
@@ -44,8 +44,8 @@ find_package(Eigen3 REQUIRED)
 #add_executable(tester test_tml.cu)
 #add_executable(tester test_tml_pdmatrix.cu)
 
-add_executable(tester paper_simulations/test_psbmpc_psim_intelligent.cpp)
 #add_executable(tester paper_simulations/test_psbmpc_psim_intelligent.cpp)
+#add_executable(tester paper_simulations/test_psbmpc_psim.cpp)
 
 target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include

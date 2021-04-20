@@ -332,7 +332,7 @@ namespace PSBMPC_LIB
 
 				// Ownship overtaking the obstacle
 				data.O_TC_0[i] = v_B.dot(v_A) > cos(mpc_pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-						v_B.norm() < v_B.norm()							    					&&
+						v_B.norm() < v_A.norm()							    					&&
 						v_B.norm() > 0.25														&&
 						is_close 																&&
 						data.AH_0[i];
