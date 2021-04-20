@@ -953,8 +953,8 @@ void PSBMPC::set_up_independent_obstacle_prediction(
 			} 
 		}	
 	}
-	std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
-	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
+	/* std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
+	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl; */
 }
 
 /****************************************************************************************
