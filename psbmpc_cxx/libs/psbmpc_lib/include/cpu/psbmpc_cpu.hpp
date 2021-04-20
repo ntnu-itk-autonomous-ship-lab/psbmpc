@@ -83,7 +83,7 @@ namespace PSBMPC_LIB
 			// Obstacle prediction scenario pruning related methods
 			void prune_obstacle_scenarios(Obstacle_Data<Tracked_Obstacle> &data);
 
-			void calculate_instantaneous_collision_probabilities(
+			void calculate_collision_probabilities(
 				Eigen::MatrixXd &P_c_i, 
 				const Obstacle_Data<Tracked_Obstacle> &data, 
 				const int i, 

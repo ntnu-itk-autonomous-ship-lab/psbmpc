@@ -25,6 +25,7 @@
 namespace PSBMPC_LIB
 {
 	class SBMPC;
+	class Obstacle_Predictor;
 	class Obstacle_Manager;
 	namespace CPU
 	{

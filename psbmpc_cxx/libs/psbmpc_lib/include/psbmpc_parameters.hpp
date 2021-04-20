@@ -49,7 +49,7 @@ namespace PSBMPC_LIB
 		CH 														// Course Hold
 	};
 
-
+	class Obstacle_Predictor;
 	class Obstacle_Manager;
 	class Joint_Prediction_Manager;
 	
@@ -75,6 +75,7 @@ namespace PSBMPC_LIB
 		friend class GPU::PSBMPC;
 		friend class CPU::MPC_Cost<PSBMPC_Parameters>;
 		friend class GPU::MPC_Cost<PSBMPC_Parameters>;
+		friend class Obstacle_Predictor;
 		friend class Obstacle_Manager;
 		friend class Joint_Prediction_Manager;
 		friend class GPU::CB_Functor_Pars;

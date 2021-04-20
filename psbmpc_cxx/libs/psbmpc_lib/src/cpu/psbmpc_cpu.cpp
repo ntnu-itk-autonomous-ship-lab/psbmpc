@@ -269,7 +269,7 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			
 			P_c_i.resize(n_ps[i], n_samples); P_c_i.setZero();
-			calculate_instantaneous_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
+			calculate_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
 
 			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, P_c_i, data, i, ownship.get_length());
 
@@ -554,7 +554,7 @@ void PSBMPC::calculate_optimal_offsets(
 		for (int i = 0; i < n_obst; i++)
 		{
 			P_c_i.resize(n_ps[i], n_samples); P_c_i.setZero();
-			calculate_instantaneous_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
+			calculate_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
 
 			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, P_c_i, data, i, ownship.get_length());
 
@@ -986,7 +986,7 @@ void PSBMPC::prune_obstacle_scenarios(
 		C_i.resize(n_ps[i]); R_c_i.resize(n_ps[i]);
 		risk_sorted_ps_indices_i.resize(n_ps[i]);
 		
-		calculate_instantaneous_collision_probabilities(P_c_i, data, i, dt_r, p_step);
+		calculate_collision_probabilities(P_c_i, data, i, dt_r, p_step);
 
 		calculate_ps_collision_probabilities(P_c_i_ps, P_c_i, i);
 
@@ -1035,7 +1035,7 @@ void PSBMPC::prune_obstacle_scenarios(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::calculate_instantaneous_collision_probabilities(
+void PSBMPC::calculate_collision_probabilities(
 	Eigen::MatrixXd &P_c_i,								// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const Obstacle_Data<Tracked_Obstacle> &data,		// In: Dynamic obstacle information
 	const int i, 										// In: Index of obstacle
