@@ -87,10 +87,7 @@ namespace PSBMPC_LIB
 			double calculate_dynamic_obstacle_cost(
 				const Eigen::VectorXd &max_cost_ps, 
 				const Obstacle_Data<Tracked_Obstacle> &data, 
-				const Intention a_i_ps_jp,
-				const bool mu_i_ps_jp,
-				const int i,
-				const bool use_joint_prediction);
+				const int i);
 
 			// This one is used in the CPU PSBMPC purely on the host side
 			double calculate_dynamic_obstacle_cost(
@@ -261,10 +258,7 @@ namespace PSBMPC_LIB
 		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 			const Eigen::VectorXd &max_cost_ps,                         // In: Max cost wrt obstacle i in prediction scenario ps, and the control behaviour from the calling loop
 			const Obstacle_Data<Tracked_Obstacle> &data,				// In: Dynamic obstacle information
-			const Intention a_i_ps_jp,									// In: Intention of obstacle i if its intelligent prediction scenario is activated
-			const bool mu_i_ps_jp,										// In: COLREGS violation indicator for obstacle i if its intelligent prediction scenario is activated
-			const int i, 												// In: Index of obstacle
-			const bool use_joint_prediction 							// In: Boolean indicator of whether or not the intelligent prediction scenario is considered
+			const int i 												// In: Index of obstacle
 			)
 		{
 			double cost_i = 0.0;
@@ -301,19 +295,9 @@ namespace PSBMPC_LIB
 				{
 					weights_ps(ps) = Pr_CC_i;
 
-					// Last prediction scenario is the joint prediction if not pruned away
-					if (ps == n_ps - 1 && use_joint_prediction)
-					{
-						a_i_ps = a_i_ps_jp;
-						mu_i_ps = mu_i_ps_jp;
-						
-						ps_intention_count_i(a_i_ps) += 1;
-					}
-					else
-					{
-						mu_i_ps = mu_i[ps];
-						a_i_ps = ps_ordering_i[ps];
-					}
+					mu_i_ps = mu_i[ps];
+					a_i_ps = ps_ordering_i[ps];
+
 					if (mu_i_ps)
 					{
 						//printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
@@ -328,9 +312,7 @@ namespace PSBMPC_LIB
 				cost_a.setZero();
 				for(int ps = 0; ps < n_ps; ps++)
 				{
-					// Last prediction scenario is the joint prediction if not pruned away
-					if (ps == n_ps - 1 && use_joint_prediction)			{ a_i_ps = a_i_ps_jp; }
-					else												{ a_i_ps = ps_ordering_i[ps]; }
+					a_i_ps = ps_ordering_i[ps];
 
 					if (a_i_ps == KCC)		{ cost_a(0) += (weights_ps(ps) / cost_a_weight_sums(0)) * max_cost_ps(ps); }
 					else if (a_i_ps == SM)	{ cost_a(1) += (weights_ps(ps) / cost_a_weight_sums(1)) * max_cost_ps(ps); }

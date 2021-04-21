@@ -139,8 +139,6 @@ namespace PSBMPC_LIB
 			float u_opt_last;
 			float chi_opt_last;
 
-			bool use_joint_prediction;
-
 			int wp_c_0;
 
 			TML::PDMatrix<float, 2, MAX_N_WPS> waypoints;
@@ -172,7 +170,6 @@ namespace PSBMPC_LIB
 				const double chi_opt_last,
 				const double u_d, 
 				const double chi_d, 
-				const bool use_joint_prediction,
 				const int wp_c_0,
 				const double ownship_length,
 				const Eigen::Matrix<double, 2, -1> &waypoints, 
@@ -193,8 +190,6 @@ namespace PSBMPC_LIB
 
 				this->u_opt_last = u_opt_last;
 				this->chi_opt_last = chi_opt_last;	
-
-				this->use_joint_prediction = use_joint_prediction;
 
 				TML::assign_eigen_object(this->waypoints, waypoints);	
 

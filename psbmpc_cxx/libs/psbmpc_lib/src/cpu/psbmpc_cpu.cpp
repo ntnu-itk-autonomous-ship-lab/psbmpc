@@ -106,7 +106,7 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 	
-	initialize_prediction(data);
+	setup_prediction(data);
 
 	// Intelligent prediction with the nominal ownship trajectory before pruning obstacle
 	// scenarios
@@ -439,7 +439,7 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 	
-	initialize_prediction(data);
+	setup_prediction(data);
 
 	if (use_joint_prediction)
 	{
@@ -743,19 +743,18 @@ void PSBMPC::increment_control_behaviour()
 }
 
 /****************************************************************************************
-*  Name     : initialize_prediction
+*  Name     : setup_prediction
 *  Function : Sets up the own-ship maneuvering times and number of prediction scenarios 
 *			  for each obstacle based on the current situation, and predicts
-*			  independent obstacle trajectories.
+*			  independent obstacle trajectories using the predictor class.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::initialize_prediction(
+void PSBMPC::setup_prediction(
 	Obstacle_Data<Tracked_Obstacle> &data							// In: Dynamic obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
-	n_ps.resize(n_obst);
 	pobstacles.resize(n_obst);
 	int n_a(0);
 	if (n_obst > 0)
@@ -765,81 +764,52 @@ void PSBMPC::initialize_prediction(
 	//***********************************************************************************
 	// Obstacle prediction initialization
 	//***********************************************************************************
-	std::vector<Intention> ps_ordering_i;
-	Eigen::VectorXd ps_course_changes_i;
-	Eigen::VectorXd ps_maneuver_times_i;
+	obstacle_predictor(data, trajectory.col(0), pars.T, pars.dt, *this);
 
-	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
-	Eigen::Vector2d p_cpa, v_os_0;
-	Eigen::Vector4d xs_i_0, xs_0;
-	if (trajectory.rows() == 4)
+	Eigen::Vector4d xs_i_0;
+	if (pars.obstacle_colav_on)
 	{
-		v_os_0(0) = trajectory(3, 0) * cos(trajectory(2, 0));
-		v_os_0(1) = trajectory(3, 0) * sin(trajectory(2, 0));
-	}
-	else
-	{
-		v_os_0(0) = trajectory(3, 0); v_os_0(1) = trajectory(4, 0);
-		v_os_0 = rotate_vector_2D(v_os_0, trajectory(2, 0));
-	}
-	xs_0.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, 0);
-	xs_0(2) = v_os_0(0); xs_0(3) = v_os_0(1);
-	Eigen::Matrix<double, 2, -1> waypoints_i;
-
-	// only use intelligent prediction n_a > 1 intentions are considered
-	// and obstacle colav is on
-	use_joint_prediction = false; 
-	for (int i = 0; i < n_obst; i++)
-	{
-		n_ps[i] = 1;
+		Eigen::Matrix<double, 2, -1> waypoints_i;
 		
-		xs_i_0 = data.obstacles[i].kf.get_state();
-		/* std::cout << "xs_i_0 = " << xs_i_0.transpose() << std::endl;
-		std::cout << "xs_0 = " << xs_0.transpose() << std::endl; */
-		calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
-		/* std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
-		std::cout << "t_cpa(i) = " << t_cpa(i) << std::endl;
-		std::cout << "d_cpa(i) = " << d_cpa(i)<< std::endl; */
-		if (n_a == 1 || data.IP_0[i])
+		// only use intelligent prediction n_a > 1 intentions are considered
+		// and obstacle colav is on
+		use_joint_prediction = false; 
+		for (int i = 0; i < n_obst; i++)
 		{
-			/* std::cout << "Obstacle i = " << i << "is passed => 1 PS only" << std::endl; */
-			ps_ordering_i.resize(1);
-			ps_ordering_i[0] = KCC;			
-			ps_course_changes_i.resize(1);
-			ps_course_changes_i[0] = 0;
-			ps_maneuver_times_i.resize(1);
-			ps_maneuver_times_i(0) = 0;
-		}
-		else
-		{
-			set_up_independent_obstacle_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, t_cpa(i), i);
-
+			xs_i_0 = data.obstacles[i].kf.get_state();
 			pobstacles[i] = Prediction_Obstacle(data.obstacles[i]);
-			if (pars.obstacle_colav_on)
-			{
-				use_joint_prediction = true;
+			use_joint_prediction = true;
 
-				// Set obstacle waypoints to a straight line out from its current time position 
-				// if no future obstacle trajectory is available
-				waypoints_i.resize(2, 2);
-				xs_i_0 = pobstacles[i].get_initial_state();
-				waypoints_i.col(0) = xs_i_0.block<2, 1>(0, 0);
-				waypoints_i.col(1) = waypoints_i.col(0) + xs_i_0.block<2, 1>(2, 0) * pars.T;
-				pobstacles[i].set_waypoints(waypoints_i);
+			// Set obstacle waypoints to a straight line out from its current time position 
+			// if no future obstacle trajectory is available
+			waypoints_i.resize(2, 2);
+			xs_i_0 = pobstacles[i].get_initial_state();
+			waypoints_i.col(0) = xs_i_0.block<2, 1>(0, 0);
+			waypoints_i.col(1) = waypoints_i.col(0) + xs_i_0.block<2, 1>(2, 0) * pars.T;
+			pobstacles[i].set_waypoints(waypoints_i);
 
-				n_ps[i] += 1;
-			}
-
-			
+			n_ps[i] += 1;
 		}
-		data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
-
-		data.obstacles[i].predict_independent_trajectories<PSBMPC>(pars.T, pars.dt, trajectory.col(0), *this);
 	}
 
 	//***********************************************************************************
 	// Own-ship prediction initialization
 	//***********************************************************************************
+	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
+	Eigen::Vector2d p_cpa, v_0;
+	Eigen::Vector4d xs_0;
+	if (trajectory.rows() == 4)
+	{
+		v_0(0) = trajectory(3, 0) * cos(trajectory(2, 0));
+		v_0(1) = trajectory(3, 0) * sin(trajectory(2, 0));
+	}
+	else
+	{
+		v_0(0) = trajectory(3, 0); v_0(1) = trajectory(4, 0);
+		v_0 = rotate_vector_2D(v_0, trajectory(2, 0));
+	}
+	xs_0.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, 0);
+	xs_0(2) = v_0(0); xs_0(3) = v_0(1);
 	// First avoidance maneuver is always at t0
 	maneuver_times.setZero();
 
@@ -859,6 +829,9 @@ void PSBMPC::initialize_prediction(
 		t_cpa_min = 1e10; index_closest = -1;
 		for (int i = 0; i < n_obst; i++)
 		{
+			xs_i_0 = data.obstacles[i].kf.get_state();
+			calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
+
 			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
@@ -885,76 +858,6 @@ void PSBMPC::initialize_prediction(
 	}
 	
 	//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
-}
-
-/****************************************************************************************
-*  Name     : set_up_independent_obstacle_prediction_variables
-*  Function : 
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::set_up_independent_obstacle_prediction(
-	std::vector<Intention> &ps_ordering_i,									// In/out: Intention ordering of the independent obstacle prediction scenarios
-	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
-	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
-	const double t_cpa_i, 													// In: Time to Closest Point of Approach for obstacle i wrt own-ship
-	const int i 															// In: Index of obstacle in consideration
-	)
-{
-	int turn_count(0), turn_start(0), n_turns(0), course_change_count(0);
-
-	if (turn_start >= 0) // Alternative maneuvers are only up until cpa with the own-ship
-	{
-		n_turns = std::ceil((t_cpa_i - turn_start * pars.t_ts) / pars.t_ts);
-	}
-	else 							
-	{
-		n_turns = 0;
-	}
-	n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
-
-	//std::cout << "obst i = " << i << " | t_cpa = " << t_cpa_i << "n_turns = " << n_turns << std::endl;
-
-	ps_ordering_i.resize(n_ps[i]);
-	ps_ordering_i[0] = KCC;
-	ps_maneuver_times_i.resize(n_ps[i]);
-	ps_maneuver_times_i[0] = 0;
-	ps_course_changes_i.resize(n_ps[i]);
-	ps_course_changes_i[0] = 0;
-	
-	for (int ps = 1; ps < n_ps[i]; ps++)
-	{
-		// Starboard maneuvers
-		if (ps < (n_ps[i] - 1) / 2 + 1)
-		{
-			ps_ordering_i[ps] = SM;
-
-			ps_maneuver_times_i[ps] = (turn_start + turn_count) * std::floor(pars.t_ts / pars.dt);
-
-			ps_course_changes_i(ps) = pars.obstacle_course_changes(course_change_count);
-			if (++course_change_count == pars.obstacle_course_changes.size())
-			{
-				if(++turn_count == n_turns) turn_count = 0;
-				course_change_count = 0;
-			} 
-		}
-		// Port maneuvers
-		else
-		{
-			ps_ordering_i[ps] = PM;
-
-			ps_maneuver_times_i[ps] = (turn_start + turn_count) * std::floor(pars.t_ts / pars.dt);
-
-			ps_course_changes_i(ps) = - pars.obstacle_course_changes(course_change_count);
-			if (++course_change_count == pars.obstacle_course_changes.size())
-			{
-				if(++turn_count == n_turns) turn_count = 0;
-				course_change_count = 0;
-			} 
-		}	
-	}
-	/* std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
-	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl; */
 }
 
 /****************************************************************************************

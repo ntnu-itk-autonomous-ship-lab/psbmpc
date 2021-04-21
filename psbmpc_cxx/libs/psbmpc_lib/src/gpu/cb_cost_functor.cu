@@ -101,22 +101,13 @@ __host__ CB_Cost_Functor_2::CB_Cost_Functor_2(
 	CB_Functor_Pars *pars,  										// In: Device pointer to functor parameters, one for all threads
 	CB_Functor_Data *fdata,  										// In: Device pointer to functor data, one for all threads
 	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, one for all threads
-	Prediction_Obstacle *pobstacles,  								// In: Device pointer to prediction_obstacles, one for each thread
 	CPE *cpe, 		 												// In: Device pointer to the collision probability estimator, one for each thread
 	Ownship *ownship, 												// In: Device pointer to the ownship class, one for each thread
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
-	Obstacle_Ship *obstacle_ship,									// In: Device pointer to the obstacle ship for joint prediction, one for each thread
-	Obstacle_SBMPC *obstacle_sbmpc,									// In: Device pointer to the obstacle sbmpc for joint prediction, one for each thread
 	MPC_Cost<CB_Functor_Pars> *mpc_cost								// In: Device pointer to the cost function keeper class, one for each thread
 	) :
-	pars(pars), fdata(fdata), 
-	obstacles(obstacles), 
-	pobstacles(pobstacles), 
-	cpe(cpe), ownship(ownship), trajectory(trajectory), 
-	obstacle_ship(obstacle_ship), obstacle_sbmpc(obstacle_sbmpc),
-	mpc_cost(mpc_cost)
+	pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost)
 {
-
 }
 
 /****************************************************************************************
@@ -126,20 +117,15 @@ __host__ CB_Cost_Functor_2::CB_Cost_Functor_2(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(const thrust::tuple<
-	const unsigned int, 
-	TML::PDMatrix<float, 2 * MAX_N_M, 1>, 
-	const unsigned int, 
-	const unsigned int, 
-	const unsigned int, 
-	const int> &input_tuple	
-	// In: Tuple consisting of the thread id, ownship control behaviour, the index of the obstacle and its corresponding 
-	// prediction scenario index to evaluate the cost with
+__device__ float CB_Cost_Functor_2::operator()(const thrust::tuple<
+	const unsigned int, 								// Thread ID
+	TML::PDMatrix<float, 2 * MAX_N_M, 1>, 				// Control behaviour considered
+	const unsigned int, 								// Control behaviour index
+	const unsigned int, 								// Obstacle i considered
+	const unsigned int> &input_tuple 					// Prediction scenario ps for the obstacle
 	)
 {
 	max_cost_ps = 0.0f;
-	a_i_ps_jp = KCC;
-	mu_i_ps_jp = false;
 
 	//======================================================================================================================
 	// 1.0 : Setup. Size temporaries accordingly to input data, etc..
@@ -164,17 +150,6 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 	P_i_p_seg.resize(16, n_seg_samples);
 
 	//======================================================================================================================
-	// 1.1: Joint prediction with the current control behaviour if the obstacle prediction scenario is the intelligent one
-	// NOT FINISHED YET
-	if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
-	{
-		printf("here jp1\n");
-		predict_trajectories_jointly();
-		a_i_ps_jp = pobstacles[i].get_intention();
-		mu_i_ps_jp = pobstacles[i].get_COLREGS_breach_indicator();
-	}
-
-	//======================================================================================================================
 	// 2 : Max cost calculation considering own-ship control behaviour <cb_index> and prediction scenario ps for obstacle i
 	d_safe_i = pars->d_safe + 0.5 * (fdata->ownship_length + obstacles[i].get_length());
 
@@ -191,15 +166,7 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 		P_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_covariance_sample(k));
 
 		xs_i_p_seg.shift_columns_left();
-		if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
-		{
-			printf("here jp2\n");
-			xs_i_p_seg.set_col(n_seg_samples - 1, pobstacles[i].get_trajectory_sample(k));
-		}
-		else
-		{
-			xs_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
-		}
+		xs_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
 
 		if (k == 0)
 		{
@@ -307,218 +274,13 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 	//	offset_sequence(2), RAD2DEG * offset_sequence(3)), offset_sequence(4), RAD2DEG * offset_sequence(5)); 
 
 	//==================================================================================================
-	// 2.7 : Put dynamic obstacle related cost and static + path related cost into output tuple
-	//thrust::tuple<float, float> out(thrust::make_tuple(max_cost_ps, cost_cb_ch_g));
-
-	return thrust::tuple<float, Intention, bool>(thrust::make_tuple(max_cost_ps, a_i_ps_jp, mu_i_ps_jp));
+	// 2.7 : Return dynamic obstacle related cost
+	return max_cost_ps;
 }
  
 //=======================================================================================
 //	Private functions
 //=======================================================================================
-//=======================================================================================
-//  Name     : update_conditional_obstacle_data
-//  Function : Updates the situation type for the calling obstacle (wrt all other 
-//			   obstacles) and obstacles (wrt own-ship) and the transitional cost 
-//			   indicators O, Q, X, S at the current time t0 wrt all obstacles.
-//  Author   : Trym Tengesdal
-//  Modified :
-//=======================================================================================
-__device__ void CB_Cost_Functor_2::update_conditional_obstacle_data(
-	const int i_caller, 															// In: Index of obstacle asking for a situational awareness update
-	const int k																		// In: Index of the current predicted time t_k
-	)
-{
-	// A : Obstacle i_caller, B : Obstacle i
-	p_A(0) = pobstacles[i_caller].get_trajectory_sample(k)(0);
-	p_A(1) = pobstacles[i_caller].get_trajectory_sample(k)(1);
-	v_A(0) = pobstacles[i_caller].get_trajectory_sample(k)(2);
-	v_A(1) = pobstacles[i_caller].get_trajectory_sample(k)(3);
-	psi_A = atan2(v_A(1), v_A(0));
-
-	data.ST_0.resize(fdata->n_obst, 1);   data.ST_i_0.resize(fdata->n_obst, 1);
-	
-	data.AH_0.resize(fdata->n_obst, 1);   data.S_TC_0.resize(fdata->n_obst, 1); data.S_i_TC_0.resize(fdata->n_obst, 1); 
-	data.O_TC_0.resize(fdata->n_obst, 1); data.Q_TC_0.resize(fdata->n_obst, 1); data.IP_0.resize(fdata->n_obst, 1); 
-	data.H_TC_0.resize(fdata->n_obst, 1); data.X_TC_0.resize(fdata->n_obst, 1);
-	// printf("p_A = %.2f, %.2f | v_A = %.2f, %.2f\n", p_A(0), p_A(1), v_A(0), v_A(1)); 
-	i_count = 0;
-	for (int i = 0; i < fdata->n_obst + 1; i++)
-	{
-		if (i != i_caller)
-		{
-			p_B(0) = pobstacles[i].get_trajectory_sample(k)(0);
-			p_B(1) = pobstacles[i].get_trajectory_sample(k)(1);
-			v_B(0) = pobstacles[i].get_trajectory_sample(k)(2);
-			v_B(1) = pobstacles[i].get_trajectory_sample(k)(3);
-			psi_B = atan2(v_B(1), v_B(0));
-
-			L_AB = p_B - p_A;
-			d_AB = L_AB.norm();
-
-			// printf("p_B = %.2f, %.2f | v_B = %.2f, %.2f\n", p_B(0), p_B(1), v_B(0), v_B(1)); 
-			// Decrease the distance between the vessels by their respective max dimension
-			d_AB = d_AB - 0.5 * (pobstacles[i_caller].get_length() + pobstacles[i].get_length()); 				
-			L_AB = L_AB.normalized();
-
-			mpc_cost[thread_index].determine_situation_type(data.ST_0[i_count], data.ST_i_0[i_count], v_A, psi_A, v_B, L_AB, d_AB);
-			
-			//=====================================================================
-			// Transitional variable update
-			//=====================================================================
-			data.AH_0[i_count] = v_A.dot(L_AB) > cos(pars->phi_AH) * v_A.norm();
-			
-			// Obstacle on starboard side
-			data.S_TC_0[i_count] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-			// Ownship on starboard side of obstacle
-			data.S_i_TC_0[i_count] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
-
-			// Ownship overtaking the obstacle
-			data.O_TC_0[i_count] = v_B.dot(v_A) > cos(pars->phi_OT) * v_B.norm() * v_A.norm() 	&&
-					v_B.norm() < v_A.norm()							    						&&
-					v_B.norm() > 0.25															&&
-					d_AB <= pars->d_close 														&&
-					data.AH_0[i_count];
-
-			// Obstacle overtaking the ownship
-			data.Q_TC_0[i_count] = v_A.dot(v_B) > cos(pars->phi_OT) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() < v_B.norm()							  							&&
-					v_A.norm() > 0.25 															&&
-					d_AB <= pars->d_close														&&
-					!data.AH_0[i_count];
-
-			// Determine if the obstacle is passed by
-			data.IP_0[i_count] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
-					!data.Q_TC_0[i_count])		 											||
-					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 					&& // Obstacle's perspective	
-					!data.O_TC_0[i_count]))		 											&&
-					d_AB > pars->d_safe;
-
-			// This is not mentioned in article, but also implemented here..				
-			data.H_TC_0[i_count] = v_A.dot(v_B) < - cos(pars->phi_HO) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() > 0.25																&&
-					v_B.norm() > 0.25																&&
-					data.AH_0[i_count];
-
-			// Crossing situation, a bit redundant with the !is_passed condition also, 
-			// but better safe than sorry (could be replaced with B_is_ahead also)
-			data.X_TC_0[i_count] = v_A.dot(v_B) < cos(pars->phi_CR) * v_A.norm() * v_B.norm()		&&
-					!data.H_TC_0[i_count]															&& 
-					!data.IP_0[i_count]																&&
-					v_A.norm() > 0.25																&&
-					v_B.norm() > 0.25;
-
-			i_count += 1;
-		}
-	}	
-}
-
-//=======================================================================================
-//  Name     : predict_trajectories_jointly
-//  Function : Predicts the trajectory of the ownship and obstacles with an active COLAV
-//			  system
-//  Author   : Trym Tengesdal
-//  Modified :
-//=======================================================================================
-__device__ void CB_Cost_Functor_2::predict_trajectories_jointly()
-{
-	u_d_i.resize(fdata->n_obst, 1); u_opt_last_i.resize(fdata->n_obst, 1);
-	chi_d_i.resize(fdata->n_obst, 1); chi_opt_last_i.resize(fdata->n_obst, 1);
-	for(int k = 0; k < n_samples; k++)
-	{
-		t = k * pars->dt;
-
-		// Set trajectory sample k for the ownship prediction obstacle
-		xs_i_p(0) = trajectory[cb_index](0, k);
-		xs_i_p(1) = trajectory[cb_index](1, k);
-		xs_i_p(2) = trajectory[cb_index](3, k) * cos(trajectory[cb_index](2, k));
-		xs_i_p(3) = trajectory[cb_index](3, k) * sin(trajectory[cb_index](2, k));
-		pobstacles[fdata->n_obst].set_trajectory_sample(xs_i_p, k);
-		
-		for (int i = 0; i < fdata->n_obst; i++)
-		{
-			xs_i_p = pobstacles[jp_thread_index + i].get_trajectory_sample(k);
-
-			if (k == 0)
-			{
-				u_d_i(i) = xs_i_p.get_block<2, 1>(2, 0).norm();
-				chi_d_i(i) = atan2(xs_i_p(3), xs_i_p(2));
-				u_opt_last_i(i) = 1.0f; chi_opt_last_i(i) = 0.0f; 
-
-				pobstacles[i].set_intention(KCC);
-			}
-
-			// Update obstacle data for obstacle i using all other obstacles
-			update_conditional_obstacle_data(i, k);
-
-			// Convert from X_i = [x, y, Vx, Vy] to X_i = [x, y, chi, U]
-			xs_i_p_transformed.set_block<2, 1>(0, 0, xs_i_p.get_block<2, 1>(0, 0));
-			xs_i_p_transformed(2) = atan2(xs_i_p(3), xs_i_p(2));
-			xs_i_p_transformed(3) = xs_i_p.get_block<2, 1>(2, 0).norm();
-
-			// Determine the intention that obstacle i`s predicted trajectory
-			// corresponds to
-			chi_i = xs_i_p_transformed(2);
-			if (t < 30)
-			{
-				if (chi_i > 15 * DEG2RAD)								{ pobstacles[i].set_intention(SM); }
-				else if (chi_i < -15 * DEG2RAD)							{ pobstacles[i].set_intention(PM); }
-			}
-			
-			// printf("waypoints_i = %.1f, %.1f |  %.1f, %.1f\n", 
-			//	pobstacles[i].get_waypoints()(0, 0), pobstacles[i].get_waypoints()(1, 0), pobstacles[i].get_waypoints()(0, 1), pobstacles[i].get_waypoints()(1, 1));
-			obstacle_ship[cb_index].update_guidance_references(
-				u_d_i(i), 
-				chi_d_i(i), 
-				pobstacles[i].get_waypoints(),
-				xs_i_p,
-				pars->dt,
-				pars->guidance_method);
-
-			if (fmod(t, 5) == 0)
-			{
-				obstacle_sbmpc[cb_index].calculate_optimal_offsets(
-					u_opt_i, 
-					chi_opt_i, 
-					u_opt_last_i(i), 
-					chi_opt_last_i(i), 
-					u_d_i(i), 
-					chi_d_i(i),
-					pobstacles[i].get_waypoints(),
-					xs_i_p_transformed,
-					fdata->static_obstacles,
-					data,
-					pobstacles,
-					i,
-					k);
-
-				u_opt_last_i(i) = u_opt_i;
-				chi_opt_last_i(i) = chi_opt_i;
-				
-				//printf("u_opt_i(i) = %.1f | chi_opt_i(i) =  %.2f\n", u_opt_i, chi_opt_i);
-			}
-
-			if (k < n_samples - 1)
-			{
-				xs_i_p_transformed = obstacle_ship[cb_index].predict(
-					xs_i_p_transformed, 
-					u_d_i(i) * u_opt_i, 
-					chi_d_i(i) + chi_opt_i, 
-					pars->dt, 
-					pars->prediction_method);
-				
-				// Convert from X_i = [x, y, chi, U] to X_i = [x, y, Vx, Vy]
-				xs_i_p.set_block<2, 1>(0, 0, xs_i_p_transformed.get_block<2, 1>(0, 0));
-				xs_i_p(2) = xs_i_p_transformed(3) * cos(xs_i_p_transformed(2));
-				xs_i_p(3) = xs_i_p_transformed(3) * sin(xs_i_p_transformed(2));
-
-				//printf("k = %d |	xs_i_p = %.1f, %.1f, %.1f, %.1f\n", k, xs_i_p(0), xs_i_p(1), xs_i_p(2), xs_i_p(3));
-				pobstacles[i].set_trajectory_sample(xs_i_p, k + 1);
-			}
-		}
-	}
-}
 
 }
 }
