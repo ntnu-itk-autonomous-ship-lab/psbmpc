@@ -545,9 +545,10 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <class MPC_Type>
 		void operator()(
-			Obstacle_Data<Tracked_Obstacle> &data,
-			const Eigen::VectorXd &ownship_state,
-			const MPC_Type &mpc)
+			Obstacle_Data<Tracked_Obstacle> &data, 					// In/Out: Dynamic obstacle information
+			const Eigen::VectorXd &ownship_state, 					// In: Own-ship state at the current time
+			const MPC_Type &mpc										// In: Calling MPC (either PSB-MPC or SB-MPC)
+			)
 		{
 			int n_obst = data.obstacles.size();
 			for (int i = 0; i < n_obst; i++)

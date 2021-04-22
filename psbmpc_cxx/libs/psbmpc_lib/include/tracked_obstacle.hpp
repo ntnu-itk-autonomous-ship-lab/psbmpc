@@ -83,14 +83,11 @@ namespace PSBMPC_LIB
 		// This is equal for all prediction scenarios including those with active COLAV (using MROU)
 		Eigen::MatrixXd P_p;  
 
-		// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
-		std::vector<Eigen::MatrixXd> xs_p;
+		// Predicted state and MROU mean velocity for each prediction scenario: n_ps x n x n_samples, where n = 4
+		std::vector<Eigen::MatrixXd> xs_p, v_ou_p;
 
 		// Prediction scenario ordering, size n_ps x 1 of intentions
 		std::vector<Intention> ps_ordering;
-
-		// Course change ordering, weights and maneuvering times for the independent prediction scenarios: n_ps x 1
-		Eigen::VectorXd ps_course_changes, ps_maneuver_times; 
 
 		// Number of prediction scenarios corresponding to intention a = 1, 2, 3, ..., n_a. Typically n_a = 3. 
 		Eigen::VectorXi ps_intention_count;
@@ -141,250 +138,17 @@ namespace PSBMPC_LIB
 
 		inline void increment_duration_lost(const double dt) { duration_lost += dt; }
 
-		// Trajectory prediction related methods
-		void resize_trajectories(const int n_samples);
-
 		inline std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; }
+		
+		inline std::vector<Eigen::MatrixXd> get_mean_velocity_trajectories() const { return v_ou_p; }
 
 		inline Eigen::MatrixXd get_trajectory_covariance() const { return P_p; }
 
-		void initialize_independent_prediction(	
-			const std::vector<Intention> &ps_ordering,
-			const Eigen::VectorXd &ps_course_changes,
-			const Eigen::VectorXd &ps_maneuver_times);
-
-		void initialize_independent_prediction_v2(	
-			const std::vector<Intention> &ps_ordering,
-			const Eigen::VectorXd &ps_course_changes,
-			const Eigen::VectorXd &ps_maneuver_times);
-
-		/****************************************************************************************
-		*  Name     : predict_independent_trajectories
-		*  Function : Predicts the obstacle trajectories for scenarios where the obstacle
-		*			  does not take the own-ship into account.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
-		template <class MPC_Type>
-		void predict_independent_trajectories(
-			const double T, 
-			const double dt, 
-			const Eigen::VectorXd &ownship_state,
-			const MPC_Type &mpc)
-		{
-			int n_samples = std::round(T / dt);
-			resize_trajectories(n_samples);
-
-			int n_ps_independent = ps_course_changes.size();
-			
-			Eigen::VectorXd ownship_state_sl = ownship_state;
-			P_p.col(0) = CPU::flatten(kf.get_covariance());
-
-			Eigen::Vector2d v_p, v_p_new, v_A, v_B, L_AB;
-			double chi_ps, t = 0, psi_A, d_AB;
-			bool have_turned;
-			for(int ps = 0; ps < n_ps_independent; ps++)
-			{
-				ownship_state_sl = ownship_state;
-
-				v_p(0) = kf.get_state()(2);
-				v_p(1) = kf.get_state()(3);
-
-				xs_p[ps].col(0) = kf.get_state();
-				
-				have_turned = false;	
-				for(int k = 0; k < n_samples; k++)
-				{
-					t = (k + 1) * dt;
-
-					if (ownship_state_sl.size() == 4)
-					{
-						v_B(0) = ownship_state_sl(2);
-						v_B(1) = ownship_state_sl(3);
-					}
-					else
-					{
-						v_B(0) = ownship_state_sl(3);
-						v_B(1) = ownship_state_sl(4);
-						v_B = CPU::rotate_vector_2D(v_B, ownship_state_sl(2));
-					}
-
-					psi_A = atan2(xs_p[ps](4), xs_p[ps](0));
-					L_AB = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl.block<2, 1>(0, 0);
-					d_AB = L_AB.norm();
-					L_AB.normalize();
-
-					if (!mu[ps])
-					{
-						mu[ps] = mpc.mpc_cost.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
-					}
-				
-					switch (ps_ordering[ps])
-					{
-						case KCC :	
-							break; // Proceed
-						case SM :
-							if (k == ps_maneuver_times[ps] && !have_turned)
-							{
-								chi_ps = atan2(v_p(1), v_p(0)); 
-								v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
-								v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
-								v_p = v_p_new;
-								have_turned = true;
-							}
-							break;
-						case PM : 
-							if (k == ps_maneuver_times[ps] && !have_turned)
-							{
-								chi_ps = atan2(v_p(1), v_p(0)); 
-								v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
-								v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
-								v_p = v_p_new;
-								have_turned = true;
-							}
-							break;
-						default :
-							// Throw
-							break;
-					}
-
-					if (k < n_samples - 1)
-					{
-						xs_p[ps].col(k + 1) = mrou.predict_state(xs_p[ps].col(k), v_p, dt);
-
-						if (ps == 0) P_p.col(k + 1) = CPU::flatten(mrou.predict_covariance(P_0, t));
-
-						// Propagate ownship assuming straight line trajectory
-						if (ownship_state_sl.size() == 4)
-						{
-							ownship_state_sl(0) = ownship_state_sl(0) + dt * ownship_state_sl(3) * cos(ownship_state_sl(2));
-							ownship_state_sl(1) = ownship_state_sl(1) + dt * ownship_state_sl(3) * sin(ownship_state_sl(2));
-							ownship_state_sl.block<2, 1>(2, 0) = ownship_state_sl.block<2, 1>(2, 0);
-						}
-						else
-						{
-							ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
-								dt * CPU::rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
-							ownship_state_sl.block<4, 1>(2, 0) = ownship_state_sl.block<4, 1>(2, 0);
-						}
-					}
-				}
-			}
-		}
-
-		/****************************************************************************************
-		*  Name     : predict_independent_trajectories_v2
-		*  Function : More refined obstacle prediction with avoidance-like trajectories,
-		*			  including the straight-line trajectory
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
-		template <class MPC_Type>
-		void predict_independent_trajectories_v2(
-			const double T, 
-			const double dt, 
-			const Eigen::VectorXd &ownship_state,
-			const MPC_Type &mpc)
-		{
-			int n_samples = std::round(T / dt);
-			resize_trajectories(n_samples);
-
-			int n_ps_independent = ps_course_changes.size();
-			
-			Eigen::VectorXd ownship_state_sl = ownship_state;
-			P_p.col(0) = CPU::flatten(kf.get_covariance());
-
-			Eigen::Vector2d v_p, v_p_new, v_A, v_B, L_AB;
-			double chi_ps, t = 0, psi_A, d_AB;
-			bool have_turned;
-			for(int ps = 0; ps < n_ps_independent; ps++)
-			{
-				ownship_state_sl = ownship_state;
-
-				v_p(0) = kf.get_state()(2);
-				v_p(1) = kf.get_state()(3);
-
-				xs_p[ps].col(0) = kf.get_state();
-				
-				have_turned = false;	
-				for(int k = 0; k < n_samples; k++)
-				{
-					t = (k + 1) * dt;
-
-					if (ownship_state_sl.size() == 4)
-					{
-						v_B(0) = ownship_state_sl(2);
-						v_B(1) = ownship_state_sl(3);
-					}
-					else
-					{
-						v_B(0) = ownship_state_sl(3);
-						v_B(1) = ownship_state_sl(4);
-						v_B = CPU::rotate_vector_2D(v_B, ownship_state_sl(2));
-					}
-
-					psi_A = atan2(xs_p[ps](4), xs_p[ps](0));
-					L_AB = xs_p[ps].block<2, 1>(0, k) - ownship_state_sl.block<2, 1>(0, 0);
-					d_AB = L_AB.norm();
-					L_AB.normalize();
-
-					if (!mu[ps])
-					{
-						mu[ps] = mpc.mpc_cost.determine_COLREGS_violation(v_A, psi_A, v_B, L_AB, d_AB);
-					}
-				
-					switch (ps_ordering[ps])
-					{
-						case KCC :	
-							break; // Proceed
-						case SM :
-							if (k == ps_maneuver_times[ps] && !have_turned)
-							{
-								chi_ps = atan2(v_p(1), v_p(0)); 
-								v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
-								v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
-								v_p = v_p_new;
-								have_turned = true;
-							}
-							break;
-						case PM : 
-							if (k == ps_maneuver_times[ps] && !have_turned)
-							{
-								chi_ps = atan2(v_p(1), v_p(0)); 
-								v_p_new(0) = v_p.norm() * cos(chi_ps + ps_course_changes[ps]);
-								v_p_new(1) = v_p.norm() * sin(chi_ps + ps_course_changes[ps]);
-								v_p = v_p_new;
-								have_turned = true;
-							}
-							break;
-						default :
-							// Throw
-							break;
-					}
-
-					if (k < n_samples - 1)
-					{
-						xs_p[ps].col(k + 1) = mrou.predict_state(xs_p[ps].col(k), v_p, dt);
-
-						if (ps == 0) P_p.col(k + 1) = CPU::flatten(mrou.predict_covariance(P_0, t));
-
-						// Propagate ownship assuming straight line trajectory
-						if (ownship_state_sl.size() == 4)
-						{
-							ownship_state_sl(0) = ownship_state_sl(0) + dt * ownship_state_sl(3) * cos(ownship_state_sl(2));
-							ownship_state_sl(1) = ownship_state_sl(1) + dt * ownship_state_sl(3) * sin(ownship_state_sl(2));
-							ownship_state_sl.block<2, 1>(2, 0) = ownship_state_sl.block<2, 1>(2, 0);
-						}
-						else
-						{
-							ownship_state_sl.block<2, 1>(0, 0) =  ownship_state_sl.block<2, 1>(0, 0) + 
-								dt * CPU::rotate_vector_2D(ownship_state_sl.block<2, 1>(3, 0), ownship_state_sl(2, 0));
-							ownship_state_sl.block<4, 1>(2, 0) = ownship_state_sl.block<4, 1>(2, 0);
-						}
-					}
-				}
-			}
-		}
+		void setup_prediction(
+			const std::vector<Eigen::MatrixXd> &xs_p,	
+			const std::vector<Eigen::MatrixXd> &v_ou_p,	
+			const Eigen::MatrixXd &P_p,	
+			const std::vector<Intention> &ps_ordering);
 
 		void prune_ps(const Eigen::VectorXi &ps_indices);
 

@@ -99,29 +99,26 @@ void Tracked_Obstacle::resize_trajectories(const int n_samples)
 }
 
 /****************************************************************************************
-*  Name     : initialize_prediction
-*  Function : Sets up independent or dependent obstacle prediction, depending on if
-*		      colav is active or not. For the dependent obstacle prediction,
-*			  ps_course_changes and ps_maneuver_times are "dont care" variables, hence
-*		      two overloads.
+*  Name     : setup_prediction
+*  Function : Set predicted trajectory information for the obstacle, from the Obstacle
+*			  Predictor class.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::initialize_independent_prediction(
-	const std::vector<Intention> &ps_ordering, 						// In: Prediction scenario ordering
-	const Eigen::VectorXd &ps_course_changes, 						// In: Order of alternative maneuvers for the prediction scenarios
-	const Eigen::VectorXd &ps_maneuver_times 						// In: Time of alternative maneuvers for the prediction scenarios	
+void Tracked_Obstacle::setup_prediction(
+	const std::vector<Eigen::MatrixXd> &xs_p, 						// In: Vector of prediction scenario state trajectories for the obstacle
+	const std::vector<Eigen::MatrixXd> &v_ou_p, 					// In: Vector of prediction scenario mean velocity trajectories for the obstacle
+	const Eigen::MatrixXd &P_p, 									// In: Associated covariance trajectory for the obstacle, size 16 x n_samples
+	const std::vector<Intention> &ps_ordering 						// In: Prediction scenario ordering
 	)
 {
-	// the size of ps_ordering is greater than the size of ps_course_changes and ps_maneuver_times
-	// when intelligent obstacle predictions are considered (joint predictions are active)
-	// Thus n_ps_i = length(ps_ordering) = n_ps_i_independent + n_ps_i_dependent
-	// where n_ps_i_independent = size(ps_course_changes)
+	this->xs_p = xs_p;
+
+	this->v_ou_p = v_ou_p;
+
+	this->P_p = P_p;
+
 	this->ps_ordering = ps_ordering;
-
-	this->ps_course_changes = ps_course_changes;
-
-	this->ps_maneuver_times = ps_maneuver_times;
 
 	int n_ps_independent = ps_ordering.size();
 	mu.resize(n_ps_independent);
@@ -154,20 +151,17 @@ void Tracked_Obstacle::prune_ps(
 	)
 {
 	int n_ps_new = ps_indices.size();
-	int n_ps = ps_ordering.size();
-	int n_ps_independent = ps_course_changes.size();
+	int n_ps_old = ps_ordering.size();
 	/* std::cout << "n_ps_new = " << n_ps_new << std::endl;
 	std::cout << "n_ps = " << n_ps << std::endl;
 	std::cout << "n_ps_independent = " << n_ps_independent << std::endl; */
 	std::vector<bool> mu_copy(n_ps_new);
 	std::vector<Eigen::MatrixXd> xs_p_copy(n_ps_new);
 	std::vector<Intention> ps_ordering_copy(n_ps_new);
-
-	Eigen::VectorXd ps_course_changes_copy(n_ps_new), ps_maneuver_times_copy(n_ps_new);
 	ps_intention_count.setZero();
 
 	int ps_count = 0;
-	for (int ps = 0; ps < n_ps; ps++)
+	for (int ps = 0; ps < n_ps_old; ps++)
 	{
 		if (ps == ps_indices(ps_count))
 		{
@@ -176,12 +170,6 @@ void Tracked_Obstacle::prune_ps(
 			xs_p_copy[ps_count] = xs_p[ps];
 
 			ps_ordering_copy[ps_count] = ps_ordering[ps];
-
-			if (ps < n_ps_independent)
-			{
-				ps_course_changes_copy(ps_count) = ps_course_changes(ps);
-				ps_maneuver_times_copy(ps_count) = ps_maneuver_times(ps);
-			}
 
 			if 		(ps_ordering_copy[ps_count] == KCC)		{ ps_intention_count(0) += 1;}
 			else if (ps_ordering_copy[ps_count] == SM)		{ ps_intention_count(1) += 1; }
@@ -198,7 +186,6 @@ void Tracked_Obstacle::prune_ps(
 	xs_p = xs_p_copy; 
 
 	ps_ordering = ps_ordering_copy;
-	ps_course_changes = ps_course_changes_copy; ps_maneuver_times = ps_maneuver_times_copy;
 }
 
 /****************************************************************************************

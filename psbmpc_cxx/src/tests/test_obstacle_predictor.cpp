@@ -81,6 +81,7 @@ int main()
 	double *p_P_traj = mxGetPr(P_traj_mx);
 	mxArray *ps_mx(nullptr), *k_mx(nullptr);
 
+	engEvalString(ep, "test_obstacle_predictor_plot_init");
 	for (int ps = 0; ps < n_ps; ps++)
 	{
 		ps_mx = mxCreateDoubleScalar(ps + 1);
@@ -103,7 +104,7 @@ int main()
 			engPutVariable(ep, "X_ps", traj_mx);
 			engPutVariable(ep, "v", v_traj_mx);
 			engPutVariable(ep, "P_flat", P_traj_mx);
-			engEvalString(ep, "test_obstacle_predictor_plot");
+			engEvalString(ep, "test_obstacle_predictor_plot_update");
 
 			printf("%s", buffer);
 		}
