@@ -524,6 +524,8 @@ namespace PSBMPC_LIB
 					}
 				}
 			}
+
+			data.obstacles[i].setup_prediction(xs_p, v_ou_p, P_p, ps_ordering_i);
 		}
 		
 	public:
