@@ -18,7 +18,7 @@
 *
 *****************************************************************************************/
 
-#include "shapefile_related/shapefil.h"
+
 #include "cpu/psbmpc_cpu.hpp"
 #include "cpu/utilities_cpu.hpp"
 #include "engine.h"
@@ -29,10 +29,6 @@
 #include <memory>
 #include <string>
 
-#include <boost/geometry/geometry.hpp>
-#include <boost/geometry/geometries/geometries.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/foreach.hpp>
 
 #define BUFSIZE 1000000
 
@@ -114,7 +110,7 @@ int main(){
 // Static Obstacles Setup
 //*****************************************************************************************************************
 	// Input the path to the land data
-    std::string filename = "/home/trymte/Desktop/ENC (copy)/data/charts/land/land.shp";
+    std::string filename = "/home/admin/Desktop/ENC (copy)/data/charts/land/land.shp";
     std::vector<polygon_2D> polygons;
 
     try

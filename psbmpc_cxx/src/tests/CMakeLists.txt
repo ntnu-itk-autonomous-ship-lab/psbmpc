@@ -31,12 +31,12 @@ find_package(Eigen3 REQUIRED)
 #add_executable(tester test_kf.cpp)
 #add_executable(tester test_prng.cpp)
 
-#add_executable(tester test_psbmpc_grounding.cpp)
+add_executable(tester test_psbmpc_grounding_cpu.cpp)
 #add_executable(tester test_read_shapefile.cpp)
 #add_executable(tester test_polygons.cpp)
 
 # Test files for use with GPU-version of PSBMPC
-add_executable(tester test_psbmpc_gpu.cpp)
+#add_executable(tester test_psbmpc_gpu.cpp)
 #add_executable(tester test_ownship_gpu.cu)
 #add_executable(tester test_obstacle_ship_gpu.cu)
 #add_executable(tester test_cpe_gpu.cu)

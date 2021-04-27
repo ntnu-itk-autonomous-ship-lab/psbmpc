@@ -22,14 +22,7 @@
 
 #include "obstacle_manager.hpp"
 #include "cpu/prediction_obstacle_cpu.hpp"
-
-#include <boost/geometry/geometry.hpp>
-#include <boost/geometry/geometries/geometries.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/foreach.hpp>
-
-typedef boost::geometry::model::d2::point_xy<double> point_2D;
-typedef boost::geometry::model::polygon<point_2D> polygon_2D;
+#include "grounding_hazard_manager.hpp"
 
 namespace PSBMPC_LIB
 {
