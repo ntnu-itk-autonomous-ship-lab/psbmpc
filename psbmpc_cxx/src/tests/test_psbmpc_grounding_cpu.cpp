@@ -21,6 +21,7 @@
 
 #include "cpu/psbmpc_cpu.hpp"
 #include "cpu/utilities_cpu.hpp"
+#include "grounding_hazard_manager.hpp"
 #include "engine.h"
 
 #include <iostream>
@@ -31,60 +32,6 @@
 
 
 #define BUFSIZE 1000000
-
-template <typename T, typename F>
-void read_shapefile(const std::string &filename, std::vector<T> &polygons, F functor)
-{
-    try
-    {
-        SHPHandle handle = SHPOpen(filename.c_str(), "rb");
-        if (handle <= (SHPHandle)0)
-        {
-            throw std::string("File " + filename + " not found");
-        }
-
-        int nShapeType, nEntities;
-        double adfMinBound[4], adfMaxBound[4];
-        SHPGetInfo(handle, &nEntities, &nShapeType, adfMinBound, adfMaxBound );
-
-        for (int i = 0; i < nEntities; i++)
-        {
-            SHPObject* psShape = SHPReadObject(handle, i );
-
-            // Read only polygons, and only those without holes
-            if (psShape->nSHPType == SHPT_POLYGON && psShape->nParts == 1)
-            {
-                T polygon;
-                functor(psShape, polygon);
-                polygons.push_back(polygon);
-            }
-            SHPDestroyObject( psShape );
-        }
-        SHPClose(handle);
-    }
-    catch(const std::string &s)
-    {
-        throw s;
-    }
-    catch(...)
-    {
-        throw std::string("Other exception");
-    }
-}
-
-
-template <typename T>
-void convert(SHPObject *psShape, T &polygon)
-{
-    double* x = psShape->padfX;
-    double* y = psShape->padfY;
-    for (int v = 0; v < psShape->nVertices; v++)
-    {
-        typename boost::geometry::point_type<T>::type point;
-        boost::geometry::assign_values(point, x[v], y[v]);
-        boost::geometry::append(polygon, point);
-    }
-}
 
 //*****************************************************************************************************************
 // Main program:
@@ -109,19 +56,13 @@ int main(){
 //*****************************************************************************************************************
 // Static Obstacles Setup
 //*****************************************************************************************************************
+	
 	// Input the path to the land data
-    std::string filename = "/home/admin/Desktop/ENC (copy)/data/charts/land/land.shp";
-    std::vector<polygon_2D> polygons;
+    std::string filename = "grounding_hazard_data/charts/land/land.shp";
+    
 
-    try
-    {
-        read_shapefile(filename, polygons, convert<polygon_2D>);
-    }
-    catch(const std::string& s)
-    {
-        std::cout << s << std::endl;
-        return 1;
-    }
+   	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename);
+	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
 
     //Make matlab polygons type friendly array:
     Eigen::Matrix<double, -1, 2> polygon_matrix;
@@ -137,7 +78,7 @@ int main(){
     polygon_matrix.resize(n_static_obst,2); 
 
     /*format polygon_matrix array for matlab plotting*/
-    int pcount = 0 ; 
+    int pcount = 0; 
     BOOST_FOREACH(polygon_2D const& poly, polygons)
 	{
         for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)

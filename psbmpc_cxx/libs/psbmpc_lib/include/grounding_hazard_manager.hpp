@@ -46,6 +46,8 @@ namespace PSBMPC_LIB
 
 		std::vector<polygon_2D> polygons;
 
+		point_2D map_origin;
+
 		// Matrix of 2 x (-1) polygons inside a grid (determined by input parameters)
 		// Each polygon is separated by (-1, -1)
 		Eigen::MatrixXd filtered_polygons;
@@ -118,10 +120,14 @@ namespace PSBMPC_LIB
 	public:
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-		Grounding_Hazard_Manager(const std::string &filename)
+		Grounding_Hazard_Manager(const std::string &filename) 
+			: 
+			map_origin(270250, 7042250) // Trondheim, just north of ravnkloa, brattora crossing
 		{
 			read_shapefile(filename, polygons);
 		}
+
+		std::vector<polygon_2D> get_polygons() const { return polygons; }
 
 		template <class MPC_Type>
 		std::vector<polygon_2D> operator()(
