@@ -163,6 +163,20 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
+		*  Name     : rotate_matrix_2D
+		*  Function : Rotates the 2D matrix by the angle. 
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
+		inline Eigen::Matrix2d rotate_matrix_2D(const Eigen::Matrix2d &M, const double angle)
+		{
+			Eigen::Matrix2d R;
+			R << cos(angle), -sin(angle), sin(angle), cos(angle);
+			
+			return R * M * R.transpose();
+		}
+
+		/****************************************************************************************
 		*  Name     : flatten
 		*  Function : Flattens a matrix of size n_rows x n_cols to n_rows * n_cols x 1
 		*  Author   :

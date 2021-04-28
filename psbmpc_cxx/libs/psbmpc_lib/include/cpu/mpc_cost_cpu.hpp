@@ -261,34 +261,20 @@ namespace PSBMPC_LIB
 			const int i 												// In: Index of obstacle
 			)
 		{
-			double cost_i = 0.0;
+			double cost_do(0.0);
+
+			Eigen::VectorXd Pr_s_i = data.obstacles[i].get_scenario_probabilities();
+			assert(max_cost_ps.size() == Pr_s_i.size());
 
 			int n_ps = max_cost_ps.size();
-			Eigen::VectorXd Pr_a_i = data.obstacles[i].get_intention_probabilities();
-			Eigen::VectorXi ps_intention_count_i = data.obstacles[i].get_ps_intention_count();
-			std::vector<Intention> ps_ordering_i = data.obstacles[i].get_ps_ordering();
-			std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
-			double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
-			Intention a_i_ps(KCC);
-			bool mu_i_ps(false);
 			
 			// If only 1 prediction scenario: Original PSB-MPC formulation
 			if (n_ps == 1)
 			{
 				cost_i = max_cost_ps(0);
 			}
-			else // Three intentions to consider: KCC, SM and PM
+			else
 			{
-				// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-				// which means that higher cost is applied if the obstacle follows COLREGS
-				// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-				// and the own-ship breaches COLREGS
-
-				if (Pr_CC_i < 0.0001) // Should not be allowed to be strictly 0
-				{
-					Pr_CC_i = 0.0001;
-				}
-				
 				Eigen::Vector3d cost_a_weight_sums, cost_a; cost_a_weight_sums.setZero();
 				Eigen::VectorXd weights_ps(n_ps);
 				for (int ps = 0; ps < n_ps; ps++)
@@ -360,11 +346,11 @@ namespace PSBMPC_LIB
 			std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
 
 			int n_ps = xs_i_p.size();
-			Eigen::VectorXd max_cost_ps(n_ps), weights_ps(n_ps);
-			max_cost_ps.setZero(); weights_ps.setZero();
+			Eigen::VectorXd max_cost_ps(n_ps);
+			max_cost_ps.setZero();
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
-			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);
+			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0);
 			bool mu(false), trans(false);
 			for(int k = 0; k < n_samples; k++)
 			{
@@ -424,8 +410,6 @@ namespace PSBMPC_LIB
 
 					trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
 
-					//R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
-
 					// Track loss modifier to collision cost
 					if (data.obstacles[i].get_duration_lost() > pars.p_step)
 					{
@@ -435,9 +419,6 @@ namespace PSBMPC_LIB
 					{
 						l_i = 1;
 					}
-					
-					// SB-MPC formulation with ad-hoc collision risk
-					//cost_ps = l_i * C * R + pars.kappa * mu  + pars.kappa_TC * trans;
 
 					// PSB-MPC formulation with probabilistic collision cost
 					cost_ps = l_i * C * P_c_i(ps, k) + pars.kappa * mu  + pars.kappa_TC * trans;
@@ -457,80 +438,16 @@ namespace PSBMPC_LIB
 				cost = max_cost_ps(0);
 				return cost;
 			}
-			// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-			// which means that higher cost is applied if the obstacle follows COLREGS
-			// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-			// and the own-ship breaches COLREGS
-
-			std::vector<Intention> ps_ordering = data.obstacles[i].get_ps_ordering();
-			std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
-			Eigen::VectorXi ps_intention_count = data.obstacles[i].get_ps_intention_count();
-
-			double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
-			if (Pr_CC_i < 0.0001) // Should not be allowed to be strictly 0
-			{
-				Pr_CC_i = 0.0001;
-			}
-
-			Eigen::Vector3d cost_a_weight_sums; cost_a_weight_sums.setZero();
-			for (int ps = 0; ps < n_ps; ps++)
-			{
-				weights_ps(ps) = Pr_CC_i;
-				if (mu_i[ps])
-				{
-					//printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
-					weights_ps(ps) = 1 - Pr_CC_i;
-				}
-				
-				if (ps_ordering[ps] == KCC)
-				{
-					cost_a_weight_sums(0) += weights_ps(ps);
-				}
-				else if (ps_ordering[ps] == SM)
-				{
-					cost_a_weight_sums(1) += weights_ps(ps);
-				}
-				else if (ps_ordering[ps] == PM)
-				{
-					cost_a_weight_sums(2) += weights_ps(ps);
-				}
-			}
-
-			Eigen::Vector3d cost_a = {0, 0, 0};
-			Eigen::VectorXd Pr_a = data.obstacles[i].get_intention_probabilities();
-			assert(Pr_a.size() == 3);
 			
-			for(int ps = 0; ps < n_ps; ps++)
-			{
-				if (ps_ordering[ps] == KCC)
-				{
-					cost_a(0) += (weights_ps(ps) / cost_a_weight_sums(0)) * max_cost_ps(ps);
-				}
-				else if (ps_ordering[ps] == SM)
-				{
-					cost_a(1) +=  (weights_ps(ps) / cost_a_weight_sums(1)) * max_cost_ps(ps);
-				}
-				else if (ps_ordering[ps] == PM)
-				{
-					cost_a(2) +=  (weights_ps(ps) / cost_a_weight_sums(2)) * max_cost_ps(ps);
-				}
-			}
-			
-			// Average the cost for the starboard and port maneuver type of intentions
-			if (ps_intention_count(0) > 0) 	{ cost_a(0) /= 1.0; } // (double)ps_intention_count(0); }
-			else 							{ cost_a(0) = 0.0;}
-			if (ps_intention_count(1) > 0)	{ cost_a(1) /= 1.0; } // (double)ps_intention_count(1); } 
-			else							{ cost_a(1) = 0.0; }
-			if (ps_intention_count(2) > 0)	{ cost_a(2) /= 1.0; } // (double)ps_intention_count(2); } 
-			else							{ cost_a(2) = 0.0; }
+			Eigen::VectorXd Pr_s = data.obstacles[i].get_scenario_probabilities();
+			assert(Pr_s.size() == max_cost_ps.size());
 
-			// Weight by the intention probabilities
-			cost = Pr_a.dot(cost_a);
+			// Weight prediction scenario costs by the scenario probabilities
+			cost = Pr_s.dot(max_cost_ps);
 
-			/* std::cout << "weights_ps = " << weights_ps.transpose() << std::endl;
+			/* 
 			std::cout << "max_cost_ps = " << max_cost_ps.transpose() << std::endl;
-			std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
-			std::cout << "cost a = " << cost_a.transpose() << std::endl;
+			std::cout << "Pr_s = " << Pr_a.transpose() << std::endl;
 			std::cout << "cost_i(i) = " << cost << std::endl; */
 
 			return cost;

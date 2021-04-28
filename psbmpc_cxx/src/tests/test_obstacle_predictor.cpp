@@ -50,14 +50,13 @@ int main()
 	Eigen::VectorXd xs_i_aug(9);
 	xs_i_aug << xs_i_0, 5, 5, 5, 5, 0;
 
-	Eigen::VectorXd Pr_a(3); Pr_a << 1, 1, 1;
-	Pr_a / Pr_a.sum();
-	double Pr_CC = 0.5;
+	Eigen::VectorXd Pr_s(3); Pr_s << 1, 1, 1;
+	Pr_s / Pr_s.sum();
 
 	Eigen::VectorXd ownship_state(4); ownship_state << 500, 0, 180 * DEG2RAD, 9.0;
 
 	PSBMPC_LIB::Obstacle_Data<PSBMPC_LIB::Tracked_Obstacle> data;
-	data.obstacles.push_back(PSBMPC_LIB::Tracked_Obstacle(xs_i_aug, P_0, Pr_a, Pr_CC, false, T, dt));
+	data.obstacles.push_back(PSBMPC_LIB::Tracked_Obstacle(xs_i_aug, P_0, Pr_s, false, T, dt));
 
 	PSBMPC_LIB::CPU::PSBMPC psbmpc;
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;

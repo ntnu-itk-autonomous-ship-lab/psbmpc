@@ -25,7 +25,7 @@
 #include "psbmpc_parameters.hpp"
 #include "tracked_obstacle.hpp"
 
-#include "Eigen/StdVector"
+#include "Eigen/Dense"
 #include <string>
 
 
@@ -179,9 +179,7 @@ namespace PSBMPC_LIB
 		void update_obstacles(
 			const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
 			const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
-			const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
-			const Eigen::MatrixXd &obstacle_intention_probabilities, 							// In: Obstacle intention probability information
-			const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
+			const Eigen::Matrix<double, 16, -1> &obstacle_covariances 							// In: Dynamic obstacle covariances
 			) 			
 		{
 			int n_obst_old = data.obstacles.size();
@@ -200,8 +198,6 @@ namespace PSBMPC_LIB
 						data.obstacles[j].update(
 							obstacle_states.col(i), 
 							obstacle_covariances.col(i), 
-							obstacle_intention_probabilities.col(i),
-							obstacle_a_priori_CC_probabilities(i),
 							obstacle_filter_on,
 							mpc_pars.dt);
 
@@ -217,8 +213,6 @@ namespace PSBMPC_LIB
 					data.new_obstacles.push_back(std::move(Tracked_Obstacle(
 						obstacle_states.col(i), 
 						obstacle_covariances.col(i),
-						obstacle_intention_probabilities.col(i), 
-						obstacle_a_priori_CC_probabilities(i),
 						obstacle_filter_on,  
 						mpc_pars.T, 
 						mpc_pars.dt)));
@@ -401,12 +395,10 @@ namespace PSBMPC_LIB
 			const Eigen::VectorXd &ownship_state,												// In: Current time own-ship state
 			const double ownship_length,														// In: Dimension of ownship along longest axis
 			const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
-			const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
-			const Eigen::MatrixXd &obstacle_intention_probabilities, 							// In: Obstacle intention probability information
-			const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
+			const Eigen::Matrix<double, 16, -1> &obstacle_covariances 							// In: Dynamic obstacle covariances
 			) 			
 		{
-			update_obstacles<Parameter_Object>(mpc_pars, obstacle_states, obstacle_covariances, obstacle_intention_probabilities, obstacle_a_priori_CC_probabilities);
+			update_obstacles<Parameter_Object>(mpc_pars, obstacle_states, obstacle_covariances);
 
 			update_situation_type_and_transitional_variables<Parameter_Object>(mpc_pars, ownship_state, ownship_length);
 		}
