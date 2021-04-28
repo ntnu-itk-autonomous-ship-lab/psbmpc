@@ -432,7 +432,7 @@ void Telemetron::predict_trajectory(
 	{ 
 		if (k == maneuver_times[man_count]){
 			u_m = offset_sequence[2 * man_count];
-			chi_m = offset_sequence[2 * man_count + 1]; 
+			chi_m += offset_sequence[2 * man_count + 1]; 
 			if (man_count < maneuver_times.size() - 1) man_count += 1;
 		}  
 
