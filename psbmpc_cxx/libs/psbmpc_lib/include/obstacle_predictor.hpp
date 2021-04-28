@@ -243,6 +243,8 @@ namespace PSBMPC_LIB
 					}
 				}
 			}
+
+			data.obstacles[i].setup_prediction(xs_p, v_ou_p, P_p, ps_ordering_i);
 		}
 		
 	public:
@@ -264,9 +266,10 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <class MPC_Type>
 		void operator()(
-			Obstacle_Data<Tracked_Obstacle> &data,
-			const Eigen::VectorXd &ownship_state,
-			const MPC_Type &mpc)
+			Obstacle_Data<Tracked_Obstacle> &data, 					// In/Out: Dynamic obstacle information
+			const Eigen::VectorXd &ownship_state, 					// In: Own-ship state at the current time
+			const MPC_Type &mpc										// In: Calling MPC (either PSB-MPC or SB-MPC)
+			)
 		{
 			int n_obst = data.obstacles.size();
 			n_ps.resize(n_obst);

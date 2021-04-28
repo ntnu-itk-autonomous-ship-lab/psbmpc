@@ -77,7 +77,8 @@ namespace PSBMPC_LIB
 		Eigen::MatrixXd P_p;  
 
 		// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
-		std::vector<Eigen::MatrixXd> xs_p;
+		std::vector<Eigen::MatrixXd> xs_p, v_OU_p;
+
 		
 	public:
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -117,12 +118,22 @@ namespace PSBMPC_LIB
 		inline void increment_duration_lost(const double dt) { duration_lost += dt; }
 
 		inline std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; }
+		
+		inline std::vector<Eigen::MatrixXd> get_mean_velocity_trajectories() const { return v_ou_p; }
 
 		inline Eigen::MatrixXd get_trajectory_covariance() const { return P_p; }
 
+<<<<<<< HEAD
 		inline void set_trajectories(const std::vector<Eigen::MatrixXd> &xs_p) { this->xs_p = xs_p; }
 
 		inline void set_trajectory_covariance(const Eigen::MatrixXd &P_p) { this->P_p = P_p; }
+=======
+		void setup_prediction(
+			const std::vector<Eigen::MatrixXd> &xs_p,	
+			const std::vector<Eigen::MatrixXd> &v_ou_p,	
+			const Eigen::MatrixXd &P_p,	
+			const std::vector<Intention> &ps_ordering);
+>>>>>>> 44fd220889323edc5ad3e505943da1af5276ea07
 
 		void prune_ps(const Eigen::VectorXi &ps_indices);
 

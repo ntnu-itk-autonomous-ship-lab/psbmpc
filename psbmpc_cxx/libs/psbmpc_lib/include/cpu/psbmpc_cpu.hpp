@@ -76,7 +76,6 @@ namespace PSBMPC_LIB
 
 			void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 
-			// Obstacle prediction scenario pruning related methods
 			void prune_obstacle_scenarios(Obstacle_Data<Tracked_Obstacle> &data);
 
 			void calculate_collision_probabilities(
