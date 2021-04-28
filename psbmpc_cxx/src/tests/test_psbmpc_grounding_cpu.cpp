@@ -156,7 +156,7 @@ int main(){
 	point_2D p1(316868,7087612);
 	point_2D p2(318807,7087612);
 	point_2D p3(318807,7087552);
-	
+	// north of ravnkloa: 270250, 7042250)
 	int d_irrelevant = 2000; 		//The polygons are so far away we can remove them from SB-MPC calculations. 
 	int iterator = 0;
 	bool isdone = false;
