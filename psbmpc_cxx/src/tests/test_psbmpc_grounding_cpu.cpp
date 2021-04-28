@@ -94,6 +94,9 @@ int main(){
 		pcount += 1;
     }
 	//remove polygons which are irrelevantly far away for code speed. 
+	double east_window_size = 2000, north_window_size = 2000;
+	point_2D origin(270250, 7042250);
+	
 	point_2D p1(316868,7087612);
 	point_2D p2(318807,7087612);
 	point_2D p3(318807,7087552);
