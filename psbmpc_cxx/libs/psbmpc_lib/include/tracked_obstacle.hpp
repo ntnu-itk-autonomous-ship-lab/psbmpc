@@ -125,6 +125,8 @@ namespace PSBMPC_LIB
 
 		inline void set_trajectories(const std::vector<Eigen::MatrixXd> &xs_p) { this->xs_p = xs_p; }
 
+		inline void set_mean_velocity_trajectories(const std::vector<Eigen::MatrixXd> &v_ou_p) { this->v_ou_p = v_ou_p; }
+
 		inline void set_trajectory_covariance(const Eigen::MatrixXd &P_p) { this->P_p = P_p; }
 
 		void prune_ps(const Eigen::VectorXi &ps_indices);

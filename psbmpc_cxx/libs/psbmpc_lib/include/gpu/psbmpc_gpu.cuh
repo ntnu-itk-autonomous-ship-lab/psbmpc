@@ -85,12 +85,12 @@ namespace PSBMPC_LIB
 			thrust::device_vector<unsigned int> cb_index_dvec, obstacle_index_dvec, obstacle_ps_index_dvec;
 
 			// Device vector of costs, size n_cbs x 1, consisting of the static obstacle and path related costs for each control behaviour
-			thrust::device_vector<float> cb_costs_1_dvec;
+			thrust::device_vector<thrust::tuple<float, float>> cb_costs_1_dvec;
 			
-			// Device vector of costs, size n_threads x 1. It is the dynamic obstacle cost when the own-ship
+			// Device vector of costs, size n_threads x 1. It is the dynamic obstacle cost (first tuple element) when the own-ship
 			// follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, behaves as in
-			// prediction scenario <obstacle_ps_index>.
-			thrust::device_vector<float> cb_costs_2_dvec;
+			// prediction scenario <obstacle_ps_index>. The own-ship COLREGS violation indicator is the second element of the tuple
+			thrust::device_vector<thrust::tuple<float, float>> cb_costs_2_dvec;
 			
 			std::unique_ptr<CB_Cost_Functor_1> cb_cost_functor_1;
 			std::unique_ptr<CB_Cost_Functor_2> cb_cost_functor_2;
@@ -122,14 +122,7 @@ namespace PSBMPC_LIB
 
 			void find_optimal_control_behaviour(Obstacle_Data<Tracked_Obstacle> &data);
 
-			void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data);
-
-			void set_up_independent_obstacle_prediction(
-				std::vector<Intention> &ps_ordering,
-				Eigen::VectorXd &ps_course_changes,
-				Eigen::VectorXd &ps_maneuver_times,
-				const double t_cpa_i,
-				const int i);
+			void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 			
 			void prune_obstacle_scenarios(Obstacle_Data<Tracked_Obstacle> &data);
 			

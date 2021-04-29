@@ -67,7 +67,7 @@ namespace PSBMPC_LIB
 
 			Guidance_Method guidance_method;
 
-			float T, T_static, dt, p_step;
+			float T, dt, p_step;
 			float d_safe, d_close, d_init;
 			float K_coll;
 			float phi_AH, phi_OT, phi_HO, phi_CR;
@@ -93,7 +93,7 @@ namespace PSBMPC_LIB
 
 				this->guidance_method = pars.guidance_method;
 
-				this->T = pars.T; this->T_static = pars.T_static; this->dt = pars.dt; this->p_step = pars.p_step; 
+				this->T = pars.T; this->dt = pars.dt; this->p_step = pars.p_step; 
 
 				this->d_safe = pars.d_safe; this->d_close = pars.d_close; this->d_init = pars.d_init;
 

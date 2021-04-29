@@ -44,11 +44,11 @@ namespace GPU
 //  Author   : Trym Tengesdal
 //  Modified :
 //=======================================================================================
-__device__ float CB_Cost_Functor_1::operator()(
+__device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
 	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
-	cost_cb = 0.0f;
+	h_so= 0.0f; h_path = 0.0f;
 	cb_index = thrust::get<0>(cb_tuple);
 	offset_sequence = thrust::get<1>(cb_tuple);
 
@@ -73,17 +73,17 @@ __device__ float CB_Cost_Functor_1::operator()(
 
 	//==================================================================================================
 	// 2.1 : Calculate cost due to driving the boat on land or static objects
-	//cost_cb += mpc_cost[cb_index].calculate_grounding_cost(); 
+	//h_so = mpc_cost[cb_index].calculate_grounding_cost(); 
 
 	//==================================================================================================
 	// 2.2 : Calculate cost due to deviating from the nominal path
-	cost_cb += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
+	h_path += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
 
 	//==================================================================================================
 	// 2.3 : Calculate cost due to having a wobbly offset_sequence
-	cost_cb += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
+	h_path += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
 
-	return cost_cb;
+	return thrust::tuple<float, float>(h_so, h_path);
 }
 
 
@@ -117,7 +117,7 @@ __host__ CB_Cost_Functor_2::CB_Cost_Functor_2(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ float CB_Cost_Functor_2::operator()(const thrust::tuple<
+__device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrust::tuple<
 	const unsigned int, 								// Thread ID
 	TML::PDMatrix<float, 2 * MAX_N_M, 1>, 				// Control behaviour considered
 	const unsigned int, 								// Control behaviour index
@@ -125,7 +125,7 @@ __device__ float CB_Cost_Functor_2::operator()(const thrust::tuple<
 	const unsigned int> &input_tuple 					// Prediction scenario ps for the obstacle
 	)
 {
-	max_cost_ps = 0.0f;
+	max_cost_i_ps = 0.0f; mu_i_ps = 0.0f;
 
 	//======================================================================================================================
 	// 1.0 : Setup. Size temporaries accordingly to input data, etc..
@@ -137,7 +137,7 @@ __device__ float CB_Cost_Functor_2::operator()(const thrust::tuple<
 
 	n_samples = round(pars->T / pars->dt);
 
-	d_safe_i = 0.0; chi_m = 0.0; cost_ps = 0.0;
+	d_safe_i = 0.0; chi_m = 0.0; cost_k = 0.0;
 
 	// Seed collision probability estimator using the thread index
 	cpe[thread_index].seed_prng(thread_index);
@@ -236,7 +236,7 @@ __device__ float CB_Cost_Functor_2::operator()(const thrust::tuple<
 
 		//==========================================================================================
 		// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
-		cost_ps = mpc_cost[thread_index].calculate_dynamic_obstacle_cost(
+		tup = mpc_cost[thread_index].calculate_dynamic_obstacle_cost(
 			fdata,
 			obstacles, 
 			P_c_i, 
@@ -244,11 +244,19 @@ __device__ float CB_Cost_Functor_2::operator()(const thrust::tuple<
 			xs_i_p_seg.get_col(n_seg_samples - 1), 
 			i, 
 			chi_m,
-			fdata->ownship_length);
+			fdata->ownship_length,
+			k);
 
-		if (max_cost_ps < cost_ps)
+		cost_k = thrust::get<0>(tup);
+		mu_k = thrust::get<1>(tup);
+
+		if (max_cost_i_ps < cost_k)
 		{
-			max_cost_ps = cost_ps;
+			max_cost_i_ps = cost_k;
+		}
+		if (mu_i_ps < 0.1f) // Only set the COLREGS violation indicator if it has not been true (> 0.0f) yet
+		{
+			mu_i_ps = mu_k;
 		}
 		//==========================================================================================
 		//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i, cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
@@ -274,8 +282,8 @@ __device__ float CB_Cost_Functor_2::operator()(const thrust::tuple<
 	//	offset_sequence(2), RAD2DEG * offset_sequence(3)), offset_sequence(4), RAD2DEG * offset_sequence(5)); 
 
 	//==================================================================================================
-	// 2.7 : Return dynamic obstacle related cost
-	return max_cost_ps;
+	// 2.7 : Return dynamic obstacle related cost and associated colregs violation indicator
+	return thrust::tuple<float, float>(max_cost_i_ps, mu_i_ps);
 }
  
 //=======================================================================================

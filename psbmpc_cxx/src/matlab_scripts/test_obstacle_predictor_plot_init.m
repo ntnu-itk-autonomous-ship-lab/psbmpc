@@ -1,5 +1,5 @@
 fig = figure;
-ax1 = axes(fig, 'Position',[0.2 0.65 0.5 0.7]);
+ax1 = axes(fig, 'Position',[0.1 0.15 0.6 0.7]);
 axis equal
 
 ylimits_ne = [-100 700];
@@ -32,8 +32,8 @@ for ps = 1: n_ps
 end
 
 % ax1: NE plot, ax2 & 3: mrou ne speeds vs mean speeds
-ax2 = axes(fig, 'Position',[0.71 0.5 0.29 0.20]);
-ax3 = axes(fig, 'Position',[0.71 0.1 0.29 0.20]);
+ax2 = axes(fig, 'Position',[0.71 0.6 0.29 0.30]);
+ax3 = axes(fig, 'Position',[0.71 0.2 0.29 0.30]);
 
 xlim(ax2, tlim);
 xlim(ax3, tlim);

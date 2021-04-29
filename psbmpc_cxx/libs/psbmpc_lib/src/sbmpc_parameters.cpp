@@ -53,7 +53,6 @@ double SBMPC_Parameters::get_dpar(
 {
 	switch(index){
 		case i_dpar_T 					: return T;
-		case i_dpar_T_static 			: return T_static;
 		case i_dpar_dt 					: return dt;
 		case i_dpar_p_step				: return p_step;
 		case i_dpar_t_ts 				: return t_ts;
@@ -136,7 +135,6 @@ void SBMPC_Parameters::set_par(
 	{
 		switch(index){
 			case i_dpar_T 					: T = value; break;
-			case i_dpar_T_static 			: T_static = value; break;
 			case i_dpar_dt 					: dt = value; break;
 			case i_dpar_p_step 				: p_step = value; break;
 			case i_dpar_t_ts 				: t_ts = value; break;
@@ -242,7 +240,6 @@ void SBMPC_Parameters::initialize_par_limits()
 		dpar_high[i] = 1e12;
 	}
 	dpar_low[i_dpar_T] = 60.0;
-	dpar_low[i_dpar_T_static] = 10.0;
 	dpar_low[i_dpar_dt] = 0.001;
 	dpar_low[i_dpar_p_step] = 0.001;
 
@@ -318,7 +315,6 @@ void SBMPC_Parameters::initialize_pars(
 
 		T = 110.0;
 		dt = 5.0;
-		T_static = 60.0;
 
 		p_step = 1;
 		if (prediction_method == ERK1)
@@ -396,7 +392,6 @@ void SBMPC_Parameters::initialize_pars(
 
 		T = 120.0;
 		dt = 5.0;
-		T_static = 60.0;
 
 		p_step = 1;
 		if (prediction_method == ERK1)

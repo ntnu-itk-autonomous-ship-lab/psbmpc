@@ -62,8 +62,6 @@ namespace PSBMPC_LIB
 
 			CPE cpe;
 
-			Obstacle_Predictor obstacle_predictor;
-
 			std::vector<Prediction_Obstacle> pobstacles;
 
 			bool use_joint_prediction;

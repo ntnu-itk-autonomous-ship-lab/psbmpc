@@ -60,7 +60,7 @@ namespace PSBMPC_LIB
 			//==============================================
 			// Pre-allocated temporaries (local to the thread stack)
 			//==============================================
-			float cost_cb; 
+			float h_so, h_path; 
 
 			unsigned int cb_index;
 			TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
@@ -94,7 +94,7 @@ namespace PSBMPC_LIB
 				mpc_cost = nullptr;
 			}
 			
-			__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
+			__device__ thrust::tuple<float, float> operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 
 		};
 
@@ -138,9 +138,11 @@ namespace PSBMPC_LIB
 
 			int n_samples, n_seg_samples, p_step;
 
-			float max_cost_ps, cost_ps, P_c_i;
+			float max_cost_i_ps, mu_i_ps, cost_k, mu_k, P_c_i;
 
 			float d_safe_i, chi_m;
+
+			thrust::tuple<float, float> tup;
 
 			// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 			// Only keeps n_seg_samples at a time, sliding window. Minimum 2
@@ -187,9 +189,10 @@ namespace PSBMPC_LIB
 			}
 
 			// Used when flattening the nested for loops over obstacles and their prediction scenario into a single loop 
-			// merged with the control behaviour loop => then calulate the maximum dynamic obstacle cost of a control behaviour for the own-ship
-			// considering obstacle i in prediction scenario ps. 
-			__device__ float operator()(const thrust::tuple<
+			// merged with the control behaviour loop. The maximum dynamic obstacle cost of a control behaviour for the own-ship
+			// considering obstacle i in prediction scenario ps is calculated, along with the associated own-ship COLREGS violation
+			// indicator
+			__device__ thrust::tuple<float, float> operator()(const thrust::tuple<
 				const unsigned int, 
 				TML::PDMatrix<float, 2 * MAX_N_M, 1>, 
 				const unsigned int, 

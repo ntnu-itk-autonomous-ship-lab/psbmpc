@@ -125,7 +125,7 @@ namespace PSBMPC_LIB
 			//
 
 			// PSBMPC CUDA kernel and Obstacle_SBMPC versions of dynamic obstacle cost calculation, respectively
-			__device__ inline float calculate_dynamic_obstacle_cost(
+			__device__ inline thrust::tuple<float, float> calculate_dynamic_obstacle_cost(
 				const CB_Functor_Data *fdata,
 				const Cuda_Obstacle *obstacles,
 				const float P_c_i,
@@ -133,7 +133,8 @@ namespace PSBMPC_LIB
 				const TML::PDVector4f xs_i_p,
 				const int i,
 				const float chi_m,
-				const float ownship_length);
+				const float ownship_length,
+				const int k);
 
 			template <class Obstacle_Data>
 			__host__ __device__ float calculate_dynamic_obstacle_cost(
@@ -391,7 +392,7 @@ namespace PSBMPC_LIB
 		//  Modified :
 		//=======================================================================================
 		template <typename Parameters>
-		__device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
+		__device__ inline thrust::tuple<float, float> MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 			const CB_Functor_Data *fdata,												// In: Pointer to control behaviour functor data
 			const Cuda_Obstacle *obstacles, 											// In: Pointer to Cuda_Obstacle array
 			const float P_c_i,															// In: Predicted obstacle collision probabilities for obstacle in prediction scenario ps
@@ -399,10 +400,11 @@ namespace PSBMPC_LIB
 			const TML::PDVector4f xs_i_p, 												// In: Predicted obstacle state at time step k in prediction scenario ps
 			const int i, 																// In: Index of obstacle
 			const float chi_m,														 	// In: Course offset used by the own-ship at time step k
-			const float ownship_length													// In: Length of the own-ship
+			const float ownship_length,													// In: Length of the own-ship
+			const int k																	// In: Prediction time index
 			)
 		{
-			cost_do = 0.0f;
+			cost_do = 0.0f; mu = false;
 			
 			// l_i is the collision cost modifier depending on the obstacle track loss.
 			cost_coll = 0.0f; l_i = 0.0f;
@@ -425,9 +427,10 @@ namespace PSBMPC_LIB
 
 			cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
-			mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
-
-			trans = determine_transitional_cost_indicator(fdata, psi_0_p, psi_i_p, L_0i_p, chi_m, i);
+			if (k > 0)
+			{
+				mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+			}
 
 			// Track loss modifier to collision cost
 			if (obstacles[i].get_duration_lost() > pars.p_step)
@@ -439,14 +442,14 @@ namespace PSBMPC_LIB
 				l_i = 1;
 			}
 
-			cost_do = l_i * cost_coll * P_c_i + pars.kappa * mu  + pars.kappa_TC * trans;
+			cost_do = l_i * cost_coll * P_c_i;
 
 			//printf("pars.T = %.2f | pars.K_coll = %.2f | pars.kappa = %.2f | pars.kappa_tc = %.2f\n", pars.T, pars.K_coll, pars.kappa, pars.kappa_TC);
 			/* printf("psi_0_p = %.2f | v_0_p = %.2f, %.2f\n", psi_0_p, v_0_p(0), v_0_p(1));
 			printf("psi_i_p = %.2f | v_i_p = %.2f, %.2f\n", psi_i_p, v_i_p(0), v_i_p(1));
 			printf("d_0i_p = %.2f  | L_0i_p = %.2f, %.2f\n", d_0i_p, L_0i_p(0), L_0i_p(1));
 			printf("C = %.4f       | mu = %d                 | trans = %d           | l_i = %.4f\n", C, mu, trans, l_i); */
-			return cost_do;
+			return thrust::tuple<float, float>(cost_do, (float)mu);
 		}
 
 		template <typename Parameters>
