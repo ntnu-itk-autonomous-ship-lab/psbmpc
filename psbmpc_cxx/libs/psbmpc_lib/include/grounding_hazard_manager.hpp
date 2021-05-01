@@ -44,6 +44,8 @@ namespace PSBMPC_LIB
 	{
 	private:
 
+		double d_so;
+
 		std::vector<polygon_2D> polygons;
 
 		point_2D map_origin;
@@ -122,6 +124,7 @@ namespace PSBMPC_LIB
 
 		Grounding_Hazard_Manager(const std::string &filename) 
 			: 
+			d_so(4000.0), 
 			map_origin(270250, 7042250) // Trondheim, just north of ravnkloa, brattora crossing
 		{
 			read_shapefile(filename, polygons);
@@ -129,17 +132,33 @@ namespace PSBMPC_LIB
 
 		std::vector<polygon_2D> get_polygons() const { return polygons; }
 
+		/****************************************************************************************
+		*  Name     : operator()
+		*  Function : Returns a vector of relevant static obstacles for use by the PSB/SB-MPC,
+		*		 	  given the current own-ship position.
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		template <class MPC_Type>
 		std::vector<polygon_2D> operator()(
-			Eigen::Matrix<double, 2, 4> &box, 						// Bounding box matrix to used to filter out irrelevant polygons
-			MPC_Type &mpc 											// Calling MPC (either PSB-MPC or SB-MPC)
+			const Eigen::VectorXd &ownship_state,							// State of the own-ship, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
+			const MPC_Type &mpc 											// Calling MPC (either PSB-MPC or SB-MPC)
 			)
 		{
-			std::vector<polygon_2D> ret = polygons;
+			std::vector<polygon_2D> ret;
 
+			double d_0j = 0.0; // distance to static obstacle
+			point_2D p_os(ownship_state(0), ownship_state(1));
+			BOOST_FOREACH(polygon_2D const& poly, polygons)
+			{
+				d_0j = boost::geometry::distance(p_os, poly);
+				if (d_0j < d_so)
+				{
+					ret.emplace_back(poly);
+				}
+			
+			}
 			return ret;
-		}
-
-		
+		}		
 	};
 }

@@ -49,18 +49,20 @@ int main(){
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
-	double T_sim = 1000; double dt = 0.5;
+	double T_sim = 500; double dt = 0.5;
 	int N = std::round(T_sim / dt);
-
 
 //*****************************************************************************************************************
 // Static Obstacles Setup
 //*****************************************************************************************************************
-	
+	char buffer1[256];
+	char *val = getcwd(buffer1, sizeof(buffer1));
+	if (val) {
+		std::cout << buffer1 << std::endl;
+	}
 	// Input the path to the land data
-    std::string filename = "grounding_hazard_data/charts/land/land.shp";
+    std::string filename = "src/tests/grounding_hazard_data/charts/land/land.shp";
     
-
    	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename);
 	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
 
@@ -75,7 +77,7 @@ int main(){
 		}
 		n_static_obst += 1;
     }
-    polygon_matrix.resize(n_static_obst,2); 
+    polygon_matrix.resize(n_static_obst, 2); 
 
     /*format polygon_matrix array for matlab plotting*/
     int pcount = 0; 
@@ -93,48 +95,6 @@ int main(){
 		polygon_matrix(pcount, 1) = -1;
 		pcount += 1;
     }
-	//remove polygons which are irrelevantly far away for code speed. 
-	double east_window_size = 2000, north_window_size = 2000;
-	point_2D origin(270250, 7042250);
-	
-	point_2D p1(316868,7087612);
-	point_2D p2(318807,7087612);
-	point_2D p3(318807,7087552);
-	// north of ravnkloa: 270250, 7042250)
-	int d_irrelevant = 2000; 		//The polygons are so far away we can remove them from SB-MPC calculations. 
-	int iterator = 0;
-	bool isdone = false;
-	bool isbreak =false;
-	while (isdone == false)
-	{
-		isdone = true;
-		BOOST_FOREACH(polygon_2D const& poly, polygons)
-		{
-			isbreak = false;
-			double distance_to_point_1 = boost::geometry::distance(p1, poly);
-			double distance_to_point_2 = boost::geometry::distance(p2, poly);
-			double distance_to_point_3 = boost::geometry::distance(p3, poly);
-
-			if ((distance_to_point_1 > d_irrelevant) && (distance_to_point_2 > d_irrelevant) && (distance_to_point_3 > d_irrelevant))
-			{
-				polygons.erase(polygons.begin() + iterator);
-				iterator=0;
-				isbreak = true;
-				break;
-			}
-			else
-			{
-				iterator += 1;
-				isbreak = false;
-			}
-		}
-		if(isbreak==true)
-		{
-			isdone = false;
-			iterator = 0;
-		}
-	}
-
     
     mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_static_obst, 2, mxREAL);
     double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
@@ -148,8 +108,9 @@ int main(){
 
 	/*coordinates are given in wgs-84 use https://finnposisjon.test.geonorge.no/ */
 	Eigen::Matrix<double, 6, 1> xs_os_0;
-	xs_os_0 << 7087612, 316868, 0, 9, 0, 0;
-	double u_d = 9, chi_d, u_c, chi_c;
+	// xs_os_0 << 7042320, 269475, 180 * DEG2RAD, 1, 0, 0; // utforbi skansen
+	xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 1, 0, 0; // "i" skansen
+	double u_d = 2, chi_d, u_c, chi_c;
 	
 	PSBMPC_LIB::CPU::Ownship asv_sim;
 
@@ -168,8 +129,8 @@ int main(){
 	waypoints.resize(2, n_wps_os); 
 	/* waypoints << 0, 200, 200, 400, 600,  300, 500,
 				 0, 0,   200, 200,  0,  0, -200; */
-	waypoints << 7087612,7087552,
-				 316868, 318807;
+	waypoints << xs_os_0(0), 7042350,
+				 xs_os_0(1), 270575;
 	
 //*****************************************************************************************************************
 // Obstacle sim setup
@@ -186,15 +147,15 @@ int main(){
 		 0, 0, 0.025, 0,
 		 0, 0, 0, 0.025;
 
-	double A = 5, B = 5, C = 5, D = 5; 
+	double A = 5, B = 5, C = 1.5, D = 1.5; 
 	
-	// Use constant equal intention probability and a priori CC probability  for simplicity
+	// Use constant equal intention probability and a priori CC probability for simplicity
 	std::vector<Eigen::VectorXd> Pr_a(n_obst);
 
 	std::vector<double> Pr_CC(n_obst);
 
 	// Simulate obstacles using an ownship model
-	PSBMPC_LIB::CPU::Ownship obstacle_sim;
+	PSBMPC_LIB::CPU::Obstacle_Ship obstacle_sim;
 
 	std::vector<double> u_d_i(n_obst);
 	std::vector<double> chi_d_i(n_obst);
@@ -230,23 +191,14 @@ int main(){
 
 	for (int i = 0; i < n_obst; i++)
 	{
-		
 		ID[i] = i;
 
 		u_d_i[i] = 3.0; chi_d_i[i] = 0.0;
 
-		#if OWNSHIP_TYPE == 0
-			xs_i_0[0].resize(4);
-			xs_i_0[0] << 7087569, 317514, -60 * DEG2RAD, 5;
-			trajectory_i[i].resize(4, N);
-			trajectory_i[i].col(0) = xs_i_0[i];
-		#else
-			xs_i_0[0].resize(6);
-			xs_i_0[0] << 7087569, 317514, -60 * DEG2RAD, 5, 0, 0;
-			trajectory_i[i].resize(6, N);
-			trajectory_i[i].col(0) = xs_i_0[i];
-		#endif
-		
+		xs_i_0[0].resize(4);
+		xs_i_0[0] << 7042350, 270675, -90 * DEG2RAD, 1;
+		trajectory_i[i].resize(4, N);
+		trajectory_i[i].col(0) = xs_i_0[i];		
 
 		trajectory_covariances_i[i].resize(16, 1);
 		trajectory_covariances_i[i].col(0) = PSBMPC_LIB::CPU::flatten(P_0);
@@ -259,10 +211,10 @@ int main(){
 
 		Pr_CC[i] = 1;
 
-		n_wps_i = 2;
+		n_wps_i = 4;
 		waypoints_i[i].resize(2, n_wps_i); 
-		waypoints_i[i] << 7087569, 7087662,
-					317514, 316773;
+		waypoints_i[i] << xs_i_0[i](0), 7042340, 7042120, 7041990,
+					xs_i_0[i](0), 270375, 269995, 269675;
 		
 		offset_sequence_i[i].resize(6);
 		offset_sequence_i[i] << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
@@ -299,6 +251,8 @@ int main(){
 	obstacle_intention_probabilities.resize(1, n_obst);
 
 	Eigen::VectorXd obstacle_a_priori_CC_probabilities(n_obst);
+
+	std::vector<polygon_2D> relevant_polygons;
 
 //*****************************************************************************************************************
 // Simulation
@@ -384,6 +338,8 @@ int main(){
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
 
+		relevant_polygons = grounding_hazard_manager.operator()(trajectory.col(k), psbmpc);
+
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, PSBMPC_LIB::LOS);
 
 		if (fmod(t, 5) == 0)
@@ -398,7 +354,7 @@ int main(){
 				chi_d,
 				waypoints,
 				trajectory.col(k),
-				polygons,
+				relevant_polygons,
 				obstacle_manager.get_data());
 
 			end = std::chrono::system_clock::now();
