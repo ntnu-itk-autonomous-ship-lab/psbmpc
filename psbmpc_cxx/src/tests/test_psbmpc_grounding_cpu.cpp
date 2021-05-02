@@ -234,7 +234,7 @@ int main(){
 // PSB-MPC setup
 //*****************************************************************************************************************	
 	PSBMPC_LIB::CPU::PSBMPC psbmpc;
-	double u_opt, chi_opt;
+	double u_opt(u_d), chi_opt(0.0);
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
 
@@ -346,7 +346,7 @@ int main(){
 		{
 			start = std::chrono::system_clock::now();		
 
-			psbmpc.calculate_optimal_offsets(
+			/* psbmpc.calculate_optimal_offsets(
 				u_opt,
 				chi_opt, 
 				predicted_trajectory,
@@ -355,7 +355,7 @@ int main(){
 				waypoints,
 				trajectory.col(k),
 				relevant_polygons,
-				obstacle_manager.get_data());
+				obstacle_manager.get_data()); */
 
 			end = std::chrono::system_clock::now();
 			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -365,7 +365,7 @@ int main(){
 			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
 
 			obstacle_manager.update_obstacle_status(trajectory.col(k));
-			obstacle_manager.display_obstacle_information();
+			//obstacle_manager.display_obstacle_information();
 		
 		}
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
@@ -400,7 +400,7 @@ int main(){
 			ptraj_i = mxGetPr(traj_i_mx[i]);
 			p_P_traj_i = mxGetPr(P_traj_i_mx[i]);
 
-			Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 6, N);
+			Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, N);
 			Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, 1);
 			
 			map_traj_i = trajectory_i[i];

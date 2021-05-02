@@ -80,8 +80,8 @@ namespace PSBMPC_LIB
 				{
 					SHPObject* ps_shape = SHPReadObject(handle, i);
 
-					// Read only polygons, and only those without holes
-					if (ps_shape->nSHPType == SHPT_POLYGON && ps_shape->nParts == 1)
+					// Read only polygons
+					if (ps_shape->nSHPType == SHPT_POLYGON)
 					{
 						T polygon;
 						convert(ps_shape, polygon);

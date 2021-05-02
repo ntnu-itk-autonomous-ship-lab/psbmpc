@@ -1,18 +1,20 @@
 fig = figure; axis equal
 hold on; grid on;
-ax1 = gca;
-ylimits_ne = [7070000 7099000];
-xlimits_ne = [300065 322065];
+ax1 = axes(fig, 'Position',[0.1 0.1 0.6 0.8]);
+origin = [270250, 7042250]; % nidelva north of ravnkloa
+ylimits_ne = [origin(2) - 1000, origin(2) + 2000];
+xlimits_ne = [origin(1) - 1500, origin(1) + 1500];
 xlim(ax1, xlimits_ne);
 ylim(ax1, ylimits_ne);
 
-ylimits_d = [7070000 7099000];
+
+ylimits_d = [0,  1000];
 tlim = [0 T_sim];
 
 % drawn boat dimensions
 boat_dim = [10 7 -10 -10 7 10; 0 2.4 2.4 -2.4 -2.4 0];
 
-ax2 = axes(fig, 'Position',[0.72 0.55 0.26 0.35]);
+ax2 = axes(fig, 'Position',[0.75 0.55 0.25 0.35]);
 ylim(ax2, ylimits_d); xlim(ax2, tlim);
 
 hold(ax1, 'on'); hold(ax2, 'on');

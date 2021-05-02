@@ -25,5 +25,5 @@ delete(h_P_i{i});
 h_P_i{i} = plot(ax1, X_i(2, k) + r_ellipse(:, 2), ...
     X_i(1, k) + r_ellipse(:, 1), 'c', 'Linewidth', 1.6); 
 
-legend(ax2, legend_strs, 'Location', 'eastoutside');
+legend(ax2, legend_strs, 'Location', 'northeast');
 drawnow;
