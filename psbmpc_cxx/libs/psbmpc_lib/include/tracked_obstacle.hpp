@@ -79,7 +79,10 @@ namespace PSBMPC_LIB
 		// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 		std::vector<Eigen::MatrixXd> xs_p, v_ou_p;
 
-		
+		// Waypoints (predicted) for the obstacle, either planned path communicated from the obstacle
+		// or straight line path
+		Eigen::MatrixXd waypoints;
+
 	public:
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -123,11 +126,15 @@ namespace PSBMPC_LIB
 
 		inline Eigen::MatrixXd get_trajectory_covariance() const { return P_p; }
 
+		inline Eigen::MatrixXd get_waypoints() const { return waypoints; }
+
 		inline void set_trajectories(const std::vector<Eigen::MatrixXd> &xs_p) { this->xs_p = xs_p; }
 
 		inline void set_mean_velocity_trajectories(const std::vector<Eigen::MatrixXd> &v_ou_p) { this->v_ou_p = v_ou_p; }
 
 		inline void set_trajectory_covariance(const Eigen::MatrixXd &P_p) { this->P_p = P_p; }
+
+		inline void set_waypoints(const Eigen::MatrixXd &waypoints) { this->waypoints = waypoints; }
 
 		void prune_ps(const Eigen::VectorXi &ps_indices);
 
