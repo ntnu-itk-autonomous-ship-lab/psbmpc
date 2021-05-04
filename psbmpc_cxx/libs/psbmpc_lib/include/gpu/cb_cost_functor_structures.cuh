@@ -39,8 +39,6 @@ namespace PSBMPC_LIB
 		{
 			TML::PDMatrix<float, 2, MAX_N_VERTICES> vertices;
 
-			TML::Vector2f centroid;
-
 			__host__ __device__ Basic_Polygon() {}
 		};
 	
