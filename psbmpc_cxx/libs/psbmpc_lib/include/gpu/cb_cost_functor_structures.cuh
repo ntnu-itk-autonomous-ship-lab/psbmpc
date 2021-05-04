@@ -30,6 +30,21 @@ namespace PSBMPC_LIB
 	namespace GPU
 	{
 		/****************************************************************************************
+		*  Name     : Basic_Polygon
+		*  Function : Polygon struct made for use on the GPU for grounding cost calculation
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
+		struct Basic_Polygon
+		{
+			TML::PDMatrix<float, 2, MAX_N_VERTICES> vertices;
+
+			TML::Vector2f centroid;
+
+			__host__ __device__ Basic_Polygon() {}
+		};
+	
+		/****************************************************************************************
 		*  Name     : Obstacle_Data_GPU_Friendly
 		*  Function : Data used by prediction obstacles in the joint prediction scheme in the 
 		*			  GPU version of the PSBMPC

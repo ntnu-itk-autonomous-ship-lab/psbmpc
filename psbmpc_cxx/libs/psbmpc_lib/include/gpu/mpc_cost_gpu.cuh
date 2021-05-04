@@ -57,10 +57,10 @@ namespace PSBMPC_LIB
 
 			TML::Vector2f v_diff, n;
 
-			float d2line;
-			int n_samples, val, o_1, o_2, o_3, o_4;
+			float d2line, d2poly, epsilon, l_sqrt;
+			int n_samples, val, o_1, o_2, o_3, o_4, line_intersect_count;
 
-			TML::Vector3f a, b, c;
+			TML::Vector3f a, b, projection;
 			//==============================================
 			//==============================================
 
@@ -68,19 +68,19 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ inline float Delta_chi(const float chi_1, const float chi_2) const 		{ if (chi_1 > 0) return pars.K_dchi_strb * powf(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * powf(fabs(chi_1 - chi_2), 2); }
 
-			__host__ __device__ inline float K_chi(const float chi) const								{ if (chi > 0) return pars.K_chi_strb * powf(chi, 2); else return pars.K_chi_port * powf(chi, 2); }
+			__host__ __device__ inline float K_chi(const float chi) const								{ if (chi > 0) return pars.K_chi_strb * powf(chi, 2); else return pars.K_chi_port * powf(chi, 2); }                       
 
-			__host__ __device__ int find_triplet_orientation(const TML::Vector2f &p, const TML::Vector2f &q, const TML::Vector2f &r);                          
-
-			__host__ __device__ bool determine_if_on_segment(const TML::Vector2f &p, const TML::Vector2f &q, const TML::Vector2f &r) const; 
-
-			__host__ __device__ bool determine_if_behind(const TML::Vector2f &p_1, const TML::Vector2f &v_1, const TML::Vector2f &v_2, const float d_to_line);                        
+			__host__ __device__ int find_triplet_orientation(const TML::Vector2f &p, const TML::Vector2f &q, const TML::Vector2f &r);  
 
 			__host__ __device__ bool determine_if_lines_intersect(const TML::Vector2f &p_1, const TML::Vector2f &q_1, const TML::Vector2f &p_2, const TML::Vector2f &q_2);  
 
-			__host__ __device__ float distance_from_point_to_line(const TML::Vector2f &p, const TML::Vector2f &q_1, const TML::Vector2f &q_2);                 
+			__host__ __device__ bool determine_if_on_segment(const TML::Vector2f &p, const TML::Vector2f &q, const TML::Vector2f &r) const;                        
 
-			__host__ __device__ float distance_to_static_obstacle(const TML::Vector2f &p, const TML::Vector2f &v_1, const TML::Vector2f &v_2);
+			__host__ __device__ bool determine_if_inside_polygon(const TML::Vector2f &p, const Basic_Polygon &poly);  
+
+			__host__ __device__ float distance_from_point_to_line_segment(const TML::Vector2f &p, const TML::Vector2f &q_1, const TML::Vector2f &q_2);                 
+
+			__host__ __device__ float distance_to_polygon(const TML::Vector2f &p, const Basic_Polygon &poly);
 
 		public:
 
@@ -616,53 +616,12 @@ namespace PSBMPC_LIB
 			const TML::Vector2f &r
 			)
 		{
+			epsilon = 0.0001f;
 			// Calculate z-component of cross product (q - p) x (r - q)
-			val = (q[0] - p[0]) * (r[1] - q[1]) - (q[1] - p[1]) * (r[0] - q[0]);
+			val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
-			if (val == 0) return 0; // colinear
+			if (abs(val) <= epsilon) return 0; // colinear
 			return val < 0 ? 1 : 2; // clock or counterclockwise
-		}
-
-		/****************************************************************************************
-		*  Name     : determine_if_on_segment
-		*  Function : Determine if the point q is on the segment pr
-		*			  (really if q is inside the rectangle with diagonal pr...)
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
-		*****************************************************************************************/
-		template <typename Parameters>
-		__host__ __device__ bool MPC_Cost<Parameters>::determine_if_on_segment(
-			const TML::Vector2f &p, 
-			const TML::Vector2f &q, 
-			const TML::Vector2f &r
-			) const
-		{
-			if (q[0] <= fmaxf(p[0], r[0]) && q[0] >= fminf(p[0], r[0]) &&
-				q[1] <= fmaxf(p[1], r[1]) && q[1] >= fminf(p[1], r[1]))
-				return true;
-			return false;
-		}
-
-		/****************************************************************************************
-		*  Name     : determine_if_behind
-		*  Function : Check if the point p_1 is behind the line defined by v_1 and v_2
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
-		*****************************************************************************************/
-		template <typename Parameters>
-		__host__ __device__ bool MPC_Cost<Parameters>::determine_if_behind(
-			const TML::Vector2f &p_1, 
-			const TML::Vector2f &v_1, 
-			const TML::Vector2f &v_2, 
-			const float distance_to_line
-			)
-		{    
-			v_diff = v_2 - v_1;
-
-			n(0) = -v_diff(1); n(1) = v_diff(0);
-			n = n / n.norm() * distance_to_line;
-
-			return (determine_if_on_segment(v_1 + n, p_1, v_2 + n));
 		}
 
 		/****************************************************************************************
@@ -691,60 +650,122 @@ namespace PSBMPC_LIB
 				return true;
 
 			// Special Cases
-			// p_1, q_1 and p_2 are colinear and p_2 lies on segment p_1q_1
+			// p_1, q_1 and p_2 are colinear and p_2 lies on segment p_1 -> q_1
 			if (o_1 == 0 && determine_if_on_segment(p_1, p_2, q_1)) return true;
 
-			// p_1, q_1 and q_2 are colinear and q_2 lies on segment p_1q_1
+			// p_1, q_1 and q_2 are colinear and q_2 lies on segment p_1 -> q_1
 			if (o_2 == 0 && determine_if_on_segment(p_1, q_2, q_1)) return true;
 
-			// p_2, q_2 and p_1 are colinear and p_1 lies on segment p_2q_2
+			// p_2, q_2 and p_1 are colinear and p_1 lies on segment p_2 -> q_2
 			if (o_3 == 0 && determine_if_on_segment(p_2, p_1, q_2)) return true;
 
-			// p_2, q_2 and q_1 are colinear and q_1 lies on segment p2q2
+			// p_2, q_2 and q_1 are colinear and q_1 lies on segment p_2 -> q_2
 			if (o_4 == 0 && determine_if_on_segment(p_2, q_1, q_2)) return true;
 
 			return false; // Doesn't fall in any of the above cases
 		}
 
 		/****************************************************************************************
-		*  Name     : distance_from_point_to_line
-		*  Function : Calculate distance from p to the line segment defined by q_1 and q_2
+		*  Name     : determine_if_on_segment
+		*  Function : Determine if the point q is on the segment p -> r (inside bounding box
+		*			  defined by p -> r diagonal)
 		*  Author   : Giorgio D. Kwame Minde Kufoalor
 		*  Modified : By Trym Tengesdal for more readability
 		*****************************************************************************************/
 		template <typename Parameters>
-		__host__ __device__ float MPC_Cost<Parameters>::distance_from_point_to_line(
+		__host__ __device__ bool MPC_Cost<Parameters>::determine_if_on_segment(
+			const TML::Vector2f &p, 
+			const TML::Vector2f &q, 
+			const TML::Vector2f &r
+			) const
+		{
+			if (q(0) <= fmaxf(p(0), r(0)) && q(0) >= fminf(p(0), r(0)) &&
+				q(1) <= fmaxf(p(1), r(1)) && q(1) >= fminf(p(1), r(1)))
+			{
+				return true;
+			}
+			return false;
+		}
+
+		/****************************************************************************************
+		*  Name     : determine_if_inside_polygon
+		*  Function : 
+		*  Author   : Trym Tengesdal
+		*  Modified : 
+		*****************************************************************************************/
+		template <typename Parameters>
+		__host__ __device__ bool MPC_Cost<Parameters>::determine_if_inside_polygon(
+			const TML::Vector2f &p, 
+			const Basic_Polygon &poly
+			)
+		{
+			line_intersect_count = 0;
+			for (int v = 0; v < poly.vertices.get_cols() - 1; v++)
+			{
+				if (determine_if_lines_intersect(p, p + 1e10f * p, poly.vertices.get_col(v), poly.vertices.get_col(v + 1)))
+				{
+					line_intersect_count += 1;
+				}
+			}
+			// If an even number of intersections => Outside the polygon
+			if (mod(line_intersect_count, 2) == 0)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		/****************************************************************************************
+		*  Name     : distance_from_point_to_line
+		*  Function : Calculate distance from p to the line segment defined by q_1 and q_2
+		*  Author   : Trym Tengesdal
+		*  Modified : 
+		*****************************************************************************************/
+		template <typename Parameters>
+		__host__ __device__ float MPC_Cost<Parameters>::distance_from_point_to_line_segment(
 			const TML::Vector2f &p, 
 			const TML::Vector2f &q_1, 
 			const TML::Vector2f &q_2
 			)
 		{   
+			epsilon = 0.0001f;
+			a.set_block<2, 1>(0, 0, q_2 - q_1); 	a(2) = 0;
+			b.set_block<2, 1>(0, 0, p - q_1); 		b(2) = 0;
 
-			a.set_block<2, 1>(0, 0, (q_1 - q_2)); 	a(2) = 0;
-			b.set_block<2, 1>(0, 0, (p - q_2)); 	b(2) = 0;
+			l_sqrt = a(0) * a(0) + a(1) * a(1);
+			if (l_sqrt <= epsilon)	{ return (p - q_1).norm(); }
+			t = fmax(0, fmin(0, a.dot(b) / l_sqrt));
+			projection = q_1 + t * (q_2 - q_1);
 
-			c = a.cross(b);
-			if (a.norm() > 0) return c.norm() / a.norm();
-			else return -1;
+			return (p - projection).norm();
 		}
 
 		/****************************************************************************************
-		*  Name     : distance_to_static_obstacle
-		*  Function : Calculate distance from p to obstacle defined by line segment {v_1, v_2}
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
+		*  Name     : distance_to_polygon
+		*  Function : Calculate distance from p to polygon
+		*  Author   : Trym Tengesdal
+		*  Modified : 
 		*****************************************************************************************/
 		template <typename Parameters>
-		__host__ __device__ float MPC_Cost<Parameters>::distance_to_static_obstacle(
+		__host__ __device__ float MPC_Cost<Parameters>::distance_to_polygon(
 			const TML::Vector2f &p, 
-			const TML::Vector2f &v_1, 
-			const TML::Vector2f &v_2
+			const Basic_Polygon &poly
 			)
 		{
-			d2line = distance_from_point_to_line(p, v_1, v_2);
-
-			if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line)) return d2line;
-			else return fminf((v_1-p).norm(),(v_2-p).norm());
+			if (determine_if_inside_polygon(p, poly))
+			{
+				return 0.0f;
+			}
+			d2poly = 1e12f;
+			for (int v = 0; v < poly.vertices.get_cols() - 1; v++)
+			{
+				d2line = distance_from_point_to_line_segment(p, poly.vertices.col(v), poly.vertices.col(v + 1));
+				if (d2line < d2poly)
+				{
+					d2poly = d2line;
+				}
+			}
+			return d2poly;
 		} 
 	}
 }
