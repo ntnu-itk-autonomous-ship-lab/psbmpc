@@ -92,7 +92,7 @@ namespace PSBMPC_LIB
 			thrust::device_vector<int> jp_obstacle_ps_index_dvec;
 
 			// Device vector of costs, size n_cbs x 1, consisting of the static obstacle and path related costs for each control behaviour
-			thrust::device_vector<float> cb_costs_1_dvec;
+			thrust::device_vector<thrust::tuple<float, float>> cb_costs_1_dvec;
 			// Device vector of costs, size n_threads x 1. It is the dynamic obstacle cost when the own-ship
 			// follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, behaves as in
 			// prediction scenario <obstacle_ps_index>. The intention and COLREGS violation indicator for the intelligent prediction scenario is given as the
@@ -119,6 +119,8 @@ namespace PSBMPC_LIB
 			Obstacle_Ship *obstacle_ship_device_ptr;
 
 			Obstacle_SBMPC *obstacle_sbmpc_device_ptr;
+
+			Basic_Polygon *polygons_device_ptr;
 
 			MPC_Cost<CB_Functor_Pars> *mpc_cost_device_ptr;
 			//=====================================================
@@ -184,7 +186,9 @@ namespace PSBMPC_LIB
 				const double u_d,
 				const double chi_d, 
 				const Eigen::Matrix<double, 2, -1> &waypoints,
-				const Eigen::Matrix<double, 4, -1> &static_obstacles,
+				const double V_w,
+				const Eigen::Vector2d &wind_direction,
+				const std::vector<polygon_2D> &polygons,
 				const Obstacle_Data<Tracked_Obstacle> &data);
 
 		public:
@@ -205,7 +209,9 @@ namespace PSBMPC_LIB
 				const double chi_d, 
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::VectorXd &ownship_state,
-				const Eigen::Matrix<double, 4, -1> &static_obstacles,
+				const double V_w,
+				const Eigen::Vector2d &wind_direction,
+				const std::vector<polygon_2D> &polygons,
 				Obstacle_Data<Tracked_Obstacle> &data);
 
 		};

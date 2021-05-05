@@ -99,7 +99,7 @@ namespace PSBMPC_LIB
 
 		Guidance_Method guidance_method;
 
-		double T, T_static, dt, p_step;
+		double T, dt, p_step;
 		double t_ts;
 		double d_safe, d_close, d_init;
 		double K_coll;
@@ -109,8 +109,7 @@ namespace PSBMPC_LIB
 		double K_chi_strb, K_dchi_strb;
 		double K_chi_port, K_dchi_port; 
 		double K_sgn, T_sgn;
-		double G;
-		double q, p;
+		double G_1, G_2, G_3, G_4;
 		
 		bool obstacle_colav_on;
 

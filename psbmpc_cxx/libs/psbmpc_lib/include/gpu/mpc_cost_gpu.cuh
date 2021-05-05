@@ -39,7 +39,7 @@ namespace PSBMPC_LIB
 			//==============================================
 			// Pre-allocated temporaries
 			//==============================================
-			float cost_cd, cost_ch, delta_t, cost_g, ahcr;
+			float cost_cd, cost_ch, delta_t, max_cost_g, cost_g, ahcr;
 
 			// Dynamic obstacle cost related (do cost)
 			float cost_k, cost_do, R, cost_coll, l_i;
@@ -55,9 +55,10 @@ namespace PSBMPC_LIB
 			// Transitional cost related
 			bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 
-			TML::Vector2f v_diff, n;
+			// Grounding hazard related
+			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k;
 
-			float d2line, d2poly, epsilon, l_sqrt, t;
+			float epsilon, l_sqrt, t_line, d_0j, phi_j;
 			int n_samples, val, o_1, o_2, o_3, o_4, line_intersect_count;
 
 			TML::Vector3f a, b, projection;
@@ -70,17 +71,21 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ inline float K_chi(const float chi) const								{ if (chi > 0) return pars.K_chi_strb * powf(chi, 2); else return pars.K_chi_port * powf(chi, 2); }                       
 
+		public:
+
 			__host__ __device__ int find_triplet_orientation(const TML::Vector2f &p, const TML::Vector2f &q, const TML::Vector2f &r);  
+
+			__host__ __device__ bool determine_if_on_segment(const TML::Vector2f &p, const TML::Vector2f &q, const TML::Vector2f &r) const; 
 
 			__host__ __device__ bool determine_if_lines_intersect(const TML::Vector2f &p_1, const TML::Vector2f &q_1, const TML::Vector2f &p_2, const TML::Vector2f &q_2);                    
 
 			__host__ __device__ bool determine_if_inside_polygon(const TML::Vector2f &p, const Basic_Polygon &poly);  
 
-			__host__ __device__ float distance_to_line_segment(const TML::Vector2f &p, const TML::Vector2f &q_1, const TML::Vector2f &q_2);                 
+			__host__ __device__ TML::Vector2f distance_to_line_segment(const TML::Vector2f &p, const TML::Vector2f &q_1, const TML::Vector2f &q_2);                    
 
-			__host__ __device__ float distance_to_polygon(const TML::Vector2f &p, const Basic_Polygon &poly);
+			__host__ __device__ TML::Vector2f distance_to_polygon(const TML::Vector2f &p, const Basic_Polygon &poly);
 
-		public:
+		
 
 			__host__ __device__ MPC_Cost() {}
 
@@ -154,11 +159,9 @@ namespace PSBMPC_LIB
 			__host__ __device__ float calculate_chattering_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times);
 
 			__host__ __device__ float calculate_grounding_cost(
-				const TML::Vector2f &p_os, 
-				const Basic_Polygon *polygons, 
-				const int n_static_obst, 
-				const float ownship_length, 
-				const float t);
+				const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
+				const CB_Functor_Data *fdata, 
+				const Basic_Polygon *polygons);
 		};
 
 		//=======================================================================================
@@ -593,19 +596,30 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		__host__ __device__ float MPC_Cost<Parameters>::calculate_grounding_cost(
-			const TML::Vector2f &p_os,													// In: Calling Own-ship position
-			const Basic_Polygon *polygons, 												// In: Pointer to static obstacles to compute grounding cost wrt
-			const int n_static_obst, 													// In: Number of static obstacles (length of polygon array)
-			const float ownship_length, 												// In: Length of the ownship along the body x-axis
-			const float t																// In: Current predicted time
+			const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,					// In: Calling Own-ship trajectory
+			const CB_Functor_Data *fdata,												// In: Pointer to various device data needed for the GPU calculations
+			const Basic_Polygon *polygons 												// In: Pointer to static obstacles to compute grounding cost wrt
 			)
 		{
-			cost_g = 0.0;
+			max_cost_g = 0.0f;
 			
-			for (int j = 0; j < n_static_obst; j++)
+			n_samples = trajectory.get_cols();
+			for (int k = 0; k < n_samples; k++)
 			{
-				d_0j = distance_to_polygon(p_os, polygons[j]);
-				cost_g += (pars.mu_1 + pars.mu_2 * omega * V_w * V_w) * exp(- (d_0j + K_omega * t) / powf(pars.eta, 2));
+				cost_g = 0.0f;
+				p_os_k = trajectory.get_block<2, 1>(0, k, 2, 1);
+				for (int j = 0; j < fdata->n_static_obst; j++)
+				{
+					L_0j = distance_to_polygon(p_os_k, polygons[j]);
+					d_0j = L_0j.norm();
+					L_0j.normalize();
+
+					phi_j = fmaxf(0.0f, L_0j.dot(fdata->wind_direction));
+
+					cost_g += (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * exp(- (pars.G_3 * d_0j * d_0j + pars.G_4 * k * pars.dt));
+				}
+
+				if (max_cost_g < cost_g) { max_cost_g = cost_g; }
 			}
 			return cost_g;
 		}
@@ -632,6 +646,28 @@ namespace PSBMPC_LIB
 
 			if (abs(val) <= epsilon) return 0; // colinear
 			return val < 0 ? 1 : 2; // clock or counterclockwise
+		}
+
+		/****************************************************************************************
+		*  Name     : determine_if_on_segment
+		*  Function : Determine if the point q is on the segment pr
+		*			  (really if q is inside the rectangle with diagonal pr...)
+		*  Author   : Giorgio D. Kwame Minde Kufoalor
+		*  Modified : By Trym Tengesdal for more readability
+		*****************************************************************************************/
+		template <typename Parameters>
+		__host__ __device__ bool MPC_Cost<Parameters>::determine_if_on_segment(
+			const TML::Vector2f &p, 
+			const TML::Vector2f &q, 
+			const TML::Vector2f &r
+			) const
+		{
+			if (q(0) <= fmaxf(p(0), r(0)) && q(0) >= fminf(p(0), r(0)) &&
+				q(1) <= fmaxf(p(1), r(1)) && q(1) >= fminf(p(1), r(1)))
+			{
+				return true;
+			}
+			return false;
 		}
 
 		/****************************************************************************************
@@ -695,21 +731,22 @@ namespace PSBMPC_LIB
 				}
 			}
 			// If an even number of intersections => Outside the polygon
-			if (mod(line_intersect_count, 2) == 0)
+			if (fmod(line_intersect_count, 2) == 0)
 			{
 				return false;
 			}
 			return true;
 		}
-
+		
 		/****************************************************************************************
 		*  Name     : distance_to_line_segment
-		*  Function : Calculate distance from p to the line segment defined by q_1 and q_2
+		*  Function : Calculate shortest distance vector from p to the line segment defined 
+		*			  by q_1 and q_2.
 		*  Author   : Trym Tengesdal
 		*  Modified : 
 		*****************************************************************************************/
 		template <typename Parameters>
-		__host__ __device__ float MPC_Cost<Parameters>::distance_to_line_segment(
+		__host__ __device__ TML::Vector2f MPC_Cost<Parameters>::distance_to_line_segment(
 			const TML::Vector2f &p, 
 			const TML::Vector2f &q_1, 
 			const TML::Vector2f &q_2
@@ -720,35 +757,36 @@ namespace PSBMPC_LIB
 			b.set_block<2, 1>(0, 0, p - q_1); 		b(2) = 0;
 
 			l_sqrt = a(0) * a(0) + a(1) * a(1);
-			if (l_sqrt <= epsilon)	{ return (p - q_1).norm(); }
+			if (l_sqrt <= epsilon)	{ return q_1 - p; }
 
-			t = fmaxf(0, fminf(0, a.dot(b) / l_sqrt));
-			projection = q_1 + t * (q_2 - q_1);
+			t_line = fmaxf(0, fminf(0, a.dot(b) / l_sqrt));
+			projection = q_1 + t_line * (q_2 - q_1);
 
-			return (p - projection).norm();
+			return projection - p;
 		}
 
 		/****************************************************************************************
-		*  Name     : distance_to_polygon
-		*  Function : Calculate distance from p to polygon
+		*  Name     : distance_vector_to_polygon
+		*  Function : Calculate distance vector from p to polygon
 		*  Author   : Trym Tengesdal
 		*  Modified : 
 		*****************************************************************************************/
 		template <typename Parameters>
-		__host__ __device__ float MPC_Cost<Parameters>::distance_to_polygon(
+		__host__ __device__ TML::Vector2f MPC_Cost<Parameters>::distance_to_polygon(
 			const TML::Vector2f &p, 
 			const Basic_Polygon &poly
 			)
 		{
 			if (determine_if_inside_polygon(p, poly))
 			{
-				return 0.0f;
+				d2poly(0) = 0.0f; d2poly(1) = 0.0f;
+				return d2poly;
 			}
-			d2poly = 1e12f;
+			d2poly(0) = 1e10; d2poly(1) = 1e10;
 			for (int v = 0; v < poly.vertices.get_cols() - 1; v++)
 			{
-				d2line = distance_from_point_to_line_segment(p, poly.vertices.col(v), poly.vertices.col(v + 1));
-				if (d2line < d2poly)
+				d2line = distance_to_line_segment(p, poly.vertices.get_col(v), poly.vertices.get_col(v + 1));
+				if (d2line.norm() < d2poly.norm())
 				{
 					d2poly = d2line;
 				}

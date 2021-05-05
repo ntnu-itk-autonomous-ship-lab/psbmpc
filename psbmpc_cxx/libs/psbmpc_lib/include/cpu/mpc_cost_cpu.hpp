@@ -41,6 +41,10 @@ namespace PSBMPC_LIB
 
 			inline double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); }
 
+			// Grounding hazard related methods
+			//===========================
+			// Static obstacles as no-go lines
+
 			int find_triplet_orientation(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r) const;                          
 
 			bool determine_if_on_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r) const; 
@@ -49,9 +53,19 @@ namespace PSBMPC_LIB
 
 			bool determine_if_lines_intersect(const Eigen::Vector2d &p_1, const Eigen::Vector2d &q_1, const Eigen::Vector2d &p_2, const Eigen::Vector2d &q_2) const;  
 
-			double distance_from_point_to_line(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2) const;                 
+			double distance_to_line(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2) const;   
 
 			double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) const;
+			//===========================
+			
+			//===========================
+			// Static obstacles as polygons
+			bool determine_if_inside_polygon(const Eigen::Vector2d &p, const polygon_2D &poly) const;
+
+			Eigen::Vector2d distance_to_line_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2) const;   
+
+			Eigen::Vector2d distance_to_polygon(const Eigen::Vector2d &p, const polygon_2D &poly) const;
+			
 
 		public:
 
@@ -133,8 +147,12 @@ namespace PSBMPC_LIB
 
 			double calculate_chattering_cost(const Eigen::VectorXd &offset_sequence, const Eigen::VectorXd &maneuver_times) const;
 
-			double calculate_grounding_cost(const Eigen::MatrixXd &trajectory, const std::vector<polygon_2D> &polygons, const int n_static_obst) const;
 			double calculate_grounding_cost(const Eigen::MatrixXd &trajectory, const Eigen::Matrix<double, 4, -1>& static_obstacles, const double ownship_length) const;
+			double calculate_grounding_cost(
+				const Eigen::MatrixXd &trajectory, 
+				const std::vector<polygon_2D> &polygons, 
+				const double V_w, 
+				const Eigen::Vector2d &wind_direction) const;
 		};
 
 		/****************************************************************************************
@@ -1035,44 +1053,44 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : calculate_grounding_cost
 		*  Function : Determines penalty due to grounding ownship on static obstacles (no-go zones)
-		*  Author   : Tom Daniel Grande
+		*  Author   : Trym Tengesdal & Tom Daniel Grande
 		*  Modified :
 		*****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_grounding_cost(
 			const Eigen::MatrixXd &trajectory,									// In: Predicted ownship trajectory
 			const std::vector<polygon_2D> &polygons,							// In: Static obstacle information
-			const int n_static_obst 											// In: Number of static obstacles
+			const double V_w,													// In: Estimated wind speed
+			const Eigen::Vector2d &wind_direction 								// In: Unit vector in NE describing the estimated wind direction
 			) const
 		{
-			int n_static_samples = std::round(pars.T_static / pars.dt);
-			double g_cost 				= 0.0;	
-			double eta  				= 25.0;		  	  	 //grounding sensitivity
-			double my_1 				= 0.35; 		 	 //grounding cost
-			double my_2 				= 1.0; 			 	 // wind disturbance risk
-			double chi_j 				= 1.0; 			 	 // unit wind direction
-			double V_w 					= 0.0; 			 	 // absolute wind velocity
-			double K_omega 				= 50.0; 			 // horizon focus weight		 
+			int n_samples = std::round(pars.T / pars.dt);
+			int n_static_obst = polygons.size();
+			double max_cost_g(0.0), cost_g(0.0);	 
 
-			double d2poly, exp_term, exp_calc;
-			point_2D p_os_k;
-			for (int k = 0; k < n_static_samples - 1; k++)
+			Eigen::Vector2d L_0j;
+			double d_0j(0.0), t(0.0), phi_j(0.0);
+			for (int k = 0; k < n_samples; k++)
 			{
-				p_os_k = point_2D(trajectory(1, k), trajectory(0, k));
+				t = pars.dt * k;
 
-				BOOST_FOREACH(polygon_2D const& poly, polygons)
+				for (int j = 0; j < n_static_obst; j++)
 				{
-					d2poly = boost::geometry::distance(p_os_k, poly);
+					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
+					d_0j = L_0j.norm();
+					L_0j.normalize();
 
-					exp_term = (-1.0 / (eta * eta) ) * (d2poly * d2poly + K_omega * k);
+					phi_j = std::max(0.0, L_0j.dot(wind_direction));
 
-					exp_calc = ( my_1 + my_2 * chi_j * V_w * V_w) * std::exp(exp_term);
+					cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * pow(d_0j, 2) + pars.G_4 * t));
+				}
 
-					g_cost = g_cost + exp_calc;
+				if (max_cost_g < cost_g)
+				{
+					max_cost_g = cost_g;
 				}
 			}
-
-			return g_cost / (double) n_static_obst * pars.n_M;
+			return max_cost_g;
 		}
 
 		/****************************************************************************************
@@ -1107,7 +1125,7 @@ namespace PSBMPC_LIB
 				so_1 << static_obstacles.block<2, 1>(0, j);
 				so_2 << static_obstacles.block<2, 1>(2, j);
 
-				d_geo = distance_from_point_to_line(p_1, so_1, so_2);
+				d_geo = distance_to_line(p_1, so_1, so_2);
 
 				// Decrease distance by the half the own-ship length
 				d_geo = d_geo - 0.5 * ownship_length;
@@ -1263,13 +1281,13 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : distance_from_point_to_line
+		*  Name     : distance_to_line
 		*  Function : Calculate distance from p to the line segment defined by q_1 and q_2
 		*  Author   : Giorgio D. Kwame Minde Kufoalor
 		*  Modified : By Trym Tengesdal for more readability
 		*****************************************************************************************/
 		template <typename Parameters>
-		double MPC_Cost<Parameters>::distance_from_point_to_line(
+		double MPC_Cost<Parameters>::distance_to_line(
 			const Eigen::Vector2d &p, 
 			const Eigen::Vector2d &q_1, 
 			const Eigen::Vector2d &q_2
@@ -1298,10 +1316,101 @@ namespace PSBMPC_LIB
 			const Eigen::Vector2d &v_2
 			) const
 		{
-			double d2line = distance_from_point_to_line(p, v_1, v_2);
+			double d2line = distance_to_line(p, v_1, v_2);
 
 			if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line)) return d2line;
-			else return std::min((v_1-p).norm(),(v_2-p).norm());
+			else return std::min((v_1 - p).norm(),(v_2 - p).norm());
+		}
+
+		/****************************************************************************************
+		*  Name     : determine_if_inside_polygon
+		*  Function : 
+		*  Author   : Trym Tengesdal
+		*  Modified : 
+		*****************************************************************************************/
+		template <typename Parameters>
+		bool MPC_Cost<Parameters>::determine_if_inside_polygon(
+			const Eigen::Vector2d &p, 
+			const polygon_2D &poly
+			) const
+		{
+			int line_intersect_count = 0;
+			Eigen::Vector2d v, v_next;
+			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
+			{
+				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
+				v_next(0) = boost::geometry::get<0>(*(it + 1)); v_next(1) = boost::geometry::get<1>(*(it + 1));
+				if (determine_if_lines_intersect(p, p + 1e9 * p, v, v_next))
+				{
+					line_intersect_count += 1;
+				}
+			}
+			// If an even number of intersections => Outside the polygon
+			if (fmod(line_intersect_count, 2) == 0)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		/****************************************************************************************
+		*  Name     : distance_to_line_segment
+		*  Function : Calculate distance from p to line segment {v_1, v_2}
+		*  Author   : Trym Tengesdal
+		*  Modified : 
+		*****************************************************************************************/
+		template <typename Parameters>
+		Eigen::Vector2d MPC_Cost<Parameters>::distance_to_line_segment(
+			const Eigen::Vector2d &p, 
+			const Eigen::Vector2d &q_1, 
+			const Eigen::Vector2d &q_2
+			) const
+		{
+			double epsilon = 0.0001, l_sqrt(0.0), t_line(0.0);
+			Eigen::Vector2d a, b, projection;
+			a << (q_2 - q_1), 0.0;
+			b << (p - q_1), 0.0;
+
+			l_sqrt = a(0) * a(0) + a(1) * a(1);
+			if (l_sqrt <= epsilon)	{ return q_1 - p; }
+
+			t_line = std::max(0.0, std::min(0.0, a.dot(b) / l_sqrt));
+			projection = q_1 + t_line * (q_2 - q_1);
+
+			return projection - p;
+		}
+
+		/****************************************************************************************
+		*  Name     : distance_to_polygon
+		*  Function : Calculate distance vector from p to polygon
+		*  Author   : Trym Tengesdal
+		*  Modified : 
+		*****************************************************************************************/
+		template <typename Parameters>
+		Eigen::Vector2d MPC_Cost<Parameters>::distance_to_polygon(
+			const Eigen::Vector2d &p, 
+			const polygon_2D &poly
+			) const
+		{
+			Eigen::Vector2d d2poly, d2line;
+			if (determine_if_inside_polygon(p, poly))
+			{
+				d2poly(0) = 0.0f; d2poly(1) = 0.0f;
+				return d2poly;
+			}
+			d2poly(0) = 1e10; d2poly(1) = 1e10;
+			Eigen::Vector2d v, v_next;
+			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
+			{
+				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
+				v_next(0) = boost::geometry::get<0>(*(it + 1)); v_next(1) = boost::geometry::get<1>(*(it + 1));
+				d2line = distance_to_line_segment(p, v, v_next);
+				if (d2line.norm() < d2poly.norm())
+				{
+					d2poly = d2line;
+				}
+			}
+			return d2poly;
 		}
 	}
 }

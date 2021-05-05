@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "grounding_hazard_manager.hpp"
 #include "obstacle_manager.hpp"
 #include "kinematic_ship_models_gpu.cuh"
 #include "kinetic_ship_models_gpu.cuh"
@@ -40,6 +41,19 @@ namespace PSBMPC_LIB
 			TML::PDMatrix<float, 2, MAX_N_VERTICES> vertices;
 
 			__host__ __device__ Basic_Polygon() {}
+
+			// Only transfer outer ring of the polygon to the basic one
+			__host__ Basic_Polygon& operator=(const polygon_2D &poly)
+			{
+				int v_count(1);
+				for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); it++)
+				{
+					vertices.resize(2, v_count); // no harm done to old values in consecutive resizing of the PDMatrix
+					vertices(0, v_count - 1) = boost::geometry::get<0>(*it);
+					vertices(1, v_count - 1) = boost::geometry::get<1>(*it);
+					v_count += 1;
+				}
+			}
 		};
 	
 		/****************************************************************************************
@@ -80,7 +94,7 @@ namespace PSBMPC_LIB
 
 			Guidance_Method guidance_method;
 
-			float T, T_static, dt, p_step;
+			float T, dt, p_step;
 			float d_safe, d_close, d_init;
 			float K_coll;
 			float phi_AH, phi_OT, phi_HO, phi_CR;
@@ -89,8 +103,7 @@ namespace PSBMPC_LIB
 			float K_chi_strb, K_dchi_strb;
 			float K_chi_port, K_dchi_port; 
 			float K_sgn, T_sgn;
-			float G;
-			float q, p;
+			float G_1, G_2, G_3, G_4;
 			
 			bool obstacle_colav_on;
 
@@ -106,7 +119,7 @@ namespace PSBMPC_LIB
 
 				this->guidance_method = pars.guidance_method;
 
-				this->T = pars.T; this->T_static = pars.T_static; this->dt = pars.dt; this->p_step = pars.p_step; 
+				this->T = pars.T; this->dt = pars.dt; this->p_step = pars.p_step; 
 
 				this->d_safe = pars.d_safe; this->d_close = pars.d_close; this->d_init = pars.d_init;
 
@@ -123,9 +136,7 @@ namespace PSBMPC_LIB
 
 				this->K_sgn = pars.K_sgn; this->T_sgn = pars.T_sgn;
 
-				this->G = pars.G;
-
-				this->q = pars.q; this->p = pars.p;
+				this->G_1 = pars.G_1; this->G_2 = pars.G_2; this->G_3 = pars.G_3; this->G_4 = pars.G_4;
 
 				this->obstacle_colav_on = pars.obstacle_colav_on;
 			}
@@ -158,9 +169,11 @@ namespace PSBMPC_LIB
 
 			TML::PDMatrix<float, 2, MAX_N_WPS> waypoints;
 
-			TML::PDMatrix<float, 4, MAX_N_OBST> static_obstacles;
+			float V_w;
+			TML::Vector2f wind_direction;
 
 			int n_obst; 
+			int n_static_obst;
 
 			// Number of prediction scenarios for each obstacle, includes the intelligent prediction scenario
 			// if not pruned away
@@ -172,7 +185,7 @@ namespace PSBMPC_LIB
 
 			//=======================================================================================
 			//  Name     : CB_Functor_Data
-			//  Function : Class constructor
+			//  Function : Class constructor. Transfer miscellaneous relevant data from host to device.
 			//  Author   : 
 			//  Modified :
 			//=======================================================================================
@@ -189,7 +202,9 @@ namespace PSBMPC_LIB
 				const int wp_c_0,
 				const double ownship_length,
 				const Eigen::Matrix<double, 2, -1> &waypoints, 
-				const Eigen::Matrix<double, 4, -1> &static_obstacles,
+				const double V_w,
+				const Eigen::Vector2d &wind_direction,
+				const std::vector<polygon_2D> &polygons,
 				const std::vector<int> &n_ps,
 				const Obstacle_Data<Tracked_Obstacle> &data)
 			{
@@ -211,9 +226,11 @@ namespace PSBMPC_LIB
 
 				TML::assign_eigen_object(this->waypoints, waypoints);	
 
-				TML::assign_eigen_object(this->static_obstacles, static_obstacles);
+				this->V_w = V_w;
+				TML::assign_eigen_object(this->wind_direction, wind_direction);
 
 				n_obst = data.obstacles.size();
+				n_static_obst = polygons.size();
 
 				this->n_ps.resize(n_obst, 1);
 

@@ -398,6 +398,8 @@ void PSBMPC::calculate_optimal_offsets(
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
+	const double V_w,														// In: Estimated wind speed
+	const Eigen::Vector2d &wind_direction,									// In: Unit vector in NE describing the estimated wind direction
 	const std::vector<polygon_2D> &polygons,								// In: Static obstacles parametrized as polygons
 	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
@@ -410,11 +412,7 @@ void PSBMPC::calculate_optimal_offsets(
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
 	int n_obst = data.obstacles.size();
-	int n_static_obst = 0;
-	BOOST_FOREACH(polygon_2D const& poly, polygons)
-	{
-		n_static_obst += 1;
-	}									
+	int n_static_obst = polygons.size();								
 
 	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
 
@@ -581,7 +579,7 @@ void PSBMPC::calculate_optimal_offsets(
 		cost_4 += cost_i.maxCoeff(); //*0.1
 		//cost_matrix(cb, 3)=cost_4;
 
-		cost_1 += mpc_cost.calculate_grounding_cost(trajectory, polygons, n_static_obst);
+		cost_1 += mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
 
 		//cost_matrix(cb, 0)=cost_1;
 
