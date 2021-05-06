@@ -18,21 +18,24 @@ hold(ax1, 'on');
 grid(ax1, 'on');
 ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]'); 
 
+P = P + map_origin;
 P(P == -1) = NaN;
 test_polygon=polyshape(P);
+selected_polygon = polyshape(selected
 
 plot(ax1,test_polygon);
+plot(ax1, 
 
-plot(ax1, X(2, 1), X(1, 1), 'gx', 'linewidth', 3);
+plot(ax1, map_origin(2) + X(2, 1), map_origin(1) + X(1, 1), 'gx', 'linewidth', 3);
 
-quiver(ax1, X(
+quiver(ax1, map_origin(2) + X(2, 1), map_origin(1) + X(1, 1), d2poly_cpu(2, :), d2poly_cpu(1, :));
 
 th = 0 : 0.01 : 2.01 * pi;
 x_cs = cos(th); y_cs = sin(th);
 
 d_safe = 50;
 
-h_wps = plot(ax1, WPs(2, :), WPs(1, :), 'rx', 'Linewidth', 2);
+h_wps = plot(ax1, map_origin(2) +  WPs(2, :), map_origin(1) + WPs(1, :), 'rx', 'Linewidth', 2);
 
 
 drawnow;

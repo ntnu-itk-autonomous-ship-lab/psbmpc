@@ -21,8 +21,10 @@ ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]');
 P = P + map_origin;
 P(P == -1) = NaN;
 test_polygon=polyshape(P);
+selected_polygon = polyshape(selected_polygon_matrix);
 
 plot(ax1,test_polygon);
+plot(ax1, selected_polygon, 'r');
 
 plot(ax1, map_origin(2) + X(2, 1), map_origin(1) + X(1, 1), 'gx', 'linewidth', 3);
 

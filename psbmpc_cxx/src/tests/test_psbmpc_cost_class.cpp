@@ -187,10 +187,23 @@ int main(){
 		d2poly_gpu.col(j) = e;
 		std::cout << "GPU dist to poly: " << d2poly_gpu.col(j).norm() << std::endl;
 	}
+	std::vector<polygon_2D> selected_polygons(1);
+	selected_polygons[0] = polygons[3];
+	Eigen::MatrixXd selected_polygon_matrix(1, 2);
+	for(auto it = boost::begin(boost::geometry::exterior_ring(selected_polygons[0])); it != boost::end(boost::geometry::exterior_ring(selected_polygons[0])); ++it)
+	{
+		selected_polygon_matrix(0, 0) = boost::geometry::get<0>(*it);
+		selected_polygon_matrix(0, 1) = boost::geometry::get<1>(*it);
+	}
 
 	//=========================================================
 	// Matlab plot setup
 	//=========================================================
+	mxArray *selected_polygon_matrix_mx = mxCreateDoubleMatrix(1, 2, mxREAL);
+    double *p_selected_polygon_matrix = mxGetPr(selected_polygon_matrix_mx);
+    Eigen::Map<Eigen::MatrixXd> map_selected_polygon_matrix(p_selected_polygon_matrix, n_static_obst, 2);
+	map_selected_polygon_matrix = selected_polygon_matrix;
+
 	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, N, mxREAL);
 	mxArray *wps_os_mx = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
 
@@ -205,8 +218,6 @@ int main(){
 	mxArray *T_sim_mx;
 	T_sim_mx = mxCreateDoubleScalar(T_sim);
 
-	
-
 	Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, N);
 	Eigen::Map<Eigen::MatrixXd> map_wps_os(p_wps_os, 2, n_wps_os);
 	Eigen::Map<Eigen::MatrixXd> map_d2poly_cpu(p_d2poly_cpu, 2, n_static_obst);
@@ -216,6 +227,7 @@ int main(){
 	map_d2poly_cpu = d2poly_cpu;
 	map_d2poly_gpu = d2poly_gpu;
 
+	engPutVariable(ep, "selected_polygon_matrix", selected_polygon_matrix_mx);
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engPutVariable(ep, "WPs", wps_os_mx);
 	engPutVariable(ep, "X", traj_os_mx);
@@ -227,10 +239,15 @@ int main(){
 	buffer[BUFSIZE] = '\0';
 	engOutputBuffer(ep, buffer, BUFSIZE);
 
+	mxDestroyArray(T_sim_mx);
 	mxDestroyArray(traj_os_mx);
 	mxDestroyArray(wps_os_mx);
-	mxDestroyArray(T_sim_mx);
-
+	mxDestroyArray(selected_polygon_matrix_mx);
+	mxDestroyArray(selected_polygon_matrix_mx);
+	mxDestroyArray(d2poly_cpu_mx);
+	mxDestroyArray(d2poly_gpu_mx);
+	mxDestroyArray(map_origin_mx);
+	mxDestroyArray(polygon_matrix_mx);
 
 	engClose(ep);  
 
