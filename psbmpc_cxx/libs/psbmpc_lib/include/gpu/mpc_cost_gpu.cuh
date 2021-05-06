@@ -56,12 +56,12 @@ namespace PSBMPC_LIB
 			bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 
 			// Grounding hazard related
-			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k;
+			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k, p_ray_end, projection;
 
 			float epsilon, l_sqrt, t_line, d_0j, phi_j;
 			int n_samples, val, o_1, o_2, o_3, o_4, line_intersect_count;
 
-			TML::Vector3f a, b, projection;
+			TML::Vector3f a, b;
 			//==============================================
 			//==============================================
 
@@ -640,12 +640,12 @@ namespace PSBMPC_LIB
 			const TML::Vector2f &r
 			)
 		{
-			epsilon = 0.0001f;
+			epsilon = 0.00001f;
 			// Calculate z-component of cross product (q - p) x (r - q)
 			val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
-			if (abs(val) <= epsilon) return 0; // colinear
-			return val < 0 ? 1 : 2; // clock or counterclockwise
+			if (abs(val) <= epsilon) { return 0; } // colinear
+			return val < 0.0f ? 1 : 2; // clock or counterclockwise
 		}
 
 		/****************************************************************************************
@@ -723,9 +723,14 @@ namespace PSBMPC_LIB
 			)
 		{
 			line_intersect_count = 0;
-			for (int v = 0; v < poly.vertices.get_cols() - 1; v++)
+
+			p_ray_end = poly.bbox.get_col(1) - p;
+			p_ray_end *= 1.1;
+			p_ray_end += p;
+
+			for (size_t v = 0; v < poly.vertices.get_cols() - 1; v++)
 			{
-				if (determine_if_lines_intersect(p, p + 1e9f * p, poly.vertices.get_col(v), poly.vertices.get_col(v + 1)))
+				if (determine_if_lines_intersect(p, p_ray_end, poly.vertices.get_col(v), poly.vertices.get_col(v + 1)))
 				{
 					line_intersect_count += 1;
 				}
@@ -752,14 +757,14 @@ namespace PSBMPC_LIB
 			const TML::Vector2f &q_2
 			)
 		{   
-			epsilon = 0.0001f;
-			a.set_block<2, 1>(0, 0, q_2 - q_1); 	a(2) = 0;
-			b.set_block<2, 1>(0, 0, p - q_1); 		b(2) = 0;
+			epsilon = 0.00001f;
+			a.set_block<2, 1>(0, 0, q_2 - q_1); 	a(2) = 0.0f;
+			b.set_block<2, 1>(0, 0, p - q_1); 		b(2) = 0.0f;
 
 			l_sqrt = a(0) * a(0) + a(1) * a(1);
 			if (l_sqrt <= epsilon)	{ return q_1 - p; }
 
-			t_line = fmaxf(0, fminf(0, a.dot(b) / l_sqrt));
+			t_line = fmaxf(0.0f, fminf(1.0f, a.dot(b) / l_sqrt));
 			projection = q_1 + t_line * (q_2 - q_1);
 
 			return projection - p;
@@ -782,8 +787,8 @@ namespace PSBMPC_LIB
 				d2poly(0) = 0.0f; d2poly(1) = 0.0f;
 				return d2poly;
 			}
-			d2poly(0) = 1e10; d2poly(1) = 1e10;
-			for (int v = 0; v < poly.vertices.get_cols() - 1; v++)
+			d2poly(0) = 1e10f; d2poly(1) = 1e10f;
+			for (size_t v = 0; v < poly.vertices.get_cols() - 1; v++)
 			{
 				d2line = distance_to_line_segment(p, poly.vertices.get_col(v), poly.vertices.get_col(v + 1));
 				if (d2line.norm() < d2poly.norm())

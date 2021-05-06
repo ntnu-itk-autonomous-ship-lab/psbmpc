@@ -57,7 +57,7 @@ namespace PSBMPC_LIB
 
 			double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) const;
 			//===========================
-			
+		public:
 			//===========================
 			// Static obstacles as polygons
 			bool determine_if_inside_polygon(const Eigen::Vector2d &p, const polygon_2D &poly) const;
@@ -67,7 +67,7 @@ namespace PSBMPC_LIB
 			Eigen::Vector2d distance_to_polygon(const Eigen::Vector2d &p, const polygon_2D &poly) const;
 			
 
-		public:
+		
 
 			MPC_Cost() {}
 
@@ -1188,11 +1188,12 @@ namespace PSBMPC_LIB
 			const Eigen::Vector2d &r
 			) const
 		{
+			double epsilon = 0.00001;
 			// Calculate z-component of cross product (q - p) x (r - q)
-			int val = (q[0] - p[0]) * (r[1] - q[1]) - (q[1] - p[1]) * (r[0] - q[0]);
+			double val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
-			if (val == 0) return 0; // colinear
-			return val < 0 ? 1 : 2; // clock or counterclockwise
+			if (abs(val) <= epsilon) { return 0; } // colinear
+			return val < 0.0 ? 1 : 2; // clock or counterclockwise
 		}
 
 		/****************************************************************************************
@@ -1209,9 +1210,11 @@ namespace PSBMPC_LIB
 			const Eigen::Vector2d &r
 			) const
 		{
-			if (q[0] <= std::max(p[0], r[0]) && q[0] >= std::min(p[0], r[0]) &&
-				q[1] <= std::max(p[1], r[1]) && q[1] >= std::min(p[1], r[1]))
+			if (q[0] <= std::max(p(0), r(0)) && q[0] >= std::min(p(0), r(0)) &&
+				q[1] <= std::max(p(1), r(1)) && q[1] >= std::min(p(1), r(1)))
+			{
 				return true;
+			}
 			return false;
 		}
 
@@ -1261,21 +1264,20 @@ namespace PSBMPC_LIB
 			int o_4 = find_triplet_orientation(p_2, q_2, q_1);
 
 			// General case
-			if (o_1 != o_2 && o_3 != o_4)
-				return true;
+			if (o_1 != o_2 && o_3 != o_4) { return true; }
 
 			// Special Cases
-			// p_1, q_1 and p_2 are colinear and p_2 lies on segment p_1q_1
-			if (o_1 == 0 && determine_if_on_segment(p_1, p_2, q_1)) return true;
+			// p_1, q_1 and p_2 are colinear and p_2 lies on segment p_1 -> q_1
+			if (o_1 == 0 && determine_if_on_segment(p_1, p_2, q_1)) { return true; }
 
-			// p_1, q_1 and q_2 are colinear and q_2 lies on segment p_1q_1
-			if (o_2 == 0 && determine_if_on_segment(p_1, q_2, q_1)) return true;
+			// p_1, q_1 and q_2 are colinear and q_2 lies on segment p_1 -> q_1
+			if (o_2 == 0 && determine_if_on_segment(p_1, q_2, q_1)) { return true; }
 
-			// p_2, q_2 and p_1 are colinear and p_1 lies on segment p_2q_2
-			if (o_3 == 0 && determine_if_on_segment(p_2, p_1, q_2)) return true;
+			// p_2, q_2 and p_1 are colinear and p_1 lies on segment p_2 -> q_2
+			if (o_3 == 0 && determine_if_on_segment(p_2, p_1, q_2)) { return true; }
 
-			// p_2, q_2 and q_1 are colinear and q_1 lies on segment p2q2
-			if (o_4 == 0 && determine_if_on_segment(p_2, q_1, q_2)) return true;
+			// p_2, q_2 and q_1 are colinear and q_1 lies on segment p_2 -> q_2
+			if (o_4 == 0 && determine_if_on_segment(p_2, q_1, q_2)) { return true; }
 
 			return false; // Doesn't fall in any of the above cases
 		}
@@ -1336,11 +1338,25 @@ namespace PSBMPC_LIB
 		{
 			int line_intersect_count = 0;
 			Eigen::Vector2d v, v_next;
+
+			// Find bounding box of polygon to use for ray creation
+			Eigen::Matrix2d bbox;
+			bbox(0, 0) = 1e10; bbox(1, 0) = 1e10; bbox(0, 1) = -1e10; bbox(1, 1) = -1e10;
+			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
+			{
+				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
+				if (v(0) < bbox(0, 0)) { bbox(0, 0) = v(0); } // x_min
+				if (v(1) < bbox(1, 0)) { bbox(1, 0) = v(1); } // y_min
+				if (v(0) > bbox(0, 1)) { bbox(0, 1) = v(0); } // x_max
+				if (v(1) > bbox(1, 1)) { bbox(1, 1) = v(1); } // y_max
+			}
+			Eigen::Vector2d p_ray_end = p + 1.1 * (bbox.col(1) - p);
 			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
 			{
 				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
 				v_next(0) = boost::geometry::get<0>(*(it + 1)); v_next(1) = boost::geometry::get<1>(*(it + 1));
-				if (determine_if_lines_intersect(p, p + 1e9 * p, v, v_next))
+				
+				if (determine_if_lines_intersect(p, p_ray_end, v, v_next))
 				{
 					line_intersect_count += 1;
 				}
@@ -1366,15 +1382,16 @@ namespace PSBMPC_LIB
 			const Eigen::Vector2d &q_2
 			) const
 		{
-			double epsilon = 0.0001, l_sqrt(0.0), t_line(0.0);
-			Eigen::Vector2d a, b, projection;
+			double epsilon = 0.00001, l_sqrt(0.0), t_line(0.0);
+			Eigen::Vector3d a, b;
+			Eigen::Vector2d projection;
 			a << (q_2 - q_1), 0.0;
 			b << (p - q_1), 0.0;
 
 			l_sqrt = a(0) * a(0) + a(1) * a(1);
 			if (l_sqrt <= epsilon)	{ return q_1 - p; }
 
-			t_line = std::max(0.0, std::min(0.0, a.dot(b) / l_sqrt));
+			t_line = std::max(0.0, std::min(1.0, a.dot(b) / l_sqrt));
 			projection = q_1 + t_line * (q_2 - q_1);
 
 			return projection - p;
@@ -1404,7 +1421,11 @@ namespace PSBMPC_LIB
 			{
 				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
 				v_next(0) = boost::geometry::get<0>(*(it + 1)); v_next(1) = boost::geometry::get<1>(*(it + 1));
+
 				d2line = distance_to_line_segment(p, v, v_next);
+				
+				/* printf("v = %.2f, %.2f | v_next = %.2f, %.2f\n", v(0), v(1), v_next(0), v_next(1));
+				printf("d2line cpu = %.2f\n", d2line.norm()); */
 				if (d2line.norm() < d2poly.norm())
 				{
 					d2poly = d2line;

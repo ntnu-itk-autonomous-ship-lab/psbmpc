@@ -31,7 +31,8 @@ find_package(Eigen3 REQUIRED)
 #add_executable(tester test_kf.cpp)
 #add_executable(tester test_prng.cpp)
 
-add_executable(tester test_psbmpc_grounding_cpu.cpp)
+#add_executable(tester test_psbmpc_grounding_cpu.cpp)
+add_executable(tester test_psbmpc_cost_class.cpp)
 #add_executable(tester test_read_shapefile.cpp)
 #add_executable(tester test_polygons.cpp)
 

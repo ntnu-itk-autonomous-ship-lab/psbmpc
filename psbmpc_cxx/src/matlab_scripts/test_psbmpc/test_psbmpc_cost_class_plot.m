@@ -1,0 +1,39 @@
+fig = figure; axis equal
+hold on; grid on;
+ax1 = axes(fig, 'Position',[0.1 0.1 0.6 0.8]);
+origin = [270250, 7042250]; % nidelva north of ravnkloa
+ylimits_ne = [origin(2) - 1000, origin(2) + 2000];
+xlimits_ne = [origin(1) - 1500, origin(1) + 1500];
+xlim(ax1, xlimits_ne);
+ylim(ax1, ylimits_ne);
+
+
+ylimits_d = [0,  1000];
+tlim = [0 T_sim];
+
+% drawn boat dimensions
+boat_dim = [10 7 -10 -10 7 10; 0 2.4 2.4 -2.4 -2.4 0];
+
+hold(ax1, 'on');
+grid(ax1, 'on');
+ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]'); 
+
+P = P + map_origin;
+P(P == -1) = NaN;
+test_polygon=polyshape(P);
+
+plot(ax1,test_polygon);
+
+plot(ax1, map_origin(2) + X(2, 1), map_origin(1) + X(1, 1), 'gx', 'linewidth', 3);
+
+quiver(ax1, map_origin(2) + X(2, 1), map_origin(1) + X(1, 1), d2poly_cpu(2, :), d2poly_cpu(1, :));
+
+th = 0 : 0.01 : 2.01 * pi;
+x_cs = cos(th); y_cs = sin(th);
+
+d_safe = 50;
+
+h_wps = plot(ax1, map_origin(2) +  WPs(2, :), map_origin(1) + WPs(1, :), 'rx', 'Linewidth', 2);
+
+
+drawnow;

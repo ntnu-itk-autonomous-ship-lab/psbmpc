@@ -51,57 +51,6 @@ int main(){
 //*****************************************************************************************************************
 	double T_sim = 500; double dt = 0.5;
 	int N = std::round(T_sim / dt);
-
-//*****************************************************************************************************************
-// Static Obstacles Setup
-//*****************************************************************************************************************
-	char buffer1[256];
-	char *val = getcwd(buffer1, sizeof(buffer1));
-	if (val) {
-		std::cout << buffer1 << std::endl;
-	}
-	// Input the path to the land data
-    std::string filename = "src/tests/grounding_hazard_data/charts/land/land.shp";
-    
-   	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename);
-	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
-
-    //Make matlab polygons type friendly array:
-    Eigen::Matrix<double, -1, 2> polygon_matrix;
-    int n_static_obst = 0;
-    BOOST_FOREACH(polygon_2D const &poly, polygons)
-	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
-		{
-			n_static_obst += 1;
-		}
-		n_static_obst += 1;
-    }
-    polygon_matrix.resize(n_static_obst, 2); 
-
-    /*format polygon_matrix array for matlab plotting*/
-    int pcount = 0; 
-    BOOST_FOREACH(polygon_2D const& poly, polygons)
-	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
-		{
-			polygon_matrix(pcount, 0) = boost::geometry::get<0>(*it);
-			polygon_matrix(pcount, 1) = boost::geometry::get<1>(*it);
-			
-			pcount += 1;
-		}
-		// each polygon is separated with (-1, -1)
-		polygon_matrix(pcount, 0) = -1;
-		polygon_matrix(pcount, 1) = -1;
-		pcount += 1;
-    }
-    
-    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_static_obst, 2, mxREAL);
-    double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
-    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_static_obst, 2);
-	map_polygon_matrix = polygon_matrix;
-
-	engPutVariable(ep, "P", polygon_matrix_mx);
 //*****************************************************************************************************************
 // Own-ship sim setup
 //*****************************************************************************************************************
@@ -258,8 +207,88 @@ int main(){
 	std::vector<polygon_2D> relevant_polygons;
 
 //*****************************************************************************************************************
+// Static Obstacles Setup
+//*****************************************************************************************************************
+	char buffer1[256];
+	char *val = getcwd(buffer1, sizeof(buffer1));
+	if (val) {
+		std::cout << buffer1 << std::endl;
+	}
+	// Input the path to the land data
+    std::string filename = "src/tests/grounding_hazard_data/charts/land/land.shp";
+    
+   	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename, psbmpc);
+	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
+
+    //Make matlab polygons type friendly array:
+    Eigen::Matrix<double, -1, 2> polygon_matrix;
+    int n_static_obst = 0;
+    BOOST_FOREACH(polygon_2D const &poly, polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			n_static_obst += 1;
+		}
+		n_static_obst += 1;
+    }
+    polygon_matrix.resize(n_static_obst, 2); 
+
+    /*format polygon_matrix array for matlab plotting*/
+    int pcount = 0; 
+    BOOST_FOREACH(polygon_2D const& poly, polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			polygon_matrix(pcount, 0) = boost::geometry::get<0>(*it);
+			polygon_matrix(pcount, 1) = boost::geometry::get<1>(*it);
+			
+			pcount += 1;
+		}
+		// each polygon is separated with (-1, -1)
+		polygon_matrix(pcount, 0) = -1;
+		polygon_matrix(pcount, 1) = -1;
+		pcount += 1;
+    }
+
+	mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
+	double *p_map_origin = mxGetPr(map_origin_mx);
+	Eigen::Map<Eigen::Vector2d> map_map_origin(p_map_origin, 2, 1);
+	map_map_origin = grounding_hazard_manager.get_map_origin();
+    
+    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_static_obst, 2, mxREAL);
+    double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_static_obst, 2);
+	map_polygon_matrix = polygon_matrix;
+
+	engPutVariable(ep, "map_origin", map_origin_mx);
+	engPutVariable(ep, "P", polygon_matrix_mx);
+
+//*****************************************************************************************************************
 // Simulation
 //*****************************************************************************************************************	
+
+	// Use positions relative to the map origin
+	Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin();
+
+	xs_os_0.block<2, 1>(0, 0) -= map_origin;
+	trajectory.block<2, 1>(0, 0) -= map_origin;
+	for (int l = 0; l < n_wps_os; l++)
+	{
+		waypoints.col(l) -= map_origin;
+	}
+	
+	for (int i = 0; i < n_obst; i++)
+	{	
+		for (int k = 0; k < std::round(T_sim / dt); k++)
+		{
+			trajectory_i[i].block<2, 1>(0, k) -= map_origin;
+		}
+		for (int l = 0; l < n_wps_i; i++)
+		{
+			waypoints_i[i].col(l) -= map_origin;
+		}
+		
+	}
 	auto start = std::chrono::system_clock::now(), end = start;
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
@@ -341,7 +370,7 @@ int main(){
 			obstacle_intention_probabilities, 
 			obstacle_a_priori_CC_probabilities);
 
-		relevant_polygons = grounding_hazard_manager.operator()(trajectory.col(k), psbmpc);
+		relevant_polygons = grounding_hazard_manager.operator()(trajectory.col(k));
 
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, PSBMPC_LIB::LOS);
 

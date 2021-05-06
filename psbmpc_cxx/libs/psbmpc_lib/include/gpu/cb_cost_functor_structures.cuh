@@ -40,19 +40,33 @@ namespace PSBMPC_LIB
 		{
 			TML::PDMatrix<float, 2, MAX_N_VERTICES> vertices;
 
+			TML::Matrix2f bbox; // simple bounding box consisting of the box lower left and upper right corners
+
 			__host__ __device__ Basic_Polygon() {}
 
 			// Only transfer outer ring of the polygon to the basic one
 			__host__ Basic_Polygon& operator=(const polygon_2D &poly)
 			{
-				int v_count(1);
+				int n_vertices(0), v_count(0);
 				for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); it++)
 				{
-					vertices.resize(2, v_count); // no harm done to old values in consecutive resizing of the PDMatrix
-					vertices(0, v_count - 1) = boost::geometry::get<0>(*it);
-					vertices(1, v_count - 1) = boost::geometry::get<1>(*it);
+					n_vertices += 1;
+				}
+
+				bbox(0, 0) = 1e6f; bbox(1, 0) = 1e6f; bbox(0, 1) = -1e6f; bbox(1, 1) = -1e6f;
+				vertices.resize(2, n_vertices);
+				for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); it++)
+				{
+					vertices(0, v_count) = boost::geometry::get<0>(*it); 
+					vertices(1, v_count) = boost::geometry::get<1>(*it);
+
+					if (vertices(0, v_count) < bbox(0, 0)) { bbox(0, 0) = vertices(0, v_count); } // x_min
+					if (vertices(1, v_count) < bbox(1, 0)) { bbox(1, 0) = vertices(1, v_count); } // y_min
+					if (vertices(0, v_count) > bbox(0, 1)) { bbox(0, 1) = vertices(0, v_count); } // x_max
+					if (vertices(1, v_count) > bbox(1, 1)) { bbox(1, 1) = vertices(1, v_count); } // y_max
 					v_count += 1;
 				}
+				return *this;
 			}
 		};
 	

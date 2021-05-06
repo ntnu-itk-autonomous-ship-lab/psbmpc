@@ -48,11 +48,7 @@ namespace PSBMPC_LIB
 
 		std::vector<polygon_2D> polygons;
 
-		point_2D map_origin;
-
-		// Matrix of 2 x (-1) polygons inside a grid (determined by input parameters)
-		// Each polygon is separated by (-1, -1)
-		Eigen::MatrixXd filtered_polygons;
+		Eigen::Vector2d map_origin;
 
 		/****************************************************************************************
 		*  Name     : read_shapefile
@@ -109,12 +105,13 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		void convert(SHPObject *ps_shape, polygon_2D &polygon)
 		{
-			double* x = ps_shape->padfX;
-			double* y = ps_shape->padfY;
+			double* x = ps_shape->padfX; // easting
+			double* y = ps_shape->padfY; // northing
 			for (int v = 0; v < ps_shape->nVertices; v++)
 			{
+				// want the points on format (northing, easting), and relative to the map origin
 				typename boost::geometry::point_type<polygon_2D>::type point;
-				boost::geometry::assign_values(point, x[v], y[v]);
+				boost::geometry::assign_values(point, y[v] - map_origin(0), x[v] - map_origin(1)); 
 				boost::geometry::append(polygon, point);
 			}
 		}
@@ -122,13 +119,25 @@ namespace PSBMPC_LIB
 	public:
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-		Grounding_Hazard_Manager(const std::string &filename) 
+		template <class MPC_Type>
+		Grounding_Hazard_Manager(const std::string &filename, const MPC_Type &mpc) 
 			: 
-			d_so(4000.0), 
-			map_origin(270250, 7042250) // Trondheim, just north of ravnkloa, brattora crossing
+			d_so(mpc.pars.d_init), 
+			map_origin(7042250, 270250) // Trondheim, just north of ravnkloa, brattora crossing
 		{
 			read_shapefile(filename, polygons);
 		}
+
+		template <class MPC_Type>
+		Grounding_Hazard_Manager(const std::string &filename, Eigen::Vector2d &map_origin, const MPC_Type &mpc) 
+			: 
+			d_so(mpc.pars.d_init), 
+			map_origin(map_origin)
+		{
+			read_shapefile(filename, polygons);
+		}
+
+		Eigen::Vector2d get_map_origin() const { return map_origin; }
 
 		std::vector<polygon_2D> get_polygons() const { return polygons; }
 
@@ -139,10 +148,8 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		template <class MPC_Type>
 		std::vector<polygon_2D> operator()(
-			const Eigen::VectorXd &ownship_state,							// State of the own-ship, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
-			const MPC_Type &mpc 											// Calling MPC (either PSB-MPC or SB-MPC)
+			const Eigen::VectorXd &ownship_state							// State of the own-ship, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
 			)
 		{
 			std::vector<polygon_2D> ret;
