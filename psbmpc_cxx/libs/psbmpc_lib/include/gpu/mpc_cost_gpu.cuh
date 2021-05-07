@@ -56,10 +56,11 @@ namespace PSBMPC_LIB
 			bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 
 			// Grounding hazard related
-			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k, p_ray_end, projection;
+			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k, p_ray_end, projection, v, v_next;
 
-			float epsilon, l_sqrt, t_line, d_0j, phi_j;
-			int n_samples, val, o_1, o_2, o_3, o_4, line_intersect_count;
+			float l_sqrt, t_line, d_0j, phi_j;
+			double val, epsilon;
+			int n_samples, o_1, o_2, o_3, o_4, line_intersect_count;
 
 			TML::Vector3f a, b;
 			//==============================================
@@ -73,11 +74,11 @@ namespace PSBMPC_LIB
 
 		public:
 
-			__host__ __device__ int find_triplet_orientation(const TML::Vector2f &p, const TML::Vector2f &q, const TML::Vector2f &r);  
+			__host__ __device__ int find_triplet_orientation(const TML::Vector2d &p, const TML::Vector2d &q, const TML::Vector2d &r);  
 
-			__host__ __device__ bool determine_if_on_segment(const TML::Vector2f &p, const TML::Vector2f &q, const TML::Vector2f &r) const; 
+			__host__ __device__ bool determine_if_on_segment(const TML::Vector2d &p, const TML::Vector2d &q, const TML::Vector2d &r) const; 
 
-			__host__ __device__ bool determine_if_lines_intersect(const TML::Vector2f &p_1, const TML::Vector2f &q_1, const TML::Vector2f &p_2, const TML::Vector2f &q_2);                    
+			__host__ __device__ bool determine_if_lines_intersect(const TML::Vector2d &p_1, const TML::Vector2d &q_1, const TML::Vector2d &p_2, const TML::Vector2d &q_2);                    
 
 			__host__ __device__ bool determine_if_inside_polygon(const TML::Vector2f &p, const Basic_Polygon &poly);  
 
@@ -630,40 +631,42 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : find_triplet_orientation
 		*  Function : Find orientation of ordered triplet (p, q, r)
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
+		*  Author   : 
+		*  Modified : 
 		*****************************************************************************************/
 		template <typename Parameters>
 		__host__ __device__ int MPC_Cost<Parameters>::find_triplet_orientation(
-			const TML::Vector2f &p, 
-			const TML::Vector2f &q, 
-			const TML::Vector2f &r
+			const TML::Vector2d &p, 
+			const TML::Vector2d &q, 
+			const TML::Vector2d &r
 			)
 		{
-			epsilon = 0.00001f;
+			epsilon = 1e-12; // abs(val) less than 1e-12 m^2 is considered zero for this check
 			// Calculate z-component of cross product (q - p) x (r - q)
 			val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
-			if (abs(val) <= epsilon) { return 0; } // colinear
-			return val < 0.0f ? 1 : 2; // clock or counterclockwise
+			printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
+			if (val >= -epsilon && val <= epsilon) 	{ return 0; } // colinear
+			else if (val > epsilon) 				{ return 1; } // clockwise
+			else 									{ return 2; } // counterclockwise
 		}
 
 		/****************************************************************************************
 		*  Name     : determine_if_on_segment
 		*  Function : Determine if the point q is on the segment pr
 		*			  (really if q is inside the rectangle with diagonal pr...)
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
+		*  Author   : 
+		*  Modified : 
 		*****************************************************************************************/
 		template <typename Parameters>
 		__host__ __device__ bool MPC_Cost<Parameters>::determine_if_on_segment(
-			const TML::Vector2f &p, 
-			const TML::Vector2f &q, 
-			const TML::Vector2f &r
+			const TML::Vector2d &p, 
+			const TML::Vector2d &q, 
+			const TML::Vector2d &r
 			) const
 		{
-			if (q(0) <= fmaxf(p(0), r(0)) && q(0) >= fminf(p(0), r(0)) &&
-				q(1) <= fmaxf(p(1), r(1)) && q(1) >= fminf(p(1), r(1)))
+			if (q(0) <= fmax(p(0), r(0)) && q(0) >= fmin(p(0), r(0)) &&
+				q(1) <= fmax(p(1), r(1)) && q(1) >= fmin(p(1), r(1)))
 			{
 				return true;
 			}
@@ -673,15 +676,15 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : determine_if_lines_intersect
 		*  Function : Determine if the line segments defined by p_1, q_1 and p_2, q_2 intersects 
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
+		*  Author   : 
+		*  Modified : 
 		*****************************************************************************************/
 		template <typename Parameters>
 		__host__ __device__ bool MPC_Cost<Parameters>::determine_if_lines_intersect(
-			const TML::Vector2f &p_1, 
-			const TML::Vector2f &q_1, 
-			const TML::Vector2f &p_2, 
-			const TML::Vector2f &q_2
+			const TML::Vector2d &p_1, 
+			const TML::Vector2d &q_1, 
+			const TML::Vector2d &p_2, 
+			const TML::Vector2d &q_2
 			)
 		{
 			// Find the four orientations needed for general and
@@ -691,6 +694,7 @@ namespace PSBMPC_LIB
 			o_3 = find_triplet_orientation(p_2, q_2, p_1);
 			o_4 = find_triplet_orientation(p_2, q_2, q_1);
 
+			printf("o_1 = %d | o_2 = %d | o_3 = %d | o_4 = %d\n", o_1, o_2, o_3, o_4);
 			// General case
 			if (o_1 != o_2 && o_3 != o_4) { return true; }
 
@@ -722,25 +726,35 @@ namespace PSBMPC_LIB
 			const Basic_Polygon &poly
 			)
 		{
+			if (poly.vertices.get_cols() < 3) { return false;}
 			line_intersect_count = 0;
 
 			p_ray_end = poly.bbox.get_col(1) - p;
 			p_ray_end *= 1.1;
 			p_ray_end += p;
 
-			for (size_t v = 0; v < poly.vertices.get_cols() - 1; v++)
+			for (size_t l = 0; l < poly.vertices.get_cols() - 1; l++)
 			{
-				if (determine_if_lines_intersect(p, p_ray_end, poly.vertices.get_col(v), poly.vertices.get_col(v + 1)))
+				v = poly.vertices.get_col(l);
+				v_next = poly.vertices.get_col(l + 1);
+				
+				if (l == 0)
 				{
+				
+				if (determine_if_lines_intersect(p, p_ray_end, v, v_next))
+				{
+					printf("index = %ld | v = %.6f, %.6f | v_next = %.6f, %.6f\n", l, v(0), v(1), v_next(0), v_next(1));
+					// Special case when p is colinear with line segment from v -> v_next
+					if (find_triplet_orientation(v, p, v_next) == 0)
+					{
+						return determine_if_on_segment(v, p, v_next);
+					}
 					line_intersect_count += 1;
 				}
+				}
 			}
-			// If an even number of intersections => Outside the polygon
-			if (fmod(line_intersect_count, 2) == 0)
-			{
-				return false;
-			}
-			return true;
+
+			return line_intersect_count % 2 == 1;
 		}
 		
 		/****************************************************************************************

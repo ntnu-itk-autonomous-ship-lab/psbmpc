@@ -23,6 +23,7 @@
 #include "obstacle_manager.hpp"
 #include "cpu/prediction_obstacle_cpu.hpp"
 #include "grounding_hazard_manager.hpp"
+#include "engine.h"
 
 namespace PSBMPC_LIB
 {
@@ -1178,8 +1179,8 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : find_triplet_orientation
 		*  Function : Find orientation of ordered triplet (p, q, r)
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
+		*  Author   : 
+		*  Modified : 
 		*****************************************************************************************/
 		template <typename Parameters>
 		int MPC_Cost<Parameters>::find_triplet_orientation(
@@ -1188,20 +1189,22 @@ namespace PSBMPC_LIB
 			const Eigen::Vector2d &r
 			) const
 		{
-			double epsilon = 0.00001;
+			double epsilon = 1e-12; // abs(val) less than 1e-12 m^2 is considered zero for this check
 			// Calculate z-component of cross product (q - p) x (r - q)
 			double val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
-			if (abs(val) <= epsilon) { return 0; } // colinear
-			return val < 0.0 ? 1 : 2; // clock or counterclockwise
+			printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
+			if (val >= -epsilon && val <= epsilon) 	{ return 0; } // colinear
+			else if (val > epsilon) 				{ return 1; } // clockwise
+			else 									{ return 2; } // counterclockwise
 		}
 
 		/****************************************************************************************
 		*  Name     : determine_if_on_segment
 		*  Function : Determine if the point q is on the segment pr
 		*			  (really if q is inside the rectangle with diagonal pr...)
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
+		*  Author   : 
+		*  Modified : 
 		*****************************************************************************************/
 		template <typename Parameters>
 		bool MPC_Cost<Parameters>::determine_if_on_segment(
@@ -1210,8 +1213,8 @@ namespace PSBMPC_LIB
 			const Eigen::Vector2d &r
 			) const
 		{
-			if (q[0] <= std::max(p(0), r(0)) && q[0] >= std::min(p(0), r(0)) &&
-				q[1] <= std::max(p(1), r(1)) && q[1] >= std::min(p(1), r(1)))
+			if (q(0) <= std::max(p(0), r(0)) && q(0) >= std::min(p(0), r(0)) &&
+				q(1) <= std::max(p(1), r(1)) && q(1) >= std::min(p(1), r(1)))
 			{
 				return true;
 			}
@@ -1263,6 +1266,7 @@ namespace PSBMPC_LIB
 			int o_3 = find_triplet_orientation(p_2, q_2, p_1);
 			int o_4 = find_triplet_orientation(p_2, q_2, q_1);
 
+			printf("o_1 = %d | o_2 = %d | o_3 = %d | o_4 = %d\n", o_1, o_2, o_3, o_4);
 			// General case
 			if (o_1 != o_2 && o_3 != o_4) { return true; }
 
@@ -1284,7 +1288,7 @@ namespace PSBMPC_LIB
 
 		/****************************************************************************************
 		*  Name     : distance_to_line
-		*  Function : Calculate distance from p to the line segment defined by q_1 and q_2
+		*  Function : Calculate distance from p to the line defined by q_1 and q_2
 		*  Author   : Giorgio D. Kwame Minde Kufoalor
 		*  Modified : By Trym Tengesdal for more readability
 		*****************************************************************************************/
@@ -1297,8 +1301,8 @@ namespace PSBMPC_LIB
 		{   
 			Eigen::Vector3d a;
 			Eigen::Vector3d b;
-			a << (q_1 - q_2), 0;
-			b << (p - q_2), 0;
+			a << (q_1 - q_2), 0.0;
+			b << (p - q_2), 0.0;
 
 			Eigen::Vector3d c = a.cross(b);
 			if (a.norm() > 0) return c.norm() / a.norm();
@@ -1336,37 +1340,103 @@ namespace PSBMPC_LIB
 			const polygon_2D &poly
 			) const
 		{
-			int line_intersect_count = 0;
-			Eigen::Vector2d v, v_next;
+			int line_intersect_count = 0, n_vertices(0);
+			Eigen::Vector2d v, v_next;			
 
 			// Find bounding box of polygon to use for ray creation
+			Eigen::MatrixXd polygon_vertices(2, 5000);
 			Eigen::Matrix2d bbox;
 			bbox(0, 0) = 1e10; bbox(1, 0) = 1e10; bbox(0, 1) = -1e10; bbox(1, 1) = -1e10;
-			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
+			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); it++)
 			{
 				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
 				if (v(0) < bbox(0, 0)) { bbox(0, 0) = v(0); } // x_min
 				if (v(1) < bbox(1, 0)) { bbox(1, 0) = v(1); } // y_min
 				if (v(0) > bbox(0, 1)) { bbox(0, 1) = v(0); } // x_max
 				if (v(1) > bbox(1, 1)) { bbox(1, 1) = v(1); } // y_max
+				polygon_vertices.col(n_vertices) = v;
+				n_vertices += 1;
 			}
+			if (n_vertices < 3) { return false; }
+
 			Eigen::Vector2d p_ray_end = p + 1.1 * (bbox.col(1) - p);
+
+			Engine *ep = engOpen(NULL);
+			if (ep == NULL)
+			{
+				std::cout << "engine start failed!" << std::endl;
+			}
+			char buffer[100000 + 1]; 
+			buffer[100000] = '\0';
+			engOutputBuffer(ep, buffer, 100000);
+
+			mxArray *bbox_mx = mxCreateDoubleMatrix(2, 5, mxREAL);
+			mxArray *p_os_ray_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
+			mxArray *polygon_side_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
+			mxArray *polygon_vertices_mx = mxCreateDoubleMatrix(2, n_vertices, mxREAL);
+
+			double *p_bbox = mxGetPr(bbox_mx);
+			double *p_p_os_ray = mxGetPr(p_os_ray_mx);
+			double *p_polygon_side = mxGetPr(polygon_side_mx);
+			double *p_polygon_vertices = mxGetPr(polygon_vertices_mx);
+			polygon_vertices.conservativeResize(2, n_vertices);
+
+			Eigen::Map<Eigen::MatrixXd> map_bbox(p_bbox, 2, 5);
+			Eigen::Map<Eigen::Matrix2d> map_p_os_ray(p_p_os_ray, 2, 2);
+			Eigen::Map<Eigen::MatrixXd> map_poly_vertices(p_polygon_vertices, 2, n_vertices);	
+			
+			Eigen::Matrix2d p_os_ray, polygon_side; p_os_ray.col(0) = p; p_os_ray.col(1) = p_ray_end;
+			Eigen::MatrixXd bbox_all(2, 5); 
+			bbox_all.col(0) = bbox.col(0); // (x_min, y_min)
+			bbox_all(0, 1) = bbox(0, 0); bbox_all(1, 1) = bbox(1, 1); //(x_min, y_max)
+			bbox_all.col(2) = bbox.col(1); //(x_max, y_max)
+			bbox_all(0, 3) = bbox(0, 1); bbox_all(1, 3) = bbox(1, 0); //(x_max, y_min)
+			bbox_all.col(4) = bbox_all.col(0);
+			
+			map_bbox = bbox_all;
+			map_p_os_ray = p_os_ray;
+			map_poly_vertices = polygon_vertices;
+
+			engPutVariable(ep, "poly_bbox", bbox_mx);
+			engPutVariable(ep, "p_os_ray", p_os_ray_mx);
+			engPutVariable(ep, "polygon_vertices", polygon_vertices_mx);
+			engEvalString(ep, "init_plot_geometry_wrt_polygon");
+
+			int v_count = 0;
 			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
 			{
 				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
 				v_next(0) = boost::geometry::get<0>(*(it + 1)); v_next(1) = boost::geometry::get<1>(*(it + 1));
 				
+				if (true) //v_count == 0)
+				{
 				if (determine_if_lines_intersect(p, p_ray_end, v, v_next))
 				{
+					Eigen::Map<Eigen::Matrix2d> map_polygon_side(p_polygon_side, 2, 2);
+					polygon_side.col(0) = v; polygon_side.col(1) = v_next;
+					map_polygon_side = polygon_side;
+
+					engPutVariable(ep, "polygon_side", polygon_side_mx);
+					printf("index = %d | v = %.6f, %.6f | v_next = %.6f, %.6f\n", v_count, v(0), v(1), v_next(0), v_next(1));
+					// Special case when p is colinear with line segment from v -> v_next
+					if (find_triplet_orientation(v, p, v_next) == 0)
+					{
+						return determine_if_on_segment(v, p, v_next);
+					}
 					line_intersect_count += 1;
+					engEvalString(ep, "plot_geometry_wrt_polygon");
+					printf("%s", buffer);
 				}
+				}
+				v_count += 1;
 			}
-			// If an even number of intersections => Outside the polygon
-			if (fmod(line_intersect_count, 2) == 0)
-			{
-				return false;
-			}
-			return true;
+
+			mxDestroyArray(bbox_mx);
+			mxDestroyArray(p_os_ray_mx);
+			mxDestroyArray(polygon_vertices_mx);
+			mxDestroyArray(polygon_side_mx);
+			engClose(ep);
+			return line_intersect_count % 2 == 1;
 		}
 
 		/****************************************************************************************

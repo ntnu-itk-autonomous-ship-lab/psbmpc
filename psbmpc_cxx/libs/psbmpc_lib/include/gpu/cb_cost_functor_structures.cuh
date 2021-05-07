@@ -40,7 +40,7 @@ namespace PSBMPC_LIB
 		{
 			TML::PDMatrix<float, 2, MAX_N_VERTICES> vertices;
 
-			TML::Matrix2f bbox; // simple bounding box consisting of the box lower left and upper right corners
+			TML::Matrix2f bbox; // Bounding box  for the polygon
 
 			__host__ __device__ Basic_Polygon() {}
 

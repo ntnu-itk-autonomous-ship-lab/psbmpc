@@ -1,0 +1,13 @@
+
+
+polygon = polyshape(polygon_vertices')
+bbox = polyshape(poly_bbox');
+
+fig = figure; axis equal
+hold on; grid on;
+plot(p_os_ray(2, 1), p_os_ray(1, 1), 'kx', 'linewidth', 3);
+plot(p_os_ray(2, :), p_os_ray(1, :), 'b');
+plot(polygon_vertices(2, :), polygon_vertices(1, :), 'k');
+plot(poly_bbox(2, :), poly_bbox(1, :), 'g');
+plot(polygon_side(2, :), polygon_side(1, :), 'r');
+legend('OS ray', 'polygon', 'bbox', 'polygon side');

@@ -52,10 +52,7 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
 	cb_index = thrust::get<0>(cb_tuple);
 	offset_sequence = thrust::get<1>(cb_tuple);
 
-	//======================================================================================================================
-	// 1.1 : Setup and own-ship trajectory prediction with the control behaviour cb_index
 	ownship[cb_index].set_wp_counter(fdata->wp_c_0);
-
 	ownship[cb_index].predict_trajectory(
 		trajectory[cb_index], 
 		fdata->ownship_state,
@@ -67,16 +64,9 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
 		pars->guidance_method, 
 		pars->T, pars->dt);
 
-	//==================================================================================================
-	// 2.1 : Calculate cost due to driving the boat on land or static objects
 	h_so = mpc_cost[cb_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons); 
 
-	//==================================================================================================
-	// 2.2 : Calculate path cost due to deviating from the nominal path
 	h_path += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
-
-	//==================================================================================================
-	// 2.3 : Calculate path cost due to having a wobbly offset_sequence
 	h_path += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
 
 	return thrust::make_tuple<float, float>(h_so, h_path);
