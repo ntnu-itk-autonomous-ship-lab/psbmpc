@@ -175,7 +175,8 @@ int main(){
 	PSBMPC_LIB::GPU::Basic_Polygon poly;
 	point_2D p(xs_os_0(0), xs_os_0(1));
 	p_os(0) = xs_os_0(0); p_os(1) = xs_os_0(1);
-	for (int j = 3; j < n_static_obst; j++)
+	n_static_obst = polygons.size();
+	for (int j = 9; j < n_static_obst; j++)
 	{
 		std::cout << "Boost dist to poly: " << boost::geometry::distance(p, polygons[j]) << std::endl;
 		d2poly_cpu.col(j) = mpc_cost_cpu.distance_to_polygon(xs_os_0.block<2, 1>(0, 0), polygons[j]);

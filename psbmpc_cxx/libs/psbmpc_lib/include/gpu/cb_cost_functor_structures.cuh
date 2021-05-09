@@ -38,9 +38,9 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		struct Basic_Polygon
 		{
-			TML::PDMatrix<float, 2, MAX_N_VERTICES> vertices;
+			TML::PDMatrix<double, 2, MAX_N_VERTICES> vertices;
 
-			TML::Matrix2f bbox; // Bounding box  for the polygon
+			TML::Matrix2d bbox; // Bounding box  for the polygon
 
 			__host__ __device__ Basic_Polygon() {}
 
@@ -53,7 +53,7 @@ namespace PSBMPC_LIB
 					n_vertices += 1;
 				}
 
-				bbox(0, 0) = 1e6f; bbox(1, 0) = 1e6f; bbox(0, 1) = -1e6f; bbox(1, 1) = -1e6f;
+				bbox(0, 0) = 1e6; bbox(1, 0) = 1e6; bbox(0, 1) = -1e6; bbox(1, 1) = -1e6;
 				vertices.resize(2, n_vertices);
 				for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); it++)
 				{

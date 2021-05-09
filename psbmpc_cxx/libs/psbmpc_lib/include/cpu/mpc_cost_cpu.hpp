@@ -1193,7 +1193,7 @@ namespace PSBMPC_LIB
 			// Calculate z-component of cross product (q - p) x (r - q)
 			double val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
-			printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
+			//printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
 			if (val >= -epsilon && val <= epsilon) 	{ return 0; } // colinear
 			else if (val > epsilon) 				{ return 1; } // clockwise
 			else 									{ return 2; } // counterclockwise
@@ -1266,7 +1266,7 @@ namespace PSBMPC_LIB
 			int o_3 = find_triplet_orientation(p_2, q_2, p_1);
 			int o_4 = find_triplet_orientation(p_2, q_2, q_1);
 
-			printf("o_1 = %d | o_2 = %d | o_3 = %d | o_4 = %d\n", o_1, o_2, o_3, o_4);
+			//printf("o_1 = %d | o_2 = %d | o_3 = %d | o_4 = %d\n", o_1, o_2, o_3, o_4);
 			// General case
 			if (o_1 != o_2 && o_3 != o_4) { return true; }
 
@@ -1408,25 +1408,23 @@ namespace PSBMPC_LIB
 				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
 				v_next(0) = boost::geometry::get<0>(*(it + 1)); v_next(1) = boost::geometry::get<1>(*(it + 1));
 				
-				if (true) //v_count == 0)
-				{
 				if (determine_if_lines_intersect(p, p_ray_end, v, v_next))
 				{
-					Eigen::Map<Eigen::Matrix2d> map_polygon_side(p_polygon_side, 2, 2);
-					polygon_side.col(0) = v; polygon_side.col(1) = v_next;
-					map_polygon_side = polygon_side;
-
-					engPutVariable(ep, "polygon_side", polygon_side_mx);
-					printf("index = %d | v = %.6f, %.6f | v_next = %.6f, %.6f\n", v_count, v(0), v(1), v_next(0), v_next(1));
+					//printf("index = %d | v = %.6f, %.6f | v_next = %.6f, %.6f\n", v_count, v(0), v(1), v_next(0), v_next(1));
 					// Special case when p is colinear with line segment from v -> v_next
 					if (find_triplet_orientation(v, p, v_next) == 0)
 					{
 						return determine_if_on_segment(v, p, v_next);
 					}
 					line_intersect_count += 1;
+
+					Eigen::Map<Eigen::Matrix2d> map_polygon_side(p_polygon_side, 2, 2);
+					polygon_side.col(0) = v; polygon_side.col(1) = v_next;
+					map_polygon_side = polygon_side;
+
+					engPutVariable(ep, "polygon_side", polygon_side_mx);
 					engEvalString(ep, "plot_geometry_wrt_polygon");
 					printf("%s", buffer);
-				}
 				}
 				v_count += 1;
 			}

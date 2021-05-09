@@ -56,7 +56,8 @@ namespace PSBMPC_LIB
 			bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 
 			// Grounding hazard related
-			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k, p_ray_end, projection, v, v_next;
+			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k, projection;
+			TML::Vector2d p_ray_end, v, v_next;
 
 			float l_sqrt, t_line, d_0j, phi_j;
 			double val, epsilon;
@@ -80,7 +81,7 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ bool determine_if_lines_intersect(const TML::Vector2d &p_1, const TML::Vector2d &q_1, const TML::Vector2d &p_2, const TML::Vector2d &q_2);                    
 
-			__host__ __device__ bool determine_if_inside_polygon(const TML::Vector2f &p, const Basic_Polygon &poly);  
+			__host__ __device__ bool determine_if_inside_polygon(const TML::Vector2d &p, const Basic_Polygon &poly);  
 
 			__host__ __device__ TML::Vector2f distance_to_line_segment(const TML::Vector2f &p, const TML::Vector2f &q_1, const TML::Vector2f &q_2);                    
 
@@ -645,7 +646,7 @@ namespace PSBMPC_LIB
 			// Calculate z-component of cross product (q - p) x (r - q)
 			val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
-			printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
+			//printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
 			if (val >= -epsilon && val <= epsilon) 	{ return 0; } // colinear
 			else if (val > epsilon) 				{ return 1; } // clockwise
 			else 									{ return 2; } // counterclockwise
@@ -694,7 +695,7 @@ namespace PSBMPC_LIB
 			o_3 = find_triplet_orientation(p_2, q_2, p_1);
 			o_4 = find_triplet_orientation(p_2, q_2, q_1);
 
-			printf("o_1 = %d | o_2 = %d | o_3 = %d | o_4 = %d\n", o_1, o_2, o_3, o_4);
+			//printf("o_1 = %d | o_2 = %d | o_3 = %d | o_4 = %d\n", o_1, o_2, o_3, o_4);
 			// General case
 			if (o_1 != o_2 && o_3 != o_4) { return true; }
 
@@ -722,7 +723,7 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		__host__ __device__ bool MPC_Cost<Parameters>::determine_if_inside_polygon(
-			const TML::Vector2f &p, 
+			const TML::Vector2d &p, 
 			const Basic_Polygon &poly
 			)
 		{
@@ -738,19 +739,15 @@ namespace PSBMPC_LIB
 				v = poly.vertices.get_col(l);
 				v_next = poly.vertices.get_col(l + 1);
 				
-				if (l == 0)
-				{
-				
 				if (determine_if_lines_intersect(p, p_ray_end, v, v_next))
 				{
-					printf("index = %ld | v = %.6f, %.6f | v_next = %.6f, %.6f\n", l, v(0), v(1), v_next(0), v_next(1));
+					//printf("index = %ld | v = %.6f, %.6f | v_next = %.6f, %.6f\n", l, v(0), v(1), v_next(0), v_next(1));
 					// Special case when p is colinear with line segment from v -> v_next
 					if (find_triplet_orientation(v, p, v_next) == 0)
 					{
 						return determine_if_on_segment(v, p, v_next);
 					}
 					line_intersect_count += 1;
-				}
 				}
 			}
 
@@ -771,12 +768,12 @@ namespace PSBMPC_LIB
 			const TML::Vector2f &q_2
 			)
 		{   
-			epsilon = 0.00001f;
+			epsilon = 1e-6; // tolerance for the squared distance being zero, would be higher if doubles were considered
 			a.set_block<2, 1>(0, 0, q_2 - q_1); 	a(2) = 0.0f;
 			b.set_block<2, 1>(0, 0, p - q_1); 		b(2) = 0.0f;
 
 			l_sqrt = a(0) * a(0) + a(1) * a(1);
-			if (l_sqrt <= epsilon)	{ return q_1 - p; }
+			if (l_sqrt <= (float)epsilon)	{ return q_1 - p; }
 
 			t_line = fmaxf(0.0f, fminf(1.0f, a.dot(b) / l_sqrt));
 			projection = q_1 + t_line * (q_2 - q_1);

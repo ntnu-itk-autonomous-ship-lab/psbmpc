@@ -100,14 +100,28 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : convert
 		*  Function : Converts a SHPObject to a polygon. 
-		*  Author   : Tom Daniel Grande & Trym Tengesdal
+		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
 		void convert(SHPObject *ps_shape, polygon_2D &polygon)
 		{
 			double* x = ps_shape->padfX; // easting
 			double* y = ps_shape->padfY; // northing
-			for (int v = 0; v < ps_shape->nVertices; v++)
+
+			// Only consider the part for the outer ring of the polygon
+			int outer_part_start = ps_shape->panPartStart[0];
+			int outer_part_end(0);
+			if (ps_shape->nParts < 2)
+			{
+				outer_part_end = ps_shape->nVertices;
+			}
+			else
+			{
+				outer_part_end = ps_shape->panPartStart[1];
+				printf("n_parts = %d | n_vertices = %d | Outer part start, end = (%d, %d)\n", ps_shape->nParts, ps_shape->nVertices, outer_part_start, outer_part_end);
+
+			}
+			for (int v = outer_part_start; v < outer_part_end; v++)
 			{
 				// want the points on format (northing, easting), and relative to the map origin
 				typename boost::geometry::point_type<polygon_2D>::type point;
