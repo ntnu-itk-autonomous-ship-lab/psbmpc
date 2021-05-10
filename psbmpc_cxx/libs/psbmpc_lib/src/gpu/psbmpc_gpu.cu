@@ -54,7 +54,7 @@ PSBMPC::PSBMPC()
 	: 
 	ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), 
 	obstacles_device_ptr(nullptr), pobstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr),
-	obstacle_ship_device_ptr(nullptr), obstacle_sbmpc_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	obstacle_ship_device_ptr(nullptr), obstacle_sbmpc_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
 {
 	opt_offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
@@ -76,6 +76,7 @@ PSBMPC::PSBMPC()
 	std::cout << "Prediction Obstacle size: " << sizeof(Prediction_Obstacle) << std::endl;
 	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
 	std::cout << "Obstacle SBMPC size: " << sizeof(Obstacle_SBMPC) << std::endl;
+	std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
 	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl;
 
 	//================================================================================
@@ -133,6 +134,10 @@ PSBMPC::PSBMPC()
     	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
 	}
 
+	// Allocate for use by all threads a read-only Basic_Polygon array
+	cudaMalloc((void**)&polygons_device_ptr, MAX_N_POLYGONS * sizeof(Basic_Polygon));
+    cuda_check_errors("CudaMalloc of Basic_Polygon`s failed.");
+
 	// NOT FINISHED YET, NEED TO FIX INDEXING OPERATION ON PREDICTION OBSTACLES ON THE DEVICE(CB_COST_FUNCTOR_2)
 	if (pars.obstacle_colav_on)
 	{
@@ -158,6 +163,7 @@ PSBMPC::PSBMPC()
 			cudaMemcpy(&obstacle_sbmpc_device_ptr[thread], &obstacle_sbmpc, sizeof(Obstacle_SBMPC), cudaMemcpyHostToDevice);
 			cuda_check_errors("CudaMemCpy of Obstacle_SBMPC failed.");
 		}
+
 	}
 }
 
@@ -198,6 +204,9 @@ PSBMPC::~PSBMPC()
 		cuda_check_errors("CudaFree of Obstacle_SBMPC failed.");
 	}
 
+	cudaFree(polygons_device_ptr);
+	cuda_check_errors("CudaFree of polygons failed.");
+
 	cudaFree(mpc_cost_device_ptr);
 	cuda_check_errors("CudaFree of MPC_Cost failed.");
 };
@@ -216,7 +225,9 @@ void PSBMPC::calculate_optimal_offsets(
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
-	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
+	const double V_w,														// In: Estimated wind speed
+	const Eigen::Vector2d &wind_direction,									// In: Unit vector in NE describing the estimated wind direction
+	const std::vector<polygon_2D> &polygons,								// In: Static obstacle information
 	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
 {	
@@ -228,7 +239,7 @@ void PSBMPC::calculate_optimal_offsets(
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
 	int n_obst = data.obstacles.size();
-	int n_static_obst = static_obstacles.cols();
+	int n_static_obst = polygons.size();
 
 	// Predict nominal trajectory first, assign as optimal if no need for
 	// COLAV, or use in the prediction initialization
@@ -254,7 +265,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	if (use_joint_prediction)
 	{
-		predict_trajectories_jointly(data, static_obstacles);
+		//predict_trajectories_jointly(data, static_obstacles);
 	}
 	
 	prune_obstacle_scenarios(data);
@@ -338,9 +349,15 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// Ownship trajectory prediction for all control behaviours 
 	//===============================================================================================================
-	set_up_temporary_device_memory(u_d, chi_d, waypoints, static_obstacles, data);
+	set_up_temporary_device_memory(u_d, chi_d, waypoints, V_w, wind_direction, polygons, data);
 
-	cb_cost_functor_1.reset(new CB_Cost_Functor_1(pars_device_ptr, fdata_device_ptr, ownship_device_ptr, trajectory_device_ptr, mpc_cost_device_ptr));
+	cb_cost_functor_1.reset(new CB_Cost_Functor_1(
+		pars_device_ptr, 
+		fdata_device_ptr, 
+		ownship_device_ptr, 
+		trajectory_device_ptr, 
+		mpc_cost_device_ptr, 
+		polygons_device_ptr));
 
 	cb_costs_1_dvec.resize(pars.n_cbs);
 	cb_index_dvec.resize(pars.n_cbs);
@@ -643,11 +660,11 @@ void PSBMPC::find_optimal_control_behaviour(
 
 	Eigen::VectorXd max_cost_ps, cost_i(data.obstacles.size());
 
-	double cost(0.0), cost_cb_ch_g(0.0);
+	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
 	Intention a_i_ps_jp(KCC); // Intention of obstacle i in its "intelligent" prediction scenario ps
 	bool mu_i_ps_jp(false); // COLREGS violation indicator of obstacle i in its "intelligent" prediction scenario ps
 
-	thrust::tuple<float, Intention, bool> tup;
+	
 	min_cost = 1e12;
 
 	Eigen::MatrixXd cost_i_matrix(n_obst, pars.n_cbs), max_cost_ps_matrix(n_obst * pars.n_r, pars.n_cbs), cb_matrix(2 * pars.n_M, pars.n_cbs);
@@ -689,7 +706,8 @@ void PSBMPC::find_optimal_control_behaviour(
 
 	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
 	//==================================================================
-
+	thrust::tuple<float, float> tup_1;
+	thrust::tuple<float, Intention, bool> tup_2;
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
 		for (int M = 0; M < pars.n_M; M++)
@@ -706,10 +724,10 @@ void PSBMPC::find_optimal_control_behaviour(
 			max_cost_ps.resize(n_ps[i]);
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
-				tup = cb_costs_2_dvec[thread_index];
-				max_cost_ps(ps) = thrust::get<0>(tup);
-				a_i_ps_jp = thrust::get<1>(tup);
-				mu_i_ps_jp = thrust::get<2>(tup);
+				tup_2 = cb_costs_2_dvec[thread_index];
+				max_cost_ps(ps) = thrust::get<0>(tup_2);
+				a_i_ps_jp = thrust::get<1>(tup_2);
+				mu_i_ps_jp = thrust::get<2>(tup_2);
 
 				thread_index += 1;
 			}
@@ -721,10 +739,14 @@ void PSBMPC::find_optimal_control_behaviour(
 			curr_max_cost_ps_index += n_ps[i];
 		}
 
-		cost_cb_ch_g = cb_costs_1_dvec[cb];
-		cost_cb_ch_g_matrix(cb) = cost_cb_ch_g;
+		h_do = cost_i.maxCoeff();
 
-		cost = cost_i.maxCoeff() + cost_cb_ch_g;
+		tup_1 = cb_costs_1_dvec[cb];
+		h_so = thrust::get<0>(tup_1);
+		h_path = thrust::get<1>(tup_1);
+		cost_cb_ch_g_matrix(cb) = h_so + h_path;
+
+		cost = h_do + h_colregs + h_so + h_path;
 		total_cost_matrix(cb) = cost;
 
 		if (cost < min_cost)
@@ -1822,11 +1844,14 @@ void PSBMPC::set_up_temporary_device_memory(
 	const double u_d,												// In: Own-ship surge reference
 	const double chi_d, 											// In: Own-ship course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,					// In: Own-ship waypoints to follow
-	const Eigen::Matrix<double, 4, -1> &static_obstacles,			// In: Static obstacle information
+	const double V_w,												// In: Estimated wind speed
+	const Eigen::Vector2d &wind_direction,							// In: Unit vector in NE describing the estimated wind direction
+	const std::vector<polygon_2D> &polygons,						// In: Static obstacle information represented as polygons
 	const Obstacle_Data<Tracked_Obstacle> &data 					// In: Dynamic obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
+	int n_static_obst = polygons.size();
 	
 	size_t limit = 0;
 
@@ -1848,13 +1873,15 @@ void PSBMPC::set_up_temporary_device_memory(
 		ownship.get_wp_counter(),
 		ownship.get_length(),
 		waypoints, 
-		static_obstacles, 
+		V_w, 
+		wind_direction,
+		polygons,
 		n_ps, 
 		data);
 	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Data failed.");
 	
-	// Obstacles
+	// Dynamic obstacles
 	Cuda_Obstacle temp_transfer_cobstacle;
 	for (int i = 0; i < n_obst; i++)
 	{
@@ -1864,28 +1891,15 @@ void PSBMPC::set_up_temporary_device_memory(
     	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
 	}
 
-
-	// THE JOINT PREDICTION IS NOT FINISHED YET FOR THE GPU VERSION
-	/* Prediction_Obstacle temp_transfer_pobstacle;
-	int jp_thread(0);
-	if (use_joint_prediction)
+	// Static obstacles
+	Basic_Polygon temp_transfer_poly;
+	for (int j = 0; j < n_static_obst; j++)
 	{
-		for (int cb = 0; cb < pars.n_cbs; cb++)
-		{
-			for (int jp_ps = 0; jp_ps < n_obst; jp_ps++)
-			{
-				for (int i = 0; i < n_obst + 1; i++)
-				{
-					temp_transfer_pobstacle = pobstacles[i];
+		temp_transfer_poly = polygons[j];
 
-					cudaMemcpy(&pobstacles_device_ptr[jp_thread], &temp_transfer_pobstacle, sizeof(Prediction_Obstacle), cudaMemcpyHostToDevice);
-					cuda_check_errors("CudaMemCpy of Prediction_Obstacle i failed.");
-
-					jp_thread += 1;
-				}
-			}
-		}
-	} */
+		cudaMemcpy(&polygons_device_ptr[j], &temp_transfer_poly, sizeof(Basic_Polygon), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
+	}
 }
 
 }

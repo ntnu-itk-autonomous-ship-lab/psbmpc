@@ -49,7 +49,7 @@ namespace PSBMPC_LIB
 		CH 														// Course Hold
 	};
 
-
+	class Grounding_Hazard_Manager;
 	class Obstacle_Manager;
 	class Joint_Prediction_Manager;
 	
@@ -76,6 +76,7 @@ namespace PSBMPC_LIB
 		friend class CPU::MPC_Cost<PSBMPC_Parameters>;
 		friend class GPU::MPC_Cost<PSBMPC_Parameters>;
 		friend class Obstacle_Manager;
+		friend class Grounding_Hazard_Manager;
 		friend class Joint_Prediction_Manager;
 		friend class GPU::CB_Functor_Pars;
 
@@ -99,7 +100,7 @@ namespace PSBMPC_LIB
 
 		Guidance_Method guidance_method;
 
-		double T, T_static, dt, p_step;
+		double T, dt, p_step;
 		double t_ts;
 		double d_safe, d_close, d_init;
 		double K_coll;
@@ -109,8 +110,7 @@ namespace PSBMPC_LIB
 		double K_chi_strb, K_dchi_strb;
 		double K_chi_port, K_dchi_port; 
 		double K_sgn, T_sgn;
-		double G;
-		double q, p;
+		double G_1, G_2, G_3, G_4;
 		
 		bool obstacle_colav_on;
 

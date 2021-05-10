@@ -44,22 +44,15 @@ namespace GPU
 //  Author   : Trym Tengesdal
 //  Modified :
 //=======================================================================================
-__device__ float CB_Cost_Functor_1::operator()(
+__device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
 	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
-	cost_cb = 0.0f;
+	h_path = 0.0f; h_so = 0.0f;
 	cb_index = thrust::get<0>(cb_tuple);
 	offset_sequence = thrust::get<1>(cb_tuple);
 
-	//======================================================================================================================
-	// 1.1 : Setup and own-ship trajectory prediction with the control behaviour cb_index
-	n_samples = round(pars->T / pars->dt);
-
 	ownship[cb_index].set_wp_counter(fdata->wp_c_0);
-
-	trajectory[cb_index].resize(4, n_samples);
-
 	ownship[cb_index].predict_trajectory(
 		trajectory[cb_index], 
 		fdata->ownship_state,
@@ -71,19 +64,12 @@ __device__ float CB_Cost_Functor_1::operator()(
 		pars->guidance_method, 
 		pars->T, pars->dt);
 
-	//==================================================================================================
-	// 2.1 : Calculate cost due to driving the boat on land or static objects
-	//cost_cb += mpc_cost[cb_index].calculate_grounding_cost(); 
+	h_so = mpc_cost[cb_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons); 
 
-	//==================================================================================================
-	// 2.2 : Calculate cost due to deviating from the nominal path
-	cost_cb += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
+	h_path += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
+	h_path += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
 
-	//==================================================================================================
-	// 2.3 : Calculate cost due to having a wobbly offset_sequence
-	cost_cb += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
-
-	return cost_cb;
+	return thrust::make_tuple<float, float>(h_so, h_path);
 }
 
 
@@ -162,17 +148,6 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 	xs_p_seg.resize(4, n_seg_samples);
 	xs_i_p_seg.resize(4, n_seg_samples);
 	P_i_p_seg.resize(16, n_seg_samples);
-
-	//======================================================================================================================
-	// 1.1: Joint prediction with the current control behaviour if the obstacle prediction scenario is the intelligent one
-	// NOT FINISHED YET
-	if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
-	{
-		printf("here jp1\n");
-		predict_trajectories_jointly();
-		a_i_ps_jp = pobstacles[i].get_intention();
-		mu_i_ps_jp = pobstacles[i].get_COLREGS_breach_indicator();
-	}
 
 	//======================================================================================================================
 	// 2 : Max cost calculation considering own-ship control behaviour <cb_index> and prediction scenario ps for obstacle i
@@ -316,209 +291,6 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 //=======================================================================================
 //	Private functions
 //=======================================================================================
-//=======================================================================================
-//  Name     : update_conditional_obstacle_data
-//  Function : Updates the situation type for the calling obstacle (wrt all other 
-//			   obstacles) and obstacles (wrt own-ship) and the transitional cost 
-//			   indicators O, Q, X, S at the current time t0 wrt all obstacles.
-//  Author   : Trym Tengesdal
-//  Modified :
-//=======================================================================================
-__device__ void CB_Cost_Functor_2::update_conditional_obstacle_data(
-	const int i_caller, 															// In: Index of obstacle asking for a situational awareness update
-	const int k																		// In: Index of the current predicted time t_k
-	)
-{
-	// A : Obstacle i_caller, B : Obstacle i
-	p_A(0) = pobstacles[i_caller].get_trajectory_sample(k)(0);
-	p_A(1) = pobstacles[i_caller].get_trajectory_sample(k)(1);
-	v_A(0) = pobstacles[i_caller].get_trajectory_sample(k)(2);
-	v_A(1) = pobstacles[i_caller].get_trajectory_sample(k)(3);
-	psi_A = atan2(v_A(1), v_A(0));
-
-	data.ST_0.resize(fdata->n_obst, 1);   data.ST_i_0.resize(fdata->n_obst, 1);
-	
-	data.AH_0.resize(fdata->n_obst, 1);   data.S_TC_0.resize(fdata->n_obst, 1); data.S_i_TC_0.resize(fdata->n_obst, 1); 
-	data.O_TC_0.resize(fdata->n_obst, 1); data.Q_TC_0.resize(fdata->n_obst, 1); data.IP_0.resize(fdata->n_obst, 1); 
-	data.H_TC_0.resize(fdata->n_obst, 1); data.X_TC_0.resize(fdata->n_obst, 1);
-	// printf("p_A = %.2f, %.2f | v_A = %.2f, %.2f\n", p_A(0), p_A(1), v_A(0), v_A(1)); 
-	i_count = 0;
-	for (int i = 0; i < fdata->n_obst + 1; i++)
-	{
-		if (i != i_caller)
-		{
-			p_B(0) = pobstacles[i].get_trajectory_sample(k)(0);
-			p_B(1) = pobstacles[i].get_trajectory_sample(k)(1);
-			v_B(0) = pobstacles[i].get_trajectory_sample(k)(2);
-			v_B(1) = pobstacles[i].get_trajectory_sample(k)(3);
-			psi_B = atan2(v_B(1), v_B(0));
-
-			L_AB = p_B - p_A;
-			d_AB = L_AB.norm();
-
-			// printf("p_B = %.2f, %.2f | v_B = %.2f, %.2f\n", p_B(0), p_B(1), v_B(0), v_B(1)); 
-			// Decrease the distance between the vessels by their respective max dimension
-			d_AB = d_AB - 0.5 * (pobstacles[i_caller].get_length() + pobstacles[i].get_length()); 				
-			L_AB = L_AB.normalized();
-
-			mpc_cost[thread_index].determine_situation_type(data.ST_0[i_count], data.ST_i_0[i_count], v_A, psi_A, v_B, L_AB, d_AB);
-			
-			//=====================================================================
-			// Transitional variable update
-			//=====================================================================
-			data.AH_0[i_count] = v_A.dot(L_AB) > cos(pars->phi_AH) * v_A.norm();
-			
-			// Obstacle on starboard side
-			data.S_TC_0[i_count] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-			// Ownship on starboard side of obstacle
-			data.S_i_TC_0[i_count] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
-
-			// Ownship overtaking the obstacle
-			data.O_TC_0[i_count] = v_B.dot(v_A) > cos(pars->phi_OT) * v_B.norm() * v_A.norm() 	&&
-					v_B.norm() < v_A.norm()							    						&&
-					v_B.norm() > 0.25															&&
-					d_AB <= pars->d_close 														&&
-					data.AH_0[i_count];
-
-			// Obstacle overtaking the ownship
-			data.Q_TC_0[i_count] = v_A.dot(v_B) > cos(pars->phi_OT) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() < v_B.norm()							  							&&
-					v_A.norm() > 0.25 															&&
-					d_AB <= pars->d_close														&&
-					!data.AH_0[i_count];
-
-			// Determine if the obstacle is passed by
-			data.IP_0[i_count] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
-					!data.Q_TC_0[i_count])		 											||
-					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 					&& // Obstacle's perspective	
-					!data.O_TC_0[i_count]))		 											&&
-					d_AB > pars->d_safe;
-
-			// This is not mentioned in article, but also implemented here..				
-			data.H_TC_0[i_count] = v_A.dot(v_B) < - cos(pars->phi_HO) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() > 0.25																&&
-					v_B.norm() > 0.25																&&
-					data.AH_0[i_count];
-
-			// Crossing situation, a bit redundant with the !is_passed condition also, 
-			// but better safe than sorry (could be replaced with B_is_ahead also)
-			data.X_TC_0[i_count] = v_A.dot(v_B) < cos(pars->phi_CR) * v_A.norm() * v_B.norm()		&&
-					!data.H_TC_0[i_count]															&& 
-					!data.IP_0[i_count]																&&
-					v_A.norm() > 0.25																&&
-					v_B.norm() > 0.25;
-
-			i_count += 1;
-		}
-	}	
-}
-
-//=======================================================================================
-//  Name     : predict_trajectories_jointly
-//  Function : Predicts the trajectory of the ownship and obstacles with an active COLAV
-//			  system
-//  Author   : Trym Tengesdal
-//  Modified :
-//=======================================================================================
-__device__ void CB_Cost_Functor_2::predict_trajectories_jointly()
-{
-	u_d_i.resize(fdata->n_obst, 1); u_opt_last_i.resize(fdata->n_obst, 1);
-	chi_d_i.resize(fdata->n_obst, 1); chi_opt_last_i.resize(fdata->n_obst, 1);
-	for(int k = 0; k < n_samples; k++)
-	{
-		t = k * pars->dt;
-
-		// Set trajectory sample k for the ownship prediction obstacle
-		xs_i_p(0) = trajectory[cb_index](0, k);
-		xs_i_p(1) = trajectory[cb_index](1, k);
-		xs_i_p(2) = trajectory[cb_index](3, k) * cos(trajectory[cb_index](2, k));
-		xs_i_p(3) = trajectory[cb_index](3, k) * sin(trajectory[cb_index](2, k));
-		pobstacles[fdata->n_obst].set_trajectory_sample(xs_i_p, k);
-		
-		for (int i = 0; i < fdata->n_obst; i++)
-		{
-			xs_i_p = pobstacles[jp_thread_index + i].get_trajectory_sample(k);
-
-			if (k == 0)
-			{
-				u_d_i(i) = xs_i_p.get_block<2, 1>(2, 0).norm();
-				chi_d_i(i) = atan2(xs_i_p(3), xs_i_p(2));
-				u_opt_last_i(i) = 1.0f; chi_opt_last_i(i) = 0.0f; 
-
-				pobstacles[i].set_intention(KCC);
-			}
-
-			// Update obstacle data for obstacle i using all other obstacles
-			update_conditional_obstacle_data(i, k);
-
-			// Convert from X_i = [x, y, Vx, Vy] to X_i = [x, y, chi, U]
-			xs_i_p_transformed.set_block<2, 1>(0, 0, xs_i_p.get_block<2, 1>(0, 0));
-			xs_i_p_transformed(2) = atan2(xs_i_p(3), xs_i_p(2));
-			xs_i_p_transformed(3) = xs_i_p.get_block<2, 1>(2, 0).norm();
-
-			// Determine the intention that obstacle i`s predicted trajectory
-			// corresponds to
-			chi_i = xs_i_p_transformed(2);
-			if (t < 30)
-			{
-				if (chi_i > 15 * DEG2RAD)								{ pobstacles[i].set_intention(SM); }
-				else if (chi_i < -15 * DEG2RAD)							{ pobstacles[i].set_intention(PM); }
-			}
-			
-			// printf("waypoints_i = %.1f, %.1f |  %.1f, %.1f\n", 
-			//	pobstacles[i].get_waypoints()(0, 0), pobstacles[i].get_waypoints()(1, 0), pobstacles[i].get_waypoints()(0, 1), pobstacles[i].get_waypoints()(1, 1));
-			obstacle_ship[cb_index].update_guidance_references(
-				u_d_i(i), 
-				chi_d_i(i), 
-				pobstacles[i].get_waypoints(),
-				xs_i_p,
-				pars->dt,
-				pars->guidance_method);
-
-			if (fmod(t, 5) == 0)
-			{
-				obstacle_sbmpc[cb_index].calculate_optimal_offsets(
-					u_opt_i, 
-					chi_opt_i, 
-					u_opt_last_i(i), 
-					chi_opt_last_i(i), 
-					u_d_i(i), 
-					chi_d_i(i),
-					pobstacles[i].get_waypoints(),
-					xs_i_p_transformed,
-					fdata->static_obstacles,
-					data,
-					pobstacles,
-					i,
-					k);
-
-				u_opt_last_i(i) = u_opt_i;
-				chi_opt_last_i(i) = chi_opt_i;
-				
-				//printf("u_opt_i(i) = %.1f | chi_opt_i(i) =  %.2f\n", u_opt_i, chi_opt_i);
-			}
-
-			if (k < n_samples - 1)
-			{
-				xs_i_p_transformed = obstacle_ship[cb_index].predict(
-					xs_i_p_transformed, 
-					u_d_i(i) * u_opt_i, 
-					chi_d_i(i) + chi_opt_i, 
-					pars->dt, 
-					pars->prediction_method);
-				
-				// Convert from X_i = [x, y, chi, U] to X_i = [x, y, Vx, Vy]
-				xs_i_p.set_block<2, 1>(0, 0, xs_i_p_transformed.get_block<2, 1>(0, 0));
-				xs_i_p(2) = xs_i_p_transformed(3) * cos(xs_i_p_transformed(2));
-				xs_i_p(3) = xs_i_p_transformed(3) * sin(xs_i_p_transformed(2));
-
-				//printf("k = %d |	xs_i_p = %.1f, %.1f, %.1f, %.1f\n", k, xs_i_p(0), xs_i_p(1), xs_i_p(2), xs_i_p(3));
-				pobstacles[i].set_trajectory_sample(xs_i_p, k + 1);
-			}
-		}
-	}
-}
 
 }
 }

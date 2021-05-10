@@ -57,15 +57,15 @@ namespace PSBMPC_LIB
 
 			MPC_Cost<CB_Functor_Pars> *mpc_cost;
 
+			Basic_Polygon *polygons;
+
 			//==============================================
 			// Pre-allocated temporaries (local to the thread stack)
 			//==============================================
-			float cost_cb; 
+			float h_so, h_path; 
 
 			unsigned int cb_index;
 			TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
-
-			int n_samples;
 
 		public: 
 			__host__ CB_Cost_Functor_1() : 
@@ -73,7 +73,8 @@ namespace PSBMPC_LIB
 				fdata(nullptr), 
 				ownship(nullptr), 
 				trajectory(nullptr),
-				mpc_cost(nullptr)
+				mpc_cost(nullptr),
+				polygons(nullptr)
 			{}
 
 			__host__ CB_Cost_Functor_1(
@@ -81,8 +82,9 @@ namespace PSBMPC_LIB
 				CB_Functor_Data *fdata, 
 				Ownship *ownship,
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,
-				MPC_Cost<CB_Functor_Pars> *mpc_cost) :
-				pars(pars), fdata(fdata), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost)
+				MPC_Cost<CB_Functor_Pars> *mpc_cost,
+				Basic_Polygon *polygons) :
+				pars(pars), fdata(fdata), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost), polygons(polygons)
 			{}
 
 			__host__ __device__ ~CB_Cost_Functor_1() 
@@ -92,9 +94,10 @@ namespace PSBMPC_LIB
 				ownship = nullptr;
 				trajectory = nullptr; 
 				mpc_cost = nullptr;
+				polygons = nullptr;
 			}
 			
-			__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
+			__device__ thrust::tuple<float, float> operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 
 		};
 
@@ -162,26 +165,7 @@ namespace PSBMPC_LIB
 			TML::Vector2f p_os, p_i, v_os_prev, v_i_prev;
 			TML::Matrix2f P_i_2D;
 
-			// Joint prediction related
-			TML::PDMatrix<float, MAX_N_OBST, 1> u_d_i, u_opt_last_i, chi_d_i, chi_opt_last_i;
-
-			TML::PDMatrix<float, 7, 1> xs_os_aug_k;
-			
-			TML::Vector2f v_os_k, v_A, v_B, L_AB, p_A, p_B;
-			TML::Vector4f xs_i_p, xs_i_p_transformed;
-
-			float t, chi_i, psi_A, psi_B, d_AB, u_opt_i, chi_opt_i; 
-
-			Obstacle_Data_GPU_Friendly data;
-
-			int i_count;
-
 			//==============================================
-			
-
-			__device__ void update_conditional_obstacle_data(const int i_caller, const int k);
-
-			__device__ void predict_trajectories_jointly();
 
 		public: 
 			__host__ CB_Cost_Functor_2() : 

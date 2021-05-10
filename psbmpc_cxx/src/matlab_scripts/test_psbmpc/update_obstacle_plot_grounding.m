@@ -5,11 +5,11 @@ boat_dim_i_k = rotMatrx2D(psi_i_k)*boat_dim;
 
 
 % Plot predicted obstacle trajectory
-h_X_i{i} = plot(ax1, X_i(2, 1:k),X_i(1, 1:k), 'g', 'Linewidth', 1.6);
+h_X_i{i} = plot(ax1, map_origin(2) + X_i(2, 1:k), map_origin(1) + X_i(1, 1:k), 'g', 'Linewidth', 1.6);
 
 % Patch obstacle
-h_X_i_ptch{i} = patch(ax1, X_i(2, k)+boat_dim_i_k(2,:),...
-    X_i(1, k)+boat_dim_i_k(1,:), 'g', 'LineWidth', 1.6);
+h_X_i_ptch{i} = patch(ax1, map_origin(2) + X_i(2, k)+boat_dim_i_k(2,:),...
+    map_origin(1) + X_i(1, k)+boat_dim_i_k(1,:), 'g', 'LineWidth', 1.6);
 
 % Plot distance to obstacle i
 d_0i = sqrt((X(1, 1:k) - X_i(1, 1:k)).^2 +...

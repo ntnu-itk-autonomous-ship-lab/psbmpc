@@ -65,7 +65,6 @@ double PSBMPC_Parameters::get_dpar(
 {
 	switch(index){
 		case i_dpar_T 					: return T;
-		case i_dpar_T_static 			: return T_static;
 		case i_dpar_dt 					: return dt;
 		case i_dpar_p_step				: return p_step;
 		case i_dpar_t_ts 				: return t_ts;
@@ -86,9 +85,10 @@ double PSBMPC_Parameters::get_dpar(
 		case i_dpar_K_dchi_port 		: return K_dchi_port;
 		case i_dpar_K_sgn 				: return K_sgn;
 		case i_dpar_T_sgn 				: return T_sgn;
-		case i_dpar_G					: return G;
-		case i_dpar_q					: return q;
-		case i_dpar_p					: return p;
+		case i_dpar_G_1					: return G_1;
+		case i_dpar_G_2					: return G_2;
+		case i_dpar_G_3					: return G_3;
+		case i_dpar_G_4					: return G_4;
 		default : 
 			// Throw
 			return 0.0;
@@ -178,7 +178,6 @@ void PSBMPC_Parameters::set_par(
 	{
 		switch(index){
 			case i_dpar_T 					: T = value; break;
-			case i_dpar_T_static 			: T_static = value; break;
 			case i_dpar_dt 					: dt = value; break;
 			case i_dpar_p_step 				: p_step = value; break;
 			case i_dpar_t_ts 				: t_ts = value; break;
@@ -205,9 +204,10 @@ void PSBMPC_Parameters::set_par(
 			case i_dpar_K_dchi_port 		: K_dchi_port = value; break;
 			case i_dpar_K_sgn 				: K_sgn = value; break;
 			case i_dpar_T_sgn 				: T_sgn = value; break;
-			case i_dpar_G 					: G = value; break;
-			case i_dpar_q 					: q = value; break;
-			case i_dpar_p 					: p = value; break;
+			case i_dpar_G_1 				: G_1 = value; break;
+			case i_dpar_G_2 				: G_2 = value; break;
+			case i_dpar_G_3 				: G_3 = value; break;
+			case i_dpar_G_4 				: G_4 = value; break;
 			default : // Throw invalid index
 				break;
 		}
@@ -306,7 +306,6 @@ void PSBMPC_Parameters::initialize_par_limits()
 		dpar_high[i] = 1e12;
 	}
 	dpar_low[i_dpar_T] = 60.0;
-	dpar_low[i_dpar_T_static] = 10.0;
 	dpar_low[i_dpar_dt] = 0.001;
 	dpar_low[i_dpar_p_step] = 0.001;
 
@@ -335,7 +334,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 3;
+	n_M = 1;
 	n_r = 9;
 
 	chi_offsets.resize(n_M);
@@ -382,9 +381,8 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 110.0; 	     
+	T = 60.0; 	     
 	dt = 5.0;
-  	T_static = 60.0;
 
 	p_step = 1;
 	if (prediction_method == ERK1)
@@ -394,9 +392,9 @@ void PSBMPC_Parameters::initialize_pars()
 	}
 	t_ts = 35;
 
-	d_init = 1500;								 
+	d_init = 1000;								 
 	d_close = 1000;
-	d_safe = 50; 							
+	d_safe = 5; 							
 	K_coll = 0.2;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
@@ -411,10 +409,12 @@ void PSBMPC_Parameters::initialize_pars()
 	K_dchi_strb = 0.9;	 			
 	K_dchi_port = 1.2;
 	K_sgn = 8;
-	T_sgn = 4 * t_ts;	  					
-	G = 1e3;		         					 
-	q = 4.0;
-	p = 1.0;
+	T_sgn = 4 * t_ts;	
+
+	G_1 = 1000.0; 
+	G_2 = 5.0;
+	G_3 = 0.001;
+	G_4 = 0.01;
 
 	obstacle_colav_on = false;
 }

@@ -136,6 +136,8 @@ namespace PSBMPC_LIB
 				const double chi_d, 
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::VectorXd &ownship_state,
+				const double V_w,
+				const Eigen::Vector2d &wind_direction,
 				const std::vector<polygon_2D> &polygons,
 				Obstacle_Data<Tracked_Obstacle> &data);
 
