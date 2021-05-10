@@ -227,6 +227,18 @@ namespace PSBMPC_LIB
 					ct_offsets.resize(5);
 					ct_offsets << - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e;
 					break;
+				}
+				case 7:
+				{
+					ct_offsets.resize(7);
+					ct_offsets << - 3 * r_ct - e, - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e, 3 * r_ct - e;
+					break;
+				}		
+				case 9:
+				{
+					ct_offsets.resize(9);
+					ct_offsets << - 4 * r_ct - e, - 3 * r_ct - e, - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e, 3 * r_ct - e, 4 * r_ct - e;
+					break;
 				}				
 				default:
 					break;
@@ -347,6 +359,7 @@ namespace PSBMPC_LIB
 			for(int ps = 0; ps < n_ps[i]; ps++)
 			{
 				xs_i_p[ps].resize(4, n_samples);
+				xs_i_p[ps].col(0) = data.obstacles[i].kf.get_state();
 
 				// Transform obstacle state from [x, y, Vx, Vy]^T to [x, y, chi, U]^T
 				xs_i_ps_k.block<2, 1>(0, 0) = xs_i_p[ps].block<2, 1>(0, 0);
@@ -411,7 +424,7 @@ namespace PSBMPC_LIB
 		MROU mrou;
 
 		Obstacle_Predictor() 
-			: n_ps_MROU(5), n_ps_LOS(3), r_ct(50.0)
+			: n_ps_MROU(5), n_ps_LOS(5), r_ct(100.0)
 		{
 			if (n_ps_MROU == 3)
 			{
@@ -431,7 +444,7 @@ namespace PSBMPC_LIB
 		}
 
 		Obstacle_Predictor(const PSBMPC_Parameters &pars) 
-			: n_ps_MROU(pars.n_r), n_ps_LOS(pars.n_r), r_ct(50.0)
+			: n_ps_MROU(pars.n_r), n_ps_LOS(pars.n_r), r_ct(100.0)
 		{
 			if (n_ps_MROU == 3)
 			{

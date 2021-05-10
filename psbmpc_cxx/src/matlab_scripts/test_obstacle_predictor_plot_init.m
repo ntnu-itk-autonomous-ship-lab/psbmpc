@@ -1,9 +1,9 @@
 fig = figure;
-ax1 = axes(fig, 'Position',[0.1 0.15 0.6 0.7]);
+ax1 = axes(fig, 'Position',[0.1 0.12 0.7 0.8]);
 axis equal
 
-ylimits_ne = [-100 700];
-xlimits_ne = [-300 300];
+ylimits_ne = [-100 1200];
+xlimits_ne = [-600 600];
 xlim(ax1, xlimits_ne);
 ylim(ax1, ylimits_ne);
 
