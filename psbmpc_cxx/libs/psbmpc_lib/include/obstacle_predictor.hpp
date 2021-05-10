@@ -200,6 +200,7 @@ namespace PSBMPC_LIB
 			Eigen::Matrix<double, 2, -1> waypoints_i = data.obstacles[i].get_waypoints();
 
 			double alpha(0.0), e(0.0);
+			// The obstacle has entered colregs/prediction range if its waypoint matrix is initialized with 2 columns (straight line)
 			if (waypoints_i.cols() == 2)
 			{
 				alpha = atan2(waypoints_i(1, 1) - waypoints_i(1, 0), waypoints_i(0, 1) - waypoints_i(0, 0));
@@ -357,6 +358,7 @@ namespace PSBMPC_LIB
 
 				obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), xs_i_ps_k(3), xs_i_ps_k(2), waypoints, ERK1, LOS, mpc.pars.T, mpc.pars.dt);
 
+				// Predict covariance using MROU model
 				for(int k = 0; k < n_samples; k++)
 				{
 					t = k * mpc.pars.dt;
@@ -370,7 +372,7 @@ namespace PSBMPC_LIB
 					if (k < n_samples - 1)
 					{
 						chi_ps = trajectory(2, k);
-						if (ps == 0) 
+						if (ps == (n_ps[i] - 1) / 2) 
 						{
 							P = mrou.predict_covariance(P_0, t + mpc.pars.dt);
 							std::cout << "P_MROU = " << std::endl;
@@ -475,14 +477,15 @@ namespace PSBMPC_LIB
 				d_0i = (ownship_state.block<2, 1>(0, 0) - data.obstacles[i].kf.get_state().block<2, 1>(0, 0)).norm();
 				if (d_0i <= mpc.pars.d_close && data.obstacles[i].get_waypoints() == Eigen::MatrixXd{})
 				{
+					waypoints_i.resize(2, 2);
 					waypoints_i.col(0) = data.obstacles[i].kf.get_state().block<2, 1>(0, 0);
 					waypoints_i.col(1) = waypoints_i.col(0) + mpc.pars.T * data.obstacles[i].kf.get_state().block<2, 1>(2, 0);
 					data.obstacles[i].set_waypoints(waypoints_i);
 				}
 
-				initialize_independent_prediction_v1(data, i, ownship_state, mpc);
+				initialize_independent_prediction_v2(data, i, ownship_state, mpc);
 
-				predict_independent_trajectories_v1(data, i, mpc);
+				predict_independent_trajectories_v2(data, i, mpc);
 
 				// Transfer data to the tracked obstacle
 				data.obstacles[i].set_trajectories(xs_i_p);

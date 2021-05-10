@@ -69,6 +69,8 @@ int main()
 	
 	std::vector<Eigen::MatrixXd> xs_p = data.obstacles[0].get_trajectories();
 	Eigen::MatrixXd P_p = data.obstacles[0].get_trajectory_covariance();
+	std::vector<Eigen::MatrixXd> v_p(1); 
+	v_p[0].resize(2, xs_p[0].cols()); v_p[0].setZero();
 	int n_ps = xs_p.size();
 	int n_samples = xs_p[0].cols();
 
@@ -100,6 +102,7 @@ int main()
 			Eigen::Map<Eigen::MatrixXd> map_P_traj(p_P_traj, 16, n_samples);
 			
 			map_traj = xs_p[ps];
+			map_v_traj = v_p[0];
 			map_P_traj = P_p;
 		
 			buffer[BUFSIZE] = '\0';
