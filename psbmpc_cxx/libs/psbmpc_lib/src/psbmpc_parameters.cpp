@@ -334,7 +334,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
+	n_M = 1;
 	n_r = 9;
 
 	chi_offsets.resize(n_M);
@@ -381,7 +381,7 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 110.0; 	     
+	T = 60.0; 	     
 	dt = 5.0;
 
 	p_step = 1;
@@ -392,9 +392,9 @@ void PSBMPC_Parameters::initialize_pars()
 	}
 	t_ts = 35;
 
-	d_init = 1500;								 
+	d_init = 1000;								 
 	d_close = 1000;
-	d_safe = 50; 							
+	d_safe = 5; 							
 	K_coll = 0.2;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
@@ -411,10 +411,10 @@ void PSBMPC_Parameters::initialize_pars()
 	K_sgn = 8;
 	T_sgn = 4 * t_ts;	
 
-	G_1 = 50.0; 
+	G_1 = 1000.0; 
 	G_2 = 5.0;
-	G_3 = 0.01;
-	G_4 = 0.1;
+	G_3 = 0.001;
+	G_4 = 0.01;
 
 	obstacle_colav_on = false;
 }

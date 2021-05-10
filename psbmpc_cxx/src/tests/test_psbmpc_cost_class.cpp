@@ -131,14 +131,14 @@ int main(){
 	{
         for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
 		{
-			polygon_matrix(pcount, 0) = boost::geometry::get<0>(*it);
-			polygon_matrix(pcount, 1) = boost::geometry::get<1>(*it);
+			polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it);
+			polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it);
 			
 			pcount += 1;
 		}
 		// each polygon is separated with (-1, -1)
-		polygon_matrix(pcount, 0) = -1;
 		polygon_matrix(pcount, 1) = -1;
+		polygon_matrix(pcount, 0) = -1;
 		pcount += 1;
     }
     
@@ -176,7 +176,7 @@ int main(){
 	point_2D p(xs_os_0(0), xs_os_0(1));
 	p_os(0) = xs_os_0(0); p_os(1) = xs_os_0(1);
 	n_static_obst = polygons.size();
-	for (int j = 21; j < n_static_obst; j++)
+	for (int j = 0; j < n_static_obst; j++)
 	{
 		std::cout << "Boost dist to poly: " << boost::geometry::distance(p, polygons[j]) << std::endl;
 		d2poly_cpu.col(j) = mpc_cost_cpu.distance_to_polygon(xs_os_0.block<2, 1>(0, 0), polygons[j]);
@@ -193,8 +193,8 @@ int main(){
 	Eigen::MatrixXd selected_polygon_matrix(1, 2);
 	for(auto it = boost::begin(boost::geometry::exterior_ring(selected_polygons[0])); it != boost::end(boost::geometry::exterior_ring(selected_polygons[0])); ++it)
 	{
-		selected_polygon_matrix(0, 0) = boost::geometry::get<0>(*it);
-		selected_polygon_matrix(0, 1) = boost::geometry::get<1>(*it);
+		selected_polygon_matrix(0, 1) = boost::geometry::get<0>(*it);
+		selected_polygon_matrix(0, 0) = boost::geometry::get<1>(*it);
 	}
 
 	//=========================================================
@@ -202,7 +202,7 @@ int main(){
 	//=========================================================
 	mxArray *selected_polygon_matrix_mx = mxCreateDoubleMatrix(1, 2, mxREAL);
     double *p_selected_polygon_matrix = mxGetPr(selected_polygon_matrix_mx);
-    Eigen::Map<Eigen::MatrixXd> map_selected_polygon_matrix(p_selected_polygon_matrix, n_static_obst, 2);
+    Eigen::Map<Eigen::MatrixXd> map_selected_polygon_matrix(p_selected_polygon_matrix, 1, 2);
 	map_selected_polygon_matrix = selected_polygon_matrix;
 
 	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, N, mxREAL);
@@ -228,6 +228,9 @@ int main(){
 	map_d2poly_cpu = d2poly_cpu;
 	map_d2poly_gpu = d2poly_gpu;
 
+	buffer[BUFSIZE] = '\0';
+	engOutputBuffer(ep, buffer, BUFSIZE);
+
 	engPutVariable(ep, "selected_polygon_matrix", selected_polygon_matrix_mx);
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engPutVariable(ep, "WPs", wps_os_mx);
@@ -237,13 +240,11 @@ int main(){
 
 	engEvalString(ep, "test_psbmpc_cost_class_plot");
 
-	buffer[BUFSIZE] = '\0';
-	engOutputBuffer(ep, buffer, BUFSIZE);
+	printf("%s", buffer);
 
 	mxDestroyArray(T_sim_mx);
 	mxDestroyArray(traj_os_mx);
 	mxDestroyArray(wps_os_mx);
-	mxDestroyArray(selected_polygon_matrix_mx);
 	mxDestroyArray(selected_polygon_matrix_mx);
 	mxDestroyArray(d2poly_cpu_mx);
 	mxDestroyArray(d2poly_gpu_mx);

@@ -1075,6 +1075,7 @@ namespace PSBMPC_LIB
 			{
 				t = pars.dt * k;
 
+				cost_g = 0.0;
 				for (int j = 0; j < n_static_obst; j++)
 				{
 					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
@@ -1083,7 +1084,7 @@ namespace PSBMPC_LIB
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
 
-					cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * pow(d_0j, 2) + pars.G_4 * t));
+					cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
 				}
 
 				if (max_cost_g < cost_g)

@@ -37,14 +37,6 @@
 // Main program:
 //*****************************************************************************************************************
 int main(){
-	// Matlab engine setup
- 	Engine *ep = engOpen(NULL);
-	if (ep == NULL)
-	{
-		std::cout << "engine start failed!" << std::endl;
-	}
-    
-	char buffer[BUFSIZE+1]; 
 
 //*****************************************************************************************************************
 // Simulation setup
@@ -120,6 +112,15 @@ int main(){
 	//=====================================================================
 	// Matlab array setup for the ownship and obstacle, ++
 	//=====================================================================
+	
+	// Matlab engine setup
+ 	Engine *ep = engOpen(NULL);
+	if (ep == NULL)
+	{
+		std::cout << "engine start failed!" << std::endl;
+	}
+    
+	char buffer[BUFSIZE+1]; 
 	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, N, mxREAL);
 	mxArray *wps_os_mx = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
 
@@ -136,6 +137,7 @@ int main(){
 	double* ptraj_i; 
 	double* p_P_traj_i; 
 	double* p_wps_i;
+
 	int n_wps_i;
 
 	for (int i = 0; i < n_obst; i++)
@@ -163,7 +165,7 @@ int main(){
 		n_wps_i = 4;
 		waypoints_i[i].resize(2, n_wps_i); 
 		waypoints_i[i] << xs_i_0[i](0), 7042340, 7042120, 7041990,
-					xs_i_0[i](0), 270375, 269995, 269675;
+					xs_i_0[i](1), 270375, 269995, 269675;
 		
 		offset_sequence_i[i].resize(6);
 		offset_sequence_i[i] << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
@@ -210,28 +212,28 @@ int main(){
 // Static Obstacles Setup
 //*****************************************************************************************************************
 	char buffer1[256];
-	char *val = getcwd(buffer1, sizeof(buffer1));
+	char *val = getcwd(buffer1, sizeof(buffer1)); // either release or debug
 	if (val) {
 		std::cout << buffer1 << std::endl;
 	}
 	// Input the path to the land data
-    std::string filename = "src/tests/grounding_hazard_data/charts/land/land.shp";
+    std::string filename = "../src/tests/grounding_hazard_data/charts/land/land.shp";
     
    	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename, psbmpc);
 	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
 
     //Make matlab polygons type friendly array:
     Eigen::Matrix<double, -1, 2> polygon_matrix;
-    int n_static_obst = 0;
+    int n_total_vertices = 0;
     BOOST_FOREACH(polygon_2D const &poly, polygons)
 	{
         for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
 		{
-			n_static_obst += 1;
+			n_total_vertices += 1;
 		}
-		n_static_obst += 1;
+		n_total_vertices += 1;
     }
-    polygon_matrix.resize(n_static_obst, 2); 
+    polygon_matrix.resize(n_total_vertices, 2); 
 
     /*format polygon_matrix array for matlab plotting*/
     int pcount = 0; 
@@ -239,14 +241,14 @@ int main(){
 	{
         for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
 		{
-			polygon_matrix(pcount, 0) = boost::geometry::get<0>(*it);
-			polygon_matrix(pcount, 1) = boost::geometry::get<1>(*it);
+			polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
+			polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
 			
 			pcount += 1;
 		}
 		// each polygon is separated with (-1, -1)
-		polygon_matrix(pcount, 0) = -1;
 		polygon_matrix(pcount, 1) = -1;
+		polygon_matrix(pcount, 0) = -1;
 		pcount += 1;
     }
 
@@ -255,9 +257,9 @@ int main(){
 	Eigen::Map<Eigen::Vector2d> map_map_origin(p_map_origin, 2, 1);
 	map_map_origin = grounding_hazard_manager.get_map_origin();
     
-    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_static_obst, 2, mxREAL);
+    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
     double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
-    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_static_obst, 2);
+    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
 	map_polygon_matrix = polygon_matrix;
 
 	engPutVariable(ep, "map_origin", map_origin_mx);
@@ -279,11 +281,11 @@ int main(){
 	
 	for (int i = 0; i < n_obst; i++)
 	{	
-		for (int k = 0; k < std::round(T_sim / dt); k++)
+		for (int k = 0; k < trajectory_i[i].cols(); k++)
 		{
 			trajectory_i[i].block<2, 1>(0, k) -= map_origin;
 		}
-		for (int l = 0; l < n_wps_i; i++)
+		for (int l = 0; l < n_wps_i; l++)
 		{
 			waypoints_i[i].col(l) -= map_origin;
 		}
@@ -316,7 +318,7 @@ int main(){
 	engPutVariable(ep, "WPs", wps_os_mx);
 
 	engEvalString(ep, "init_psbmpc_plotting_grounding");
-	mxArray *i_mx, *k_s_mx;
+	mxArray *i_mx(nullptr), *k_s_mx(nullptr);
 
 	for (int i = 0; i < n_obst; i++)
 	{
@@ -330,7 +332,7 @@ int main(){
 		i_mx = mxCreateDoubleScalar(i + 1);
 		engPutVariable(ep, "i", i_mx);
 
-		engEvalString(ep, "init_obstacle_plot");
+		engEvalString(ep, "init_obstacle_plot_grounding");
 	}
 	//=========================================================
 	
@@ -378,7 +380,7 @@ int main(){
 		{
 			start = std::chrono::system_clock::now();		
 
-			/* psbmpc.calculate_optimal_offsets(
+			psbmpc.calculate_optimal_offsets(
 				u_opt,
 				chi_opt, 
 				predicted_trajectory,
@@ -389,7 +391,7 @@ int main(){
 				V_w, 
 				wind_direction,
 				relevant_polygons,
-				obstacle_manager.get_data()); */
+				obstacle_manager.get_data());
 
 			end = std::chrono::system_clock::now();
 			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -427,7 +429,7 @@ int main(){
 		engPutVariable(ep, "X_pred", pred_traj_mx);
 		engPutVariable(ep, "X", traj_os_mx);
 
-		engEvalString(ep, "update_ownship_plot");
+		engEvalString(ep, "update_ownship_plot_grounding");
 
 		for(int i = 0; i < n_obst; i++)
 		{
@@ -446,7 +448,7 @@ int main(){
 			i_mx = mxCreateDoubleScalar(i + 1);
 			engPutVariable(ep, "i", i_mx);
 
-			engEvalString(ep, "update_obstacle_plot");
+			engEvalString(ep, "update_obstacle_plot_grounding");
 		}
 		//======================================================
 		

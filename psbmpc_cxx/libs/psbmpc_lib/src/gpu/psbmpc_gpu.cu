@@ -54,7 +54,7 @@ PSBMPC::PSBMPC()
 	: 
 	ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), 
 	obstacles_device_ptr(nullptr), pobstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr),
-	obstacle_ship_device_ptr(nullptr), obstacle_sbmpc_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	obstacle_ship_device_ptr(nullptr), obstacle_sbmpc_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
 {
 	opt_offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
@@ -76,6 +76,7 @@ PSBMPC::PSBMPC()
 	std::cout << "Prediction Obstacle size: " << sizeof(Prediction_Obstacle) << std::endl;
 	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
 	std::cout << "Obstacle SBMPC size: " << sizeof(Obstacle_SBMPC) << std::endl;
+	std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
 	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl;
 
 	//================================================================================

@@ -35,11 +35,8 @@
 typedef boost::geometry::model::d2::point_xy<double> point_2D;
 typedef boost::geometry::model::polygon<point_2D> polygon_2D;
 
-
-
 namespace PSBMPC_LIB
 {
-
 	class Grounding_Hazard_Manager
 	{
 	private:
@@ -118,9 +115,9 @@ namespace PSBMPC_LIB
 			else
 			{
 				outer_part_end = ps_shape->panPartStart[1];
-				printf("n_parts = %d | n_vertices = %d | Outer part start, end = (%d, %d)\n", ps_shape->nParts, ps_shape->nVertices, outer_part_start, outer_part_end);
-
 			}
+			//printf("n_parts = %d | n_vertices = %d | Outer part start, end = (%d, %d)\n", ps_shape->nParts, ps_shape->nVertices, outer_part_start, outer_part_end);
+
 			for (int v = outer_part_start; v < outer_part_end; v++)
 			{
 				// want the points on format (northing, easting), and relative to the map origin
