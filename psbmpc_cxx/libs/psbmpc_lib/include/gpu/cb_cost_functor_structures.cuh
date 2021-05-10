@@ -135,7 +135,19 @@ namespace PSBMPC_LIB
 
 				this->T = pars.T; this->dt = pars.dt; this->p_step = pars.p_step; 
 
+				this->d_safe = pars.d_safe; this->d_close = pars.d_close; this->d_init = pars.d_init; 
+
+				this->K_coll = pars.K_coll; 
+
+				this->phi_AH = pars.phi_AH; this->phi_OT = pars.phi_OT; this->phi_HO = pars.phi_HO; this->phi_CR = pars.phi_CR;
+
+				this->kappa = pars.kappa; this->kappa_TC = pars.kappa_TC;
+
+				this->K_u = pars.K_u; this->K_du = pars.K_du;
+
 				this->K_chi_strb = pars.K_chi_strb; this->K_dchi_strb = pars.K_dchi_strb;
+
+				this->K_chi_port = pars.K_chi_port; this->K_dchi_port = pars.K_dchi_port;
 
 				this->K_sgn = pars.K_sgn; this->T_sgn = pars.T_sgn;
 
