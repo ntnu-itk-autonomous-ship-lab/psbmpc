@@ -164,12 +164,10 @@ namespace PSBMPC_LIB
 			}
 		}
 
-		template <class MPC_Type>
 		void initialize_independent_prediction_v2(
 			const Obstacle_Data<Tracked_Obstacle> &data,						// In/Out: Dynamic obstacle information
 			const int i, 														// In: Index of obstacle whose prediction to initialize
-			const Eigen::VectorXd &ownship_state,								// In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
-			const MPC_Type &mpc 												// In: Calling MPC (either PSB-MPC or SB-MPC)
+			const Eigen::VectorXd &ownship_state								// In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
 			)
 		{
 			n_ps[i] = n_ps_LOS;
@@ -243,6 +241,42 @@ namespace PSBMPC_LIB
 				default:
 					break;
 			}
+
+			/* switch (n_ps_LOS)
+			{
+				case 1:
+				{
+					ct_offsets.resize(1);
+					ct_offsets(0) = 0.0;
+					break;
+				}
+				case 3:
+				{
+					ct_offsets.resize(3);
+					ct_offsets << - r_ct, 0.0, r_ct;
+					break;
+				}
+				case 5:
+				{
+					ct_offsets.resize(5);
+					ct_offsets << - 2 * r_ct, - r_ct, 0.0, r_ct, 2 * r_ct;
+					break;
+				}
+				case 7:
+				{
+					ct_offsets.resize(7);
+					ct_offsets << - 3 * r_ct, - 2 * r_ct, - r_ct, 0.0, r_ct, 2 * r_ct, 3 * r_ct;
+					break;
+				}		
+				case 9:
+				{
+					ct_offsets.resize(9);
+					ct_offsets << - 4 * r_ct, - 3 * r_ct, - 2 * r_ct, - r_ct, 0.0, r_ct, 2 * r_ct, 3 * r_ct, 4 * r_ct;
+					break;
+				}				
+				default:
+					break;
+			} */
 		}
 
 		/****************************************************************************************
@@ -388,27 +422,28 @@ namespace PSBMPC_LIB
 						if (ps == (n_ps[i] - 1) / 2) 
 						{
 							P = mrou.predict_covariance(P_0, t + mpc.pars.dt);
-							std::cout << "P_MROU = " << std::endl;
-							std::cout << P << std::endl;
+							/* std::cout << "P_MROU = " << std::endl;
+							std::cout << P << std::endl; */
 
 							// Add constraint on cross-track variance here
 							P_rot_2D = CPU::rotate_matrix_2D(P.block<2, 2>(0, 0), chi_ps);
 							
 							if (3 * sqrt(P_rot_2D(1, 1)) > r_ct)
 							{
-								std::cout << P_rot_2D << std::endl;
+								/* std::cout << P_rot_2D << std::endl; */
 								P_rot_2D(1, 1) = pow(r_ct, 2) / 3.0;
 								
-								std::cout << "P_rot after" << std::endl;
-								std::cout << P_rot_2D << std::endl;
+								/* std::cout << "P_rot after" << std::endl;
+								std::cout << P_rot_2D << std::endl; */
 
 								P_rot_2D = CPU::rotate_matrix_2D(P_rot_2D, -chi_ps);
-								std::cout << "P_rot after back rotation" << std::endl;
-								std::cout << P_rot_2D << std::endl;
-
+								
 								P.block<2, 2>(0, 0) = P_rot_2D;
+
+								/* std::cout << "P_rot after back rotation" << std::endl;
+								std::cout << P_rot_2D << std::endl;
 								std::cout << "P_MROU after constraining = " << std::endl;
-								std::cout << P << std::endl;
+								std::cout << P << std::endl; */
 							}
 
 							P_i_p.col(k + 1) = CPU::flatten(P);
@@ -424,7 +459,7 @@ namespace PSBMPC_LIB
 		MROU mrou;
 
 		Obstacle_Predictor() 
-			: n_ps_MROU(5), n_ps_LOS(5), r_ct(100.0)
+			: n_ps_MROU(5), n_ps_LOS(5), r_ct(50.0), mrou(0.1, 0.0, 0.1, 0.1, 0.1)
 		{
 			if (n_ps_MROU == 3)
 			{
@@ -444,7 +479,7 @@ namespace PSBMPC_LIB
 		}
 
 		Obstacle_Predictor(const PSBMPC_Parameters &pars) 
-			: n_ps_MROU(pars.n_r), n_ps_LOS(pars.n_r), r_ct(100.0)
+			: n_ps_MROU(pars.n_r), n_ps_LOS(pars.n_r), r_ct(50.0), mrou(0.1, 0.0, 0.1, 0.1, 0.1)
 		{
 			if (n_ps_MROU == 3)
 			{
@@ -464,6 +499,8 @@ namespace PSBMPC_LIB
 		}
 
 		int get_n_ps_i(const int i) const { return n_ps[i]; }
+
+		int get_n_ps_LOS() const { return n_ps_LOS; }
 
 		/****************************************************************************************
 		*  Name     : operator()
@@ -488,7 +525,7 @@ namespace PSBMPC_LIB
 				// If yes, then store its waypoints, ideally communicated from the obstacle itself,
 				// otherwise predict waypoints as a straight line path
 				d_0i = (ownship_state.block<2, 1>(0, 0) - data.obstacles[i].kf.get_state().block<2, 1>(0, 0)).norm();
-				if (d_0i <= mpc.pars.d_close && data.obstacles[i].get_waypoints() == Eigen::MatrixXd{})
+				if (d_0i <= mpc.pars.d_close && data.obstacles[i].get_waypoints().cols() < 2)
 				{
 					waypoints_i.resize(2, 2);
 					waypoints_i.col(0) = data.obstacles[i].kf.get_state().block<2, 1>(0, 0);
@@ -496,7 +533,7 @@ namespace PSBMPC_LIB
 					data.obstacles[i].set_waypoints(waypoints_i);
 				}
 
-				initialize_independent_prediction_v2(data, i, ownship_state, mpc);
+				initialize_independent_prediction_v2(data, i, ownship_state);
 
 				predict_independent_trajectories_v2(data, i, mpc);
 

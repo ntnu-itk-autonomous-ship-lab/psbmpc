@@ -31,7 +31,7 @@ for ps = 1: n_ps
    legend_strs(ps) = ['ps=' num2str(ps - 1)]; 
 end
 
-% ax1: NE plot, ax2 & 3: mrou ne speeds vs mean speeds
+% ax1: NE plot, ax2 & 3: mrou/LOS ne speeds vs mean speeds
 ax2 = axes(fig, 'Position',[0.71 0.6 0.29 0.30]);
 ax3 = axes(fig, 'Position',[0.71 0.2 0.29 0.30]);
 
@@ -44,6 +44,9 @@ grid(ax1, 'on'); grid(ax2, 'on'); grid(ax3, 'on');
 ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]'); 
 ylabel(ax2,'Speed [m/s]');  xlabel(ax2,'Time [s]');
 ylabel(ax3,'Speed [m/s]');  xlabel(ax3,'Time [s]');
+
+h_X_i = []; h_X_i_ptch = [];
+h_wps_i = plot(ax1, wps_i(2, :), wps_i(1, :), '--rx');
 
 h_X_i_ps = cell(n_ps, 1);
 h_X_i_ps_ptch = cell(n_ps, 1);

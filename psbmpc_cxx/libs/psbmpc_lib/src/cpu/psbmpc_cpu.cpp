@@ -119,13 +119,13 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Engine *ep = engOpen(NULL);
+	/*Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	} */
 	/*
- 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+ 	mxArray *traj_os = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
 	double *ptraj_os = mxGetPr(traj_os); 
@@ -189,8 +189,8 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	} 
-	*/
+	}  */
+	
 	// COST PLOTTING
 	/* mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
  	mxArray *cost_i_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
@@ -834,7 +834,11 @@ void PSBMPC::setup_prediction(
 	)
 {
 	int n_obst = data.obstacles.size();
-
+	n_ps.resize(n_obst);
+	for (int i = 0; i < n_obst; i++)
+	{
+		n_ps[i] = data.obstacles[i].get_scenario_probabilities().size();
+	}
 	//***********************************************************************************
 	// Own-ship prediction initialization
 	//***********************************************************************************

@@ -75,6 +75,47 @@ Tracked_Obstacle::Tracked_Obstacle(
 	}
 }
 
+Tracked_Obstacle::Tracked_Obstacle(
+	const Eigen::VectorXd &xs_aug, 								// In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::VectorXd &P, 									// In: Obstacle covariance
+	const bool filter_on, 										// In: Indicator of whether the KF is active
+	const double T, 											// In: Prediction horizon
+	const double dt 											// In: Sampling interval
+	) :
+	ID(xs_aug(8)),
+	A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
+	l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)), 
+	x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
+	duration_tracked(0.0), duration_lost(0.0)
+{
+ 	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
+
+	P_0 = CPU::reshape(P, 4, 4); 
+
+	this->kf = KF(xs_0, P_0, ID, dt, 0.0);
+
+ 	int n_samples = std::round(T / dt);
+
+	// n = 4 states in obstacle model for independent trajectories, using MROU
+	this->xs_p.resize(1);
+	this->xs_p[0].resize(4, n_samples);
+	this->xs_p[0].col(0) = xs_0;
+
+	this->P_p.resize(16, n_samples);
+	this->P_p.col(0) = P; 
+
+	if(filter_on) 
+	{
+		this->kf.update(xs_0, duration_lost, dt);
+
+		this->duration_tracked = kf.get_time();
+	}
+}
+
 /****************************************************************************************
 *  Name     : prune_ps
 *  Function : Removes prediction data for prediction scenarios not in the 
@@ -135,36 +176,10 @@ void Tracked_Obstacle::add_intelligent_prediction(
 
 /****************************************************************************************
 *  Name     : update
-*  Function : Updates the obstacle state, covariance, intention probabilities, a priori
-* 			  COLREGS compliance probability at the current time prior to a run of the
-*			  PSB-MPC. Two overloads depending on if obstacle is lost or not, respectively
+*  Function : 
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void Tracked_Obstacle::update(
-	const bool filter_on, 										// In: Indicator of whether the KF is active
-	const double dt 											// In: Prediction time step
-	)
-{
-	// Depending on if the KF is on/off, the state and
-	// covariance are updated, or just reset directly to the input
-	// data (xs_0 and P_0)
-	if (filter_on)
-	{
-		kf.update(xs_0, duration_lost, dt);
-
-		duration_tracked = kf.get_time();
-
-		xs_0 = kf.get_state();
-
-		P_0 = kf.get_covariance();
-	}
-	else
-	{ 
-		kf.reset(xs_0, P_0, 0.0); 
-	}
-}
-
 void Tracked_Obstacle::update(
 	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 	const Eigen::VectorXd &P, 									// In: Obstacle covariance
@@ -200,6 +215,64 @@ void Tracked_Obstacle::update(
 	}
 	
 	this->Pr_s = Pr_s / Pr_s.sum(); 
+}
+
+void Tracked_Obstacle::update(
+	const Eigen::VectorXd &xs_aug, 								// In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+	const Eigen::VectorXd &P, 									// In: Obstacle covariance
+	const bool filter_on, 										// In: Indicator of whether the KF is active
+	const double dt 											// In: Prediction time step
+	)
+{
+	double psi = atan2(xs_aug(3), xs_aug(2));
+	xs_0(0) = xs_aug(0) + x_offset * cos(psi) - y_offset * sin(psi); 
+	xs_0(1) = xs_aug(1) + x_offset * cos(psi) + y_offset * sin(psi);
+	xs_0(2) = xs_aug(2);
+	xs_0(3) = xs_aug(3);
+
+	P_0 = CPU::reshape(P, 4, 4);
+
+	// Depending on if the KF is on/off, the state and
+	// covariance are updated, or just reset directly to the input
+	// data (xs_0 and P_0)
+	if (filter_on)
+	{
+		kf.update(xs_0, duration_lost, dt);
+
+		duration_tracked = kf.get_time();
+
+		xs_0 = kf.get_state();
+
+		P_0 = kf.get_covariance();
+	}
+	else
+	{ 
+		kf.reset(xs_0, P_0, 0.0); 
+	}
+}
+
+void Tracked_Obstacle::update(
+	const bool filter_on, 										// In: Indicator of whether the KF is active
+	const double dt 											// In: Prediction time step
+	)
+{
+	// Depending on if the KF is on/off, the state and
+	// covariance are updated, or just reset directly to the input
+	// data (xs_0 and P_0)
+	if (filter_on)
+	{
+		kf.update(xs_0, duration_lost, dt);
+
+		duration_tracked = kf.get_time();
+
+		xs_0 = kf.get_state();
+
+		P_0 = kf.get_covariance();
+	}
+	else
+	{ 
+		kf.reset(xs_0, P_0, 0.0); 
+	}
 }
 
 /****************************************************************************************

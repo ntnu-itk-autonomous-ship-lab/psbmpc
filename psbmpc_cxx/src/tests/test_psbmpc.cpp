@@ -1,9 +1,9 @@
 /****************************************************************************************
 *
-*  File name : test_psbmpc.cu
+*  File name : test_psbmpc.cpp
 *
 *  Function  : Test file for the Probabilistic Scenario-based Model Predictive Control
-*			   using Matlab for visualization. GPU version
+*			   using Matlab for visualization 
 *			   
 *	           ---------------------
 *
@@ -20,21 +20,23 @@
 
 #include "cpu/psbmpc_cpu.hpp"
 #include "gpu/psbmpc_gpu.cuh"
-#include "gpu/utilities_gpu.cuh"
+#include "cpu/utilities_cpu.hpp"
 #include <iostream>
 #include <vector>
 #include <chrono>
+#include <memory>
 #include "Eigen/Dense"
 #include "engine.h"
 
 
 #define BUFSIZE 1000000
 
-int main(){
+int main()
+{
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
-	double T_sim = 150; double dt = 0.5;
+	double T_sim = 150, dt = 0.5;
 	int N = std::round(T_sim / dt);
 
 //*****************************************************************************************************************
@@ -42,7 +44,7 @@ int main(){
 //*****************************************************************************************************************
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 9, 0, 0;
-	double u_d = 9.0, chi_d, u_c, chi_c;
+	double u_d(9.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 	
 	PSBMPC_LIB::CPU::Ownship asv_sim;
 
@@ -71,8 +73,6 @@ int main(){
 	std::vector<int> ID(n_obst);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_obst);
-	xs_i_0[0].resize(6);
-	xs_i_0[0] << 500, 300, -90 * DEG2RAD, 5, 0, 0;
 
 	// Use constant obstacle uncertainty throughout the simulation, for simplicity
 	Eigen::MatrixXd P_0(4, 4);
@@ -81,7 +81,7 @@ int main(){
 		 0, 0, 0.025, 0,
 		 0, 0, 0, 0.025;
 
-	double A = 5, B = 5, C = 5, D = 5; 
+	double A = 10, B = 10, C = 2, D = 2; 
 	
 	// Use constant equal intention probability and a priori CC probability  for simplicity
 	std::vector<Eigen::VectorXd> Pr_a(n_obst);
@@ -103,8 +103,9 @@ int main(){
 	std::vector<Eigen::Matrix<double, 2, -1>> waypoints_i(n_obst);
 
 	//=====================================================================
-	// Matlab engine and array setup for the ownship and obstacle, ++
+	// Matlab engine setup and array setup for the ownship and obstacle, ++
 	//=====================================================================
+	// Matlab engine setup
  	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
@@ -125,44 +126,64 @@ int main(){
 	std::vector<mxArray*> P_traj_i_mx(n_obst); 
 	std::vector<mxArray*> wps_i_mx(n_obst);
 
-	double* p_traj_i; 
+	double* ptraj_i; 
 	double* p_P_traj_i; 
 	double* p_wps_i;
-	int n_wps_i;
+	
+	
+	//=====================================================================
+	int n_wps_i(0);
 
 	for (int i = 0; i < n_obst; i++)
 	{
 		ID[i] = i;
 
-		u_d_i[i] = 5.0; chi_d_i[i] = 0.0;
-
-		#if OWNSHIP_TYPE == 0
-			xs_i_0[0].resize(4);
-			xs_i_0[0] << 500, 300, -90 * DEG2RAD, 5;
-			trajectory_i[i].resize(4, N);
-			trajectory_i[i].col(0) = xs_i_0[i];
-		#else
-			xs_i_0[0].resize(6);
-			xs_i_0[0] << 500, 300, -90 * DEG2RAD, 5, 0, 0;
-			trajectory_i[i].resize(6, N);
-			trajectory_i[i].col(0) = xs_i_0[i];
-		#endif
-
 		trajectory_covariances_i[i].resize(16, 1);
 		trajectory_covariances_i[i].col(0) = PSBMPC_LIB::CPU::flatten(P_0);
 
 		Pr_a[i].resize(3);
-		Pr_a[i] << 1, 1, 1;
-		Pr_a[i] = Pr_a[0] / Pr_a[0].sum();
+		Pr_a[i] << 0.05, 0.9, 0.05;
+		Pr_a[i] = Pr_a[i] / Pr_a[i].sum();
 		/* Pr_a[i].resize(1);
-		Pr_a[i] << 1;  */
+		Pr_a[i] << 1; */
 
-		Pr_CC[i] = 0.1; 
+		Pr_CC[i] = 1;
 
 		n_wps_i = 2;
 		waypoints_i[i].resize(2, n_wps_i); 
-		waypoints_i[i] << 500, 500,
-					300, -300;
+		xs_i_0[i].resize(6);
+		if (i == 1)
+		{
+			//xs_i_0[i] << 5000, 0, 180 * DEG2RAD, 6, 0, 0;
+			xs_i_0[i] << 300, 150, -90 * DEG2RAD, 5, 0, 0;
+			waypoints_i[i] << 	xs_i_0[i](0), 500,
+								xs_i_0[i](1), -300;
+			u_d_i[i] = 5.0; chi_d_i[i] = -90 * DEG2RAD;
+		} 
+		else if (i == 2)
+		{
+			xs_i_0[i] << 500, -300, 90 * DEG2RAD, 5, 0, 0;
+			waypoints_i[i] << 	xs_i_0[i](0), 500,
+								xs_i_0[i](1), 300;
+			u_d_i[i] = 5.0; chi_d_i[i] = 90 * DEG2RAD;
+		}
+		else
+		{
+			xs_i_0[i] << 700, 0, 180 * DEG2RAD, 8, 0, 0;
+			waypoints_i[i] << 	xs_i_0[i](0), 0,
+								xs_i_0[i](1), 0;
+			u_d_i[i] = 8.0; chi_d_i[i] = 180 * DEG2RAD;
+		}
+
+		#if OWNSHIP_TYPE == 0
+			trajectory_i[i].resize(4, N);
+			trajectory_i[i].block<2, 1>(0, 0) = xs_i_0[i].block<2, 1>(0, 0);
+			trajectory_i[i](2, 0) = xs_i_0[i](2);
+			trajectory_i[i](3) = xs_i_0[i].block<2, 1>(3, 0).norm();
+		#else
+			trajectory_i[i].resize(6, N);
+			trajectory_i[i].col(0) = xs_i_0[i];
+		#endif
 		
 		offset_sequence_i[i].resize(6);
 		offset_sequence_i[i] << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
@@ -173,16 +194,15 @@ int main(){
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T_sim, dt);
 	}
-
-//*****************************************************************************************************************
-// Obstacle Manager setup
-//*****************************************************************************************************************	
-	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
+	
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************	
+	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
+	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
 	PSBMPC_LIB::GPU::PSBMPC psbmpc;
-	double u_opt, chi_opt;
+	//PSBMPC_LIB::GPU::PSBMPC psbmpc;
+	double u_opt(1.0), chi_opt(0.0);
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
 
@@ -191,11 +211,6 @@ int main(){
 
 	Eigen::Matrix<double, 16, -1> obstacle_covariances;
 	obstacle_covariances.resize(16, n_obst);
-
-	Eigen::MatrixXd obstacle_intention_probabilities;
-	obstacle_intention_probabilities.resize(3, n_obst);
-
-	Eigen::VectorXd obstacle_a_priori_CC_probabilities(n_obst);
 
 	int n_static_obst = 1;
 	Eigen::Matrix<double, 4, -1> static_obstacles;
@@ -214,7 +229,7 @@ int main(){
 	//=========================================================
 	// Matlab plot setup
 	//=========================================================
-		
+	
 	for (int i = 0; i < n_obst; i++)
 	{
 		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
@@ -263,7 +278,7 @@ int main(){
 	
 	Eigen::Vector4d xs_i_k;
 	Eigen::VectorXd xs_aug(9);
-	double mean_t = 0, t(0.0);
+	double mean_t(0.0), t(0.0);
 	for (int k = 0; k < N; k++)
 	{
 		t = k * dt;
@@ -285,22 +300,11 @@ int main(){
 			obstacle_states.col(i) << xs_i_k, A, B, C, D, ID[i];
 
 			obstacle_covariances.col(i) = PSBMPC_LIB::CPU::flatten(P_0);
-
-			obstacle_intention_probabilities.col(i) = Pr_a[i];
-
-			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
 
-		 obstacle_manager.operator()(
-			psbmpc.pars, 
-			trajectory.col(k), 
-			asv_sim.get_length(),
-			obstacle_states, 
-			obstacle_covariances, 
-			obstacle_intention_probabilities, 
-			obstacle_a_priori_CC_probabilities);
+		obstacle_manager(trajectory.col(k), asv_sim.get_length(), obstacle_states, obstacle_covariances, psbmpc);
 
-		obstacle_manager.update_obstacle_status(trajectory.col(k));
+		obstacle_predictor(obstacle_manager.get_data(), trajectory.col(k), psbmpc);
 
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, PSBMPC_LIB::LOS);
 
@@ -326,14 +330,15 @@ int main(){
 
 			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
 
-			std::cout << "u_d = " << u_d << " | chi_d = " << chi_d << std::endl;
+			//std::cout << "u_d = " << u_d << " | chi_d = " << chi_d << std::endl;
 
-			obstacle_manager.display_obstacle_information();		
-		} 
+			obstacle_manager.update_obstacle_status(trajectory.col(k));
+			obstacle_manager.display_obstacle_information();
+		}
 		u_c = u_d * u_opt; chi_c = chi_d + chi_opt;
 		
 		if (k < N - 1) { trajectory.col(k + 1) = asv_sim.predict(trajectory.col(k), u_c, chi_c, dt, PSBMPC_LIB::ERK1); }
-		
+		//std::cout << trajectory.col(k).transpose() << std::endl;
 
 		//===========================================
 		// Send trajectory data to matlab
@@ -358,12 +363,13 @@ int main(){
 
 		engEvalString(ep, "update_ownship_plot");
 
+		printf("%s", buffer);
 		for(int i = 0; i < n_obst; i++)
 		{
-			p_traj_i = mxGetPr(traj_i_mx[i]);
+			ptraj_i = mxGetPr(traj_i_mx[i]);
 			p_P_traj_i = mxGetPr(P_traj_i_mx[i]);
 
-			Eigen::Map<Eigen::MatrixXd> map_traj_i(p_traj_i, trajectory_i[i].rows(), N);
+			Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, trajectory_i[i].rows(), N);
 			Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, 1);
 			
 			map_traj_i = trajectory_i[i];
@@ -376,7 +382,10 @@ int main(){
 			engPutVariable(ep, "i", i_mx);
 
 			engEvalString(ep, "update_obstacle_plot");
+
+			printf("%s", buffer);
 		}
+		
 		//======================================================
 		
 	}
@@ -395,7 +404,7 @@ int main(){
 		mxDestroyArray(P_traj_i_mx[i]);
 		mxDestroyArray(wps_i_mx[i]);
 	}
-	engClose(ep);  
+	engClose(ep);   
 
 	return 0;
 }

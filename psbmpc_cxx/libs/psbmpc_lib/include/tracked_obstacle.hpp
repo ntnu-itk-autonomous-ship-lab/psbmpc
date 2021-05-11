@@ -96,6 +96,12 @@ namespace PSBMPC_LIB
 			const bool filter_on, 
 			const double T, 
 			const double dt);
+		
+		Tracked_Obstacle(const Eigen::VectorXd &xs_aug, 
+			const Eigen::VectorXd &P, 
+			const bool filter_on, 
+			const double T, 
+			const double dt);
 
 		inline int get_ID() const { return ID; };
 
@@ -144,6 +150,12 @@ namespace PSBMPC_LIB
 			const Eigen::VectorXd &xs_aug, 
 			const Eigen::VectorXd &P, 
 			const Eigen::VectorXd &Pr_s, 
+			const bool filter_on,
+			const double dt);
+
+		void update(
+			const Eigen::VectorXd &xs_aug, 
+			const Eigen::VectorXd &P, 
 			const bool filter_on,
 			const double dt);
 
