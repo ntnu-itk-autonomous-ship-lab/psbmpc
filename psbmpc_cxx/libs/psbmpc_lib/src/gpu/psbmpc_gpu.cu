@@ -577,17 +577,27 @@ void PSBMPC::find_optimal_control_behaviour(
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	Eigen::VectorXd max_cost_i_ps, mu_i_ps, mu_i(data.obstacles.size()), cost_i(data.obstacles.size());
+	Eigen::VectorXd max_cost_i_ps, mu_i_ps, mu_i(n_obst), cost_do(n_obst);
 
 	double cost(0.0), h_do, h_colregs, h_so, h_path;
 	min_cost = 1e12;
 
-	Eigen::MatrixXd cost_i_matrix(n_obst, pars.n_cbs), max_cost_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
-	Eigen::MatrixXd mu_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs), cb_matrix(2 * pars.n_M, pars.n_cbs), cost_so_path_matrix(2, pars.n_cbs);
-	Eigen::Matrix<double, 1, -1> total_cost_matrix(1, pars.n_cbs), n_ps_matrix(1, n_obst);
+	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
+	Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
+	Eigen::MatrixXd max_cost_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
+	Eigen::MatrixXd mu_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
+	Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
+	Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
+	Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs);
+	Eigen::MatrixXd n_ps_matrix(1, n_obst);
+	Eigen::MatrixXd Pr_s_i_matrix(n_obst, n_ps[0]);
 	for (int i = 0; i < n_obst; i++)
 	{
 		n_ps_matrix(0, i) = n_ps[i];
+		for (int ps = 0; ps < n_ps[i]; ps++)
+		{
+			Pr_s_i_matrix(i, ps) = data.obstacles[i].get_scenario_probabilities()(ps);
+		}
 	}
 	int curr_ps_index(0);
 	//==================================================================
@@ -599,30 +609,34 @@ void PSBMPC::find_optimal_control_behaviour(
 		std::cout << "engine start failed!" << std::endl;
 	}
 	mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
- 	mxArray *cost_i_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
+ 	mxArray *cost_do_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
+	mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
 	mxArray *max_cost_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
 	mxArray *mu_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
-	mxArray *cost_so_path_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
+	mxArray *cost_so_path_mx = mxCreateDoubleMatrix(2, pars.n_cbs, mxREAL);
 	mxArray *n_ps_mx = mxCreateDoubleMatrix(1, n_obst, mxREAL);
 	mxArray *cb_matrix_mx = mxCreateDoubleMatrix(2 * pars.n_M, pars.n_cbs, mxREAL);
+	mxArray *Pr_s_i_mx = mxCreateDoubleMatrix(n_obst, n_ps[0], mxREAL);
 	
-
 	double *ptr_total_cost = mxGetPr(total_cost_mx); 
-	double *ptr_cost_i = mxGetPr(cost_i_mx); 
+	double *ptr_cost_do = mxGetPr(cost_do_mx); 
+	double *ptr_cost_colregs = mxGetPr(cost_colregs_mx); 
 	double *ptr_max_cost_i_ps = mxGetPr(max_cost_i_ps_mx); 
 	double *ptr_mu_i_ps = mxGetPr(mu_i_ps_mx); 
 	double *ptr_cost_so_path = mxGetPr(cost_so_path_mx); 
 	double *ptr_n_ps = mxGetPr(n_ps_mx); 
 	double *ptr_cb_matrix = mxGetPr(cb_matrix_mx); 
+	double *ptr_Pr_s_i = mxGetPr(Pr_s_i_mx); 
 
-	
-	Eigen::Map<Eigen::Matrix<double, 1, -1>> map_total_cost(ptr_total_cost, 1, pars.n_cbs);
-	Eigen::Map<Eigen::MatrixXd> map_cost_i(ptr_cost_i, n_obst, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_total_cost(ptr_total_cost, 1, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_cost_do(ptr_cost_do, n_obst, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_cost_colregs(ptr_cost_colregs, 1, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_max_cost_i_ps(ptr_max_cost_i_ps, n_obst * pars.n_r, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_mu_i_ps(ptr_mu_i_ps, n_obst * pars.n_r, pars.n_cbs);
-	Eigen::Map<Eigen::Matrix<double, 1, -1>> map_cost_so_path(ptr_cost_so_path, 1, pars.n_cbs);
-	Eigen::Map<Eigen::Matrix<double, 1, -1>> map_n_ps(ptr_n_ps, 1, n_obst);
+	Eigen::Map<Eigen::MatrixXd> map_cost_so_path(ptr_cost_so_path, 2, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps, 1, n_obst);
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps[0]);
 
 	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr);
 	//==================================================================
@@ -660,19 +674,21 @@ void PSBMPC::find_optimal_control_behaviour(
 			}
 
 			tup = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, mu_i_ps, data, i);
-			cost_i(i) = std::get<0>(tup);
+			cost_do(i) = std::get<0>(tup);
 			mu_i(i) = std::get<1>(tup);
 
 			// Matlab related data structure
-			cost_i_matrix.col(cb) = cost_i;
+			
 			max_cost_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = max_cost_i_ps;
 			mu_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = mu_i_ps;
 			curr_ps_index += n_ps[i];
 		}
+		cost_do_matrix.col(cb) = cost_do;
 
-		h_do = cost_i.sum();
+		h_do = cost_do.sum();
 
-		h_colregs = std::min(1.0, mu_i.sum());
+		h_colregs = pars.kappa * std::min(1.0, mu_i.sum());
+		cost_colregs_matrix(0, cb) = h_colregs;
 
 		cost = h_do + h_colregs + h_so + h_path;
 		total_cost_matrix(cb) = cost;
@@ -685,23 +701,24 @@ void PSBMPC::find_optimal_control_behaviour(
 		}
 
 		increment_control_behaviour(offset_sequence_counter, offset_sequence);
-
-		cost_i_matrix.col(cb) = cost_i;
 	}
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
 	opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 	map_total_cost = total_cost_matrix;
-	map_cost_i = cost_i_matrix;
+	map_cost_do = cost_do_matrix;
 	map_max_cost_i_ps = max_cost_i_ps_matrix;
 	map_mu_i_ps = mu_i_ps_matrix;
 	map_cost_so_path = cost_so_path_matrix;
 	map_n_ps = n_ps_matrix;
 	map_cb_matrix = cb_matrix;
+	map_Pr_s_i = Pr_s_i_matrix;
 
+	engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
 	engPutVariable(ep, "total_cost", total_cost_mx);
-	engPutVariable(ep, "cost_i", cost_i_mx);
+	engPutVariable(ep, "cost_do", cost_do_mx);
+	engPutVariable(ep, "cost_colregs", cost_colregs_mx);
 	engPutVariable(ep, "max_cost_i_ps", max_cost_i_ps_mx);
 	engPutVariable(ep, "mu_i_ps", mu_i_ps_mx);
 	engPutVariable(ep, "cost_so_path", cost_so_path_mx);
@@ -712,7 +729,8 @@ void PSBMPC::find_optimal_control_behaviour(
 	engEvalString(ep, "gpu_psbmpc_cost_plotting");
 
 	mxDestroyArray(total_cost_mx);
-	mxDestroyArray(cost_i_mx);
+	mxDestroyArray(cost_do_mx);
+	mxDestroyArray(cost_colregs_mx);
 	mxDestroyArray(max_cost_i_ps_mx);
 	mxDestroyArray(mu_i_ps_mx);
 	mxDestroyArray(cost_so_path_mx);

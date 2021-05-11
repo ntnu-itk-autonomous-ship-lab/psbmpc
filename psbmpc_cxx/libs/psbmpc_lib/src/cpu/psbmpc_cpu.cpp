@@ -192,39 +192,41 @@ void PSBMPC::calculate_optimal_offsets(
 	}  */
 	
 	// COST PLOTTING
-	/* mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
+	mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
  	mxArray *cost_i_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
 	mxArray *max_cost_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
-	mxArray *cost_cb_ch_g_mx = mxCreateDoubleMatrix(3, pars.n_cbs, mxREAL);
+	mxArray *cost_colregs_so_path_mx = mxCreateDoubleMatrix(3, pars.n_cbs, mxREAL);
 	mxArray *n_ps_mx = mxCreateDoubleMatrix(1, n_obst, mxREAL);
 	mxArray *cb_matrix_mx = mxCreateDoubleMatrix(2 * pars.n_M, pars.n_cbs, mxREAL);
 
 	double *ptr_total_cost = mxGetPr(total_cost_mx); 
 	double *ptr_cost_i = mxGetPr(cost_i_mx); 
 	double *ptr_max_cost_ps = mxGetPr(max_cost_ps_mx); 
-	double *ptr_cost_cb_ch_g = mxGetPr(cost_cb_ch_g_mx); 
+	double *ptr_cost_colregs_so_path = mxGetPr(cost_colregs_so_path_mx); 
 	double *ptr_n_ps = mxGetPr(n_ps_mx); 
 	double *ptr_cb_matrix = mxGetPr(cb_matrix_mx); 
 	
-	Eigen::Map<Eigen::Matrix<double, 1, -1>> map_total_cost(ptr_total_cost, 1, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_total_cost(ptr_total_cost, 1, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_cost_i(ptr_cost_i, n_obst, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_max_cost_ps(ptr_max_cost_ps, n_obst * pars.n_r, pars.n_cbs);
-	Eigen::Map<Eigen::MatrixXd> map_cost_cb_ch_g(ptr_cost_cb_ch_g, 3, pars.n_cbs);
-	Eigen::Map<Eigen::Matrix<double, 1, -1>> map_n_ps(ptr_n_ps, 1, n_obst);
+	Eigen::Map<Eigen::MatrixXd> map_cost_colregs_so_path(ptr_cost_colregs_so_path, 3, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps, 1, n_obst);
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
 
-	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
+	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); 
 
-	/* Eigen::MatrixXd cost_i_matrix(n_obst, pars.n_cbs), max_cost_ps_matrix(n_obst * pars.n_r, pars.n_cbs), 
-					cb_matrix(2 * pars.n_M, pars.n_cbs), cost_cb_ch_g_matrix(3, pars.n_cbs);
-	Eigen::Matrix<double, 1, -1> total_cost_matrix(1, pars.n_cbs), n_ps_matrix(1, n_obst);
-	Eigen::VectorXd max_cost_ps;
+	Eigen::MatrixXd cost_i_matrix(n_obst, pars.n_cbs);
+	Eigen::MatrixXd max_cost_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
+	Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
+	Eigen::MatrixXd cost_cb_ch_g_matrix(3, pars.n_cbs);
+	Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs), n_ps_matrix(1, n_obst);
+	Eigen::MatrixXd max_cost_ps;
 	for (int i = 0; i < n_obst; i++)
 	{
 		n_ps_matrix(0, i) = n_ps[i];
 	}
 	cost_cb_ch_g_matrix.setZero();
-	int curr_max_cost_ps_index(0); */
+	int curr_max_cost_ps_index(0);
 	//===============================================================================================================
 
 	double cost(0.0), h_do, h_colregs, h_so, h_path;
