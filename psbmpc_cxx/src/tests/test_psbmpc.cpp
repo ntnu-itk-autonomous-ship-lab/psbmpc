@@ -200,8 +200,8 @@ int main()
 //*****************************************************************************************************************	
 	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
-	PSBMPC_LIB::GPU::PSBMPC psbmpc;
-	//PSBMPC_LIB::GPU::PSBMPC psbmpc;
+	PSBMPC_LIB::CPU::PSBMPC psbmpc; // change CPU for GPU depending on the version you want to test
+
 	double u_opt(1.0), chi_opt(0.0);
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 

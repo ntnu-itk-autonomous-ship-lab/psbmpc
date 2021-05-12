@@ -22,7 +22,7 @@ find_package(Eigen3 REQUIRED)
 #TODO: Merge the gpu/cpu test files for gpu/cpu specific classes together
 
 # Pure host side test files
-add_executable(tester test_psbmpc.cpp)
+#add_executable(tester test_psbmpc.cpp)
 #add_executable(tester test_ownship_cpu.cpp)
 #add_executable(tester test_obstacle_ship_cpu.cpp)
 #add_executable(tester test_obstacle_cpu.cpp)
@@ -39,7 +39,7 @@ add_executable(tester test_psbmpc.cpp)
 # Test files specific to the GPU-version of the PSBMPC
 #add_executable(tester test_ownship_gpu.cu)
 #add_executable(tester test_obstacle_ship_gpu.cu)
-#add_executable(tester test_cpe_gpu.cu)
+add_executable(tester test_cpe_gpu.cu)
 #add_executable(tester test_thrust.cu)
 #add_executable(tester test_tml.cu)
 #add_executable(tester test_tml_pdmatrix.cu)
@@ -53,6 +53,6 @@ target_include_directories(tester PRIVATE
 	${EIGEN3_INCLUDE_DIRS}
 )
 
-if (USE_GPU_PSBMPC)
-	set_property(TARGET tester PROPERTY CUDA_ARCHITECTURES 61 86)
-endif()
+set_target_properties(tester PROPERTIES 
+	CUDA_SEPARABLE_COMPILATION ON
+	CUDA_ARCHITECTURES "61;86")

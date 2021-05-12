@@ -285,18 +285,22 @@ namespace PSBMPC_LIB
 			) const
 		{
 			// l_i is the collision cost modifier depending on the obstacle track loss.
-			double cost_do(0.0), cost_ps(0.0), mu_i(0.0), C(0.0), l_i(0.0);
+			double cost_do(0.0), cost_ps(0.0), mu_i(0.0), coll_cost(0.0), l_i(0.0);
 
 			int n_samples = trajectory.cols();
 			Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
 			std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
 
 			int n_ps = xs_i_p.size();
-			Eigen::VectorXd max_cost_ps(n_ps);
-			max_cost_ps.setZero();
+
+			max_cost_i_ps.resize(n_ps); 
+			max_cost_i_ps.setZero();
+			mu_i_ps.resize(n_ps);
+			mu_i_ps.setZero();
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), d_0i_p(0.0);
+			bool mu(false);
 			for(int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
@@ -321,16 +325,18 @@ namespace PSBMPC_LIB
 					// Decrease the distance between the vessels by their respective max dimension
 					d_0i_p = abs(d_0i_p - 0.5 * (ownship_length + data.obstacles[i].get_length())); 
 
-					L_0i_p = L_0i_p.normalized();
+					L_0i_p.normalize();
 
 					v_i_p(0) = xs_i_p[ps](2, k);
 					v_i_p(1) = xs_i_p[ps](3, k);
 
-					C = calculate_collision_cost(v_0_p, v_i_p);
+					coll_cost = calculate_collision_cost(v_0_p, v_i_p);
 
-					if (k > 0 && mu_i_ps(ps) == false)
+					if (k > 0 && mu_i_ps(ps) < 0.1)
 					{
-						mu_i_ps(ps) = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+						mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+						if (mu) { mu_i_ps(ps) = 1.0; }
+						else 	{ mu_i_ps(ps) = 0.0; }
 					}
 
 					// Track loss modifier to collision cost
@@ -344,7 +350,7 @@ namespace PSBMPC_LIB
 					}
 
 					// PSB-MPC formulation with probabilistic collision cost
-					cost_ps = l_i * C * P_c_i(ps, k);
+					cost_ps = l_i * coll_cost * P_c_i(ps, k);
 
 					// Maximize wrt time
 					if (cost_ps > max_cost_i_ps(ps))
@@ -388,10 +394,11 @@ namespace PSBMPC_LIB
 			int n_ps = xs_i_p.size();
 			Eigen::VectorXd max_cost_i_ps(n_ps), mu_i_ps(n_ps);
 			max_cost_i_ps.setZero();
+			mu_i_ps.setZero();
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), d_0i_p(0.0);
-
+			bool mu;
 			for(int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
@@ -423,9 +430,11 @@ namespace PSBMPC_LIB
 
 					C = calculate_collision_cost(v_0_p, v_i_p);
 
-					if (k > 0 && mu_i_ps(ps) == false)
+					if (k > 0 && mu_i_ps(ps) < 0.1)
 					{
-						mu_i_ps(ps) = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+						mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+						if (mu) { mu_i_ps(ps) = 1.0; }
+						else 	{ mu_i_ps(ps) = 0.0; }
 					}
 
 					// Track loss modifier to collision cost
@@ -484,7 +493,7 @@ namespace PSBMPC_LIB
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);
-			bool mu, trans;
+			bool mu(false), trans(false);
 			for(int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
@@ -535,7 +544,10 @@ namespace PSBMPC_LIB
 
 				C = calculate_collision_cost(v_0_p, v_i_p);
 
-				mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+				if (k > 0)
+				{
+					mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+				}
 
 				trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
 
@@ -580,7 +592,7 @@ namespace PSBMPC_LIB
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0);
-			bool mu, trans;
+			bool mu(false), trans(false);
 			for(int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
@@ -630,7 +642,10 @@ namespace PSBMPC_LIB
 
 				C = calculate_collision_cost(v_0_p, v_i_p);
 
-				mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+				if (k > 0)
+				{
+					mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+				}
 
 				trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
 

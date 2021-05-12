@@ -49,7 +49,7 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		inline void save_matrix_to_file(const Eigen::MatrixXd &in)
 		{
-			std::ofstream outdata("/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv", std::ofstream::trunc);
+			std::ofstream outdata("/home/admin/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv", std::ios::out | std::ios::trunc);
 			int n_rows = in.rows();
 			int n_cols = in.cols();
 

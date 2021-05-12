@@ -671,11 +671,13 @@ void PSBMPC::find_optimal_control_behaviour(
 				max_cost_i_ps(ps) = (double)thrust::get<0>(dev_tup);
 				mu_i_ps(ps) = (double)thrust::get<1>(dev_tup);
 				thread_index += 1;
+				printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb, max_cost_i_ps(ps), mu_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
 			}
 
 			tup = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, mu_i_ps, data, i);
 			cost_do(i) = std::get<0>(tup);
 			mu_i(i) = std::get<1>(tup);
+
 
 			// Matlab related data structure
 			
@@ -708,6 +710,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 	map_total_cost = total_cost_matrix;
 	map_cost_do = cost_do_matrix;
+	map_cost_colregs = cost_colregs_matrix;
 	map_max_cost_i_ps = max_cost_i_ps_matrix;
 	map_mu_i_ps = mu_i_ps_matrix;
 	map_cost_so_path = cost_so_path_matrix;
@@ -726,7 +729,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	engPutVariable(ep, "cb_matrix", cb_matrix_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
 	engPutVariable(ep, "opt_cb_index", opt_cb_index_mx);
-	engEvalString(ep, "gpu_psbmpc_cost_plotting");
+	engEvalString(ep, "psbmpc_cost_plotting");
 
 	mxDestroyArray(total_cost_mx);
 	mxDestroyArray(cost_do_mx);

@@ -256,11 +256,12 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrus
 		}
 		if (mu_i_ps < 0.1f) // Only set the COLREGS violation indicator if it has not been true (> 0.0f) yet
 		{
-			mu_i_ps = mu_k;
+			if (mu_k) 	{ mu_i_ps = 1.0f; }
+			else 		{ mu_i_ps = 0.0f; }
 		}
 		//==========================================================================================
 		//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i, cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
-
+		
 		/* printf("max_cost_ps = ");
 		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 		{
@@ -275,7 +276,7 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrus
 	}
 	
 	//==================================================================================================
-	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
+	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_i_ps, mu_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	/* printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1), 
 		offset_sequence(2), RAD2DEG * offset_sequence(3)); */
 	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1), 

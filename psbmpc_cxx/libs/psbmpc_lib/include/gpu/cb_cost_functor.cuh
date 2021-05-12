@@ -138,11 +138,12 @@ namespace PSBMPC_LIB
 
 			int n_samples, n_seg_samples, p_step;
 
-			float max_cost_i_ps, mu_i_ps, cost_k, mu_k, P_c_i;
+			float max_cost_i_ps, mu_i_ps, cost_k, P_c_i;
+			bool mu_k;
 
 			float d_safe_i, chi_m;
 
-			thrust::tuple<float, float> tup;
+			thrust::tuple<float, bool> tup;
 
 			// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 			// Only keeps n_seg_samples at a time, sliding window. Minimum 2
