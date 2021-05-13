@@ -394,7 +394,7 @@ void PSBMPC_Parameters::initialize_pars()
 
 	d_init = 1000;								 
 	d_close = 1000;
-	d_safe = 5; 							
+	d_safe = 50; 							
 	K_coll = 0.2;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 

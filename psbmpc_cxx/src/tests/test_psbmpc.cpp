@@ -200,7 +200,7 @@ int main()
 //*****************************************************************************************************************	
 	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
-	PSBMPC_LIB::GPU::PSBMPC psbmpc; // change CPU for GPU depending on the version you want to test
+	PSBMPC_LIB::CPU::PSBMPC psbmpc; // change CPU for GPU depending on the version you want to test
 
 	double u_opt(1.0), chi_opt(0.0);
 
@@ -212,7 +212,6 @@ int main()
 	Eigen::Matrix<double, 16, -1> obstacle_covariances;
 	obstacle_covariances.resize(16, n_obst);
 
-	int n_static_obst = 0;
 	std::vector<polygon_2D> polygons(0);
 	double V_w = 0.0;
 	Eigen::Vector2d wind_direction; wind_direction << 1.0, 0.0;
@@ -387,7 +386,6 @@ int main()
 	mxDestroyArray(k_s_mx);
 	mxDestroyArray(T_sim_mx);
 	mxDestroyArray(n_obst_mx);
-	mxDestroyArray(n_static_obst_mx);
 	for (int i = 0; i < n_obst; i++)
 	{
 		mxDestroyArray(traj_i_mx[i]);
