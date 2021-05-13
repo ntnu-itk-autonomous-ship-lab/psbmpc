@@ -527,8 +527,8 @@ int main(){
 	engPutVariable(ep, "P_c_MCSKF", Pcoll_MCSKF);
 	engEvalString(ep, "test_cpe_plot");
 	
-	PSBMPC_LIB::CPU::save_matrix_to_file(P_c_i_CE);
-	PSBMPC_LIB::CPU::save_matrix_to_file(P_c_i_MCSKF);
+	//PSBMPC_LIB::CPU::save_matrix_to_file(P_c_i_CE);
+	//PSBMPC_LIB::CPU::save_matrix_to_file(P_c_i_MCSKF);
 
 	printf("%s", buffer);
 	mxDestroyArray(traj_os_mx);

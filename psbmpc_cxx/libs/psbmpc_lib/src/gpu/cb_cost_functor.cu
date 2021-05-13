@@ -246,10 +246,9 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrus
 			chi_m,
 			fdata->ownship_length,
 			k);
-
 		cost_k = thrust::get<0>(tup);
 		mu_k = thrust::get<1>(tup);
-
+		
 		if (max_cost_i_ps < cost_k)
 		{
 			max_cost_i_ps = cost_k;

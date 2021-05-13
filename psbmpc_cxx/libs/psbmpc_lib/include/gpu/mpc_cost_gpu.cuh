@@ -148,7 +148,7 @@ namespace PSBMPC_LIB
 				const float chi_m);
 			//
 
-			__host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const { return pars.K_coll * powf((v_1 - v_2).norm(), 2); }
+			__host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const { return pars.K_coll * (powf(v_1(0) - v_2(0), 2) + powf(v_1(1) - v_2(1), 2)); }
 
 			__host__ __device__ float calculate_ad_hoc_collision_risk(const float d_AB, const float t);
 
@@ -407,7 +407,7 @@ namespace PSBMPC_LIB
 			cost_coll = 0.0f; l_i = 0.0f;
 
 			v_0_p(0) = xs_p(3) * cos(xs_p(2)); 
-			v_0_p(1) = xs_p(3) * cos(xs_p(2)); 
+			v_0_p(1) = xs_p(3) * sin(xs_p(2)); 
 			psi_0_p = xs_p(2); 
 
 			L_0i_p = xs_i_p.get_block<2, 1>(0, 0, 2, 1) - xs_p.get_block<2, 1>(0, 0, 2, 1);
@@ -440,8 +440,8 @@ namespace PSBMPC_LIB
 
 			cost_do = l_i * cost_coll * P_c_i;
 
-			/* printf("C = %.4f | mu = %d | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n", 
-				cost_coll, mu, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
+			/* printf("k = %d | C = %.4f | P_c_i = %.6f | mu = %d | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n", 
+				k, cost_coll, P_c_i, mu, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
 			return thrust::tuple<float, bool>(cost_do, mu);
 		}
 

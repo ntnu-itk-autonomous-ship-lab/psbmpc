@@ -285,7 +285,7 @@ namespace PSBMPC_LIB
 			) const
 		{
 			// l_i is the collision cost modifier depending on the obstacle track loss.
-			double cost_do(0.0), cost_ps(0.0), mu_i(0.0), coll_cost(0.0), l_i(0.0);
+			double cost_do(0.0), cost_ps(0.0), mu_i(0.0), cost_coll(0.0), l_i(0.0);
 
 			int n_samples = trajectory.cols();
 			Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
@@ -330,7 +330,7 @@ namespace PSBMPC_LIB
 					v_i_p(0) = xs_i_p[ps](2, k);
 					v_i_p(1) = xs_i_p[ps](3, k);
 
-					coll_cost = calculate_collision_cost(v_0_p, v_i_p);
+					cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
 					if (k > 0 && mu_i_ps(ps) < 0.1)
 					{
@@ -350,13 +350,16 @@ namespace PSBMPC_LIB
 					}
 
 					// PSB-MPC formulation with probabilistic collision cost
-					cost_ps = l_i * coll_cost * P_c_i(ps, k);
+					cost_ps = l_i * cost_coll * P_c_i(ps, k);
 
 					// Maximize wrt time
 					if (cost_ps > max_cost_i_ps(ps))
 					{
 						max_cost_i_ps(ps) = cost_ps;
 					}
+					/* if (ps == 2)
+						printf("k = %d | C = %.4f | P_c_i = %.6f | mu = %d | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n", 
+							k, cost_coll, P_c_i(ps, k), mu, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
 				}
 			}
 			
