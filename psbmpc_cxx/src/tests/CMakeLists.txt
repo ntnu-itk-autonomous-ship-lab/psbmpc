@@ -22,7 +22,8 @@ find_package(Eigen3 REQUIRED)
 #TODO: Merge the gpu/cpu test files for gpu/cpu specific classes together
 
 # Pure host side test files
-add_executable(tester test_psbmpc.cpp)
+#add_executable(tester test_psbmpc.cpp)
+add_executable(tester test_psbmpc_grounding.cpp)
 #add_executable(tester test_ownship_cpu.cpp)
 #add_executable(tester test_obstacle_ship_cpu.cpp)
 #add_executable(tester test_obstacle_cpu.cpp)
@@ -31,8 +32,6 @@ add_executable(tester test_psbmpc.cpp)
 #add_executable(tester test_mrou.cpp)
 #add_executable(tester test_kf.cpp)
 #add_executable(tester test_prng.cpp)
-
-#add_executable(tester test_psbmpc_grounding.cpp)
 #add_executable(tester test_psbmpc_cost_class.cpp)
 #add_executable(tester test_read_shapefile.cpp)
 #add_executable(tester test_polygons.cpp)

@@ -394,7 +394,7 @@ void PSBMPC_Parameters::initialize_pars()
 
 	d_init = 1000;								 
 	d_close = 1000;
-	d_safe = 50; 							
+	d_safe = 5; 							
 	K_coll = 0.2;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
@@ -411,10 +411,10 @@ void PSBMPC_Parameters::initialize_pars()
 	K_sgn = 8;
 	T_sgn = 4 * t_ts;	
 
-	G_1 = 1000.0; 
+	G_1 = 100.0; 
 	G_2 = 5.0;
-	G_3 = 0.001;
-	G_4 = 0.01;
+	G_3 = 0.1;
+	G_4 = 0.1;
 
 	obstacle_colav_on = false;
 }

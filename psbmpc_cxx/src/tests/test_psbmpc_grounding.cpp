@@ -177,13 +177,12 @@ int main(){
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T_sim, dt);
 	}
 
-//*****************************************************************************************************************
-// Obstacle Manager setup
-//*****************************************************************************************************************	
-	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
+
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************	
+	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
+	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
 	PSBMPC_LIB::CPU::PSBMPC psbmpc;
 	double u_opt(u_d), chi_opt(0.0);
 
@@ -192,19 +191,11 @@ int main(){
 
 	Eigen::Matrix<double, 2, -1> predicted_trajectory; 
 
-	Eigen::Matrix<double,-1,-1> obstacle_status; 				
-	Eigen::Matrix<double,-1, 1> colav_status; 
-
 	Eigen::Matrix<double, 9, -1> obstacle_states;
 	obstacle_states.resize(9, n_obst);
 
 	Eigen::Matrix<double, 16, -1> obstacle_covariances;
 	obstacle_covariances.resize(16, n_obst);
-
-	Eigen::MatrixXd obstacle_intention_probabilities;
-	obstacle_intention_probabilities.resize(1, n_obst);
-
-	Eigen::VectorXd obstacle_a_priori_CC_probabilities(n_obst);
 
 	std::vector<polygon_2D> relevant_polygons;
 
@@ -217,7 +208,7 @@ int main(){
 		std::cout << buffer1 << std::endl;
 	}
 	// Input the path to the land data
-    std::string filename = "../src/tests/grounding_hazard_data/charts/land/land.shp";
+    std::string filename = "src/tests/grounding_hazard_data/charts/land/land.shp";
     
    	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename, psbmpc);
 	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
@@ -358,19 +349,11 @@ int main(){
 			obstacle_states.col(i) << xs_i_k, A, B, C, D, ID[i];
 
 			obstacle_covariances.col(i) = PSBMPC_LIB::CPU::flatten(P_0);
-
-			obstacle_intention_probabilities.col(i) = Pr_a[i];
-			obstacle_a_priori_CC_probabilities(i) = Pr_CC[i];
 		}
 
-		obstacle_manager.operator()(
-			psbmpc.pars, 
-			trajectory.col(k), 
-			asv_sim.get_length(),
-			obstacle_states, 
-			obstacle_covariances, 
-			obstacle_intention_probabilities, 
-			obstacle_a_priori_CC_probabilities);
+		obstacle_manager(trajectory.col(k), asv_sim.get_length(), obstacle_states, obstacle_covariances, psbmpc);
+
+		obstacle_predictor(obstacle_manager.get_data(), trajectory.col(k), psbmpc);
 
 		relevant_polygons = grounding_hazard_manager.operator()(trajectory.col(k));
 

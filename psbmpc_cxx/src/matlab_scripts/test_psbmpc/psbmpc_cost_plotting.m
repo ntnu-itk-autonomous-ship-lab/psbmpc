@@ -44,5 +44,5 @@ fprintf('Optimum control behaviour index = %d\n', opt_cb_index);
 fprintf('Corresponding control behaviour:\n');
 disp(cb_matrix(:, opt_cb_index));
 
-save('cpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'max_cost_i_ps', 'cost_so_path', ...
+save('gpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'max_cost_i_ps', 'cost_so_path', ...
     'n_obst', 'n_ps', 'cb_matrix', 'opt_cb_index');

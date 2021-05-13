@@ -164,25 +164,19 @@ namespace PSBMPC_LIB
 			}
 		}
 
+		template <class MPC_Type>
 		void initialize_independent_prediction_v2(
 			const Obstacle_Data<Tracked_Obstacle> &data,						// In/Out: Dynamic obstacle information
 			const int i, 														// In: Index of obstacle whose prediction to initialize
-			const Eigen::VectorXd &ownship_state								// In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
+			const Eigen::VectorXd &ownship_state,								// In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
+			const MPC_Type &mpc 												// In: Calling MPC (either PSB-MPC or SB-MPC)
 			)
 		{
 			n_ps[i] = n_ps_LOS;
 
-			if (data.IP_0[i])
-			{
-				/* std::cout << "Obstacle i = " << i << "is passed => 1 PS only" << std::endl; */		
-				ct_offsets.resize(1);
-				ct_offsets(0) = 0.0;
-				n_ps[i] = 1;
-				return;
-			}
-			
-			Eigen::Vector2d v_os_0;
+			Eigen::MatrixXd waypoints_i = data.obstacles[i].get_waypoints();
 			Eigen::Vector4d xs_i_0 = data.obstacles[i].kf.get_state(), xs_0;
+			Eigen::Vector2d v_os_0;
 			if (ownship_state.rows() == 4)
 			{
 				v_os_0(0) = ownship_state(3) * cos(ownship_state(2));
@@ -195,17 +189,25 @@ namespace PSBMPC_LIB
 			}
 			xs_0.block<2, 1>(0, 0) = ownship_state.block<2, 1>(0, 0);
 			xs_0(2) = v_os_0(0); xs_0(3) = v_os_0(1);
-			Eigen::Matrix<double, 2, -1> waypoints_i = data.obstacles[i].get_waypoints();
+
+			// Either an irrelevant obstacle or too far away to consider (waypoints_i not initialized properly)
+			double d_0i = (xs_i_0.block<2, 1>(0, 0) - xs_0.block<2, 1>(0, 0)).norm();
+			if (data.IP_0[i] || d_0i > mpc.pars.d_init)
+			{
+				/* std::cout << "Obstacle i = " << i << " passed by ? << data.IP_0[i] << std::endl; */		
+				ct_offsets.resize(1);
+				ct_offsets(0) = 0.0;
+				n_ps[i] = 1;
+				return;
+			}
+			
 
 			double alpha(0.0), e(0.0);
 			// The obstacle has entered colregs/prediction range if its waypoint matrix is initialized with 2 columns (straight line)
-			if (waypoints_i.cols() == 2)
-			{
-				alpha = atan2(waypoints_i(1, 1) - waypoints_i(1, 0), waypoints_i(0, 1) - waypoints_i(0, 0));
+			alpha = atan2(waypoints_i(1, 1) - waypoints_i(1, 0), waypoints_i(0, 1) - waypoints_i(0, 0));
 
-				e = - (xs_i_0(0) - waypoints_i(0, 0)) * sin(alpha) + (xs_i_0(1) - waypoints_i(1, 0)) * cos(alpha);
-			}
-			
+			e = - (xs_i_0(0) - waypoints_i(0, 0)) * sin(alpha) + (xs_i_0(1) - waypoints_i(1, 0)) * cos(alpha);
+
 			switch (n_ps_LOS)
 			{
 				case 1:
@@ -521,11 +523,9 @@ namespace PSBMPC_LIB
 			Eigen::MatrixXd waypoints_i;
 			for (int i = 0; i < n_obst; i++)
 			{	
-				// Determine if the situation wrt obstacle i has started (its inside d_close range)
-				// If yes, then store its waypoints, ideally communicated from the obstacle itself,
-				// otherwise predict waypoints as a straight line path
-				d_0i = (ownship_state.block<2, 1>(0, 0) - data.obstacles[i].kf.get_state().block<2, 1>(0, 0)).norm();
-				if (d_0i <= mpc.pars.d_close && data.obstacles[i].get_waypoints().cols() < 2)
+				// Store the obstacle`s predicted waypoints if not done already
+				// (as straight line path if no other info is available)
+				if (data.obstacles[i].get_waypoints().cols() < 2)
 				{
 					waypoints_i.resize(2, 2);
 					waypoints_i.col(0) = data.obstacles[i].kf.get_state().block<2, 1>(0, 0);
@@ -533,7 +533,7 @@ namespace PSBMPC_LIB
 					data.obstacles[i].set_waypoints(waypoints_i);
 				}
 
-				initialize_independent_prediction_v2(data, i, ownship_state);
+				initialize_independent_prediction_v2(data, i, ownship_state, mpc);
 
 				predict_independent_trajectories_v2(data, i, mpc);
 
