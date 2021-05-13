@@ -89,7 +89,6 @@ void SBMPC_Parameters::initialize_pars(
 
 		T = 110.0;
 		dt = 5.0;
-		T_static = 60.0;
 
 		p_step = 1;
 		if (prediction_method == ERK1)
@@ -167,7 +166,6 @@ void SBMPC_Parameters::initialize_pars(
 
 		T = 120.0;
 		dt = 5.0;
-		T_static = 60.0;
 
 		p_step = 1;
 		if (prediction_method == ERK1)

@@ -351,24 +351,24 @@ __host__ __device__ void Kinematic_Ship::predict_trajectory(
 	initialize_wp_following();
 
 	man_count = 0;
-	u_m = 1, u_d_p = u_d;
-	chi_m = 0, chi_d_p = chi_d;
+	u_m = 1.0f, u_d_p = u_d;
+	chi_m = 0.0f, chi_d_p = chi_d;
 	xs_p(0) = ship_state(0);
 	xs_p(1) = ship_state(1);
 
 	if (ship_state.get_rows() == 4)
 	{
-		v_p(0) = ship_state(2);
-		v_p(1) = ship_state(3);
+		chi_p = ship_state(2);
+		U_p = ship_state(3);
 	}
 	else
 	{
-		v_p(0) = ship_state(3);
-		v_p(1) = ship_state(4);
-		rotate_vector_2D(v_p, ship_state(2));
+		chi_p = ship_state(2);
+		U_p = ship_state.get_block<2, 1>(3, 0, 2, 1).norm();
 	}
-	xs_p(2) = v_p(0);
-	xs_p(3) = v_p(1);
+	xs_p(2) = chi_p;
+	xs_p(3) = U_p;
+	trajectory.set_col(0, xs_p);
 
 	for (int k = 0; k < n_samples; k++)
 	{ 

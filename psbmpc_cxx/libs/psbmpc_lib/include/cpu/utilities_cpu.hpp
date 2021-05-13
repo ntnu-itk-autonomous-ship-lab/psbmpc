@@ -49,7 +49,7 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		inline void save_matrix_to_file(const Eigen::MatrixXd &in)
 		{
-			std::ofstream outdata("/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv", std::ofstream::trunc);
+			std::ofstream outdata("/home/admin/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv", std::ios::out | std::ios::trunc);
 			int n_rows = in.rows();
 			int n_cols = in.cols();
 
@@ -160,6 +160,20 @@ namespace PSBMPC_LIB
 				default : std::cout << "Invalid axis specified!" << std::endl;
 			}
 			return v_temp;
+		}
+
+		/****************************************************************************************
+		*  Name     : rotate_matrix_2D
+		*  Function : Rotates the 2D matrix by the angle. 
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
+		inline Eigen::Matrix2d rotate_matrix_2D(const Eigen::Matrix2d &M, const double angle)
+		{
+			Eigen::Matrix2d R;
+			R << cos(angle), -sin(angle), sin(angle), cos(angle);
+			
+			return R * M * R.transpose();
 		}
 
 		/****************************************************************************************

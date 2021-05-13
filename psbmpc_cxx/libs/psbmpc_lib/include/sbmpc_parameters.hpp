@@ -25,6 +25,7 @@
 namespace PSBMPC_LIB
 {
 	class SBMPC;
+	class Obstacle_Predictor;
 	class Obstacle_Manager;
 	namespace CPU
 	{
@@ -56,7 +57,7 @@ namespace PSBMPC_LIB
 
 		Guidance_Method guidance_method;
 
-		double T, T_static, dt, p_step;
+		double T, dt, p_step;
 		double t_ts;
 		double d_safe, d_close, d_init;
 		double K_coll;

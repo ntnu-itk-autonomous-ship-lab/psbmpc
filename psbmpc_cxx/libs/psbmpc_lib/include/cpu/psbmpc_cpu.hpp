@@ -23,6 +23,7 @@
 
 #include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
+#include "obstacle_predictor.hpp"
 #include "cpu/obstacle_sbmpc_cpu.hpp"
 #if OWNSHIP_TYPE == 0
 	#include "cpu/kinematic_ship_models_cpu.hpp"
@@ -71,19 +72,11 @@ namespace PSBMPC_LIB
 
 			void increment_control_behaviour();
 
-			void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data);
+			void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 
-			void set_up_independent_obstacle_prediction(
-				std::vector<Intention> &ps_ordering,
-				Eigen::VectorXd &ps_course_changes,
-				Eigen::VectorXd &ps_maneuver_times,
-				const double t_cpa_i,
-				const int i);
-
-			// Obstacle prediction scenario pruning related methods
 			void prune_obstacle_scenarios(Obstacle_Data<Tracked_Obstacle> &data);
 
-			void calculate_instantaneous_collision_probabilities(
+			void calculate_collision_probabilities(
 				Eigen::MatrixXd &P_c_i, 
 				const Obstacle_Data<Tracked_Obstacle> &data, 
 				const int i, 

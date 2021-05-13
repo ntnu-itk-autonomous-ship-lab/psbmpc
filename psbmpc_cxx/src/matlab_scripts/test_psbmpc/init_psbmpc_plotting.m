@@ -48,12 +48,4 @@ for i = 1 : n_obst
     h_P_i{i} = [];
 end
 
-h_X_static = cell(n_static_obst, 1);
-so_x = zeros(2, 1); so_y = so_x;
-for j = 1 : n_static_obst
-    so_x(1) = X_static(1, j); so_x(2) = X_static(3, j); 
-    so_y(1) = X_static(2, j); so_y(2) = X_static(4, j); 
-    h_X_static{i} = plot(ax1, so_y, so_x, 'm', 'Linewidth', 3); 
-end
-
 drawnow;

@@ -49,7 +49,6 @@ namespace PSBMPC_LIB
 		
 		class CPE;
 		class Cuda_Obstacle;
-		class Obstacle_SBMPC;
 		template <typename Parameters> class MPC_Cost;
 
 		class PSBMPC
@@ -72,10 +71,6 @@ namespace PSBMPC_LIB
 
 			CPU::CPE cpe_host;
 
-			std::vector<Prediction_Obstacle> pobstacles;
-
-			bool use_joint_prediction;
-
 			//=====================================================
 			// Device related objects read/write-ed upon by each
 			// GPU thread.
@@ -86,18 +81,16 @@ namespace PSBMPC_LIB
 			// Device vector of control behaviours, size n_threads x 1
 			thrust::device_vector<TML::PDMatrix<float, 2 * MAX_N_M, 1>> cb_dvec;
 
-			// Device vector of control bevhaviour indices, obstacle indices, obstacle prediction scenario indices,
-			// intelligent obstacle prediction scenario indices,  size n_threads x 1
+			// Device vector of control bevhaviour indices, obstacle indices, obstacle prediction scenario indices, size n_threads x 1
 			thrust::device_vector<unsigned int> cb_index_dvec, obstacle_index_dvec, obstacle_ps_index_dvec;
-			thrust::device_vector<int> jp_obstacle_ps_index_dvec;
 
 			// Device vector of costs, size n_cbs x 1, consisting of the static obstacle and path related costs for each control behaviour
 			thrust::device_vector<thrust::tuple<float, float>> cb_costs_1_dvec;
-			// Device vector of costs, size n_threads x 1. It is the dynamic obstacle cost when the own-ship
+			
+			// Device vector of costs, size n_threads x 1. It is the dynamic obstacle cost (first tuple element) when the own-ship
 			// follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, behaves as in
-			// prediction scenario <obstacle_ps_index>. The intention and COLREGS violation indicator for the intelligent prediction scenario is given as the
-			// second and third element
-			thrust::device_vector<thrust::tuple<float, Intention, bool>> cb_costs_2_dvec;
+			// prediction scenario <obstacle_ps_index>. The own-ship COLREGS violation indicator is the second element of the tuple
+			thrust::device_vector<thrust::tuple<float, float>> cb_costs_2_dvec;
 			
 			std::unique_ptr<CB_Cost_Functor_1> cb_cost_functor_1;
 			std::unique_ptr<CB_Cost_Functor_2> cb_cost_functor_2;
@@ -110,15 +103,10 @@ namespace PSBMPC_LIB
 			CB_Functor_Data *fdata_device_ptr;
 
 			Cuda_Obstacle *obstacles_device_ptr;
-			Prediction_Obstacle *pobstacles_device_ptr;
 
 			CPE *cpe_device_ptr;
 
 			Ownship *ownship_device_ptr;
-
-			Obstacle_Ship *obstacle_ship_device_ptr;
-
-			Obstacle_SBMPC *obstacle_sbmpc_device_ptr;
 
 			Basic_Polygon *polygons_device_ptr;
 
@@ -136,19 +124,11 @@ namespace PSBMPC_LIB
 
 			void find_optimal_control_behaviour(Obstacle_Data<Tracked_Obstacle> &data);
 
-			void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data);
-
-			void set_up_independent_obstacle_prediction(
-				std::vector<Intention> &ps_ordering,
-				Eigen::VectorXd &ps_course_changes,
-				Eigen::VectorXd &ps_maneuver_times,
-				const double t_cpa_i,
-				const int i);
+			void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 			
-			// Obstacle prediction scenario pruning related methods
 			void prune_obstacle_scenarios(Obstacle_Data<Tracked_Obstacle> &data);
 			
-			void calculate_instantaneous_collision_probabilities(
+			void calculate_collision_probabilities(
 				Eigen::MatrixXd &P_c_i, 
 				const Obstacle_Data<Tracked_Obstacle> &data, 
 				const int i, 
@@ -175,10 +155,6 @@ namespace PSBMPC_LIB
 				const TML::Vector2f &v_B,
 				const TML::Vector2f &L_AB,
 				const float d_AB);
-
-			void update_conditional_obstacle_data(Obstacle_Data_GPU_Friendly &data, const int i_caller, const int k);
-
-			void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1>& static_obstacles);
 
 			void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 

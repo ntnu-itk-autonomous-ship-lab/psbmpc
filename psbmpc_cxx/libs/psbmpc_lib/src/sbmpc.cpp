@@ -89,7 +89,7 @@ void SBMPC::calculate_optimal_offsets(
 		return;
 	}
 
-	initialize_prediction(data);
+	setup_prediction(data);
 
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
@@ -328,46 +328,22 @@ void SBMPC::increment_control_behaviour()
 	}
 }
 /****************************************************************************************
-*  Name     : initialize_prediction
-*  Function : Sets up the own-ship maneuvering times and number of prediction scenarios 
-*			  for each obstacle based on the current situation
+*  Name     : setup_prediction
+*  Function : Sets up the own-ship maneuvering times.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void SBMPC::initialize_prediction(
+void SBMPC::setup_prediction(
 	Obstacle_Data<Tracked_Obstacle> &data									// In: Dynamic obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
 	
 	//***********************************************************************************
-	// Obstacle prediction initialization
-	//***********************************************************************************
-	std::vector<Intention> ps_ordering_i;
-	Eigen::VectorXd ps_course_changes_i;
-	Eigen::VectorXd ps_maneuver_times_i;
-
-	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
-	Eigen::Vector2d p_cpa;
-	for (int i = 0; i < n_obst; i++)
-	{
-		CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf.get_state());
-
-		ps_ordering_i.resize(1); 
-		ps_ordering_i[0] = KCC;		
-		ps_course_changes_i.resize(1);
-		ps_course_changes_i[0] = 0;
-		ps_maneuver_times_i.resize(1);
-		ps_maneuver_times_i(0) = 0;
-		
-		data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
-
-		data.obstacles[i].predict_independent_trajectories<SBMPC>(
-			pars.T, pars.dt, trajectory.col(0), *this);	
-	}
-	//***********************************************************************************
 	// Own-ship prediction initialization
 	//***********************************************************************************
+	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
+	Eigen::Vector2d p_cpa;
 	maneuver_times.resize(pars.n_M);
 	// First avoidance maneuver is always at t0
 	maneuver_times.setZero();
@@ -386,6 +362,7 @@ void SBMPC::initialize_prediction(
 		t_cpa_min = 1e10; index_closest = -1;
 		for (int i = 0; i < n_obst; i++)
 		{
+			CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf.get_state());
 			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means

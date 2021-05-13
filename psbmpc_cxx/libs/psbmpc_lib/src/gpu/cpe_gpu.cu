@@ -59,7 +59,7 @@ __host__ __device__ CPE::CPE(
 
     rho = 0.9f;
 
-    max_it = 10;
+    max_it = 6;
 
     converged_last = false;
 
@@ -105,9 +105,9 @@ __device__ void CPE::initialize(
         
         break;
     case MCSKF4D :
-        P_c_p = 0; P_c_upd = 0;
+        P_c_p = 0.0f; P_c_upd = 0.0f;
         // Ad hoc variance for the probability
-        var_P_c_p = 0.3; var_P_c_upd = 0; 
+        var_P_c_p = 0.3f; var_P_c_upd = 0.0f; 
         break;
     default:
         // Throw

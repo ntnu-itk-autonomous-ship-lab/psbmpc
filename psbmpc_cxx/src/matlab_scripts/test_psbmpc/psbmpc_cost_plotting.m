@@ -1,26 +1,23 @@
-close all
-
 legend_strs = strings(n_obst + 4, 1);
 legend_strs(1) = 'total cost';
-legend_strs(2) = 'cost cd';
-legend_strs(3) = 'cost ch';
-legend_strs(4) = 'cost g';
+legend_strs(2) = 'h colregs';
+legend_strs(3) = 'h so'; 
+legend_strs(4) = 'h path'; 
 count = 5;
 for i = 1 : n_obst
-    legend_strs(count) = ['cost i=' num2str(i)]; 
+    legend_strs(count) = ['cost do=' num2str(i)]; 
     count = count + 1;
 end
 
 figure(1); 
 hold on; grid on;
 plot(total_cost, 'b');
-plot(cost_cb_ch_g(1, :), 'r');
-plot(cost_cb_ch_g(2, :), 'k');
-plot(cost_cb_ch_g(3, :), 'm');
+plot(cost_colregs, 'k');
+plot(cost_so_path(1, :), 'r');
+plot(cost_so_path(2, :), 'g');
 for i = 1 : n_obst
-    plot(cost_i(i, :));
+    plot(cost_do(i, :));
 end
-
 legend(legend_strs, 'location', 'northeast');
 ylabel('cost');
 xlabel('cb index');
@@ -35,7 +32,7 @@ for i = 1 : n_obst
     figure(i + 1);
     title(strcat('Obstacle i = ', num2str(i), ' | Max cost ps'));
     grid on;
-    plot(max_cost_ps(index : index + n_ps(i) - 1, :)');
+    plot(max_cost_i_ps(index : index + n_ps(i) - 1, :)');
     legend(max_cost_legend_strs{i});
     ylabel('cost');
     xlabel('cb index');
@@ -47,5 +44,5 @@ fprintf('Optimum control behaviour index = %d\n', opt_cb_index);
 fprintf('Corresponding control behaviour:\n');
 disp(cb_matrix(:, opt_cb_index));
 
-save('cpu_psbmpc_cost_data', 'total_cost', 'cost_i', 'max_cost_ps', 'cost_cb_ch_g', ...
+save('gpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'max_cost_i_ps', 'cost_so_path', ...
     'n_obst', 'n_ps', 'cb_matrix', 'opt_cb_index');

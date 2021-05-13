@@ -92,30 +92,25 @@ namespace PSBMPC_LIB
 
 			// PSBMPC, SBMPC and Obstacle_SBMPC dynamic obstacle cost, respectively
 			// This one is used in the GPU PSBMPC on the host side
-			double calculate_dynamic_obstacle_cost(
+			std::tuple<double, double> calculate_dynamic_obstacle_cost(
 				const Eigen::VectorXd &max_cost_ps, 
+				const Eigen::VectorXd &mu_i_ps,
 				const Obstacle_Data<Tracked_Obstacle> &data, 
-				const Intention a_i_ps_jp,
-				const bool mu_i_ps_jp,
-				const int i,
-				const bool use_joint_prediction);
+				const int i);
 
-			// This one is used in the CPU PSBMPC purely on the host side
-			double calculate_dynamic_obstacle_cost(
+			// This one is used in the CPU PSBMPC for cost plotting
+			std::tuple<double, double> calculate_dynamic_obstacle_cost(
+				Eigen::VectorXd &max_cost_ps,
+				Eigen::VectorXd &mu_i_ps,
 				const Eigen::MatrixXd &trajectory, 
-				const Eigen::VectorXd &offset_sequence,
-				const Eigen::VectorXd &maneuver_times,
 				const Eigen::MatrixXd &P_c_i, 
 				const Obstacle_Data<Tracked_Obstacle> &data, 
 				const int i, 
 				const double ownship_length) const;
-			
-			// For plotting cost terms in the PSBMPC
-			double calculate_dynamic_obstacle_cost(
-				Eigen::VectorXd &max_cost_ps,
+
+			// Regular one used in the CPU PSBMPC
+			std::tuple<double, double> calculate_dynamic_obstacle_cost(
 				const Eigen::MatrixXd &trajectory, 
-				const Eigen::VectorXd &offset_sequence,
-				const Eigen::VectorXd &maneuver_times,
 				const Eigen::MatrixXd &P_c_i, 
 				const Obstacle_Data<Tracked_Obstacle> &data, 
 				const int i, 
@@ -256,126 +251,45 @@ namespace PSBMPC_LIB
 						!is_head_on 												&&
 						!is_passed;
 
-			// Extra condition that the COLREGS violation is only considered in an annulus; i.e. within d_close but outside d_safe.
-			// The logic behind having to be outside d_safe is that typically a collision happens here, and thus COLREGS should be disregarded
-			// in order to make a safe reactive avoidance maneuver, if possible.  
-			return is_close && (( B_is_starboard && is_head_on) || (B_is_starboard && is_crossing && !A_is_overtaken)) && (d_AB > pars.d_safe);
+			return is_close && (( B_is_starboard && is_head_on) || (B_is_starboard && is_crossing && !A_is_overtaken));
 		}
 
 		/****************************************************************************************
 		*  Name     : calculate_dynamic_obstacle_cost
 		*  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i
-		*             Overloads depending on if its PSBMPC (GPU/CPU)/SBMPC/Obstacle_SBMPC
+		*             Overloads depending on if its PSBMPC (GPU/CPU)/SBMPC/Obstacle_SBMPC. 
+		*			  Also calculates the COLREGS penalty wrt obstacle i.
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
 		template <typename Parameters>
-		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
-			const Eigen::VectorXd &max_cost_ps,                         // In: Max cost wrt obstacle i in prediction scenario ps, and the control behaviour from the calling loop
+		std::tuple<double, double> MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
+			const Eigen::VectorXd &max_cost_i_ps,                       // In: Max cost wrt obstacle i in prediction scenario ps, and the control behaviour from the calling loop
+			const Eigen::VectorXd &mu_i_ps,                       		// In: COLREGS violation indicator wrt obstacle i in prediction scenario ps, and the control behaviour from the calling loop
 			const Obstacle_Data<Tracked_Obstacle> &data,				// In: Dynamic obstacle information
-			const Intention a_i_ps_jp,									// In: Intention of obstacle i if its intelligent prediction scenario is activated
-			const bool mu_i_ps_jp,										// In: COLREGS violation indicator for obstacle i if its intelligent prediction scenario is activated
-			const int i, 												// In: Index of obstacle
-			const bool use_joint_prediction 							// In: Boolean indicator of whether or not the intelligent prediction scenario is considered
+			const int i 												// In: Index of obstacle
 			)
 		{
-			double cost_i = 0.0;
+			double cost_do(0.0), mu_i(0.0);
 
-			int n_ps = max_cost_ps.size();
-			Eigen::VectorXd Pr_a_i = data.obstacles[i].get_intention_probabilities();
-			Eigen::VectorXi ps_intention_count_i = data.obstacles[i].get_ps_intention_count();
-			std::vector<Intention> ps_ordering_i = data.obstacles[i].get_ps_ordering();
-			std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
-			double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
-			Intention a_i_ps(KCC);
-			bool mu_i_ps(false);
-			
-			// If only 1 prediction scenario: Original PSB-MPC formulation
-			if (n_ps == 1)
-			{
-				cost_i = max_cost_ps(0);
-			}
-			else // Three intentions to consider: KCC, SM and PM
-			{
-				// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-				// which means that higher cost is applied if the obstacle follows COLREGS
-				// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-				// and the own-ship breaches COLREGS
+			Eigen::VectorXd Pr_s_i = data.obstacles[i].get_scenario_probabilities();
+			assert(max_cost_i_ps.size() == Pr_s_i.size());
 
-				if (Pr_CC_i < 0.0001) // Should not be allowed to be strictly 0
-				{
-					Pr_CC_i = 0.0001;
-				}
-				
-				Eigen::Vector3d cost_a_weight_sums, cost_a; cost_a_weight_sums.setZero();
-				Eigen::VectorXd weights_ps(n_ps);
-				for (int ps = 0; ps < n_ps; ps++)
-				{
-					weights_ps(ps) = Pr_CC_i;
+			cost_do = Pr_s_i.dot(max_cost_i_ps);
+			mu_i = Pr_s_i.dot(mu_i_ps);
 
-					// Last prediction scenario is the joint prediction if not pruned away
-					if (ps == n_ps - 1 && use_joint_prediction)
-					{
-						a_i_ps = a_i_ps_jp;
-						mu_i_ps = mu_i_ps_jp;
-						
-						ps_intention_count_i(a_i_ps) += 1;
-					}
-					else
-					{
-						mu_i_ps = mu_i[ps];
-						a_i_ps = ps_ordering_i[ps];
-					}
-					if (mu_i_ps)
-					{
-						//printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
-						weights_ps(ps) = 1 - Pr_CC_i;
-					}
-					
-					if 		(a_i_ps == KCC)		{ cost_a_weight_sums(0) += weights_ps(ps); }
-					else if (a_i_ps == SM)		{ cost_a_weight_sums(1) += weights_ps(ps); }
-					else if (a_i_ps == PM)		{ cost_a_weight_sums(2) += weights_ps(ps); }
-				}
-				
-				cost_a.setZero();
-				for(int ps = 0; ps < n_ps; ps++)
-				{
-					// Last prediction scenario is the joint prediction if not pruned away
-					if (ps == n_ps - 1 && use_joint_prediction)			{ a_i_ps = a_i_ps_jp; }
-					else												{ a_i_ps = ps_ordering_i[ps]; }
+			/* std::cout << "max_cost_i_ps = " << max_cost_i_ps.transpose() << std::endl;
+			std::cout << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
+			std::cout << "cost_do = " << cost_do << std::endl; */
 
-					if (a_i_ps == KCC)		{ cost_a(0) += (weights_ps(ps) / cost_a_weight_sums(0)) * max_cost_ps(ps); }
-					else if (a_i_ps == SM)	{ cost_a(1) += (weights_ps(ps) / cost_a_weight_sums(1)) * max_cost_ps(ps); }
-					else if (a_i_ps == PM)	{ cost_a(2) += (weights_ps(ps) / cost_a_weight_sums(2)) * max_cost_ps(ps); }
-				}
-
-				// Average the cost for the starboard and port maneuver type of intentions
-				if (ps_intention_count_i(0) > 0) 	{ cost_a(0) /= 1.0; } //ps_intention_count_i(0); }
-				else 								{ cost_a(0) = 0.0; }
-				if (ps_intention_count_i(1) > 0)	{ cost_a(1) /= 1.0; } //ps_intention_count_i(1); } 
-				else								{ cost_a(1) = 0.0; }
-				if (ps_intention_count_i(2) > 0)	{ cost_a(2) /= 1.0; } //ps_intention_count_i(2); } 
-				else								{ cost_a(2) = 0.0; }
-
-				// Weight by the intention probabilities
-				cost_i = Pr_a_i.dot(cost_a);
-
-				/* std::cout << "ps_intention_count = " << ps_intention_count_i.transpose() << std::endl;
-				std::cout << "cost_a_weight_sums = " << cost_a_weight_sums.transpose() << std::endl;
-				std::cout << "weights_ps = " << weights_ps.transpose() << std::endl;
-				std::cout << "max_cost_ps = " << max_cost_ps.transpose() << std::endl;
-				std::cout << "Pr_a = " << Pr_a_i.transpose() << std::endl;
-				std::cout << "cost a = " << cost_a.transpose() << std::endl;
-				std::cout << "cost_i = " << cost_i << std::endl; */
-			}
-			return cost_i;
+			return std::make_tuple<double, double>(std::move(cost_do), std::move(mu_i));
 		}
 
 		template <typename Parameters>
-		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
+		std::tuple<double, double> MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
+			Eigen::VectorXd &max_cost_i_ps,								// In/Out: Max dynamic obstacle cost associated with the current control behaviour, wrt obstacle i in prediction scenario ps
+			Eigen::VectorXd &mu_i_ps,									// In/Out: Indicator of COLREGS violation for the own-ship wrt the obstacle in all prediction scenarios 
 			const Eigen::MatrixXd &trajectory,                          // In: Own-ship trajectory when following the current offset_sequence/control behaviour
-			const Eigen::VectorXd &offset_sequence,                     // In: Offset sequence currently followed by the own-ship
-			const Eigen::VectorXd &maneuver_times,                      // In: Time of each maneuver in the offset sequence
 			const Eigen::MatrixXd &P_c_i,								// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 			const Obstacle_Data<Tracked_Obstacle> &data,				// In: Dynamic obstacle information
 			const int i, 												// In: Index of obstacle
@@ -383,19 +297,22 @@ namespace PSBMPC_LIB
 			) const
 		{
 			// l_i is the collision cost modifier depending on the obstacle track loss.
-			double cost(0.0), cost_ps(0.0), C(0.0), l_i(0.0);
+			double cost_do(0.0), cost_ps(0.0), mu_i(0.0), cost_coll(0.0), l_i(0.0);
 
 			int n_samples = trajectory.cols();
 			Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
 			std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
 
 			int n_ps = xs_i_p.size();
-			Eigen::VectorXd max_cost_ps(n_ps), weights_ps(n_ps);
-			max_cost_ps.setZero(); weights_ps.setZero();
+
+			max_cost_i_ps.resize(n_ps); 
+			max_cost_i_ps.setZero();
+			mu_i_ps.resize(n_ps);
+			mu_i_ps.setZero();
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
-			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);
-			bool mu(false), trans(false);
+			double psi_0_p(0.0), d_0i_p(0.0);
+			bool mu(false);
 			for(int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
@@ -411,28 +328,6 @@ namespace PSBMPC_LIB
 					v_0_p(1) = trajectory(4, k); 
 					v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
 				}
-
-				// Determine active course modification at sample k
-				for (int M = 0; M < pars.n_M; M++)
-				{
-					if (M < pars.n_M - 1)
-					{
-						if (k >= maneuver_times[M] && k < maneuver_times[M + 1])
-						{
-							chi_m = offset_sequence[2 * M + 1];
-							
-						}
-					}
-					else
-					{
-						if (k >= maneuver_times[M])
-						{
-							chi_m = offset_sequence[2 * M + 1];
-						}
-					}
-					//std::cout << "k = " << k << std::endl;
-					//std::cout << "chi_m = " << chi_m * RAD2DEG << std::endl;
-				}
 				
 				for(int ps = 0; ps < n_ps; ps++)
 				{
@@ -442,19 +337,19 @@ namespace PSBMPC_LIB
 					// Decrease the distance between the vessels by their respective max dimension
 					d_0i_p = abs(d_0i_p - 0.5 * (ownship_length + data.obstacles[i].get_length())); 
 
-					L_0i_p = L_0i_p.normalized();
+					L_0i_p.normalize();
 
 					v_i_p(0) = xs_i_p[ps](2, k);
 					v_i_p(1) = xs_i_p[ps](3, k);
-					psi_i_p = atan2(v_i_p(1), v_i_p(0));
 
-					C = calculate_collision_cost(v_0_p, v_i_p);
+					cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
-					mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
-
-					trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
-
-					//R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
+					if (k > 0 && mu_i_ps(ps) < 0.1)
+					{
+						mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+						if (mu) { mu_i_ps(ps) = 1.0; }
+						else 	{ mu_i_ps(ps) = 0.0; }
+					}
 
 					// Track loss modifier to collision cost
 					if (data.obstacles[i].get_duration_lost() > pars.p_step)
@@ -465,113 +360,39 @@ namespace PSBMPC_LIB
 					{
 						l_i = 1;
 					}
-					
-					// SB-MPC formulation with ad-hoc collision risk
-					//cost_ps = l_i * C * R + pars.kappa * mu  + pars.kappa_TC * trans;
 
 					// PSB-MPC formulation with probabilistic collision cost
-					cost_ps = l_i * C * P_c_i(ps, k) + pars.kappa * mu  + pars.kappa_TC * trans;
+					cost_ps = l_i * cost_coll * P_c_i(ps, k);
 
 					// Maximize wrt time
-					if (cost_ps > max_cost_ps(ps))
+					if (cost_ps > max_cost_i_ps(ps))
 					{
-						max_cost_ps(ps) = cost_ps;
+						max_cost_i_ps(ps) = cost_ps;
 					}
-				}
-			}
-
-			// If only 1 prediction scenario
-			// => Original PSB-MPC formulation
-			if (n_ps == 1)
-			{
-				cost = max_cost_ps(0);
-				return cost;
-			}
-			// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-			// which means that higher cost is applied if the obstacle follows COLREGS
-			// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-			// and the own-ship breaches COLREGS
-
-			std::vector<Intention> ps_ordering = data.obstacles[i].get_ps_ordering();
-			std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
-			Eigen::VectorXi ps_intention_count = data.obstacles[i].get_ps_intention_count();
-
-			double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
-			if (Pr_CC_i < 0.0001) // Should not be allowed to be strictly 0
-			{
-				Pr_CC_i = 0.0001;
-			}
-
-			Eigen::Vector3d cost_a_weight_sums; cost_a_weight_sums.setZero();
-			for (int ps = 0; ps < n_ps; ps++)
-			{
-				weights_ps(ps) = Pr_CC_i;
-				if (mu_i[ps])
-				{
-					//printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
-					weights_ps(ps) = 1 - Pr_CC_i;
-				}
-				
-				if (ps_ordering[ps] == KCC)
-				{
-					cost_a_weight_sums(0) += weights_ps(ps);
-				}
-				else if (ps_ordering[ps] == SM)
-				{
-					cost_a_weight_sums(1) += weights_ps(ps);
-				}
-				else if (ps_ordering[ps] == PM)
-				{
-					cost_a_weight_sums(2) += weights_ps(ps);
-				}
-			}
-
-			Eigen::Vector3d cost_a = {0, 0, 0};
-			Eigen::VectorXd Pr_a = data.obstacles[i].get_intention_probabilities();
-			assert(Pr_a.size() == 3);
-			
-			for(int ps = 0; ps < n_ps; ps++)
-			{
-				if (ps_ordering[ps] == KCC)
-				{
-					cost_a(0) += (weights_ps(ps) / cost_a_weight_sums(0)) * max_cost_ps(ps);
-				}
-				else if (ps_ordering[ps] == SM)
-				{
-					cost_a(1) +=  (weights_ps(ps) / cost_a_weight_sums(1)) * max_cost_ps(ps);
-				}
-				else if (ps_ordering[ps] == PM)
-				{
-					cost_a(2) +=  (weights_ps(ps) / cost_a_weight_sums(2)) * max_cost_ps(ps);
+					/* if (ps == 2)
+						printf("k = %d | C = %.4f | P_c_i = %.6f | mu = %d | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n", 
+							k, cost_coll, P_c_i(ps, k), mu, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
 				}
 			}
 			
-			// Average the cost for the starboard and port maneuver type of intentions
-			if (ps_intention_count(0) > 0) 	{ cost_a(0) /= 1.0; } // (double)ps_intention_count(0); }
-			else 							{ cost_a(0) = 0.0;}
-			if (ps_intention_count(1) > 0)	{ cost_a(1) /= 1.0; } // (double)ps_intention_count(1); } 
-			else							{ cost_a(1) = 0.0; }
-			if (ps_intention_count(2) > 0)	{ cost_a(2) /= 1.0; } // (double)ps_intention_count(2); } 
-			else							{ cost_a(2) = 0.0; }
+			Eigen::VectorXd Pr_s_i = data.obstacles[i].get_scenario_probabilities();
+			assert(Pr_s_i.size() == max_cost_i_ps.size());
 
-			// Weight by the intention probabilities
-			cost = Pr_a.dot(cost_a);
+			// Weight prediction scenario costs by the scenario probabilities
+			cost_do = Pr_s_i.dot(max_cost_i_ps);
 
-			/* std::cout << "weights_ps = " << weights_ps.transpose() << std::endl;
-			std::cout << "max_cost_ps = " << max_cost_ps.transpose() << std::endl;
-			std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
-			std::cout << "cost a = " << cost_a.transpose() << std::endl;
-			std::cout << "cost_i(i) = " << cost << std::endl; */
+			mu_i = Pr_s_i.dot(mu_i_ps);
+			/* 
+			std::cout << "max_cost_i_ps = " << max_cost_i_ps.transpose() << std::endl;
+			std::cout << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
+			std::cout << "cost_i(i) = " << cost_do << std::endl; */
 
-			return cost;
+			return std::make_tuple<double, double>(std::move(cost_do), std::move(mu_i));
 		}
 
 		template <typename Parameters>
-		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
-			Eigen::VectorXd &max_cost_ps,								// In/Out: Vector of maximum costs for each prediction scenario for obstacle i
+		std::tuple<double, double> MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 			const Eigen::MatrixXd &trajectory,                          // In: Own-ship trajectory when following the current offset_sequence/control behaviour
-			const Eigen::VectorXd &offset_sequence,                     // In: Offset sequence currently followed by the own-ship
-			const Eigen::VectorXd &maneuver_times,                      // In: Time of each maneuver in the offset sequence
 			const Eigen::MatrixXd &P_c_i,								// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 			const Obstacle_Data<Tracked_Obstacle> &data,				// In: Dynamic obstacle information
 			const int i, 												// In: Index of obstacle
@@ -579,19 +400,20 @@ namespace PSBMPC_LIB
 			) const
 		{
 			// l_i is the collision cost modifier depending on the obstacle track loss.
-			double cost(0.0), cost_ps(0.0), C(0.0), l_i(0.0);
+			double cost_do(0.0), cost_ps(0.0), mu_i(0.0), C(0.0), l_i(0.0);
 
 			int n_samples = trajectory.cols();
 			Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
 			std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
 
 			int n_ps = xs_i_p.size();
-			Eigen::VectorXd weights_ps(n_ps); max_cost_ps.resize(n_ps);
-			max_cost_ps.setZero(); weights_ps.setZero();
+			Eigen::VectorXd max_cost_i_ps(n_ps), mu_i_ps(n_ps);
+			max_cost_i_ps.setZero();
+			mu_i_ps.setZero();
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
-			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);
-			bool mu(false), trans(false);
+			double psi_0_p(0.0), d_0i_p(0.0);
+			bool mu;
 			for(int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
@@ -607,28 +429,6 @@ namespace PSBMPC_LIB
 					v_0_p(1) = trajectory(4, k); 
 					v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
 				}
-
-				// Determine active course modification at sample k
-				for (int M = 0; M < pars.n_M; M++)
-				{
-					if (M < pars.n_M - 1)
-					{
-						if (k >= maneuver_times[M] && k < maneuver_times[M + 1])
-						{
-							chi_m = offset_sequence[2 * M + 1];
-							
-						}
-					}
-					else
-					{
-						if (k >= maneuver_times[M])
-						{
-							chi_m = offset_sequence[2 * M + 1];
-						}
-					}
-					//std::cout << "k = " << k << std::endl;
-					//std::cout << "chi_m = " << chi_m * RAD2DEG << std::endl;
-				}
 				
 				for(int ps = 0; ps < n_ps; ps++)
 				{
@@ -642,15 +442,15 @@ namespace PSBMPC_LIB
 
 					v_i_p(0) = xs_i_p[ps](2, k);
 					v_i_p(1) = xs_i_p[ps](3, k);
-					psi_i_p = atan2(v_i_p(1), v_i_p(0));
 
 					C = calculate_collision_cost(v_0_p, v_i_p);
 
-					mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
-
-					trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
-
-					//R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
+					if (k > 0 && mu_i_ps(ps) < 0.1)
+					{
+						mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+						if (mu) { mu_i_ps(ps) = 1.0; }
+						else 	{ mu_i_ps(ps) = 0.0; }
+					}
 
 					// Track loss modifier to collision cost
 					if (data.obstacles[i].get_duration_lost() > pars.p_step)
@@ -661,105 +461,31 @@ namespace PSBMPC_LIB
 					{
 						l_i = 1;
 					}
-					
-					// SB-MPC formulation with ad-hoc collision risk
-					//cost_ps = l_i * C * R + pars.kappa * mu  + pars.kappa_TC * trans;
 
 					// PSB-MPC formulation with probabilistic collision cost
-					cost_ps = l_i * C * P_c_i(ps, k) + pars.kappa * mu  + pars.kappa_TC * trans;
+					cost_ps = l_i * C * P_c_i(ps, k);
 
 					// Maximize wrt time
-					if (cost_ps > max_cost_ps(ps))
+					if (cost_ps > max_cost_i_ps(ps))
 					{
-						max_cost_ps(ps) = cost_ps;
+						max_cost_i_ps(ps) = cost_ps;
 					}
 				}
 			}
-
-			// If only 1 prediction scenario
-			// => Original PSB-MPC formulation
-			if (n_ps == 1)
-			{
-				cost = max_cost_ps(0);
-				return cost;
-			}
-			// Weight prediction scenario cost based on if obstacle follows COLREGS or not,
-			// which means that higher cost is applied if the obstacle follows COLREGS
-			// to a high degree (high Pr_CC_i with no COLREGS violation from its side)
-			// and the own-ship breaches COLREGS
-
-			std::vector<Intention> ps_ordering = data.obstacles[i].get_ps_ordering();
-			std::vector<bool> mu_i = data.obstacles[i].get_COLREGS_violation_indicator();
-			Eigen::VectorXi ps_intention_count = data.obstacles[i].get_ps_intention_count();
-
-			double Pr_CC_i = data.obstacles[i].get_a_priori_CC_probability();
-			if (Pr_CC_i < 0.0001) // Should not be allowed to be strictly 0
-			{
-				Pr_CC_i = 0.0001;
-			}
-
-			Eigen::Vector3d cost_a_weight_sums; cost_a_weight_sums.setZero();
-			for (int ps = 0; ps < n_ps; ps++)
-			{
-				weights_ps(ps) = Pr_CC_i;
-				if (mu_i[ps])
-				{
-					//printf("Obstacle i = %d breaks COLREGS in ps = %d\n", i, ps);
-					weights_ps(ps) = 1 - Pr_CC_i;
-				}
-				
-				if (ps_ordering[ps] == KCC)
-				{
-					cost_a_weight_sums(0) += weights_ps(ps);
-				}
-				else if (ps_ordering[ps] == SM)
-				{
-					cost_a_weight_sums(1) += weights_ps(ps);
-				}
-				else if (ps_ordering[ps] == PM)
-				{
-					cost_a_weight_sums(2) += weights_ps(ps);
-				}
-			}
-
-			Eigen::Vector3d cost_a = {0, 0, 0};
-			Eigen::VectorXd Pr_a = data.obstacles[i].get_intention_probabilities();
-			assert(Pr_a.size() == 3);
 			
-			for(int ps = 0; ps < n_ps; ps++)
-			{
-				if (ps_ordering[ps] == KCC)
-				{
-					cost_a(0) += (weights_ps(ps) / cost_a_weight_sums(0)) * max_cost_ps(ps);
-				}
-				else if (ps_ordering[ps] == SM)
-				{
-					cost_a(1) +=  (weights_ps(ps) / cost_a_weight_sums(1)) * max_cost_ps(ps);
-				}
-				else if (ps_ordering[ps] == PM)
-				{
-					cost_a(2) +=  (weights_ps(ps) / cost_a_weight_sums(2)) * max_cost_ps(ps);
-				}
-			}
-			
-			// Average the cost for the starboard and port maneuver type of intentions
-			if (ps_intention_count(0) > 0) 	{ cost_a(0) /= 1.0; } // (double)ps_intention_count(0); }
-			else 							{ cost_a(0) = 0.0;}
-			if (ps_intention_count(1) > 0)	{ cost_a(1) /= 1.0; } // (double)ps_intention_count(1); } 
-			else							{ cost_a(1) = 0.0; }
-			if (ps_intention_count(2) > 0)	{ cost_a(2) /= 1.0; } // (double)ps_intention_count(2); } 
-			else							{ cost_a(2) = 0.0; }
+			Eigen::VectorXd Pr_s_i = data.obstacles[i].get_scenario_probabilities();
+			assert(Pr_s_i.size() == max_cost_i_ps.size());
 
-			// Weight by the intention probabilities
-			cost = Pr_a.dot(cost_a);
+			// Weight prediction scenario costs by the scenario probabilities
+			cost_do = Pr_s_i.dot(max_cost_i_ps);
 
-			/* std::cout << "weights_ps = " << weights_ps.transpose() << std::endl;
-			std::cout << "max_cost_ps = " << max_cost_ps.transpose() << std::endl;
-			std::cout << "Pr_a = " << Pr_a.transpose() << std::endl;
-			std::cout << "cost a = " << cost_a.transpose() << std::endl;
-			std::cout << "cost_i(i) = " << cost << std::endl; */
+			mu_i = Pr_s_i.dot(mu_i_ps);
+			/* 
+			std::cout << "max_cost_i_ps = " << max_cost_i_ps.transpose() << std::endl;
+			std::cout << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
+			std::cout << "cost_i(i) = " << cost_do << std::endl; */
 
-			return cost;
+			return std::make_tuple<double, double>(std::move(cost_do), std::move(mu_i));
 		}
 
 		// SBMPC do cost
@@ -782,7 +508,7 @@ namespace PSBMPC_LIB
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);
-			bool mu, trans;
+			bool mu(false), trans(false);
 			for(int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
@@ -833,7 +559,10 @@ namespace PSBMPC_LIB
 
 				C = calculate_collision_cost(v_0_p, v_i_p);
 
-				mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+				if (k > 0)
+				{
+					mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+				}
 
 				trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
 
@@ -878,7 +607,7 @@ namespace PSBMPC_LIB
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0);
-			bool mu, trans;
+			bool mu(false), trans(false);
 			for(int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
@@ -928,7 +657,10 @@ namespace PSBMPC_LIB
 
 				C = calculate_collision_cost(v_0_p, v_i_p);
 
-				mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+				if (k > 0)
+				{
+					mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+				}
 
 				trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
 
@@ -1110,7 +842,7 @@ namespace PSBMPC_LIB
 		{
 			double d_geo(0.0), t(0.0), g_cost(0.0); 
 			int n_static_obst = static_obstacles.cols();
-			int n_static_samples = std::round(pars.T_static / pars.dt);
+			int n_samples = std::round(pars.T / pars.dt);
 			// so 1 and 2 : endpoints of line describing static obstacle
 			Eigen::Vector2d p_0, p_1, so_1, so_2; 
 
@@ -1122,7 +854,7 @@ namespace PSBMPC_LIB
 			for (int j = 0; j < n_static_obst; j++)
 			{
 				p_0 << trajectory.block<2, 1>(0, 0);
-				p_1 << trajectory.block<2, 1>(0, n_static_samples - 1);
+				p_1 << trajectory.block<2, 1>(0, n_samples - 1);
 
 				so_1 << static_obstacles.block<2, 1>(0, j);
 				so_2 << static_obstacles.block<2, 1>(2, j);
@@ -1144,7 +876,7 @@ namespace PSBMPC_LIB
 				return 0.0;
 			}
 			
-			for (int k = 0; k < n_static_samples - 1; k++)
+			for (int k = 0; k < n_samples - 1; k++)
 			{
 				t = (k + 1) * pars.dt;
 

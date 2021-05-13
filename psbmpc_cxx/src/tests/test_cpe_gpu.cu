@@ -21,20 +21,22 @@
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
 #include "cpu/utilities_cpu.hpp"
-#include "mrou.h"
+#include "mrou.hpp"
 #if OWNSHIP_TYPE == 0
 	#include "gpu/kinematic_ship_models_gpu.cuh"
 #else 
 	#include "gpu/kinetic_ship_models_gpu.cuh"
 #endif
+#include "xoshiro.hpp"
+#include "Eigen/Dense"
+#include "engine.h"
+
 #include <iostream>
 #include <vector>
 #include <memory>
 #include <chrono>
 #include <random>
-#include "xoshiro.hpp"
-#include "Eigen/Dense"
-#include "engine.h"
+
 
 #define BUFSIZE 1000000
 
@@ -467,9 +469,6 @@ int main(){
 	cudaFree(P_c_i_device_ptr);
 	cuda_check_errors("CudaFree of P_c_i failed.");
 
-	
-
-
 	//*****************************************************************************************************************
 	// Send data to matlab
 	//*****************************************************************************************************************
@@ -528,8 +527,8 @@ int main(){
 	engPutVariable(ep, "P_c_MCSKF", Pcoll_MCSKF);
 	engEvalString(ep, "test_cpe_plot");
 	
-	//save_matrix_to_file(P_c_i_CE[0]);
-	//save_matrix_to_file(P_c_i_MCSKF[0]);
+	//PSBMPC_LIB::CPU::save_matrix_to_file(P_c_i_CE);
+	//PSBMPC_LIB::CPU::save_matrix_to_file(P_c_i_MCSKF);
 
 	printf("%s", buffer);
 	mxDestroyArray(traj_os_mx);

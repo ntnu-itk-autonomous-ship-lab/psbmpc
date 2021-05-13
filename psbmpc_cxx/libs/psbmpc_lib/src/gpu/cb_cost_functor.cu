@@ -48,7 +48,7 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
 	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
-	h_path = 0.0f; h_so = 0.0f;
+	h_so= 0.0f; h_path = 0.0f;
 	cb_index = thrust::get<0>(cb_tuple);
 	offset_sequence = thrust::get<1>(cb_tuple);
 
@@ -87,22 +87,13 @@ __host__ CB_Cost_Functor_2::CB_Cost_Functor_2(
 	CB_Functor_Pars *pars,  										// In: Device pointer to functor parameters, one for all threads
 	CB_Functor_Data *fdata,  										// In: Device pointer to functor data, one for all threads
 	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, one for all threads
-	Prediction_Obstacle *pobstacles,  								// In: Device pointer to prediction_obstacles, one for each thread
 	CPE *cpe, 		 												// In: Device pointer to the collision probability estimator, one for each thread
 	Ownship *ownship, 												// In: Device pointer to the ownship class, one for each thread
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
-	Obstacle_Ship *obstacle_ship,									// In: Device pointer to the obstacle ship for joint prediction, one for each thread
-	Obstacle_SBMPC *obstacle_sbmpc,									// In: Device pointer to the obstacle sbmpc for joint prediction, one for each thread
 	MPC_Cost<CB_Functor_Pars> *mpc_cost								// In: Device pointer to the cost function keeper class, one for each thread
 	) :
-	pars(pars), fdata(fdata), 
-	obstacles(obstacles), 
-	pobstacles(pobstacles), 
-	cpe(cpe), ownship(ownship), trajectory(trajectory), 
-	obstacle_ship(obstacle_ship), obstacle_sbmpc(obstacle_sbmpc),
-	mpc_cost(mpc_cost)
+	pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost)
 {
-
 }
 
 /****************************************************************************************
@@ -112,20 +103,15 @@ __host__ CB_Cost_Functor_2::CB_Cost_Functor_2(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(const thrust::tuple<
-	const unsigned int, 
-	TML::PDMatrix<float, 2 * MAX_N_M, 1>, 
-	const unsigned int, 
-	const unsigned int, 
-	const unsigned int, 
-	const int> &input_tuple	
-	// In: Tuple consisting of the thread id, ownship control behaviour, the index of the obstacle and its corresponding 
-	// prediction scenario index to evaluate the cost with
+__device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrust::tuple<
+	const unsigned int, 								// Thread ID
+	TML::PDMatrix<float, 2 * MAX_N_M, 1>, 				// Control behaviour considered
+	const unsigned int, 								// Control behaviour index
+	const unsigned int, 								// Obstacle i considered
+	const unsigned int> &input_tuple 					// Prediction scenario ps for the obstacle
 	)
 {
-	max_cost_ps = 0.0f;
-	a_i_ps_jp = KCC;
-	mu_i_ps_jp = false;
+	max_cost_i_ps = 0.0f; mu_i_ps = 0.0f;
 
 	//======================================================================================================================
 	// 1.0 : Setup. Size temporaries accordingly to input data, etc..
@@ -137,7 +123,7 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 
 	n_samples = round(pars->T / pars->dt);
 
-	d_safe_i = 0.0; chi_m = 0.0; cost_ps = 0.0;
+	d_safe_i = 0.0; chi_m = 0.0; cost_k = 0.0;
 
 	// Seed collision probability estimator using the thread index
 	cpe[thread_index].seed_prng(thread_index);
@@ -166,15 +152,7 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 		P_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_covariance_sample(k));
 
 		xs_i_p_seg.shift_columns_left();
-		if (ps == fdata->n_ps[i] - 1 && fdata->use_joint_prediction)
-		{
-			printf("here jp2\n");
-			xs_i_p_seg.set_col(n_seg_samples - 1, pobstacles[i].get_trajectory_sample(k));
-		}
-		else
-		{
-			xs_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
-		}
+		xs_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
 
 		if (k == 0)
 		{
@@ -244,7 +222,7 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 
 		//==========================================================================================
 		// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
-		cost_ps = mpc_cost[thread_index].calculate_dynamic_obstacle_cost(
+		tup = mpc_cost[thread_index].calculate_dynamic_obstacle_cost(
 			fdata,
 			obstacles, 
 			P_c_i, 
@@ -252,15 +230,23 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 			xs_i_p_seg.get_col(n_seg_samples - 1), 
 			i, 
 			chi_m,
-			fdata->ownship_length);
-
-		if (max_cost_ps < cost_ps)
+			fdata->ownship_length,
+			k);
+		cost_k = thrust::get<0>(tup);
+		mu_k = thrust::get<1>(tup);
+		
+		if (max_cost_i_ps < cost_k)
 		{
-			max_cost_ps = cost_ps;
+			max_cost_i_ps = cost_k;
+		}
+		if (mu_i_ps < 0.1f) // Only set the COLREGS violation indicator if it has not been true (> 0.0f) yet
+		{
+			if (mu_k) 	{ mu_i_ps = 1.0f; }
+			else 		{ mu_i_ps = 0.0f; }
 		}
 		//==========================================================================================
 		//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i, cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
-
+		
 		/* printf("max_cost_ps = ");
 		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
 		{
@@ -275,17 +261,15 @@ __device__ thrust::tuple<float, Intention, bool> CB_Cost_Functor_2::operator()(c
 	}
 	
 	//==================================================================================================
-	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
+	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_i_ps, mu_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	/* printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1), 
 		offset_sequence(2), RAD2DEG * offset_sequence(3)); */
 	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1), 
 	//	offset_sequence(2), RAD2DEG * offset_sequence(3)), offset_sequence(4), RAD2DEG * offset_sequence(5)); 
 
 	//==================================================================================================
-	// 2.7 : Put dynamic obstacle related cost and static + path related cost into output tuple
-	//thrust::tuple<float, float> out(thrust::make_tuple(max_cost_ps, cost_cb_ch_g));
-
-	return thrust::tuple<float, Intention, bool>(thrust::make_tuple(max_cost_ps, a_i_ps_jp, mu_i_ps_jp));
+	// 2.7 : Return dynamic obstacle related cost and associated colregs violation indicator
+	return thrust::tuple<float, float>(max_cost_i_ps, mu_i_ps);
 }
  
 //=======================================================================================

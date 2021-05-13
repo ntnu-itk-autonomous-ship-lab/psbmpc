@@ -524,8 +524,8 @@ __host__ __device__ void Telemetron::predict_trajectory(
 	initialize_wp_following();
 
 	man_count = 0;
-	u_m = 1, u_d_p = u_d;
-	chi_m = 0, chi_d_p = chi_d;
+	u_m = 1.0f, u_d_p = u_d;
+	chi_m = 0.0f, chi_d_p = chi_d;
 	xs_p = ship_state;
 	
 	for (int k = 0; k < n_samples; k++)

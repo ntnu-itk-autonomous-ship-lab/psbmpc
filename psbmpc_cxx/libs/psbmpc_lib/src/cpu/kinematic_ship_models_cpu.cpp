@@ -109,7 +109,8 @@ void Kinematic_Ship::determine_active_waypoint_segment(
 
 /****************************************************************************************
 *  Name     : update_guidance_references 
-*  Function : 
+*  Function : Two overloads, one general purpose function, and one specialized for LOS
+*			  where an artificial cross-track error is applied.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -196,6 +197,65 @@ void Kinematic_Ship::update_guidance_references(
 	}
 }
 
+void Kinematic_Ship::update_guidance_references(
+	double &u_d,												// In/out: Surge reference
+	double &chi_d,												// In/out: Course reference 
+	const double e_m,				 							// In: Modifier to the LOS-guidance cross track error to cause a different path alignment
+	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
+	const Eigen::Vector4d &xs, 									// In: Ownship state	
+	const double dt, 											// In: Time step
+	const Guidance_Method guidance_method						// In: Type of guidance used	
+	)
+{
+	assert(guidance_method == LOS);
+
+	// No surge modification
+	u_d = u_d;
+	
+	int n_wps = waypoints.cols();
+	double alpha(0.0), e(0.0);
+	Eigen::Vector2d d_next_wp, L_wp_segment;
+	bool segment_passed = false;
+	
+	if (wp_c_p < n_wps - 1)
+	{
+		// Determine if a switch must be made to the next waypoint segment, for LOS and WPP
+		d_next_wp(0) = waypoints(0, wp_c_p + 1) - xs(0);
+		d_next_wp(1) = waypoints(1, wp_c_p + 1) - xs(1);
+
+		L_wp_segment(0) = waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p);
+		L_wp_segment(1) = waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p);
+		L_wp_segment = L_wp_segment.normalized();
+
+		segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
+
+		if (d_next_wp.norm() <= R_a || segment_passed) //(s > 0 && e <= R_a))
+		{
+			e_int = 0;
+			wp_c_p ++;
+		} 
+	}
+
+	// Compute path tangential angle
+	if (wp_c_p == n_wps - 1)
+	{
+		alpha = atan2(waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1), 
+					waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1));
+	}
+	else
+	{
+		alpha = atan2(waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p), 
+					waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p));
+	}
+	// Compute cross track error and integrate it
+	e = - (xs(0) - waypoints(0, wp_c_p)) * sin(alpha) + (xs(1) - waypoints(1, wp_c_p)) * cos(alpha);
+	e += e_m; // Add artificial cross track error to cause different path alignment, for obstacle prediction
+	e_int += e * dt;
+	if (e_int >= e_int_max) e_int -= e * dt;
+
+	chi_d = alpha + atan2( - (e + LOS_K_i * e_int), LOS_LD);
+}
+
 /****************************************************************************************
 *  Name     : predict
 *  Function : Predicts obstacle state xs a number of dt units forward in time with the 
@@ -243,7 +303,7 @@ Eigen::Vector4d Kinematic_Ship::predict(
 /****************************************************************************************
 *  Name     : predict_trajectory
 *  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
-*			  in the offset sequence.
+*			  in the offset sequence, or for a cross track modifier to the original path.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -283,6 +343,39 @@ void Kinematic_Ship::predict_trajectory(
 		update_guidance_references(u_d_p, chi_d_p, waypoints, xs, dt, guidance_method);
 
 		xs = predict(xs, u_m * u_d_p , chi_d_p + chi_m, dt, prediction_method);
+		
+		if (k < n_samples - 1) trajectory.col(k + 1) = xs;
+	}
+}
+
+void Kinematic_Ship::predict_trajectory(
+	Eigen::MatrixXd &trajectory, 									// In/out: Obstacle ship trajectory
+	const double e_m,						 						// In: Modifier to the LOS-guidance cross track error to cause a different path alignment
+	const double u_d, 												// In: Surge reference
+	const double chi_d, 											// In: Course reference
+	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Obstacle waypoints
+	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
+	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
+	const double T,													// In: Prediction horizon
+	const double dt 												// In: Prediction time step
+	)
+{
+	int n_samples = std::round(T / dt);
+	
+	assert(trajectory.rows() == 4);
+	trajectory.conservativeResize(4, n_samples);
+
+	wp_c_p = wp_c_0;
+
+	double u_d_p = u_d;
+	double chi_d_p = chi_d;
+	Eigen::Vector4d xs = trajectory.col(0);
+
+	for (int k = 0; k < n_samples; k++)
+	{ 
+		update_guidance_references(u_d_p, chi_d_p, e_m, waypoints, xs, dt, guidance_method);
+
+		xs = predict(xs, u_d_p, chi_d_p, dt, prediction_method);
 		
 		if (k < n_samples - 1) trajectory.col(k + 1) = xs;
 	}
