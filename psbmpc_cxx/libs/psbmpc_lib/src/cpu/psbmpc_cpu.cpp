@@ -127,7 +127,7 @@ void PSBMPC::calculate_optimal_offsets(
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	/*
+	
  	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
@@ -136,6 +136,43 @@ void PSBMPC::calculate_optimal_offsets(
 
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
 	map_wps = waypoints;
+
+	//Make matlab polygons type friendly array:
+    Eigen::Matrix<double, -1, 2> polygon_matrix;
+    int n_total_vertices = 0;
+    BOOST_FOREACH(polygon_2D const &poly, polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			n_total_vertices += 1;
+		}
+		n_total_vertices += 1;
+    }
+    polygon_matrix.resize(n_total_vertices, 2); 
+
+    /*format polygon_matrix array for matlab plotting*/
+    int pcount = 0; 
+    BOOST_FOREACH(polygon_2D const& poly, polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
+			polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
+			
+			pcount += 1;
+		}
+		// each polygon is separated with (-1, -1)
+		polygon_matrix(pcount, 1) = -1;
+		polygon_matrix(pcount, 0) = -1;
+		pcount += 1;
+    }
+    
+    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
+    double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
+	map_polygon_matrix = polygon_matrix;
+
+	engPutVariable(ep, "P", polygon_matrix_mx);
 
 	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx;
 	dt_sim = mxCreateDoubleScalar(pars.dt);
@@ -185,9 +222,9 @@ void PSBMPC::calculate_optimal_offsets(
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
 	} 
-	*/
+	
 	// COST PLOTTING
-	mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
+	/* mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
  	mxArray *cost_do_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
 	mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
 	mxArray *max_cost_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
@@ -217,7 +254,7 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps[0]);
 
-	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr);
+	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
 
 	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
 	Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
@@ -278,7 +315,7 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			
 			P_c_i.resize(n_ps[i], n_samples); P_c_i.setZero();
-			calculate_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
+			//calculate_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
 
 			/* tup = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, P_c_i, data, i, ownship.get_length());
 			cost_i(i) = std::get<0>(tup);
@@ -292,7 +329,7 @@ void PSBMPC::calculate_optimal_offsets(
 			
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
-				printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_count, i, ps, cb, max_cost_i_ps(ps), mu_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
+				//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_count, i, ps, cb, max_cost_i_ps(ps), mu_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
 				thread_count += 1;
 			}
 			//===============================================================================================================
@@ -364,7 +401,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-	opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+	/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 	map_total_cost = total_cost_matrix;
 	map_cost_do = cost_do_matrix;
 	map_cost_colregs = cost_colregs_matrix;
@@ -399,7 +436,7 @@ void PSBMPC::calculate_optimal_offsets(
 	mxDestroyArray(n_obst_mx);
 	mxDestroyArray(opt_cb_index_mx);
 	
-	engClose(ep);
+	engClose(ep); */
 	//==================================================================
 
 	u_opt = opt_offset_sequence(0); 	u_opt_last = u_opt;

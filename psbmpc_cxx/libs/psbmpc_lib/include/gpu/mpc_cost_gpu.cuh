@@ -602,9 +602,9 @@ namespace PSBMPC_LIB
 			max_cost_g = 0.0f;
 			
 			n_samples = trajectory.get_cols();
+			cost_g = 0.0f;
 			for (int k = 0; k < n_samples; k++)
 			{
-				cost_g = 0.0f;
 				p_os_k = trajectory.get_block<2, 1>(0, k, 2, 1);
 				for (int j = 0; j < fdata->n_static_obst; j++)
 				{
@@ -616,10 +616,8 @@ namespace PSBMPC_LIB
 
 					cost_g += (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * exp(- (pars.G_3 * d_0j * d_0j + pars.G_4 * k * pars.dt));
 				}
-
-				if (max_cost_g < cost_g) { max_cost_g = cost_g; }
 			}
-			return cost_g;
+			return cost_g / (float)n_samples;
 		}
 
 		/****************************************************************************************

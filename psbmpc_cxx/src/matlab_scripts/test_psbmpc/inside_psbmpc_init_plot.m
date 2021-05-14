@@ -1,8 +1,8 @@
 fig = figure(2); clf; axis equal
 hold on; grid on;
 ax1 = gca;
-ylimits_ne = [-100 1000];
-xlimits_ne = [-1000 1000];
+ylimits_ne = [-1000 2000];
+xlimits_ne = [-1500 1500];
 xlim(ax1, xlimits_ne);
 ylim(ax1, ylimits_ne);
 
@@ -15,8 +15,8 @@ tlim = [0 T_sim];
 t_vec = 0 : dt_sim : (n_samples - 1) * dt_sim;
 ylim(ax2, [-0.05 1.05]); %xlim(ax2, tlim);
 
-Lx = 0.02*ylimits_ne(2);
-Ly = 0.002*(xlimits_ne(2) - xlimits_ne(1));
+Lx = 0.01*ylimits_ne(2);
+Ly = 0.001*(xlimits_ne(2) - xlimits_ne(1));
 % drawn boat dimensions
 boat_dim = [Lx/2 .7*Lx/2 -Lx/2 -Lx/2 .7*Lx/2 Lx/2; 0 2*Ly 2*Ly  -2*Ly -2*Ly 0];
 
@@ -25,6 +25,12 @@ grid(ax1, 'on'); grid(ax2, 'on');
 
 ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]'); 
 ylabel(ax2,'Probability');  xlabel(ax2,'Time [s]'); 
+
+[n_vertices, ~] = size(P);
+P(P == -1) = NaN;
+test_polygon=polyshape(P);
+
+plot(ax1,test_polygon);
 
 th = 0 : 0.01 : 2.01 * pi;
 x_cs = cos(th); y_cs = sin(th);

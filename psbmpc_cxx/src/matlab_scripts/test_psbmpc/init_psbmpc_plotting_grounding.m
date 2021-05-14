@@ -36,9 +36,7 @@ ylabel(ax2,'Distance [m]');  xlabel(ax2,'Time [s]');
 th = 0 : 0.01 : 2.01 * pi;
 x_cs = cos(th); y_cs = sin(th);
 
-d_safe = 50;
-
-h_wps = plot(ax1, map_origin(2) + WPs(2, :), map_origin(1) + WPs(1, :), 'rx', 'Linewidth', 2);
+h_wps = plot(ax1, map_origin(2) + WPs(2, :), map_origin(1) + WPs(1, :), 'kx', 'Linewidth', 2);
 
 h_X = []; h_X_p = [];
 h_X_text = []; h_X_k = [];

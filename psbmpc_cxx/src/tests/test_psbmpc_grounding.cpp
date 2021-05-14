@@ -50,8 +50,8 @@ int main(){
 	/*coordinates are given in wgs-84 use https://finnposisjon.test.geonorge.no/ */
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	// xs_os_0 << 7042320, 269475, 180 * DEG2RAD, 1, 0, 0; // utforbi skansen
-	xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 1, 0, 0; // "i" skansen
-	double u_d = 2, chi_d, u_c, chi_c;
+	xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 1.5, 0, 0; // "i" skansen
+	double u_d = 1.5, chi_d, u_c, chi_c;
 	
 	PSBMPC_LIB::CPU::Ownship asv_sim;
 
@@ -121,15 +121,9 @@ int main(){
 	}
     
 	char buffer[BUFSIZE+1]; 
-	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, N, mxREAL);
-	mxArray *wps_os_mx = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
-
+	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), N, mxREAL);
 	double *ptraj_os = mxGetPr(traj_os_mx); 
-	double *p_wps_os = mxGetPr(wps_os_mx); 
-
-	Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_os, 2, n_wps_os);
-	map_wps_i = waypoints;
-
+	
 	std::vector<mxArray*> traj_i_mx(n_obst); 
 	std::vector<mxArray*> P_traj_i_mx(n_obst); 
 	std::vector<mxArray*> wps_i_mx(n_obst);
@@ -296,15 +290,22 @@ int main(){
 		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
 	
-	mxArray *T_sim_mx, *n_obst_mx;
+	mxArray *T_sim_mx, *n_obst_mx, *d_safe_mx;
 	T_sim_mx = mxCreateDoubleScalar(T_sim);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
+	d_safe_mx = mxCreateDoubleScalar(psbmpc.pars.get_dpar(i_dpar_d_safe));
 
 	mxArray *pred_traj_mx;
 	double *p_pred_traj;
 
+	mxArray *wps_os_mx = mxCreateDoubleMatrix(2, n_wps_os, mxREAL);
+	double *p_wps_os = mxGetPr(wps_os_mx); 
+
+	Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_os, 2, n_wps_os);
+	map_wps_i = waypoints;
 
 	engPutVariable(ep, "n_obst", n_obst_mx);
+	engPutVariable(ep, "d_safe", d_safe_mx);
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engPutVariable(ep, "WPs", wps_os_mx);
 
@@ -339,7 +340,9 @@ int main(){
 		{
 			if (trajectory_i[i].rows() == 4)
 			{
-				xs_i_k = trajectory_i[i].col(k);
+				xs_i_k.block<2, 1>(0, 0) = trajectory_i[i].block<2, 1>(0, k);
+				xs_i_k(2) = trajectory_i[i](3, k) * cos(trajectory_i[i](2, k));
+				xs_i_k(3) = trajectory_i[i](3, k) * sin(trajectory_i[i](2, k));
 			}
 			else
 			{
@@ -347,6 +350,7 @@ int main(){
 				xs_i_k.block<2, 1>(2, 0) = PSBMPC_LIB::CPU::rotate_vector_2D(trajectory_i[i].block<2, 1>(3, k), trajectory_i[i](2, k));
 			}
 			obstacle_states.col(i) << xs_i_k, A, B, C, D, ID[i];
+			std::cout << "xs_i_k = " << xs_i_k.transpose() << std::endl;
 
 			obstacle_covariances.col(i) = PSBMPC_LIB::CPU::flatten(P_0);
 		}
@@ -406,7 +410,7 @@ int main(){
 		Eigen::Map<Eigen::MatrixXd> map_pred_traj_os(p_pred_traj, 2, predicted_trajectory.cols());
 		map_pred_traj_os = predicted_trajectory;
 
-		Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, 6, N);
+		Eigen::Map<Eigen::MatrixXd> map_traj_os(ptraj_os, trajectory.rows(), N);
 		map_traj_os = trajectory;
 
 		engPutVariable(ep, "X_pred", pred_traj_mx);

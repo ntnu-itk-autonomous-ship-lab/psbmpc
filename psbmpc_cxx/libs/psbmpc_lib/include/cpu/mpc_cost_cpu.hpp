@@ -369,9 +369,9 @@ namespace PSBMPC_LIB
 					{
 						max_cost_i_ps(ps) = cost_ps;
 					}
-					if (ps == 1)
+					/* if (ps == 1)
 						printf("k = %d | C = %.4f | P_c_i = %.6f | mu = %d | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n", 
-							k, cost_coll, P_c_i(ps, k), mu, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1));
+							k, cost_coll, P_c_i(ps, k), mu, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
 				}
 			}
 			
@@ -799,15 +799,15 @@ namespace PSBMPC_LIB
 		{
 			int n_samples = std::round(pars.T / pars.dt);
 			int n_static_obst = polygons.size();
-			double max_cost_g(0.0), cost_g(0.0);	 
+			double cost_g(0.0);	 
 
 			Eigen::Vector2d L_0j;
 			double d_0j(0.0), t(0.0), phi_j(0.0);
+			cost_g = 0.0;
 			for (int k = 0; k < n_samples; k++)
 			{
 				t = pars.dt * k;
 
-				cost_g = 0.0;
 				for (int j = 0; j < n_static_obst; j++)
 				{
 					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
@@ -818,13 +818,8 @@ namespace PSBMPC_LIB
 
 					cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
 				}
-
-				if (max_cost_g < cost_g)
-				{
-					max_cost_g = cost_g;
-				}
 			}
-			return max_cost_g;
+			return cost_g / (double)n_samples;
 		}
 
 		/****************************************************************************************
