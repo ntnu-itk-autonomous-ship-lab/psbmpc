@@ -148,14 +148,6 @@ int main(){
 		trajectory_covariances_i[i].resize(16, 1);
 		trajectory_covariances_i[i].col(0) = PSBMPC_LIB::CPU::flatten(P_0);
 
-		/* Pr_a[i].resize(3);
-		Pr_a[i] << 1, 1, 1;
-		Pr_a[i] = Pr_a[0] / Pr_a[0].sum(); */
-		Pr_a[i].resize(1);
-		Pr_a[i] << 1;
-
-		Pr_CC[i] = 1;
-
 		n_wps_i = 4;
 		waypoints_i[i].resize(2, n_wps_i); 
 		waypoints_i[i] << xs_i_0[i](0), 7042340, 7042120, 7041990,
@@ -350,7 +342,6 @@ int main(){
 				xs_i_k.block<2, 1>(2, 0) = PSBMPC_LIB::CPU::rotate_vector_2D(trajectory_i[i].block<2, 1>(3, k), trajectory_i[i](2, k));
 			}
 			obstacle_states.col(i) << xs_i_k, A, B, C, D, ID[i];
-			std::cout << "xs_i_k = " << xs_i_k.transpose() << std::endl;
 
 			obstacle_covariances.col(i) = PSBMPC_LIB::CPU::flatten(P_0);
 		}
@@ -359,7 +350,7 @@ int main(){
 
 		obstacle_predictor(obstacle_manager.get_data(), trajectory.col(k), psbmpc);
 
-		relevant_polygons = grounding_hazard_manager.operator()(trajectory.col(k));
+		relevant_polygons = grounding_hazard_manager(trajectory.col(k));
 
 		asv_sim.update_guidance_references(u_d, chi_d, waypoints, trajectory.col(k), dt, PSBMPC_LIB::LOS);
 
