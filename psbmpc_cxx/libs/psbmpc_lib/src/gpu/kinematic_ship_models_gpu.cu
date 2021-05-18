@@ -35,17 +35,17 @@ namespace GPU
 *****************************************************************************************/
 __host__ __device__ Kinematic_Ship::Kinematic_Ship()
 {
-	l = 20.0f;
-	w = 4.0f;
+	l = 5.0f; // milliAmpere dims
+	w = 3.0f;
 
-	T_chi = 3.0f; 		
 	T_U = 10.0f;
+	T_chi = 7.5f; 		// Ad hoc parameters, are very dependent on the ship type
 
 	// Guidance parameters
 	e_int = 0.0f;
 	e_int_max = 20.0f * M_PI / 180.0f; // Maximum integral correction in LOS guidance
-	R_a = 20.0f; 			    // WP acceptance radius (20.0)
-	LOS_LD = 150.0f; 			// LOS lookahead distance (100.0) 
+	R_a = 30.0f; 			    // WP acceptance radius (20.0)
+	LOS_LD = 200.0f; 			// LOS lookahead distance (100.0) 
 	LOS_K_i = 0.0f; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
@@ -60,8 +60,8 @@ Kinematic_Ship::Kinematic_Ship(
 	) : 
 	T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
 {
-	l = 20.0f;
-	w = 4.0f;
+	l = 5.0f; // milliAmpere dims
+	w = 3.0f;
 
 	// Guidance parameters
 	e_int = 0.0f;

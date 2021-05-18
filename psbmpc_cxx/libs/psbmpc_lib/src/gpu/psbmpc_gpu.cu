@@ -225,12 +225,12 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
-	}
- 	mxArray *traj_os = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
+	} */
+ 	/* mxArray *traj_os = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
 	double *ptraj_os = mxGetPr(traj_os); 
@@ -238,6 +238,43 @@ void PSBMPC::calculate_optimal_offsets(
 
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
 	map_wps = waypoints;
+
+	//Make matlab polygons type friendly array:
+    Eigen::Matrix<double, -1, 2> polygon_matrix;
+    int n_total_vertices = 0;
+    BOOST_FOREACH(polygon_2D const &poly, polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			n_total_vertices += 1;
+		}
+		n_total_vertices += 1;
+    }
+    polygon_matrix.resize(n_total_vertices, 2); 
+
+    // format polygon_matrix array for matlab plotting
+    int pcount = 0; 
+    BOOST_FOREACH(polygon_2D const& poly, polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
+			polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
+			
+			pcount += 1;
+		}
+		// each polygon is separated with (-1, -1)
+		polygon_matrix(pcount, 1) = -1;
+		polygon_matrix(pcount, 0) = -1;
+		pcount += 1;
+    }
+    
+    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
+    double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
+	map_polygon_matrix = polygon_matrix;
+
+	engPutVariable(ep, "P", polygon_matrix_mx);
 
 	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx;
 	dt_sim = mxCreateDoubleScalar(pars.dt);
@@ -286,7 +323,7 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	}
+	} */
 	
 	//===============================================================================================================
 
@@ -680,7 +717,7 @@ void PSBMPC::find_optimal_control_behaviour(
 				max_cost_i_ps(ps) = (double)thrust::get<0>(dev_tup);
 				mu_i_ps(ps) = (double)thrust::get<1>(dev_tup);
 				thread_index += 1;
-				printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb, max_cost_i_ps(ps), mu_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
+				//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb, max_cost_i_ps(ps), mu_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
 			}
 
 			tup = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, mu_i_ps, data, i);

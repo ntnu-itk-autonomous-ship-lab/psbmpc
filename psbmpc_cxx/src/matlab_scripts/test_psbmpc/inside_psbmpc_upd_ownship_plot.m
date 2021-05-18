@@ -15,5 +15,5 @@ for s = 1 : 100 : n_samples
     boat_dim_s = rotMatrx2D(X(3, s))*boat_dim;
     h_X_s{s} = patch(ax1, X(2, s)+boat_dim_s(2,:),X(1, s)+boat_dim_s(1,:),'k', 'Linewidth', 1.6);
     
-    h_safe_s{s} = plot(ax1, y_cs * 50 + X(2, s), 50 * x_cs + X(1, s), 'r', 'Linewidth', 1.6);
+    h_safe_s{s} = plot(ax1, y_cs * d_safe + X(2, s), d_safe * x_cs + X(1, s), 'r', 'Linewidth', 1.6);
 end

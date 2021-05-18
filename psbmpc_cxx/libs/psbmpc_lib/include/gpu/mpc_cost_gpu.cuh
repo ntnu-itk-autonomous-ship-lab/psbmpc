@@ -602,9 +602,9 @@ namespace PSBMPC_LIB
 			max_cost_g = 0.0f;
 			
 			n_samples = trajectory.get_cols();
-			cost_g = 0.0f;
 			for (int k = 0; k < n_samples; k++)
 			{
+				cost_g = 0.0f;
 				p_os_k = trajectory.get_block<2, 1>(0, k, 2, 1);
 				for (int j = 0; j < fdata->n_static_obst; j++)
 				{
@@ -614,10 +614,16 @@ namespace PSBMPC_LIB
 
 					phi_j = fmaxf(0.0f, L_0j.dot(fdata->wind_direction));
 
-					cost_g += (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * exp(- (pars.G_3 * d_0j * d_0j + pars.G_4 * k * pars.dt));
+					cost_g += (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(- (pars.G_3 * d_0j + pars.G_4 * (float)k * pars.dt));
+
+					//printf("t = %.4f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
+				}
+				if (max_cost_g < cost_g)
+				{
+					max_cost_g = cost_g;
 				}
 			}
-			return cost_g / (float)n_samples;
+			return max_cost_g;
 		}
 
 		/****************************************************************************************

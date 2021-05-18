@@ -138,7 +138,7 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrus
 	//======================================================================================================================
 	// 2 : Max cost calculation considering own-ship control behaviour <cb_index> and prediction scenario ps for obstacle i
 	d_safe_i = pars->d_safe + 0.5 * (fdata->ownship_length + obstacles[i].get_length());
-	printf("d_safe = %.2f | d_safe_i = %.6f\n", pars->d_safe, d_safe_i);
+	//printf("d_safe = %.2f | d_safe_i = %.6f\n", pars->d_safe, d_safe_i);
 	p_step = 1;
 	v_os_prev.set_zero(); v_i_prev.set_zero();
 	for (int k = 0; k < n_samples; k += p_step)

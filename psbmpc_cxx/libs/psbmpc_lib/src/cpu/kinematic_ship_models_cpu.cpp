@@ -35,14 +35,14 @@ namespace CPU
 *****************************************************************************************/
 Kinematic_Ship::Kinematic_Ship()
 {
-	l = 20;
-	w = 4;
+	l = 5.0; // milliAmpere dims
+	w = 3.0;
 	
-	T_U = 10;
+	T_U = 10.0;
 	T_chi = 7.5; 		// Ad hoc parameters, are very dependent on the ship type
 
 	// Guidance parameters
-	e_int = 0;
+	e_int = 0.0;
 	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
 	R_a = 30.0; 			    // WP acceptance radius (20.0)
 	LOS_LD = 200.0; 			// LOS lookahead distance (100.0) 
@@ -61,8 +61,8 @@ Kinematic_Ship::Kinematic_Ship(
 	) : 
 	T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
 {
-	l = 20;
-	w = 4;
+	l = 5; // milliAmpere dims
+	w = 3;
 
 	// Guidance parameters
 	e_int = 0;

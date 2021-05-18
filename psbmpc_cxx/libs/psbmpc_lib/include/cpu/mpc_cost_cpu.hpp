@@ -799,27 +799,38 @@ namespace PSBMPC_LIB
 		{
 			int n_samples = std::round(pars.T / pars.dt);
 			int n_static_obst = polygons.size();
-			double cost_g(0.0);	 
+			double max_cost_g(0.0), cost_g(0.0);	 
 
 			Eigen::Vector2d L_0j;
 			double d_0j(0.0), t(0.0), phi_j(0.0);
-			cost_g = 0.0;
+			
 			for (int k = 0; k < n_samples; k++)
 			{
 				t = pars.dt * k;
 
+				cost_g = 0.0;
 				for (int j = 0; j < n_static_obst; j++)
 				{
 					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
 					d_0j = L_0j.norm();
+					if (d_0j < 0.1f)
+					{
+						//std::cout << t << std::endl;
+					}
 					L_0j.normalize();
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
 
 					cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
+
+					//printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
+				}
+				if (max_cost_g < cost_g)
+				{
+					max_cost_g = cost_g;
 				}
 			}
-			return cost_g / (double)n_samples;
+			return max_cost_g;
 		}
 
 		/****************************************************************************************

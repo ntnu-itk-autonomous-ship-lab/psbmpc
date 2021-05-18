@@ -15,7 +15,7 @@ tlim = [0 T_sim];
 % drawn boat dimensions
 boat_dim = [10 7 -10 -10 7 10; 0 2.4 2.4 -2.4 -2.4 0];
 
-ax2 = axes(fig, 'Position',[0.6 0.55 0.25 0.35]);
+ax2 = axes(fig, 'Position',[0.7 0.2 0.22 0.5]);
 ylim(ax2, ylimits_d); xlim(ax2, tlim);
 
 hold(ax1, 'on'); hold(ax2, 'on');
