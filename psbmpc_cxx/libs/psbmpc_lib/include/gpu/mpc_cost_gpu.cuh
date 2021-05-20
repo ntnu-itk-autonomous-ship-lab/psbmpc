@@ -164,7 +164,8 @@ namespace PSBMPC_LIB
 			__host__ __device__ float calculate_grounding_cost(
 				const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
 				const CB_Functor_Data *fdata, 
-				const Basic_Polygon *polygons);
+				const Basic_Polygon *polygons,
+				const int p_step);
 		};
 
 		//=======================================================================================
@@ -596,13 +597,14 @@ namespace PSBMPC_LIB
 		__host__ __device__ float MPC_Cost<Parameters>::calculate_grounding_cost(
 			const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,					// In: Calling Own-ship trajectory
 			const CB_Functor_Data *fdata,												// In: Pointer to various device data needed for the GPU calculations
-			const Basic_Polygon *polygons 												// In: Pointer to static obstacles to compute grounding cost wrt
+			const Basic_Polygon *polygons, 												// In: Pointer to static obstacles to compute grounding cost wrt
+			const int p_step 															// In: Step between samples (> 1 to reduce computational effort)
 			)
 		{
 			max_cost_g = 0.0f;
 			
 			n_samples = trajectory.get_cols();
-			for (int k = 0; k < n_samples; k++)
+			for (int k = 0; k < n_samples; k += p_step)
 			{
 				cost_g = 0.0f;
 				p_os_k = trajectory.get_block<2, 1>(0, k, 2, 1);

@@ -34,7 +34,7 @@ find_package(Eigen3 REQUIRED)
 #add_executable(tester test_prng.cpp)
 #add_executable(tester test_psbmpc_cost_class.cpp)
 #add_executable(tester test_read_shapefile.cpp)
-#add_executable(tester test_polygons.cpp)
+add_executable(tester test_polygons.cpp)
 
 # Test files specific to the GPU-version of the PSBMPC
 #add_executable(tester test_ownship_gpu.cu)
@@ -44,7 +44,7 @@ find_package(Eigen3 REQUIRED)
 #add_executable(tester test_tml.cu)
 #add_executable(tester test_tml_pdmatrix.cu)
 
-add_executable(tester paper_simulations/test_psbmpc_psim_intelligent_grounding.cpp)
+#add_executable(tester paper_simulations/test_psbmpc_psim_intelligent_grounding.cpp)
 #add_executable(tester paper_simulations/test_psbmpc_psim.cpp)
 
 target_include_directories(tester PRIVATE

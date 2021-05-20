@@ -64,7 +64,8 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
 		pars->guidance_method, 
 		pars->T, pars->dt);
 
-	h_so = mpc_cost[cb_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons); 
+	p_step_grounding = 2;
+	h_so = mpc_cost[cb_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons, p_step_grounding); 
 
 	h_path += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
 	h_path += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 

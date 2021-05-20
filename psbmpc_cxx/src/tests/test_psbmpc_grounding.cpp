@@ -201,9 +201,10 @@ int main(){
     
    	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename, psbmpc);
 	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
+	std::vector<polygon_2D> simplified_polygons = grounding_hazard_manager.get_simplified_polygons();
 
     //Make matlab polygons type friendly array:
-    Eigen::Matrix<double, -1, 2> polygon_matrix;
+    Eigen::Matrix<double, -1, 2> polygon_matrix, simplified_polygon_matrix;
     int n_total_vertices = 0;
     BOOST_FOREACH(polygon_2D const &poly, polygons)
 	{
@@ -232,18 +233,52 @@ int main(){
 		pcount += 1;
     }
 
+	// SIMPLIFIED POLYGONS
+	int n_total_vertices_simplified = 0;
+    BOOST_FOREACH(polygon_2D const &poly, simplified_polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			n_total_vertices_simplified += 1;
+		}
+		n_total_vertices_simplified += 1;
+    }
+    simplified_polygon_matrix.resize(n_total_vertices_simplified, 2); 
+
+    /*format polygon_matrix array for matlab plotting*/
+    int pcount = 0; 
+    BOOST_FOREACH(polygon_2D const& poly, simplified_polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			simplified_polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
+			simplified_polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
+			
+			pcount += 1;
+		}
+		// each polygon is separated with (-1, -1)
+		simplified_polygon_matrix(pcount, 1) = -1;
+		simplified_polygon_matrix(pcount, 0) = -1;
+		pcount += 1;
+    }
+
 	mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
 	double *p_map_origin = mxGetPr(map_origin_mx);
 	Eigen::Map<Eigen::Vector2d> map_map_origin(p_map_origin, 2, 1);
 	map_map_origin = grounding_hazard_manager.get_map_origin();
     
     mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
+	mxArray *simplified_polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
     double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+	double *p_simplified_polygon_matrix = mxGetPr(polygon_matrix_mx);
     Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
+	Eigen::Map<Eigen::MatrixXd> map_simplified_polygon_matrix(p_simplified_polygon_matrix, n_total_vertices_simplified, 2);
 	map_polygon_matrix = polygon_matrix;
+	map_simplified_polygon_matrix = simplified_polygon_matrix;
 
 	engPutVariable(ep, "map_origin", map_origin_mx);
 	engPutVariable(ep, "P", polygon_matrix_mx);
+	engPutVariable(ep, "P_simplified", simplified_polygon_matrix_mx);
 
 //*****************************************************************************************************************
 // Simulation
@@ -438,6 +473,7 @@ int main(){
 	mxDestroyArray(map_origin_mx);
 	mxDestroyArray(d_safe_mx);
 	mxDestroyArray(polygon_matrix_mx);
+	mxDestroyArray(simplified_polygon_matrix_mx);
 	mxDestroyArray(traj_os_mx);
 	mxDestroyArray(wps_os_mx);
 	mxDestroyArray(pred_traj_mx);

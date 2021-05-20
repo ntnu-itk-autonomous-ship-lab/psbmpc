@@ -26,9 +26,15 @@ disp(map_origin);
 P(P == -1) = NaN;
 P(:, 1) = P(:, 1) + map_origin(2);
 P(:, 2) = P(:, 2) + map_origin(1);
-test_polygon=polyshape(P);
+polygon=polyshape(P);
 
-plot(ax1,test_polygon);
+[n_vertices_simplified, ~] = size(P_simplified)
+P_simplified(P_simplified == -1) = NaN;
+P_simplified(:, 1) = P_simplified(:, 1) + map_origin(2);
+P_simplified(:, 2) = P_simplified(:, 2) + map_origin(1);
+simplified_polygon = polyshape(P_simplified);
+
+plot(ax1, polygon); plot(ax1, simplified_polygon);
 
 ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]'); 
 ylabel(ax2,'Distance [m]');  xlabel(ax2,'Time [s]');

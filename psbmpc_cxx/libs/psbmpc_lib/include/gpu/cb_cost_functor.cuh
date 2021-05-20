@@ -65,6 +65,7 @@ namespace PSBMPC_LIB
 			float h_so, h_path; 
 
 			unsigned int cb_index;
+			int p_step_grounding;
 			TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
 
 		public: 

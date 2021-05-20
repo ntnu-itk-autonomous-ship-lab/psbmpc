@@ -1,54 +1,157 @@
+/****************************************************************************************
+*
+*  File name : test_polygons.cpp
+*
+*  Function  : Test file for the grounding hazard managers polygon handling.
+*			   
+*	           ---------------------
+*
+*  Version 1.0
+*
+*  Copyright (C) 2021 Trym Tengsedal NTNU Trondheim. 
+*  All rights reserved.
+*
+*  Author    : Trym Tengsedal
+*
+*  Modified  : 
+*
+*****************************************************************************************/
+
 #include <iostream>
 #include <list>
 
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/linestring.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/polygon.hpp>
-#include <boost/geometry/geometries/multi_point.hpp>
-#include <boost/geometry/geometries/multi_polygon.hpp>
-#include <boost/foreach.hpp>
+#include "cpu/psbmpc_cpu.hpp"
+#include "gpu/psbmpc_gpu.cuh"
+#include "cpu/utilities_cpu.hpp"
+#include "grounding_hazard_manager.hpp"
+
+#define BUFSIZE 1000000
 
 int main()
-{
-    typedef boost::geometry::model::d2::point_xy<double> point_type;
-    typedef boost::geometry::model::polygon<point_type> polygon_type;
-    typedef boost::geometry::model::linestring<point_type> linestring_type;
-    typedef boost::geometry::model::multi_point<point_type> multi_point_type;
-    typedef boost::geometry::model::multi_polygon<polygon_type> multi_polygon_type;
-    point_type p(2,5);
-    polygon_type poly;
-    linestring_type line;
-    multi_point_type mp;
-    multi_polygon_type mpoly;
+{    
+//*****************************************************************************************************************
+// Own-ship position
+//*****************************************************************************************************************
 
-    boost::geometry::read_wkt(
-        "POLYGON((2 1.3,2.4 1.7,2.8 1.8,3.4 1.2,3.7 1.6,3.4 2,4.1 3,5.3 2.6,5.4 1.2,4.9 0.8,2.9 0.7,2 1.3)"
-            "(4.0 2.0, 4.2 1.4, 4.8 1.9, 4.4 2.2, 4.0 2.0))", poly);
-    boost::geometry::read_wkt("MULTIPOLYGON(((1 2,1 4,3 4,3 2,1 2)),((4 2,4 4,6 4,6 2, 4 2)))", mpoly);
-    line.push_back(point_type(0,0));
-    line.push_back(point_type(0,3));
-    mp.push_back(point_type(0,0));
-    mp.push_back(point_type(3,3));
+	/*coordinates are given in wgs-84 use https://finnposisjon.test.geonorge.no/ */
+	Eigen::Matrix<double, 6, 1> xs_os_0;
+	// xs_os_0 << 7042320, 269475, 180 * DEG2RAD, 1, 0, 0; // utforbi skansen
+	xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 1.5, 0, 0; // "i" skansen
+
+//*****************************************************************************************************************
+// Static Obstacles Setup
+//*****************************************************************************************************************
+	char buffer1[256];
+	char *val = getcwd(buffer1, sizeof(buffer1)); // either release or debug
+	if (val) {
+		std::cout << buffer1 << std::endl;
+	}
+	// Input the path to the land data
+    std::string filename = "src/tests/grounding_hazard_data/charts/land/land.shp";
     
-/*__________________________Calculate distance from point to polygon in multipolygon___________________________________________________________*/        
-    BOOST_FOREACH(polygon_type const& my_poly, mpoly){
-        std::cout << boost::geometry::wkt<polygon_type>(my_poly) << std::endl;
-        for(auto it = boost::begin(boost::geometry::exterior_ring(my_poly)); it != boost::end(boost::geometry::exterior_ring(my_poly)); ++it)
-            {
-                std::cout << boost::geometry::get<0>(*it) << std::endl;
-                std::cout << boost::geometry::get<1>(*it) << std::endl;
-                //use the coordinates...
-            }
+    PSBMPC_LIB::CPU::PSBMPC psbmpc;
+   	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename, psbmpc);
+	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
+	std::vector<polygon_2D> simplified_polygons = grounding_hazard_manager.get_simplified_polygons();
+
+    //Make matlab polygons type friendly array:
+    Eigen::Matrix<double, -1, 2> polygon_matrix, simplified_polygon_matrix;
+    int n_total_vertices = 0;
+    BOOST_FOREACH(polygon_2D const &poly, polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			n_total_vertices += 1;
+		}
+		n_total_vertices += 1;
     }
- 
-        
-/*_____________________________________________________________________________________*/        
-   /* std::cout
-        << "Point-Poly: " << boost::geometry::distance(p, poly) << std::endl
-        << "Point-Line: " << boost::geometry::distance(p, line) << std::endl
-        << "Point-MultiPoly: " << boost::geometry::distance(p, mpoly) << std::endl
-        << "Point-MultiPoint: " << boost::geometry::distance(p, mp) << std::endl;
-    */
+    polygon_matrix.resize(n_total_vertices, 2); 
+
+    /*format polygon_matrix array for matlab plotting*/
+    int pcount = 0; 
+    BOOST_FOREACH(polygon_2D const& poly, polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
+			polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
+			
+			pcount += 1;
+		}
+		// each polygon is separated with (-1, -1)
+		polygon_matrix(pcount, 1) = -1;
+		polygon_matrix(pcount, 0) = -1;
+		pcount += 1;
+    }
+
+	// SIMPLIFIED POLYGONS
+	int n_total_vertices_simplified = 0;
+    BOOST_FOREACH(polygon_2D const &poly, simplified_polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			n_total_vertices_simplified += 1;
+		}
+		n_total_vertices_simplified += 1;
+    }
+    simplified_polygon_matrix.resize(n_total_vertices_simplified, 2); 
+
+    /*format polygon_matrix array for matlab plotting*/
+    pcount = 0; 
+    BOOST_FOREACH(polygon_2D const& poly, simplified_polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			simplified_polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
+			simplified_polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
+			
+			pcount += 1;
+		}
+		// each polygon is separated with (-1, -1)
+		simplified_polygon_matrix(pcount, 1) = -1;
+		simplified_polygon_matrix(pcount, 0) = -1;
+		pcount += 1;
+    }
+
+//*****************************************************************************************************************
+// Matlab plotting stuff
+//*****************************************************************************************************************
+    // Matlab engine setup
+ 	Engine *ep = engOpen(NULL);
+	if (ep == NULL)
+	{
+		std::cout << "engine start failed!" << std::endl;
+	}
+    char buffer[BUFSIZE+1]; 
+    buffer[BUFSIZE] = '\0';
+	engOutputBuffer(ep, buffer, BUFSIZE);
+
+    mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
+    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
+	mxArray *simplified_polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
+
+	double *p_map_origin = mxGetPr(map_origin_mx);
+    double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+	double *p_simplified_polygon_matrix = mxGetPr(polygon_matrix_mx);
+
+	Eigen::Map<Eigen::Vector2d> map_map_origin(p_map_origin, 2, 1);
+    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
+	Eigen::Map<Eigen::MatrixXd> map_simplified_polygon_matrix(p_simplified_polygon_matrix, n_total_vertices_simplified, 2);
+
+	map_map_origin = grounding_hazard_manager.get_map_origin();
+	map_polygon_matrix = polygon_matrix;
+	map_simplified_polygon_matrix = simplified_polygon_matrix;
+
+	engPutVariable(ep, "map_origin", map_origin_mx);
+	engPutVariable(ep, "P", polygon_matrix_mx);
+	engPutVariable(ep, "P_simplified", simplified_polygon_matrix_mx);
+    engEvalString(ep, "test_polygons_plot");
+
+    printf("%s\n", buffer);
+
+    mxDestroyArray(map_origin_mx);
+    mxDestroyArray(polygon_matrix_mx);
+    mxDestroyArray(simplified_polygon_matrix_mx);
+
     return 0;
 }

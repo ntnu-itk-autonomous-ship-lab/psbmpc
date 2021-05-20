@@ -148,7 +148,8 @@ namespace PSBMPC_LIB
 				const Eigen::MatrixXd &trajectory, 
 				const std::vector<polygon_2D> &polygons, 
 				const double V_w, 
-				const Eigen::Vector2d &wind_direction) const;
+				const Eigen::Vector2d &wind_direction,
+				const int p_step) const;
 		};
 
 		/****************************************************************************************
@@ -794,7 +795,8 @@ namespace PSBMPC_LIB
 			const Eigen::MatrixXd &trajectory,									// In: Predicted ownship trajectory
 			const std::vector<polygon_2D> &polygons,							// In: Static obstacle information
 			const double V_w,													// In: Estimated wind speed
-			const Eigen::Vector2d &wind_direction 								// In: Unit vector in NE describing the estimated wind direction
+			const Eigen::Vector2d &wind_direction, 								// In: Unit vector in NE describing the estimated wind direction
+			const int p_step 													// In: Step between samples (> 1 to reduce computational effort)
 			) const
 		{
 			int n_samples = std::round(pars.T / pars.dt);
@@ -804,7 +806,7 @@ namespace PSBMPC_LIB
 			Eigen::Vector2d L_0j;
 			double d_0j(0.0), t(0.0), phi_j(0.0);
 			
-			for (int k = 0; k < n_samples; k++)
+			for (int k = 0; k < n_samples; k += p_step)
 			{
 				t = pars.dt * k;
 

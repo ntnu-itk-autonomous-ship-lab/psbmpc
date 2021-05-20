@@ -287,7 +287,7 @@ void PSBMPC::calculate_optimal_offsets(
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	min_cost = 1e12;
 	int min_index = 0;
-	int p_step_cpe = 1; // step between calculated collision probability samples
+	int p_step_cpe = 1, p_step_grounding = 2; // step between calculated collision probability samples and grounding cost evaluation
 	int thread_count = 1;
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -361,7 +361,7 @@ void PSBMPC::calculate_optimal_offsets(
 		h_colregs = pars.kappa * std::min(1.0, mu_i.sum());
 		cost_colregs_matrix(0, cb) = h_colregs;
 
-		h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
+		h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction, p_step_grounding);
 		cost_so_path_matrix(0, cb) = h_so;
 
 		h_path += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
