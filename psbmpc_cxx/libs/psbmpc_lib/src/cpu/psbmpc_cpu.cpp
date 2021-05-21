@@ -122,11 +122,11 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
-	}
+	} */
 	
  	/* mxArray *traj_os = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
@@ -227,7 +227,7 @@ void PSBMPC::calculate_optimal_offsets(
 	} */ 
 	
 	// COST PLOTTING
-	mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
+	/* mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
  	mxArray *cost_do_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
 	mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
 	mxArray *max_cost_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
@@ -257,7 +257,8 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps[0]);
 
-	mxArray *n_obst_copy_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr);
+	mxArray *n_obst_copy_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
+	//===============================================================================================================
 
 	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
 	Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
@@ -278,7 +279,7 @@ void PSBMPC::calculate_optimal_offsets(
 	}
 	int curr_ps_index(0);
 	Eigen::VectorXd max_cost_i_ps, mu_i_ps;
-	//===============================================================================================================
+	
 
 	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
 	Eigen::VectorXd cost_do(n_obst), mu_i(n_obst);
@@ -287,7 +288,6 @@ void PSBMPC::calculate_optimal_offsets(
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	min_cost = 1e12;
 	int min_index = 0;
-	int p_step_cpe = 1, p_step_grounding = 2; // step between calculated collision probability samples and grounding cost evaluation
 	int thread_count = 1;
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -318,7 +318,7 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			
 			P_c_i.resize(n_ps[i], n_samples); P_c_i.setZero();
-			//calculate_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
+			//calculate_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, pars.p_step_cpe); 
 
 			/* tup = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, P_c_i, data, i, ownship.get_length());
 			cost_i(i) = std::get<0>(tup);
@@ -361,7 +361,7 @@ void PSBMPC::calculate_optimal_offsets(
 		h_colregs = pars.kappa * std::min(1.0, mu_i.sum());
 		cost_colregs_matrix(0, cb) = h_colregs;
 
-		h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction, p_step_grounding);
+		h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction, pars.p_step_grounding);
 		cost_so_path_matrix(0, cb) = h_so;
 
 		h_path += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
@@ -404,7 +404,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-	opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+	/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 	map_total_cost = total_cost_matrix;
 	map_cost_do = cost_do_matrix;
 	map_cost_colregs = cost_colregs_matrix;
@@ -439,7 +439,7 @@ void PSBMPC::calculate_optimal_offsets(
 	mxDestroyArray(n_obst_copy_mx);
 	mxDestroyArray(opt_cb_index_mx);
 	
-	engClose(ep);
+	engClose(ep); */
 	//==================================================================
 
 	u_opt = opt_offset_sequence(0); 	u_opt_last = u_opt;

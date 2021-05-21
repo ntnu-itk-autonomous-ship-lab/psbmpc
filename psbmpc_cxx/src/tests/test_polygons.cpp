@@ -54,12 +54,15 @@ int main()
 	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
 	std::vector<polygon_2D> simplified_polygons = grounding_hazard_manager.get_simplified_polygons();
 
+	//=================================
+	// POLYGONS
+	//=================================
     //Make matlab polygons type friendly array:
     Eigen::Matrix<double, -1, 2> polygon_matrix, simplified_polygon_matrix;
     int n_total_vertices = 0;
     BOOST_FOREACH(polygon_2D const &poly, polygons)
 	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; ++it)
 		{
 			n_total_vertices += 1;
 		}
@@ -71,24 +74,27 @@ int main()
     int pcount = 0; 
     BOOST_FOREACH(polygon_2D const& poly, polygons)
 	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; ++it)
 		{
 			polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
 			polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
 			
 			pcount += 1;
 		}
-		// each polygon is separated with (-1, -1)
-		polygon_matrix(pcount, 1) = -1;
-		polygon_matrix(pcount, 0) = -1;
+		// each polygon is separated with (-1e6, -1e6)
+		polygon_matrix(pcount, 1) = -1e6;
+		polygon_matrix(pcount, 0) = -1e6;
 		pcount += 1;
     }
 
+	//PSBMPC_LIB::CPU::save_matrix_to_file(polygon_matrix);
+	//=================================
 	// SIMPLIFIED POLYGONS
+	//=================================
 	int n_total_vertices_simplified = 0;
     BOOST_FOREACH(polygon_2D const &poly, simplified_polygons)
 	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; ++it)
 		{
 			n_total_vertices_simplified += 1;
 		}
@@ -100,16 +106,16 @@ int main()
     pcount = 0; 
     BOOST_FOREACH(polygon_2D const& poly, simplified_polygons)
 	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; ++it)
 		{
 			simplified_polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
 			simplified_polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
 			
 			pcount += 1;
 		}
-		// each polygon is separated with (-1, -1)
-		simplified_polygon_matrix(pcount, 1) = -1;
-		simplified_polygon_matrix(pcount, 0) = -1;
+		// each polygon is separated with (-1e6, -1e6)
+		simplified_polygon_matrix(pcount, 1) = -1e6;
+		simplified_polygon_matrix(pcount, 0) = -1e6;
 		pcount += 1;
     }
 
@@ -128,11 +134,11 @@ int main()
 
     mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
     mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
-	mxArray *simplified_polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
+	mxArray *simplified_polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices_simplified, 2, mxREAL);
 
 	double *p_map_origin = mxGetPr(map_origin_mx);
     double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
-	double *p_simplified_polygon_matrix = mxGetPr(polygon_matrix_mx);
+	double *p_simplified_polygon_matrix = mxGetPr(simplified_polygon_matrix_mx);
 
 	Eigen::Map<Eigen::Vector2d> map_map_origin(p_map_origin, 2, 1);
     Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);

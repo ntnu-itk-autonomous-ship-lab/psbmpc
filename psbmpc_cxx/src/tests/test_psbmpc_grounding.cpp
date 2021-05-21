@@ -51,7 +51,7 @@ int main(){
 	/*coordinates are given in wgs-84 use https://finnposisjon.test.geonorge.no/ */
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	// xs_os_0 << 7042320, 269475, 180 * DEG2RAD, 1, 0, 0; // utforbi skansen
-	xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 1.5, 0, 0; // "i" skansen
+	xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 2.0, 0, 0; // "i" skansen
 	double u_d = 1.5, chi_d, u_c, chi_c;
 	
 	PSBMPC_LIB::CPU::Ownship asv_sim;
@@ -139,7 +139,7 @@ int main(){
 	{
 		ID[i] = i;
 
-		u_d_i[i] = 3.0; chi_d_i[i] = 0.0;
+		u_d_i[i] = 2.0; chi_d_i[i] = 0.0;
 
 		xs_i_0[0].resize(4);
 		xs_i_0[0] << 7042350, 270675, -90 * DEG2RAD, 1;
@@ -170,7 +170,7 @@ int main(){
 //*****************************************************************************************************************	
 	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
-	PSBMPC_LIB::GPU::PSBMPC psbmpc;
+	PSBMPC_LIB::CPU::PSBMPC psbmpc;
 
 	double u_opt(u_d), chi_opt(0.0);
 
@@ -246,7 +246,7 @@ int main(){
     simplified_polygon_matrix.resize(n_total_vertices_simplified, 2); 
 
     /*format polygon_matrix array for matlab plotting*/
-    int pcount = 0; 
+    pcount = 0; 
     BOOST_FOREACH(polygon_2D const& poly, simplified_polygons)
 	{
         for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
@@ -263,16 +263,18 @@ int main(){
     }
 
 	mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
-	double *p_map_origin = mxGetPr(map_origin_mx);
-	Eigen::Map<Eigen::Vector2d> map_map_origin(p_map_origin, 2, 1);
-	map_map_origin = grounding_hazard_manager.get_map_origin();
-    
     mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
-	mxArray *simplified_polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
+	mxArray *simplified_polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices_simplified, 2, mxREAL);
+
+	double *p_map_origin = mxGetPr(map_origin_mx);
     double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
-	double *p_simplified_polygon_matrix = mxGetPr(polygon_matrix_mx);
+	double *p_simplified_polygon_matrix = mxGetPr(simplified_polygon_matrix_mx);
+
+	Eigen::Map<Eigen::Vector2d> map_map_origin(p_map_origin, 2, 1);
     Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
 	Eigen::Map<Eigen::MatrixXd> map_simplified_polygon_matrix(p_simplified_polygon_matrix, n_total_vertices_simplified, 2);
+
+	map_map_origin = grounding_hazard_manager.get_map_origin();
 	map_polygon_matrix = polygon_matrix;
 	map_simplified_polygon_matrix = simplified_polygon_matrix;
 
@@ -394,6 +396,7 @@ int main(){
 
 		if (fmod(t, 5) == 0)
 		{
+			std::cout << "n_relevant_so = " << relevant_polygons.size() << std::endl;
 			start = std::chrono::system_clock::now();		
 
 			psbmpc.calculate_optimal_offsets(

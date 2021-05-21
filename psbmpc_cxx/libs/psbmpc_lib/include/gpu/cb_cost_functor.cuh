@@ -57,15 +57,12 @@ namespace PSBMPC_LIB
 
 			MPC_Cost<CB_Functor_Pars> *mpc_cost;
 
-			Basic_Polygon *polygons;
-
 			//==============================================
 			// Pre-allocated temporaries (local to the thread stack)
 			//==============================================
-			float h_so, h_path; 
+			float h_path; 
 
 			unsigned int cb_index;
-			int p_step_grounding;
 			TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
 
 		public: 
@@ -74,8 +71,7 @@ namespace PSBMPC_LIB
 				fdata(nullptr), 
 				ownship(nullptr), 
 				trajectory(nullptr),
-				mpc_cost(nullptr),
-				polygons(nullptr)
+				mpc_cost(nullptr)
 			{}
 
 			__host__ CB_Cost_Functor_1(
@@ -83,9 +79,8 @@ namespace PSBMPC_LIB
 				CB_Functor_Data *fdata, 
 				Ownship *ownship,
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,
-				MPC_Cost<CB_Functor_Pars> *mpc_cost,
-				Basic_Polygon *polygons) :
-				pars(pars), fdata(fdata), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost), polygons(polygons)
+				MPC_Cost<CB_Functor_Pars> *mpc_cost) :
+				pars(pars), fdata(fdata), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost)
 			{}
 
 			__host__ __device__ ~CB_Cost_Functor_1() 
@@ -95,21 +90,82 @@ namespace PSBMPC_LIB
 				ownship = nullptr;
 				trajectory = nullptr; 
 				mpc_cost = nullptr;
-				polygons = nullptr;
 			}
 			
-			__device__ thrust::tuple<float, float> operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
+			__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 
 		};
 
 		/****************************************************************************************
 		*  Name     : CB_Cost_Functor_2
+		*  Function : Functor used to calculate the partial grounding cost given a control
+		*			  behaviour cb and a static obstacle j. 
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
+		class CB_Cost_Functor_2
+		{
+		private: 
+
+			//==============================================
+			// Members allocated in global device memory
+			//==============================================
+			CB_Functor_Pars *pars;
+
+			CB_Functor_Data *fdata;
+
+			TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory;
+
+			MPC_Cost<CB_Functor_Pars> *mpc_cost;
+
+			Basic_Polygon *polygons;
+
+			//==============================================
+			// Pre-allocated temporaries (local to the thread stack)
+			//==============================================
+			float max_h_so_j; 
+
+			unsigned int cb_index, j;
+
+		public: 
+			__host__ CB_Cost_Functor_2() : 
+				pars(nullptr), 
+				fdata(nullptr), 
+				trajectory(nullptr),
+				mpc_cost(nullptr),
+				polygons(nullptr)
+			{}
+
+			__host__ CB_Cost_Functor_2(
+				CB_Functor_Pars *pars, 
+				CB_Functor_Data *fdata, 
+				TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,
+				MPC_Cost<CB_Functor_Pars> *mpc_cost,
+				Basic_Polygon *polygons) :
+				pars(pars), fdata(fdata), trajectory(trajectory), mpc_cost(mpc_cost), polygons(polygons)
+			{}
+
+			__host__ __device__ ~CB_Cost_Functor_2() 
+			{ 
+				pars = nullptr; 
+				fdata = nullptr; 
+				trajectory = nullptr; 
+				mpc_cost = nullptr;
+				polygons = nullptr;
+			}
+			
+			__device__ float operator()(const thrust::tuple<const unsigned int, const unsigned int> &input_tuple);
+
+		};
+
+		/****************************************************************************************
+		*  Name     : CB_Cost_Functor_3
 		*  Function : Functor used to calculate the dynamic obstacle cost, for a control behaviour
 		*			  l, an obstacle i behaving as in prediction scenario ps. 
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		class CB_Cost_Functor_2
+		class CB_Cost_Functor_3
 		{
 		private: 
 
@@ -140,7 +196,7 @@ namespace PSBMPC_LIB
 			TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
 			unsigned int i, ps;
 
-			int n_samples, n_seg_samples, p_step;
+			int n_samples, n_seg_samples;
 
 			float max_cost_i_ps, mu_i_ps, cost_k, P_c_i;
 			bool mu_k;
@@ -164,7 +220,7 @@ namespace PSBMPC_LIB
 			//==============================================
 
 		public: 
-			__host__ CB_Cost_Functor_2() : 
+			__host__ CB_Cost_Functor_3() : 
 				pars(nullptr), 
 				fdata(nullptr), 
 				obstacles(nullptr), 
@@ -174,7 +230,7 @@ namespace PSBMPC_LIB
 				mpc_cost(nullptr) 
 			{}
 
-			__host__ CB_Cost_Functor_2(
+			__host__ CB_Cost_Functor_3(
 				CB_Functor_Pars *pars, 
 				CB_Functor_Data *fdata, 
 				Cuda_Obstacle *obstacles, 
@@ -183,7 +239,7 @@ namespace PSBMPC_LIB
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,
 				MPC_Cost<CB_Functor_Pars> *mpc_cost);
 
-			__host__ __device__ ~CB_Cost_Functor_2() 
+			__host__ __device__ ~CB_Cost_Functor_3() 
 			{ 
 				pars = nullptr; 
 				fdata = nullptr; 

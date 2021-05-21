@@ -47,7 +47,8 @@ namespace PSBMPC_LIB
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
-		inline void save_matrix_to_file(const Eigen::MatrixXd &in)
+		template <class Eigen_Type>
+		inline void save_matrix_to_file(const Eigen_Type &in)
 		{
 			std::ofstream outdata("/home/admin/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv", std::ios::out | std::ios::trunc);
 			int n_rows = in.rows();

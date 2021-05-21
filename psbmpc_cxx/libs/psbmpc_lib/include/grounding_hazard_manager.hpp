@@ -26,6 +26,7 @@
 
 #include "Eigen/Dense"
 
+#include <iostream>
 #include <string>
 #include <stdexcept>
 #include <boost/geometry/geometry.hpp>
@@ -42,7 +43,9 @@ namespace PSBMPC_LIB
 	{
 	private:
 
-		double d_so;
+		// Distance threshold for a polygon/static obstacle to be relevant for COLAV, and the
+		// ramer-douglas-peucker algorithm distance tolerance threshold
+		double d_so_relevant, epsilon;
 
 		std::vector<polygon_2D> polygons, simplified_polygons;
 
@@ -138,24 +141,29 @@ namespace PSBMPC_LIB
 		{
 			std::vector<point_2D> vertices_in, vertices_out;
 
-			double epsilon = 0.5;
 			int n_polygons = polygons.size();
 			for (int j = 0; j < n_polygons; j++)
 			{
-				for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])); it++)
+				vertices_in.clear();
+				for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; it++)
 				{
 					vertices_in.emplace_back(*it);
 				}
 
-				ramer_douglas_peucker(vertices_out, vertices_in, epsilon);
+				ramer_douglas_peucker(vertices_out, vertices_in);
 
 				polygon_2D poly;
 				for (size_t v = 0; v < vertices_out.size(); v++)
 				{
 					boost::geometry::append(poly, vertices_out[v]);
 				}
+				boost::geometry::append(poly, vertices_out[0]);
 				simplified_polygons.emplace_back(poly);
+				printf("Polygon: %d | Vertices before: %ld | Vertices after: %ld\n", j, vertices_in.size() + 1, vertices_out.size() + 1);
 			}
+			/* polygon_2D poly = polygons[21];
+			polygons.clear();
+			polygons.emplace_back(poly); */
 		}
 
 		/****************************************************************************************
@@ -167,8 +175,7 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		void ramer_douglas_peucker(
 			std::vector<point_2D> &vertices_out, 						// In/Out: Vertices of simplified polygon
-			const std::vector<point_2D> &vertices_in, 					// In: Vertices of polygon to simplify								
-			double epsilon 												// In: Tolerance for distance
+			const std::vector<point_2D> &vertices_in 					// In: Vertices of polygon to simplify								
 			)
 		{
 			int n_vertices_in = vertices_in.size();
@@ -197,8 +204,8 @@ namespace PSBMPC_LIB
 				std::vector<point_2D> first_line(vertices_in.begin(), vertices_in.begin() + index + 1);
 				std::vector<point_2D> last_line(vertices_in.begin() + index, vertices_in.end());
 
-				ramer_douglas_peucker(recursive_results_1, first_line, epsilon);
-				ramer_douglas_peucker(recursive_results_2, last_line, epsilon);
+				ramer_douglas_peucker(recursive_results_1, first_line);
+				ramer_douglas_peucker(recursive_results_2, last_line);
 		
 				// Build the result list
 				vertices_out.assign(recursive_results_1.begin(), recursive_results_1.end() - 1);
@@ -253,7 +260,7 @@ namespace PSBMPC_LIB
 		template <class MPC_Type>
 		Grounding_Hazard_Manager(const std::string &filename, const MPC_Type &mpc) 
 			: 
-			d_so(mpc.pars.d_init), 
+			d_so_relevant(mpc.pars.d_so_relevant), epsilon(2.0),
 			map_origin(7042250, 270250) // Trondheim, just north of ravnkloa, brattora crossing
 		{
 			read_shapefile(filename, polygons);
@@ -264,7 +271,7 @@ namespace PSBMPC_LIB
 		template <class MPC_Type>
 		Grounding_Hazard_Manager(const std::string &filename, Eigen::Vector2d &map_origin, const MPC_Type &mpc) 
 			: 
-			d_so(mpc.pars.d_init), 
+			d_so_relevant(mpc.pars.d_so_relevant), epsilon(2.0),
 			map_origin(map_origin)
 		{
 			read_shapefile(filename, polygons);
@@ -292,10 +299,10 @@ namespace PSBMPC_LIB
 
 			double d_0j = 0.0; // distance to static obstacle
 			point_2D p_os(ownship_state(0), ownship_state(1));
-			BOOST_FOREACH(polygon_2D const& poly, polygons)
+			BOOST_FOREACH(polygon_2D const& poly, simplified_polygons)
 			{
 				d_0j = boost::geometry::distance(p_os, poly);
-				if (d_0j < d_so)
+				if (d_0j < d_so_relevant)
 				{
 					ret.emplace_back(poly);
 				}

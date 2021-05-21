@@ -81,19 +81,21 @@ namespace PSBMPC_LIB
 			// Device vector of control behaviours, size n_threads x 1
 			thrust::device_vector<TML::PDMatrix<float, 2 * MAX_N_M, 1>> cb_dvec;
 
-			// Device vector of control bevhaviour indices, obstacle indices, obstacle prediction scenario indices, size n_threads x 1
-			thrust::device_vector<unsigned int> cb_index_dvec, obstacle_index_dvec, obstacle_ps_index_dvec;
+			// Device vector of control bevhaviour indices, dynamic obstacle indices, 
+			// dynamic obstacle prediction scenario indices, static obstacle indices, size n_threads x 1
+			thrust::device_vector<unsigned int> cb_index_dvec, dobstacle_index_dvec, dobstacle_ps_index_dvec, sobstacle_index_dvec;
 
 			// Device vector of costs, size n_cbs x 1, consisting of the static obstacle and path related costs for each control behaviour
-			thrust::device_vector<thrust::tuple<float, float>> cb_costs_1_dvec;
+			thrust::device_vector<float> cb_costs_1_dvec, cb_costs_2_dvec;
 			
 			// Device vector of costs, size n_threads x 1. It is the dynamic obstacle cost (first tuple element) when the own-ship
 			// follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, behaves as in
 			// prediction scenario <obstacle_ps_index>. The own-ship COLREGS violation indicator is the second element of the tuple
-			thrust::device_vector<thrust::tuple<float, float>> cb_costs_2_dvec;
+			thrust::device_vector<thrust::tuple<float, float>> cb_costs_3_dvec;
 			
 			std::unique_ptr<CB_Cost_Functor_1> cb_cost_functor_1;
 			std::unique_ptr<CB_Cost_Functor_2> cb_cost_functor_2;
+			std::unique_ptr<CB_Cost_Functor_3> cb_cost_functor_3;
 
 			TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory_device_ptr;
 
@@ -120,9 +122,9 @@ namespace PSBMPC_LIB
 
 			void increment_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
-			void map_thrust_dvecs();
+			void map_thrust_dvecs(const std::vector<polygon_2D> &polygons);
 
-			void find_optimal_control_behaviour(Obstacle_Data<Tracked_Obstacle> &data);
+			void find_optimal_control_behaviour(Obstacle_Data<Tracked_Obstacle> &data, const std::vector<polygon_2D> &polygons);
 
 			void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 			

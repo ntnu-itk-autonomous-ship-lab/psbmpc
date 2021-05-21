@@ -85,6 +85,10 @@ namespace PSBMPC_LIB
 		// prediction scenarios for an obstacle, respectively
 		int n_cbs, n_M, n_r;
 
+		// Step between samples in prediction, collision probability estimation and
+		// grounding cost evaluation, respectively
+		int p_step, p_step_cpe, p_step_grounding;
+
 		// Finite sets of offsets considered to the own-ship surge and course references,
 		// for each maneuver in the horizon
 		std::vector<Eigen::VectorXd> u_offsets;
@@ -101,9 +105,9 @@ namespace PSBMPC_LIB
 
 		Guidance_Method guidance_method;
 
-		double T, dt, p_step;
+		double T, dt;
 		double t_ts;
-		double d_safe, d_close, d_init;
+		double d_safe, d_close, d_init, d_so_relevant;
 		double K_coll;
 		double phi_AH, phi_OT, phi_HO, phi_CR;
 		double kappa, kappa_TC;

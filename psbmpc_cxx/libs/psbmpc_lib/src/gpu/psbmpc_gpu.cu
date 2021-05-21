@@ -368,13 +368,13 @@ void PSBMPC::calculate_optimal_offsets(
 	map_thrust_dvecs();
 
 	auto input_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(
-		thread_index_dvec.begin(), 
+		thread_index_2_dvec.begin(), 
 		cb_dvec.begin(),
 		cb_index_dvec.begin(),
 		obstacle_index_dvec.begin(),
 		obstacle_ps_index_dvec.begin()));
     auto input_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(
-		thread_index_dvec.end(), 
+		thread_index_2_dvec.end(), 
 		cb_dvec.end(),
 		cb_index_dvec.end(),
 		obstacle_index_dvec.end(),
@@ -548,31 +548,39 @@ void PSBMPC::increment_control_behaviour(
 *  Name     : map_thrust_input_dvecs
 *  Function : Fills the device vectors in/out of the thrust calls with the proper
 *			  flattened values. Number of threads will be 
-*			  n_threads = n_cbs * (n_ps^1 + ... + n_ps^n_obst)
+*			  n_threads_1 = n_cbs * n_so for the second kernel, and 
+*			  n_threads_2 = n_cbs * (n_ps^1 + ... + n_ps^n_obst) for the third kernel
 *			  
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::map_thrust_dvecs()
+void PSBMPC::map_thrust_dvecs(
+	const std::vector<polygon_2D> &polygons 								// In: Static obstacle information
+	)
 {
 	// Figure out how many threads to schedule
 	int n_obst = n_ps.size();
 	int n_obst_ps_total(0);
+	int n_static_obst = polygons.size();
 	for (int i = 0; i < n_obst; i++)
 	{
 		n_obst_ps_total += n_ps[i];
 	}
-	int n_threads = pars.n_cbs * n_obst_ps_total;
-	thread_index_dvec.resize(n_threads);
+	int n_threads_1 = pars.n_cbs * n_static_obst; 
+	int n_threads_2 = pars.n_cbs * n_obst_ps_total;
+
+	sobstacle_index_dvec.resize(n_threads_1);
+
+	thread_index_dvec.resize(n_threads_2);
 	thrust::sequence(thread_index_dvec.begin(), thread_index_dvec.end(), 0);
 
-	cb_dvec.resize(n_threads);
-	cb_index_dvec.resize(n_threads);
-	obstacle_index_dvec.resize(n_threads);
-	obstacle_ps_index_dvec.resize(n_threads);
-	cb_costs_2_dvec.resize(n_threads);
+	cb_dvec.resize(n_threads_2);
+	cb_index_dvec.resize(n_threads_2);
+	dobstacle_index_dvec.resize(n_threads_2);
+	dobstacle_ps_index_dvec.resize(n_threads_2);
+	cb_costs_2_dvec.resize(n_threads_2);
 
-	unsigned int thread_index(0);
+	unsigned int thread_index_1, thread_index_2(0);
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_tml(2 * pars.n_M);
 
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
@@ -585,14 +593,14 @@ void PSBMPC::map_thrust_dvecs()
 		{	
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
-				cb_dvec[thread_index] = offset_sequence_tml;
-				cb_index_dvec[thread_index] = cb;
-				obstacle_index_dvec[thread_index] = i;
-				obstacle_ps_index_dvec[thread_index] = ps;
+				cb_dvec[thread_index_2] = offset_sequence_tml;
+				cb_index_dvec[thread_index_2] = cb;
+				dobstacle_index_dvec[thread_index_2] = i;
+				dobstacle_ps_index_dvec[thread_index_2] = ps;
 				
-				thread_index += 1;
+				thread_index_2 += 1;
 
-				/* printf("thread %d | ", thread_index - 1);
+				/* printf("thread %d | ", thread_index_2 - 1);
 				printf("cb = ");
 				for (int M = 0; M < pars.n_M; M++)
 				{
@@ -615,11 +623,12 @@ void PSBMPC::map_thrust_dvecs()
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::find_optimal_control_behaviour(
-	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data,									// In/Out: Dynamic obstacle information
+	const std::vector<polygon_2D> &polygons 								// In: Static obstacle information
 )
 {
 	int n_obst = n_ps.size();
-	unsigned int thread_index(0);
+	unsigned int thread_index_2(0);
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
@@ -649,7 +658,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -684,7 +693,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps[0]);
 
-	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr);
+	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
 	//==================================================================
 	std::tuple<double, double> tup;
 	thrust::tuple<float, float> dev_tup;
@@ -700,12 +709,10 @@ void PSBMPC::find_optimal_control_behaviour(
 		cost = 0.0;
 		curr_ps_index = 0;
 
-		dev_tup = cb_costs_1_dvec[cb];
-
-		h_so = (double)thrust::get<0>(dev_tup);
+		h_so = cb_costs_2_dvec[cb];
 		cost_so_path_matrix(0, cb) = h_so;
 
-		h_path = (double)thrust::get<1>(dev_tup);
+		h_path = cb_costs_1_dvec[cb];
 		cost_so_path_matrix(1, cb) = h_path;
 
 		for (int i = 0; i < n_obst; i++)
@@ -713,11 +720,11 @@ void PSBMPC::find_optimal_control_behaviour(
 			max_cost_i_ps.resize(n_ps[i]); mu_i_ps.resize(n_ps[i]);
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
-				dev_tup = cb_costs_2_dvec[thread_index];
+				dev_tup = cb_costs_3_dvec[thread_index_2];
 				max_cost_i_ps(ps) = (double)thrust::get<0>(dev_tup);
 				mu_i_ps(ps) = (double)thrust::get<1>(dev_tup);
-				thread_index += 1;
-				//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb, max_cost_i_ps(ps), mu_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
+				thread_index_2 += 1;
+				//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index_2, i, ps, cb, max_cost_i_ps(ps), mu_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
 			}
 
 			tup = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, mu_i_ps, data, i);
@@ -753,7 +760,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-	opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+	/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 	map_total_cost = total_cost_matrix;
 	map_cost_do = cost_do_matrix;
 	map_cost_colregs = cost_colregs_matrix;
@@ -788,7 +795,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	mxDestroyArray(n_obst_mx);
 	mxDestroyArray(opt_cb_index_mx);
 	
-	engClose(ep);
+	engClose(ep); */
 	//==================================================================
 }
 

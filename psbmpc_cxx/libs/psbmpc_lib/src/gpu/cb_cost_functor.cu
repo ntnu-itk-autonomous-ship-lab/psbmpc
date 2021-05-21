@@ -44,11 +44,11 @@ namespace GPU
 //  Author   : Trym Tengesdal
 //  Modified :
 //=======================================================================================
-__device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
+__device__ float CB_Cost_Functor_1::operator()(
 	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
-	h_so= 0.0f; h_path = 0.0f;
+	h_path = 0.0f;
 	cb_index = thrust::get<0>(cb_tuple);
 	offset_sequence = thrust::get<1>(cb_tuple);
 
@@ -64,18 +64,37 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
 		pars->guidance_method, 
 		pars->T, pars->dt);
 
-	p_step_grounding = 2;
-	h_so = mpc_cost[cb_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons, p_step_grounding); 
-
 	h_path += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
 	h_path += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
 
-	return thrust::make_tuple<float, float>(h_so, h_path);
+	return h_path;
 }
-
 
 //=======================================================================================
 //  CB COST FUNCTOR 2 METHODS
+//=======================================================================================
+//=======================================================================================
+//  Name     : operator()
+//  Function : Predicts the trajectory of the ownship for a certain control behaviour,
+//			   and calculates the static obstacle and path related costs
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
+__device__ float CB_Cost_Functor_2::operator()(
+	const thrust::tuple<const unsigned int, const unsigned int> &input_tuple	// In: Tuple consisting of the index of the control behaviour and static obstacle to consider
+	)
+{
+	max_h_so_j = 0.0f;
+	cb_index = thrust::get<0>(input_tuple);
+	j = thrust::get<1>(input_tuple);
+
+	
+
+	return max_h_so_j; 
+}
+
+//=======================================================================================
+//  CB COST FUNCTOR 3 METHODS
 //=======================================================================================
 
 /****************************************************************************************
@@ -84,7 +103,7 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__host__ CB_Cost_Functor_2::CB_Cost_Functor_2(
+__host__ CB_Cost_Functor_3::CB_Cost_Functor_3(
 	CB_Functor_Pars *pars,  										// In: Device pointer to functor parameters, one for all threads
 	CB_Functor_Data *fdata,  										// In: Device pointer to functor data, one for all threads
 	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, one for all threads
@@ -104,7 +123,7 @@ __host__ CB_Cost_Functor_2::CB_Cost_Functor_2(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrust::tuple<
+__device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrust::tuple<
 	const unsigned int, 								// Thread ID
 	TML::PDMatrix<float, 2 * MAX_N_M, 1>, 				// Control behaviour considered
 	const unsigned int, 								// Control behaviour index
@@ -140,9 +159,8 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrus
 	// 2 : Max cost calculation considering own-ship control behaviour <cb_index> and prediction scenario ps for obstacle i
 	d_safe_i = pars->d_safe + 0.5 * (fdata->ownship_length + obstacles[i].get_length());
 	//printf("d_safe = %.2f | d_safe_i = %.6f\n", pars->d_safe, d_safe_i);
-	p_step = 1;
 	v_os_prev.set_zero(); v_i_prev.set_zero();
-	for (int k = 0; k < n_samples; k += p_step)
+	for (int k = 0; k < n_samples; k += pars->p_step_cpe)
 	{	
 		//==========================================================================================
 		// 2.0 : Extract states and information relevant for cost evaluation at sample k. 
