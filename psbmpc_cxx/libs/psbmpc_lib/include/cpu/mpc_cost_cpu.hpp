@@ -148,8 +148,7 @@ namespace PSBMPC_LIB
 				const Eigen::MatrixXd &trajectory, 
 				const std::vector<polygon_2D> &polygons, 
 				const double V_w, 
-				const Eigen::Vector2d &wind_direction,
-				const int p_step) const;
+				const Eigen::Vector2d &wind_direction) const;
 		};
 
 		/****************************************************************************************
@@ -795,8 +794,7 @@ namespace PSBMPC_LIB
 			const Eigen::MatrixXd &trajectory,									// In: Predicted ownship trajectory
 			const std::vector<polygon_2D> &polygons,							// In: Static obstacle information
 			const double V_w,													// In: Estimated wind speed
-			const Eigen::Vector2d &wind_direction, 								// In: Unit vector in NE describing the estimated wind direction
-			const int p_step 													// In: Step between samples (> 1 to reduce computational effort)
+			const Eigen::Vector2d &wind_direction 								// In: Unit vector in NE describing the estimated wind direction
 			) const
 		{
 			int n_samples = std::round(pars.T / pars.dt);
@@ -806,7 +804,7 @@ namespace PSBMPC_LIB
 			Eigen::Vector2d L_0j;
 			double d_0j(0.0), t(0.0), phi_j(0.0);
 			
-			for (int k = 0; k < n_samples; k += p_step)
+			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
 			{
 				t = pars.dt * k;
 
@@ -823,14 +821,16 @@ namespace PSBMPC_LIB
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
 
-					cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
+					//cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
+					cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
 
+					if (max_cost_g < cost_g)
+					{
+						max_cost_g = cost_g;
+					}
 					//printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
-				if (max_cost_g < cost_g)
-				{
-					max_cost_g = cost_g;
-				}
+				
 			}
 			return max_cost_g;
 		}

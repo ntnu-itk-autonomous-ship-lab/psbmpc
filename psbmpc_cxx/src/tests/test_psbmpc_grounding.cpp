@@ -170,7 +170,7 @@ int main(){
 //*****************************************************************************************************************	
 	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
-	PSBMPC_LIB::CPU::PSBMPC psbmpc;
+	PSBMPC_LIB::GPU::PSBMPC psbmpc;
 
 	double u_opt(u_d), chi_opt(0.0);
 
@@ -197,7 +197,7 @@ int main(){
 		std::cout << buffer1 << std::endl;
 	}
 	// Input the path to the land data
-    std::string filename = "../src/tests/grounding_hazard_data/charts/land/land.shp";
+    std::string filename = "src/tests/grounding_hazard_data/charts/land/land.shp";
     
    	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename, psbmpc);
 	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();

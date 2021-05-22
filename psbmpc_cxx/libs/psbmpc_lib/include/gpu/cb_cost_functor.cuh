@@ -125,7 +125,7 @@ namespace PSBMPC_LIB
 			//==============================================
 			float max_h_so_j; 
 
-			unsigned int cb_index, j;
+			unsigned int thread_index, cb_index, j;
 
 		public: 
 			__host__ CB_Cost_Functor_2() : 
@@ -154,7 +154,7 @@ namespace PSBMPC_LIB
 				polygons = nullptr;
 			}
 			
-			__device__ float operator()(const thrust::tuple<const unsigned int, const unsigned int> &input_tuple);
+			__device__ float operator()(const thrust::tuple<const unsigned int, const unsigned int, const unsigned int> &input_tuple);
 
 		};
 

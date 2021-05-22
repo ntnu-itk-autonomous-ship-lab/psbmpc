@@ -81,14 +81,16 @@ __device__ float CB_Cost_Functor_1::operator()(
 //  Modified :
 //=======================================================================================
 __device__ float CB_Cost_Functor_2::operator()(
-	const thrust::tuple<const unsigned int, const unsigned int> &input_tuple	// In: Tuple consisting of the index of the control behaviour and static obstacle to consider
+	const thrust::tuple<const unsigned int, const unsigned int, const unsigned int> &input_tuple	// In: Tuple consisting of the index of the thread, control behaviour and static obstacle to consider
 	)
 {
 	max_h_so_j = 0.0f;
-	cb_index = thrust::get<0>(input_tuple);
-	j = thrust::get<1>(input_tuple);
 
-	
+	thread_index = thrust::get<0>(input_tuple);
+	cb_index = thrust::get<1>(input_tuple);
+	j = thrust::get<2>(input_tuple);
+
+	max_h_so_j = mpc_cost[thread_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons[j]);
 
 	return max_h_so_j; 
 }

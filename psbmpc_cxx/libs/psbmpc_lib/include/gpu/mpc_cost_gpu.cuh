@@ -164,8 +164,12 @@ namespace PSBMPC_LIB
 			__host__ __device__ float calculate_grounding_cost(
 				const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
 				const CB_Functor_Data *fdata, 
-				const Basic_Polygon *polygons,
-				const int p_step);
+				const Basic_Polygon *polygons);
+
+			__host__ __device__ float calculate_grounding_cost(
+				const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
+				const CB_Functor_Data *fdata, 
+				const Basic_Polygon &poly);
 		};
 
 		//=======================================================================================
@@ -597,14 +601,13 @@ namespace PSBMPC_LIB
 		__host__ __device__ float MPC_Cost<Parameters>::calculate_grounding_cost(
 			const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,					// In: Calling Own-ship trajectory
 			const CB_Functor_Data *fdata,												// In: Pointer to various device data needed for the GPU calculations
-			const Basic_Polygon *polygons, 												// In: Pointer to static obstacles to compute grounding cost wrt
-			const int p_step 															// In: Step between samples (> 1 to reduce computational effort)
+			const Basic_Polygon *polygons 												// In: Pointer to static obstacles to compute grounding cost wrt
 			)
 		{
 			max_cost_g = 0.0f;
 			
 			n_samples = trajectory.get_cols();
-			for (int k = 0; k < n_samples; k += p_step)
+			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
 			{
 				cost_g = 0.0f;
 				p_os_k = trajectory.get_block<2, 1>(0, k, 2, 1);
@@ -620,6 +623,37 @@ namespace PSBMPC_LIB
 
 					//printf("t = %.4f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
+				if (max_cost_g < cost_g)
+				{
+					max_cost_g = cost_g;
+				}
+			}
+			return max_cost_g;
+		}
+
+		template <typename Parameters>
+		__host__ __device__ float MPC_Cost<Parameters>::calculate_grounding_cost(
+			const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,					// In: Calling Own-ship trajectory
+			const CB_Functor_Data *fdata,												// In: Pointer to various device data needed for the GPU calculations
+			const Basic_Polygon &poly	 												// In: Static obstacle to compute grounding cost wrt
+			)
+		{
+			max_cost_g = 0.0f; cost_g = 0.0f;
+			
+			n_samples = trajectory.get_cols();
+			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
+			{
+				p_os_k = trajectory.get_block<2, 1>(0, k, 2, 1);
+
+				L_0j = distance_to_polygon(p_os_k, poly);
+				d_0j = L_0j.norm();
+				L_0j.normalize();
+
+				phi_j = fmaxf(0.0f, L_0j.dot(fdata->wind_direction));
+
+				cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(- (pars.G_3 * d_0j + pars.G_4 * (float)k * pars.dt));
+
+				//printf("t = %.4f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				if (max_cost_g < cost_g)
 				{
 					max_cost_g = cost_g;

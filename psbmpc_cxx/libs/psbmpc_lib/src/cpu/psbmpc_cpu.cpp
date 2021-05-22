@@ -361,7 +361,7 @@ void PSBMPC::calculate_optimal_offsets(
 		h_colregs = pars.kappa * std::min(1.0, mu_i.sum());
 		cost_colregs_matrix(0, cb) = h_colregs;
 
-		h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction, pars.p_step_grounding);
+		h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
 		cost_so_path_matrix(0, cb) = h_so;
 
 		h_path += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
