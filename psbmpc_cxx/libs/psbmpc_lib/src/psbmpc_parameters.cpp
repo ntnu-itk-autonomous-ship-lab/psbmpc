@@ -340,7 +340,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 1;
+	n_M = 2;
 	n_r = 7;
 
 	chi_offsets.resize(n_M);
@@ -349,10 +349,10 @@ void PSBMPC_Parameters::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(1);
+			u_offsets[M].resize(3);
 
-			u_offsets[M] << 1.0;
-			//u_offsets[M] << 1.0, 0.5, 0.0;
+			//u_offsets[M] << 1.0;
+			u_offsets[M] << 1.0, 0.5, 0.0;
 
 			chi_offsets[M].resize(13);
 			//chi_offsets[M] << 0.0;
@@ -393,7 +393,7 @@ void PSBMPC_Parameters::initialize_pars()
 
 	p_step = 1;
 	p_step_cpe = 2;
-	p_step_grounding = 1;
+	p_step_grounding = 2;
 	if (prediction_method == ERK1)
 	{ 
 		dt = 0.5; 

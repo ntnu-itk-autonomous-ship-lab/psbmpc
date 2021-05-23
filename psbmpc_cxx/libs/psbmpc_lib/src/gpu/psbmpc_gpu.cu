@@ -351,7 +351,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_1_dvec.begin(), cb_dvec.begin()));
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_1_dvec.end(), cb_dvec.end()));
-    
+	
 	thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs_1_dvec.begin(), *cb_cost_functor_1);
 	cuda_check_errors("Thrust transform for cost calculation part one failed.");
 
@@ -407,8 +407,8 @@ void PSBMPC::calculate_optimal_offsets(
 		dobstacle_index_dvec.end(),
 		dobstacle_ps_index_dvec.end()));
 
-    thrust::transform(input_tuple_2_begin, input_tuple_2_end, cb_costs_3_dvec.begin(), *cb_cost_functor_3);
-	cuda_check_errors("Thrust transform for cost calculation part three failed.");
+    /* thrust::transform(input_tuple_2_begin, input_tuple_2_end, cb_costs_3_dvec.begin(), *cb_cost_functor_3);
+	cuda_check_errors("Thrust transform for cost calculation part three failed."); */
 
 	//===============================================================================================================
 	// Stitch together the GPU calculated costs to form the cost function for each control behaviour
@@ -601,6 +601,7 @@ void PSBMPC::map_thrust_dvecs(
 	sobstacle_index_dvec.resize(n_threads_1);
 	thread_index_1_dvec.resize(n_threads_1);
 	thrust::sequence(thread_index_1_dvec.begin(), thread_index_1_dvec.end(), 0);
+	cb_costs_2_dvec.resize(n_threads_1);
 	
 	// Threads for calculating the partial dynamic obstacle cost
 	int n_threads_2 = pars.n_cbs * n_obst_ps_total;
@@ -611,7 +612,7 @@ void PSBMPC::map_thrust_dvecs(
 	cb_index_2_dvec.resize(n_threads_2);
 	dobstacle_index_dvec.resize(n_threads_2);
 	dobstacle_ps_index_dvec.resize(n_threads_2);
-	cb_costs_2_dvec.resize(n_threads_2);
+	cb_costs_3_dvec.resize(n_threads_2);
 
 	unsigned int thread_index_1(0), thread_index_2(0);
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_tml(2 * pars.n_M);

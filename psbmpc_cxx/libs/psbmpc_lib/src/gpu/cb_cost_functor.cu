@@ -123,7 +123,7 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrus
 	cb_index = thrust::get<2>(input_tuple);
 	i = thrust::get<3>(input_tuple);
 	ps = thrust::get<4>(input_tuple);
-
+	
 	n_samples = round(pars->T / pars->dt);
 
 	d_safe_i = 0.0; chi_m = 0.0; cost_k = 0.0;
@@ -248,26 +248,12 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrus
 		}
 		//==========================================================================================
 		//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i, cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
-		
-		/* printf("max_cost_ps = ");
-		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
-		{
-			printf("%.4f", max_cost_ps(ps));
-			if (ps < fdata->n_ps[i] - 1)
-			{
-				printf(", ");
-			}
-		}
-		printf("\n"); */
+
 		//==============================================================================================
 	}
 	
 	//==================================================================================================
 	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_i_ps, mu_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
-	/* printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1), 
-		offset_sequence(2), RAD2DEG * offset_sequence(3)); */
-	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1), 
-	//	offset_sequence(2), RAD2DEG * offset_sequence(3)), offset_sequence(4), RAD2DEG * offset_sequence(5)); 
 
 	//==================================================================================================
 	// 2.7 : Return dynamic obstacle related cost and associated colregs violation indicator
