@@ -114,7 +114,7 @@ int main(){
 	// Matlab array setup for the ownship and obstacle, ++
 	//=====================================================================
 	
-	// Matlab engine setup
+	/* // Matlab engine setup
  	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
@@ -131,7 +131,7 @@ int main(){
 
 	double* ptraj_i; 
 	double* p_P_traj_i; 
-	double* p_wps_i;
+	double* p_wps_i; */
 
 	int n_wps_i;
 
@@ -262,7 +262,7 @@ int main(){
 		pcount += 1;
     }
 
-	mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
+	/* mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
     mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
 	mxArray *simplified_polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices_simplified, 2, mxREAL);
 
@@ -280,7 +280,7 @@ int main(){
 
 	engPutVariable(ep, "map_origin", map_origin_mx);
 	engPutVariable(ep, "P", polygon_matrix_mx);
-	engPutVariable(ep, "P_simplified", simplified_polygon_matrix_mx);
+	engPutVariable(ep, "P_simplified", simplified_polygon_matrix_mx); */
 
 //*****************************************************************************************************************
 // Simulation
@@ -315,7 +315,7 @@ int main(){
 	// Matlab plot setup
 	//=========================================================
 
-	for (int i = 0; i < n_obst; i++)
+	/* for (int i = 0; i < n_obst; i++)
 	{
 		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
 		traj_i_mx[i] = mxCreateDoubleMatrix(trajectory_i[i].rows(), N, mxREAL);
@@ -357,7 +357,7 @@ int main(){
 		engPutVariable(ep, "i", i_mx);
 
 		engEvalString(ep, "init_obstacle_plot_grounding");
-	}
+	} */
 	//=========================================================
 	
 	Eigen::Vector4d xs_i_k;
@@ -430,7 +430,7 @@ int main(){
 		//===========================================
 		// Send trajectory data to matlab
 		//===========================================
-		buffer[BUFSIZE] = '\0';
+		/* buffer[BUFSIZE] = '\0';
 		engOutputBuffer(ep, buffer, BUFSIZE);
 
 		k_s_mx = mxCreateDoubleScalar(k + 1);
@@ -468,12 +468,12 @@ int main(){
 			engPutVariable(ep, "i", i_mx);
 
 			engEvalString(ep, "update_obstacle_plot_grounding");
-		}
+		} */
 		//======================================================
 		
 	}
 
-	mxDestroyArray(map_origin_mx);
+	/* mxDestroyArray(map_origin_mx);
 	mxDestroyArray(d_safe_mx);
 	mxDestroyArray(polygon_matrix_mx);
 	mxDestroyArray(simplified_polygon_matrix_mx);
@@ -490,7 +490,7 @@ int main(){
 		mxDestroyArray(P_traj_i_mx[i]);
 		mxDestroyArray(wps_i_mx[i]);
 	}
-	engClose(ep);  
+	engClose(ep);   */
 
 	return 0;
 }

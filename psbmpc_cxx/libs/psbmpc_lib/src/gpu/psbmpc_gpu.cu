@@ -627,6 +627,15 @@ void PSBMPC::map_thrust_dvecs(
 			cb_index_1_dvec[thread_index_1] = cb;
 			sobstacle_index_dvec[thread_index_1] = j;
 			thread_index_1 += 1;
+
+			/* printf("thread_1 %d | ", thread_index_1 - 1);
+			printf("cb = ");
+			for (int M = 0; M < pars.n_M; M++)
+			{
+				printf("%.2f, %.2f", offset_sequence(2 * M), RAD2DEG * offset_sequence(2 * M + 1));
+				if (M < pars.n_M - 1) printf(", ");
+			}
+			printf(" | cb_index = %d | j = %d |\n", cb, j); */
 		}
 
 		for (int i = 0; i < n_obst; i++)
@@ -640,7 +649,7 @@ void PSBMPC::map_thrust_dvecs(
 				
 				thread_index_2 += 1;
 
-				/* printf("thread %d | ", thread_index_2 - 1);
+				/* printf("thread_2 %d | ", thread_index_2 - 1);
 				printf("cb = ");
 				for (int M = 0; M < pars.n_M; M++)
 				{

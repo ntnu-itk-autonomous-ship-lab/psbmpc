@@ -35,8 +35,7 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : CB_Cost_Functor_1
 		*  Function : Functor used to predict the own-ship trajectory
-		*			  following a certain control behaviour, and calculate the static obstacle
-		*			  and path related costs
+		*			  following a certain control behaviour, and calculate the path related costs
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
@@ -237,7 +236,9 @@ namespace PSBMPC_LIB
 				CPE *cpe,
 				Ownship *ownship,
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,
-				MPC_Cost<CB_Functor_Pars> *mpc_cost);
+				MPC_Cost<CB_Functor_Pars> *mpc_cost):
+				pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost) 
+				{}
 
 			__host__ __device__ ~CB_Cost_Functor_3() 
 			{ 
@@ -245,14 +246,11 @@ namespace PSBMPC_LIB
 				fdata = nullptr; 
 				obstacles = nullptr; 
 				cpe = nullptr; 
+				ownship = nullptr;
 				trajectory = nullptr; 
 				mpc_cost = nullptr;
 			}
 
-			// Used when flattening the nested for loops over obstacles and their prediction scenario into a single loop 
-			// merged with the control behaviour loop. The maximum dynamic obstacle cost of a control behaviour for the own-ship
-			// considering obstacle i in prediction scenario ps is calculated, along with the associated own-ship COLREGS violation
-			// indicator
 			__device__ thrust::tuple<float, float> operator()(const thrust::tuple<
 				const unsigned int, 
 				TML::PDMatrix<float, 2 * MAX_N_M, 1>, 

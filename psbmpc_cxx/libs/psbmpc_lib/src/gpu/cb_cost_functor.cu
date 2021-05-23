@@ -100,27 +100,8 @@ __device__ float CB_Cost_Functor_2::operator()(
 //=======================================================================================
 
 /****************************************************************************************
-*  Name     : CB_Cost_Functor
-*  Function : Class constructor
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__host__ CB_Cost_Functor_3::CB_Cost_Functor_3(
-	CB_Functor_Pars *pars,  										// In: Device pointer to functor parameters, one for all threads
-	CB_Functor_Data *fdata,  										// In: Device pointer to functor data, one for all threads
-	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, one for all threads
-	CPE *cpe, 		 												// In: Device pointer to the collision probability estimator, one for each thread
-	Ownship *ownship, 												// In: Device pointer to the ownship class, one for each thread
-	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
-	MPC_Cost<CB_Functor_Pars> *mpc_cost								// In: Device pointer to the cost function keeper class, one for each thread
-	) :
-	pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost)
-{
-}
-
-/****************************************************************************************
 *  Name     : operator()
-*  Function : This is where the fun begins. Evaluates the cost of following the control
+*  Function : Evaluates the cost of following the control
 *			  behaviour (a particular avoidance maneuver) given by the input tuple.
 *  Author   : Trym Tengesdal
 *  Modified :
