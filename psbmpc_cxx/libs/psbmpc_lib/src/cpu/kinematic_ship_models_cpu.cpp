@@ -38,8 +38,8 @@ Kinematic_Ship::Kinematic_Ship()
 	l = 5.0; // milliAmpere dims
 	w = 3.0;
 	
-	T_U = 10.0;
-	T_chi = 7.5; 		// Ad hoc parameters, are very dependent on the ship type
+	T_U = 1.0f;
+	T_chi = 1.0f; 		// Ad hoc parameters, are very dependent on the ship type
 
 	// Guidance parameters
 	e_int = 0.0;

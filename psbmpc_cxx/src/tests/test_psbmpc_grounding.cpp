@@ -26,6 +26,7 @@
 #include "engine.h"
 
 #include <iostream>
+#include <limits>
 #include <vector>
 #include <chrono>
 #include <memory>
@@ -38,7 +39,7 @@
 // Main program:
 //*****************************************************************************************************************
 int main(){
-
+	std::cout << std::numeric_limits<long double>::digits10 << std::endl;
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
@@ -50,9 +51,9 @@ int main(){
 
 	/*coordinates are given in wgs-84 use https://finnposisjon.test.geonorge.no/ */
 	Eigen::Matrix<double, 6, 1> xs_os_0;
-	// xs_os_0 << 7042320, 269475, 180 * DEG2RAD, 1, 0, 0; // utforbi skansen
-	//xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 2.0, 0, 0; // "i" skansen
-	xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 2.0, 0, 0; // "i" skansen
+	//xs_os_0 << 7042320, 269475, 180 * DEG2RAD, 1, 0, 0; // utforbi skansen
+	//xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 1.5, 0, 0; // "i" skansen
+	xs_os_0 << 7042220, 270175, 60 * DEG2RAD, 1.5, 0, 0; // rett sørvest for ravnkloa
 	double u_d = 1.5, chi_d, u_c, chi_c;
 	
 	PSBMPC_LIB::CPU::Ownship asv_sim;
@@ -164,7 +165,6 @@ int main(){
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T_sim, dt);
 	}
-
 
 //*****************************************************************************************************************
 // PSB-MPC setup

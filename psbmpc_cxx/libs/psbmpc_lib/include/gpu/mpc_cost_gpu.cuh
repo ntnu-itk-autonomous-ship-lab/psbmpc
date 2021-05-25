@@ -60,7 +60,7 @@ namespace PSBMPC_LIB
 			TML::Vector2d p_ray_end, v, v_next;
 
 			float l_sqrt, t_line, d_0j, phi_j;
-			double val, epsilon;
+			long double val, epsilon;
 			int n_samples, o_1, o_2, o_3, o_4, line_intersect_count;
 
 			TML::Vector3f a, b;
@@ -678,12 +678,13 @@ namespace PSBMPC_LIB
 			const TML::Vector2d &r
 			)
 		{
-			epsilon = 1e-12; // abs(val) less than 1e-12 m^2 is considered zero for this check
+			epsilon = 1e-17; // abs(val) less than 1e-13 m^2 is considered zero for this check
 			// Calculate z-component of cross product (q - p) x (r - q)
-			val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
+			val = ((long double)q(0) - (long double)p(0)) * ((long double)r(1) - (long double)q(1)) - 
+					((long double)q(1) - (long double)p(1)) * ((long double)r(0) - (long double)q(0));
 
 			//printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
-			if (val >= -epsilon && val <= epsilon) 	{ return 0; } // colinear
+			if (val > -epsilon && val < epsilon) 	{ return 0; } // colinear
 			else if (val > epsilon) 				{ return 1; } // clockwise
 			else 									{ return 2; } // counterclockwise
 		}
@@ -763,12 +764,23 @@ namespace PSBMPC_LIB
 			const Basic_Polygon &poly
 			)
 		{
-			if (poly.vertices.get_cols() < 3) { return false;}
-			line_intersect_count = 0;
+			if (poly.vertices.get_cols() < 3 ||
+				p(0) < poly.bbox(0, 0) || p(0) > poly.bbox(0, 1) || p(1) < poly.bbox(1, 0) || p(1) > poly.bbox(1, 1)) 
+			{ return false; }
 
-			p_ray_end = poly.bbox.get_col(1) - p;
-			p_ray_end *= 1.1;
-			p_ray_end += p;
+			line_intersect_count = 0;
+			if ((poly.bbox.get_col(1) - p).norm() > (poly.bbox.get_col(0) - p).norm())
+			{
+				p_ray_end = poly.bbox.get_col(1) - p;
+				p_ray_end *= 1.01;
+				p_ray_end += p;
+			}
+			else
+			{
+				p_ray_end = poly.bbox.get_col(0) - p;
+				p_ray_end *= 1.01;
+				p_ray_end += p;
+			}
 
 			for (size_t l = 0; l < poly.vertices.get_cols() - 1; l++)
 			{

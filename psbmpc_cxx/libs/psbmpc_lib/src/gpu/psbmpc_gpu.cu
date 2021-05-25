@@ -235,64 +235,78 @@ void PSBMPC::calculate_optimal_offsets(
 	{
 		std::cout << "engine start failed!" << std::endl;
 	} */
- 	/* mxArray *traj_os = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
+	/*
+	mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
+ 	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
-	double *ptraj_os = mxGetPr(traj_os); 
+	double *p_init_state_os = mxGetPr(init_state_os_mx); 
+	double *ptraj_os_mx = mxGetPr(traj_os_mx); 
 	double *p_wps_os = mxGetPr(wps_os); 
-
+	
+	Eigen::Map<Eigen::VectorXd> map_init_state_os(p_init_state_os, ownship_state.size(), 1);
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
+	map_init_state_os = ownship_state;
 	map_wps = waypoints;
 
-	//Make matlab polygons type friendly array:
-    Eigen::Matrix<double, -1, 2> polygon_matrix;
-    int n_total_vertices = 0;
-    BOOST_FOREACH(polygon_2D const &poly, polygons)
-	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
-		{
-			n_total_vertices += 1;
-		}
-		n_total_vertices += 1;
-    }
-    polygon_matrix.resize(n_total_vertices, 2); 
-
-    // format polygon_matrix array for matlab plotting
-    int pcount = 0; 
-    BOOST_FOREACH(polygon_2D const& poly, polygons)
-	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
-		{
-			polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
-			polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
-			
-			pcount += 1;
-		}
-		// each polygon is separated with (-1, -1)
-		polygon_matrix(pcount, 1) = -1;
-		polygon_matrix(pcount, 0) = -1;
-		pcount += 1;
-    }
-    
-    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
-    double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
-    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
-	map_polygon_matrix = polygon_matrix;
-
-	engPutVariable(ep, "P", polygon_matrix_mx);
-
-	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx;
+	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *n_static_obst_mx, *i_mx, *ps_mx, *d_safe_mx;
 	dt_sim = mxCreateDoubleScalar(pars.dt);
 	T_sim = mxCreateDoubleScalar(pars.T);
 	n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
-
+	d_safe_mx = mxCreateDoubleScalar(pars.d_safe);
+	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
+	
+	engPutVariable(ep, "ownship_state", init_state_os_mx);
 	engPutVariable(ep, "n_ps", n_ps_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
+	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
 	engPutVariable(ep, "dt_sim", dt_sim);
 	engPutVariable(ep, "T_sim", T_sim);
 	engPutVariable(ep, "WPs", wps_os);
+	engPutVariable(ep, "d_safe", d_safe_mx);
 	engEvalString(ep, "inside_psbmpc_init_plot");
+
+	Eigen::Matrix<double, 2, -1> polygon_matrix;
+    int n_total_vertices = 0;
+    mxArray *polygon_matrix_mx(nullptr);
+	mxArray *d_0j_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
+	mxArray *j_mx(nullptr);
+    double *p_polygon_matrix(nullptr);
+	double *p_d_0j = mxGetPr(d_0j_mx);
+    
+	Eigen::Map<Eigen::Vector2d> map_d_0j(p_d_0j, 2, 1);
+	int pcount;
+	Eigen::Vector2d d_0j;
+	for (int j = 0; j < n_static_obst; j++)
+	{
+		j_mx = mxCreateDoubleScalar(j + 1);
+		n_total_vertices = 0;
+		for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; ++it)
+		{
+			n_total_vertices += 1;
+		}
+		polygon_matrix.resize(2, n_total_vertices);
+		pcount = 0;
+		for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; ++it)
+		{
+			polygon_matrix(0, pcount) = boost::geometry::get<0>(*it);
+			polygon_matrix(1, pcount) = boost::geometry::get<1>(*it);
+			
+			pcount += 1;
+		}
+		d_0j = mpc_cost.distance_to_polygon(ownship_state.block<2, 1>(0, 0), polygons[j]);
+		map_d_0j = d_0j;
+
+		polygon_matrix_mx = mxCreateDoubleMatrix(2, n_total_vertices, mxREAL);
+		p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+		Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, 2, n_total_vertices);
+		map_polygon_matrix = polygon_matrix;
+		engPutVariable(ep, "j", j_mx);
+		engPutVariable(ep, "d_0j", d_0j_mx);
+		engPutVariable(ep, "polygon_matrix_j", polygon_matrix_mx);
+		engEvalString(ep, "inside_psbmpc_static_obstacle_plot");
+	}
 
 	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
@@ -328,7 +342,7 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	} */
+	}  */
 	
 	//===============================================================================================================
 
@@ -833,6 +847,8 @@ void PSBMPC::find_optimal_control_behaviour(
 	map_cb_matrix = cb_matrix;
 	map_Pr_s_i = Pr_s_i_matrix;
 
+	mxArray *is_gpu_mx = mxCreateDoubleScalar(1);
+	engPutVariable(ep, "is_gpu", is_gpu_mx);
 	engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
 	engPutVariable(ep, "total_cost", total_cost_mx);
 	engPutVariable(ep, "cost_do", cost_do_mx);
@@ -847,6 +863,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	engPutVariable(ep, "opt_cb_index", opt_cb_index_mx);
 	engEvalString(ep, "psbmpc_cost_plotting");
 
+	mxDestroyArray(is_gpu_mx);
 	mxDestroyArray(total_cost_mx);
 	mxDestroyArray(cost_do_mx);
 	mxDestroyArray(cost_colregs_mx);

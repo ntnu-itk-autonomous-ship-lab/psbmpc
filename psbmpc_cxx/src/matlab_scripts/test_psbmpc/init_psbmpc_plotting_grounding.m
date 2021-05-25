@@ -59,3 +59,5 @@ for i = 1 : n_obst
     h_X_i_ptch{i} = [];
     h_P_i{i} = [];
 end
+
+

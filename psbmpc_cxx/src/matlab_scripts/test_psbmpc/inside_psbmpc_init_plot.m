@@ -26,11 +26,11 @@ grid(ax1, 'on'); grid(ax2, 'on');
 ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]'); 
 ylabel(ax2,'Probability');  xlabel(ax2,'Time [s]'); 
 
-[n_vertices, ~] = size(P);
-P(P == -1) = NaN;
-test_polygon=polyshape(P);
-
-plot(ax1,test_polygon);
+% [n_vertices, ~] = size(P);
+% P(P == -1) = NaN;
+% test_polygon=polyshape(P);
+% 
+% plot(ax1,test_polygon);
 
 th = 0 : 0.01 : 2.01 * pi;
 x_cs = cos(th); y_cs = sin(th);
@@ -66,5 +66,15 @@ for i = 1 : n_obst
         h_text_i{i, ps} = [];
     end
 end
+
+h_text_j = cell(n_static_obst, 1);
+h_polygon_j = cell(n_static_obst, 1);
+h_d_j = cell(n_static_obst, 1);
+for j = 1 : n_static_obst
+    h_text_j{j} = [];
+    h_polygon_j{j} = [];
+    h_d_j{j} = [];
+end
+
 
 drawnow;
