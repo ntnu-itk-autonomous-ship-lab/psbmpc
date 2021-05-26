@@ -11,4 +11,4 @@
 <p> Move with care using this library for other stuff than what it is used for as of now in this code base. There will definitely be undiscovered/unexpected bugs when attempting to use the containers for operations they have not been tested for. </p>
 
 
-<p> Trym Tengesdal, 8. Oktober 2020.  </p>
+<p> Trym Tengesdal, 8. October 2020.  </p>

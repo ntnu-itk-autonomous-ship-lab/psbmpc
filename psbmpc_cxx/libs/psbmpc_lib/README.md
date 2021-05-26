@@ -9,12 +9,12 @@ Note that the amount of memory you need on your GPU to run the algorithm will in
 
 ## Dependencies
 
-- Matlab C API for the debugging and plotting functionality. (Follow instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
-- Eigen >= 3.3.7 (already included in repo under libs/third_party_libs/). Eigen is still experimental regarding CUDA compatibility. I have not suppressed the warnings from eigen regarding CUDA-stuff, but hope that one day Eigen will be fully functionable on the GPU. Not tested with other Eigen versions.
+- Matlab C API for the debugging and plotting functionality. (Follow setup instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
+- Eigen3. Eigen is still experimental regarding CUDA compatibility. I have suppressed the warnings from eigen regarding CUDA-stuff, but hope that one day Eigen will be fully functionable and warning-free on the GPU. Not tested with other Eigen versions.
 - xoshiro256+ random number generator used in the Collision Probability Estimator implemented for use in the CPU version (already included in repo under libs/third_party_libs/, implementation taken from <https://gist.github.com/imneme/3eb1bcc5418c4ae83c4c6a86d9cbb1cd#comments>). See <http://prng.di.unimi.it/> for more information. 
 - CUDA and Thrust for the GPU version. Not tested for CUDA versions below 10.0.
 - cuRAND <https://docs.nvidia.com/cuda/curand/index.html> is used for the Collision Probability Estimator compatible on the device. 
-- Boost <https://www.boost.org/> for reading shapefile data into a vector of polygons, used in the grounding cost calculation of the PSB-MPC (CPU only as of now).
+- Boost <https://www.boost.org/> for reading shapefile data into a vector of polygons in the Grounding Hazard Manager, and used in the grounding cost calculation of the PSB-MPC CPU version.
 
 ## Overall Structure
 <p>The library for the GPU-implementation has the following structure <br>
@@ -43,7 +43,7 @@ and has the following **outputs**:
 - A predicted trajectory for the own-ship when implementing the optimal avoidance maneuver(s).
 - Obstacle_Data: Some parts of the Obstacle_Data can be modified by the PSB-MPC (predicted relative hazard levels for each obstacle)
 
-### PSBMPC_Parameters
+### PSBMPC Parameters
 <p> Contains all PSB-MPC parameters in a class, which should be modified according to tuning changes. The class has get/set functionality for each parameter according to an index file "psbmpc_index.h", and uses limits on double and integer type parameters to assure that the setting of these parameters makes sense. Work could although be done to make the get/set functionality even better.<br>
 
 Note that the amount of control behaviours (function of the amount of maneuvers and different maneuver types considered) that can be considered on the GPU, is highly limited by the amount of memory available on the GPU, as some data structures (for instance the CPE class) need to be allocated and transferred to each thread (host to device transfer). 
@@ -53,17 +53,20 @@ Note that the amount of control behaviours (function of the amount of maneuvers 
 ### SBMPC
 <p> The original SBMPC, made into a separate class for the library to enable easier comparison. </p>
 
-### SBMPC_Parameters 
-<p> Parameter class for the SBMPC </p>
+### SBMPC Parameters 
+<p> Parameter class for the SBMPC. </p>
 
-### MPC_Cost
-<p> Class responsible for evaluating the cost function in the PSBMPC, SBMPC and obstacle SBMPC. One version each for the CPU/GPU implementation.  </p>
+### MPC Cost
+<p> Class responsible for evaluating the cost function in the PSBMPC, SBMPC and obstacle SBMPC. One version each, meant for the host/device side.  </p>
 
-## CB Cost Functor (1 & 2)
-<p> Special case C++ class/struct which has overloaded the **operator(..)**. The functors 1 and 2 are used to evaluate the cost of following one particular control behaviour. The functors are ported to the gpu, where each thread will run the **operator(..)** to evaluate the cost of a certain control behaviour. The first **CB_Cost_Functor_1** predicts the own-ship trajectory for all control behaviours, and calculates the static obstacle cost and path related costs. After this, the second **CB_Cost_Functor_2** calculates parts of the dynamic obstacle costs. The total cost of each control behaviour is then stitched together on the host side in the **find_optimal_control_behaviour()** function.   </p>
+## CB Cost Functor (1, 2 & 3)
+<p> Special case C++ class/struct which has overloaded the **operator(..)**. The functors 1, 2 and 3 are used to evaluate the cost of following one particular control behaviour. The functors are ported to the gpu, where each thread will run the **operator(..)** to evaluate the cost of a certain control behaviour. The first **CB_Cost_Functor_1** predicts the own-ship trajectory for all control behaviours, and calculates the path related costs. After this, the second **CB_Cost_Functor_2** calculates the grounding cost wrt one static obstacle. The third **CB_Cost_Functor_3** calculates parts of the dynamic obstacle costs. The total cost of each control behaviour is then stitched together on the host side in the **find_optimal_control_behaviour()** function.   </p>
 
 ### CB Cost Functor Structures 
 <p> Defines data for GPU threads that is needed in the **CB_Cost_Functor**, which needs to be sent from the host to the device. A subset of the PSB-MPC parameters are defined in a struct here, and also a struct which gathers diverse types of data for use on the GPU. </p>
+
+### Grounding Hazard Manager
+<p> Reads in ENC data of land in the form of shapefiles into 2D polygons. Simplifies the polygons using the Ramer-Douglas-Peucker algorithm <https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm>, and returns a reference to the relevant ones for usage in the PSBMPC </p>
 
 ### Obstacle Predictor
 <p> Responsible for setting up and predicting the dynamic obstacle trajectories, used by the PSB-MPC. </p>
@@ -89,24 +92,24 @@ and also updates the current situation type that the own-ship is in, wrt to each
 
 The obstacle classes maintains information about the obstacle, in addition to its predicted trajectories and PSB-MPC cost function related parameters. Organized into a inheritance hierarchy with
 
-- Tracked_Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the PSB-MPC to keep track of the nearby obstacles. 
-- Prediction_Obstacle: More minimalistic class than the Tracked_Obstacle, used by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system.**Not used nor maintained**
-- Cuda_Obstacle: Used as a GPU-friendly data container of relevant Tracked_Obstacle data needed on the GPU. Read-only when processing on the GPU.
+- Tracked Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the PSB-MPC to keep track of the nearby obstacles. 
+- Prediction Obstacle: More minimalistic class than the Tracked Obstacle, used by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system.**Not used nor maintained**
+- Cuda Obstacle: Used as a GPU-friendly data container of relevant Tracked Obstacle data needed on the GPU. Read-only when processing on the GPU.
 
 
-### Obstacle_SBMPC_Parameters
+### Obstacle SBMPC Parameters
 
-<p> Special case parameter class for the Obstacle_SBMPC which is used on the GPU. Uses the TML library instead of Eigen for matrix/vector types </p>
+<p> Special case parameter class for the Obstacle SBMPC which is used on the GPU. Uses the TML library instead of Eigen for matrix/vector types. </p>
 
-### Obstacle_SBMPC
+### Obstacle SBMPC
 
 A simple SB-MPC meant for use by obstacles in the PSB-MPC prediction when considering intelligent obstacles. One version each for the CPU/GPU implementation.
 
-### Kinetic_Ship_Models
+### Kinetic Ship Models
 
 Implements a 3DOF surface vessel base model class with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. One version each for the CPU/GPU implementation. By specifying the compile time flag OWNSHIP_TYPE, one can choose between the derived versions Telemetron and MilliAmpere(NOT FINISHED).
 
-### Kinematic_Ship_Models
+### Kinematic Ship Models
 
 <p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with some first order time constant delay.  </p>
 The model is on the form <br>
@@ -116,7 +119,7 @@ The model is on the form <br>
 <img src="https://render.githubusercontent.com/render/math?math=\chi_{k%2B1} = \chi_{k} %2B \Delta_t \frac{1}{T_{\chi}}(\chi_d - \chi_{k})"> <br>
 <img src="https://render.githubusercontent.com/render/math?math=U_{k%2B1} = U_{k} %2B \Delta_t \frac{1}{T_{U}}(U_d - U_{k})"> <br>
 
-<p> One version each for the CPU/GPU implementation. By specifying the compile time flag OWNSHIP_TYPE, one can choose to use this model for the Ownship. This kinematic model is the default for the Obstacle Ship. </p> 
+<p> One version each for the CPU/GPU implementation. By specifying the compile time flag **OWNSHIP_TYPE**, one can choose to use this model for the Ownship. This kinematic model is the default for the Obstacle Ship. </p> 
 
 ### KF
 
@@ -135,13 +138,13 @@ This is the Collision Probability Estimator used in the PSB-MPC predictions. Has
 <p> Inlined functions commonly used across multiple modules, gathered in one file. One version each for the CPU/GPU implementation. </p>
 
 
-## Tryms_matrix (Tryms shitty matrix library)
+## Tryms matrix (Tryms shitty matrix library)
 Custom matrix library made specifically for usage of matrices in CUDA kernels, as I did not find another satisfactory third-party solution for this. Hopefully, Eigen will have better CUDA support in the future, which is unfortunately very limited today. **NOTE:** This library should be used with care, as it is only tested for a subset of all "typical matrix functionality", i.e. only the operations currently used in the PSB-MPC GPU run code. 
 
 The library implements three matrix type containers:
-- Static_Matrix: Fixed sized matrices
-- Pseudo_Dynamic_Matrix (PDMatrix): (Fixed size) Matrix used to store larger amounts of data, with a compile-time known max number of rows and columns. However, the effective size used during run-time can vary.
-- Dynamic_Matrix: Matrix container for data with  varying size **Not used nor maintained**
+- Static Matrix: Fixed sized matrices
+- Pseudo Dynamic Matrix (PDMatrix): (Fixed size) Matrix used to store larger amounts of data, with a compile-time known max number of rows and columns. However, the effective size used during run-time can vary.
+- Dynamic Matrix: Matrix container for data with  varying size **Not used nor maintained**
 
 Only the fixed size matrices are used currently, because dynamic memory allocation on the gpu is costly, slow and should therefore in general not be done. Thus, the "dynamic_matrix.cuh" file is **NOT USED**. 
 
@@ -156,4 +159,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 
 
-<p> Trym Tengesdal, 17. March 2021.  </p>
+<p> Trym Tengesdal, 26. May 2021.  </p>

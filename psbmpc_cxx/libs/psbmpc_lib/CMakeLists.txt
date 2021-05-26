@@ -105,5 +105,5 @@ else()
 	#target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -g -G -lineinfo -Wall -Wno-pedantic>)
 endif()
 
-# Use these set commands when building the GPU version
+# Use these set commands when building the GPU version (Check your NVIDIA GPU to verify that the architecture is correct)
 set_property(TARGET psbmpc_lib PROPERTY CUDA_ARCHITECTURES 61 86)

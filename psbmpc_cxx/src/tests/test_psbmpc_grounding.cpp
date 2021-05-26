@@ -175,7 +175,6 @@ int main(){
 
 	double u_opt(u_d), chi_opt(0.0);
 
-
 	double V_w = 0.0;
 	Eigen::Vector2d wind_direction; wind_direction(0) = 1.0; wind_direction(1) = 0.0;
 
