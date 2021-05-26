@@ -57,11 +57,11 @@ namespace PSBMPC_LIB
 
 			// Grounding hazard related
 			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k, projection;
-			TML::Vector2d p_ray_end, v, v_next;
+			TML::Vector2d p_ray_end, v_prev, v, v_next;
 
 			float l_sqrt, t_line, d_0j, phi_j;
-			long double val, epsilon;
-			int n_samples, o_1, o_2, o_3, o_4, line_intersect_count;
+			double val, epsilon;
+			int n_samples, o_11, o_12, o_1, o_2, o_3, o_4, line_intersect_count;
 
 			TML::Vector3f a, b;
 			//==============================================
@@ -678,10 +678,9 @@ namespace PSBMPC_LIB
 			const TML::Vector2d &r
 			)
 		{
-			epsilon = 1e-17; // abs(val) less than 1e-13 m^2 is considered zero for this check
+			epsilon = 1e-8; // abs(val) less than 1e-8 m^2 is considered zero for this check
 			// Calculate z-component of cross product (q - p) x (r - q)
-			val = ((long double)q(0) - (long double)p(0)) * ((long double)r(1) - (long double)q(1)) - 
-					((long double)q(1) - (long double)p(1)) * ((long double)r(0) - (long double)q(0));
+			val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
 			//printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
 			if (val > -epsilon && val < epsilon) 	{ return 0; } // colinear
@@ -769,23 +768,18 @@ namespace PSBMPC_LIB
 			{ return false; }
 
 			line_intersect_count = 0;
-			if ((poly.bbox.get_col(1) - p).norm() > (poly.bbox.get_col(0) - p).norm())
-			{
-				p_ray_end = poly.bbox.get_col(1) - p;
-				p_ray_end *= 1.01;
-				p_ray_end += p;
-			}
-			else
-			{
-				p_ray_end = poly.bbox.get_col(0) - p;
-				p_ray_end *= 1.01;
-				p_ray_end += p;
-			}
 
-			for (size_t l = 0; l < poly.vertices.get_cols() - 1; l++)
+			// Pick a point outside the polygon bbox for the ray tracing
+			p_ray_end = poly.bbox.get_col(1);
+			p_ray_end(0) += 0.01;
+
+			for (size_t l = 0; l < poly.vertices.get_cols(); l++)
 			{
+				if (l == 0)								{ v_prev = poly.vertices.get_col(poly.vertices.get_cols() - 1); }
+				else 									{ v_prev = poly.vertices.get_col(l - 1); }
 				v = poly.vertices.get_col(l);
-				v_next = poly.vertices.get_col(l + 1);
+				if (l == poly.vertices.get_cols() - 1)	{ v_next = poly.vertices.get_col(0); }
+				else 									{ v_next = poly.vertices.get_col(l + 1); }
 				
 				if (determine_if_lines_intersect(p, p_ray_end, v, v_next))
 				{
@@ -796,6 +790,24 @@ namespace PSBMPC_LIB
 						return determine_if_on_segment(v, p, v_next);
 					}
 					line_intersect_count += 1;
+
+					// Special case when the vertex v is colinear with p -> p_ray_end
+					if (find_triplet_orientation(p, v, p_ray_end) == 0)
+					{
+						// Determine if:  
+						// 1) both polygon sides connected to v are below/above the ray: 2 intersections 
+						// 	  => add one to the line intersection count.
+						// 2) if one side is below and the other above: 1 intersection 
+						o_11 = find_triplet_orientation(p, p_ray_end, v_prev);
+						o_12 = find_triplet_orientation(p, p_ray_end, v_next);
+						if (o_11 == o_12) // Case 1
+						{
+							line_intersect_count += 1;
+						}
+						// add one extra to account for the fact that the other side connecting the
+						// vertex will also be checked, when (v_next = v).
+						line_intersect_count += 1; 
+					}
 				}
 			}
 

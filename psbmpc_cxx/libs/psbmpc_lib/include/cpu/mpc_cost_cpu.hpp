@@ -867,9 +867,9 @@ namespace PSBMPC_LIB
 				{
 					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
 					d_0j = L_0j.norm();
-					if (d_0j < 2.0)
+					if (true)
 					{
-						//std::cout << "k = " << k << " | distance to j = 2(1) : " << d_0j << std::endl;
+						//std::cout << "k = " << k << " | distance to j = " << j << " : " << d_0j << std::endl;
 					}
 					L_0j.normalize();
 
@@ -988,10 +988,9 @@ namespace PSBMPC_LIB
 			const Eigen::Vector2d &r
 			) const
 		{
-			long double epsilon = 1e-17; // abs(val) less than 1e-24 m^2 is considered zero for this check
+			double epsilon = 1e-8; // abs(val) less than 1e-8 m^2 is considered zero for this check
 			// Calculate z-component of cross product (q - p) x (r - q)
-			long double val = ((long double)q(0) - (long double)p(0)) * ((long double)r(1) - (long double)q(1)) - 
-								((long double)q(1) - (long double)p(1)) * ((long double)r(0) - (long double)q(0));
+			double val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
 			//printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
 			if (val > -epsilon && val < epsilon) 	{ return 0; } // colinear
@@ -1165,22 +1164,22 @@ namespace PSBMPC_LIB
 			Eigen::Map<Eigen::Matrix2d> map_bbox(p_bbox, 2, 2);
 			
 			Eigen::Matrix2d p_os_ray; p_os_ray.col(0) = p; 
-			Eigen::Matrix2d polygon_side;*/
-			Eigen::MatrixXd polygon_matrix(2, 10000);
+			Eigen::Matrix2d polygon_side; */
 			
 			//======================================================
 			int line_intersect_count(0), n_vertices(0);
-			Eigen::Vector2d v, v_next;			
+			Eigen::Vector2d v_prev, v, v_next;			
 
+			Eigen::MatrixXd vertices(2, 10000);
 			// Find bounding box of polygon to use for ray creation
 			Eigen::Matrix2d bbox;
 			bbox(0, 0) = 1e10; bbox(1, 0) = 1e10; bbox(0, 1) = -1e10; bbox(1, 1) = -1e10;
-			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); it++)
+			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
 			{
 				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
 
-				polygon_matrix(0, n_vertices) = v(0);
-				polygon_matrix(1, n_vertices) = v(1);
+				vertices(0, n_vertices) = v(0);
+				vertices(1, n_vertices) = v(1);
 
 				if (v(0) < bbox(0, 0)) { bbox(0, 0) = v(0); } // x_min
 				if (v(1) < bbox(1, 0)) { bbox(1, 0) = v(1); } // y_min
@@ -1188,31 +1187,25 @@ namespace PSBMPC_LIB
 				if (v(1) > bbox(1, 1)) { bbox(1, 1) = v(1); } // y_max
 				n_vertices += 1;
 			}
-
-			if (n_vertices < 3 ||
+			vertices.conservativeResize(2, n_vertices);
+			/* if (n_vertices < 3 ||
 				p(0) < bbox(0, 0) || p(0) > bbox(0, 1) || p(1) < bbox(1, 0) || p(1) > bbox(1, 1)) 
-			{ return false; }
+			{ return false; } */
 
 			Eigen::Vector2d p_ray_end;
-			if ((bbox.col(1) - p).norm() > (bbox.col(0) - p).norm())
-			{
-				p_ray_end = p + 1.01 * (bbox.col(1) - p); 
-			}
-			else
-			{
-				p_ray_end = p + 1.01 * (bbox.col(0) - p); 
-			}
+			p_ray_end = bbox.col(1); // set ray end to x_max, y_max of polygon bbox
+			p_ray_end(0) += 0.1;
+			p_ray_end = p + 1.1 * (bbox.col(1) - p);
 			 
-
 			//======================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//======================================================
 			/* p_os_ray.col(1) = p_ray_end;
-			polygon_matrix.conservativeResize(2, n_vertices);
+			
 			polygon_matrix_mx = mxCreateDoubleMatrix(2, n_vertices, mxREAL);
 			p_polygon_matrix = mxGetPr(polygon_matrix_mx);
 			Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, 2, n_vertices);
-			map_polygon_matrix = polygon_matrix;
+			map_polygon_matrix = vertices;
 			map_bbox = bbox;
 			map_p_os_ray = p_os_ray;
 
@@ -1221,11 +1214,14 @@ namespace PSBMPC_LIB
 			engPutVariable(ep, "bbox", bbox_mx);
 			engEvalString(ep, "init_plot_geometry_wrt_polygon"); */
 			//======================================================
-			int v_count = 0;
-			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
+			int o_11(0), o_12(0);
+			for(int l = 0; l < n_vertices; l++)
 			{
-				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
-				v_next(0) = boost::geometry::get<0>(*(it + 1)); v_next(1) = boost::geometry::get<1>(*(it + 1));
+				if (l == 0)					{ v_prev = vertices.col(n_vertices - 1); }
+				else 						{ v_prev = vertices.col(l - 1); }
+				v = vertices.col(l);
+				if (l == n_vertices - 1)	{ v_next = vertices.col(0); }
+				else 						{ v_next = vertices.col(l + 1); }
 				
 				//======================================================
 				// MATLAB PLOTTING FOR DEBUGGING
@@ -1244,8 +1240,25 @@ namespace PSBMPC_LIB
 						return determine_if_on_segment(v, p, v_next);
 					}
 					line_intersect_count += 1;
+
+					// Special case when the vertex v is colinear with p -> p_ray_end
+					if (find_triplet_orientation(p, v, p_ray_end) == 0)
+					{
+						// Determine if:  
+						// 1) both polygon sides connected to v are below/above the ray: 0 or 2 intersections 
+						// 	  => add one to the line intersection count.
+						// 2) if one side is below and the other above: 1 intersection.
+						o_11 = find_triplet_orientation(p, p_ray_end, v_prev);
+						o_12 = find_triplet_orientation(p, p_ray_end, v_next);
+						if (o_11 == o_12)
+						{
+							line_intersect_count += 1;
+						}
+						// add one extra to account for the fact that the other side connecting the
+						// vertex will be checked, when (v_next = v).
+						line_intersect_count += 1; 
+					}
 				}
-				v_count += 1;
 			}
 			//======================================================
 			// MATLAB PLOTTING FOR DEBUGGING
