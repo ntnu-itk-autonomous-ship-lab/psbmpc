@@ -1,6 +1,5 @@
 #======================================================================
 # This CMakeLists.txt creates the PSB-MPC library target. 
-# If you want 
 # ---------------------------------------------------------------------
 
 # Version 1.0
@@ -49,7 +48,12 @@ if(USE_GPU_PSBMPC)
 		src/shapefile_related/shpopen.cpp
 	)
 
-	set_target_properties(psbmpc_lib PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+	# Use these set commands when building the GPU version 
+#	 NOTE: Modify or add the architecture property corresponding to your NVIDIA GPU!
+	set_target_properties(psbmpc_lib PROPERTIES 
+		CUDA_SEPARABLE_COMPILATION ON
+		CUDA_ARCHITECTURES "61;86"
+	)
 
 	target_include_directories(psbmpc_lib PUBLIC tryms_matrix ${CUDA_INCLUDE_DIRS})
 
@@ -102,8 +106,6 @@ target_compile_options(psbmpc_lib
 if(CMAKE_BUILD_TYPE EQUAL release)
 	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -j4>)
 else()
+	# Comment out the below line if you want to compile debug with symbols, lineinfo etc.
 	#target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -g -G -lineinfo -Wall -Wno-pedantic>)
 endif()
-
-# Use these set commands when building the GPU version (Check your NVIDIA GPU to verify that the architecture is correct)
-set_property(TARGET psbmpc_lib PROPERTY CUDA_ARCHITECTURES 61 86)

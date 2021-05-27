@@ -9,6 +9,7 @@ Note that the amount of memory you need on your GPU to run the algorithm will in
 
 ## Dependencies
 
+- CMake > 3.10 for building 
 - Matlab C API for the debugging and plotting functionality. (Follow setup instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
 - Eigen3. Eigen is still experimental regarding CUDA compatibility. I have suppressed the warnings from eigen regarding CUDA-stuff, but hope that one day Eigen will be fully functionable and warning-free on the GPU. Not tested with other Eigen versions.
 - xoshiro256+ random number generator used in the Collision Probability Estimator implemented for use in the CPU version (already included in repo under libs/third_party_libs/, implementation taken from <https://gist.github.com/imneme/3eb1bcc5418c4ae83c4c6a86d9cbb1cd#comments>). See <http://prng.di.unimi.it/> for more information. 
@@ -21,7 +22,7 @@ Note that the amount of memory you need on your GPU to run the algorithm will in
 
 <img src="psbmpc_lib_structure.png" width="400"> 
 
-Thus, there is a main library namespace **PSBMPC_LIB** which contains all the functionality. The namespace is further nested into **CPU** and **GPU** for versions of classes (with the same name, e.g. PSBMPC, Ownship,..) that have different implementation for the CPU and GPU version of the MPC, respectively. Common classes/functionality exists under the library namespace, e.g. a Kalman Filter, SBMPC, Mean-Reverting Ornstein-Uhlenbeck process, etc. 
+Thus, there is a main library namespace **PSBMPC_LIB** which contains all the functionality. The namespace is further nested into **CPU** and **GPU** for versions of classes (with the same name, e.g. PSBMPC, Ownship,..) that have different implementation for the CPU and GPU version of the MPC, respectively. Common classes/functionality exists under the library namespace, such as a Kalman Filter, SBMPC, Mean-Reverting Ornstein-Uhlenbeck process, etc. 
 
 The main modules (classes/structs) are explained below: </p>
 
@@ -66,7 +67,7 @@ Note that the amount of control behaviours (function of the amount of maneuvers 
 <p> Defines data for GPU threads that is needed in the **CB_Cost_Functor**, which needs to be sent from the host to the device. A subset of the PSB-MPC parameters are defined in a struct here, and also a struct which gathers diverse types of data for use on the GPU. </p>
 
 ### Grounding Hazard Manager
-<p> Reads in ENC data of land in the form of shapefiles into 2D polygons. Simplifies the polygons using the Ramer-Douglas-Peucker algorithm <https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm>, and returns a reference to the relevant ones for usage in the PSBMPC </p>
+<p> Reads in ENC data of land in the form of shapefiles into 2D polygons. Simplifies the polygons using the Ramer-Douglas-Peucker algorithm <https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm>, and returns a reference to the relevant ones for usage in the PSBMPC. </p>
 
 ### Obstacle Predictor
 <p> Responsible for setting up and predicting the dynamic obstacle trajectories, used by the PSB-MPC. </p>
@@ -77,8 +78,6 @@ Note that the amount of control behaviours (function of the amount of maneuvers 
 
 - Nearby obstacle states, an aggregated matrix with columns of <img src="https://render.githubusercontent.com/render/math?math={[x, y, V_x, V_y, A, B, C, D, ID]}^T"> where the first 4 variables are the north and east position and velocity, respectively. The A, B, C, D parameters are the square approximation of the obstacle's dimensions, and ID is its indentification number.
 - The corresponding covariance information or uncertainty associated with the estimates/measurement on <img src="https://render.githubusercontent.com/render/math?math={[x, y, V_x, V_y]}^T">, flattened into a 16-element vector. 
-- The corresponding intention probabilities for the obstacle, obtained by some intention inference module. If the PSB-MPC is configured to not consider intentions, these inputs are not used.
-- The corresponding a priori probability of the obstacle being COLREGS compliant, obtained by some intention inference module. If the PSB-MPC is configured to not consider intentions, these inputs are not used.
 
 and also updates the current situation type that the own-ship is in, wrt to each obstacle, and also transitional variables (if an obstacle is passed by, is head on, is ahead, is overtaking the own-ship etc.).
 
@@ -107,7 +106,7 @@ A simple SB-MPC meant for use by obstacles in the PSB-MPC prediction when consid
 
 ### Kinetic Ship Models
 
-Implements a 3DOF surface vessel base model class with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. One version each for the CPU/GPU implementation. By specifying the compile time flag OWNSHIP_TYPE, one can choose between the derived versions Telemetron and MilliAmpere(NOT FINISHED).
+Implements a 3DOF surface vessel base model class with guidance and control as used in for instance <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2625756>. One version each for the CPU/GPU implementation. By specifying the compile time flag **OWNSHIP_TYPE**, one can choose between the derived versions Telemetron and MilliAmpere(**NOT FINISHED**).
 
 ### Kinematic Ship Models
 
@@ -131,7 +130,7 @@ This is the Mean-reverting Ornstein-Uhlenbeck process used for the prediction of
 
 ### CPE
 
-This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based, and is basically among others the main reason for trying to implement the PSB-MPC on the GPU. **NOTE** Changed to facilitate only static data allocation, and only considers one obstacle at the time. A grid of CPEs is allocated prior to running GPU code, where each thread will read/write to their own CPE object. One version each for the CPU/GPU implementation, as the GPU version requires a tailor made PRNG, whereas the CPU version can use std:: type or other custom PRNG (like xoshiro, which is fast and efficient). 
+This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based, and is among others the main reason for trying to implement the PSB-MPC on the GPU. **NOTE** Changed to facilitate only static data allocation, and only considers one obstacle at the time. A grid of CPEs is allocated prior to running GPU code, where each thread will read/write to their own CPE object. One version each for the CPU/GPU implementation, as the GPU version requires a tailor made PRNG, whereas the CPU version can use std:: type or other custom PRNG (like xoshiro, which is fast and efficient). 
 
 ### Utilities
 
@@ -159,4 +158,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 
 
-<p> Trym Tengesdal, 26. May 2021.  </p>
+<p> Trym Tengesdal, 27. May 2021.  </p>

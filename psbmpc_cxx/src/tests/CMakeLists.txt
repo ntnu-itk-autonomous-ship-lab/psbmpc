@@ -1,7 +1,7 @@
 #======================================================================
 # This CMakeLists.txt creates the target for use in testing PSB-MPC
-# functionality. Every module of the PSB-MPC lib can be tested, by
-# uncommenting the module test file you want to select. 
+# functionality. Almost every module of the PSB-MPC lib can be tested, 
+# by uncommenting the module test file you want to select. 
 
 # NOTE: Not all the GPU type (.cu extensions) test files can be
 # guaranteed to be bug-free, so use with care in this case. 
