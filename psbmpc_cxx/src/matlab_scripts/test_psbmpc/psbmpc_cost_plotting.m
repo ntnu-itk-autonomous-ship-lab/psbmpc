@@ -39,10 +39,28 @@ for i = 1 : n_obst
     index = index + n_ps(i);
 end
 
+[n_static_obst, ~] = size(max_cost_j);
+max_cost_j_legend_strs = cell(1, n_static_obst);
+figure(n_obst + j + 1);
+title(strcat('Static obstacles max cost'));
+grid on; hold on;
+for j = 1 : n_static_obst
+    max_cost_j_legend_strs{j} = strcat('j=', num2str(j));
+    plot(max_cost_j(j, :));
+end
+legend(max_cost_j_legend_strs);
+ylabel('cost');
+xlabel('cb index');
+
 % printf index of optimal control behaviour
 fprintf('Optimum control behaviour index = %d\n', opt_cb_index);
 fprintf('Corresponding control behaviour:\n');
 disp(cb_matrix(:, opt_cb_index));
 
-save('gpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'max_cost_i_ps', 'cost_so_path', ...
-    'n_obst', 'n_ps', 'cb_matrix', 'opt_cb_index');
+if is_gpu == 1
+    save('gpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'max_cost_i_ps', 'cost_so_path', ...
+        'max_cost_j', 'n_obst', 'n_ps', 'cb_matrix', 'opt_cb_index');
+else
+    save('cpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'max_cost_i_ps', 'cost_so_path', ...
+        'max_cost_j', 'n_obst', 'n_ps', 'cb_matrix', 'opt_cb_index');
+end

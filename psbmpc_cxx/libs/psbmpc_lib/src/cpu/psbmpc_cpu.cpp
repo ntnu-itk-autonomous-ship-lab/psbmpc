@@ -128,76 +128,86 @@ void PSBMPC::calculate_optimal_offsets(
 		std::cout << "engine start failed!" << std::endl;
 	}
 	
- 	/* mxArray *traj_os = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
+	/* mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
+ 	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
-	double *ptraj_os = mxGetPr(traj_os); 
+	double *p_init_state_os = mxGetPr(init_state_os_mx); 
+	double *p_traj_os = mxGetPr(traj_os_mx); 
 	double *p_wps_os = mxGetPr(wps_os); 
-
+	
+	Eigen::Map<Eigen::VectorXd> map_init_state_os(p_init_state_os, ownship_state.size(), 1);
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
+	map_init_state_os = ownship_state;
 	map_wps = waypoints;
 
-	//Make matlab polygons type friendly array:
-    Eigen::Matrix<double, -1, 2> polygon_matrix;
-    int n_total_vertices = 0;
-    BOOST_FOREACH(polygon_2D const &poly, polygons)
-	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
-		{
-			n_total_vertices += 1;
-		}
-		n_total_vertices += 1;
-    }
-    polygon_matrix.resize(n_total_vertices, 2); 
-
-    // format polygon_matrix array for matlab plotting
-    int pcount = 0; 
-    BOOST_FOREACH(polygon_2D const& poly, polygons)
-	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
-		{
-			polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
-			polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
-			
-			pcount += 1;
-		}
-		// each polygon is separated with (-1, -1)
-		polygon_matrix(pcount, 1) = -1;
-		polygon_matrix(pcount, 0) = -1;
-		pcount += 1;
-    }
-    
-    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
-    double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
-    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
-	map_polygon_matrix = polygon_matrix;
-
-	engPutVariable(ep, "P", polygon_matrix_mx);
-
-	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx, *d_safe_mx;
+	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *n_static_obst_mx, *i_mx, *ps_mx, *d_safe_mx;
 	dt_sim = mxCreateDoubleScalar(pars.dt);
 	T_sim = mxCreateDoubleScalar(pars.T);
 	n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
 	d_safe_mx = mxCreateDoubleScalar(pars.d_safe);
+	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
 	
-	std::cout << waypoints << std::endl;
+	engPutVariable(ep, "ownship_state", init_state_os_mx);
 	engPutVariable(ep, "n_ps", n_ps_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
+	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
 	engPutVariable(ep, "dt_sim", dt_sim);
 	engPutVariable(ep, "T_sim", T_sim);
 	engPutVariable(ep, "WPs", wps_os);
 	engPutVariable(ep, "d_safe", d_safe_mx);
 	engEvalString(ep, "inside_psbmpc_init_plot");
 
+	Eigen::Matrix<double, 2, -1> polygon_matrix;
+    int n_total_vertices = 0;
+    mxArray *polygon_matrix_mx(nullptr);
+	mxArray *d_0j_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
+	mxArray *j_mx(nullptr);
+    double *p_polygon_matrix(nullptr);
+	double *p_d_0j = mxGetPr(d_0j_mx);
+    
+	Eigen::Map<Eigen::Vector2d> map_d_0j(p_d_0j, 2, 1);
+	int pcount;
+	Eigen::Vector2d d_0j;
+	for (int j = 0; j < n_static_obst; j++)
+	{
+		j_mx = mxCreateDoubleScalar(j + 1);
+		n_total_vertices = 0;
+		for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; ++it)
+		{
+			n_total_vertices += 1;
+		}
+		polygon_matrix.resize(2, n_total_vertices);
+		pcount = 0;
+		for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; ++it)
+		{
+			polygon_matrix(0, pcount) = boost::geometry::get<0>(*it);
+			polygon_matrix(1, pcount) = boost::geometry::get<1>(*it);
+			
+			pcount += 1;
+		}
+		d_0j = mpc_cost.distance_to_polygon(ownship_state.block<2, 1>(0, 0), polygons[j]);
+		map_d_0j = d_0j;
+
+		polygon_matrix_mx = mxCreateDoubleMatrix(2, n_total_vertices, mxREAL);
+		p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+		Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, 2, n_total_vertices);
+		map_polygon_matrix = polygon_matrix;
+		engPutVariable(ep, "j", j_mx);
+		engPutVariable(ep, "d_0j", d_0j_mx);
+		engPutVariable(ep, "polygon_matrix_j", polygon_matrix_mx);
+		engEvalString(ep, "inside_psbmpc_static_obstacle_plot");
+	}
+
 	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
 
-	double *ptraj_i = mxGetPr(traj_i);
+	double *p_traj_i = mxGetPr(traj_i);
 	double *p_P_traj_i = mxGetPr(P_traj_i);
 	double *p_P_c_i;
 
-	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
+	Eigen::Map<Eigen::MatrixXd> map_traj_i(p_traj_i, 4, n_samples);
 	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
 
 	std::vector<mxArray*> P_c_i_mx(n_obst);
@@ -224,13 +234,14 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	} */ 
+	}  */
 	
 	// COST PLOTTING
 	mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
  	mxArray *cost_do_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
 	mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
 	mxArray *max_cost_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
+	mxArray *max_cost_j_mx = mxCreateDoubleMatrix(n_static_obst, pars.n_cbs, mxREAL);
 	mxArray *mu_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
 	mxArray *cost_so_path_mx = mxCreateDoubleMatrix(2, pars.n_cbs, mxREAL);
 	mxArray *n_ps_copy_mx = mxCreateDoubleMatrix(1, n_obst, mxREAL);
@@ -241,6 +252,7 @@ void PSBMPC::calculate_optimal_offsets(
 	double *ptr_cost_do = mxGetPr(cost_do_mx); 
 	double *ptr_cost_colregs = mxGetPr(cost_colregs_mx); 
 	double *ptr_max_cost_i_ps = mxGetPr(max_cost_i_ps_mx); 
+	double *ptr_max_cost_j = mxGetPr(max_cost_j_mx); 
 	double *ptr_mu_i_ps = mxGetPr(mu_i_ps_mx); 
 	double *ptr_cost_so_path = mxGetPr(cost_so_path_mx); 
 	double *ptr_n_ps_copy = mxGetPr(n_ps_copy_mx); 
@@ -251,6 +263,7 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_cost_do(ptr_cost_do, n_obst, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_cost_colregs(ptr_cost_colregs, 1, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_max_cost_i_ps(ptr_max_cost_i_ps, n_obst * pars.n_r, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_max_cost_j(ptr_max_cost_j, n_static_obst, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_mu_i_ps(ptr_mu_i_ps, n_obst * pars.n_r, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_cost_so_path(ptr_cost_so_path, 2, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps_copy, 1, n_obst);
@@ -258,10 +271,12 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps[0]);
 
 	mxArray *n_obst_copy_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr);
+	//===============================================================================================================
 
 	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
 	Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
 	Eigen::MatrixXd max_cost_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
+	Eigen::MatrixXd max_cost_j_matrix(n_static_obst, pars.n_cbs);
 	Eigen::MatrixXd mu_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
 	Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
 	Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
@@ -277,9 +292,8 @@ void PSBMPC::calculate_optimal_offsets(
 		}
 	}
 	int curr_ps_index(0);
-	Eigen::VectorXd max_cost_i_ps, mu_i_ps;
-	//===============================================================================================================
-
+	Eigen::VectorXd max_cost_i_ps, max_cost_j, mu_i_ps;
+	
 	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
 	Eigen::VectorXd cost_do(n_obst), mu_i(n_obst);
 	std::tuple<double, double> tup;
@@ -287,7 +301,6 @@ void PSBMPC::calculate_optimal_offsets(
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	min_cost = 1e12;
 	int min_index = 0;
-	int p_step_cpe = 1; // step between calculated collision probability samples
 	int thread_count = 1;
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -318,7 +331,7 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			
 			P_c_i.resize(n_ps[i], n_samples); P_c_i.setZero();
-			//calculate_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, p_step_cpe); 
+			//calculate_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, pars.p_step_cpe); 
 
 			/* tup = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, P_c_i, data, i, ownship.get_length());
 			cost_i(i) = std::get<0>(tup);
@@ -361,8 +374,9 @@ void PSBMPC::calculate_optimal_offsets(
 		h_colregs = pars.kappa * std::min(1.0, mu_i.sum());
 		cost_colregs_matrix(0, cb) = h_colregs;
 
-		h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
+		h_so = mpc_cost.calculate_grounding_cost(max_cost_j, trajectory, polygons, V_w, wind_direction);
 		cost_so_path_matrix(0, cb) = h_so;
+		max_cost_j_matrix.block(0, cb, n_static_obst, 1) = max_cost_j;
 
 		h_path += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
 		h_path += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
@@ -391,13 +405,13 @@ void PSBMPC::calculate_optimal_offsets(
 		//===============================================================================================================
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
-		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, trajectory.rows(), n_samples);
+		/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
 		engPutVariable(ep, "k", k_s);
 
-		engPutVariable(ep, "X", traj_os);
+		engPutVariable(ep, "X", traj_os_mx);
 		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
 		//===============================================================================================================
 	}
@@ -409,17 +423,21 @@ void PSBMPC::calculate_optimal_offsets(
 	map_cost_do = cost_do_matrix;
 	map_cost_colregs = cost_colregs_matrix;
 	map_max_cost_i_ps = max_cost_i_ps_matrix;
+	map_max_cost_j = max_cost_j_matrix;
 	map_mu_i_ps = mu_i_ps_matrix;
 	map_cost_so_path = cost_so_path_matrix;
 	map_n_ps = n_ps_matrix;
 	map_cb_matrix = cb_matrix;
 	map_Pr_s_i = Pr_s_i_matrix;
 
+	mxArray *is_gpu_mx = mxCreateDoubleScalar(0);
+	engPutVariable(ep, "is_gpu", is_gpu_mx);
 	engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
 	engPutVariable(ep, "total_cost", total_cost_mx);
 	engPutVariable(ep, "cost_do", cost_do_mx);
 	engPutVariable(ep, "cost_colregs", cost_colregs_mx);
 	engPutVariable(ep, "max_cost_i_ps", max_cost_i_ps_mx);
+	engPutVariable(ep, "max_cost_j", max_cost_j_mx);
 	engPutVariable(ep, "mu_i_ps", mu_i_ps_mx);
 	engPutVariable(ep, "cost_so_path", cost_so_path_mx);
 	engPutVariable(ep, "n_ps", n_ps_copy_mx);
@@ -428,10 +446,12 @@ void PSBMPC::calculate_optimal_offsets(
 	engPutVariable(ep, "opt_cb_index", opt_cb_index_mx);
 	engEvalString(ep, "psbmpc_cost_plotting");
 
+	mxDestroyArray(is_gpu_mx);
 	mxDestroyArray(total_cost_mx);
 	mxDestroyArray(cost_do_mx);
 	mxDestroyArray(cost_colregs_mx);
 	mxDestroyArray(max_cost_i_ps_mx);
+	mxDestroyArray(max_cost_j_mx);
 	mxDestroyArray(mu_i_ps_mx);
 	mxDestroyArray(cost_so_path_mx);
 	mxDestroyArray(n_ps_copy_mx);

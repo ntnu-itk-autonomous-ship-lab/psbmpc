@@ -113,7 +113,8 @@ PSBMPC::PSBMPC()
 
 	// Allocate for each thread an mpc cost object
 	MPC_Cost<CB_Functor_Pars> temp_mpc_cost(temp_pars);
-	cudaMalloc((void**)&mpc_cost_device_ptr, pars.n_cbs * MAX_N_OBST * pars.n_r * sizeof(MPC_Cost<CB_Functor_Pars>));
+	int max_n_threads = pars.n_cbs * std::max(MAX_N_POLYGONS, MAX_N_OBST * pars.n_r);
+	cudaMalloc((void**)&mpc_cost_device_ptr, max_n_threads * sizeof(MPC_Cost<CB_Functor_Pars>));
 	cuda_check_errors("CudaMalloc of MPC_Cost failed.");
 
 	for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -126,7 +127,10 @@ PSBMPC::PSBMPC()
 	{
 		cudaMemcpy(&cpe_device_ptr[thread], &temp_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of CPE failed.");
+	}
 
+	for (int thread = 0; thread < max_n_threads; thread++)
+	{
 		cudaMemcpy(&mpc_cost_device_ptr[thread], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
 	}
@@ -151,9 +155,10 @@ PSBMPC::~PSBMPC()
 	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
 
 	cudaFree(fdata_device_ptr); 
-	cuda_check_errors("cudaFree of fdata_device_ptr failed.");
+	cuda_check_errors("CudaFree of CB_Functor_Data failed.");
 
-	obstacles_device_ptr = nullptr;	
+	cudaFree(obstacles_device_ptr);
+	cuda_check_errors("CudaFree of Cuda_Obstacles failed.");
 
 	cudaFree(cpe_device_ptr);
 	cuda_check_errors("CudaFree of CPE failed.");
@@ -162,7 +167,7 @@ PSBMPC::~PSBMPC()
 	cuda_check_errors("CudaFree of Ownship failed.");	
 
 	cudaFree(polygons_device_ptr);
-	cuda_check_errors("CudaFree of polygons failed.");
+	cuda_check_errors("CudaFree of Basic_Polygon`s failed.");
 
 	cudaFree(mpc_cost_device_ptr);
 	cuda_check_errors("CudaFree of MPC_Cost failed.");
@@ -230,64 +235,78 @@ void PSBMPC::calculate_optimal_offsets(
 	{
 		std::cout << "engine start failed!" << std::endl;
 	} */
- 	/* mxArray *traj_os = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
+	/*
+	mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
+ 	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
-	double *ptraj_os = mxGetPr(traj_os); 
+	double *p_init_state_os = mxGetPr(init_state_os_mx); 
+	double *ptraj_os_mx = mxGetPr(traj_os_mx); 
 	double *p_wps_os = mxGetPr(wps_os); 
-
+	
+	Eigen::Map<Eigen::VectorXd> map_init_state_os(p_init_state_os, ownship_state.size(), 1);
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
+	map_init_state_os = ownship_state;
 	map_wps = waypoints;
 
-	//Make matlab polygons type friendly array:
-    Eigen::Matrix<double, -1, 2> polygon_matrix;
-    int n_total_vertices = 0;
-    BOOST_FOREACH(polygon_2D const &poly, polygons)
-	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
-		{
-			n_total_vertices += 1;
-		}
-		n_total_vertices += 1;
-    }
-    polygon_matrix.resize(n_total_vertices, 2); 
-
-    // format polygon_matrix array for matlab plotting
-    int pcount = 0; 
-    BOOST_FOREACH(polygon_2D const& poly, polygons)
-	{
-        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
-		{
-			polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
-			polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
-			
-			pcount += 1;
-		}
-		// each polygon is separated with (-1, -1)
-		polygon_matrix(pcount, 1) = -1;
-		polygon_matrix(pcount, 0) = -1;
-		pcount += 1;
-    }
-    
-    mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
-    double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
-    Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
-	map_polygon_matrix = polygon_matrix;
-
-	engPutVariable(ep, "P", polygon_matrix_mx);
-
-	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx;
+	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *n_static_obst_mx, *i_mx, *ps_mx, *d_safe_mx;
 	dt_sim = mxCreateDoubleScalar(pars.dt);
 	T_sim = mxCreateDoubleScalar(pars.T);
 	n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
-
+	d_safe_mx = mxCreateDoubleScalar(pars.d_safe);
+	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
+	
+	engPutVariable(ep, "ownship_state", init_state_os_mx);
 	engPutVariable(ep, "n_ps", n_ps_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
+	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
 	engPutVariable(ep, "dt_sim", dt_sim);
 	engPutVariable(ep, "T_sim", T_sim);
 	engPutVariable(ep, "WPs", wps_os);
+	engPutVariable(ep, "d_safe", d_safe_mx);
 	engEvalString(ep, "inside_psbmpc_init_plot");
+
+	Eigen::Matrix<double, 2, -1> polygon_matrix;
+    int n_total_vertices = 0;
+    mxArray *polygon_matrix_mx(nullptr);
+	mxArray *d_0j_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
+	mxArray *j_mx(nullptr);
+    double *p_polygon_matrix(nullptr);
+	double *p_d_0j = mxGetPr(d_0j_mx);
+    
+	Eigen::Map<Eigen::Vector2d> map_d_0j(p_d_0j, 2, 1);
+	int pcount;
+	Eigen::Vector2d d_0j;
+	for (int j = 0; j < n_static_obst; j++)
+	{
+		j_mx = mxCreateDoubleScalar(j + 1);
+		n_total_vertices = 0;
+		for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; ++it)
+		{
+			n_total_vertices += 1;
+		}
+		polygon_matrix.resize(2, n_total_vertices);
+		pcount = 0;
+		for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; ++it)
+		{
+			polygon_matrix(0, pcount) = boost::geometry::get<0>(*it);
+			polygon_matrix(1, pcount) = boost::geometry::get<1>(*it);
+			
+			pcount += 1;
+		}
+		d_0j = mpc_cost.distance_to_polygon(ownship_state.block<2, 1>(0, 0), polygons[j]);
+		map_d_0j = d_0j;
+
+		polygon_matrix_mx = mxCreateDoubleMatrix(2, n_total_vertices, mxREAL);
+		p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+		Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, 2, n_total_vertices);
+		map_polygon_matrix = polygon_matrix;
+		engPutVariable(ep, "j", j_mx);
+		engPutVariable(ep, "d_0j", d_0j_mx);
+		engPutVariable(ep, "polygon_matrix_j", polygon_matrix_mx);
+		engEvalString(ep, "inside_psbmpc_static_obstacle_plot");
+	}
 
 	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
@@ -323,40 +342,64 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	} */
+	}  */
 	
 	//===============================================================================================================
 
+	set_up_temporary_device_memory(u_d, chi_d, waypoints, V_w, wind_direction, polygons, data);
 	//===============================================================================================================
 	// Ownship trajectory prediction for all control behaviours 
 	//===============================================================================================================
-	set_up_temporary_device_memory(u_d, chi_d, waypoints, V_w, wind_direction, polygons, data);
-
 	cb_cost_functor_1.reset(new CB_Cost_Functor_1(
 		pars_device_ptr, 
 		fdata_device_ptr, 
 		ownship_device_ptr, 
 		trajectory_device_ptr, 
-		mpc_cost_device_ptr, 
-		polygons_device_ptr));
+		mpc_cost_device_ptr));
 
 	cb_costs_1_dvec.resize(pars.n_cbs);
-	cb_index_dvec.resize(pars.n_cbs);
-	thrust::sequence(cb_index_dvec.begin(), cb_index_dvec.end(), 0);
+	cb_index_1_dvec.resize(pars.n_cbs);
+	thrust::sequence(cb_index_1_dvec.begin(), cb_index_1_dvec.end(), 0);
 
 	map_offset_sequences();
 
-	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), cb_dvec.begin()));
-    auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), cb_dvec.end()));
-    
+	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_1_dvec.begin(), cb_dvec.begin()));
+    auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_1_dvec.end(), cb_dvec.end()));
+	
 	thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs_1_dvec.begin(), *cb_cost_functor_1);
 	cuda_check_errors("Thrust transform for cost calculation part one failed.");
 
 	//===============================================================================================================
+	// Prepare thrust device vectors for the second and third cost functor calls
+	//===============================================================================================================
+	map_thrust_dvecs(polygons);
+
+	//===============================================================================================================
+	// Grounding cost evaluation for all control behaviours wrt one static obstacle at the time
+	//===============================================================================================================
+	cb_cost_functor_2.reset(new CB_Cost_Functor_2(
+		pars_device_ptr, 
+		fdata_device_ptr, 
+		trajectory_device_ptr, 
+		mpc_cost_device_ptr,
+		polygons_device_ptr));
+	
+	auto input_tuple_1_begin = thrust::make_zip_iterator(thrust::make_tuple(
+		thread_index_1_dvec.begin(), 
+		cb_index_1_dvec.begin(),
+		sobstacle_index_dvec.begin()));
+    auto input_tuple_1_end = thrust::make_zip_iterator(thrust::make_tuple(
+		thread_index_1_dvec.end(), 
+		cb_index_1_dvec.end(),
+		sobstacle_index_dvec.end()));
+
+    thrust::transform(input_tuple_1_begin, input_tuple_1_end, cb_costs_2_dvec.begin(), *cb_cost_functor_2);
+	cuda_check_errors("Thrust transform for cost calculation part two failed.");
+	//===============================================================================================================
 	// Cost evaluation for all control behaviours wrt one dynamic obstacle behaving as in 
 	// a certain prediction scenario
 	//===============================================================================================================
-	cb_cost_functor_2.reset(new CB_Cost_Functor_2(
+	cb_cost_functor_3.reset(new CB_Cost_Functor_3(
 		pars_device_ptr, 
 		fdata_device_ptr, 
 		obstacles_device_ptr, 
@@ -365,28 +408,28 @@ void PSBMPC::calculate_optimal_offsets(
 		trajectory_device_ptr, 
 		mpc_cost_device_ptr));
 
-	map_thrust_dvecs();
-
-	auto input_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(
-		thread_index_dvec.begin(), 
+	auto input_tuple_2_begin = thrust::make_zip_iterator(thrust::make_tuple(
+		thread_index_2_dvec.begin(), 
 		cb_dvec.begin(),
-		cb_index_dvec.begin(),
-		obstacle_index_dvec.begin(),
-		obstacle_ps_index_dvec.begin()));
-    auto input_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(
-		thread_index_dvec.end(), 
+		cb_index_2_dvec.begin(),
+		dobstacle_index_dvec.begin(),
+		dobstacle_ps_index_dvec.begin()));
+    auto input_tuple_2_end = thrust::make_zip_iterator(thrust::make_tuple(
+		thread_index_2_dvec.end(), 
 		cb_dvec.end(),
-		cb_index_dvec.end(),
-		obstacle_index_dvec.end(),
-		obstacle_ps_index_dvec.end()));
+		cb_index_2_dvec.end(),
+		dobstacle_index_dvec.end(),
+		dobstacle_ps_index_dvec.end()));
 
-	// Perform the calculations on the GPU
-    thrust::transform(input_tuple_begin, input_tuple_end, cb_costs_2_dvec.begin(), *cb_cost_functor_2);
-	cuda_check_errors("Thrust transform for cost calculation part two failed.");
+    /* thrust::transform(input_tuple_2_begin, input_tuple_2_end, cb_costs_3_dvec.begin(), *cb_cost_functor_3);
+	cuda_check_errors("Thrust transform for cost calculation part three failed."); */
 
-	find_optimal_control_behaviour(data);
+	//===============================================================================================================
+	// Stitch together the GPU calculated costs to form the cost function for each control behaviour
+	// and find the optimal solution
+	//===============================================================================================================
+	find_optimal_control_behaviour(data, polygons);
 
-	// Set the trajectory to the optimal one and assign to the output trajectory
 	ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 	assign_optimal_trajectory(predicted_trajectory);
 	//===============================================================================================================
@@ -548,31 +591,44 @@ void PSBMPC::increment_control_behaviour(
 *  Name     : map_thrust_input_dvecs
 *  Function : Fills the device vectors in/out of the thrust calls with the proper
 *			  flattened values. Number of threads will be 
-*			  n_threads = n_cbs * (n_ps^1 + ... + n_ps^n_obst)
+*			  n_threads_1 = n_cbs * n_so for the second kernel, and 
+*			  n_threads_2 = n_cbs * (n_ps^1 + ... + n_ps^n_obst) for the third kernel
 *			  
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::map_thrust_dvecs()
+void PSBMPC::map_thrust_dvecs(
+	const std::vector<polygon_2D> &polygons 								// In: Static obstacle information
+	)
 {
 	// Figure out how many threads to schedule
 	int n_obst = n_ps.size();
 	int n_obst_ps_total(0);
+	int n_static_obst = polygons.size();
 	for (int i = 0; i < n_obst; i++)
 	{
 		n_obst_ps_total += n_ps[i];
 	}
-	int n_threads = pars.n_cbs * n_obst_ps_total;
-	thread_index_dvec.resize(n_threads);
-	thrust::sequence(thread_index_dvec.begin(), thread_index_dvec.end(), 0);
+	// Threads for calculating the grounding cost
+	int n_threads_1 = pars.n_cbs * n_static_obst; 
+	cb_index_1_dvec.resize(n_threads_1);
+	sobstacle_index_dvec.resize(n_threads_1);
+	thread_index_1_dvec.resize(n_threads_1);
+	thrust::sequence(thread_index_1_dvec.begin(), thread_index_1_dvec.end(), 0);
+	cb_costs_2_dvec.resize(n_threads_1);
+	
+	// Threads for calculating the partial dynamic obstacle cost
+	int n_threads_2 = pars.n_cbs * n_obst_ps_total;
+	thread_index_2_dvec.resize(n_threads_2);
+	thrust::sequence(thread_index_2_dvec.begin(), thread_index_2_dvec.end(), 0);
 
-	cb_dvec.resize(n_threads);
-	cb_index_dvec.resize(n_threads);
-	obstacle_index_dvec.resize(n_threads);
-	obstacle_ps_index_dvec.resize(n_threads);
-	cb_costs_2_dvec.resize(n_threads);
+	cb_dvec.resize(n_threads_2);
+	cb_index_2_dvec.resize(n_threads_2);
+	dobstacle_index_dvec.resize(n_threads_2);
+	dobstacle_ps_index_dvec.resize(n_threads_2);
+	cb_costs_3_dvec.resize(n_threads_2);
 
-	unsigned int thread_index(0);
+	unsigned int thread_index_1(0), thread_index_2(0);
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_tml(2 * pars.n_M);
 
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
@@ -581,18 +637,34 @@ void PSBMPC::map_thrust_dvecs()
 	{
 		TML::assign_eigen_object(offset_sequence_tml, offset_sequence);
 
+		for (int j = 0; j < n_static_obst; j++)
+		{
+			cb_index_1_dvec[thread_index_1] = cb;
+			sobstacle_index_dvec[thread_index_1] = j;
+			thread_index_1 += 1;
+
+			/* printf("thread_1 %d | ", thread_index_1 - 1);
+			printf("cb = ");
+			for (int M = 0; M < pars.n_M; M++)
+			{
+				printf("%.2f, %.2f", offset_sequence(2 * M), RAD2DEG * offset_sequence(2 * M + 1));
+				if (M < pars.n_M - 1) printf(", ");
+			}
+			printf(" | cb_index = %d | j = %d |\n", cb, j); */
+		}
+
 		for (int i = 0; i < n_obst; i++)
 		{	
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
-				cb_dvec[thread_index] = offset_sequence_tml;
-				cb_index_dvec[thread_index] = cb;
-				obstacle_index_dvec[thread_index] = i;
-				obstacle_ps_index_dvec[thread_index] = ps;
+				cb_dvec[thread_index_2] = offset_sequence_tml;
+				cb_index_2_dvec[thread_index_2] = cb;
+				dobstacle_index_dvec[thread_index_2] = i;
+				dobstacle_ps_index_dvec[thread_index_2] = ps;
 				
-				thread_index += 1;
+				thread_index_2 += 1;
 
-				/* printf("thread %d | ", thread_index - 1);
+				/* printf("thread_2 %d | ", thread_index_2 - 1);
 				printf("cb = ");
 				for (int M = 0; M < pars.n_M; M++)
 				{
@@ -615,15 +687,17 @@ void PSBMPC::map_thrust_dvecs()
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::find_optimal_control_behaviour(
-	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data,									// In/Out: Dynamic obstacle information
+	const std::vector<polygon_2D> &polygons 								// In: Static obstacle information
 )
 {
-	int n_obst = n_ps.size();
-	unsigned int thread_index(0);
+	int n_obst = data.obstacles.size();
+	int n_static_obst = polygons.size();
+	unsigned int thread_index_1(0), thread_index_2(0);
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	Eigen::VectorXd max_cost_i_ps, mu_i_ps, mu_i(n_obst), cost_do(n_obst);
+	Eigen::VectorXd max_cost_i_ps, max_cost_j(n_static_obst), mu_i_ps, mu_i(n_obst), cost_do(n_obst);
 
 	double cost(0.0), h_do, h_colregs, h_so, h_path;
 	min_cost = 1e12;
@@ -631,6 +705,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
 	Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
 	Eigen::MatrixXd max_cost_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
+	Eigen::MatrixXd max_cost_j_matrix(n_static_obst, pars.n_cbs);
 	Eigen::MatrixXd mu_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
 	Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
 	Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
@@ -649,7 +724,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-/* 	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -658,6 +733,7 @@ void PSBMPC::find_optimal_control_behaviour(
  	mxArray *cost_do_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
 	mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
 	mxArray *max_cost_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
+	mxArray *max_cost_j_mx = mxCreateDoubleMatrix(n_static_obst, pars.n_cbs, mxREAL);
 	mxArray *mu_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
 	mxArray *cost_so_path_mx = mxCreateDoubleMatrix(2, pars.n_cbs, mxREAL);
 	mxArray *n_ps_mx = mxCreateDoubleMatrix(1, n_obst, mxREAL);
@@ -668,6 +744,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	double *ptr_cost_do = mxGetPr(cost_do_mx); 
 	double *ptr_cost_colregs = mxGetPr(cost_colregs_mx); 
 	double *ptr_max_cost_i_ps = mxGetPr(max_cost_i_ps_mx); 
+	double *ptr_max_cost_j = mxGetPr(max_cost_j_mx); 
 	double *ptr_mu_i_ps = mxGetPr(mu_i_ps_mx); 
 	double *ptr_cost_so_path = mxGetPr(cost_so_path_mx); 
 	double *ptr_n_ps = mxGetPr(n_ps_mx); 
@@ -678,6 +755,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	Eigen::Map<Eigen::MatrixXd> map_cost_do(ptr_cost_do, n_obst, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_cost_colregs(ptr_cost_colregs, 1, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_max_cost_i_ps(ptr_max_cost_i_ps, n_obst * pars.n_r, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_max_cost_j(ptr_max_cost_j, n_static_obst, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_mu_i_ps(ptr_mu_i_ps, n_obst * pars.n_r, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_cost_so_path(ptr_cost_so_path, 2, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps, 1, n_obst);
@@ -700,24 +778,16 @@ void PSBMPC::find_optimal_control_behaviour(
 		cost = 0.0;
 		curr_ps_index = 0;
 
-		dev_tup = cb_costs_1_dvec[cb];
-
-		h_so = (double)thrust::get<0>(dev_tup);
-		cost_so_path_matrix(0, cb) = h_so;
-
-		h_path = (double)thrust::get<1>(dev_tup);
-		cost_so_path_matrix(1, cb) = h_path;
-
 		for (int i = 0; i < n_obst; i++)
 		{
 			max_cost_i_ps.resize(n_ps[i]); mu_i_ps.resize(n_ps[i]);
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
-				dev_tup = cb_costs_2_dvec[thread_index];
+				dev_tup = cb_costs_3_dvec[thread_index_2];
 				max_cost_i_ps(ps) = (double)thrust::get<0>(dev_tup);
 				mu_i_ps(ps) = (double)thrust::get<1>(dev_tup);
-				thread_index += 1;
-				//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb, max_cost_i_ps(ps), mu_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
+				thread_index_2 += 1;
+				//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index_2, i, ps, cb, max_cost_i_ps(ps), mu_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
 			}
 
 			tup = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, mu_i_ps, data, i);
@@ -738,6 +808,18 @@ void PSBMPC::find_optimal_control_behaviour(
 		h_colregs = pars.kappa * std::min(1.0, mu_i.sum());
 		cost_colregs_matrix(0, cb) = h_colregs;
 
+		for (int j = 0; j < n_static_obst; j++)
+		{
+			max_cost_j(j) = cb_costs_2_dvec[thread_index_1];
+			thread_index_1 += 1;
+		}
+		max_cost_j_matrix.block(0, cb, n_static_obst, 1) = max_cost_j;
+		h_so = max_cost_j.maxCoeff();
+		cost_so_path_matrix(0, cb) = h_so;
+
+		h_path = cb_costs_1_dvec[cb];
+		cost_so_path_matrix(1, cb) = h_path;
+
 		cost = h_do + h_colregs + h_so + h_path;
 		total_cost_matrix(cb) = cost;
 
@@ -753,22 +835,26 @@ void PSBMPC::find_optimal_control_behaviour(
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-/* 	opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+	/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 	map_total_cost = total_cost_matrix;
 	map_cost_do = cost_do_matrix;
 	map_cost_colregs = cost_colregs_matrix;
 	map_max_cost_i_ps = max_cost_i_ps_matrix;
+	map_max_cost_j = max_cost_j_matrix;
 	map_mu_i_ps = mu_i_ps_matrix;
 	map_cost_so_path = cost_so_path_matrix;
 	map_n_ps = n_ps_matrix;
 	map_cb_matrix = cb_matrix;
 	map_Pr_s_i = Pr_s_i_matrix;
 
+	mxArray *is_gpu_mx = mxCreateDoubleScalar(1);
+	engPutVariable(ep, "is_gpu", is_gpu_mx);
 	engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
 	engPutVariable(ep, "total_cost", total_cost_mx);
 	engPutVariable(ep, "cost_do", cost_do_mx);
 	engPutVariable(ep, "cost_colregs", cost_colregs_mx);
 	engPutVariable(ep, "max_cost_i_ps", max_cost_i_ps_mx);
+	engPutVariable(ep, "max_cost_j", max_cost_j_mx);
 	engPutVariable(ep, "mu_i_ps", mu_i_ps_mx);
 	engPutVariable(ep, "cost_so_path", cost_so_path_mx);
 	engPutVariable(ep, "n_ps", n_ps_mx);
@@ -777,10 +863,12 @@ void PSBMPC::find_optimal_control_behaviour(
 	engPutVariable(ep, "opt_cb_index", opt_cb_index_mx);
 	engEvalString(ep, "psbmpc_cost_plotting");
 
+	mxDestroyArray(is_gpu_mx);
 	mxDestroyArray(total_cost_mx);
 	mxDestroyArray(cost_do_mx);
 	mxDestroyArray(cost_colregs_mx);
 	mxDestroyArray(max_cost_i_ps_mx);
+	mxDestroyArray(max_cost_j_mx);
 	mxDestroyArray(mu_i_ps_mx);
 	mxDestroyArray(cost_so_path_mx);
 	mxDestroyArray(n_ps_mx);

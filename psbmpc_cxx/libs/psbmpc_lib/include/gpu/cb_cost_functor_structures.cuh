@@ -48,14 +48,14 @@ namespace PSBMPC_LIB
 			__host__ Basic_Polygon& operator=(const polygon_2D &poly)
 			{
 				int n_vertices(0), v_count(0);
-				for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); it++)
+				for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
 				{
 					n_vertices += 1;
 				}
 
 				bbox(0, 0) = 1e6; bbox(1, 0) = 1e6; bbox(0, 1) = -1e6; bbox(1, 1) = -1e6;
 				vertices.resize(2, n_vertices);
-				for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); it++)
+				for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
 				{
 					vertices(0, v_count) = boost::geometry::get<0>(*it); 
 					vertices(1, v_count) = boost::geometry::get<1>(*it);
@@ -101,6 +101,7 @@ namespace PSBMPC_LIB
 		struct CB_Functor_Pars
 		{
 			int n_M;
+			int p_step, p_step_cpe, p_step_grounding;
 
 			CPE_Method cpe_method;
 
@@ -108,7 +109,7 @@ namespace PSBMPC_LIB
 
 			Guidance_Method guidance_method;
 
-			float T, dt, p_step;
+			float T, dt;
 			float d_safe, d_close, d_init;
 			float K_coll;
 			float phi_AH, phi_OT, phi_HO, phi_CR;
@@ -127,13 +128,15 @@ namespace PSBMPC_LIB
 			{
 				this->n_M = pars.n_M;
 
+				this->p_step = pars.p_step; this->p_step_cpe = pars.p_step_cpe; this->p_step_grounding = pars.p_step_grounding; 
+
 				this->cpe_method = pars.cpe_method;
 
 				this->prediction_method = pars.prediction_method;
 
 				this->guidance_method = pars.guidance_method;
 
-				this->T = pars.T; this->dt = pars.dt; this->p_step = pars.p_step; 
+				this->T = pars.T; this->dt = pars.dt; 
 
 				this->d_safe = pars.d_safe; this->d_close = pars.d_close; this->d_init = pars.d_init; 
 

@@ -44,6 +44,7 @@ namespace PSBMPC_LIB
 
 		class CB_Cost_Functor_1;
 		class CB_Cost_Functor_2;
+		class CB_Cost_Functor_3;
 		class CB_Functor_Pars;
 		class CB_Functor_Data;
 		
@@ -75,25 +76,27 @@ namespace PSBMPC_LIB
 			// Device related objects read/write-ed upon by each
 			// GPU thread.
 			//=====================================================
-			//Device vector of thread indices/ID's, size n_threads x 1
-			thrust::device_vector<unsigned int> thread_index_dvec;
+			//Device vector of thread indices/ID's for the second and third cost functors
+			thrust::device_vector<unsigned int> thread_index_1_dvec, thread_index_2_dvec;
 
-			// Device vector of control behaviours, size n_threads x 1
+			// Device vector of control behaviours
 			thrust::device_vector<TML::PDMatrix<float, 2 * MAX_N_M, 1>> cb_dvec;
 
-			// Device vector of control bevhaviour indices, obstacle indices, obstacle prediction scenario indices, size n_threads x 1
-			thrust::device_vector<unsigned int> cb_index_dvec, obstacle_index_dvec, obstacle_ps_index_dvec;
+			// Device vector of control bevhaviour indices for cost functor 2 & 3, dynamic obstacle indices, 
+			// dynamic obstacle prediction scenario indices and static obstacle indices
+			thrust::device_vector<unsigned int> cb_index_1_dvec, cb_index_2_dvec, dobstacle_index_dvec, dobstacle_ps_index_dvec, sobstacle_index_dvec;
 
-			// Device vector of costs, size n_cbs x 1, consisting of the static obstacle and path related costs for each control behaviour
-			thrust::device_vector<thrust::tuple<float, float>> cb_costs_1_dvec;
+			// Device vector of costs, consisting of the static obstacle and path related costs for each control behaviour
+			thrust::device_vector<float> cb_costs_1_dvec, cb_costs_2_dvec;
 			
-			// Device vector of costs, size n_threads x 1. It is the dynamic obstacle cost (first tuple element) when the own-ship
+			// Device vector of costs, size n_threads_2 x 1. It is the dynamic obstacle cost (first tuple element) when the own-ship
 			// follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, behaves as in
 			// prediction scenario <obstacle_ps_index>. The own-ship COLREGS violation indicator is the second element of the tuple
-			thrust::device_vector<thrust::tuple<float, float>> cb_costs_2_dvec;
+			thrust::device_vector<thrust::tuple<float, float>> cb_costs_3_dvec;
 			
 			std::unique_ptr<CB_Cost_Functor_1> cb_cost_functor_1;
 			std::unique_ptr<CB_Cost_Functor_2> cb_cost_functor_2;
+			std::unique_ptr<CB_Cost_Functor_3> cb_cost_functor_3;
 
 			TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory_device_ptr;
 
@@ -120,9 +123,9 @@ namespace PSBMPC_LIB
 
 			void increment_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
-			void map_thrust_dvecs();
+			void map_thrust_dvecs(const std::vector<polygon_2D> &polygons);
 
-			void find_optimal_control_behaviour(Obstacle_Data<Tracked_Obstacle> &data);
+			void find_optimal_control_behaviour(Obstacle_Data<Tracked_Obstacle> &data, const std::vector<polygon_2D> &polygons);
 
 			void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 			

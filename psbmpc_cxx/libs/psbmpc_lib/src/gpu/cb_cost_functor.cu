@@ -44,11 +44,11 @@ namespace GPU
 //  Author   : Trym Tengesdal
 //  Modified :
 //=======================================================================================
-__device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
+__device__ float CB_Cost_Functor_1::operator()(
 	const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple	// In: Tuple consisting of the index and vector for the control behaviour evaluated in this kernel
 	)
 {
-	h_so= 0.0f; h_path = 0.0f;
+	h_path = 0.0f;
 	cb_index = thrust::get<0>(cb_tuple);
 	offset_sequence = thrust::get<1>(cb_tuple);
 
@@ -64,46 +64,49 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_1::operator()(
 		pars->guidance_method, 
 		pars->T, pars->dt);
 
-	h_so = mpc_cost[cb_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons); 
-
 	h_path += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
 	h_path += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
 
-	return thrust::make_tuple<float, float>(h_so, h_path);
+	return h_path;
 }
-
 
 //=======================================================================================
 //  CB COST FUNCTOR 2 METHODS
 //=======================================================================================
-
-/****************************************************************************************
-*  Name     : CB_Cost_Functor
-*  Function : Class constructor
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-__host__ CB_Cost_Functor_2::CB_Cost_Functor_2(
-	CB_Functor_Pars *pars,  										// In: Device pointer to functor parameters, one for all threads
-	CB_Functor_Data *fdata,  										// In: Device pointer to functor data, one for all threads
-	Cuda_Obstacle *obstacles,  										// In: Device pointer to obstacles, one for all threads
-	CPE *cpe, 		 												// In: Device pointer to the collision probability estimator, one for each thread
-	Ownship *ownship, 												// In: Device pointer to the ownship class, one for each thread
-	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,				// In: Device pointer to the own-ship trajectory, one for each thread
-	MPC_Cost<CB_Functor_Pars> *mpc_cost								// In: Device pointer to the cost function keeper class, one for each thread
-	) :
-	pars(pars), fdata(fdata), obstacles(obstacles), cpe(cpe), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost)
+//=======================================================================================
+//  Name     : operator()
+//  Function : Predicts the trajectory of the ownship for a certain control behaviour,
+//			   and calculates the static obstacle and path related costs
+//  Author   : Trym Tengesdal
+//  Modified :
+//=======================================================================================
+__device__ float CB_Cost_Functor_2::operator()(
+	const thrust::tuple<const unsigned int, const unsigned int, const unsigned int> &input_tuple	// In: Tuple consisting of the index of the thread, control behaviour and static obstacle to consider
+	)
 {
+	max_h_so_j = 0.0f;
+
+	thread_index = thrust::get<0>(input_tuple);
+	cb_index = thrust::get<1>(input_tuple);
+	j = thrust::get<2>(input_tuple);
+
+	max_h_so_j = mpc_cost[thread_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons[j]);
+
+	return max_h_so_j; 
 }
+
+//=======================================================================================
+//  CB COST FUNCTOR 3 METHODS
+//=======================================================================================
 
 /****************************************************************************************
 *  Name     : operator()
-*  Function : This is where the fun begins. Evaluates the cost of following the control
+*  Function : Evaluates the cost of following the control
 *			  behaviour (a particular avoidance maneuver) given by the input tuple.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrust::tuple<
+__device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrust::tuple<
 	const unsigned int, 								// Thread ID
 	TML::PDMatrix<float, 2 * MAX_N_M, 1>, 				// Control behaviour considered
 	const unsigned int, 								// Control behaviour index
@@ -120,7 +123,7 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrus
 	cb_index = thrust::get<2>(input_tuple);
 	i = thrust::get<3>(input_tuple);
 	ps = thrust::get<4>(input_tuple);
-
+	
 	n_samples = round(pars->T / pars->dt);
 
 	d_safe_i = 0.0; chi_m = 0.0; cost_k = 0.0;
@@ -139,9 +142,8 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrus
 	// 2 : Max cost calculation considering own-ship control behaviour <cb_index> and prediction scenario ps for obstacle i
 	d_safe_i = pars->d_safe + 0.5 * (fdata->ownship_length + obstacles[i].get_length());
 	//printf("d_safe = %.2f | d_safe_i = %.6f\n", pars->d_safe, d_safe_i);
-	p_step = 1;
 	v_os_prev.set_zero(); v_i_prev.set_zero();
-	for (int k = 0; k < n_samples; k += p_step)
+	for (int k = 0; k < n_samples; k += pars->p_step_cpe)
 	{	
 		//==========================================================================================
 		// 2.0 : Extract states and information relevant for cost evaluation at sample k. 
@@ -246,26 +248,12 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_2::operator()(const thrus
 		}
 		//==========================================================================================
 		//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i, cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
-		
-		/* printf("max_cost_ps = ");
-		for (int ps = 0; ps < fdata->n_ps[i]; ps++)
-		{
-			printf("%.4f", max_cost_ps(ps));
-			if (ps < fdata->n_ps[i] - 1)
-			{
-				printf(", ");
-			}
-		}
-		printf("\n"); */
+
 		//==============================================================================================
 	}
 	
 	//==================================================================================================
 	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_i_ps, mu_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
-	/* printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1), 
-		offset_sequence(2), RAD2DEG * offset_sequence(3)); */
-	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", thread_index, i, ps, cb_index, max_cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1), 
-	//	offset_sequence(2), RAD2DEG * offset_sequence(3)), offset_sequence(4), RAD2DEG * offset_sequence(5)); 
 
 	//==================================================================================================
 	// 2.7 : Return dynamic obstacle related cost and associated colregs violation indicator

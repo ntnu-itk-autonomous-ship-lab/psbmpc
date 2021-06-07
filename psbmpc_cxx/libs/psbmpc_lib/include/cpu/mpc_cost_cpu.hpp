@@ -149,6 +149,13 @@ namespace PSBMPC_LIB
 				const std::vector<polygon_2D> &polygons, 
 				const double V_w, 
 				const Eigen::Vector2d &wind_direction) const;
+
+			double calculate_grounding_cost(
+				Eigen::VectorXd &max_cost_j,
+				const Eigen::MatrixXd &trajectory, 
+				const std::vector<polygon_2D> &polygons, 
+				const double V_w, 
+				const Eigen::Vector2d &wind_direction) const;
 		};
 
 		/****************************************************************************************
@@ -804,7 +811,7 @@ namespace PSBMPC_LIB
 			Eigen::Vector2d L_0j;
 			double d_0j(0.0), t(0.0), phi_j(0.0);
 			
-			for (int k = 0; k < n_samples; k++)
+			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
 			{
 				t = pars.dt * k;
 
@@ -821,14 +828,67 @@ namespace PSBMPC_LIB
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
 
-					cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
+					//cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
+					cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
 
+					if (max_cost_g < cost_g)
+					{
+						max_cost_g = cost_g;
+					}
 					//printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
-				if (max_cost_g < cost_g)
+				
+			}
+			return max_cost_g;
+		}
+
+		template <typename Parameters>
+		double MPC_Cost<Parameters>::calculate_grounding_cost(
+			Eigen::VectorXd &max_cost_j, 										// In/Out: Max costs wrt to each static obstacle, for debugging purposes
+			const Eigen::MatrixXd &trajectory,									// In: Predicted ownship trajectory
+			const std::vector<polygon_2D> &polygons,							// In: Static obstacle information
+			const double V_w,													// In: Estimated wind speed
+			const Eigen::Vector2d &wind_direction 								// In: Unit vector in NE describing the estimated wind direction
+			) const
+		{
+			int n_samples = std::round(pars.T / pars.dt);
+			int n_static_obst = polygons.size();
+			double max_cost_g(0.0), cost_g(0.0);	 
+
+			Eigen::Vector2d L_0j;
+			double d_0j(0.0), t(0.0), phi_j(0.0);
+			max_cost_j.resize(n_static_obst); max_cost_j.setZero();
+			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
+			{
+				t = pars.dt * k;
+
+				cost_g = 0.0;
+				for (int j = 0; j < n_static_obst; j++)
 				{
-					max_cost_g = cost_g;
+					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
+					d_0j = L_0j.norm();
+					if (true)
+					{
+						//std::cout << "k = " << k << " | distance to j = " << j << " : " << d_0j << std::endl;
+					}
+					L_0j.normalize();
+
+					phi_j = std::max(0.0, L_0j.dot(wind_direction));
+
+					//cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
+					cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
+
+					if (max_cost_j(j) < cost_g)
+					{
+						max_cost_j(j) = cost_g;
+					}
+					if (max_cost_g < cost_g)
+					{
+						max_cost_g = cost_g;
+					}
+					//printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
+				
 			}
 			return max_cost_g;
 		}
@@ -928,12 +988,12 @@ namespace PSBMPC_LIB
 			const Eigen::Vector2d &r
 			) const
 		{
-			double epsilon = 1e-12; // abs(val) less than 1e-12 m^2 is considered zero for this check
+			double epsilon = 1e-8; // abs(val) less than 1e-8 m^2 is considered zero for this check
 			// Calculate z-component of cross product (q - p) x (r - q)
 			double val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
 			//printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
-			if (val >= -epsilon && val <= epsilon) 	{ return 0; } // colinear
+			if (val > -epsilon && val < epsilon) 	{ return 0; } // colinear
 			else if (val > epsilon) 				{ return 1; } // clockwise
 			else 									{ return 2; } // counterclockwise
 		}
@@ -1079,29 +1139,98 @@ namespace PSBMPC_LIB
 			const polygon_2D &poly
 			) const
 		{
-			int line_intersect_count = 0, n_vertices(0);
-			Eigen::Vector2d v, v_next;			
+			//======================================================
+			// MATLAB PLOTTING FOR DEBUGGING
+			//======================================================
+			/* Engine *ep = engOpen(NULL);
+			if (ep == NULL)
+			{
+				std::cout << "engine start failed!" << std::endl;
+			}
+			mxArray *polygon_matrix_mx(nullptr);
+			mxArray *polygon_side_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
+			//mxArray *d_0j_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
+			mxArray *p_os_ray_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
+			mxArray *bbox_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
+			double *p_polygon_matrix(nullptr);
+			double *p_polygon_side = mxGetPr(polygon_side_mx);
+			double *p_p_os_ray = mxGetPr(p_os_ray_mx);
+			double *p_bbox = mxGetPr(bbox_mx);
 
+			
+			Eigen::Map<Eigen::Matrix2d> map_polygon_side(p_polygon_side, 2, 2);
+			//Eigen::Map<Eigen::Vector2d> map_d_0j;
+			Eigen::Map<Eigen::Matrix2d> map_p_os_ray(p_p_os_ray, 2, 2);
+			Eigen::Map<Eigen::Matrix2d> map_bbox(p_bbox, 2, 2);
+			
+			Eigen::Matrix2d p_os_ray; p_os_ray.col(0) = p; 
+			Eigen::Matrix2d polygon_side; */
+			
+			//======================================================
+			int line_intersect_count(0), n_vertices(0);
+			Eigen::Vector2d v_prev, v, v_next;			
+
+			Eigen::MatrixXd vertices(2, 10000);
 			// Find bounding box of polygon to use for ray creation
 			Eigen::Matrix2d bbox;
 			bbox(0, 0) = 1e10; bbox(1, 0) = 1e10; bbox(0, 1) = -1e10; bbox(1, 1) = -1e10;
-			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); it++)
+			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
 			{
 				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
+
+				vertices(0, n_vertices) = v(0);
+				vertices(1, n_vertices) = v(1);
+
 				if (v(0) < bbox(0, 0)) { bbox(0, 0) = v(0); } // x_min
 				if (v(1) < bbox(1, 0)) { bbox(1, 0) = v(1); } // y_min
 				if (v(0) > bbox(0, 1)) { bbox(0, 1) = v(0); } // x_max
 				if (v(1) > bbox(1, 1)) { bbox(1, 1) = v(1); } // y_max
 				n_vertices += 1;
 			}
-			if (n_vertices < 3) { return false; }
+			vertices.conservativeResize(2, n_vertices);
+			/* if (n_vertices < 3 ||
+				p(0) < bbox(0, 0) || p(0) > bbox(0, 1) || p(1) < bbox(1, 0) || p(1) > bbox(1, 1)) 
+			{ return false; } */
 
-			Eigen::Vector2d p_ray_end = p + 1.1 * (bbox.col(1) - p);
-			int v_count = 0;
-			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
+			Eigen::Vector2d p_ray_end;
+			p_ray_end = bbox.col(1); // set ray end to x_max, y_max of polygon bbox
+			p_ray_end(0) += 0.1;
+			p_ray_end = p + 1.1 * (bbox.col(1) - p);
+			 
+			//======================================================
+			// MATLAB PLOTTING FOR DEBUGGING
+			//======================================================
+			/* p_os_ray.col(1) = p_ray_end;
+			
+			polygon_matrix_mx = mxCreateDoubleMatrix(2, n_vertices, mxREAL);
+			p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+			Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, 2, n_vertices);
+			map_polygon_matrix = vertices;
+			map_bbox = bbox;
+			map_p_os_ray = p_os_ray;
+
+			engPutVariable(ep, "polygon_vertices", polygon_matrix_mx);
+			engPutVariable(ep, "p_os_ray", p_os_ray_mx);
+			engPutVariable(ep, "bbox", bbox_mx);
+			engEvalString(ep, "init_plot_geometry_wrt_polygon"); */
+			//======================================================
+			int o_11(0), o_12(0);
+			for(int l = 0; l < n_vertices; l++)
 			{
-				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
-				v_next(0) = boost::geometry::get<0>(*(it + 1)); v_next(1) = boost::geometry::get<1>(*(it + 1));
+				if (l == 0)					{ v_prev = vertices.col(n_vertices - 1); }
+				else 						{ v_prev = vertices.col(l - 1); }
+				v = vertices.col(l);
+				if (l == n_vertices - 1)	{ v_next = vertices.col(0); }
+				else 						{ v_next = vertices.col(l + 1); }
+				
+				//======================================================
+				// MATLAB PLOTTING FOR DEBUGGING
+				//======================================================
+				/* polygon_side.col(0) = v; polygon_side.col(1) = v_next;
+				map_polygon_side = polygon_side;
+				engPutVariable(ep, "polygon_side", polygon_side_mx);
+				engEvalString(ep, "plot_geometry_wrt_polygon"); */
+				//======================================================
 				
 				if (determine_if_lines_intersect(p, p_ray_end, v, v_next))
 				{
@@ -1111,9 +1240,35 @@ namespace PSBMPC_LIB
 						return determine_if_on_segment(v, p, v_next);
 					}
 					line_intersect_count += 1;
+
+					// Special case when the vertex v is colinear with p -> p_ray_end
+					if (find_triplet_orientation(p, v, p_ray_end) == 0)
+					{
+						// Determine if:  
+						// 1) both polygon sides connected to v are below/above the ray: 0 or 2 intersections 
+						// 	  => add one to the line intersection count.
+						// 2) if one side is below and the other above: 1 intersection.
+						o_11 = find_triplet_orientation(p, p_ray_end, v_prev);
+						o_12 = find_triplet_orientation(p, p_ray_end, v_next);
+						if (o_11 == o_12)
+						{
+							line_intersect_count += 1;
+						}
+						// add one extra to account for the fact that the other side connecting the
+						// vertex will be checked, when (v_next = v).
+						line_intersect_count += 1; 
+					}
 				}
-				v_count += 1;
 			}
+			//======================================================
+			// MATLAB PLOTTING FOR DEBUGGING
+			//======================================================
+			/* mxDestroyArray(polygon_matrix_mx);
+			mxDestroyArray(polygon_side_mx);
+			mxDestroyArray(p_os_ray_mx);
+			mxDestroyArray(bbox_mx);
+			engClose(ep); */
+			//======================================================
 			return line_intersect_count % 2 == 1;
 		}
 
@@ -1160,7 +1315,7 @@ namespace PSBMPC_LIB
 			Eigen::Vector2d d2poly, d2line;
 			if (determine_if_inside_polygon(p, poly))
 			{
-				d2poly(0) = 0.0f; d2poly(1) = 0.0f;
+				d2poly(0) = 0.0; d2poly(1) = 0.0;
 				return d2poly;
 			}
 			d2poly(0) = 1e10; d2poly(1) = 1e10;

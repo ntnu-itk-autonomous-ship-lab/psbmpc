@@ -45,6 +45,8 @@ namespace PSBMPC_LIB
 		// Number of control behaviours and sequential maneuvers for the ownship, respectively
 		int n_cbs, n_M;
 
+		int p_step;
+		
 		// Finite sets of offsets considered to the own-ship surge and course references,
 		// for each maneuver in the horizon
 		std::vector<Eigen::VectorXd> u_offsets;
@@ -57,7 +59,7 @@ namespace PSBMPC_LIB
 
 		Guidance_Method guidance_method;
 
-		double T, dt, p_step;
+		double T, dt;
 		double t_ts;
 		double d_safe, d_close, d_init;
 		double K_coll;

@@ -21,8 +21,8 @@
 #pragma once
 
 #define N_BPAR						1							// Number of boolean tyoe parameters in PSBMPC
-#define N_IPAR						2 							// Number of integer type parameters in PSBMPC
-#define N_DPAR						25 							// Number of double type parameters in PSBMPC
+#define N_IPAR						5 							// Number of integer type parameters in PSBMPC
+#define N_DPAR						26 							// Number of double type parameters in PSBMPC
 #define N_OPAR						2							// Number of offset/control behavior related parameters in PSBMPC
 #define N_EVPAR						1							// Number of Eigen::Vector type parameters in PSBMPC
 
@@ -31,18 +31,21 @@
 
 // Indices for parameters of type int
 #define i_ipar_n_M					0                          
-#define i_ipar_n_r                  1                           
+#define i_ipar_n_r                  1       
+#define i_ipar_p_step 				2       
+#define i_ipar_p_step_cpe 			3
+#define i_ipar_p_step_grounding		4             
 
 // Indices for parameters of type double
 #define i_dpar_T 					0
 #define i_dpar_dt 					1
-#define i_dpar_p_step 				2
 
-#define i_dpar_t_ts					3
+#define i_dpar_t_ts					2
 
-#define i_dpar_d_safe				4
-#define i_dpar_d_close				5
-#define i_dpar_d_init				6
+#define i_dpar_d_safe				3
+#define i_dpar_d_close				4
+#define i_dpar_d_init				5
+#define i_dpar_d_so_relevant    	6
 
 #define i_dpar_K_coll				7
 

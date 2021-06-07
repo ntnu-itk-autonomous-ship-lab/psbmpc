@@ -26,6 +26,7 @@
 #include "engine.h"
 
 #include <iostream>
+#include <limits>
 #include <vector>
 #include <chrono>
 #include <memory>
@@ -38,7 +39,7 @@
 // Main program:
 //*****************************************************************************************************************
 int main(){
-
+	std::cout << std::numeric_limits<long double>::digits10 << std::endl;
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
@@ -50,8 +51,9 @@ int main(){
 
 	/*coordinates are given in wgs-84 use https://finnposisjon.test.geonorge.no/ */
 	Eigen::Matrix<double, 6, 1> xs_os_0;
-	// xs_os_0 << 7042320, 269475, 180 * DEG2RAD, 1, 0, 0; // utforbi skansen
-	xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 1.5, 0, 0; // "i" skansen
+	//xs_os_0 << 7042320, 269475, 180 * DEG2RAD, 1, 0, 0; // utforbi skansen
+	//xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 1.5, 0, 0; // "i" skansen
+	xs_os_0 << 7042220, 270175, 60 * DEG2RAD, 1.5, 0, 0; // rett sørvest for ravnkloa
 	double u_d = 1.5, chi_d, u_c, chi_c;
 	
 	PSBMPC_LIB::CPU::Ownship asv_sim;
@@ -139,7 +141,7 @@ int main(){
 	{
 		ID[i] = i;
 
-		u_d_i[i] = 3.0; chi_d_i[i] = 0.0;
+		u_d_i[i] = 2.0; chi_d_i[i] = 0.0;
 
 		xs_i_0[0].resize(4);
 		xs_i_0[0] << 7042350, 270675, -90 * DEG2RAD, 1;
@@ -164,7 +166,6 @@ int main(){
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T_sim, dt);
 	}
 
-
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************	
@@ -173,7 +174,6 @@ int main(){
 	PSBMPC_LIB::GPU::PSBMPC psbmpc;
 
 	double u_opt(u_d), chi_opt(0.0);
-
 
 	double V_w = 0.0;
 	Eigen::Vector2d wind_direction; wind_direction(0) = 1.0; wind_direction(1) = 0.0;
@@ -201,9 +201,10 @@ int main(){
     
    	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename, psbmpc);
 	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
+	std::vector<polygon_2D> simplified_polygons = grounding_hazard_manager.get_simplified_polygons();
 
     //Make matlab polygons type friendly array:
-    Eigen::Matrix<double, -1, 2> polygon_matrix;
+    Eigen::Matrix<double, -1, 2> polygon_matrix, simplified_polygon_matrix;
     int n_total_vertices = 0;
     BOOST_FOREACH(polygon_2D const &poly, polygons)
 	{
@@ -232,18 +233,54 @@ int main(){
 		pcount += 1;
     }
 
+	// SIMPLIFIED POLYGONS
+	int n_total_vertices_simplified = 0;
+    BOOST_FOREACH(polygon_2D const &poly, simplified_polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			n_total_vertices_simplified += 1;
+		}
+		n_total_vertices_simplified += 1;
+    }
+    simplified_polygon_matrix.resize(n_total_vertices_simplified, 2); 
+
+    /*format polygon_matrix array for matlab plotting*/
+    pcount = 0; 
+    BOOST_FOREACH(polygon_2D const& poly, simplified_polygons)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			simplified_polygon_matrix(pcount, 1) = boost::geometry::get<0>(*it); // east 
+			simplified_polygon_matrix(pcount, 0) = boost::geometry::get<1>(*it); // north format for matlab
+			
+			pcount += 1;
+		}
+		// each polygon is separated with (-1, -1)
+		simplified_polygon_matrix(pcount, 1) = -1;
+		simplified_polygon_matrix(pcount, 0) = -1;
+		pcount += 1;
+    }
+
 	mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
-	double *p_map_origin = mxGetPr(map_origin_mx);
-	Eigen::Map<Eigen::Vector2d> map_map_origin(p_map_origin, 2, 1);
-	map_map_origin = grounding_hazard_manager.get_map_origin();
-    
     mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
+	mxArray *simplified_polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices_simplified, 2, mxREAL);
+
+	double *p_map_origin = mxGetPr(map_origin_mx);
     double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+	double *p_simplified_polygon_matrix = mxGetPr(simplified_polygon_matrix_mx);
+
+	Eigen::Map<Eigen::Vector2d> map_map_origin(p_map_origin, 2, 1);
     Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
+	Eigen::Map<Eigen::MatrixXd> map_simplified_polygon_matrix(p_simplified_polygon_matrix, n_total_vertices_simplified, 2);
+
+	map_map_origin = grounding_hazard_manager.get_map_origin();
 	map_polygon_matrix = polygon_matrix;
+	map_simplified_polygon_matrix = simplified_polygon_matrix;
 
 	engPutVariable(ep, "map_origin", map_origin_mx);
 	engPutVariable(ep, "P", polygon_matrix_mx);
+	engPutVariable(ep, "P_simplified", simplified_polygon_matrix_mx);
 
 //*****************************************************************************************************************
 // Simulation
@@ -359,6 +396,7 @@ int main(){
 
 		if (fmod(t, 5) == 0)
 		{
+			std::cout << "n_relevant_so = " << relevant_polygons.size() << std::endl;
 			start = std::chrono::system_clock::now();		
 
 			psbmpc.calculate_optimal_offsets(
@@ -438,6 +476,7 @@ int main(){
 	mxDestroyArray(map_origin_mx);
 	mxDestroyArray(d_safe_mx);
 	mxDestroyArray(polygon_matrix_mx);
+	mxDestroyArray(simplified_polygon_matrix_mx);
 	mxDestroyArray(traj_os_mx);
 	mxDestroyArray(wps_os_mx);
 	mxDestroyArray(pred_traj_mx);

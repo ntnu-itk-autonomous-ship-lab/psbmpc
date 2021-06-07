@@ -48,4 +48,4 @@
 #define MAX_N_CPE_SAMPLES 500           // Max number of samples allowable to draw in the CPE. 
 
 #define MAX_N_POLYGONS 50               // Max number of static obstacles/polygons allowable on the device
-#define MAX_N_VERTICES 30000            // Max number of vertices in a polygon allowable on the device
+#define MAX_N_VERTICES 8000             // Max number of vertices in a polygon allowable on the device

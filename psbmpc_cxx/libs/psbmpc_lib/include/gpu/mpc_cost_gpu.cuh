@@ -57,11 +57,11 @@ namespace PSBMPC_LIB
 
 			// Grounding hazard related
 			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k, projection;
-			TML::Vector2d p_ray_end, v, v_next;
+			TML::Vector2d p_ray_end, v_prev, v, v_next;
 
 			float l_sqrt, t_line, d_0j, phi_j;
 			double val, epsilon;
-			int n_samples, o_1, o_2, o_3, o_4, line_intersect_count;
+			int n_samples, o_11, o_12, o_1, o_2, o_3, o_4, line_intersect_count;
 
 			TML::Vector3f a, b;
 			//==============================================
@@ -165,6 +165,11 @@ namespace PSBMPC_LIB
 				const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
 				const CB_Functor_Data *fdata, 
 				const Basic_Polygon *polygons);
+
+			__host__ __device__ float calculate_grounding_cost(
+				const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
+				const CB_Functor_Data *fdata, 
+				const Basic_Polygon &poly);
 		};
 
 		//=======================================================================================
@@ -602,7 +607,7 @@ namespace PSBMPC_LIB
 			max_cost_g = 0.0f;
 			
 			n_samples = trajectory.get_cols();
-			for (int k = 0; k < n_samples; k++)
+			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
 			{
 				cost_g = 0.0f;
 				p_os_k = trajectory.get_block<2, 1>(0, k, 2, 1);
@@ -618,6 +623,37 @@ namespace PSBMPC_LIB
 
 					//printf("t = %.4f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
+				if (max_cost_g < cost_g)
+				{
+					max_cost_g = cost_g;
+				}
+			}
+			return max_cost_g;
+		}
+
+		template <typename Parameters>
+		__host__ __device__ float MPC_Cost<Parameters>::calculate_grounding_cost(
+			const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,					// In: Calling Own-ship trajectory
+			const CB_Functor_Data *fdata,												// In: Pointer to various device data needed for the GPU calculations
+			const Basic_Polygon &poly	 												// In: Static obstacle to compute grounding cost wrt
+			)
+		{
+			max_cost_g = 0.0f; cost_g = 0.0f;
+			
+			n_samples = trajectory.get_cols();
+			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
+			{
+				p_os_k = trajectory.get_block<2, 1>(0, k, 2, 1);
+
+				L_0j = distance_to_polygon(p_os_k, poly);
+				d_0j = L_0j.norm();
+				L_0j.normalize();
+
+				phi_j = fmaxf(0.0f, L_0j.dot(fdata->wind_direction));
+
+				cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(- (pars.G_3 * d_0j + pars.G_4 * (float)k * pars.dt));
+
+				//printf("t = %.4f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				if (max_cost_g < cost_g)
 				{
 					max_cost_g = cost_g;
@@ -642,12 +678,12 @@ namespace PSBMPC_LIB
 			const TML::Vector2d &r
 			)
 		{
-			epsilon = 1e-12; // abs(val) less than 1e-12 m^2 is considered zero for this check
+			epsilon = 1e-8; // abs(val) less than 1e-8 m^2 is considered zero for this check
 			// Calculate z-component of cross product (q - p) x (r - q)
 			val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
 			//printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
-			if (val >= -epsilon && val <= epsilon) 	{ return 0; } // colinear
+			if (val > -epsilon && val < epsilon) 	{ return 0; } // colinear
 			else if (val > epsilon) 				{ return 1; } // clockwise
 			else 									{ return 2; } // counterclockwise
 		}
@@ -727,17 +763,23 @@ namespace PSBMPC_LIB
 			const Basic_Polygon &poly
 			)
 		{
-			if (poly.vertices.get_cols() < 3) { return false;}
+			if (poly.vertices.get_cols() < 3 ||
+				p(0) < poly.bbox(0, 0) || p(0) > poly.bbox(0, 1) || p(1) < poly.bbox(1, 0) || p(1) > poly.bbox(1, 1)) 
+			{ return false; }
+
 			line_intersect_count = 0;
 
-			p_ray_end = poly.bbox.get_col(1) - p;
-			p_ray_end *= 1.1;
-			p_ray_end += p;
+			// Pick a point outside the polygon bbox for the ray tracing
+			p_ray_end = poly.bbox.get_col(1);
+			p_ray_end(0) += 0.01;
 
-			for (size_t l = 0; l < poly.vertices.get_cols() - 1; l++)
+			for (size_t l = 0; l < poly.vertices.get_cols(); l++)
 			{
+				if (l == 0)								{ v_prev = poly.vertices.get_col(poly.vertices.get_cols() - 1); }
+				else 									{ v_prev = poly.vertices.get_col(l - 1); }
 				v = poly.vertices.get_col(l);
-				v_next = poly.vertices.get_col(l + 1);
+				if (l == poly.vertices.get_cols() - 1)	{ v_next = poly.vertices.get_col(0); }
+				else 									{ v_next = poly.vertices.get_col(l + 1); }
 				
 				if (determine_if_lines_intersect(p, p_ray_end, v, v_next))
 				{
@@ -748,6 +790,24 @@ namespace PSBMPC_LIB
 						return determine_if_on_segment(v, p, v_next);
 					}
 					line_intersect_count += 1;
+
+					// Special case when the vertex v is colinear with p -> p_ray_end
+					if (find_triplet_orientation(p, v, p_ray_end) == 0)
+					{
+						// Determine if:  
+						// 1) both polygon sides connected to v are below/above the ray: 2 intersections 
+						// 	  => add one to the line intersection count.
+						// 2) if one side is below and the other above: 1 intersection 
+						o_11 = find_triplet_orientation(p, p_ray_end, v_prev);
+						o_12 = find_triplet_orientation(p, p_ray_end, v_next);
+						if (o_11 == o_12) // Case 1
+						{
+							line_intersect_count += 1;
+						}
+						// add one extra to account for the fact that the other side connecting the
+						// vertex will also be checked, when (v_next = v).
+						line_intersect_count += 1; 
+					}
 				}
 			}
 
