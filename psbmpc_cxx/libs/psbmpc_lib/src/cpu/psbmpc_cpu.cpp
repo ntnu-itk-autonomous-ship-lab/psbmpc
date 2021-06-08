@@ -122,11 +122,11 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
-	}
+	} */
 	
 	/* mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
  	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
@@ -237,7 +237,7 @@ void PSBMPC::calculate_optimal_offsets(
 	}  */
 	
 	// COST PLOTTING
-	mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
+	/* mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
  	mxArray *cost_do_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
 	mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
 	mxArray *max_cost_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
@@ -270,7 +270,7 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps[0]);
 
-	mxArray *n_obst_copy_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr);
+	mxArray *n_obst_copy_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
 	//===============================================================================================================
 
 	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
@@ -418,7 +418,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-	opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+	/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 	map_total_cost = total_cost_matrix;
 	map_cost_do = cost_do_matrix;
 	map_cost_colregs = cost_colregs_matrix;
@@ -459,7 +459,7 @@ void PSBMPC::calculate_optimal_offsets(
 	mxDestroyArray(n_obst_copy_mx);
 	mxDestroyArray(opt_cb_index_mx);
 	
-	engClose(ep);
+	engClose(ep); */
 	//==================================================================
 
 	u_opt = opt_offset_sequence(0); 	u_opt_last = u_opt;
@@ -630,7 +630,7 @@ void PSBMPC::setup_prediction(
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
 			// that the previous avoidance maneuver happened before CPA with this obstacle)
-			if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min)
+			if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min && t_cpa(i) <= pars.T)
 			{	
 				t_cpa_min = t_cpa(i);
 				index_closest = i;

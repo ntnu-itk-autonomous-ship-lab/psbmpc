@@ -21,6 +21,10 @@ ylim(ax2, ylimits_d); xlim(ax2, tlim);
 hold(ax1, 'on'); hold(ax2, 'on');
 grid(ax1, 'on'); grid(ax2, 'on');
 
+n_samples = T_sim / dt_sim;
+t_vec = dt_sim * (0 : (n_samples - 1));
+plot(ax2, t_vec, d_safe * ones(n_samples, 1), 'r');
+
 disp(map_origin);
 [n_vertices, ~] = size(P)
 P(P == -1) = NaN;

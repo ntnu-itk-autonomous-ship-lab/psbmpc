@@ -592,6 +592,7 @@ void PSBMPC::map_thrust_dvecs(
 	}
 	// Total number of GPU threads to schedule
 	int n_threads = pars.n_cbs * (n_static_obst + n_obst_ps_total);
+	std::cout << "n_threads = " << n_threads << " | n_static_obst = " << n_static_obst << " | n_obst_ps_total = " << n_obst_ps_total << std::endl;
 
 	cb_dvec.resize(n_threads);
 	cb_index_dvec.resize(n_threads);
@@ -713,7 +714,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-	Engine *ep = engOpen(NULL);
+	/* Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
@@ -751,7 +752,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps[0]);
 
-	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr);
+	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
 	//==================================================================
 	std::tuple<double, double> tup;
 	thrust::tuple<float, float, float> dev_tup;
@@ -826,7 +827,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
-	opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+	/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 	map_total_cost = total_cost_matrix;
 	map_cost_do = cost_do_matrix;
 	map_cost_colregs = cost_colregs_matrix;
@@ -867,7 +868,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	mxDestroyArray(n_obst_mx);
 	mxDestroyArray(opt_cb_index_mx);
 	
-	engClose(ep);
+	engClose(ep); */
 	//==================================================================
 }
 
@@ -933,7 +934,7 @@ void PSBMPC::setup_prediction(
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
 			// that the previous avoidance maneuver happened before CPA with this obstacle)
-			if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min)
+			if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min && t_cpa(i) <= pars.T)
 			{	
 				t_cpa_min = t_cpa(i);
 				index_closest = i;
@@ -954,7 +955,7 @@ void PSBMPC::setup_prediction(
 		}
 	}
 	
-	//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
+	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -1364,7 +1365,7 @@ void PSBMPC::set_up_temporary_device_memory(
 		temp_transfer_cobstacle = data.obstacles[i];
 
 		cudaMemcpy(&obstacles_device_ptr[i], &temp_transfer_cobstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
+    	cuda_check_errors("CudaMemCpy of Cuda Obstacle i failed.");
 	}
 
 	// Static obstacles
@@ -1374,7 +1375,7 @@ void PSBMPC::set_up_temporary_device_memory(
 		temp_transfer_poly = polygons[j];
 
 		cudaMemcpy(&polygons_device_ptr[j], &temp_transfer_poly, sizeof(Basic_Polygon), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
+    	cuda_check_errors("CudaMemCpy of Basic Polygon j failed.");
 	}
 }
 
