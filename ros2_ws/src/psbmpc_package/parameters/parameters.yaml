@@ -1,0 +1,94 @@
+psbmpc_package:
+  ros__parameters:
+    measurement_topic_name: 
+    publish_topic_name: "guidance/reference_trajectory"
+    publish_period_ms: 5000
+    psbmpc_parameters:
+    	n_M: 2
+    	n_r: 7
+    	u_offsets: [[1.0, 0.5, 0.0], [1.0, 0.5]]
+    	chi_offsets: [[-60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0], [-45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0]]
+    	p_step: 10
+    	p_step_cpe: 2
+    	p_step_grounding: 2
+    	T: 120
+    	dt: 0.5
+    	t_ts: 30
+    	d_safe: 5.0
+    	d_close: 400
+    	d_init: 400
+    	d_so_relevant: 200
+    	K_coll: 0.2
+    	phi_AH: 68.5
+    	phi_OT: 68.5
+    	phi_HO: 22.5
+    	phi_CR: 68.5
+    	kappa: 10.0
+    	kappa_TC: 20.0
+    	K_u: 20.0
+    	K_du: 6.0
+    	K_chi_strb: 1.3
+    	K_chi_port: 1.6
+    	K_dchi_strb: 0.9
+    	K_dchi_port: 1.2
+    	K_sgn: 8.0
+    	T_sgn: 120
+    	G_1: 100.0
+    	G_2: 5.0
+    	G_3: 0.25
+    	G_4: 0.008
+    	
+    ownship:
+    	l: 5.0
+    	w: 3.0
+    	T_U: 1.0
+    	T_chi: 0.5
+    	e_int_max: 20
+    	R_a: 5
+    	LOS_LD: 66
+    	LOS_K_i: 0.0
+    	
+    obstacle_ship:
+    	l: 5.0
+    	w: 3.0
+    	T_U: 1.0
+    	T_chi: 0.5
+    	e_int_max: 20
+    	R_a: 5
+    	LOS_LD: 66
+    	LOS_K_i: 0.0
+    	
+    CPE:
+    	n_CE: 500
+    	sigma_inject: 0.33
+    	alpha_n: 0.9
+    	gate: 11.618285980628054
+    	rho: 0.9
+    	max_it: 6
+    	n_MCSKF: 500
+    	r: 0.001
+    	q: 0.0008
+    	
+    MROU:
+    	sigma_x: 0.1
+    	sigma_xy: 0.0
+    	sigma_y: 0.1
+    	gamma_x: 0.1
+    	gamma_y: 0.1
+    	
+    KF: 
+    	P_0:	[0.1, 0.0, 0.0, 0.0, 
+    		0.0, 0.1, 0.0, 0.0,
+    		0.0, 0.0, 0.1, 0.0,
+    		0.0, 0.0, 0.0, 0.1]
+    	Q: 	[0.05, 0.0, 0.001, 0.0, 
+    		0.0, 0.05, 0.0, 0.001,
+    		0.001, 0.0, 0.001, 0.0,
+    		0.0, 0.001, 0.0, 0.001]
+	R: 	[0.2, 0.0, 0.0, 0.0, 
+		0.0, 0.2, 0.0, 0.0,
+		0.0, 0.0, 0.01, 0.0,
+		0.0, 0.0, 0.0, 0.01]
+    	
+    	
+    	

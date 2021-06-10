@@ -24,6 +24,7 @@
 #include "cpu/cpe_cpu.hpp"
 #include "cpu/mpc_cost_cpu.hpp"
 #include "cb_cost_functor_structures.cuh"
+#include <string>
 
 namespace PSBMPC_LIB
 {	
@@ -115,6 +116,8 @@ namespace PSBMPC_LIB
 
 			MPC_Cost<CB_Functor_Pars> *mpc_cost_device_ptr;
 			//=====================================================
+			void preallocate_device_data();
+
 			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 			
 			void map_offset_sequences();
@@ -177,6 +180,7 @@ namespace PSBMPC_LIB
 			CPU::MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 			PSBMPC();
+			PSBMPC(const std::string &config);
 
 			~PSBMPC();
 

@@ -22,7 +22,7 @@
 
 #define N_BPAR						1							// Number of boolean tyoe parameters in PSBMPC
 #define N_IPAR						5 							// Number of integer type parameters in PSBMPC
-#define N_DPAR						26 							// Number of double type parameters in PSBMPC
+#define N_DPAR						27 							// Number of double type parameters in PSBMPC
 #define N_OPAR						2							// Number of offset/control behavior related parameters in PSBMPC
 #define N_EVPAR						1							// Number of Eigen::Vector type parameters in PSBMPC
 
@@ -72,6 +72,8 @@
 #define i_dpar_G_2 					23
 #define i_dpar_G_3 					24
 #define i_dpar_G_4 					25
+
+#define i_dpar_epsilon_rdp          26
 
 // Indices for offset/control behaviour parameters of type std::vector/Eigen::MatrixXd
 #define i_opar_u_offsets			0

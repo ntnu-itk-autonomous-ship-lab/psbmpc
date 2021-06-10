@@ -93,6 +93,7 @@ double PSBMPC_Parameters::get_dpar(
 		case i_dpar_G_2					: return G_2;
 		case i_dpar_G_3					: return G_3;
 		case i_dpar_G_4					: return G_4;
+		case i_dpar_epsilon_rdp			: return epsilon_rdp;
 		default : 
 			// Throw
 			return 0.0;
@@ -215,6 +216,7 @@ void PSBMPC_Parameters::set_par(
 			case i_dpar_G_2 				: G_2 = value; break;
 			case i_dpar_G_3 				: G_3 = value; break;
 			case i_dpar_G_4 				: G_4 = value; break;
+			case i_dpar_epsilon_rdp 		: epsilon_rdp = value; break;
 			default : // Throw invalid index
 				break;
 		}
@@ -425,6 +427,8 @@ void PSBMPC_Parameters::initialize_pars()
 	G_2 = 5.0;
 	G_3 = 0.25;
 	G_4 = 0.008;
+
+	epsilon_rdp = 2.0;
 
 	obstacle_colav_on = false;
 }

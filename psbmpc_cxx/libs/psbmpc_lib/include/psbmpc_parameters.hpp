@@ -116,6 +116,7 @@ namespace PSBMPC_LIB
 		double K_chi_port, K_dchi_port; 
 		double K_sgn, T_sgn;
 		double G_1, G_2, G_3, G_4;
+		double epsilon_rdp;
 		
 		bool obstacle_colav_on;
 
@@ -126,8 +127,8 @@ namespace PSBMPC_LIB
 	public:
 
 		PSBMPC_Parameters() { initialize_pars(); initialize_par_limits(); }
+		PSBMPC_Parameters(const std::string &config); 
 
-		//PSBMPC_Parameters(std::string tuning_file); // Not implemented yet
 
 		void set_par(const int index, const bool value);
 

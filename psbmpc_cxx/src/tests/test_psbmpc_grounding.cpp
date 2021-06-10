@@ -53,7 +53,7 @@ int main(){
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	//xs_os_0 << 7042320, 269475, 180 * DEG2RAD, 1, 0, 0; // utforbi skansen
 	//xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 1.5, 0, 0; // "i" skansen
-	xs_os_0 << 7042220, 270175, 60 * DEG2RAD, 1.5, 0, 0; // rett sørvest for ravnkloa
+	xs_os_0 << 7042220, 270175, 60 * DEG2RAD, 1.5, 0, 0; // rett nordvest for ravnkloa
 	double u_d = 1.5, chi_d, u_c, chi_c;
 	
 	PSBMPC_LIB::CPU::Ownship asv_sim;

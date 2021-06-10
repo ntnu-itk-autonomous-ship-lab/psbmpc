@@ -52,89 +52,19 @@ namespace GPU
 *****************************************************************************************/
 PSBMPC::PSBMPC() 
 	: 
-	ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), 
-	obstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), 
+	pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), 
+	polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	
 {
 	opt_offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
-	
-	u_opt_last = 1.0; chi_opt_last = 0.0;
-
-	min_cost = 1e12;
 
 	cpe_host = CPU::CPE(pars.cpe_method, pars.dt);
 
 	mpc_cost = CPU::MPC_Cost<PSBMPC_Parameters>(pars);
 
-	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
-	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
-	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
-	std::cout << "Ownship trajectory size: " << sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>) << std::endl; 
-	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
-	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
-	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
-	std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
-	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl;
-
-	//================================================================================
-	// Cuda device memory allocation, preallocated to save computation time
-	//================================================================================
-	// Allocate for use by all threads a read-only Cuda_Obstacle array
-	cudaMalloc((void**)&obstacles_device_ptr, MAX_N_OBST * sizeof(Cuda_Obstacle));
-    cuda_check_errors("CudaMalloc of Cuda_Obstacle's failed.");
-	
-	// Allocate for use by all threads a control behaviour parameter object
-	CB_Functor_Pars temp_pars(pars); 
-	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
-	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
-
-	cudaMemcpy(pars_device_ptr, &temp_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
-    cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
-
-	// Allocate for use by all threads a control behaviour data object
-	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
-	cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
-	
-	// Allocate for each control behaviour an own-ship trajectory
-	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>));
-	cuda_check_errors("CudaMalloc of trajectory failed.");
-
-	// Allocate for each control behaviour an ownship
-	cudaMalloc((void**)&ownship_device_ptr, pars.n_cbs * sizeof(Ownship));
-	cuda_check_errors("CudaMalloc of Ownship failed.");
-
-	// Allocate for each thread that considers dynamic obstacles a Collision Probability Estimator
-	CPE temp_cpe(pars.cpe_method, pars.dt);
-	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_OBST * pars.n_r * sizeof(CPE));
-    cuda_check_errors("CudaMalloc of CPE failed.");
-
-	// Allocate for each thread an mpc cost object
-	MPC_Cost<CB_Functor_Pars> temp_mpc_cost(temp_pars);
-	int max_n_threads = pars.n_cbs * (MAX_N_POLYGONS + MAX_N_OBST * pars.n_r);
-	cudaMalloc((void**)&mpc_cost_device_ptr, max_n_threads * sizeof(MPC_Cost<CB_Functor_Pars>));
-	cuda_check_errors("CudaMalloc of MPC_Cost failed.");
-
-	for (int cb = 0; cb < pars.n_cbs; cb++)
-	{
-		cudaMemcpy(&ownship_device_ptr[cb], &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of Ownship failed.");		
-	}
-
-	for (int thread = 0; thread < pars.n_cbs * MAX_N_OBST * pars.n_r; thread++)
-	{
-		cudaMemcpy(&cpe_device_ptr[thread], &temp_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of CPE failed.");
-	}
-
-	for (int thread = 0; thread < max_n_threads; thread++)
-	{
-		cudaMemcpy(&mpc_cost_device_ptr[thread], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
-	}
-
-	// Allocate for use by all threads that consider static obstacles a read-only Basic_Polygon array
-	cudaMalloc((void**)&polygons_device_ptr, MAX_N_POLYGONS * sizeof(Basic_Polygon));
-    cuda_check_errors("CudaMalloc of Basic_Polygon`s failed.");
+	preallocate_device_data();
 }
 
 /****************************************************************************************
@@ -447,6 +377,79 @@ void PSBMPC::calculate_optimal_offsets(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+void PSBMPC::preallocate_device_data()
+{
+	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
+	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
+	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
+	std::cout << "Ownship trajectory size: " << sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>) << std::endl; 
+	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
+	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
+	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
+	std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
+	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl;
+
+	//================================================================================
+	// Cuda device memory allocation, preallocated to save computation time
+	//================================================================================
+	// Allocate for use by all threads a read-only Cuda_Obstacle array
+	cudaMalloc((void**)&obstacles_device_ptr, MAX_N_OBST * sizeof(Cuda_Obstacle));
+    cuda_check_errors("CudaMalloc of Cuda_Obstacle's failed.");
+	
+	// Allocate for use by all threads a control behaviour parameter object
+	CB_Functor_Pars temp_pars(pars); 
+	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
+	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
+
+	cudaMemcpy(pars_device_ptr, &temp_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
+    cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
+
+	// Allocate for use by all threads a control behaviour data object
+	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
+	cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
+	
+	// Allocate for each control behaviour an own-ship trajectory
+	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>));
+	cuda_check_errors("CudaMalloc of trajectory failed.");
+
+	// Allocate for each control behaviour an ownship
+	cudaMalloc((void**)&ownship_device_ptr, pars.n_cbs * sizeof(Ownship));
+	cuda_check_errors("CudaMalloc of Ownship failed.");
+
+	// Allocate for each thread that considers dynamic obstacles a Collision Probability Estimator
+	CPE temp_cpe(pars.cpe_method, pars.dt);
+	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_OBST * pars.n_r * sizeof(CPE));
+    cuda_check_errors("CudaMalloc of CPE failed.");
+
+	// Allocate for each thread an mpc cost object
+	MPC_Cost<CB_Functor_Pars> temp_mpc_cost(temp_pars);
+	int max_n_threads = pars.n_cbs * (MAX_N_POLYGONS + MAX_N_OBST * pars.n_r);
+	cudaMalloc((void**)&mpc_cost_device_ptr, max_n_threads * sizeof(MPC_Cost<CB_Functor_Pars>));
+	cuda_check_errors("CudaMalloc of MPC_Cost failed.");
+
+	for (int cb = 0; cb < pars.n_cbs; cb++)
+	{
+		cudaMemcpy(&ownship_device_ptr[cb], &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of Ownship failed.");		
+	}
+
+	for (int thread = 0; thread < pars.n_cbs * MAX_N_OBST * pars.n_r; thread++)
+	{
+		cudaMemcpy(&cpe_device_ptr[thread], &temp_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of CPE failed.");
+	}
+
+	for (int thread = 0; thread < max_n_threads; thread++)
+	{
+		cudaMemcpy(&mpc_cost_device_ptr[thread], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
+	}
+
+	// Allocate for use by all threads that consider static obstacles a read-only Basic_Polygon array
+	cudaMalloc((void**)&polygons_device_ptr, MAX_N_POLYGONS * sizeof(Basic_Polygon));
+    cuda_check_errors("CudaMalloc of Basic_Polygon`s failed.");
+}
+
 /****************************************************************************************
 *  Name     : determine_colav_active
 *  Function : Uses the dynamic obstacle vector and the number of static 
