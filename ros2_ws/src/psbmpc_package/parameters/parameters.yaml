@@ -41,8 +41,8 @@ psbmpc_package:
     ownship:
     	l: 5.0
     	w: 3.0
-    	T_U: 1.0
-    	T_chi: 0.5
+    	T_U: 1.44
+    	T_chi: 0.92
     	e_int_max: 20
     	R_a: 5
     	LOS_LD: 66
@@ -51,8 +51,8 @@ psbmpc_package:
     obstacle_ship:
     	l: 5.0
     	w: 3.0
-    	T_U: 1.0
-    	T_chi: 0.5
+    	T_U: 1.44
+    	T_chi: 0.92
     	e_int_max: 20
     	R_a: 5
     	LOS_LD: 66
@@ -70,9 +70,9 @@ psbmpc_package:
     	q: 0.0008
     	
     MROU:
-    	sigma_x: 0.1
+    	sigma_x: 0.01
     	sigma_xy: 0.0
-    	sigma_y: 0.1
+    	sigma_y: 0.01
     	gamma_x: 0.1
     	gamma_y: 0.1
     	

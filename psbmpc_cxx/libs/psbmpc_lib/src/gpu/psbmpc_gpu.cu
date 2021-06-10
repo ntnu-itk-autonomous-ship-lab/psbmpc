@@ -67,6 +67,29 @@ PSBMPC::PSBMPC()
 	preallocate_device_data();
 }
 
+PSBMPC::PSBMPC(const PSBMPC &other) 
+	:
+	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
+	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+{
+	assign_data(other);
+
+	preallocate_device_data();
+}
+
+PSBMPC& PSBMPC::operator=(const PSBMPC &other)
+{
+	if (this != &other)
+	{
+		free();
+
+		assign_data(other);	
+
+		preallocate_device_data();
+	}
+	return *this;
+}
+
 /****************************************************************************************
 *  Name     : ~PSBMPC
 *  Function : Class destructor
@@ -75,29 +98,7 @@ PSBMPC::PSBMPC()
 *****************************************************************************************/
 PSBMPC::~PSBMPC() 
 {
-	cudaFree(trajectory_device_ptr);
-	cuda_check_errors("CudaFree of trajectory failed.");
-
-	cudaFree(pars_device_ptr);
-	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
-
-	cudaFree(fdata_device_ptr); 
-	cuda_check_errors("CudaFree of CB_Functor_Data failed.");
-
-	cudaFree(obstacles_device_ptr);
-	cuda_check_errors("CudaFree of Cuda_Obstacles failed.");
-
-	cudaFree(cpe_device_ptr);
-	cuda_check_errors("CudaFree of CPE failed.");
-
-	cudaFree(ownship_device_ptr);
-	cuda_check_errors("CudaFree of Ownship failed.");	
-
-	cudaFree(polygons_device_ptr);
-	cuda_check_errors("CudaFree of Basic_Polygon`s failed.");
-
-	cudaFree(mpc_cost_device_ptr);
-	cuda_check_errors("CudaFree of MPC_Cost failed.");
+	free();
 };
 
 /****************************************************************************************
@@ -379,7 +380,7 @@ void PSBMPC::calculate_optimal_offsets(
 ****************************************************************************************/
 void PSBMPC::preallocate_device_data()
 {
-	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
+	/* std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
 	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
 	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
 	std::cout << "Ownship trajectory size: " << sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>) << std::endl; 
@@ -387,7 +388,7 @@ void PSBMPC::preallocate_device_data()
 	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
 	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
 	std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
-	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl;
+	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl; */
 
 	//================================================================================
 	// Cuda device memory allocation, preallocated to save computation time
@@ -1380,6 +1381,71 @@ void PSBMPC::set_up_temporary_device_memory(
 		cudaMemcpy(&polygons_device_ptr[j], &temp_transfer_poly, sizeof(Basic_Polygon), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of Basic Polygon j failed.");
 	}
+}
+
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::assign_data(const PSBMPC &other)
+{
+	n_ps = other.n_ps;
+
+	opt_offset_sequence = other.opt_offset_sequence;
+	maneuver_times = other.maneuver_times;
+	
+	u_opt_last = other.u_opt_last;
+	chi_opt_last = other.chi_opt_last;
+
+	min_cost = other.min_cost;
+	min_index = other.min_index;
+
+	ownship = other.ownship;
+
+	trajectory = other.trajectory;
+
+	cpe_host = other.cpe_host;
+
+	// Device related data is DONT CARE in assigning process,
+	// as these are reset at each new MPC iteration anyways
+
+	pars = other.pars;
+	mpc_cost = other.mpc_cost;
+}
+
+/****************************************************************************************
+*  Name     : free
+*  Function : Frees device memory
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::free()
+{
+	cudaFree(trajectory_device_ptr);
+	cuda_check_errors("CudaFree of trajectory failed.");
+
+	cudaFree(pars_device_ptr);
+	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
+
+	cudaFree(fdata_device_ptr); 
+	cuda_check_errors("CudaFree of CB_Functor_Data failed.");
+
+	cudaFree(obstacles_device_ptr);
+	cuda_check_errors("CudaFree of Cuda_Obstacles failed.");
+
+	cudaFree(cpe_device_ptr);
+	cuda_check_errors("CudaFree of CPE failed.");
+
+	cudaFree(ownship_device_ptr);
+	cuda_check_errors("CudaFree of Ownship failed.");	
+
+	cudaFree(polygons_device_ptr);
+	cuda_check_errors("CudaFree of Basic_Polygon`s failed.");
+
+	cudaFree(mpc_cost_device_ptr);
+	cuda_check_errors("CudaFree of MPC_Cost failed.");
 }
 
 }

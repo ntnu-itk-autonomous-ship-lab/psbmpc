@@ -342,7 +342,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 3;
+	n_M = 1;
 	n_r = 7;
 
 	chi_offsets.resize(n_M);
@@ -356,12 +356,12 @@ void PSBMPC_Parameters::initialize_pars()
 			//u_offsets[M] << 1.0;
 			u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(13);
+			chi_offsets[M].resize(11);
 			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
-			chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
+			chi_offsets[M] << -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -404,8 +404,8 @@ void PSBMPC_Parameters::initialize_pars()
 	t_ts = 30;
 
 	d_so_relevant = 200;
-	d_init = 400;								 
-	d_close = 400;
+	d_init = 300;								 
+	d_close = 300;
 	d_safe = 5; 							
 	K_coll = 0.2;		  					
 	phi_AH = 68.5 * DEG2RAD;		 	
@@ -414,7 +414,7 @@ void PSBMPC_Parameters::initialize_pars()
 	phi_CR = 68.5 * DEG2RAD;	     		
 	kappa = 10.0;		  					
 	kappa_TC = 20.0;						 
-	K_u = 20;		   						 
+	K_u = 40;		   						 
 	K_du = 6;		    					
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					

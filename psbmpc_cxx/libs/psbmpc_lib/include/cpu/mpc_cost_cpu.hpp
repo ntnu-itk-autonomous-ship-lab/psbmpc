@@ -74,6 +74,8 @@ namespace PSBMPC_LIB
 
 			MPC_Cost(const Parameters &pars) : pars(pars) {}
 
+			MPC_Cost& operator=(const MPC_Cost &other) = default;
+			
 			template <class Obstacle_Data>
 			bool determine_transitional_cost_indicator(
 				const double psi_A, 

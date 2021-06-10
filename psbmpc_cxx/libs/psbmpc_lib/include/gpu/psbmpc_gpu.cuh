@@ -173,6 +173,10 @@ namespace PSBMPC_LIB
 				const std::vector<polygon_2D> &polygons,
 				const Obstacle_Data<Tracked_Obstacle> &data);
 
+			void assign_data(const PSBMPC &other);
+
+			void free();
+
 		public:
 
 			PSBMPC_Parameters pars;
@@ -181,8 +185,11 @@ namespace PSBMPC_LIB
 
 			PSBMPC();
 			PSBMPC(const std::string &config);
+			PSBMPC(const PSBMPC &other);
 
 			~PSBMPC();
+
+			PSBMPC& operator=(const PSBMPC &other);
 
 			void calculate_optimal_offsets(
 				double &u_opt, 

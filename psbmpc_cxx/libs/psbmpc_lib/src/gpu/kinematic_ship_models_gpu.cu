@@ -38,15 +38,15 @@ __host__ __device__ Kinematic_Ship::Kinematic_Ship()
 	l = 5.0f; // milliAmpere dims
 	w = 3.0f;
 
-	T_U = 1.0f;
-	T_chi = 1.0f; 		// Ad hoc parameters, are very dependent on the ship type
+	T_U = 1.44f;
+	T_chi = 0.92f; 		// Ad hoc identified time constants for milliAmpere
 
 	// Guidance parameters
 	e_int = 0.0f;
-	e_int_max = 20.0f * M_PI / 180.0f; // Maximum integral correction in LOS guidance
-	R_a = 30.0f; 			    // WP acceptance radius (20.0)
-	LOS_LD = 200.0f; 			// LOS lookahead distance (100.0) 
-	LOS_K_i = 0.0f; 			    // LOS integral gain (0.0)
+	e_int_max = 20.0f * M_PI / 180.0f; 	// Maximum integral correction in LOS guidance
+	R_a = 5.0f; 			    		// WP acceptance radius (5.0 for milliampere, 20.0 for "normal ship")
+	LOS_LD = 66.0f; 					// LOS lookahead distance (66.0 for milliampere, 200.0 for "normal ship") 
+	LOS_K_i = 0.0f; 			    	// LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
 }
