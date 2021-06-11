@@ -162,14 +162,14 @@ void PSBMPC::calculate_optimal_offsets(
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
-	} */
-	/*
+	}
+	
 	mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
  	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
 	double *p_init_state_os = mxGetPr(init_state_os_mx); 
-	double *ptraj_os_mx = mxGetPr(traj_os_mx); 
+	double *p_traj_os = mxGetPr(traj_os_mx); 
 	double *p_wps_os = mxGetPr(wps_os); 
 	
 	Eigen::Map<Eigen::VectorXd> map_init_state_os(p_init_state_os, ownship_state.size(), 1);
@@ -349,16 +349,16 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, trajectory.rows(), n_samples);
+	/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
 	map_traj = trajectory;
 
 	k_s = mxCreateDoubleScalar(n_samples);
 	engPutVariable(ep, "k", k_s);
 
-	engPutVariable(ep, "X", traj_os);
+	engPutVariable(ep, "X", traj_os_mx);
 	engEvalString(ep, "inside_psbmpc_upd_ownship_plot");  
 
-	engClose(ep);*/
+	engClose(ep); */
 	//===============================================================================================================
 
 	u_opt = opt_offset_sequence(0); 		u_opt_last = u_opt;
@@ -705,7 +705,17 @@ void PSBMPC::find_optimal_control_behaviour(
 	Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
 	Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs);
 	Eigen::MatrixXd n_ps_matrix(1, n_obst);
-	Eigen::MatrixXd Pr_s_i_matrix(n_obst, n_ps[0]);
+
+	int n_ps_max(0);
+	for (int i = 0; i < n_obst; i++)
+	{
+		n_ps_matrix(0, i) = n_ps[i];
+		if (n_ps_max < n_ps[i])
+		{
+			n_ps_max = n_ps[i];
+		}
+	}
+	Eigen::MatrixXd Pr_s_i_matrix(n_obst, n_ps_max);
 	for (int i = 0; i < n_obst; i++)
 	{
 		n_ps_matrix(0, i) = n_ps[i];

@@ -461,7 +461,8 @@ namespace PSBMPC_LIB
 		MROU mrou;
 
 		Obstacle_Predictor() 
-			: n_ps_MROU(5), n_ps_LOS(5), r_ct(5.0), mrou(0.01, 0.0, 0.01, 0.1, 0.1)
+			: n_ps_MROU(5), n_ps_LOS(5), r_ct(10.0), mrou(0.01, 0.0, 0.01, 0.1, 0.1)
+			//: n_ps_MROU(5), n_ps_LOS(5), r_ct(30.0), mrou(0.1, 0.0, 0.1, 0.1, 0.1)
 		{
 			if (n_ps_MROU == 3)
 			{
