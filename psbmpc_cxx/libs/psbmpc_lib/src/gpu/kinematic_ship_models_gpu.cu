@@ -41,6 +41,12 @@ __host__ __device__ Kinematic_Ship::Kinematic_Ship()
 	T_U = 1.44f;
 	T_chi = 0.92f; 		// Ad hoc identified time constants for milliAmpere
 
+	/*l = 10.0f; 
+	w = 4.0f;
+
+	T_U = 10.0f;
+	T_chi = 8.0f; 		// Ad hoc time constants for a 10m long ship */
+
 	// Guidance parameters
 	e_int = 0.0f;
 	e_int_max = 20.0f * M_PI / 180.0f; 	// Maximum integral correction in LOS guidance
@@ -62,6 +68,9 @@ Kinematic_Ship::Kinematic_Ship(
 {
 	l = 5.0f; // milliAmpere dims
 	w = 3.0f;
+
+	/*l = 10.0f; 
+	w = 4.0f; */
 
 	// Guidance parameters
 	e_int = 0.0f;

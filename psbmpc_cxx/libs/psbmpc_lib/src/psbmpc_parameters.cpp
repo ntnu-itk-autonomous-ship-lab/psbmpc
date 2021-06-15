@@ -342,7 +342,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 1;
+	n_M = 2;
 	n_r = 7;
 
 	chi_offsets.resize(n_M);
@@ -426,8 +426,8 @@ void PSBMPC_Parameters::initialize_pars()
 
 	G_1 = 100.0; 
 	G_2 = 5.0;
-	G_3 = 0.3;
-	G_4 = 0.05;
+	G_3 = 0.25;
+	G_4 = 0.04;
 
 	epsilon_rdp = 2.0;
 
