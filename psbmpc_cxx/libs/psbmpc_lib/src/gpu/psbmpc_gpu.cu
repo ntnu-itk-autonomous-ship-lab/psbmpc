@@ -693,13 +693,20 @@ void PSBMPC::find_optimal_control_behaviour(
 
 	Eigen::VectorXd max_cost_i_ps, max_cost_j(n_static_obst), mu_i_ps, mu_i(n_obst), cost_do(n_obst);
 
-	double cost(0.0), h_do, h_colregs, h_so, h_path;
+	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
 	min_cost = 1e12;
 
 	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
 	Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
 	Eigen::MatrixXd max_cost_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
 	Eigen::MatrixXd max_cost_j_matrix(n_static_obst, pars.n_cbs);
+	if (n_static_obst == 0)
+	{
+		max_cost_j.resize(1); 
+		max_cost_j_matrix.resize(1, pars.n_cbs);
+		max_cost_j.setZero();
+		max_cost_j_matrix.setZero();
+	}
 	Eigen::MatrixXd mu_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
 	Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
 	Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
@@ -772,6 +779,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	thrust::tuple<float, float, float> dev_tup;
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
+		h_do = 0.0; h_colregs = 0.0; h_so = 0.0; h_path = 0.0; 
 		for (int M = 0; M < pars.n_M; M++)
 		{
 			cb_matrix(2 * M, cb) = offset_sequence(2 * M);

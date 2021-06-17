@@ -427,7 +427,7 @@ void PSBMPC_Parameters::initialize_pars()
 	G_1 = 100.0; 
 	G_2 = 5.0;
 	G_3 = 0.25;
-	G_4 = 0.04;
+	G_4 = 0.06;
 
 	epsilon_rdp = 2.0;
 
