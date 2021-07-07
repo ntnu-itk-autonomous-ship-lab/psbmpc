@@ -357,12 +357,13 @@ void PSBMPC_Parameters::initialize_pars()
 			u_offsets[M] << 1.0, 0.5;
 			//u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(13);
+			chi_offsets[M].resize(15);
 			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
-			//chi_offsets[M] << -90.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 90.0;
+			//chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, -5.0, 0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else
@@ -378,7 +379,8 @@ void PSBMPC_Parameters::initialize_pars()
 			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 			//chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
@@ -391,7 +393,7 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 180.0; 	     
+	T = 150.0; 	     
 	dt = 5.0;
 
 	p_step = 1;
@@ -408,7 +410,7 @@ void PSBMPC_Parameters::initialize_pars()
 	d_init = 300;								 
 	d_close = 300;
 	d_safe = 5; 							
-	K_coll = 6.0;	// 0.2 for sea traffic, 10.0 for nidelva	  					
+	K_coll = 2.0;	// 0.2 for sea traffic, 10.0 for nidelva	  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
@@ -426,8 +428,8 @@ void PSBMPC_Parameters::initialize_pars()
 
 	G_1 = 100.0; 
 	G_2 = 5.0;
-	G_3 = 0.3;
-	G_4 = 0.05;
+	G_3 = 0.25;
+	G_4 = 0.01;
 
 	epsilon_rdp = 2.0;
 
