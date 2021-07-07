@@ -39,7 +39,13 @@ Kinematic_Ship::Kinematic_Ship()
 	w = 3.0;
 	
 	T_U = 1.44;
-	T_chi = 0.92; 		// Ad hoc parameters, are very dependent on the ship type
+	T_chi = 0.92; 		// Ad hoc identified time constants for milliAmpere
+
+	/* l = 10.0;
+	w = 4.0;
+	
+	T_U = 10.0;
+	T_chi = 8.0; 		// Ad hoc time constants for a 10m long ship */
 
 	// Guidance parameters
 	e_int = 0.0;
@@ -63,6 +69,9 @@ Kinematic_Ship::Kinematic_Ship(
 {
 	l = 5; // milliAmpere dims
 	w = 3;
+
+	/* l = 10.0;
+	w = 4.0;*/
 
 	// Guidance parameters
 	e_int = 0;
