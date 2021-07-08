@@ -52,4 +52,5 @@ ros2_ws/install/*
 ros2_ws/log/*
 psbmpc_cxx/debug/*
 psbmpc_cxx/release/*
+psbmpc_cxx/install/*
 psbmpc_cxx/src/tests/grounding_hazard_data/*

@@ -419,12 +419,12 @@ void PSBMPC::preallocate_device_data()
 
 	// Allocate for each thread that considers dynamic obstacles a Collision Probability Estimator
 	CPE temp_cpe(pars.cpe_method, pars.dt);
-	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_OBST * pars.n_r * sizeof(CPE));
+	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_OBST * MAX_N_PS * sizeof(CPE));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
 	// Allocate for each thread an mpc cost object
 	MPC_Cost<CB_Functor_Pars> temp_mpc_cost(temp_pars);
-	int max_n_threads = pars.n_cbs * (MAX_N_POLYGONS + MAX_N_OBST * pars.n_r);
+	int max_n_threads = pars.n_cbs * (MAX_N_POLYGONS + MAX_N_OBST * MAX_N_PS);
 	cudaMalloc((void**)&mpc_cost_device_ptr, max_n_threads * sizeof(MPC_Cost<CB_Functor_Pars>));
 	cuda_check_errors("CudaMalloc of MPC_Cost failed.");
 
@@ -434,7 +434,7 @@ void PSBMPC::preallocate_device_data()
     	cuda_check_errors("CudaMemCpy of Ownship failed.");		
 	}
 
-	for (int thread = 0; thread < pars.n_cbs * MAX_N_OBST * pars.n_r; thread++)
+	for (int thread = 0; thread < pars.n_cbs * MAX_N_OBST * MAX_N_PS; thread++)
 	{
 		cudaMemcpy(&cpe_device_ptr[thread], &temp_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of CPE failed.");

@@ -101,7 +101,8 @@ target_link_libraries(psbmpc_lib PRIVATE ${Matlab_LIBRARIES} PUBLIC Eigen3::Eige
 # Common build commands
 target_compile_options(psbmpc_lib
 	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
-	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0 -Xlinker -dlink>)
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0 -Xlinker -dlink>
+)
 
 if(CMAKE_BUILD_TYPE EQUAL release)
 	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -j4>)
@@ -109,3 +110,12 @@ else()
 	# Comment out the below line if you want to compile debug with symbols, lineinfo etc.
 	#target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -g -G -lineinfo -Wall -Wno-pedantic>)
 endif()
+
+install(TARGETS psbmpc_lib EXPORT psbmpc_lib_targets
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
+	RUNTIME DESTINATION bin
+	INCLUDES DESTINATION include
+)
+
+export(TARGETS psbmpc_lib FILE psbmpc_lib.cmake)

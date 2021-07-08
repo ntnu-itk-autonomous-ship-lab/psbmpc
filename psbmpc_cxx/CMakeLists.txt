@@ -18,7 +18,7 @@
 #======================================================================
 
 cmake_minimum_required(VERSION 3.17.3)
-project(psbmpc_test LANGUAGES CUDA CXX)
+project(PSBMPC LANGUAGES CUDA CXX)
 
 # for host side debug compilation and profiling
 #set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -29,3 +29,6 @@ add_subdirectory(libs/psbmpc_lib)
 add_subdirectory(src/tests)
 
 target_link_libraries(tester PRIVATE psbmpc_lib)
+
+export(TARGETS psbmpc_lib FILE "${PROJECT_BINARY_DIR}/PSBMPCTargets.cmake")
+export(PACKAGE PSBMPC)

@@ -239,6 +239,12 @@ namespace PSBMPC_LIB
 					ct_offsets.resize(9);
 					ct_offsets << - 4 * r_ct - e, - 3 * r_ct - e, - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e, 3 * r_ct - e, 4 * r_ct - e;
 					break;
+				}			
+				case 11:
+				{
+					ct_offsets.resize(11);
+					ct_offsets << - 5 * r_ct - e, - 4 * r_ct - e, - 3 * r_ct - e, - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e, 3 * r_ct - e, 4 * r_ct - e, 5 * r_ct - e;
+					break;
 				}				
 				default:
 					break;
@@ -504,6 +510,8 @@ namespace PSBMPC_LIB
 		int get_n_ps_i(const int i) const { return n_ps[i]; }
 
 		int get_n_ps_LOS() const { return n_ps_LOS; }
+
+		void set_n_ps_LOS(const int n_ps_LOS) { this->n_ps_LOS = n_ps_LOS; }
 
 		/****************************************************************************************
 		*  Name     : operator()

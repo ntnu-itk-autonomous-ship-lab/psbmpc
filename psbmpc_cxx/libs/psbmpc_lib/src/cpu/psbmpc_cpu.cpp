@@ -119,6 +119,16 @@ void PSBMPC::calculate_optimal_offsets(
 	}
 	
 	//prune_obstacle_scenarios(data);
+	Eigen::MatrixXd n_ps_matrix(1, n_obst);
+	int n_ps_max(0);
+	for (int i = 0; i < n_obst; i++)
+	{
+		n_ps_matrix(0, i) = n_ps[i];
+		if (n_ps_max < n_ps[i])
+		{
+			n_ps_max = n_ps[i];
+		}
+	}
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
@@ -246,7 +256,7 @@ void PSBMPC::calculate_optimal_offsets(
 	mxArray *cost_so_path_mx = mxCreateDoubleMatrix(2, pars.n_cbs, mxREAL);
 	mxArray *n_ps_copy_mx = mxCreateDoubleMatrix(1, n_obst, mxREAL);
 	mxArray *cb_matrix_mx = mxCreateDoubleMatrix(2 * pars.n_M, pars.n_cbs, mxREAL);
-	mxArray *Pr_s_i_mx = mxCreateDoubleMatrix(n_obst, n_ps[0], mxREAL);
+	mxArray *Pr_s_i_mx = mxCreateDoubleMatrix(n_obst, n_ps_max, mxREAL);
 	
 	double *ptr_total_cost = mxGetPr(total_cost_mx); 
 	double *ptr_cost_do = mxGetPr(cost_do_mx); 
@@ -268,11 +278,11 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_cost_so_path(ptr_cost_so_path, 2, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps_copy, 1, n_obst);
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
-	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps[0]);
+	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps_max);
 
 	mxArray *n_obst_copy_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
 	//===============================================================================================================
-
+	
 	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
 	Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
 	Eigen::MatrixXd max_cost_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
@@ -281,8 +291,8 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
 	Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
 	Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs);
-	Eigen::MatrixXd n_ps_matrix(1, n_obst);
-	Eigen::MatrixXd Pr_s_i_matrix(n_obst, n_ps[0]);
+	
+	Eigen::MatrixXd Pr_s_i_matrix(n_obst, n_ps_max);
 	for (int i = 0; i < n_obst; i++)
 	{
 		n_ps_matrix(0, i) = n_ps[i];
@@ -466,13 +476,13 @@ void PSBMPC::calculate_optimal_offsets(
 	u_opt = opt_offset_sequence(0); 	u_opt_last = u_opt;
 	chi_opt = opt_offset_sequence(1); 	chi_opt_last = chi_opt;
 
-	std::cout << "Optimal offset sequence : ";
+	/* std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)
 	{
 		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
 		if (M < pars.n_M - 1) std::cout << ", ";
 	}
-	std::cout << std::endl;
+	std::cout << std::endl; */
 
 	//std::cout << "Cost at optimum : " << min_cost << std::endl;
 }
