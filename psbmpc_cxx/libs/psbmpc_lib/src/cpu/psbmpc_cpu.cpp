@@ -330,18 +330,18 @@ void PSBMPC::calculate_optimal_offsets(
 		for (int i = 0; i < n_obst; i++)
 		{
 			
-			P_c_i.resize(n_ps[i], n_samples); P_c_i.setZero();
-			//calculate_collision_probabilities(P_c_i, data, i, p_step_cpe * pars.dt, pars.p_step_cpe); 
+			P_c_i.resize(n_ps[i], n_samples); //P_c_i.setZero();
+			calculate_collision_probabilities(P_c_i, data, i, pars.p_step_cpe * pars.dt, pars.p_step_cpe); 
 
-			/* tup = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, P_c_i, data, i, ownship.get_length());
-			cost_i(i) = std::get<0>(tup);
-			mu_i(i) = std::get<1>(tup); */
+			tup = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, P_c_i, data, i, ownship.get_length());
+			cost_do(i) = std::get<0>(tup);
+			mu_i(i) = std::get<1>(tup);
 
-			tup = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, mu_i_ps, trajectory, P_c_i, data, i, ownship.get_length());
+			/* tup = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, mu_i_ps, trajectory, P_c_i, data, i, ownship.get_length());
 			cost_do(i) = std::get<0>(tup);
 			mu_i(i) = std::get<1>(tup);
 			max_cost_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = max_cost_i_ps;
-			curr_ps_index += n_ps[i];
+			curr_ps_index += n_ps[i]; */
 			
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
@@ -374,9 +374,10 @@ void PSBMPC::calculate_optimal_offsets(
 		h_colregs = pars.kappa * std::min(1.0, mu_i.sum());
 		cost_colregs_matrix(0, cb) = h_colregs;
 
-		h_so = mpc_cost.calculate_grounding_cost(max_cost_j, trajectory, polygons, V_w, wind_direction);
+		h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
+		/* h_so = mpc_cost.calculate_grounding_cost(max_cost_j, trajectory, polygons, V_w, wind_direction);
+		max_cost_j_matrix.block(0, cb, n_static_obst, 1) = max_cost_j; */
 		cost_so_path_matrix(0, cb) = h_so;
-		max_cost_j_matrix.block(0, cb, n_static_obst, 1) = max_cost_j;
 
 		h_path += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
 		h_path += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
