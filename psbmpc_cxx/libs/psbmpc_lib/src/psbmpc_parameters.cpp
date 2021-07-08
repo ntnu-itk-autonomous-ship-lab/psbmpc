@@ -342,7 +342,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
+	n_M = 1;
 	n_r = 7;
 
 	chi_offsets.resize(n_M);
@@ -410,7 +410,7 @@ void PSBMPC_Parameters::initialize_pars()
 	d_init = 300;								 
 	d_close = 300;
 	d_safe = 5; 							
-	K_coll = 2.0;	// 0.2 for sea traffic, 10.0 for nidelva	  					
+	K_coll = 3.0;	// 0.2 for sea traffic, 10.0 for nidelva	  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		

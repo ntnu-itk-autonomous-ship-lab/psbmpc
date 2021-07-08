@@ -1190,9 +1190,9 @@ namespace PSBMPC_LIB
 				n_vertices += 1;
 			}
 			vertices.conservativeResize(2, n_vertices);
-			/* if (n_vertices < 3 ||
+			if (n_vertices < 3 ||
 				p(0) < bbox(0, 0) || p(0) > bbox(0, 1) || p(1) < bbox(1, 0) || p(1) > bbox(1, 1)) 
-			{ return false; } */
+			{ return false; }
 
 			Eigen::Vector2d p_ray_end;
 			p_ray_end = bbox.col(1); // set ray end to x_max, y_max of polygon bbox
