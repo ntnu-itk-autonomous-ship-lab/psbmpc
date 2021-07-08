@@ -822,10 +822,6 @@ namespace PSBMPC_LIB
 				{
 					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
 					d_0j = L_0j.norm();
-					if (d_0j < 0.1f)
-					{
-						//std::cout << t << std::endl;
-					}
 					L_0j.normalize();
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
@@ -869,10 +865,6 @@ namespace PSBMPC_LIB
 				{
 					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
 					d_0j = L_0j.norm();
-					if (true)
-					{
-						//std::cout << "k = " << k << " | distance to j = " << j << " : " << d_0j << std::endl;
-					}
 					L_0j.normalize();
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
@@ -1190,9 +1182,9 @@ namespace PSBMPC_LIB
 				n_vertices += 1;
 			}
 			vertices.conservativeResize(2, n_vertices);
-			/* if (n_vertices < 3 ||
+			if (n_vertices < 3 ||
 				p(0) < bbox(0, 0) || p(0) > bbox(0, 1) || p(1) < bbox(1, 0) || p(1) > bbox(1, 1)) 
-			{ return false; } */
+			{ return false; }
 
 			Eigen::Vector2d p_ray_end;
 			p_ray_end = bbox.col(1); // set ray end to x_max, y_max of polygon bbox
