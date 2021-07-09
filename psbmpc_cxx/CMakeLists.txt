@@ -29,6 +29,3 @@ add_subdirectory(libs/psbmpc_lib)
 add_subdirectory(src/tests)
 
 target_link_libraries(tester PRIVATE psbmpc_lib)
-
-export(TARGETS psbmpc_lib FILE "${PROJECT_BINARY_DIR}/PSBMPCTargets.cmake")
-export(PACKAGE PSBMPC)

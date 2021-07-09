@@ -111,11 +111,55 @@ else()
 	#target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -g -G -lineinfo -Wall -Wno-pedantic>)
 endif()
 
-install(TARGETS psbmpc_lib EXPORT psbmpc_lib_targets
+## Create package for the library
+file(
+    WRITE "${CMAKE_CURRENT_BINARY_DIR}/Config.cmake.in"
+    "
+        @PACKAGE_INIT@
+		include( \"\$\{CMAKE_CURRENT_LIST_DIR\}/psbmpc_libTargets.cmake\" )
+
+		include(CMakeFindDependencyMacro)
+		find_dependency(Eigen3)
+		find_dependency(Matlab)
+    "
+)
+
+include(GNUInstallDirs)
+install(TARGETS psbmpc_lib
+	EXPORT psbmpc_libTargets
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
 	RUNTIME DESTINATION bin
-	INCLUDES DESTINATION include
+	INCLUDES DESTINATION include 
 )
 
-export(TARGETS psbmpc_lib FILE psbmpc_lib.cmake)
+install(
+	EXPORT psbmpc_libTargets
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/psbmpc_lib
+	NAMESPACE psbmpc_lib::
+	FILE psbmpc_libTargets.cmake
+)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file( 
+  "${CMAKE_CURRENT_BINARY_DIR}/Config.cmake.in" 
+  "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_libConfig.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/psbmpc_lib
+  PATH_VARS CMAKE_INSTALL_LIBDIR
+)
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_libConfigVersion.cmake"
+  VERSION 1.0.0
+  COMPATIBILITY AnyNewerVersion
+)
+
+install(
+  FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_libConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_libConfigVersion.cmake"
+  DESTINATION
+    ${CMAKE_INSTALL_LIBDIR}/cmake/psbmpc_lib
+  COMPONENT
+    Devel
+)
