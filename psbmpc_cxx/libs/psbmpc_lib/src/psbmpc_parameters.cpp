@@ -342,7 +342,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
+	n_M = 3;
 	n_r = MAX_N_PS;
 
 	chi_offsets.resize(n_M);
@@ -366,7 +366,7 @@ void PSBMPC_Parameters::initialize_pars()
 			//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, -5.0, 0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
-		else
+		else if (M == 1)
 		{
 			u_offsets[M].resize(2);
 			//u_offsets[M] << 1.0;
@@ -381,6 +381,24 @@ void PSBMPC_Parameters::initialize_pars()
 			//chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
 			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+			//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
+			chi_offsets[M] *= DEG2RAD;
+		}
+		else
+		{
+			u_offsets[M].resize(1);
+			u_offsets[M] << 1.0;
+			//u_offsets[M] << 1.0, 0.5;
+			//u_offsets[M] << 1.0, 0.5, 0.0;
+
+			chi_offsets[M].resize(7);
+			//chi_offsets[M] << 0.0;
+			//chi_offsets[M] << -30.0, 0.0, 30.0;
+			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
 			//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 			chi_offsets[M] *= DEG2RAD;
 		}

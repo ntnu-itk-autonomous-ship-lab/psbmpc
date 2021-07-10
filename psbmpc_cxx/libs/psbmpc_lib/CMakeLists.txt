@@ -55,7 +55,7 @@ if(USE_GPU_PSBMPC)
 		CUDA_ARCHITECTURES "61;86"
 	)
 
-	target_include_directories(psbmpc_lib PUBLIC tryms_matrix ${CUDA_INCLUDE_DIRS})
+	target_include_directories(psbmpc_lib PRIVATE tryms_matrix ${CUDA_INCLUDE_DIRS})
 
 	target_link_libraries(psbmpc_lib PRIVATE ${CUDA_LIBRARIES})
 
@@ -84,15 +84,14 @@ else()
 	)
 endif()
 
-
 find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-target_include_directories(psbmpc_lib PUBLIC 
-	include
-	tryms_matrix
-	${Matlab_INCLUDE_DIRS}
-	${EIGEN3_INCLUDE_DIRS}
+target_include_directories(psbmpc_lib 
+	PRIVATE
+		include
+		${Matlab_INCLUDE_DIRS}
+		${EIGEN3_INCLUDE_DIRS}
 )
 
 target_link_libraries(psbmpc_lib PRIVATE ${Matlab_LIBRARIES} PUBLIC Eigen3::Eigen)
@@ -101,8 +100,7 @@ target_link_libraries(psbmpc_lib PRIVATE ${Matlab_LIBRARIES} PUBLIC Eigen3::Eige
 # Common build commands
 target_compile_options(psbmpc_lib
 	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
-	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0 -Xlinker -dlink>
-)
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0 -Xlinker -dlink>)
 
 if(CMAKE_BUILD_TYPE EQUAL release)
 	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -j4>)
@@ -110,6 +108,7 @@ else()
 	# Comment out the below line if you want to compile debug with symbols, lineinfo etc.
 	#target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -g -G -lineinfo -Wall -Wno-pedantic>)
 endif()
+
 
 ## Create package for the library
 file(

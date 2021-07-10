@@ -35,14 +35,17 @@ The main function to use is the **calculate_optimal_offsets(..)** function, whic
 - Planned guidance references for surge and course
 - The waypoints that the own-ship is supposed to follow (curved/continuous path following is not implemented yet)
 - The current time own-ship state (3DOF) <img src="https://render.githubusercontent.com/render/math?math={[x, y, \psi, u, v, r]}^T">
+- Absolute wind speed and its direction (used with the anti-grounding part)
 - Nearby static obstacles, parameterized as polygons or no-go lines.
-- A data structure Obstacle_Data containing dynamic obstacle information.
+- A data structure Obstacle Data containing dynamic obstacle information.
 
 and has the following **outputs**:
 
 - Optimal surge and course modification to the planned guidance references
 - A predicted trajectory for the own-ship when implementing the optimal avoidance maneuver(s).
-- Obstacle_Data: Some parts of the Obstacle_Data can be modified by the PSB-MPC (predicted relative hazard levels for each obstacle)
+- Obstacle Data: Some parts of the Obstacle_Data can be modified by the PSB-MPC (predicted relative hazard levels for each obstacle)
+
+<p>You should use the Obstacle Manager class for creating and updating the Obstacle Data structure, and can also use the Grounding Hazard Manager to create and update relevant polygons for the anti-grounding part. The Obstacle Predictor class is used to predict all nearby dynamic obstacle trajectories (can be multiple trajectories for each obstacle), using the Obstacle Data from the Obstacle Manager as input. </p>
 
 ### PSBMPC Parameters
 <p> Contains all PSB-MPC parameters in a class, which should be modified according to tuning changes. The class has get/set functionality for each parameter according to an index file "psbmpc_index.h", and uses limits on double and integer type parameters to assure that the setting of these parameters makes sense. Work could although be done to make the get/set functionality even better.<br>
@@ -70,7 +73,7 @@ Note that the amount of control behaviours (function of the amount of maneuvers 
 <p> Reads in ENC data of land in the form of shapefiles into 2D polygons. Simplifies the polygons using the Ramer-Douglas-Peucker algorithm <https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm>, and returns a reference to the relevant ones for usage in the PSBMPC. </p>
 
 ### Obstacle Predictor
-<p> Responsible for setting up and predicting the dynamic obstacle trajectories, used by the PSB-MPC. </p>
+<p> Responsible for setting up and predicting the dynamic obstacle trajectories, used by the PSB-MPC. Takes in and updates an Obstacle Data structure with the predicted trajectory information. </p>
 
 ### Obstacle Manager
 
@@ -110,7 +113,7 @@ Implements a 3DOF surface vessel base model class with guidance and control as u
 
 ### Kinematic Ship Models
 
-<p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with some first order time constant delay.  </p>
+<p> This module implements a minimal kinematic module for the motion of a nearby obstacle with guidance and control, for use in the Obstacle SB-MPC predictions when the PSB-MPC enables obstacles to have their own collision avoidance system. The guidance is based on using the Speed over Ground (SOG) and Course over Ground (COG) for the obstacle directly, with first order time constant delay.  </p>
 The model is on the form <br>
 
 <img src="https://render.githubusercontent.com/render/math?math=x_{k%2B1} = x_{k} %2B \Delta_t U_k \cos(\chi_{k})"> <br>
