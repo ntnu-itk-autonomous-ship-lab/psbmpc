@@ -30,7 +30,7 @@
 #include "psbmpc_interfaces/msg/trajectory2.hpp"
 #include "psbmpc_interfaces/msg/trajectory4.hpp"
 #include "psbmpc_interfaces/msg/offset.hpp"
-#include "psbmpc_interfaces/msg/kinematic_estimate.hpp"
+#include "psbmpc_interfaces/msg/dynamic_obstacle_estimates.hpp"
 
 #include "gpu/psbmpc_gpu.cuh"
 
@@ -43,15 +43,15 @@ private:
   //==================================================
   // Subscribers and publishers
   //==================================================
-  rclcpp::Subscription<psbmpc_interfaces::msg::KinematicEstimate>::SharedPtr obstacle_subscription;
+  rclcpp::Subscription<psbmpc_interfaces::msg::DynamicObstacleEstimates>::SharedPtr dynamic_obstacle_subscription;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr state_subscription;
   rclcpp::Subscription<psbmpc_interfaces::msg::Trajectory2>::SharedPtr waypoints_subscription;
-  //std::shared_ptr<rclcpp::Publisher<psbmpc_interfaces::msg::Offset>> trajectory_publisher;
-  rclcpp::Publisher<psbmpc_interfaces::msg::Trajectory4>::SharedPtr trajectory_publisher;
+  //rclcpp_lifecycle::LifecyclePublisher<psbmpc_interfaces::msg::Offset>::SharedPtr trajectory_publisher;
+  rclcpp_lifecycle::LifecyclePublisher<psbmpc_interfaces::msg::Trajectory4>::SharedPtr trajectory_publisher;
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  const std::string obstacle_topic_name;
+  const std::string dynamic_obstacle_topic_name;
   const std::string state_topic_name;
   const std::string waypoints_topic_name;
   const std::string reference_topic_name;
@@ -59,21 +59,23 @@ private:
   //==================================================
   // PODs, data structures and classes for use by the node
   //==================================================
+  double ownship_length;
   double u_opt, chi_opt;
-  Eigen::MatrixXd predicted_trajectory;
+  Eigen::Matrix<double, 2, -1> predicted_trajectory;
 
   double u_d, chi_d;
   Eigen::VectorXd ownship_state;
 
   Eigen::MatrixXd waypoints;
   Eigen::MatrixXd obstacle_states, obstacle_covariances;
+  std::vector<polygon_2D> relevant_polygons;
 
   PSBMPC_LIB::GPU::PSBMPC psbmpc;
   PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager;
   PSBMPC_LIB::Obstacle_Manager obstacle_manager;
   PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
 
-  void obstacle_callback(const psbmpc_interfaces::msg::KinematicEstimate::SharedPtr &msg);
+  void dynamic_obstacle_callback(const psbmpc_interfaces::msg::DynamicObstacleEstimates::SharedPtr &msg);
 
   void state_callback(const nav_msgs::msg::Odometry::SharedPtr &msg);
 

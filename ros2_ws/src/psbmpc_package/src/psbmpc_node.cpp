@@ -40,17 +40,17 @@ PSBMPC_Node::PSBMPC_Node(
   const rclcpp::NodeOptions &options                    // In: 
   )
   : LifecycleNode(node_name, options), 
-  obstacle_topic_name(declare_parameter("obstacle_topic_name").get<std::string>()),
+  dynamic_obstacle_topic_name(declare_parameter("dynamic_obstacle_topic_name").get<std::string>()),
   state_topic_name(declare_parameter("state_topic_name").get<std::string>()),
   waypoints_topic_name(declare_parameter("waypoints_topic_name").get<std::string>()),
   reference_topic_name(declare_parameter("reference_topic_name").get<std::string>()),
   psbmpc(PSBMPC_LIB::GPU::PSBMPC()), 
   grounding_hazard_manager(map_data_filename, map_origin, psbmpc)
 {
-  obstacle_subscription = this->create_subscription<psbmpc_interfaces::msg::KinematicEstimate>(
-    obstacle_topic_name, 
+  dynamic_obstacle_subscription = this->create_subscription<psbmpc_interfaces::msg::DynamicObstacleEstimates>(
+    dynamic_obstacle_topic_name, 
     rclcpp::QoS(1), 
-    std::bind(&PSBMPC_Node::obstacle_callback, this, std::placeholders::_1));
+    std::bind(&PSBMPC_Node::dynamic_obstacle_callback, this, std::placeholders::_1));
 
   state_subscription = this->create_subscription<nav_msgs::msg::Odometry>(
     state_topic_name, 
@@ -60,10 +60,9 @@ PSBMPC_Node::PSBMPC_Node(
   waypoints_subscription = this->create_subscription<psbmpc_interfaces::msg::Trajectory2>(
     waypoints_topic_name, 
     rclcpp::QoS(1), 
-    std::bind(&PSBMPC_Node::obstacle_callback, this, std::placeholders::_1));  
+    std::bind(&PSBMPC_Node::waypoints_callback, this, std::placeholders::_1));  
 
   trajectory_publisher = this->create_publisher<psbmpc_interfaces::msg::Trajectory4>(reference_topic_name, rclcpp::QoS(1));
-
   timer = this->create_wall_timer(5s, std::bind(&PSBMPC_Node::publish_reference_trajectory, this));
 }
 
@@ -73,11 +72,51 @@ PSBMPC_Node::PSBMPC_Node(
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-void PSBMPC_Node::obstacle_callback(
-  const psbmpc_interfaces::msg::KinematicEstimate::SharedPtr &msg   // Obstacle state and covariance estimate message
+void PSBMPC_Node::dynamic_obstacle_callback(
+  const psbmpc_interfaces::msg::DynamicObstacleEstimates::SharedPtr &msg   // Dynamic obstacle information (ID, state and covariances)
   )
 {
-  
+  int n_obst = msg->obstacle_ids.size();
+  obstacle_states.resize(9, n_obst);
+  obstacle_covariances.resize(16, n_obst);
+
+  int ID;
+  double A, B, C, D;
+  Eigen::Vector4d xs_i;
+  Eigen::Matrix4d P;
+  Eigen::Matrix2d pos_vel_cov;
+  for (int i = 0; i < n_obst; i++)
+  {
+    ID = msg->obstacle_ids[i];
+    A = msg->obstacle_dimensions[i].x;
+    B = msg->obstacle_dimensions[i].y;
+    C = msg->obstacle_dimensions[i].z;
+    D = msg->obstacle_dimensions[i].w;
+    xs_i(0) = msg->obstacle_estimates[i].pos_est.x;
+    xs_i(1) = msg->obstacle_estimates[i].pos_est.y;
+    xs_i(2) = msg->obstacle_estimates[i].vel_est.x;
+    xs_i(3) = msg->obstacle_estimates[i].vel_est.y;
+    obstacle_states.col(i) << xs_i, A, B, C, D, ID;
+
+    P(0, 0) = msg->obstacle_estimates[i].pos_cov.var_x;
+    P(0, 1) = msg->obstacle_estimates[i].pos_cov.cor_xy;
+    P(1, 0) = msg->obstacle_estimates[i].pos_cov.cor_xy;
+    P(1, 1) = msg->obstacle_estimates[i].pos_cov.var_y;
+
+    P(2, 2) = msg->obstacle_estimates[i].vel_cov.var_x;
+    P(2, 3) = msg->obstacle_estimates[i].vel_cov.cor_xy;
+    P(2, 2) = msg->obstacle_estimates[i].vel_cov.cor_xy;
+    P(3, 3) = msg->obstacle_estimates[i].vel_cov.var_y;
+
+    pos_vel_cov(0, 0) = msg->obstacle_estimates[i].pos_vel_corr.cor_px_vx;
+    pos_vel_cov(0, 1) = msg->obstacle_estimates[i].pos_vel_corr.cor_px_vy;
+    pos_vel_cov(1, 0) = msg->obstacle_estimates[i].pos_vel_corr.cor_py_vx;
+    pos_vel_cov(1, 1) = msg->obstacle_estimates[i].pos_vel_corr.cor_py_vy;
+
+    P.block<2, 2>(0, 2) = pos_vel_cov;
+    P.block<2, 2>(2, 0) = pos_vel_cov;
+    obstacle_covariances.col(i) << PSBMPC_LIB::CPU::flatten(P);
+  }
 }
 
 /****************************************************************************************
@@ -95,6 +134,7 @@ void PSBMPC_Node::state_callback(
     ownship_state.resize(4);
     ownship_state(0) = msg->pose.pose.position.x;
     ownship_state(1) = msg->pose.pose.position.y;
+    
     heading = tf2::getYaw(msg->pose.pose.orientation);
     ownship_state(2) = heading;
 
@@ -133,6 +173,7 @@ void PSBMPC_Node::waypoints_callback(
     waypoints(1, i) = msg->waypoints[i].y;
   }
 }
+
 /****************************************************************************************
 *  Name     : publish_reference_trajectory
 *  Function :
@@ -143,30 +184,13 @@ void PSBMPC_Node::publish_reference_trajectory()
 {
   double V_w = 0.0;
   Eigen::Vector2d wind_direction; wind_direction << 1.0, 0.0;
-  /***********************************************************************************
-   * Preprocess own-ship state information
-  ***********************************************************************************/
-  #if (OWNSHIP_TYPE == 0)
-    ownship_state.resize(4);
-  #else
-    ownship_state.resize(6);
-  #endif
 
-  /***********************************************************************************
-   * Preprocess obstacle information
-  ***********************************************************************************/
-  Eigen::Matrix<double, 4, -1> static_obstacles; static_obstacles.resize(4, 0);
+  relevant_polygons = grounding_hazard_manager(ownship_state);
 
-  obstacle_manager.operator()(
-    psbmpc.pars, 
-    ownship_state, 
-    asv_sim.get_length(),
-    obstacle_states, 
-    obstacle_covariances);
+  obstacle_manager(ownship_state, ownship_length, obstacle_states, obstacle_covariances, psbmpc);
 
-  /***********************************************************************************
-   * Run the COLAV algorithm
-  ***********************************************************************************/
+  obstacle_predictor(obstacle_manager.get_data(), ownship_state, psbmpc);
+
   auto start = std::chrono::system_clock::now();		
 
   psbmpc.calculate_optimal_offsets(
@@ -183,24 +207,20 @@ void PSBMPC_Node::publish_reference_trajectory()
     obstacle_manager.get_data());
 
   auto end = std::chrono::system_clock::now();
-  auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
 
   double mean_t = elapsed.count();
 
-  std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
+  std::cout << "PSBMPC time usage : " << mean_t << " seconds" << std::endl;
 
   std::cout << "u_d = " << u_d << " | chi_d = " << chi_d << std::endl;
 
-  /***********************************************************************************
-   * Publish the results, either as an Offset, Trajectory2 or Trajectory6 message
-  ***********************************************************************************/
   obstacle_manager.update_obstacle_status(ownship_state);
   obstacle_manager.display_obstacle_information();
 
   int n_samples = predicted_trajectory.cols();
-  psbmpc_interfaces::msg::Reference reference_k; // r_k = [x, y, psi, u, v, r]^T
+  psbmpc_interfaces::msg::Reference reference_k; // r_k = [x, y, chi, U]^T
   psbmpc_interfaces::msg::Trajectory4 trajectory_msg;
-  
 
   for (int k = 0; k < n_samples; k++)
   {
@@ -212,13 +232,17 @@ void PSBMPC_Node::publish_reference_trajectory()
     #else
       reference_k.speed = sqrt(pow(predicted_trajectory(3, k), 2) + pow(predicted_trajectory(4, k), 2));
     #endif
-
     trajectory_msg.predicted_trajectory.push_back(reference_k);
   }
-  trajectory_publisher.publish(trajectory_msg);
+  trajectory_publisher->publish(trajectory_msg);
 }
 
-
+/****************************************************************************************
+*  Name     : on_xxx
+*  Function : Implements the transitioning functions for the ROS2 lifecycle node
+*  Author   :
+*  Modified :
+*****************************************************************************************/
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 PSBMPC_Node::on_configure(const rclcpp_lifecycle::State &previous_state) 
 {
@@ -232,9 +256,8 @@ PSBMPC_Node::on_activate(const rclcpp_lifecycle::State &previous_state)
 {
   RCLCPP_INFO(get_logger(), "Activating");
 
-  pub_->on_activate();
-  controller_state_pub_->on_activate();
-  timer_->reset();
+  trajectory_publisher->on_activate();
+  timer->reset();
 
   return CallbackReturn::SUCCESS;
 }
@@ -243,8 +266,7 @@ rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 PSBMPC_Node::on_deactivate(const rclcpp_lifecycle::State &previous_state) 
 {
   RCLCPP_INFO(get_logger(), "Deactivating");
-  
-  state_subscription->on_deactivate();
+
   trajectory_publisher->on_deactivate();
   timer->cancel();
 
@@ -252,14 +274,14 @@ PSBMPC_Node::on_deactivate(const rclcpp_lifecycle::State &previous_state)
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-PSBMPC_Node::on_cleanup(const rclcpp_lifecycle::State &) 
+PSBMPC_Node::on_cleanup(const rclcpp_lifecycle::State &previous_state) 
 {
   RCLCPP_INFO(get_logger(), "Cleaning up");
   return CallbackReturn::SUCCESS;
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-PSBMPC_Node::on_shutdown(const rclcpp_lifecycle::State &) 
+PSBMPC_Node::on_shutdown(const rclcpp_lifecycle::State &previous_state) 
 {
   RCLCPP_INFO(get_logger(), "Shutting down");
   return CallbackReturn::SUCCESS;
@@ -278,20 +300,24 @@ int main(int argc, char ** argv)
   {
     rclcpp::init(argc, argv);
 
-    std::shared_ptr<rclcpp::Node> psbmpc_node_ptr = std::make_shared<rclcpp::Node>("psbmpc_node");
+    rclcpp_lifecycle::LifecycleNode::SharedPtr psbmpc_node_ptr = std::make_shared<rclcpp_lifecycle::LifecycleNode>("psbmpc_node");
 
-    rclcpp::spin(psbmpc_node_ptr);
+    rclcpp::executors::StaticSingleThreadedExecutor executor;
+
+    executor.add_node(psbmpc_node_ptr->get_node_base_interface());
+    
+    executor.spin();
 
     rclcpp::shutdown();
   }
   catch(const std::exception& e)
   {
-    RCLCPP_INFO(rclcpp::get_logger("psbmpc"), e.what());
+    RCLCPP_INFO(rclcpp::get_logger("PSB-MPC"), e.what());
     r = 3;
   } 
   catch (...) 
   {
-    RCLCPP_INFO(rclcpp::get_logger("psbmpc"), "Unknown exception caught. ""Exiting...");
+    RCLCPP_INFO(rclcpp::get_logger("PSB-MPC"), "Unknown exception caught. ""Exiting...");
     r = -1;
   }
 

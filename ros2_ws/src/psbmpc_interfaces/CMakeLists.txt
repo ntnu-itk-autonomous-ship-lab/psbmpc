@@ -21,10 +21,13 @@ set(msg_files
   "msg/Reference.msg"
   "msg/Offset.msg"
   "msg/Vector2.msg"
+  "msg/Vector4.msg"
   "msg/Covariance2.msg"
   "msg/CrossCovariance2.msg"
   "msg/KinematicEstimate.msg"
   "msg/KinematicEstimateStamped.msg"
+  "msg/DynamicObstacleEstimates.msg"
+  "msg/DynamicObstacleEstimatesStamped.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
