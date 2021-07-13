@@ -237,7 +237,7 @@ void KF::update(
 	Eigen::Matrix<double, 4, 2> K;
 	Eigen::Matrix<double, 2, 4> C_2D = C.block<2, 4>(0, 0);
 
-	if (dead_reckon)
+	if (!dead_reckon)
 	{
 		K = P_p * C_2D.transpose() * (C_2D * P_p * C_2D.transpose() + R.block<2, 2>(0, 0)).inverse(); 
 

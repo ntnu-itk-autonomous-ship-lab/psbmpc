@@ -35,8 +35,7 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : CB_Cost_Functor_1
 		*  Function : Functor used to predict the own-ship trajectory
-		*			  following a certain control behaviour, and calculate the static obstacle
-		*			  and path related costs
+		*			  following a certain control behaviour, and calculate the path related costs
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
@@ -60,12 +59,10 @@ namespace PSBMPC_LIB
 			//==============================================
 			// Pre-allocated temporaries (local to the thread stack)
 			//==============================================
-			float cost_cb; 
+			float h_path; 
 
 			unsigned int cb_index;
 			TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
-
-			int n_samples;
 
 		public: 
 			__host__ CB_Cost_Functor_1() : 
@@ -100,8 +97,8 @@ namespace PSBMPC_LIB
 
 		/****************************************************************************************
 		*  Name     : CB_Cost_Functor_2
-		*  Function : Functor used to calculate the dynamic obstacle cost, for a control behaviour
-		*			  l, an obstacle i behaving as in prediction scenario ps. 
+		*  Function : Functor used to calculate the partial grounding cost, dynamic obstacle cost
+		*			  and COLREGS cost.
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
@@ -116,9 +113,9 @@ namespace PSBMPC_LIB
 
 			CB_Functor_Data *fdata;
 
-			Cuda_Obstacle *obstacles;
+			Basic_Polygon *polygons;
 
-			Prediction_Obstacle *pobstacles;
+			Cuda_Obstacle *obstacles;
 
 			CPE *cpe;
 
@@ -126,29 +123,23 @@ namespace PSBMPC_LIB
 
 			TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory;
 
-			Obstacle_Ship *obstacle_ship;
-
-			Obstacle_SBMPC *obstacle_sbmpc;
-
 			MPC_Cost<CB_Functor_Pars> *mpc_cost;
-
 			//==============================================
 
 			//==============================================
 			// Pre-allocated temporaries (local to the thread stack)
 			//==============================================
-			unsigned int thread_index;
-			unsigned int cb_index;
+			int thread_index, cb_index, j, i, ps, cpe_index;
 			TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
-			unsigned int i, ps, jp_thread_index;
 
 			int n_samples, n_seg_samples;
 
-			float max_cost_ps, cost_ps, P_c_i;
+			float max_h_so_j, max_cost_i_ps, mu_i_ps, cost_k, P_c_i;
+			bool mu_k;
 
 			float d_safe_i, chi_m;
 
-			Intention a_i_ps_jp; bool mu_i_ps_jp;
+			thrust::tuple<float, bool> tup;
 
 			// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 			// Only keeps n_seg_samples at a time, sliding window. Minimum 2
@@ -161,79 +152,46 @@ namespace PSBMPC_LIB
 			// For the CE-method:
 			TML::Vector2f p_os, p_i, v_os_prev, v_i_prev;
 			TML::Matrix2f P_i_2D;
-
-			// Joint prediction related
-			TML::PDMatrix<float, MAX_N_OBST, 1> u_d_i, u_opt_last_i, chi_d_i, chi_opt_last_i;
-
-			TML::PDMatrix<float, 7, 1> xs_os_aug_k;
-			
-			TML::Vector2f v_os_k, v_A, v_B, L_AB, p_A, p_B;
-			TML::Vector4f xs_i_p, xs_i_p_transformed;
-
-			float t, chi_i, psi_A, psi_B, d_AB, u_opt_i, chi_opt_i; 
-
-			Obstacle_Data_GPU_Friendly data;
-
-			int i_count;
-
 			//==============================================
-			
-
-			__device__ void update_conditional_obstacle_data(const int i_caller, const int k);
-
-			__device__ void predict_trajectories_jointly();
 
 		public: 
 			__host__ CB_Cost_Functor_2() : 
 				pars(nullptr), 
 				fdata(nullptr), 
+				polygons(nullptr),
 				obstacles(nullptr), 
-				pobstacles(nullptr), 
 				cpe(nullptr), 
 				ownship(nullptr), 
 				trajectory(nullptr), 
-				obstacle_ship(nullptr), 
-				obstacle_sbmpc(nullptr), 
 				mpc_cost(nullptr) 
 			{}
 
 			__host__ CB_Cost_Functor_2(
 				CB_Functor_Pars *pars, 
 				CB_Functor_Data *fdata, 
+				Basic_Polygon *polygons,
 				Cuda_Obstacle *obstacles, 
-				Prediction_Obstacle *pobstacles,
 				CPE *cpe,
 				Ownship *ownship,
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,
-				Obstacle_Ship *obstacle_ship,
-				Obstacle_SBMPC *obstacle_sbmpc,
-				MPC_Cost<CB_Functor_Pars> *mpc_cost);
+				MPC_Cost<CB_Functor_Pars> *mpc_cost):
+				pars(pars), fdata(fdata), polygons(polygons), obstacles(obstacles), cpe(cpe), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost) 
+				{}
 
 			__host__ __device__ ~CB_Cost_Functor_2() 
 			{ 
 				pars = nullptr; 
 				fdata = nullptr; 
+				polygons = nullptr;
 				obstacles = nullptr; 
-				pobstacles = nullptr; 
 				cpe = nullptr; 
+				ownship = nullptr;
 				trajectory = nullptr; 
-				obstacle_ship = nullptr; 
-				obstacle_sbmpc = nullptr; 
 				mpc_cost = nullptr;
 			}
 
-			// Used when flattening the nested for loops over obstacles and their prediction scenario into a single loop 
-			// merged with the control behaviour loop => then calulate the maximum dynamic obstacle cost of a control behaviour for the own-ship
-			// considering obstacle i in prediction scenario ps. 
-			// The intention and COLREGS violation indicator for the intelligent obstacle prediction (if active) is also returned from the thread.
-			__device__ thrust::tuple<float, Intention, bool> operator()(const thrust::tuple<
-				const unsigned int, 
-				TML::PDMatrix<float, 2 * MAX_N_M, 1>, 
-				const unsigned int, 
-				const unsigned int, 
-				const unsigned int, 
-				const int> &input_tuple);
-			
+			__device__ thrust::tuple<float, float, float> operator()(
+				const thrust::tuple<const int, TML::PDMatrix<float, 2 * MAX_N_M, 1>, const int, const int, const int, const int, const int> &input_tuple);
 		};
 	}
 }

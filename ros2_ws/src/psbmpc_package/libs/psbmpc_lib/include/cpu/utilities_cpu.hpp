@@ -47,9 +47,10 @@ namespace PSBMPC_LIB
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
-		inline void save_matrix_to_file(const Eigen::MatrixXd &in)
+		template <class Eigen_Type>
+		inline void save_matrix_to_file(const Eigen_Type &in)
 		{
-			std::ofstream outdata("/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv", std::ofstream::trunc);
+			std::ofstream outdata("/home/admin/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv", std::ios::out | std::ios::trunc);
 			int n_rows = in.rows();
 			int n_cols = in.cols();
 
@@ -163,6 +164,20 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
+		*  Name     : rotate_matrix_2D
+		*  Function : Rotates the 2D matrix by the angle. 
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
+		inline Eigen::Matrix2d rotate_matrix_2D(const Eigen::Matrix2d &M, const double angle)
+		{
+			Eigen::Matrix2d R;
+			R << cos(angle), -sin(angle), sin(angle), cos(angle);
+			
+			return R * M * R.transpose();
+		}
+
+		/****************************************************************************************
 		*  Name     : flatten
 		*  Function : Flattens a matrix of size n_rows x n_cols to n_rows * n_cols x 1
 		*  Author   :
@@ -229,6 +244,8 @@ namespace PSBMPC_LIB
 			double psi_A(0.0), psi_B(0.0);
 			Eigen::Vector2d v_A, v_B, p_A, p_B, L_AB;
 			p_A = xs_A.block<2, 1>(0, 0); p_B = xs_B.block<2, 1>(0, 0);
+
+			// Either xs = [x, y, psi, u, v, r]^T or [x, y, Vx, Vy]
 			if (xs_A.size() == 6) { psi_A = xs_A(2); v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
 			else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
 			

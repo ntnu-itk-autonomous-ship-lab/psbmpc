@@ -545,7 +545,7 @@ double CPE::MCSKF4D_estimation(
         // Find average velocity along segment and angle of the segment
         if (xs_os.rows() == 4)
         {
-            U_os_sl = xs_os.block(3, 0, 1, n_seg_samples).rowwise().mean().norm();
+            U_os_sl = xs_os(3);
         }
         else
         {

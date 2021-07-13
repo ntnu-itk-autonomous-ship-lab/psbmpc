@@ -50,9 +50,9 @@ namespace PSBMPC_LIB
 			//===================================
 			// Pre-allocated temporaries
 			int n_samples, n_wps, man_count;
-			float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
+			float u_m, u_d_p, chi_m, chi_d_p, chi_p, U_p, alpha, e;
 
-			TML::Vector2f d_next_wp, L_wp_segment, v_p;
+			TML::Vector2f d_next_wp, L_wp_segment;
 			bool segment_passed;
 
 			TML::Vector4f xs_p, xs_new;
