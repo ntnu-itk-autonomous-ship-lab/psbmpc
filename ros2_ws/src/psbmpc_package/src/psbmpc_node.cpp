@@ -19,7 +19,6 @@
 *****************************************************************************************/
 
 #include "psbmpc_node.hpp"
-#include "tf2/LinearMath/Transform.h"
 
 #include <chrono>
 #include <cstdio>
@@ -35,8 +34,6 @@ using namespace std::chrono_literals;
 *****************************************************************************************/
 PSBMPC_Node::PSBMPC_Node(
   const std::string &node_name,                         // In: Self explanatory
-  const std::string &map_data_filename,                 // In: Self explanatory
-  const Eigen::Vector2d &map_origin,                    // In: Vector of north-east coordinates for the defined map origin
   const rclcpp::NodeOptions &options                    // In: 
   )
   : LifecycleNode(node_name, options), 
@@ -44,6 +41,8 @@ PSBMPC_Node::PSBMPC_Node(
   state_topic_name(declare_parameter("state_topic_name").get<std::string>()),
   waypoints_topic_name(declare_parameter("waypoints_topic_name").get<std::string>()),
   reference_topic_name(declare_parameter("reference_topic_name").get<std::string>()),
+  map_data_filename(declare_parameter("map_data_filename").get<std::string>()),
+  map_origin(declare_parameter("map_origin").get<std::vector<double>>()),
   psbmpc(PSBMPC_LIB::GPU::PSBMPC()), 
   grounding_hazard_manager(map_data_filename, map_origin, psbmpc)
 {
@@ -129,18 +128,22 @@ void PSBMPC_Node::state_callback(
   const nav_msgs::msg::Odometry::SharedPtr &msg                      // In: State message
   )
 {
-  double heading(0.0);
+  double heading(0.0), SOG(0.0);
+  Eigen::Vector4d q;
+  q(0) = msg->pose.pose.orientation.x;
+  q(1) = msg->pose.pose.orientation.y;
+  q(2) = msg->pose.pose.orientation.z;
+  q(3) = msg->pose.pose.orientation.w;
+  heading = atan2(2.0 * (q(3) * q(0) + q(1) * q(2)) , - 1.0 + 2.0 * (q(0) * q(0) + q(1) * q(1)));
   #if OWNSHIP_TYPE == 0
     ownship_state.resize(4);
     ownship_state(0) = msg->pose.pose.position.x;
     ownship_state(1) = msg->pose.pose.position.y;
-    
-    heading = tf2::getYaw(msg->pose.pose.orientation);
-    ownship_state(2) = heading;
-
+    ownship_state(2) = heading; // approximate course to heading, as no crab angle info is available
+    SOG = sqrt(pow(msg->twist.twist.linear.x, 2) + pow(msg->twist.twist.linear.y, 2));
+    ownship_state(3) = SOG;
   #else
     ownship_state.resize(6);
-    heading = tf2::getYaw(msg->pose.pose.orientation);
     ownship_state(0) = msg->pose.pose.position.x;
     ownship_state(1) = msg->pose.pose.position.y;
     ownship_state(2) = heading;
@@ -148,7 +151,6 @@ void PSBMPC_Node::state_callback(
     ownship_state(4) = msg->twist.twist.linear.y;
     ownship_state(5) = msg->twist.twist.angular.z;
   #endif
-  
 }
 
 /****************************************************************************************
@@ -211,7 +213,7 @@ void PSBMPC_Node::publish_reference_trajectory()
 
   double mean_t = elapsed.count();
 
-  std::cout << "PSBMPC time usage : " << mean_t << " seconds" << std::endl;
+  std::cout << "PSBMPC time usage: " << mean_t << " seconds" << std::endl;
 
   std::cout << "u_d = " << u_d << " | chi_d = " << chi_d << std::endl;
 

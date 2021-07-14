@@ -342,7 +342,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
+	n_M = 4;
 	n_r = MAX_N_PS;
 
 	chi_offsets.resize(n_M);

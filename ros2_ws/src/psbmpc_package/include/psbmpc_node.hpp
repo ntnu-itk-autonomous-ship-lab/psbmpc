@@ -55,6 +55,8 @@ private:
   const std::string state_topic_name;
   const std::string waypoints_topic_name;
   const std::string reference_topic_name;
+  const std::string map_data_filename;
+  const Eigen::Vector2d map_origin;
 
   //==================================================
   // PODs, data structures and classes for use by the node
@@ -100,15 +102,10 @@ private:
 
 public:
 
-  explicit PSBMPC_Node(
-    const std::string &map_data_filename, 
-    const Eigen::Vector2d &map_origin, 
-    const rclcpp::NodeOptions &options) : PSBMPC_Node("PSBMPC_Node", map_data_filename, map_origin, options) {}
+  explicit PSBMPC_Node(const rclcpp::NodeOptions &options) : PSBMPC_Node("PSBMPC_Node", options) {}
   
   explicit PSBMPC_Node(
     const std::string &node_name, 
-    const std::string &map_data_filename, 
-    const Eigen::Vector2d &map_origin, 
     const rclcpp::NodeOptions &options);
 
 };

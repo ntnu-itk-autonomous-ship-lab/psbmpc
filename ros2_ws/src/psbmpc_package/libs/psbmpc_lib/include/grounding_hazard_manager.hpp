@@ -279,6 +279,18 @@ namespace PSBMPC_LIB
 			create_simplified_polygons();
 		}
 
+		template <class MPC_Type>
+		Grounding_Hazard_Manager(const std::string &filename, const std::vector<double> &map_origin, const MPC_Type &mpc) 
+			: d_so_relevant(mpc.pars.d_so_relevant), epsilon(mpc.pars.epsilon_rdp)
+		{
+			assert(map_origin.size() == 2);
+			this->map_origin(0) = map_origin[0]; this->map_origin(1) = map_origin[1];
+
+			read_shapefile(filename, polygons);
+
+			create_simplified_polygons();
+		}
+
 		Eigen::Vector2d get_map_origin() const { return map_origin; }
 
 		std::vector<polygon_2D> get_polygons() const { return polygons; }

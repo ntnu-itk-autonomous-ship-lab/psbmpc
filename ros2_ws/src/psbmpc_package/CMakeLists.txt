@@ -17,11 +17,18 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(psbmpc_interfaces REQUIRED)
+find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
+find_package(Eigen3 REQUIRED)
+#find_package(psbmpc_lib REQUIRED)
 
 set(dependencies 
   rclcpp
   nav_msgs
-  psbmpc_interfaces)
+  psbmpc_interfaces
+  Matlab
+  Eigen3
+  #psbmpc_lib
+)
 
 # Toggle usage of the CPU(0)/GPU(1) version of PSBMPC
 set(USE_GPU_PSBMPC 1)
@@ -31,11 +38,15 @@ add_executable(psbmpc_node src/psbmpc_node.cpp)
 
 ament_target_dependencies(psbmpc_node ${dependencies})
 
-target_link_libraries(psbmpc_node psbmpc_lib)
+target_link_libraries(psbmpc_node psbmpc_lib ${Matlab_LIBRARIES} Eigen3::Eigen)
 
 target_include_directories(psbmpc_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/psbmpc_lib/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/psbmpc_lib/tryms_matrix>
   $<INSTALL_INTERFACE:include>
+  ${Matlab_INCLUDE_DIRS}
+	${EIGEN3_INCLUDE_DIRS}
 )
 
 install(TARGETS 
