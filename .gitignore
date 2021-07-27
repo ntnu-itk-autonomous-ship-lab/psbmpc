@@ -50,6 +50,8 @@
 ros2_ws/build/*
 ros2_ws/install/*
 ros2_ws/log/*
+ros2_ws/.vscode/*
 psbmpc_cxx/debug/*
 psbmpc_cxx/release/*
 psbmpc_cxx/src/tests/grounding_hazard_data/*
+psbmpc_cxx/.vscode/*

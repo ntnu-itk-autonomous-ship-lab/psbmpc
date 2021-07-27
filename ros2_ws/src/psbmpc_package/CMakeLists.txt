@@ -19,7 +19,6 @@ find_package(nav_msgs REQUIRED)
 find_package(psbmpc_interfaces REQUIRED)
 find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 find_package(Eigen3 REQUIRED)
-#find_package(psbmpc_lib REQUIRED)
 
 set(dependencies 
   rclcpp
@@ -27,7 +26,6 @@ set(dependencies
   psbmpc_interfaces
   Matlab
   Eigen3
-  #psbmpc_lib
 )
 
 # Toggle usage of the CPU(0)/GPU(1) version of PSBMPC
