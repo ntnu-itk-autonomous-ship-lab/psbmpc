@@ -28,4 +28,4 @@ add_subdirectory(libs/psbmpc_lib)
 
 add_subdirectory(src/tests)
 
-target_link_libraries(tester PRIVATE psbmpc_lib)
+#target_link_libraries(tester PRIVATE psbmpc_lib)
