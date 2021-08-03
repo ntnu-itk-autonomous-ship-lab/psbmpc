@@ -9,7 +9,7 @@ Note that the amount of memory you need on your GPU to run the algorithm will in
 
 ## Dependencies
 
-- C++11 or higher
+- C++17
 - CMake > 3.10 for building 
 - Matlab C API for the debugging and plotting functionality. (Follow setup instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
 - Eigen3. Eigen is still experimental regarding CUDA compatibility. I have suppressed the warnings from eigen regarding CUDA-stuff, but hope that one day Eigen will be fully functionable and warning-free on the GPU. Not tested with other Eigen versions.
