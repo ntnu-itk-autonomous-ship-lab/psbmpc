@@ -64,8 +64,8 @@ Note that the amount of control behaviours (function of the amount of maneuvers 
 ### MPC Cost
 <p> Class responsible for evaluating the cost function in the PSBMPC, SBMPC and obstacle SBMPC. One version each, meant for the host/device side.  </p>
 
-## CB Cost Functor (1, 2 & 3)
-<p> Special case C++ class/struct which has overloaded the **operator(..)**. The functors 1, 2 and 3 are used to evaluate the cost of following one particular control behaviour. The functors are ported to the gpu, where each thread will run the **operator(..)** to evaluate the cost of a certain control behaviour. The first **CB_Cost_Functor_1** predicts the own-ship trajectory for all control behaviours, and calculates the path related costs. After this, the second **CB_Cost_Functor_2** calculates the grounding cost wrt one static obstacle. The third **CB_Cost_Functor_3** calculates parts of the dynamic obstacle costs. The total cost of each control behaviour is then stitched together on the host side in the **find_optimal_control_behaviour()** function.   </p>
+## CB Cost Functor (1 & 2)
+<p> Special case C++ class/struct which has overloaded the **operator(..)**. The functors 1 and 2 are used to evaluate the cost of following one particular control behaviour. The functors are ported to the gpu, where each thread will run the **operator(..)** to evaluate the cost of a certain control behaviour. The first **CB_Cost_Functor_1** predicts the own-ship trajectory for all control behaviours, and calculates the path related costs. After this, the second **CB_Cost_Functor_2** calculates the cost for one control behaviour wrt one static obstacle OR a dynamic obstacle behaving as in a certain prediction scenario. The total cost of each control behaviour is then stitched together on the host side in the **find_optimal_control_behaviour()** function.   </p>
 
 ### CB Cost Functor Structures 
 <p> Defines data for GPU threads that is needed in the **CB_Cost_Functor**, which needs to be sent from the host to the device. A subset of the PSB-MPC parameters are defined in a struct here, and also a struct which gathers diverse types of data for use on the GPU. </p>
@@ -162,4 +162,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 
 
-<p> Trym Tengesdal, 27. May 2021.  </p>
+<p> Trym Tengesdal, 3. August 2021.  </p>
