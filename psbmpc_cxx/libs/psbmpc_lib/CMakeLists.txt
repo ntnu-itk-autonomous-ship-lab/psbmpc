@@ -112,7 +112,7 @@ else()
 endif()
 
 
-## Create package for the library (NOT FINISHED IMPLEMENTATION YET)
+## Create package for the library (NOT FINALIZED, NEED CORRECTIONS)
 #file(
 #    WRITE "${CMAKE_CURRENT_BINARY_DIR}/Config.cmake.in"
 #    "
