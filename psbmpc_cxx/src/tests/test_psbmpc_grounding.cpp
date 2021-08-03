@@ -171,7 +171,11 @@ int main(){
 //*****************************************************************************************************************	
 	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
-	PSBMPC_LIB::GPU::PSBMPC psbmpc;
+	#if (USE_GPU_PSBMPC == 1)
+		PSBMPC_LIB::GPU::PSBMPC psbmpc;
+	#else
+		PSBMPC_LIB::CPU::PSBMPC psbmpc;
+	#endif
 
 	double u_opt(u_d), chi_opt(0.0);
 

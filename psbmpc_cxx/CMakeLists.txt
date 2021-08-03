@@ -18,7 +18,12 @@
 #======================================================================
 
 cmake_minimum_required(VERSION 3.17.3)
-project(PSBMPC LANGUAGES CUDA CXX)
+
+if(USE_GPU_PSBMPC)
+	project(PSBMPC LANGUAGES CUDA CXX)
+else()
+	project(PSBMPC LANGUAGES CXX)
+endif()
 
 # for host side debug compilation and profiling
 #set(CMAKE_VERBOSE_MAKEFILE ON)

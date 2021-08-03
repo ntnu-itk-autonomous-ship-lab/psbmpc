@@ -53,6 +53,8 @@ target_include_directories(tester PRIVATE
 	${EIGEN3_INCLUDE_DIRS}
 )
 
-set_target_properties(tester PROPERTIES 
-	CUDA_SEPARABLE_COMPILATION ON
-	CUDA_ARCHITECTURES "61;86")
+if (USE_GPU_PSBMPC)
+	set_target_properties(tester PROPERTIES 
+		CUDA_SEPARABLE_COMPILATION ON
+		CUDA_ARCHITECTURES "61;86")
+endif()

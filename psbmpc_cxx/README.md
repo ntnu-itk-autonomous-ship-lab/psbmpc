@@ -3,6 +3,7 @@
 
 ## Dependencies
 
+- C++17
 - CMake > 3.10 for building 
 - Matlab C API for the debugging and plotting functionality. (Follow setup instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
 - Eigen3. Eigen is still experimental regarding CUDA compatibility. I have suppressed the warnings from eigen regarding CUDA-stuff, but hope that one day Eigen will be fully functionable and warning-free on the GPU. Not tested with other Eigen versions.
@@ -12,10 +13,9 @@
 - Boost <https://www.boost.org/> for reading shapefile data into a vector of polygons in the Grounding Hazard Manager, and used in the grounding cost calculation of the PSB-MPC CPU version.
 
 ## PSB-MPC library usage
-<p>To use the library, for cmake, simply use the "add_subdirectory(/path/to/psbmpc_lib)" command, and link the corresponding target to your executable test file. Then, change directory to either debug or release, and build using standard cmake commands for either a debug or release build. Specify the flag **USE_GPU_PSBMPC** to switch between only compiling for usage of the CPU version, or both. Specify the flag **OWNSHIP_TYPE** to switch between a kinematic model, telemetron model and milliAmpere model (not finished) for the own-ship. </p>
+<p> Several test functions exist under src/tests to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test (the ```add_executable(..)``` commands). To use the library with one of the test files under src/tests/, for cmake, create a debug/release directory under psbmpc_cxx/, go into the debug/release directory and type  ```cmake -DCMAKE_BUILD_TYPE=debug ..``` for debug and ```cmake -DCMAKE_BUILD_TYPE=release ..``` for release. To use the GPU PSB-MPC, you also have to specify the ```USE_GPU_PSBMPC=1``` compile time flag: ```cmake -DCMAKE_BUILD_TYPE=debug -DUSE_GPU_PSBMPC=1 ..```. The same goes for toggling between own-ship types (e.g. ```-DOWNSHIP_TYPE=0```). </p>
 
-## Testing out the library functionality
-<p> Several test functions exist under src/tests to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test. </p>
+<p> To use the library in another cmake project, copy the library folder into your project, and use the "add_subdirectory(/path/to/psbmpc_lib)" to add it to your project. </p>
 
 
 ## References
@@ -29,4 +29,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 
 
-<p> Trym Tengesdal, 26. May 2021.  </p>
+<p> Trym Tengesdal, 3. August 2021.  </p>

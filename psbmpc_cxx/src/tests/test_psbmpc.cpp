@@ -19,7 +19,9 @@
 *****************************************************************************************/
 
 #include "cpu/psbmpc_cpu.hpp"
-#include "gpu/psbmpc_gpu.cuh"
+#if (USE_GPU_PSBMPC == 1)
+	#include "gpu/psbmpc_gpu.cuh"
+#endif
 #include "cpu/utilities_cpu.hpp"
 #include <iostream>
 #include <vector>
@@ -200,7 +202,11 @@ int main()
 //*****************************************************************************************************************	
 	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
-	PSBMPC_LIB::GPU::PSBMPC psbmpc; // change CPU for GPU depending on the version you want to test
+	#if (USE_GPU_PSBMPC == 1)
+		PSBMPC_LIB::GPU::PSBMPC psbmpc;
+	#else
+		PSBMPC_LIB::CPU::PSBMPC psbmpc;
+	#endif
 
 	double u_opt(1.0), chi_opt(0.0);
 
