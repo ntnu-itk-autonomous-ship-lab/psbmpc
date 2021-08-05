@@ -940,8 +940,8 @@ void PSBMPC::setup_prediction(
 	{
 		// If a predicted collision occurs with the closest obstacle, avoidance maneuver 
 		// M is taken right after the obstacle possibly maneuvers (modelled to be at t_0 + M * t_ts
-		// if the independent obstacle prediction scheme is used), given that t_cpa > t_ts. 
-		// If t_cpa < t_ts or n_obst = 0, the subsequent maneuver is taken at t_{M-1} + t_ts + 1 anyways (simplification)
+		// given that t_cpa > t_ts. If t_cpa < t_ts or n_obst = 0, the subsequent maneuver is taken 
+		// at t_{M-1} + t_ts + 1 anyways (simplification)
 		maneuver_times(M) = maneuver_times(M - 1) + std::round((pars.t_ts + 1) / pars.dt);
 		
 		// Otherwise, find the closest obstacle (wrt t_cpa) that is a possible hazard

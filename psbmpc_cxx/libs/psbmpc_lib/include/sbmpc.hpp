@@ -35,7 +35,8 @@ namespace PSBMPC_LIB
 	{
 	private:
 		// Control behavior related vectors and the own-ship maneuver times in the prediction horizon
-		Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
+		Eigen::VectorXd offset_sequence, maneuver_times;
+		Eigen::VectorXi offset_sequence_counter;
 
 		// Previous optimal offsets/modifications
 		double u_opt_last;

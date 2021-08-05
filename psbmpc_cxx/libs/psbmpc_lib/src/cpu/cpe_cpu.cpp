@@ -314,8 +314,8 @@ void CPE::resize_matrices()
 /****************************************************************************************
 *  Name     : update_L
 *  Function : Updates the lower triangular matrix L based on cholesky decomposition 
-*             formulas for the input matrix. For 2x2 and 4x4 matrices only, hence 
-*             why eigen is not used.
+*             formulas for the input matrix. Hardcoded for 2x2 and 4x4 matrices for
+*             efficiency.
 *             Formulas: 
 *             L_jj = sqrt(A_jj - sum_k=0^j-1 (L_jk)^2)
 *             L_ij = (1 / L_jj) * (A_jj) - sum_k=0^j-1 L_ik * L_jk)
@@ -724,8 +724,8 @@ double CPE::CE_estimation(
     else                       { var_P_i_largest = P_i(1, 1); }
 
     // This large a distance usually means no effective conflict zone, as
-    // practically 100% of probability mass inside 3.5 * standard deviations
-    // (assuming equal std dev in x, y (assumption))
+    // practically 100% of probability mass is inside 3.5 * standard deviations
+    // (assuming equal std dev in x, y)
     if (d_0i > d_safe + 3.5 * sqrt(var_P_i_largest)) 
     { 
         return P_c_CE; 
