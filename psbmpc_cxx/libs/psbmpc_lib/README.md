@@ -94,7 +94,7 @@ and also updates the current situation type that the own-ship is in, wrt to each
 <p> The obstacle classes maintains information about the obstacle, in addition to its predicted trajectories and PSB-MPC cost function related parameters. Organized into a inheritance hierarchy with <br>
 
 - Tracked Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the PSB-MPC to keep track of the nearby obstacles. 
-- Prediction Obstacle: More minimalistic class than the Tracked Obstacle, used by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system.**Not used nor maintained**
+- Prediction Obstacle: More minimalistic class than the Tracked Obstacle, used by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system. **Not used nor maintained**
 - Cuda Obstacle: Used as a GPU-friendly data container of relevant Tracked Obstacle data needed on the GPU. Read-only when processing on the GPU. </p>
 
 
