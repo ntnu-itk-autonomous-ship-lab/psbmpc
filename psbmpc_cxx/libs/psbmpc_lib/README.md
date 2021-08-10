@@ -44,7 +44,7 @@ and has the following **outputs**:
 
 - Optimal surge and course modification to the planned guidance references
 - A predicted trajectory for the own-ship when implementing the optimal avoidance maneuver(s).
-- Obstacle Data: Some parts of the Obstacle_Data can be modified by the PSB-MPC (predicted relative hazard levels for each obstacle)
+- Obstacle Data: Some parts of the Obstacle Data can be modified by the PSB-MPC (predicted relative hazard levels for each obstacle)
 
 <p>You should use the Obstacle Manager class for creating and updating the Obstacle Data structure, and can also use the Grounding Hazard Manager to create and update relevant polygons for the anti-grounding part. The Obstacle Predictor class is used to predict all nearby dynamic obstacle trajectories (can be multiple trajectories for each obstacle), using the Obstacle Data from the Obstacle Manager as input. </p>
 
