@@ -97,7 +97,6 @@ void PSBMPC::calculate_optimal_offsets(
 	maneuver_times.setZero();
 	ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 
-
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
 	{
@@ -280,7 +279,8 @@ void PSBMPC::calculate_optimal_offsets(
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps_max);
 
-	mxArray *n_obst_copy_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
+	mxArray *n_obst_copy_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr);
+	*/
 	//===============================================================================================================
 	
 	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
@@ -301,16 +301,16 @@ void PSBMPC::calculate_optimal_offsets(
 			Pr_s_i_matrix(i, ps) = data.obstacles[i].get_scenario_probabilities()(ps);
 		}
 	}
-	int curr_ps_index(0);
-	Eigen::VectorXd max_cost_i_ps, max_cost_j, mu_i_ps;
 	
+	Eigen::VectorXd max_cost_i_ps, max_cost_j, mu_i_ps;
+	int curr_ps_index(0), min_index(0);
 	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
 	Eigen::VectorXd cost_do(n_obst), mu_i(n_obst);
 	std::tuple<double, double> tup;
 	Eigen::MatrixXd P_c_i;
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
 	min_cost = 1e12;
-	int min_index = 0;
+	
 	int thread_count = 1;
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -1235,7 +1235,7 @@ void PSBMPC::predict_trajectories_jointly(
 	const bool overwrite										// In: Flag to choose whether or not to add the first intelligent prediction to the data, or overwrite the previous
 	)
 {
-	Eigen::Matrix<double, 4, -1> static_obstacles(4, 1); static_obstacles.setZero();
+	Eigen::Matrix<double, 4, -1> static_obstacles(4, n_static_obst); static_obstacles.setZero();
 	predict_trajectories_jointly(data, static_obstacles, overwrite);
 }
 

@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(psbmpc_package LANGUAGES CUDA CXX)
 
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -40,11 +40,7 @@ target_link_libraries(psbmpc_node psbmpc_lib ${Matlab_LIBRARIES} Eigen3::Eigen)
 
 target_include_directories(psbmpc_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/psbmpc_lib/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libs/psbmpc_lib/tryms_matrix>
   $<INSTALL_INTERFACE:include>
-  ${Matlab_INCLUDE_DIRS}
-	${EIGEN3_INCLUDE_DIRS}
 )
 
 install(TARGETS 

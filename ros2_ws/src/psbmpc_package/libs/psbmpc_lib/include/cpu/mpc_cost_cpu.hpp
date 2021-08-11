@@ -1164,7 +1164,7 @@ namespace PSBMPC_LIB
 			int line_intersect_count(0), n_vertices(0);
 			Eigen::Vector2d v_prev, v, v_next;			
 
-			Eigen::MatrixXd vertices(2, 10000);
+			Eigen::MatrixXd vertices(2, 25000);
 			// Find bounding box of polygon to use for ray creation
 			Eigen::Matrix2d bbox;
 			bbox(0, 0) = 1e10; bbox(1, 0) = 1e10; bbox(0, 1) = -1e10; bbox(1, 1) = -1e10;

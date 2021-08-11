@@ -108,6 +108,9 @@ namespace PSBMPC_LIB
 
 			PSBMPC();
 
+			// Resets previous optimal offsets and predicted own-ship waypoint following
+			void reset() { u_opt_last = 1.0; chi_opt_last = 0.0; ownship.set_wp_counter(0); }
+
 			// For use when grounding hazards are simplified as straight lines
 			void calculate_optimal_offsets(
 				double &u_opt, 

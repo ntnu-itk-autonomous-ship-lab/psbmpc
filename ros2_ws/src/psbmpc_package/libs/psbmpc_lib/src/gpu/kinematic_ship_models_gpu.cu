@@ -107,8 +107,8 @@ __host__ __device__ void Kinematic_Ship::determine_active_waypoint_segment(
 		segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
 
 		//(s > R_a && fabs(e) <= R_a))) 	
-		if (d_next_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
-		else										{ break; }		
+		if (d_next_wp.norm() <= R_a || segment_passed) 	{ wp_c_0++; } 
+		else											{ break; }		
 	}
 	wp_c_p = wp_c_0;
 }
@@ -316,7 +316,7 @@ __host__ __device__ void Kinematic_Ship::predict_trajectory(
 	
 	trajectory.resize(4, n_samples); // conserves existing values inside 4 x n_samples by default
 
-	initialize_wp_following();
+	wp_c_p = wp_c_0;
 
 	man_count = 0;
 	u_m = 1, u_d_p = u_d;
@@ -357,8 +357,8 @@ __host__ __device__ void Kinematic_Ship::predict_trajectory(
 	
 	trajectory.resize(4, n_samples); // conserves existing values inside 4 x n_samples by default
 
-	initialize_wp_following();
-
+	wp_c_p = wp_c_0;
+	
 	man_count = 0;
 	u_m = 1.0f, u_d_p = u_d;
 	chi_m = 0.0f, chi_d_p = chi_d;

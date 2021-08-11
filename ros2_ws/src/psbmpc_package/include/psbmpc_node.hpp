@@ -43,11 +43,11 @@ private:
   //==================================================
   // Subscribers and publishers
   //==================================================
-  rclcpp::Subscription<psbmpc_interfaces::msg::DynamicObstacleEstimates>::SharedPtr dynamic_obstacle_subscription;
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr state_subscription;
-  rclcpp::Subscription<psbmpc_interfaces::msg::Trajectory2>::SharedPtr waypoints_subscription;
+  std::shared_ptr<rclcpp::Subscription<psbmpc_interfaces::msg::DynamicObstacleEstimates>> dynamic_obstacle_subscription;
+  std::shared_ptr<rclcpp::Subscription<nav_msgs::msg::Odometry>> state_subscription;
+  std::shared_ptr<rclcpp::Subscription<psbmpc_interfaces::msg::Trajectory2>> waypoints_subscription;
   //rclcpp_lifecycle::LifecyclePublisher<psbmpc_interfaces::msg::Offset>::SharedPtr trajectory_publisher;
-  rclcpp_lifecycle::LifecyclePublisher<psbmpc_interfaces::msg::Trajectory4>::SharedPtr trajectory_publisher;
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<psbmpc_interfaces::msg::Trajectory4>> trajectory_publisher;
 
   rclcpp::TimerBase::SharedPtr timer;
 
@@ -56,7 +56,7 @@ private:
   const std::string waypoints_topic_name;
   const std::string reference_topic_name;
   const std::string map_data_filename;
-  const Eigen::Vector2d map_origin;
+  const std::vector<double> map_origin;
 
   //==================================================
   // PODs, data structures and classes for use by the node
@@ -77,13 +77,19 @@ private:
   PSBMPC_LIB::Obstacle_Manager obstacle_manager;
   PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
 
-  void dynamic_obstacle_callback(const psbmpc_interfaces::msg::DynamicObstacleEstimates::SharedPtr &msg);
+  std::chrono::milliseconds deadline_duration;
+  uint32_t n_missed_deadlines_sub;
+  uint32_t n_missed_deadlines_pub;
 
-  void state_callback(const nav_msgs::msg::Odometry::SharedPtr &msg);
+  void create_dynamic_obstacle_subscription();
 
-  void waypoints_callback(const psbmpc_interfaces::msg::Trajectory2::SharedPtr &msg);
+  void create_state_subscription();
 
-  void publish_reference_trajectory();
+  void create_waypoints_subscription();
+
+  void create_reference_trajectory_publisher();
+
+  void create_publisher_timer_callback();
 
   rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
   on_configure(const rclcpp_lifecycle::State &previous_state) override;

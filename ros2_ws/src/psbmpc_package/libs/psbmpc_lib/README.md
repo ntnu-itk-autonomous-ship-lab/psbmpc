@@ -9,6 +9,7 @@ Note that the amount of memory you need on your GPU to run the algorithm will in
 
 ## Dependencies
 
+- C++17
 - CMake > 3.10 for building 
 - Matlab C API for the debugging and plotting functionality. (Follow setup instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
 - Eigen3. Eigen is still experimental regarding CUDA compatibility. I have suppressed the warnings from eigen regarding CUDA-stuff, but hope that one day Eigen will be fully functionable and warning-free on the GPU. Not tested with other Eigen versions.
@@ -22,7 +23,9 @@ Note that the amount of memory you need on your GPU to run the algorithm will in
 
 <img src="psbmpc_lib_structure.png" width="400"> 
 
-Thus, there is a main library namespace **PSBMPC_LIB** which contains all the functionality. The namespace is further nested into **CPU** and **GPU** for versions of classes (with the same name, e.g. PSBMPC, Ownship,..) that have different implementation for the CPU and GPU version of the MPC, respectively. Common classes/functionality exists under the library namespace, such as a Kalman Filter, SBMPC, Mean-Reverting Ornstein-Uhlenbeck process, etc. 
+Thus, there is a main library namespace **PSBMPC_LIB** which contains all the functionality. The namespace is further nested into **CPU** and **GPU** for versions of classes (with the same name, e.g. PSBMPC, Ownship,..) that have different implementation for the CPU and GPU version of the MPC, respectively. Common classes/functionality exists under the library namespace, such as a Kalman Filter, SBMPC, Mean-Reverting Ornstein-Uhlenbeck process, etc.  <br>
+
+As Matlab is used for debugging and visualization, there are sections of commented out code in e.g. psbmpc.cpp that has the "title" "MATLAB PLOTTING FOR DEBUGGING". This code can be commented in to use to plot the different cost terms in the MPC, visualize the environment, plot the current own-ship trajectory, predicted obstacle trajectories, and plot the collision probabilities associated with them.
 
 The main modules (classes/structs) are explained below: </p>
 
@@ -63,8 +66,8 @@ Note that the amount of control behaviours (function of the amount of maneuvers 
 ### MPC Cost
 <p> Class responsible for evaluating the cost function in the PSBMPC, SBMPC and obstacle SBMPC. One version each, meant for the host/device side.  </p>
 
-## CB Cost Functor (1, 2 & 3)
-<p> Special case C++ class/struct which has overloaded the **operator(..)**. The functors 1, 2 and 3 are used to evaluate the cost of following one particular control behaviour. The functors are ported to the gpu, where each thread will run the **operator(..)** to evaluate the cost of a certain control behaviour. The first **CB_Cost_Functor_1** predicts the own-ship trajectory for all control behaviours, and calculates the path related costs. After this, the second **CB_Cost_Functor_2** calculates the grounding cost wrt one static obstacle. The third **CB_Cost_Functor_3** calculates parts of the dynamic obstacle costs. The total cost of each control behaviour is then stitched together on the host side in the **find_optimal_control_behaviour()** function.   </p>
+## CB Cost Functor (1 & 2)
+<p> Special case C++ class/struct which has overloaded the **operator(..)**. The functors 1 and 2 are used to evaluate the cost of following one particular control behaviour. The functors are ported to the gpu, where each thread will run the **operator(..)** to evaluate the cost of a certain control behaviour. The first **CB_Cost_Functor_1** predicts the own-ship trajectory for all control behaviours, and calculates the path related costs. After this, the second **CB_Cost_Functor_2** calculates the cost for one control behaviour wrt one static obstacle OR a dynamic obstacle behaving as in a certain prediction scenario. The total cost of each control behaviour is then stitched together on the host side in the **find_optimal_control_behaviour()** function.   </p>
 
 ### CB Cost Functor Structures 
 <p> Defines data for GPU threads that is needed in the **CB_Cost_Functor**, which needs to be sent from the host to the device. A subset of the PSB-MPC parameters are defined in a struct here, and also a struct which gathers diverse types of data for use on the GPU. </p>
@@ -161,4 +164,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 
 
-<p> Trym Tengesdal, 27. May 2021.  </p>
+<p> Trym Tengesdal, 3. August 2021.  </p>
