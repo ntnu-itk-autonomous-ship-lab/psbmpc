@@ -13,8 +13,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   #add_compile_options(-fno-omit-frame-pointer -g)
 endif()
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(psbmpc_interfaces REQUIRED)
 find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
@@ -22,6 +27,9 @@ find_package(Eigen3 REQUIRED)
 
 set(dependencies 
   rclcpp
+  rclcpp_components
+  rclcpp_lifecycle
+  lifecycle_msgs
   nav_msgs
   psbmpc_interfaces
   Matlab
@@ -43,9 +51,15 @@ target_include_directories(psbmpc_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+#rclcpp_components_register_nodes(psbmpc_node "PSB-MPC")
+
+#ament_export_targets(export_psbmpc_node HAS_LIBRARY_TARGET)
+#ament_export_dependencies(${dependencies})
+
 install(TARGETS 
   psbmpc_node
-  DESTINATION lib/${PROJECT_NAME})
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

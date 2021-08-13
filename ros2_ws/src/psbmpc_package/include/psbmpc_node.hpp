@@ -32,7 +32,10 @@
 #include "psbmpc_interfaces/msg/offset.hpp"
 #include "psbmpc_interfaces/msg/dynamic_obstacle_estimates.hpp"
 
-#include "gpu/psbmpc_gpu.cuh"
+#include "cpu/psbmpc_cpu.hpp"
+#if USE_GPU_PSBMPC
+  #include "gpu/psbmpc_gpu.cuh"
+#endif
 
 #include <string>
 #include <memory>
@@ -43,20 +46,32 @@ private:
   //==================================================
   // Subscribers and publishers
   //==================================================
-  std::shared_ptr<rclcpp::Subscription<psbmpc_interfaces::msg::DynamicObstacleEstimates>> dynamic_obstacle_subscription;
-  std::shared_ptr<rclcpp::Subscription<nav_msgs::msg::Odometry>> state_subscription;
-  std::shared_ptr<rclcpp::Subscription<psbmpc_interfaces::msg::Trajectory2>> waypoints_subscription;
+  rclcpp::Subscription<psbmpc_interfaces::msg::DynamicObstacleEstimates>::SharedPtr dynamic_obstacle_subscription;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr state_subscription;
+  rclcpp::Subscription<psbmpc_interfaces::msg::Trajectory2>::SharedPtr waypoints_subscription;
   //rclcpp_lifecycle::LifecyclePublisher<psbmpc_interfaces::msg::Offset>::SharedPtr trajectory_publisher;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<psbmpc_interfaces::msg::Trajectory4>> trajectory_publisher;
+  rclcpp_lifecycle::LifecyclePublisher<psbmpc_interfaces::msg::Trajectory4>::SharedPtr trajectory_publisher;
 
   rclcpp::TimerBase::SharedPtr timer;
 
+  const std::string map_data_filename;
+  const std::vector<double> map_origin;
+
+  bool enable_topic_stats;
+  const std::string topic_stats_topic_name;
   const std::string dynamic_obstacle_topic_name;
   const std::string state_topic_name;
   const std::string waypoints_topic_name;
   const std::string reference_topic_name;
-  const std::string map_data_filename;
-  const std::vector<double> map_origin;
+
+  std::chrono::milliseconds topic_stats_publish_period;
+  std::chrono::milliseconds deadline_duration;
+  std::chrono::milliseconds trajectory_publish_period;  
+
+  uint32_t n_missed_deadlines_do_sub;
+  uint32_t n_missed_deadlines_state_sub;
+  uint32_t n_missed_deadlines_wps_sub;
+  uint32_t n_missed_deadlines_pub;
 
   //==================================================
   // PODs, data structures and classes for use by the node
@@ -72,39 +87,40 @@ private:
   Eigen::MatrixXd obstacle_states, obstacle_covariances;
   std::vector<polygon_2D> relevant_polygons;
 
-  PSBMPC_LIB::GPU::PSBMPC psbmpc;
+  #if USE_GPU_PSBMPC
+    PSBMPC_LIB::GPU::PSBMPC psbmpc;
+  #else
+    PSBMPC_LIB::CPU::PSBMPC psbmpc;
+  #endif
   PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager;
   PSBMPC_LIB::Obstacle_Manager obstacle_manager;
   PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
+  //====================================================
 
-  std::chrono::milliseconds deadline_duration;
-  uint32_t n_missed_deadlines_sub;
-  uint32_t n_missed_deadlines_pub;
+  void dynamic_obstacle_callback(const psbmpc_interfaces::msg::DynamicObstacleEstimates::SharedPtr msg);
 
-  void create_dynamic_obstacle_subscription();
+  void state_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
 
-  void create_state_subscription();
+  void waypoints_callback(const psbmpc_interfaces::msg::Trajectory2::SharedPtr msg);
 
-  void create_waypoints_subscription();
+  void publish_reference_trajectory();
 
-  void create_reference_trajectory_publisher();
-
-  void create_publisher_timer_callback();
+  void log_psbmpc_information();
 
   rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-  on_configure(const rclcpp_lifecycle::State &previous_state) override;
+  on_configure(const rclcpp_lifecycle::State &) override;
 
   rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-  on_activate(const rclcpp_lifecycle::State &previous_state) override;
+  on_activate(const rclcpp_lifecycle::State &) override;
 
   rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-  on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
+  on_deactivate(const rclcpp_lifecycle::State &) override;
 
   rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-  on_cleanup(const rclcpp_lifecycle::State &previous_state) override;
+  on_cleanup(const rclcpp_lifecycle::State &) override;
 
   rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
-  on_shutdown(const rclcpp_lifecycle::State &previous_state) override;
+  on_shutdown(const rclcpp_lifecycle::State &) override;
 
 public:
 
