@@ -39,19 +39,29 @@ namespace CPU
 *  Modified :
 *****************************************************************************************/
 PSBMPC::PSBMPC()
+	: u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12)
 {
 	offset_sequence_counter.resize(2 * pars.n_M);
 	offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
 
-	u_opt_last = 1.0;
-	chi_opt_last = 0.0;
-
-	min_cost = 1e12;
-
-	cpe = CPE(pars.cpe_method, pars.dt);
+	cpe = CPE(pars.cpe_method);
 
 	mpc_cost = MPC_Cost<PSBMPC_Parameters>(pars);
+
+	use_joint_prediction = false;
+}
+
+PSBMPC::PSBMPC(
+	const Ownship &ownship, 				// In: Own-ship with specific parameter set
+	const CPE &cpe, 						// In: CPE with specific parameter set
+	const PSBMPC_Parameters &pars 			// In: Parameter object to initialize the PSB-MPC
+	) :
+	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(ownship), cpe(cpe), pars(pars), mpc_cost(pars)
+{
+	offset_sequence_counter.resize(2 * pars.n_M);
+	offset_sequence.resize(2 * pars.n_M);
+	maneuver_times.resize(pars.n_M);
 
 	use_joint_prediction = false;
 }

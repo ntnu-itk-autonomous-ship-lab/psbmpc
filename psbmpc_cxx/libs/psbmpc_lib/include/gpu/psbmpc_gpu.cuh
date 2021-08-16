@@ -184,7 +184,7 @@ namespace PSBMPC_LIB
 			CPU::MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 			PSBMPC();
-			PSBMPC(const std::string &config);
+			PSBMPC(const Ownship &ownship, const CPU::CPE &cpe, const PSBMPC_Parameters &pars); 
 			PSBMPC(const PSBMPC &other);
 
 			~PSBMPC();

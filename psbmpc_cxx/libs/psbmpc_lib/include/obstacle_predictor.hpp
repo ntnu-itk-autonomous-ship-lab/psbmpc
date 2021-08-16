@@ -507,6 +507,34 @@ namespace PSBMPC_LIB
 			}
 		}
 
+		Obstacle_Predictor(
+			const double r_ct, 				// In: Cross-track spacing between obstacle trajectories
+			const double sigma_x, 			// In: MROU wiener process noise parameters
+			const double sigma_xy, 
+			const double sigma_y, 
+			const double gamma_x, 			// In: MROU reversion strength parameters
+			const double gamma_y, 
+			const PSBMPC_Parameters &pars 	// In: Parameter class for the PSB-MPC
+		) 
+			: n_ps_MROU(pars.n_r), n_ps_LOS(pars.n_r), r_ct(r_ct), mrou(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y)
+		{
+			if (n_ps_MROU == 3)
+			{
+				course_changes.resize(1);
+				course_changes << 45 * DEG2RAD;
+			}
+			else if (n_ps_MROU == 5)
+			{
+				course_changes.resize(2);
+				course_changes << 45 * DEG2RAD, 90 * DEG2RAD;
+			}
+			else
+			{
+				course_changes.resize(3);
+				course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
+			}
+		}
+
 		int get_n_ps_i(const int i) const { return n_ps[i]; }
 
 		int get_n_ps_LOS() const { return n_ps_LOS; }
