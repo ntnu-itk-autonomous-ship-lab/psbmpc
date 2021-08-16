@@ -2,7 +2,7 @@
 *
 *  File name : utilities_gpu.cuh
 *
-*  Function  : Header file for all-purpose math functions which are used by multiple 
+*  Function  : Header file for all-purpose math functions which can/are used by multiple 
 *			   device library files. Thus, do NOT add a function here if it belongs to one 
 *			   distinct class. Overloads for tml type matrices.
 *  
