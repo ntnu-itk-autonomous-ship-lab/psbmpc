@@ -37,8 +37,8 @@ PSBMPC_Node::PSBMPC_Node(
   const rclcpp::NodeOptions &options                    // In: 
   )
   : LifecycleNode(node_name, options), 
-  map_data_filename(declare_parameter("map_data_filename").get<std::string>()),
-  map_origin(declare_parameter("map_origin").get<std::vector<double>>()),
+  map_data_filename(declare_parameter("grounding_hazard_manager.map_data_filename").get<std::string>()),
+  map_origin(declare_parameter("grounding_hazard_manager.map_origin").get<std::vector<double>>()),
   enable_topic_stats(declare_parameter("enable_topic_stats").get<bool>()),
   topic_stats_topic_name{declare_parameter("topic_stats_topic_name").get<std::string>()},
   dynamic_obstacle_topic_name(declare_parameter("dynamic_obstacle_topic_name").get<std::string>()),
@@ -52,13 +52,49 @@ PSBMPC_Node::PSBMPC_Node(
   n_missed_deadlines_state_sub(0U),
   n_missed_deadlines_wps_sub(0U),
   n_missed_deadlines_pub(0U),
-  #if USE_GPU_PSBMPC
-    psbmpc(PSBMPC_LIB::GPU::PSBMPC())
-  #else
-    psbmpc(PSBMPC_LIB::CPU::PSBMPC())
-  #endif
-  , 
+  pars(
+    declare_parameter("psbmpc.u_offsets").get<std::vector<std::vector<double>>(),
+    declare_parameter("psbmpc.chi_offsets").get<std::vector<std::vector<double>>(),
+    declare_parameter("psbmpc.cpe_method").get<int>(),
+    declare_parameter("psbmpc.prediction_method").get<int>(),
+    declare_parameter("psbmpc.guidance_method").get<int>(),
+    declare_parameter("psbmpc.ipars").get<std::vector<int>>(),
+    declare_parameter("psbmpc.dpars").get<std::vector<double>>()),
+  #if (OWNSHIP_TYPE == 0)
+    ownship(
+      declare_parameter("ownship.l").get<double>(),
+      declare_parameter("ownship.w").get<double>(), 
+      declare_parameter("ownship.T_U").get<double>(), 
+      declare_parameter("ownship.T_chi").get<double>(), 
+      declare_parameter("ownship.R_a").get<double>(), 
+      declare_parameter("ownship.LOS_LD").get<double>(), 
+      declare_parameter("ownship.LOS_K_i").get<double>())
+  #endif,
+  cpe(
+    declare_parameter("cpe.n_CE").get<int>(),
+    declare_parameter("cpe.n_MCSKF").get<int>(),
+    declare_parameter("cpe.alpha_n").get<double>(),
+    declare_parameter("cpe.gate").get<double>(),
+    declare_parameter("cpe.rho").get<double>(),
+    declare_parameter("cpe.max_it").get<double>(),
+    declare_parameter("cpe.r").get<double>(),
+    declare_parameter("cpe.q").get<double>(),
+    declare_parameter("psbmpc.cpe_method").get<int>()),
+  psbmpc(pars, ownship, cpe), 
+  obstacle_manager(
+    declare_parameter("obstacle_manager.T_lost_limit").get<double>(), 
+    declare_parameter("obstacle_manager.T_tracked_limit").get<double>(), 
+    declare_parameter("obstacle_manager.obstacle_filter_on").get<bool>()),
+  obstacle_predictor(
+    declare_parameter("obstacle_predictor.r_ct").get<double>(),
+    declare_parameter("obstacle_predictor.sigma_x").get<double>(),
+    declare_parameter("obstacle_predictor.sigma_xy").get<double>(),
+    declare_parameter("obstacle_predictor.sigma_y").get<double>(),
+    declare_parameter("obstacle_predictor.gamma_x").get<double>(),
+    declare_parameter("obstacle_predictor.gamma_y").get<double>(),
+    pars),
   grounding_hazard_manager(map_data_filename, map_origin, psbmpc)
+  
 {
   //=======================================================================
   // Creating dynamic obstacle subscriber
@@ -272,6 +308,9 @@ void PSBMPC_Node::publish_reference_trajectory()
 
   obstacle_predictor(obstacle_manager.get_data(), ownship_state, psbmpc);
 
+  ownship.determine_active_waypoint_segment(waypoints, ownship_state);
+
+  ownship.update_guidance_references(u_d, chi_d, waypoints, ownship_state, 0.0, PSBMPC_LIB::LOS);
   auto start = std::chrono::system_clock::now();		
 
   psbmpc.calculate_optimal_offsets(
@@ -290,7 +329,7 @@ void PSBMPC_Node::publish_reference_trajectory()
   auto end = std::chrono::system_clock::now();
   auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
 
-  double mean_t = elapsed.count();
+  mean_t = elapsed.count();
 
   //std::cout << "PSBMPC time usage: " << mean_t << " seconds" << std::endl;
 
@@ -326,7 +365,20 @@ void PSBMPC_Node::publish_reference_trajectory()
 *****************************************************************************************/
 void PSBMPC_Node::log_psbmpc_information()
 {
+  #if OWNSHIP_TYPE
+    RCLCPP_INFO(get_logger(), "Input Own-ship state = %lf, %lf, %lf, %lf, %lf, %lf", ownship_state(0), ownship_state(1), ownship_state(2),
+      ownship_state(3), ownship_state(4), ownship_state(5));
+  #else
+    RCLCPP_INFO(get_logger(), "Input Own-ship state = %lf, %lf, %lf, %lf", ownship_state(0), ownship_state(1), ownship_state(2), ownship_state(3));
+  #endif
+
+  RCLCPP_INFO(get_logger(), "Optimal offsets = %lf, %lf", u_opt, chi_opt);
+  RCLCPP_INFO(get_logger(), "PSB-MPC run-time = %lf", mean_t);
   
+  RCLCPP_INFO(get_logger(), "DO subscription missed deadlines = %lu", n_missed_deadlines_do_sub);
+  RCLCPP_INFO(get_logger(), "Own-ship state subscription missed deadlines = %lu", n_missed_deadlines_state_sub);
+  RCLCPP_INFO(get_logger(), "Waypoints subscription missed deadlines = %lu", n_missed_deadlines_wps_sub);
+  RCLCPP_INFO(get_logger(), "Trajectory publisher missed deadlines = %lu", n_missed_deadlines_pub);
 }
 
 /****************************************************************************************

@@ -77,7 +77,7 @@ private:
   // PODs, data structures and classes for use by the node
   //==================================================
   double ownship_length;
-  double u_opt, chi_opt;
+  double u_opt, chi_opt, mean_t;
   Eigen::Matrix<double, 2, -1> predicted_trajectory;
 
   double u_d, chi_d;
@@ -87,14 +87,18 @@ private:
   Eigen::MatrixXd obstacle_states, obstacle_covariances;
   std::vector<polygon_2D> relevant_polygons;
 
+  PSBMPC_LIB::PSBMPC_Parameters pars;
+  PSBMPC_LIB::CPU::Ownship ownship;
+  PSBMPC_LIB::CPU::CPE cpe;
   #if USE_GPU_PSBMPC
     PSBMPC_LIB::GPU::PSBMPC psbmpc;
   #else
     PSBMPC_LIB::CPU::PSBMPC psbmpc;
   #endif
-  PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager;
+  
   PSBMPC_LIB::Obstacle_Manager obstacle_manager;
   PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
+  PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager;
   //====================================================
 
   void dynamic_obstacle_callback(const psbmpc_interfaces::msg::DynamicObstacleEstimates::SharedPtr msg);
