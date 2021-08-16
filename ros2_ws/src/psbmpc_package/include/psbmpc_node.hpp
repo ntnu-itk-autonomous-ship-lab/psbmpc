@@ -88,11 +88,12 @@ private:
   std::vector<polygon_2D> relevant_polygons;
 
   PSBMPC_LIB::PSBMPC_Parameters pars;
-  PSBMPC_LIB::CPU::Ownship ownship;
   PSBMPC_LIB::CPU::CPE cpe;
   #if USE_GPU_PSBMPC
+    PSBMPC_LIB::GPU::Ownship ownship;
     PSBMPC_LIB::GPU::PSBMPC psbmpc;
   #else
+    PSBMPC_LIB::CPU::Ownship ownship;
     PSBMPC_LIB::CPU::PSBMPC psbmpc;
   #endif
   

@@ -64,7 +64,7 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ Kinematic_Ship();
 
-			__host__ __device__ Kinematic_Ship(const float T_U, const float  T_chi, const float R_a, const float LOS_LD, const float LOS_K_i);
+			__host__ __device__ Kinematic_Ship(const float l, const float w, const float T_U, const float  T_chi, const float R_a, const float LOS_LD, const float LOS_K_i);
 
 			__host__ __device__ float get_length() const { return l; }
 			

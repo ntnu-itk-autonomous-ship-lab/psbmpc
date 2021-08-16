@@ -34,7 +34,7 @@ using namespace std::chrono_literals;
 *****************************************************************************************/
 PSBMPC_Node::PSBMPC_Node(
   const std::string &node_name,                         // In: Self explanatory
-  const rclcpp::NodeOptions &options                    // In: 
+  const rclcpp::NodeOptions &options                    // In: Configuration options for the node
   )
   : LifecycleNode(node_name, options), 
   map_data_filename(declare_parameter("grounding_hazard_manager.map_data_filename").get<std::string>()),
@@ -55,11 +55,21 @@ PSBMPC_Node::PSBMPC_Node(
   pars(
     PSBMPC_LIB::CPU::parse_VVD(declare_parameter("psbmpc.u_offsets").get<std::string>()),
     PSBMPC_LIB::CPU::parse_VVD(declare_parameter("psbmpc.chi_offsets").get<std::string>()),
-    declare_parameter("psbmpc.cpe_method").get<int>(),
-    declare_parameter("psbmpc.prediction_method").get<int>(),
-    declare_parameter("psbmpc.guidance_method").get<int>(),
+    static_cast<PSBMPC_LIB::CPE_Method>(declare_parameter("psbmpc.cpe_method").get<int>()),
+    static_cast<PSBMPC_LIB::Prediction_Method>(declare_parameter("psbmpc.prediction_method").get<int>()),
+    static_cast<PSBMPC_LIB::Guidance_Method>(declare_parameter("psbmpc.guidance_method").get<int>()),
     declare_parameter("psbmpc.ipars").get<std::vector<int>>(),
     declare_parameter("psbmpc.dpars").get<std::vector<double>>()),
+  cpe(
+    static_cast<PSBMPC_LIB::CPE_Method>(declare_parameter("psbmpc.cpe_method").get<int>()),
+    declare_parameter("cpe.n_CE").get<int>(),
+    declare_parameter("cpe.n_MCSKF").get<int>(),
+    declare_parameter("cpe.alpha_n").get<double>(),
+    declare_parameter("cpe.gate").get<double>(),
+    declare_parameter("cpe.rho").get<double>(),
+    declare_parameter("cpe.max_it").get<double>(),
+    declare_parameter("cpe.q").get<double>(),
+    declare_parameter("cpe.r").get<double>()),
   #if (OWNSHIP_TYPE == 0)
     ownship(
       declare_parameter("ownship.l").get<double>(),
@@ -70,16 +80,6 @@ PSBMPC_Node::PSBMPC_Node(
       declare_parameter("ownship.LOS_LD").get<double>(), 
       declare_parameter("ownship.LOS_K_i").get<double>())
   #endif,
-  cpe(
-    declare_parameter("cpe.n_CE").get<int>(),
-    declare_parameter("cpe.n_MCSKF").get<int>(),
-    declare_parameter("cpe.alpha_n").get<double>(),
-    declare_parameter("cpe.gate").get<double>(),
-    declare_parameter("cpe.rho").get<double>(),
-    declare_parameter("cpe.max_it").get<double>(),
-    declare_parameter("cpe.r").get<double>(),
-    declare_parameter("cpe.q").get<double>(),
-    declare_parameter("psbmpc.cpe_method").get<int>()),
   psbmpc(pars, ownship, cpe), 
   obstacle_manager(
     declare_parameter("obstacle_manager.T_lost_limit").get<double>(), 
@@ -94,7 +94,6 @@ PSBMPC_Node::PSBMPC_Node(
     declare_parameter("obstacle_predictor.gamma_y").get<double>(),
     pars),
   grounding_hazard_manager(map_data_filename, map_origin, psbmpc)
-  
 {
   //=======================================================================
   // Creating dynamic obstacle subscriber

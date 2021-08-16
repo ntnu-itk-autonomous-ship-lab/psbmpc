@@ -78,6 +78,3 @@
 // Indices for offset/control behaviour parameters of type std::vector/Eigen::MatrixXd
 #define i_opar_u_offsets			0
 #define i_opar_chi_offsets			1
-
-// Indices for offset/control behaviour parameters of type Eigen::VectorXd
-#define i_evpar_obstacle_course_changes 0

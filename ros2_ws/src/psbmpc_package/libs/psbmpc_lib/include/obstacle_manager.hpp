@@ -375,6 +375,8 @@ namespace PSBMPC_LIB
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 		Obstacle_Manager();
+		Obstacle_Manager(const double T_lost_limit, const double T_tracked_limit, const bool obstacle_filter_on)
+			: T_lost_limit(T_lost_limit), T_tracked_limit(T_tracked_limit), obstacle_filter_on(obstacle_filter_on) {}
 
 		Obstacle_Data<Tracked_Obstacle>& get_data() { return data; }
 

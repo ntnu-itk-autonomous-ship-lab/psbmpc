@@ -52,18 +52,28 @@ namespace GPU
 *****************************************************************************************/
 PSBMPC::PSBMPC() 
 	: 
-	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), 
-	pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), 
-	polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(Ownship()), pars(PSBMPC_Parameters()), mpc_cost(pars),
+	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
+	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
 	
 {
 	opt_offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
 
-	cpe_host = CPU::CPE(pars.cpe_method, pars.dt);
+	cpe_host = CPU::CPE(pars.cpe_method);
 
-	mpc_cost = CPU::MPC_Cost<PSBMPC_Parameters>(pars);
+	preallocate_device_data();
+}
 
+PSBMPC::PSBMPC(
+	const Ownship &ownship, 				// In: Own-ship with specific parameter set
+	const CPU::CPE &cpe, 					// In: CPE with specific parameter set
+	const PSBMPC_Parameters &pars 			// In: Parameter object to initialize the PSB-MPC
+	) :
+	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(ownship), cpe_host(cpe), pars(pars), mpc_cost(pars), 
+	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
+	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+{
 	preallocate_device_data();
 }
 
@@ -418,7 +428,7 @@ void PSBMPC::preallocate_device_data()
 	cuda_check_errors("CudaMalloc of Ownship failed.");
 
 	// Allocate for each thread that considers dynamic obstacles a Collision Probability Estimator
-	CPE temp_cpe(pars.cpe_method, pars.dt);
+	CPE temp_cpe(pars.cpe_method);
 	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_OBST * MAX_N_PS * sizeof(CPE));
     cuda_check_errors("CudaMalloc of CPE failed.");
 

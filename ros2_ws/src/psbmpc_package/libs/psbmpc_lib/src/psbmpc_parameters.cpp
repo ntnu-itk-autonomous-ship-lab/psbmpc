@@ -116,21 +116,6 @@ std::vector<Eigen::VectorXd> PSBMPC_Parameters::get_opar(
 	}
 }
 
-Eigen::VectorXd PSBMPC_Parameters::get_evpar(
-	const int index															// In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
-	) const
-{
-	switch (index){
-		case i_evpar_obstacle_course_changes			: return obstacle_course_changes;
-		default : 
-		{ 
-			// Throw invalid index
-			Eigen::VectorXd bs;
-			return bs; 
-		}
-	}
-}
-
 /****************************************************************************************
 *  Name     : set_par
 *  Function : Sets parameter with index <index> to value <value>, given that it is inside
@@ -264,27 +249,6 @@ void PSBMPC_Parameters::set_par(
 	}
 }
 
-void PSBMPC_Parameters::set_par(
-	const int index, 														// In: Index of parameter to set
-	const Eigen::VectorXd &value 											// In: Value to set for parameter
-	)
-{
-	if (value.size() > 0)
-	{	
-		switch(index)
-		{
-			case i_evpar_obstacle_course_changes 		: obstacle_course_changes = value; break;
-			default : 
-				// Throw invalid index
-				break;
-		}
-	}
-	else
-	{
-		// Throw invalid par value
-	}
-}
-
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
@@ -335,7 +299,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 
 /****************************************************************************************
 *  Name     : initialize_pars
-*  Function : Sets initial values for PSBMPC tuning parameters
+*  Function : Sets initial values for PSBMPC tuning parameters, two overloads.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -405,9 +369,6 @@ void PSBMPC_Parameters::initialize_pars()
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
 	}
 
-	obstacle_course_changes.resize(3);
-	obstacle_course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
-
 	cpe_method = CE;
 	prediction_method = ERK1;
 	guidance_method = LOS;
@@ -453,6 +414,86 @@ void PSBMPC_Parameters::initialize_pars()
 	epsilon_rdp = 2.0;
 
 	obstacle_colav_on = false;
+}
+
+void PSBMPC_Parameters::initialize_pars(
+	const std::vector<std::vector<double>> &u_offsets, 		// In: Vector of vectors of surge modifications
+	const std::vector<std::vector<double>> &chi_offsets, 	// In: Vector of vectors of course modifications
+	const CPE_Method cpe_method,							// In: Collision probability estimator type to use
+	const Prediction_Method prediction_method,				// In: Prediction type to use
+	const Guidance_Method guidance_method,					// In: Guidance type to use
+	const std::vector<int> &ipars, 							// In: Vector of integer parameters
+	const std::vector<double> &dpars						// In: Vector of double parameters
+	)
+{
+	n_M = ipars[i_ipar_n_M];
+	n_r = ipars[i_ipar_n_r];
+	assert(n_M == u_offsets.size() && n_M == chi_offsets.size());
+
+	p_step = ipars[i_ipar_p_step];
+	p_step_cpe = ipars[i_ipar_p_step_cpe];
+	p_step_grounding = ipars[i_ipar_p_step_grounding];
+
+	this->u_offsets.resize(n_M); this->chi_offsets.resize(n_M);
+	for (int M = 0; M < n_M; M++)
+	{	
+		assert(u_offsets[M].size() > 0 && chi_offsets[M].size() > 0);
+		this->u_offsets[M].resize(u_offsets[M].size());
+		for (size_t uo = 0; uo < u_offsets[M].size(); uo++)
+		{
+			this->u_offsets[M](uo) = u_offsets[M][uo];
+		}
+		this->chi_offsets[M].resize(chi_offsets[M].size());
+		for (size_t co = 0; co < chi_offsets[M].size(); co++)
+		{
+			// Input pars for chi_offsets are in degrees, so must convert to radians
+			this->chi_offsets[M](co) = chi_offsets[M][co] * DEG2RAD;
+		}
+	}
+
+	this->cpe_method = cpe_method;
+	this->prediction_method = prediction_method;
+	this->guidance_method = guidance_method;
+
+	T = dpars[i_dpar_T]; 
+	dt = dpars[i_dpar_dt]; 
+	t_ts = dpars[i_dpar_t_ts];
+
+	d_safe = dpars[i_dpar_d_safe]; 
+	d_close = dpars[i_dpar_d_close];
+	d_init = dpars[i_dpar_d_init];
+	d_so_relevant = dpars[i_dpar_d_so_relevant];
+
+	K_coll = dpars[i_dpar_K_coll];
+
+	// Input pars for phi_AH - CR are in degrees, so must convert to radians
+	phi_AH = dpars[i_dpar_phi_AH] * DEG2RAD;
+	phi_OT = dpars[i_dpar_phi_OT] * DEG2RAD;
+	phi_HO = dpars[i_dpar_phi_HO] * DEG2RAD;
+	phi_CR = dpars[i_dpar_phi_CR] * DEG2RAD;
+
+	kappa = dpars[i_dpar_kappa];
+	kappa_TC = dpars[i_dpar_kappa_TC];
+
+	K_u = dpars[i_dpar_K_u];
+	K_du = dpars[i_dpar_K_du];
+
+	K_chi_strb = dpars[i_dpar_K_chi_strb];
+	K_dchi_strb = dpars[i_dpar_K_dchi_strb];
+	K_chi_port = dpars[i_dpar_K_chi_port];
+	K_dchi_port = dpars[i_dpar_K_dchi_port];
+
+	K_sgn = dpars[i_dpar_K_sgn];
+	T_sgn = dpars[i_dpar_T_sgn];
+
+	G_1 = dpars[i_dpar_G_1];
+	G_2 = dpars[i_dpar_G_2];
+	G_2 = dpars[i_dpar_G_3];
+	G_2 = dpars[i_dpar_G_4];
+
+	epsilon_rdp = dpars[i_dpar_epsilon_rdp];
+
+	obstacle_colav_on = false; // default
 }
 
 }

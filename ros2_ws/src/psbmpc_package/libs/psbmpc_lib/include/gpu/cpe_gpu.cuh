@@ -161,7 +161,7 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ CPE() {}
 
-			__host__ __device__ CPE(const CPE_Method cpe_method, const float dt);
+			__host__ __device__ CPE(const CPE_Method cpe_method);
 
 			__host__ __device__ CPE(const CPE &cpe);
 

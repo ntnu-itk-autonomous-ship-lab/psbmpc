@@ -49,7 +49,9 @@ namespace PSBMPC_LIB
 
 			Kinematic_Ship();
 
-			Kinematic_Ship(const double T_U, const double  T_chi, const double R_a, const double LOS_LD, const double LOS_K_i);
+			//Kinematic_Ship(const Kinematic_Ship &other) = default;
+
+			Kinematic_Ship(const double l, const double w, const double T_U, const double  T_chi, const double R_a, const double LOS_LD, const double LOS_K_i);
 
 			double get_length() const { return l; }
 

@@ -55,8 +55,8 @@ namespace PSBMPC_LIB
 
 			//====================================
 			// CE-method parameters, internal states and temporaries
-			int max_it;
 			double sigma_inject, alpha_n, gate, rho;
+			int max_it;
 			
 			bool converged_last;
 
@@ -176,8 +176,16 @@ namespace PSBMPC_LIB
 		public:
 
 			CPE() {}
-
-			CPE(const CPE_Method cpe_method, const double dt);
+			CPE(const CPE_Method cpe_method,
+				const int n_CE, 
+				const int n_MCSKF, 
+				const double alpha_n, 
+				const double gate, 
+				const double rho, 
+				const double max_it,
+				const double q,
+				const double r);
+			CPE(const CPE_Method cpe_method);
 
 			CPE(const CPE &other);
 
