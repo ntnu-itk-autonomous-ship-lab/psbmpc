@@ -340,7 +340,7 @@ int main(){
 	//thrust::device_vector<float> P_c_i_dvec(n_samples);
 	thrust::device_vector<TML::PDMatrix<float, 1, MAX_N_SAMPLES>*> P_c_i_dvec(1);
 
-	PSBMPC_LIB::GPU::CPE cpe(PSBMPC_LIB::CE, dt);
+	PSBMPC_LIB::GPU::CPE cpe(PSBMPC_LIB::CE);
 	PSBMPC_LIB::GPU::CPE *cpe_device_ptr;
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_p_device_ptr;
 	TML::PDMatrix<float, 4, MAX_N_SAMPLES> *xs_i_p_device_ptr;

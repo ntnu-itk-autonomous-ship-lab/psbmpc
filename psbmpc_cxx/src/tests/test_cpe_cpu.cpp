@@ -149,7 +149,7 @@ int main(){
 
 	Eigen::MatrixXd P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
 	Eigen::Matrix<double, 1, -1> P_c_i_temp(1, n_samples);
-	std::unique_ptr<PSBMPC_LIB::CPU::CPE> cpe(new PSBMPC_LIB::CPU::CPE(PSBMPC_LIB::CE, dt));
+	std::unique_ptr<PSBMPC_LIB::CPU::CPE> cpe(new PSBMPC_LIB::CPU::CPE(PSBMPC_LIB::CE));
 
 	//*****************************************************************************************************************
 	// Prediction

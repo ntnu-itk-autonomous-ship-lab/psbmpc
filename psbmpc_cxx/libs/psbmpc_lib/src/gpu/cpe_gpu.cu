@@ -35,8 +35,7 @@ namespace GPU
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ CPE::CPE(
-    const CPE_Method cpe_method,                                    // In: Method to be used
-    const float dt                                                 // In: Time step of calling function simulation environment
+    const CPE_Method cpe_method                                    // In: Method to be used
     ) :
     method(cpe_method)
 {
@@ -67,10 +66,10 @@ __host__ __device__ CPE::CPE(
     
     n_MCSKF = 500;
 
-    r = 0.001f;
     q = 8e-4f;
+    r = 0.001f;
 
-    dt_seg = dt;
+    dt_seg = 0.5f;
 
     d_safe = 50.0f;
 
