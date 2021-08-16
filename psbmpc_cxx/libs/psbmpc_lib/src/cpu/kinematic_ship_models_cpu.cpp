@@ -38,15 +38,21 @@ Kinematic_Ship::Kinematic_Ship()
 	l = 5.0; // milliAmpere dims
 	w = 3.0;
 	
-	T_U = 1.0f;
-	T_chi = 1.0f; 		// Ad hoc parameters, are very dependent on the ship type
+	T_U = 1.44;
+	T_chi = 0.92; 		// Ad hoc identified time constants for milliAmpere
+
+	/* l = 10.0;
+	w = 4.0;
+	
+	T_U = 10.0;
+	T_chi = 8.0; 		// Ad hoc time constants for a 10m long ship */
 
 	// Guidance parameters
 	e_int = 0.0;
-	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
-	R_a = 30.0; 			    // WP acceptance radius (20.0)
-	LOS_LD = 200.0; 			// LOS lookahead distance (100.0) 
-	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
+	e_int_max = 20 * M_PI / 180.0; 	// Maximum integral correction in LOS guidance
+	R_a = 5.0; 			   			// WP acceptance radius (5.0 for milliampere, 20.0 for "normal ship")
+	LOS_LD = 66.0; 					// LOS lookahead distance (66.0 for milliampere, 200.0 for "normal ship") 
+	LOS_K_i = 0.0; 			    	// LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
 		
@@ -63,6 +69,9 @@ Kinematic_Ship::Kinematic_Ship(
 {
 	l = 5; // milliAmpere dims
 	w = 3;
+
+	/* l = 10.0;
+	w = 4.0;*/
 
 	// Guidance parameters
 	e_int = 0;

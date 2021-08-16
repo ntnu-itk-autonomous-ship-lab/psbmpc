@@ -73,63 +73,51 @@ __device__ float CB_Cost_Functor_1::operator()(
 //=======================================================================================
 //  CB COST FUNCTOR 2 METHODS
 //=======================================================================================
-//=======================================================================================
-//  Name     : operator()
-//  Function : Predicts the trajectory of the ownship for a certain control behaviour,
-//			   and calculates the static obstacle and path related costs
-//  Author   : Trym Tengesdal
-//  Modified :
-//=======================================================================================
-__device__ float CB_Cost_Functor_2::operator()(
-	const thrust::tuple<const unsigned int, const unsigned int, const unsigned int> &input_tuple	// In: Tuple consisting of the index of the thread, control behaviour and static obstacle to consider
-	)
-{
-	max_h_so_j = 0.0f;
-
-	thread_index = thrust::get<0>(input_tuple);
-	cb_index = thrust::get<1>(input_tuple);
-	j = thrust::get<2>(input_tuple);
-
-	max_h_so_j = mpc_cost[thread_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons[j]);
-
-	return max_h_so_j; 
-}
-
-//=======================================================================================
-//  CB COST FUNCTOR 3 METHODS
-//=======================================================================================
-
 /****************************************************************************************
 *  Name     : operator()
-*  Function : Evaluates the cost of following the control
-*			  behaviour (a particular avoidance maneuver) given by the input tuple.
+*  Function : Evaluates partial static and dynamic obstacle cost terms when following 
+*			  the control behaviour given by the input tuple, in addition to determining
+*			  the COLREGS violation indicator in a certain scenario.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-__device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrust::tuple<
-	const unsigned int, 								// Thread ID
-	TML::PDMatrix<float, 2 * MAX_N_M, 1>, 				// Control behaviour considered
-	const unsigned int, 								// Control behaviour index
-	const unsigned int, 								// Obstacle i considered
-	const unsigned int> &input_tuple 					// Prediction scenario ps for the obstacle
+__device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(const thrust::tuple<
+	const int, 								// Thread index
+	TML::PDMatrix<float, 2 * MAX_N_M, 1>, 	// Control behaviour considered
+	const int, 								// Control behaviour index
+	const int, 								// Static obstacle j considered
+	const int, 								// Dynamic obstacle i considered
+	const int,								// Prediction scenario ps for the dynamic obstacle
+	const int> &input_tuple 				// CPE object index		
 	)
 {
-	max_cost_i_ps = 0.0f; mu_i_ps = 0.0f;
+	max_h_so_j = 0.0f; max_cost_i_ps = 0.0f; mu_i_ps = 0.0f;
 
-	//======================================================================================================================
-	// 1.0 : Setup. Size temporaries accordingly to input data, etc..
 	thread_index = thrust::get<0>(input_tuple);
 	offset_sequence = thrust::get<1>(input_tuple);
 	cb_index = thrust::get<2>(input_tuple);
-	i = thrust::get<3>(input_tuple);
-	ps = thrust::get<4>(input_tuple);
+	j = thrust::get<3>(input_tuple);
+	i = thrust::get<4>(input_tuple);
+	ps = thrust::get<5>(input_tuple);
+	cpe_index = thrust::get<6>(input_tuple);
+
+	// Check if the thread is supposed to calculated the grounding cost
+	if (j >= 0 || i == -1 || ps == -1)
+	{
+		max_h_so_j = mpc_cost[thread_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons[j]);
+
+		// Last two cost elements are dont care arguments for GPU threads only computing
+		// the partial static obstacle cost
+		return thrust::tuple<float, float, float>(max_h_so_j, -1.0f,  -1.0f);
+	}
+	// Else: Calculate the partial dynamic obstacle cost and COLREGS violation indicator
 	
 	n_samples = round(pars->T / pars->dt);
 
 	d_safe_i = 0.0; chi_m = 0.0; cost_k = 0.0;
 
-	// Seed collision probability estimator using the thread index
-	cpe[thread_index].seed_prng(thread_index);
+	// Seed collision probability estimator using the cpe index
+	cpe[cpe_index].seed_prng(cpe_index);
 
 	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
 	n_seg_samples = std::round(cpe[thread_index].get_segment_discretization_time() / pars->dt) + 1;
@@ -138,15 +126,11 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrus
 	xs_i_p_seg.resize(4, n_seg_samples);
 	P_i_p_seg.resize(16, n_seg_samples);
 
-	//======================================================================================================================
-	// 2 : Max cost calculation considering own-ship control behaviour <cb_index> and prediction scenario ps for obstacle i
 	d_safe_i = pars->d_safe + 0.5 * (fdata->ownship_length + obstacles[i].get_length());
 	//printf("d_safe = %.2f | d_safe_i = %.6f\n", pars->d_safe, d_safe_i);
 	v_os_prev.set_zero(); v_i_prev.set_zero();
 	for (int k = 0; k < n_samples; k += pars->p_step_cpe)
 	{	
-		//==========================================================================================
-		// 2.0 : Extract states and information relevant for cost evaluation at sample k. 
 		xs_p_seg.shift_columns_left();
 		xs_p_seg.set_col(n_seg_samples - 1, trajectory[cb_index].get_col(k));
 
@@ -158,7 +142,7 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrus
 
 		if (k == 0)
 		{
-			cpe[thread_index].initialize(
+			cpe[cpe_index].initialize(
 				xs_p_seg.get_col(n_seg_samples - 1), 
 				xs_i_p_seg.get_col(n_seg_samples - 1),  
 				d_safe_i);
@@ -183,8 +167,6 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrus
 			}
 		}
 
-		//==========================================================================================
-		// 2.1 : Estimate Collision probability at time k with obstacle i in prediction scenario ps
 		/* printf("k = %d | xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", k, xs_p_seg(0, n_seg_samples - 1), xs_p_seg(1, n_seg_samples - 1), xs_p_seg(2, n_seg_samples - 1), xs_p_seg(3, n_seg_samples - 1), xs_p_seg(4, n_seg_samples - 1), xs_p_seg(5, n_seg_samples - 1));
 		printf("k = %d | xs_i_p = %.1f, %.1f, %.1f, %.1f\n", k, xs_i_p_seg(0, n_seg_samples - 1), xs_i_p_seg(1, n_seg_samples - 1), xs_i_p_seg(2, n_seg_samples - 1), xs_i_p_seg(3, n_seg_samples - 1));
 		*/
@@ -209,12 +191,12 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrus
 
 				P_i_2D = reshape<16, 1, 4, 4>(P_i_p_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-				P_c_i = cpe[thread_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt);
+				P_c_i = cpe[cpe_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt);
 				break;
 			case MCSKF4D :                
 				if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 				{
-					P_c_i = cpe[thread_index].MCSKF4D_estimate(xs_p_seg, xs_i_p_seg, P_i_p_seg);						
+					P_c_i = cpe[cpe_index].MCSKF4D_estimate(xs_p_seg, xs_i_p_seg, P_i_p_seg);						
 				}	
 				break;
 			default :
@@ -222,8 +204,6 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrus
 				break;
 		}
 
-		//==========================================================================================
-		// 2.2 : Calculate and maximize dynamic obstacle cost in prediction scenario ps wrt time
 		tup = mpc_cost[thread_index].calculate_dynamic_obstacle_cost(
 			fdata,
 			obstacles, 
@@ -254,10 +234,11 @@ __device__ thrust::tuple<float, float> CB_Cost_Functor_3::operator()(const thrus
 	
 	//==================================================================================================
 	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_i_ps, mu_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
-
 	//==================================================================================================
-	// 2.7 : Return dynamic obstacle related cost and associated colregs violation indicator
-	return thrust::tuple<float, float>(max_cost_i_ps, mu_i_ps);
+	
+	// The first element (grounding cost element) is dont care for threads that only
+	// compute the partial dynamic obstacle cost and COLREGS violation indicator
+	return thrust::tuple<float, float, float>(-1.0f, max_cost_i_ps, mu_i_ps);
 }
  
 //=======================================================================================

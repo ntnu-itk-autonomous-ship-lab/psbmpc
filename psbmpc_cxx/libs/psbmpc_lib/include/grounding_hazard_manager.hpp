@@ -271,7 +271,7 @@ namespace PSBMPC_LIB
 		template <class MPC_Type>
 		Grounding_Hazard_Manager(const std::string &filename, const Eigen::Vector2d &map_origin, const MPC_Type &mpc) 
 			: 
-			d_so_relevant(mpc.pars.d_so_relevant), epsilon(2.0),
+			d_so_relevant(mpc.pars.d_so_relevant), epsilon(mpc.pars.epsilon_rdp),
 			map_origin(map_origin)
 		{
 			read_shapefile(filename, polygons);

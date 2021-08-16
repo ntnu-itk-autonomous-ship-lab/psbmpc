@@ -52,92 +52,42 @@ namespace GPU
 *****************************************************************************************/
 PSBMPC::PSBMPC() 
 	: 
-	ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), 
-	obstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), 
+	pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), 
+	polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	
 {
 	opt_offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
-	
-	u_opt_last = 1.0; chi_opt_last = 0.0;
-
-	min_cost = 1e12;
 
 	cpe_host = CPU::CPE(pars.cpe_method, pars.dt);
 
 	mpc_cost = CPU::MPC_Cost<PSBMPC_Parameters>(pars);
 
-	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
-	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
-	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
-	std::cout << "Ownship trajectory size: " << sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>) << std::endl; 
-	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
-	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
-	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
-	std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
-	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl;
+	preallocate_device_data();
+}
 
-	//================================================================================
-	// Cuda device memory allocation
-	//================================================================================
-	// Memory for most objects needed on the GPU are preallocated to save computation time
-	// Allocate for use by all threads a read-only Cuda_Obstacle array
-	cudaMalloc((void**)&obstacles_device_ptr, MAX_N_OBST * sizeof(Cuda_Obstacle));
-    cuda_check_errors("CudaMalloc of Cuda_Obstacle's failed.");
-	
-	// Allocate for use by all threads a control behaviour parameter object
-	CB_Functor_Pars temp_pars(pars); 
-	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
-	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
+PSBMPC::PSBMPC(const PSBMPC &other) 
+	:
+	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
+	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+{
+	assign_data(other);
 
-	cudaMemcpy(pars_device_ptr, &temp_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
-    cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
+	preallocate_device_data();
+}
 
-	// Allocate for use by all threads a control behaviour data object
-	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
-	cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
-	
-	// Allocate for each control behaviour an own-ship trajectory
-	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>));
-	cuda_check_errors("CudaMalloc of trajectory failed.");
-
-	// Allocate for each control behaviour an ownship
-	cudaMalloc((void**)&ownship_device_ptr, pars.n_cbs * sizeof(Ownship));
-	cuda_check_errors("CudaMalloc of Ownship failed.");
-
-	// A max number of allocations is considered to prevent memory allocation and transfer
-	// during iterations of the PSBMPC
-	// Allocate for each thread a Collision Probability Estimator
-	CPE temp_cpe(pars.cpe_method, pars.dt);
-	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_OBST * pars.n_r * sizeof(CPE));
-    cuda_check_errors("CudaMalloc of CPE failed.");
-
-	// Allocate for each thread an mpc cost object
-	MPC_Cost<CB_Functor_Pars> temp_mpc_cost(temp_pars);
-	int max_n_threads = pars.n_cbs * std::max(MAX_N_POLYGONS, MAX_N_OBST * pars.n_r);
-	cudaMalloc((void**)&mpc_cost_device_ptr, max_n_threads * sizeof(MPC_Cost<CB_Functor_Pars>));
-	cuda_check_errors("CudaMalloc of MPC_Cost failed.");
-
-	for (int cb = 0; cb < pars.n_cbs; cb++)
+PSBMPC& PSBMPC::operator=(const PSBMPC &other)
+{
+	if (this != &other)
 	{
-		cudaMemcpy(&ownship_device_ptr[cb], &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of Ownship failed.");		
-	}
+		free();
 
-	for (int thread = 0; thread < pars.n_cbs * MAX_N_OBST * pars.n_r; thread++)
-	{
-		cudaMemcpy(&cpe_device_ptr[thread], &temp_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of CPE failed.");
-	}
+		assign_data(other);	
 
-	for (int thread = 0; thread < max_n_threads; thread++)
-	{
-		cudaMemcpy(&mpc_cost_device_ptr[thread], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
+		preallocate_device_data();
 	}
-
-	// Allocate for use by all threads a read-only Basic_Polygon array
-	cudaMalloc((void**)&polygons_device_ptr, MAX_N_POLYGONS * sizeof(Basic_Polygon));
-    cuda_check_errors("CudaMalloc of Basic_Polygon`s failed.");
+	return *this;
 }
 
 /****************************************************************************************
@@ -148,29 +98,7 @@ PSBMPC::PSBMPC()
 *****************************************************************************************/
 PSBMPC::~PSBMPC() 
 {
-	cudaFree(trajectory_device_ptr);
-	cuda_check_errors("CudaFree of trajectory failed.");
-
-	cudaFree(pars_device_ptr);
-	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
-
-	cudaFree(fdata_device_ptr); 
-	cuda_check_errors("CudaFree of CB_Functor_Data failed.");
-
-	cudaFree(obstacles_device_ptr);
-	cuda_check_errors("CudaFree of Cuda_Obstacles failed.");
-
-	cudaFree(cpe_device_ptr);
-	cuda_check_errors("CudaFree of CPE failed.");
-
-	cudaFree(ownship_device_ptr);
-	cuda_check_errors("CudaFree of Ownship failed.");	
-
-	cudaFree(polygons_device_ptr);
-	cuda_check_errors("CudaFree of Basic_Polygon`s failed.");
-
-	cudaFree(mpc_cost_device_ptr);
-	cuda_check_errors("CudaFree of MPC_Cost failed.");
+	free();
 };
 
 /****************************************************************************************
@@ -234,14 +162,14 @@ void PSBMPC::calculate_optimal_offsets(
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
-	} */
-	/*
+	}
+	
 	mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
  	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
 	double *p_init_state_os = mxGetPr(init_state_os_mx); 
-	double *ptraj_os_mx = mxGetPr(traj_os_mx); 
+	double *p_traj_os = mxGetPr(traj_os_mx); 
 	double *p_wps_os = mxGetPr(wps_os); 
 	
 	Eigen::Map<Eigen::VectorXd> map_init_state_os(p_init_state_os, ownship_state.size(), 1);
@@ -358,50 +286,30 @@ void PSBMPC::calculate_optimal_offsets(
 		mpc_cost_device_ptr));
 
 	cb_costs_1_dvec.resize(pars.n_cbs);
-	cb_index_1_dvec.resize(pars.n_cbs);
-	thrust::sequence(cb_index_1_dvec.begin(), cb_index_1_dvec.end(), 0);
+	cb_index_dvec.resize(pars.n_cbs);
+	thrust::sequence(cb_index_dvec.begin(), cb_index_dvec.end(), 0);
 
 	map_offset_sequences();
 
-	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_1_dvec.begin(), cb_dvec.begin()));
-    auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_1_dvec.end(), cb_dvec.end()));
+	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), cb_dvec.begin()));
+    auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), cb_dvec.end()));
 	
 	thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs_1_dvec.begin(), *cb_cost_functor_1);
 	cuda_check_errors("Thrust transform for cost calculation part one failed.");
 
 	//===============================================================================================================
-	// Prepare thrust device vectors for the second and third cost functor calls
+	// Prepare thrust device vectors for the second cost functor call
 	//===============================================================================================================
 	map_thrust_dvecs(polygons);
 
 	//===============================================================================================================
-	// Grounding cost evaluation for all control behaviours wrt one static obstacle at the time
+	// Cost evaluation for all control behaviours wrt one static obstacle OR a dynamic obstacle behaving as in 
+	// a certain prediction scenario
 	//===============================================================================================================
 	cb_cost_functor_2.reset(new CB_Cost_Functor_2(
 		pars_device_ptr, 
 		fdata_device_ptr, 
-		trajectory_device_ptr, 
-		mpc_cost_device_ptr,
-		polygons_device_ptr));
-	
-	auto input_tuple_1_begin = thrust::make_zip_iterator(thrust::make_tuple(
-		thread_index_1_dvec.begin(), 
-		cb_index_1_dvec.begin(),
-		sobstacle_index_dvec.begin()));
-    auto input_tuple_1_end = thrust::make_zip_iterator(thrust::make_tuple(
-		thread_index_1_dvec.end(), 
-		cb_index_1_dvec.end(),
-		sobstacle_index_dvec.end()));
-
-    thrust::transform(input_tuple_1_begin, input_tuple_1_end, cb_costs_2_dvec.begin(), *cb_cost_functor_2);
-	cuda_check_errors("Thrust transform for cost calculation part two failed.");
-	//===============================================================================================================
-	// Cost evaluation for all control behaviours wrt one dynamic obstacle behaving as in 
-	// a certain prediction scenario
-	//===============================================================================================================
-	cb_cost_functor_3.reset(new CB_Cost_Functor_3(
-		pars_device_ptr, 
-		fdata_device_ptr, 
+		polygons_device_ptr,
 		obstacles_device_ptr, 
 		cpe_device_ptr, 
 		ownship_device_ptr,
@@ -409,20 +317,24 @@ void PSBMPC::calculate_optimal_offsets(
 		mpc_cost_device_ptr));
 
 	auto input_tuple_2_begin = thrust::make_zip_iterator(thrust::make_tuple(
-		thread_index_2_dvec.begin(), 
+		thread_index_dvec.begin(), 
 		cb_dvec.begin(),
-		cb_index_2_dvec.begin(),
+		cb_index_dvec.begin(),
+		sobstacle_index_dvec.begin(),
 		dobstacle_index_dvec.begin(),
-		dobstacle_ps_index_dvec.begin()));
+		dobstacle_ps_index_dvec.begin(),
+		cpe_index_dvec.begin()));
     auto input_tuple_2_end = thrust::make_zip_iterator(thrust::make_tuple(
-		thread_index_2_dvec.end(), 
+		thread_index_dvec.end(), 
 		cb_dvec.end(),
-		cb_index_2_dvec.end(),
+		cb_index_dvec.end(),
+		sobstacle_index_dvec.end(),
 		dobstacle_index_dvec.end(),
-		dobstacle_ps_index_dvec.end()));
+		dobstacle_ps_index_dvec.end(),
+		cpe_index_dvec.end()));
 
-    /* thrust::transform(input_tuple_2_begin, input_tuple_2_end, cb_costs_3_dvec.begin(), *cb_cost_functor_3);
-	cuda_check_errors("Thrust transform for cost calculation part three failed."); */
+    thrust::transform(input_tuple_2_begin, input_tuple_2_end, cb_costs_2_dvec.begin(), *cb_cost_functor_2);
+	cuda_check_errors("Thrust transform for cost calculation part three failed.");
 
 	//===============================================================================================================
 	// Stitch together the GPU calculated costs to form the cost function for each control behaviour
@@ -437,16 +349,16 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, trajectory.rows(), n_samples);
+	/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
 	map_traj = trajectory;
 
 	k_s = mxCreateDoubleScalar(n_samples);
 	engPutVariable(ep, "k", k_s);
 
-	engPutVariable(ep, "X", traj_os);
+	engPutVariable(ep, "X", traj_os_mx);
 	engEvalString(ep, "inside_psbmpc_upd_ownship_plot");  
 
-	engClose(ep);*/
+	engClose(ep); */
 	//===============================================================================================================
 
 	u_opt = opt_offset_sequence(0); 		u_opt_last = u_opt;
@@ -466,6 +378,79 @@ void PSBMPC::calculate_optimal_offsets(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+void PSBMPC::preallocate_device_data()
+{
+	/* std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
+	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
+	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
+	std::cout << "Ownship trajectory size: " << sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>) << std::endl; 
+	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
+	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
+	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
+	std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
+	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl; */
+
+	//================================================================================
+	// Cuda device memory allocation, preallocated to save computation time
+	//================================================================================
+	// Allocate for use by all threads a read-only Cuda_Obstacle array
+	cudaMalloc((void**)&obstacles_device_ptr, MAX_N_OBST * sizeof(Cuda_Obstacle));
+    cuda_check_errors("CudaMalloc of Cuda_Obstacle's failed.");
+	
+	// Allocate for use by all threads a control behaviour parameter object
+	CB_Functor_Pars temp_pars(pars); 
+	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
+	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
+
+	cudaMemcpy(pars_device_ptr, &temp_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
+    cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
+
+	// Allocate for use by all threads a control behaviour data object
+	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
+	cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
+	
+	// Allocate for each control behaviour an own-ship trajectory
+	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>));
+	cuda_check_errors("CudaMalloc of trajectory failed.");
+
+	// Allocate for each control behaviour an ownship
+	cudaMalloc((void**)&ownship_device_ptr, pars.n_cbs * sizeof(Ownship));
+	cuda_check_errors("CudaMalloc of Ownship failed.");
+
+	// Allocate for each thread that considers dynamic obstacles a Collision Probability Estimator
+	CPE temp_cpe(pars.cpe_method, pars.dt);
+	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_OBST * MAX_N_PS * sizeof(CPE));
+    cuda_check_errors("CudaMalloc of CPE failed.");
+
+	// Allocate for each thread an mpc cost object
+	MPC_Cost<CB_Functor_Pars> temp_mpc_cost(temp_pars);
+	int max_n_threads = pars.n_cbs * (MAX_N_POLYGONS + MAX_N_OBST * MAX_N_PS);
+	cudaMalloc((void**)&mpc_cost_device_ptr, max_n_threads * sizeof(MPC_Cost<CB_Functor_Pars>));
+	cuda_check_errors("CudaMalloc of MPC_Cost failed.");
+
+	for (int cb = 0; cb < pars.n_cbs; cb++)
+	{
+		cudaMemcpy(&ownship_device_ptr[cb], &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of Ownship failed.");		
+	}
+
+	for (int thread = 0; thread < pars.n_cbs * MAX_N_OBST * MAX_N_PS; thread++)
+	{
+		cudaMemcpy(&cpe_device_ptr[thread], &temp_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of CPE failed.");
+	}
+
+	for (int thread = 0; thread < max_n_threads; thread++)
+	{
+		cudaMemcpy(&mpc_cost_device_ptr[thread], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
+	}
+
+	// Allocate for use by all threads that consider static obstacles a read-only Basic_Polygon array
+	cudaMalloc((void**)&polygons_device_ptr, MAX_N_POLYGONS * sizeof(Basic_Polygon));
+    cuda_check_errors("CudaMalloc of Basic_Polygon`s failed.");
+}
+
 /****************************************************************************************
 *  Name     : determine_colav_active
 *  Function : Uses the dynamic obstacle vector and the number of static 
@@ -609,28 +594,22 @@ void PSBMPC::map_thrust_dvecs(
 	{
 		n_obst_ps_total += n_ps[i];
 	}
-	// Threads for calculating the grounding cost
-	int n_threads_1 = pars.n_cbs * n_static_obst; 
-	cb_index_1_dvec.resize(n_threads_1);
-	sobstacle_index_dvec.resize(n_threads_1);
-	thread_index_1_dvec.resize(n_threads_1);
-	thrust::sequence(thread_index_1_dvec.begin(), thread_index_1_dvec.end(), 0);
-	cb_costs_2_dvec.resize(n_threads_1);
-	
-	// Threads for calculating the partial dynamic obstacle cost
-	int n_threads_2 = pars.n_cbs * n_obst_ps_total;
-	thread_index_2_dvec.resize(n_threads_2);
-	thrust::sequence(thread_index_2_dvec.begin(), thread_index_2_dvec.end(), 0);
+	// Total number of GPU threads to schedule
+	int n_threads = pars.n_cbs * (n_static_obst + n_obst_ps_total);
+	std::cout << "n_threads = " << n_threads << " | n_static_obst = " << n_static_obst << " | n_obst_ps_total = " << n_obst_ps_total << std::endl;
 
-	cb_dvec.resize(n_threads_2);
-	cb_index_2_dvec.resize(n_threads_2);
-	dobstacle_index_dvec.resize(n_threads_2);
-	dobstacle_ps_index_dvec.resize(n_threads_2);
-	cb_costs_3_dvec.resize(n_threads_2);
+	cb_dvec.resize(n_threads);
+	cb_index_dvec.resize(n_threads);
+	sobstacle_index_dvec.resize(n_threads);
+	dobstacle_index_dvec.resize(n_threads);
+	dobstacle_ps_index_dvec.resize(n_threads);
+	cpe_index_dvec.resize(n_threads);
+	thread_index_dvec.resize(n_threads);
+	thrust::sequence(thread_index_dvec.begin(), thread_index_dvec.end(), 0);
+	cb_costs_2_dvec.resize(n_threads);
 
-	unsigned int thread_index_1(0), thread_index_2(0);
+	int thread_index(0), cpe_index(0);
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_tml(2 * pars.n_M);
-
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 	for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -639,39 +618,54 @@ void PSBMPC::map_thrust_dvecs(
 
 		for (int j = 0; j < n_static_obst; j++)
 		{
-			cb_index_1_dvec[thread_index_1] = cb;
-			sobstacle_index_dvec[thread_index_1] = j;
-			thread_index_1 += 1;
+			cb_dvec[thread_index] = offset_sequence_tml;
+			cb_index_dvec[thread_index] = cb;
 
-			/* printf("thread_1 %d | ", thread_index_1 - 1);
+			sobstacle_index_dvec[thread_index] = j;
+
+			// Set dynamic obstacle, prediction scenario index  and cpe index to -1 
+			// for threads where only the grounding cost should be computed
+			dobstacle_index_dvec[thread_index] = -1;
+			dobstacle_ps_index_dvec[thread_index] = -1;
+			cpe_index_dvec[thread_index] = -1;
+			thread_index += 1;
+
+			/* printf("thread %d | ", thread_index - 1);
 			printf("cb = ");
 			for (int M = 0; M < pars.n_M; M++)
 			{
 				printf("%.2f, %.2f", offset_sequence(2 * M), RAD2DEG * offset_sequence(2 * M + 1));
 				if (M < pars.n_M - 1) printf(", ");
 			}
-			printf(" | cb_index = %d | j = %d |\n", cb, j); */
+			printf(" | cb_index = %d | j = %d | i = %d | ps = %d\n", cb, j, -1, -1); */
 		}
 
 		for (int i = 0; i < n_obst; i++)
 		{	
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
-				cb_dvec[thread_index_2] = offset_sequence_tml;
-				cb_index_2_dvec[thread_index_2] = cb;
-				dobstacle_index_dvec[thread_index_2] = i;
-				dobstacle_ps_index_dvec[thread_index_2] = ps;
-				
-				thread_index_2 += 1;
+				cb_dvec[thread_index] = offset_sequence_tml;
+				cb_index_dvec[thread_index] = cb;
 
-				/* printf("thread_2 %d | ", thread_index_2 - 1);
+				// Set static obstacle index to -1 for threads where only dynamic
+				// obstacle related costs/indicators should be computed
+				sobstacle_index_dvec[thread_index] = -1;
+
+				dobstacle_index_dvec[thread_index] = i;
+				dobstacle_ps_index_dvec[thread_index] = ps;
+				cpe_index_dvec[thread_index] = cpe_index;
+				
+				thread_index += 1;
+				cpe_index += 1;
+
+				/* printf("thread %d | ", thread_index - 1);
 				printf("cb = ");
 				for (int M = 0; M < pars.n_M; M++)
 				{
 					printf("%.2f, %.2f", offset_sequence(2 * M), RAD2DEG * offset_sequence(2 * M + 1));
 					if (M < pars.n_M - 1) printf(", ");
 				}
-				printf(" | cb_index = %d | i = %d | ps = %d\n", cb, i, ps); */
+				printf(" | cb_index = %d | j = %d | i = %d | ps = %d\n", cb, -1, i, ps); */
 			}
 		}
 		increment_control_behaviour(offset_sequence_counter, offset_sequence);
@@ -693,25 +687,42 @@ void PSBMPC::find_optimal_control_behaviour(
 {
 	int n_obst = data.obstacles.size();
 	int n_static_obst = polygons.size();
-	unsigned int thread_index_1(0), thread_index_2(0);
+	int thread_index(0);
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
 	Eigen::VectorXd max_cost_i_ps, max_cost_j(n_static_obst), mu_i_ps, mu_i(n_obst), cost_do(n_obst);
 
-	double cost(0.0), h_do, h_colregs, h_so, h_path;
+	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
 	min_cost = 1e12;
 
 	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
 	Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
 	Eigen::MatrixXd max_cost_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
 	Eigen::MatrixXd max_cost_j_matrix(n_static_obst, pars.n_cbs);
+	if (n_static_obst == 0)
+	{
+		max_cost_j.resize(1); 
+		max_cost_j_matrix.resize(1, pars.n_cbs);
+		max_cost_j.setZero();
+		max_cost_j_matrix.setZero();
+	}
 	Eigen::MatrixXd mu_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
 	Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
 	Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
 	Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs);
 	Eigen::MatrixXd n_ps_matrix(1, n_obst);
-	Eigen::MatrixXd Pr_s_i_matrix(n_obst, n_ps[0]);
+
+	int n_ps_max(0);
+	for (int i = 0; i < n_obst; i++)
+	{
+		n_ps_matrix(0, i) = n_ps[i];
+		if (n_ps_max < n_ps[i])
+		{
+			n_ps_max = n_ps[i];
+		}
+	}
+	Eigen::MatrixXd Pr_s_i_matrix(n_obst, n_ps_max);
 	for (int i = 0; i < n_obst; i++)
 	{
 		n_ps_matrix(0, i) = n_ps[i];
@@ -738,7 +749,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	mxArray *cost_so_path_mx = mxCreateDoubleMatrix(2, pars.n_cbs, mxREAL);
 	mxArray *n_ps_mx = mxCreateDoubleMatrix(1, n_obst, mxREAL);
 	mxArray *cb_matrix_mx = mxCreateDoubleMatrix(2 * pars.n_M, pars.n_cbs, mxREAL);
-	mxArray *Pr_s_i_mx = mxCreateDoubleMatrix(n_obst, n_ps[0], mxREAL);
+	mxArray *Pr_s_i_mx = mxCreateDoubleMatrix(n_obst, n_ps_max, mxREAL);
 	
 	double *ptr_total_cost = mxGetPr(total_cost_mx); 
 	double *ptr_cost_do = mxGetPr(cost_do_mx); 
@@ -760,14 +771,15 @@ void PSBMPC::find_optimal_control_behaviour(
 	Eigen::Map<Eigen::MatrixXd> map_cost_so_path(ptr_cost_so_path, 2, pars.n_cbs);
 	Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps, 1, n_obst);
 	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
-	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps[0]);
+	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps_max);
 
 	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
 	//==================================================================
 	std::tuple<double, double> tup;
-	thrust::tuple<float, float> dev_tup;
+	thrust::tuple<float, float, float> dev_tup;
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
+		h_do = 0.0; h_colregs = 0.0; h_so = 0.0; h_path = 0.0; 
 		for (int M = 0; M < pars.n_M; M++)
 		{
 			cb_matrix(2 * M, cb) = offset_sequence(2 * M);
@@ -776,46 +788,48 @@ void PSBMPC::find_optimal_control_behaviour(
 		//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
 		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 		cost = 0.0;
-		curr_ps_index = 0;
 
+		for (int j = 0; j < n_static_obst; j++)
+		{
+			dev_tup = cb_costs_2_dvec[thread_index];
+			max_cost_j(j) = (double)thrust::get<0>(dev_tup);
+			thread_index += 1;
+			/* printf("Thread %d | j = %d | i = -1 | ps = -1 | max cost j : %.4f | max cost i ps : DC | mu_i_ps : DC | cb_index : %d | cb : %.1f, %.1f \n", 
+					thread_index, j, max_cost_j(j), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
+		}
+		max_cost_j_matrix.block(0, cb, n_static_obst, 1) = max_cost_j;
+		h_so = max_cost_j.maxCoeff();
+		cost_so_path_matrix(0, cb) = h_so;
+
+		curr_ps_index = 0;
 		for (int i = 0; i < n_obst; i++)
 		{
 			max_cost_i_ps.resize(n_ps[i]); mu_i_ps.resize(n_ps[i]);
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
-				dev_tup = cb_costs_3_dvec[thread_index_2];
-				max_cost_i_ps(ps) = (double)thrust::get<0>(dev_tup);
-				mu_i_ps(ps) = (double)thrust::get<1>(dev_tup);
-				thread_index_2 += 1;
-				//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index_2, i, ps, cb, max_cost_i_ps(ps), mu_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
+				dev_tup = cb_costs_2_dvec[thread_index];
+				max_cost_i_ps(ps) = (double)thrust::get<1>(dev_tup);
+				mu_i_ps(ps) = (double)thrust::get<2>(dev_tup);
+				thread_index += 1;
+				/* printf("Thread %d | j = -1 | i = %d | ps = %d | max cost j : DC | max cost i ps : %.4f | mu_i_ps : %.1f | cb_index : %d | cb : %.1f, %.1f \n", 
+					thread_index, i, ps, max_cost_i_ps(ps), mu_i_ps(ps), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 			}
 
 			tup = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, mu_i_ps, data, i);
 			cost_do(i) = std::get<0>(tup);
 			mu_i(i) = std::get<1>(tup);
 
-
 			// Matlab related data structure
-			
 			max_cost_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = max_cost_i_ps;
 			mu_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = mu_i_ps;
 			curr_ps_index += n_ps[i];
 		}
-		cost_do_matrix.col(cb) = cost_do;
 
 		h_do = cost_do.sum();
+		cost_do_matrix.col(cb) = cost_do;
 
 		h_colregs = pars.kappa * std::min(1.0, mu_i.sum());
 		cost_colregs_matrix(0, cb) = h_colregs;
-
-		for (int j = 0; j < n_static_obst; j++)
-		{
-			max_cost_j(j) = cb_costs_2_dvec[thread_index_1];
-			thread_index_1 += 1;
-		}
-		max_cost_j_matrix.block(0, cb, n_static_obst, 1) = max_cost_j;
-		h_so = max_cost_j.maxCoeff();
-		cost_so_path_matrix(0, cb) = h_so;
 
 		h_path = cb_costs_1_dvec[cb];
 		cost_so_path_matrix(1, cb) = h_path;
@@ -924,11 +938,10 @@ void PSBMPC::setup_prediction(
 	int index_closest(-1);
 	for (int M = 1; M < pars.n_M; M++)
 	{
-		// This is the solution so far if n_obst = 0. And also:
 		// If a predicted collision occurs with the closest obstacle, avoidance maneuver 
-		// M is taken right after the obstacle possibly maneuvers (which will be at t_0 + M * t_ts
-		// if the independent obstacle prediction scheme is used), given that t_cpa > t_ts. 
-		// If t_cpa < t_ts, the subsequent maneuver is taken at t_0 + M * t_ts + 1 anyways (simplification)
+		// M is taken right after the obstacle possibly maneuvers (modelled to be at t_0 + M * t_ts
+		// given that t_cpa > t_ts. If t_cpa < t_ts or n_obst = 0, the subsequent maneuver is taken 
+		// at t_{M-1} + t_ts + 1 anyways (simplification)
 		maneuver_times(M) = maneuver_times(M - 1) + std::round((pars.t_ts + 1) / pars.dt);
 		
 		// Otherwise, find the closest obstacle (wrt t_cpa) that is a possible hazard
@@ -942,7 +955,7 @@ void PSBMPC::setup_prediction(
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
 			// that the previous avoidance maneuver happened before CPA with this obstacle)
-			if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min)
+			if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min && t_cpa(i) <= pars.T)
 			{	
 				t_cpa_min = t_cpa(i);
 				index_closest = i;
@@ -963,7 +976,7 @@ void PSBMPC::setup_prediction(
 		}
 	}
 	
-	//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
+	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -1373,7 +1386,7 @@ void PSBMPC::set_up_temporary_device_memory(
 		temp_transfer_cobstacle = data.obstacles[i];
 
 		cudaMemcpy(&obstacles_device_ptr[i], &temp_transfer_cobstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
+    	cuda_check_errors("CudaMemCpy of Cuda Obstacle i failed.");
 	}
 
 	// Static obstacles
@@ -1383,8 +1396,73 @@ void PSBMPC::set_up_temporary_device_memory(
 		temp_transfer_poly = polygons[j];
 
 		cudaMemcpy(&polygons_device_ptr[j], &temp_transfer_poly, sizeof(Basic_Polygon), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
+    	cuda_check_errors("CudaMemCpy of Basic Polygon j failed.");
 	}
+}
+
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::assign_data(const PSBMPC &other)
+{
+	n_ps = other.n_ps;
+
+	opt_offset_sequence = other.opt_offset_sequence;
+	maneuver_times = other.maneuver_times;
+	
+	u_opt_last = other.u_opt_last;
+	chi_opt_last = other.chi_opt_last;
+
+	min_cost = other.min_cost;
+	min_index = other.min_index;
+
+	ownship = other.ownship;
+
+	trajectory = other.trajectory;
+
+	cpe_host = other.cpe_host;
+
+	// Device related data is DONT CARE in assigning process,
+	// as these are reset at each new MPC iteration anyways
+
+	pars = other.pars;
+	mpc_cost = other.mpc_cost;
+}
+
+/****************************************************************************************
+*  Name     : free
+*  Function : Frees device memory
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::free()
+{
+	cudaFree(trajectory_device_ptr);
+	cuda_check_errors("CudaFree of trajectory failed.");
+
+	cudaFree(pars_device_ptr);
+	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
+
+	cudaFree(fdata_device_ptr); 
+	cuda_check_errors("CudaFree of CB_Functor_Data failed.");
+
+	cudaFree(obstacles_device_ptr);
+	cuda_check_errors("CudaFree of Cuda_Obstacles failed.");
+
+	cudaFree(cpe_device_ptr);
+	cuda_check_errors("CudaFree of CPE failed.");
+
+	cudaFree(ownship_device_ptr);
+	cuda_check_errors("CudaFree of Ownship failed.");	
+
+	cudaFree(polygons_device_ptr);
+	cuda_check_errors("CudaFree of Basic_Polygon`s failed.");
+
+	cudaFree(mpc_cost_device_ptr);
+	cuda_check_errors("CudaFree of MPC_Cost failed.");
 }
 
 }

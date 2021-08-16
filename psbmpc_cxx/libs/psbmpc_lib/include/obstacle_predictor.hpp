@@ -239,6 +239,12 @@ namespace PSBMPC_LIB
 					ct_offsets.resize(9);
 					ct_offsets << - 4 * r_ct - e, - 3 * r_ct - e, - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e, 3 * r_ct - e, 4 * r_ct - e;
 					break;
+				}			
+				case 11:
+				{
+					ct_offsets.resize(11);
+					ct_offsets << - 5 * r_ct - e, - 4 * r_ct - e, - 3 * r_ct - e, - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e, 3 * r_ct - e, 4 * r_ct - e, 5 * r_ct - e;
+					break;
 				}				
 				default:
 					break;
@@ -461,7 +467,8 @@ namespace PSBMPC_LIB
 		MROU mrou;
 
 		Obstacle_Predictor() 
-			: n_ps_MROU(5), n_ps_LOS(5), r_ct(5.0), mrou(0.01, 0.0, 0.01, 0.1, 0.1)
+			: n_ps_MROU(3), n_ps_LOS(1), r_ct(10.0), mrou(0.01, 0.0, 0.01, 0.1, 0.1)
+			//: n_ps_MROU(5), n_ps_LOS(5), r_ct(30.0), mrou(0.1, 0.0, 0.1, 0.1, 0.1)
 		{
 			if (n_ps_MROU == 3)
 			{
@@ -504,6 +511,8 @@ namespace PSBMPC_LIB
 
 		int get_n_ps_LOS() const { return n_ps_LOS; }
 
+		void set_n_ps_LOS(const int n_ps_LOS) { this->n_ps_LOS = n_ps_LOS; }
+
 		/****************************************************************************************
 		*  Name     : operator()
 		*  Function : Initializes and predicts obstacle trajectories
@@ -542,7 +551,7 @@ namespace PSBMPC_LIB
 				data.obstacles[i].set_trajectory_covariance(P_i_p);
 
 				// Calculate scenario probabilities using intention model,
-				// or just set to be uniform..
+				// or just set to be uniform../triangle
 				Eigen::VectorXd Pr_s_i(n_ps[i]);
 				for (int ps = 0; ps < n_ps[i]; ps++)
 				{

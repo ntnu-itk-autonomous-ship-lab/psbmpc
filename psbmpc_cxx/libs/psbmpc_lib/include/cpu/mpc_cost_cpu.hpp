@@ -66,14 +66,13 @@ namespace PSBMPC_LIB
 			Eigen::Vector2d distance_to_line_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2) const;   
 
 			Eigen::Vector2d distance_to_polygon(const Eigen::Vector2d &p, const polygon_2D &poly) const;
-			
-
-		
 
 			MPC_Cost() {}
 
 			MPC_Cost(const Parameters &pars) : pars(pars) {}
 
+			MPC_Cost& operator=(const MPC_Cost &other) = default;
+			
 			template <class Obstacle_Data>
 			bool determine_transitional_cost_indicator(
 				const double psi_A, 
@@ -820,10 +819,6 @@ namespace PSBMPC_LIB
 				{
 					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
 					d_0j = L_0j.norm();
-					if (d_0j < 0.1f)
-					{
-						//std::cout << t << std::endl;
-					}
 					L_0j.normalize();
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
@@ -867,10 +862,6 @@ namespace PSBMPC_LIB
 				{
 					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
 					d_0j = L_0j.norm();
-					if (true)
-					{
-						//std::cout << "k = " << k << " | distance to j = " << j << " : " << d_0j << std::endl;
-					}
 					L_0j.normalize();
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
@@ -1170,7 +1161,7 @@ namespace PSBMPC_LIB
 			int line_intersect_count(0), n_vertices(0);
 			Eigen::Vector2d v_prev, v, v_next;			
 
-			Eigen::MatrixXd vertices(2, 10000);
+			Eigen::MatrixXd vertices(2, 50000);
 			// Find bounding box of polygon to use for ray creation
 			Eigen::Matrix2d bbox;
 			bbox(0, 0) = 1e10; bbox(1, 0) = 1e10; bbox(0, 1) = -1e10; bbox(1, 1) = -1e10;
@@ -1188,9 +1179,9 @@ namespace PSBMPC_LIB
 				n_vertices += 1;
 			}
 			vertices.conservativeResize(2, n_vertices);
-			/* if (n_vertices < 3 ||
+			if (n_vertices < 3 ||
 				p(0) < bbox(0, 0) || p(0) > bbox(0, 1) || p(1) < bbox(1, 0) || p(1) > bbox(1, 1)) 
-			{ return false; } */
+			{ return false; }
 
 			Eigen::Vector2d p_ray_end;
 			p_ray_end = bbox.col(1); // set ray end to x_max, y_max of polygon bbox

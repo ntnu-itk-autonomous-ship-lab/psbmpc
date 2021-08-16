@@ -39,7 +39,7 @@
 // Main program:
 //*****************************************************************************************************************
 int main(){
-	std::cout << std::numeric_limits<long double>::digits10 << std::endl;
+	//std::cout << std::numeric_limits<long double>::digits10 << std::endl;
 //*****************************************************************************************************************
 // Simulation setup
 //*****************************************************************************************************************
@@ -53,7 +53,7 @@ int main(){
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	//xs_os_0 << 7042320, 269475, 180 * DEG2RAD, 1, 0, 0; // utforbi skansen
 	//xs_os_0 << 7042020, 269575, 130 * DEG2RAD, 1.5, 0, 0; // "i" skansen
-	xs_os_0 << 7042220, 270175, 60 * DEG2RAD, 1.5, 0, 0; // rett sørvest for ravnkloa
+	xs_os_0 << 7042220, 270175, 60 * DEG2RAD, 1.5, 0, 0; // rett nordvest for ravnkloa
 	double u_d = 1.5, chi_d, u_c, chi_c;
 	
 	PSBMPC_LIB::CPU::Ownship asv_sim;
@@ -171,7 +171,11 @@ int main(){
 //*****************************************************************************************************************	
 	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
-	PSBMPC_LIB::GPU::PSBMPC psbmpc;
+	#if (USE_GPU_PSBMPC == 1)
+		PSBMPC_LIB::GPU::PSBMPC psbmpc;
+	#else
+		PSBMPC_LIB::CPU::PSBMPC psbmpc;
+	#endif
 
 	double u_opt(u_d), chi_opt(0.0);
 
@@ -197,7 +201,7 @@ int main(){
 		std::cout << buffer1 << std::endl;
 	}
 	// Input the path to the land data
-    std::string filename = "../src/tests/grounding_hazard_data/charts/land/land.shp";
+    std::string filename = "../src/tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
     
    	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename, psbmpc);
 	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
@@ -322,10 +326,11 @@ int main(){
 		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
 	
-	mxArray *T_sim_mx, *n_obst_mx, *d_safe_mx;
+	mxArray *T_sim_mx, *n_obst_mx, *d_safe_mx, *dt_sim_mx;
 	T_sim_mx = mxCreateDoubleScalar(T_sim);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
 	d_safe_mx = mxCreateDoubleScalar(psbmpc.pars.get_dpar(i_dpar_d_safe));
+	dt_sim_mx = mxCreateDoubleScalar(dt);
 
 	mxArray *pred_traj_mx;
 	double *p_pred_traj;
@@ -339,6 +344,7 @@ int main(){
 	engPutVariable(ep, "n_obst", n_obst_mx);
 	engPutVariable(ep, "d_safe", d_safe_mx);
 	engPutVariable(ep, "T_sim", T_sim_mx);
+	engPutVariable(ep, "dt_sim", dt_sim_mx);
 	engPutVariable(ep, "WPs", wps_os_mx);
 
 	engEvalString(ep, "init_psbmpc_plotting_grounding");
@@ -396,7 +402,7 @@ int main(){
 
 		if (fmod(t, 5) == 0)
 		{
-			std::cout << "n_relevant_so = " << relevant_polygons.size() << std::endl;
+			//std::cout << "n_relevant_so = " << relevant_polygons.size() << std::endl;
 			start = std::chrono::system_clock::now();		
 
 			psbmpc.calculate_optimal_offsets(
@@ -483,6 +489,7 @@ int main(){
 	mxDestroyArray(i_mx);
 	mxDestroyArray(k_s_mx);
 	mxDestroyArray(T_sim_mx);
+	mxDestroyArray(dt_sim_mx);
 	mxDestroyArray(n_obst_mx);
 	for (int i = 0; i < n_obst; i++)
 	{

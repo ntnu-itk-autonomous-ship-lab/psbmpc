@@ -84,28 +84,83 @@ else()
 	)
 endif()
 
-
 find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(Boost REQUIRED)
 
-target_include_directories(psbmpc_lib PUBLIC 
-	include
-	tryms_matrix
-	${Matlab_INCLUDE_DIRS}
-	${EIGEN3_INCLUDE_DIRS}
+target_include_directories(psbmpc_lib 
+	PUBLIC
+		include
+		${Matlab_INCLUDE_DIRS}
+		${EIGEN3_INCLUDE_DIRS}
+		${Boost_INCLUDE_DIRS}
 )
 
-target_link_libraries(psbmpc_lib PRIVATE ${Matlab_LIBRARIES} PUBLIC Eigen3::Eigen)
+target_link_libraries(psbmpc_lib PUBLIC ${Matlab_LIBRARIES} ${Boost_LIBRARIES} Eigen3::Eigen )
 
 # OWNSHIP_TYPE = 0 : Kinematic_Ship | = 1 : Telemetron | = 2 : MilliAmpere(NOT FINISHED YET)
 # Common build commands
 target_compile_options(psbmpc_lib
-	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
+	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -std=c++17 -Wall -Wextra -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
 	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0 -Xlinker -dlink>)
 
 if(CMAKE_BUILD_TYPE EQUAL release)
-	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -j4>)
+	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -std=c++17 -j4>)
 else()
 	# Comment out the below line if you want to compile debug with symbols, lineinfo etc.
 	#target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CUDA>: -Xcompiler -g -G -lineinfo -Wall -Wno-pedantic>)
 endif()
+
+
+## Create package for the library (NOT FINALIZED, NEED CORRECTIONS)
+#file(
+#    WRITE "${CMAKE_CURRENT_BINARY_DIR}/Config.cmake.in"
+#    "
+#        @PACKAGE_INIT@
+#		include( \"\$\{CMAKE_CURRENT_LIST_DIR\}/psbmpc_libTargets.cmake\" )
+#
+#		include(CMakeFindDependencyMacro)
+#		find_dependency(Eigen3)
+#		find_dependency(Matlab)
+#    "
+#)
+
+#include(GNUInstallDirs)
+#install(TARGETS psbmpc_lib
+#	EXPORT psbmpc_libTargets
+#	LIBRARY DESTINATION lib
+#	ARCHIVE DESTINATION lib
+#	RUNTIME DESTINATION bin
+#	INCLUDES DESTINATION include 
+#)
+
+#install(
+#	EXPORT psbmpc_libTargets
+#	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/psbmpc_lib
+#	NAMESPACE psbmpc_lib::
+#	FILE psbmpc_libTargets.cmake
+#)
+
+#include(CMakePackageConfigHelpers)
+#configure_package_config_file( 
+#  "${CMAKE_CURRENT_BINARY_DIR}/Config.cmake.in" 
+#  "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_libConfig.cmake"
+#  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/psbmpc_lib
+#  PATH_VARS CMAKE_INSTALL_LIBDIR
+#)
+
+#write_basic_package_version_file(
+#  "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_libConfigVersion.cmake"
+#  VERSION 1.0.0
+#  COMPATIBILITY AnyNewerVersion
+#)
+
+#install(
+#  FILES
+#    "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_libConfig.cmake"
+#    "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_libConfigVersion.cmake"
+#  DESTINATION
+#    ${CMAKE_INSTALL_LIBDIR}/cmake/psbmpc_lib
+#  COMPONENT
+#    Devel
+#)

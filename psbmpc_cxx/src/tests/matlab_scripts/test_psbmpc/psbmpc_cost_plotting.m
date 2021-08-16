@@ -41,7 +41,7 @@ end
 
 [n_static_obst, ~] = size(max_cost_j);
 max_cost_j_legend_strs = cell(1, n_static_obst);
-figure(n_obst + j + 1);
+figure(n_obst + 2);
 title(strcat('Static obstacles max cost'));
 grid on; hold on;
 for j = 1 : n_static_obst

@@ -53,8 +53,8 @@ PSBMPC_Node::PSBMPC_Node(
   n_missed_deadlines_wps_sub(0U),
   n_missed_deadlines_pub(0U),
   pars(
-    declare_parameter("psbmpc.u_offsets").get<std::vector<std::vector<double>>(),
-    declare_parameter("psbmpc.chi_offsets").get<std::vector<std::vector<double>>(),
+    PSBMPC_LIB::CPU::parse_VVD(declare_parameter("psbmpc.u_offsets").get<std::string>()),
+    PSBMPC_LIB::CPU::parse_VVD(declare_parameter("psbmpc.chi_offsets").get<std::string>()),
     declare_parameter("psbmpc.cpe_method").get<int>(),
     declare_parameter("psbmpc.prediction_method").get<int>(),
     declare_parameter("psbmpc.guidance_method").get<int>(),

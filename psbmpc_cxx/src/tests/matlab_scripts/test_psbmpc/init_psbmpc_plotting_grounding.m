@@ -12,14 +12,26 @@ ylim(ax1, ylimits_ne);
 ylimits_d = [0,  1000];
 tlim = [0 T_sim];
 
-% drawn boat dimensions
-boat_dim = [10 7 -10 -10 7 10; 0 2.4 2.4 -2.4 -2.4 0];
+% L_os = 0.04*ylimits(2);
+% w_os = 0.006*(xlimits(2) - xlimits(1));
+% 
+% L_i = 0.04*ylimits(2);
+% w_i = 0.006*(xlimits(2) - xlimits(1));
+% % drawn boat dimensions
+L_os = 5; L_i = 5;
+w_os = 3; w_i = 3;
+boat_dim = [L_os/2 .7*L_os/2 -L_os/2 -L_os/2 .7*L_os/2 L_os/2; 0 2*w_os 2*w_os  -2*w_os -2*w_os 0];
+
 
 ax2 = axes(fig, 'Position',[0.7 0.2 0.22 0.5]);
 ylim(ax2, ylimits_d); xlim(ax2, tlim);
 
 hold(ax1, 'on'); hold(ax2, 'on');
 grid(ax1, 'on'); grid(ax2, 'on');
+
+n_samples = T_sim / dt_sim;
+t_vec = dt_sim * (0 : (n_samples - 1));
+plot(ax2, t_vec, d_safe * ones(n_samples, 1), 'r');
 
 disp(map_origin);
 [n_vertices, ~] = size(P)
