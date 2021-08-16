@@ -40,7 +40,7 @@ SBMPC::SBMPC()
 
 	mpc_cost = CPU::MPC_Cost<SBMPC_Parameters>(pars);
 
-	chi_opt_last = 0; u_opt_last = 1;
+	chi_opt_last = 0.0; u_opt_last = 1.0;
 }
 
 /****************************************************************************************
@@ -69,7 +69,19 @@ void SBMPC::calculate_optimal_offsets(
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
 	int n_obst = data.obstacles.size();
-	int n_static_obst = static_obstacles.cols();	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
+	int n_static_obst = static_obstacles.cols();								
+
+	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
+
+	// Predict nominal trajectory first, assign as optimal if no need for
+	// COLAV, or use in the prediction initialization
+	for (int M = 0; M < pars.n_M; M++)
+	{
+		offset_sequence(2 * M) = 1.0; offset_sequence(2 * M + 1) = 0.0;
+	}
+	maneuver_times.setZero();
+	ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+
 
 	bool colav_active = determine_colav_active(data, n_static_obst);
 	if (!colav_active)
@@ -77,15 +89,8 @@ void SBMPC::calculate_optimal_offsets(
 		u_opt = 1.0; 		u_opt_last = u_opt;
 		chi_opt = 0.0; 		chi_opt_last = chi_opt;
 
-		for (int M = 0; M < pars.n_M; M++)
-		{
-			opt_offset_sequence(2 * M) = 1.0; opt_offset_sequence(2 * M + 1) = 0.0;
-		}
-		maneuver_times.setZero();
-		ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
-		
 		assign_optimal_trajectory(predicted_trajectory);
-		
+
 		return;
 	}
 
@@ -171,7 +176,7 @@ void SBMPC::calculate_optimal_offsets(
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
-		cost = 0;
+		cost = 0.0;
 
 		ownship.predict_trajectory(
 			trajectory, 
@@ -343,31 +348,49 @@ void SBMPC::setup_prediction(
 	// Own-ship prediction initialization
 	//***********************************************************************************
 	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
-	Eigen::Vector2d p_cpa;
+	Eigen::Vector2d p_cpa, v_0;
+
+	Eigen::Vector4d xs_0, xs_i_0;
+	if (trajectory.rows() == 4)
+	{
+		v_0(0) = trajectory(3, 0) * cos(trajectory(2, 0));
+		v_0(1) = trajectory(3, 0) * sin(trajectory(2, 0));
+	}
+	else
+	{
+		v_0(0) = trajectory(3, 0); v_0(1) = trajectory(4, 0);
+		v_0 = CPU::rotate_vector_2D(v_0, trajectory(2, 0));
+	}
+	xs_0.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, 0);
+	xs_0(2) = v_0(0); xs_0(3) = v_0(1);
+
 	maneuver_times.resize(pars.n_M);
 	// First avoidance maneuver is always at t0
 	maneuver_times.setZero();
 
-	double t_cpa_min, d_safe_i;
+	double t_cpa_min(0.0), d_safe_i(0.0);
 	std::vector<bool> maneuvered_by(n_obst);
-	int index_closest;
+	int index_closest(-1);
 	for (int M = 1; M < pars.n_M; M++)
 	{
 		// If a predicted collision occurs with the closest obstacle, avoidance maneuver 
-		// M is taken at t_0 + M * t_ts + 1, Otherwise, it is taken at t_cpa with the 
-		// closest obstacle
+		// M is taken right after the obstacle possibly maneuvers (modelled to be at t_0 + M * t_ts
+		// given that t_cpa > t_ts. If t_cpa < t_ts or n_obst = 0, the subsequent maneuver is taken 
+		// at t_{M-1} + t_ts + 1 anyways (simplification)
 		maneuver_times(M) = maneuver_times(M - 1) + std::round((pars.t_ts + 1) / pars.dt);
 		
-		// Find the closest obstacle (wrt t_cpa) that is a possible hazard
+		// Otherwise, find the closest obstacle (wrt t_cpa) that is a possible hazard
 		t_cpa_min = 1e10; index_closest = -1;
 		for (int i = 0; i < n_obst; i++)
 		{
-			CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), data.obstacles[i].kf.get_state());
+			xs_i_0 = data.obstacles[i].kf.get_state();
+			CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
+
 			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
 			// that the previous avoidance maneuver happened before CPA with this obstacle)
-			if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min)
+			if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min && t_cpa(i) <= pars.T)
 			{	
 				t_cpa_min = t_cpa(i);
 				index_closest = i;
@@ -387,7 +410,8 @@ void SBMPC::setup_prediction(
 			}
 		}
 	}
-	//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
+	
+	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 
 

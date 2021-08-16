@@ -55,8 +55,6 @@ namespace PSBMPC_LIB
 
 			double get_width() const { return w; }
 
-			inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; this->wp_c_p = wp_c_0; }
-
 			void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Vector4d &xs);
 
 			void update_guidance_references(
@@ -73,7 +71,8 @@ namespace PSBMPC_LIB
 				const double e_m,
 				const Eigen::Matrix<double, 2, -1> &waypoints, 
 				const Eigen::Vector4d &xs,
-				const double dt);
+				const double dt,
+				const Guidance_Method guidance_method);
 
 			Eigen::Vector4d predict(
 				const Eigen::Vector4d &xs_old, 

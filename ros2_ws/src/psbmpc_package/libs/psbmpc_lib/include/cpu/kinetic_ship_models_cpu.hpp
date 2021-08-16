@@ -87,11 +87,9 @@ namespace PSBMPC_LIB
 				const double dt,
 				const Guidance_Method guidance_method);
 
-			inline double get_length() const { return l; }
+			inline double get_length() const { return l; };
 
-			inline double get_width() const { return w; }
-
-			inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; this->wp_c_p = wp_c_0; }
+			inline double get_width() const { return w; };
 
 		};
 

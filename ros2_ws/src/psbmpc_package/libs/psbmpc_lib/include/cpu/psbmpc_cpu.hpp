@@ -46,7 +46,8 @@ namespace PSBMPC_LIB
 			std::vector<int> n_ps;
 
 			// Control behavior related vectors and the own-ship maneuver times in the prediction horizon
-			Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
+			Eigen::VectorXd offset_sequence, maneuver_times;
+			Eigen::VectorXi offset_sequence_counter;
 
 			// Previous optimal offsets/modifications
 			double u_opt_last;
@@ -107,9 +108,6 @@ namespace PSBMPC_LIB
 			MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 			PSBMPC();
-
-			// Resets previous optimal offsets and predicted own-ship waypoint following
-			void reset() { u_opt_last = 1.0; chi_opt_last = 0.0; ownship.set_wp_counter(0); }
 
 			// For use when grounding hazards are simplified as straight lines
 			void calculate_optimal_offsets(

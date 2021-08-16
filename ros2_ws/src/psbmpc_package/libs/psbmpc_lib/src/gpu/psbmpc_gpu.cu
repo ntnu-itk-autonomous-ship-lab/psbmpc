@@ -180,16 +180,7 @@ void PSBMPC::calculate_optimal_offsets(
 	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *n_static_obst_mx, *i_mx, *ps_mx, *d_safe_mx;
 	dt_sim = mxCreateDoubleScalar(pars.dt);
 	T_sim = mxCreateDoubleScalar(pars.T);
-
-	int n_ps_max(0);
-	for (int i = 0; i < n_obst; i++)
-	{
-		if (n_ps_max < n_ps[i])
-		{
-			n_ps_max = n_ps[i];
-		}
-	}
-	n_ps_mx = mxCreateDoubleScalar(n_ps_max);
+	n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
 	d_safe_mx = mxCreateDoubleScalar(pars.d_safe);
 	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
@@ -241,7 +232,6 @@ void PSBMPC::calculate_optimal_offsets(
 		map_polygon_matrix = polygon_matrix;
 		engPutVariable(ep, "j", j_mx);
 		engPutVariable(ep, "d_0j", d_0j_mx);
-		std::cout << "Num vertices polygon j = " << j + 1 << ": " << n_total_vertices << std::endl;
 		engPutVariable(ep, "polygon_matrix_j", polygon_matrix_mx);
 		engEvalString(ep, "inside_psbmpc_static_obstacle_plot");
 	}
@@ -950,8 +940,8 @@ void PSBMPC::setup_prediction(
 	{
 		// If a predicted collision occurs with the closest obstacle, avoidance maneuver 
 		// M is taken right after the obstacle possibly maneuvers (modelled to be at t_0 + M * t_ts
-		// if the independent obstacle prediction scheme is used), given that t_cpa > t_ts. 
-		// If t_cpa < t_ts or n_obst = 0, the subsequent maneuver is taken at t_{M-1} + t_ts + 1 anyways (simplification)
+		// given that t_cpa > t_ts. If t_cpa < t_ts or n_obst = 0, the subsequent maneuver is taken 
+		// at t_{M-1} + t_ts + 1 anyways (simplification)
 		maneuver_times(M) = maneuver_times(M - 1) + std::round((pars.t_ts + 1) / pars.dt);
 		
 		// Otherwise, find the closest obstacle (wrt t_cpa) that is a possible hazard

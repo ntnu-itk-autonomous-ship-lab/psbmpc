@@ -70,7 +70,7 @@ namespace PSBMPC_LIB
 			
 			__host__ __device__ float get_width() const { return w; }
 
-			__host__ __device__ inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; this->wp_c_p = wp_c_0; }
+			__host__ __device__ inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; }
 
 			__host__ __device__ inline int get_wp_counter() const { return wp_c_0; }
 

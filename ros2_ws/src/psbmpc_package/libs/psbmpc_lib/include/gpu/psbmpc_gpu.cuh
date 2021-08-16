@@ -191,9 +191,6 @@ namespace PSBMPC_LIB
 
 			PSBMPC& operator=(const PSBMPC &other);
 
-			// Resets previous optimal offsets and predicted own-ship waypoint following
-			void reset() { u_opt_last = 1.0; chi_opt_last = 0.0; ownship.set_wp_counter(0);}
-
 			void calculate_optimal_offsets(
 				double &u_opt, 
 				double &chi_opt, 

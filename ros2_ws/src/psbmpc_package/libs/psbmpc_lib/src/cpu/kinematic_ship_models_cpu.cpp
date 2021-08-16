@@ -212,9 +212,12 @@ void Kinematic_Ship::update_guidance_references(
 	const double e_m,				 							// In: Modifier to the LOS-guidance cross track error to cause a different path alignment
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
 	const Eigen::Vector4d &xs, 									// In: Ownship state	
-	const double dt 											// In: Time step
+	const double dt, 											// In: Time step
+	const Guidance_Method guidance_method						// In: Type of guidance used	
 	)
 {
+	assert(guidance_method == LOS);
+
 	// No surge modification
 	u_d = u_d;
 	
@@ -379,7 +382,7 @@ void Kinematic_Ship::predict_trajectory(
 
 	for (int k = 0; k < n_samples; k++)
 	{ 
-		update_guidance_references(u_d_p, chi_d_p, e_m, waypoints, xs, dt);
+		update_guidance_references(u_d_p, chi_d_p, e_m, waypoints, xs, dt, guidance_method);
 
 		xs = predict(xs, u_d_p, chi_d_p, dt, prediction_method);
 		
