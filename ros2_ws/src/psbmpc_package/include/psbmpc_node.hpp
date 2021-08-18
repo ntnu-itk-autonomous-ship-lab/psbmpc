@@ -54,9 +54,6 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  const std::string map_data_filename;
-  const std::vector<double> map_origin;
-
   bool enable_topic_stats;
   const std::string topic_stats_topic_name;
   const std::string dynamic_obstacle_topic_name;

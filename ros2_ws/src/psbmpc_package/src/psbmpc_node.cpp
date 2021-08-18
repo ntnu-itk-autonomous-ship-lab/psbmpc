@@ -37,8 +37,6 @@ PSBMPC_Node::PSBMPC_Node(
   const rclcpp::NodeOptions &options                    // In: Configuration options for the node
   )
   : LifecycleNode(node_name, options), 
-  map_data_filename(declare_parameter("grounding_hazard_manager.map_data_filename").get<std::string>()),
-  map_origin(declare_parameter("grounding_hazard_manager.map_origin").get<std::vector<double>>()),
   enable_topic_stats(declare_parameter("enable_topic_stats").get<bool>()),
   topic_stats_topic_name{declare_parameter("topic_stats_topic_name").get<std::string>()},
   dynamic_obstacle_topic_name(declare_parameter("dynamic_obstacle_topic_name").get<std::string>()),
@@ -58,7 +56,7 @@ PSBMPC_Node::PSBMPC_Node(
     static_cast<PSBMPC_LIB::CPE_Method>(declare_parameter("psbmpc.cpe_method").get<int>()),
     static_cast<PSBMPC_LIB::Prediction_Method>(declare_parameter("psbmpc.prediction_method").get<int>()),
     static_cast<PSBMPC_LIB::Guidance_Method>(declare_parameter("psbmpc.guidance_method").get<int>()),
-    declare_parameter("psbmpc.ipars").get<std::vector<int>>(),
+    declare_parameter("psbmpc.ipars").get<std::vector<int64_t>>(),
     declare_parameter("psbmpc.dpars").get<std::vector<double>>()),
   cpe(
     static_cast<PSBMPC_LIB::CPE_Method>(declare_parameter("psbmpc.cpe_method").get<int>()),
@@ -78,9 +76,9 @@ PSBMPC_Node::PSBMPC_Node(
       declare_parameter("ownship.T_chi").get<double>(), 
       declare_parameter("ownship.R_a").get<double>(), 
       declare_parameter("ownship.LOS_LD").get<double>(), 
-      declare_parameter("ownship.LOS_K_i").get<double>())
-  #endif,
-  psbmpc(pars, ownship, cpe), 
+      declare_parameter("ownship.LOS_K_i").get<double>()),
+  #endif
+  psbmpc(ownship, cpe, pars), 
   obstacle_manager(
     declare_parameter("obstacle_manager.T_lost_limit").get<double>(), 
     declare_parameter("obstacle_manager.T_tracked_limit").get<double>(), 
@@ -93,7 +91,10 @@ PSBMPC_Node::PSBMPC_Node(
     declare_parameter("obstacle_predictor.gamma_x").get<double>(),
     declare_parameter("obstacle_predictor.gamma_y").get<double>(),
     pars),
-  grounding_hazard_manager(map_data_filename, map_origin, psbmpc)
+  grounding_hazard_manager(
+    declare_parameter("grounding_hazard_manager.map_data_filename").get<std::string>(),
+    declare_parameter("grounding_hazard_manager.map_origin").get<std::vector<double>>(), 
+    psbmpc)
 {
   //=======================================================================
   // Creating dynamic obstacle subscriber
