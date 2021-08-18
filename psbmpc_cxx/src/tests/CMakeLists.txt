@@ -16,7 +16,6 @@
 #======================================================================
 
 find_package(Eigen3 REQUIRED)
-#TODO: Merge the gpu/cpu test files for gpu/cpu specific classes together
 
 # Pure host side test files
 add_executable(tester test_psbmpc.cpp)

@@ -63,10 +63,6 @@ namespace PSBMPC_LIB
 
 			CPE cpe;
 
-			std::vector<Prediction_Obstacle> pobstacles;
-
-			bool use_joint_prediction;
-
 			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 
 			void reset_control_behaviour();
@@ -95,9 +91,6 @@ namespace PSBMPC_LIB
 				const Eigen::VectorXd &P_c_i_ps, 
 				const Obstacle_Data<Tracked_Obstacle> &data, 
 				const int i);
-
-			void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1>& static_obstacles, const bool overwrite);
-			void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const std::vector<polygon_2D> &polygons, const int n_static_obst, const bool overwrite);
 
 			void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
