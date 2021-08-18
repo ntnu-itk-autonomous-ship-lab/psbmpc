@@ -422,7 +422,7 @@ void PSBMPC_Parameters::initialize_pars(
 	const CPE_Method cpe_method,							// In: Collision probability estimator type to use
 	const Prediction_Method prediction_method,				// In: Prediction type to use
 	const Guidance_Method guidance_method,					// In: Guidance type to use
-	const std::vector<int> &ipars, 							// In: Vector of integer parameters
+	const std::vector<int64_t> &ipars, 							// In: Vector of integer parameters
 	const std::vector<double> &dpars						// In: Vector of double parameters
 	)
 {
