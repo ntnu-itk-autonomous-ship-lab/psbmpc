@@ -57,3 +57,4 @@ psbmpc_node:
 			# Double type parameters, see psbmpc_index.hpp file to see which parameter to change
 			# phi_AH, phi_OT, phi_HO, phi_CR given in degrees, conversion to radians done in the parameter class
 			dpars: [150.0, 0.5, 10.0, 5.0, 300.0, 300.0, 200.0, 3.0, 68.5, 68.5, 22.5, 68.5, 20.0, 20.0, 40.0, 6.0, 1.3, 1.6, 0.9, 1.2, 8.0, 40.0, 100.0, 5.0, 0.25, 0.01, 2.0]
+			
