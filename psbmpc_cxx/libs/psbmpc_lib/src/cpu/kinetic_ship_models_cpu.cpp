@@ -450,7 +450,7 @@ void Telemetron::predict_trajectory(
 // MilliAmpere class methods
 //=======================================================================================
 /****************************************************************************************
-*  Name     : Telemetron
+*  Name     : MilliAmpere
 *  Function : Class constructor
 *  Author   : 
 *  Modified :

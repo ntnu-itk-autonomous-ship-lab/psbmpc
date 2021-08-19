@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
 #include "cpu/cpe_cpu.hpp"
 #include "cpu/mpc_cost_cpu.hpp"
