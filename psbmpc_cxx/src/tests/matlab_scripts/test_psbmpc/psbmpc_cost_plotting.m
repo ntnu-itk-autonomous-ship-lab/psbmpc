@@ -9,7 +9,7 @@ for i = 1 : n_obst
     count = count + 1;
 end
 
-figure(1); 
+figure(3); 
 hold on; grid on;
 plot(total_cost, 'b');
 plot(cost_colregs, 'k');
@@ -29,7 +29,7 @@ for i = 1 : n_obst
     for ps = 1 : n_ps(i)
         max_cost_legend_strs{i}(ps) = strcat('ps=', num2str(ps));
     end
-    figure(i + 1);
+    figure(i + 3);
     title(strcat('Obstacle i = ', num2str(i), ' | Max cost ps'));
     grid on;
     plot(max_cost_i_ps(index : index + n_ps(i) - 1, :)');
@@ -40,7 +40,7 @@ for i = 1 : n_obst
 end
 
 max_cost_j_legend_strs = cell(1, n_static_obst);
-figure(n_obst + 2);
+figure(n_obst + 4);
 title(strcat('Static obstacles max cost'));
 grid on; hold on;
 for j = 1 : n_static_obst

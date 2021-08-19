@@ -19,7 +19,7 @@
 *****************************************************************************************/
 
 #include "cpu/psbmpc_cpu.hpp"
-#if (USE_GPU_PSBMPC == 1)
+#if USE_GPU_PSBMPC
 	#include "gpu/psbmpc_gpu.cuh"
 #endif
 #include "cpu/utilities_cpu.hpp"
@@ -202,7 +202,7 @@ int main()
 //*****************************************************************************************************************	
 	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
-	#if (USE_GPU_PSBMPC == 1)
+	#if USE_GPU_PSBMPC
 		PSBMPC_LIB::GPU::PSBMPC psbmpc;
 	#else
 		PSBMPC_LIB::CPU::PSBMPC psbmpc;

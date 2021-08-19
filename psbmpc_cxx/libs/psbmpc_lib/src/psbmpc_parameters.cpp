@@ -306,7 +306,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 4;
+	n_M = 2;
 	n_r = MAX_N_PS;
 
 	chi_offsets.resize(n_M);
@@ -428,7 +428,7 @@ void PSBMPC_Parameters::initialize_pars(
 {
 	n_M = ipars[i_ipar_n_M];
 	n_r = ipars[i_ipar_n_r];
-	assert(n_M == u_offsets.size() && n_M == chi_offsets.size());
+	assert(n_M == (int)u_offsets.size() && n_M == (int)chi_offsets.size());
 
 	p_step = ipars[i_ipar_p_step];
 	p_step_cpe = ipars[i_ipar_p_step_cpe];
@@ -437,7 +437,7 @@ void PSBMPC_Parameters::initialize_pars(
 	this->u_offsets.resize(n_M); this->chi_offsets.resize(n_M);
 	for (int M = 0; M < n_M; M++)
 	{	
-		assert(u_offsets[M].size() > 0 && chi_offsets[M].size() > 0);
+		assert((int)u_offsets[M].size() > 0 && (int)chi_offsets[M].size() > 0);
 		this->u_offsets[M].resize(u_offsets[M].size());
 		for (size_t uo = 0; uo < u_offsets[M].size(); uo++)
 		{

@@ -25,10 +25,6 @@ else()
 	project(PSBMPC LANGUAGES CXX)
 endif()
 
-# for host side debug compilation and profiling
-#set(CMAKE_VERBOSE_MAKEFILE ON)
-#add_compile_options(-fno-omit-frame-pointer -g)
-
 add_subdirectory(libs/psbmpc_lib)
 
 add_subdirectory(src/tests)
