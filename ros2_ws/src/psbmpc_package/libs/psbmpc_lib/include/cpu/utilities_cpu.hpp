@@ -27,6 +27,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <stdexcept>
+#include <vector>
 
 namespace PSBMPC_LIB
 {

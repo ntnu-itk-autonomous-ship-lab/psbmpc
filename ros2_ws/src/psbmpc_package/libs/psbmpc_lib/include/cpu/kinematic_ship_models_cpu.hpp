@@ -73,8 +73,7 @@ namespace PSBMPC_LIB
 				const double e_m,
 				const Eigen::Matrix<double, 2, -1> &waypoints, 
 				const Eigen::Vector4d &xs,
-				const double dt,
-				const Guidance_Method guidance_method);
+				const double dt);
 
 			Eigen::Vector4d predict(
 				const Eigen::Vector4d &xs_old, 
@@ -102,7 +101,6 @@ namespace PSBMPC_LIB
 				const double chi_d,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Prediction_Method prediction_method,
-				const Guidance_Method guidance_method,
 				const double T,
 				const double dt);
 		};

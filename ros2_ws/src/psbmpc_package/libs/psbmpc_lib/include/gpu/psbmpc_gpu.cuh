@@ -65,7 +65,6 @@ namespace PSBMPC_LIB
 			double chi_opt_last;
 
 			double min_cost;
-			int min_index;
 
 			Ownship ownship;
 

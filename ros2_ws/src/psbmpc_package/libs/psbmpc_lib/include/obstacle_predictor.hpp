@@ -411,7 +411,7 @@ namespace PSBMPC_LIB
 				trajectory.resize(4, n_samples);
 				trajectory.col(0) = xs_i_ps_k;
 
-				obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), xs_i_ps_k(3), xs_i_ps_k(2), waypoints, ERK1, LOS, mpc.pars.T, mpc.pars.dt);
+				obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), xs_i_ps_k(3), xs_i_ps_k(2), waypoints, ERK1, mpc.pars.T, mpc.pars.dt);
 
 				// Predict covariance using MROU model
 				for(int k = 0; k < n_samples; k++)

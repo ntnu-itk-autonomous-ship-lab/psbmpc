@@ -36,8 +36,15 @@ set(dependencies
   Eigen3
 )
 
+# Toggle usage of PSBMPC debugging version of PSBMPC
+set(ENABLE_PSBMPC_DEBUGGING 0)
+
+# OWNSHIP_TYPE = 0 : Kinematic_Ship | = 1 : Telemetron | = 2 : MilliAmpere(NOT FINISHED YET)
+set(OWNSHIP_TYPE 0)
+
 # Toggle usage of the CPU(0)/GPU(1) version of PSBMPC
 set(USE_GPU_PSBMPC 1)
+
 add_subdirectory(libs/psbmpc_lib)
 
 add_executable(psbmpc_node src/psbmpc_node.cpp)
@@ -49,6 +56,11 @@ target_link_libraries(psbmpc_node psbmpc_lib ${Matlab_LIBRARIES} Eigen3::Eigen)
 target_include_directories(psbmpc_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
+)
+
+set_target_properties(psbmpc_node PROPERTIES 
+  CUDA_SEPARABLE_COMPILATION ON
+  CUDA_ARCHITECTURES "61;86"
 )
 
 #rclcpp_components_register_nodes(psbmpc_node "PSB-MPC")
