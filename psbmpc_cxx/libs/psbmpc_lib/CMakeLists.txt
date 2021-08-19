@@ -98,37 +98,6 @@ target_compile_options(psbmpc_lib
 	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DUSE_GPU_PSBMPC=${USE_GPU_PSBMPC} -DOWNSHIP_TYPE=${OWNSHIP_TYPE} -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16  -Xlinker -dlink>
 )
 
-#if (USE_GPU_PSBMPC)
-#	target_compile_options(psbmpc_lib
-#		PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -DUSE_GPU_PSBMPC=1>
-#		PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  -DUSE_GPU_PSBMPC=1>
-#	)
-#endif()
-
-#if (ENABLE_PSBMPC_DEBUGGING)
-#	target_compile_options(psbmpc_lib
-#		PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -DENABLE_PSBMPC_DEBUGGING=1>
-#		PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  -DENABLE_PSBMPC_DEBUGGING=1>
-#	)
-#endif()
-
-if (OWNSHIP_TYPE EQUAL 0)
-	target_compile_options(psbmpc_lib
-		PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -DOWNSHIP_TYPE=0>
-		PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  -DOWNSHIP_TYPE=0>
-	)
-elseif(OWNSHIP_TYPE EQUAL 1)
-	target_compile_options(psbmpc_lib
-		PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -DOWNSHIP_TYPE=1>
-		PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  -DOWNSHIP_TYPE=1>
-	)
-elseif(OWNSHIP_TYPE EQUAL 2)
-	target_compile_options(psbmpc_lib
-		PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -DOWNSHIP_TYPE=2>
-		PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  -DOWNSHIP_TYPE=2>
-	)
-endif()
-
 if(CMAKE_BUILD_TYPE EQUAL release)
 	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -j4>)
 else()
