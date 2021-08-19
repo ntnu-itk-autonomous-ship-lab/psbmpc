@@ -222,10 +222,10 @@ void PSBMPC_Node::dynamic_obstacle_callback(
     P(2, 2) = msg->obstacle_estimates[i].vel_cov.cor_xy;
     P(3, 3) = msg->obstacle_estimates[i].vel_cov.var_y;
 
-    pos_vel_cov(0, 0) = msg->obstacle_estimates[i].pos_vel_corr.cor_px_vx;
-    pos_vel_cov(0, 1) = msg->obstacle_estimates[i].pos_vel_corr.cor_px_vy;
-    pos_vel_cov(1, 0) = msg->obstacle_estimates[i].pos_vel_corr.cor_py_vx;
-    pos_vel_cov(1, 1) = msg->obstacle_estimates[i].pos_vel_corr.cor_py_vy;
+    pos_vel_cov(0, 0) = msg->obstacle_estimates[i].pos_vel_corr.corr_px_vx;
+    pos_vel_cov(0, 1) = msg->obstacle_estimates[i].pos_vel_corr.corr_px_vy;
+    pos_vel_cov(1, 0) = msg->obstacle_estimates[i].pos_vel_corr.corr_py_vx;
+    pos_vel_cov(1, 1) = msg->obstacle_estimates[i].pos_vel_corr.corr_py_vy;
 
     P.block<2, 2>(0, 2) = pos_vel_cov;
     P.block<2, 2>(2, 0) = pos_vel_cov;
