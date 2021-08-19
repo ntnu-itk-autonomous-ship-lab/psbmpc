@@ -36,14 +36,14 @@ set(dependencies
   Eigen3
 )
 
-# Toggle usage of PSBMPC debugging version of PSBMPC
-set(ENABLE_PSBMPC_DEBUGGING 0)
+# Toggle usage of the CPU(0)/GPU(1) version of PSBMPC
+set(USE_GPU_PSBMPC 1)
 
 # OWNSHIP_TYPE = 0 : Kinematic_Ship | = 1 : Telemetron | = 2 : MilliAmpere(NOT FINISHED YET)
 set(OWNSHIP_TYPE 0)
 
-# Toggle usage of the CPU(0)/GPU(1) version of PSBMPC
-set(USE_GPU_PSBMPC 1)
+# Toggle usage of PSBMPC debugging version of PSBMPC
+set(ENABLE_PSBMPC_DEBUGGING 0)
 
 add_subdirectory(libs/psbmpc_lib)
 

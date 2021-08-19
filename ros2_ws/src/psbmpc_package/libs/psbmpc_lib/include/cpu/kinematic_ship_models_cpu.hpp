@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
 
 namespace PSBMPC_LIB
