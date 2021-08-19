@@ -89,23 +89,21 @@ target_include_directories(psbmpc_lib
 
 target_link_libraries(psbmpc_lib PUBLIC ${Matlab_LIBRARIES} ${Boost_LIBRARIES} Eigen3::Eigen)
 
-# Toggle ON/OFF matlab plotting and saving functionality for PSBMPC debugging and tuning
-#set(ENABLE_PSBMPC_DEBUGGING 0)
-
-# OWNSHIP_TYPE = 0 : Kinematic_Ship | = 1 : Telemetron | = 2 : MilliAmpere(NOT FINISHED YET)
-#set(OWNSHIP_TYPE 0)
+message("Use GPU PSBMPC: ${USE_GPU_PSBMPC}")
+message("Own-ship type: ${OWNSHIP_TYPE}")
+message("Enable PSBMPC debugging: ${ENABLE_PSBMPC_DEBUGGING}")
 
 target_compile_options(psbmpc_lib
-	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -std=c++17 -Wall -Wextra -Wno-deprecated-copy -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16>
-	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16  -Xlinker -dlink>
+	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -std=c++17 -Wall -Wextra -Wno-deprecated-copy -DUSE_GPU_PSBMPC=${USE_GPU_PSBMPC} -DOWNSHIP_TYPE=${OWNSHIP_TYPE} -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16>
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DUSE_GPU_PSBMPC=${USE_GPU_PSBMPC} -DOWNSHIP_TYPE=${OWNSHIP_TYPE} -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16  -Xlinker -dlink>
 )
 
-if (USE_GPU_PSBMPC)
-	target_compile_options(psbmpc_lib
-		PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -DUSE_GPU_PSBMPC=1>
-		PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  -DUSE_GPU_PSBMPC=1>
-	)
-endif()
+#if (USE_GPU_PSBMPC)
+#	target_compile_options(psbmpc_lib
+#		PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -DUSE_GPU_PSBMPC=1>
+#		PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  -DUSE_GPU_PSBMPC=1>
+#	)
+#endif()
 
 #if (ENABLE_PSBMPC_DEBUGGING)
 #	target_compile_options(psbmpc_lib
