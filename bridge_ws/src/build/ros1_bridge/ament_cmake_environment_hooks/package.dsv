@@ -1,0 +1,4 @@
+source;share/ros1_bridge/local_setup.bash
+source;share/ros1_bridge/local_setup.dsv
+source;share/ros1_bridge/local_setup.sh
+source;share/ros1_bridge/local_setup.zsh

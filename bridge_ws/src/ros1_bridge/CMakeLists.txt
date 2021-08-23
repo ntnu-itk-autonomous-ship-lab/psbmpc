@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
-project(psbmpc_interfaces)
+project(ros1_bridge)
+
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -10,35 +15,11 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-
-set(msg_files
-  "msg/Trajectory2.msg"
-  "msg/Trajectory4.msg"
-  "msg/Reference.msg"
-  "msg/Offset.msg"
-  "msg/Vector2.msg"
-  "msg/Vector4.msg"
-  "msg/Covariance2.msg"
-  "msg/CrossCovariance2.msg"
-  "msg/KinematicEstimate.msg"
-  "msg/KinematicEstimateStamped.msg"
-  "msg/DynamicObstacleEstimates.msg"
-  "msg/DynamicObstacleEstimatesStamped.msg"
-)
-
-rosidl_generate_interfaces(${PROJECT_NAME}
-  ${msg_files}
-  DEPENDENCIES std_msgs geometry_msgs 
- )
-
-install(
-  FILES mapping_rules.yaml
-  DESTINATION share/${PROJECT_NAME}
-)
+# uncomment the following section in order to fill in
+# further dependencies manually.
+# find_package(<dependency> REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -1,0 +1,15 @@
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ament_index/resource_index/package_run_dependencies/ros1_bridge
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ament_index/resource_index/parent_prefix_path/ros1_bridge
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/environment/ament_prefix_path.sh
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/environment/ament_prefix_path.dsv
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/environment/path.sh
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/environment/path.dsv
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/local_setup.bash
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/local_setup.sh
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/local_setup.zsh
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/local_setup.dsv
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/package.dsv
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ament_index/resource_index/packages/ros1_bridge
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/cmake/ros1_bridgeConfig.cmake
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/cmake/ros1_bridgeConfig-version.cmake
+/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/install/ros1_bridge/share/ros1_bridge/package.xml
