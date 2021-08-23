@@ -55,3 +55,6 @@ psbmpc_cxx/debug/*
 psbmpc_cxx/release/*
 psbmpc_cxx/src/tests/grounding_hazard_data/*
 psbmpc_cxx/.vscode/*
+bridge_ws/build/*
+bridge_ws/install/*
+bridge_ws/log/*

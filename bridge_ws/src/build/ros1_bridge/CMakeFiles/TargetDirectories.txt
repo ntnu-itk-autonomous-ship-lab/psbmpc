@@ -1,9 +1,0 @@
-/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/build/ros1_bridge/CMakeFiles/install/strip.dir
-/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/build/ros1_bridge/CMakeFiles/install/local.dir
-/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/build/ros1_bridge/CMakeFiles/install.dir
-/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/build/ros1_bridge/CMakeFiles/list_install_components.dir
-/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/build/ros1_bridge/CMakeFiles/rebuild_cache.dir
-/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/build/ros1_bridge/CMakeFiles/edit_cache.dir
-/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/build/ros1_bridge/CMakeFiles/test.dir
-/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/build/ros1_bridge/CMakeFiles/ros1_bridge_uninstall.dir
-/home/trymte/Desktop/copyyy/thecolavrepo/bridge_ws/src/build/ros1_bridge/CMakeFiles/uninstall.dir
