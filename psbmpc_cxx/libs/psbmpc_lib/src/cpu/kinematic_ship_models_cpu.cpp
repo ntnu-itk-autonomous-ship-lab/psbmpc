@@ -59,16 +59,16 @@ Kinematic_Ship::Kinematic_Ship()
 }
 
 Kinematic_Ship::Kinematic_Ship(
+	const double l,													// In: Ship length
+	const double w, 												// In: Ship width
 	const double T_U, 												// In: Ship first order speed time constant
 	const double T_chi, 											// In: Ship first order course time constant
 	const double R_a, 												// In: Ship radius of acceptance parameter in WP following
 	const double LOS_LD, 											// In: Ship lookahead distance parameter in LOS WP following
 	const double LOS_K_i 											// In: Ship integral gain parameter in LOS WP following
 	) : 
-	T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
+	l(l), w(w), T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
 {
-	l = 5; // milliAmpere dims
-	w = 3;
 
 	/* l = 10.0;
 	w = 4.0;*/
@@ -361,7 +361,6 @@ void Kinematic_Ship::predict_trajectory(
 	const double chi_d, 											// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints, 					// In: Obstacle waypoints
 	const Prediction_Method prediction_method,						// In: Type of prediction method to be used, typically an explicit method
-	const Guidance_Method guidance_method, 							// In: Type of guidance to be used
 	const double T,													// In: Prediction horizon
 	const double dt 												// In: Prediction time step
 	)

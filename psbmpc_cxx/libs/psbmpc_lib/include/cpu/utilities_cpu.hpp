@@ -2,7 +2,7 @@
 *
 *  File name : utilities_cpu.hpp
 *
-*  Function  : Header file for all-purpose math functions which are used by multiple 
+*  Function  : Header file for all-purpose math functions which can/are used by multiple 
 *			   host library files. Thus, do NOT add a function here if it belongs to one 
 *			   distinct class.
 *  
@@ -26,6 +26,8 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <stdexcept>
+#include <vector>
 
 namespace PSBMPC_LIB
 {
@@ -41,6 +43,81 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Place inline functions here	
 		****************************************************************************************/
+		/****************************************************************************************
+		*  Name     : parse_VVD
+		*  Function : Parse string into nested vector of doubles. Modified version from 
+		*			  <https://github.com/ros-planning/navigation2/blob/30b405c58e6d53ba8c96381416bc4679d35a1483/nav2_costmap_2d/src/array_parser.cpp>
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
+		inline std::vector<std::vector<double>> parse_VVD(const std::string &input)
+		{
+			std::vector<std::vector<double>> result;
+
+			std::stringstream input_ss(input);
+			int depth = 0;
+			std::vector<double> current_vector;
+			while (!!input_ss && !input_ss.eof()) {
+				switch (input_ss.peek()) {
+				case EOF:
+					break;
+				case '[':
+					depth++;
+					if (depth > 2) 
+					{
+						throw std::logic_error("Array depth greater than 2");
+						return result;
+					}
+					input_ss.get();
+					current_vector.clear();
+					break;
+				case ']':
+					depth--;
+					if (depth < 0) 
+					{
+						throw std::logic_error("More close ] than open [");
+						return result;
+					}
+					input_ss.get();
+					if (depth == 1) 
+					{
+						result.push_back(current_vector);
+					}
+					break;
+				case ',':
+				case ' ':
+				case '\t':
+					input_ss.get();
+					break;
+				default:  // All other characters should be part of the numbers.
+					if (depth != 2) 
+					{
+						std::stringstream err_ss;
+						err_ss << "Numbers at depth other than 2. Char was '" << char(input_ss.peek()) << "'.";
+						throw std::logic_error(err_ss.str());
+						return result;
+					}
+					float value;
+					input_ss >> value;
+					if (!!input_ss) 
+					{
+						current_vector.push_back(value);
+					}
+					break;
+				}
+			}
+
+			if (depth != 0) 
+			{
+				throw std::logic_error("Unterminated vector string.");
+			} else 
+			{
+				throw std::logic_error("");
+			}
+
+			return result;
+		}
+
 		/****************************************************************************************
 		*  Name     : save_matrix_to_file
 		*  Function : Two overloads

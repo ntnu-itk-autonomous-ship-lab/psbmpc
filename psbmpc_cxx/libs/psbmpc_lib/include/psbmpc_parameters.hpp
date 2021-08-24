@@ -94,8 +94,6 @@ namespace PSBMPC_LIB
 		std::vector<Eigen::VectorXd> u_offsets;
 		std::vector<Eigen::VectorXd> chi_offsets;
 
-		Eigen::VectorXd obstacle_course_changes;
-
 		Eigen::VectorXd dpar_low, dpar_high;
 		Eigen::VectorXd ipar_low, ipar_high;
 
@@ -123,11 +121,31 @@ namespace PSBMPC_LIB
 		void initialize_par_limits();
 
 		void initialize_pars();
+		void initialize_pars(
+			const std::vector<std::vector<double>> &u_offsets, 
+			const std::vector<std::vector<double>> &chi_offsets, 
+			const CPE_Method cpe_method,
+			const Prediction_Method prediction_method,
+			const Guidance_Method guidance_method,
+			const std::vector<int64_t> &ipars, 
+			const std::vector<double> &dpars);
 
 	public:
 
 		PSBMPC_Parameters() { initialize_pars(); initialize_par_limits(); }
-		PSBMPC_Parameters(const std::string &config); 
+		PSBMPC_Parameters(
+			const std::vector<std::vector<double>> &u_offsets, 
+			const std::vector<std::vector<double>> &chi_offsets, 
+			const CPE_Method cpe_method,
+			const Prediction_Method prediction_method,
+			const Guidance_Method guidance_method,
+			const std::vector<int64_t> &ipars, 
+			const std::vector<double> &dpars)
+		{
+			initialize_pars(u_offsets, chi_offsets, cpe_method, prediction_method, guidance_method, ipars, dpars);
+
+			initialize_par_limits();
+		}
 
 
 		void set_par(const int index, const bool value);
@@ -137,8 +155,6 @@ namespace PSBMPC_LIB
 		void set_par(const int index, const double value);
 
 		void set_par(const int index, const std::vector<Eigen::VectorXd> &value);
-
-		void set_par(const int index, const Eigen::VectorXd &value);
 
 		inline void set_cpe_method(const CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
 
@@ -153,8 +169,6 @@ namespace PSBMPC_LIB
 		double get_dpar(const int index) const;
 
 		std::vector<Eigen::VectorXd> get_opar(const int index) const;
-
-		Eigen::VectorXd get_evpar(const int index) const;
 
 		inline CPE_Method get_cpe_method() const { return cpe_method; }; 
 

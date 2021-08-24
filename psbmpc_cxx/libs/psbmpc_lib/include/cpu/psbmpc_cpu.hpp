@@ -46,7 +46,8 @@ namespace PSBMPC_LIB
 			std::vector<int> n_ps;
 
 			// Control behavior related vectors and the own-ship maneuver times in the prediction horizon
-			Eigen::VectorXd offset_sequence_counter, offset_sequence, maneuver_times;
+			Eigen::VectorXd offset_sequence, maneuver_times;
+			Eigen::VectorXi offset_sequence_counter;
 
 			// Previous optimal offsets/modifications
 			double u_opt_last;
@@ -61,10 +62,6 @@ namespace PSBMPC_LIB
 			Ownship ownship;
 
 			CPE cpe;
-
-			std::vector<Prediction_Obstacle> pobstacles;
-
-			bool use_joint_prediction;
 
 			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 
@@ -95,9 +92,6 @@ namespace PSBMPC_LIB
 				const Obstacle_Data<Tracked_Obstacle> &data, 
 				const int i);
 
-			void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1>& static_obstacles, const bool overwrite);
-			void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const std::vector<polygon_2D> &polygons, const int n_static_obst, const bool overwrite);
-
 			void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
 		public:
@@ -107,6 +101,7 @@ namespace PSBMPC_LIB
 			MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 			PSBMPC();
+			PSBMPC(const Ownship &ownship, const CPE &cpe, const PSBMPC_Parameters &pars); 
 
 			// Resets previous optimal offsets and predicted own-ship waypoint following
 			void reset() { u_opt_last = 1.0; chi_opt_last = 0.0; ownship.set_wp_counter(0); }

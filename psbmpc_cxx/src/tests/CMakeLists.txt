@@ -3,9 +3,6 @@
 # functionality. Almost every module of the PSB-MPC lib can be tested, 
 # by uncommenting the module test file you want to select. 
 
-# NOTE: Not all the GPU type (.cu extensions) test files can be
-# guaranteed to be bug-free, so use with care in this case. 
-
 # ---------------------------------------------------------------------
 
 # Version 1.0
@@ -19,7 +16,6 @@
 #======================================================================
 
 find_package(Eigen3 REQUIRED)
-#TODO: Merge the gpu/cpu test files for gpu/cpu specific classes together
 
 # Pure host side test files
 #add_executable(tester test_psbmpc.cpp)

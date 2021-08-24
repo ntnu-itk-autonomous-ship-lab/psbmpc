@@ -35,7 +35,27 @@ namespace CPU
 *****************************************************************************************/
 CPE::CPE(
     const CPE_Method cpe_method,                                    // In: Method to be used
-    const double dt                                                 // In: Time step of calling function simulation environment
+    const int n_CE,                                                 // In: Number of samples for the Cross-entropy method
+    const int n_MCSKF,                                              // In: Number of samples for the MCS + KF 4D method
+    const double alpha_n,                                           // In: CE method smoothing factor
+    const double gate,                                              // In: CE method 1 - alpha_p confidense ellipse parameter
+    const double rho,                                               // In: CE method ratio parameter for the required amount of elite samples
+    const double max_it,                                            // In: CE method max number of optimization iterations
+    const double q,                                                 // In: MCSKF4D process noise variance
+    const double r                                                  // In: MCSKF4D measurement noise variance
+    ) :
+    method(cpe_method), n_CE(n_CE), n_MCSKF(n_MCSKF), generator(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1)), 
+    alpha_n(alpha_n), gate(gate), rho(rho), max_it(max_it), q(q), r(r), dt_seg(0.5)
+{
+    sigma_inject = 1.0 / 3.0; // dependent on d_safe wrt obstacle i => set in CE-method
+
+    converged_last = false;
+
+    resize_matrices();
+}
+
+CPE::CPE(
+    const CPE_Method cpe_method                                    // In: Method to be used
     ) :
     method(cpe_method), generator(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1))
 {
@@ -64,10 +84,10 @@ CPE::CPE(
     // MCSKF4D pars
     n_MCSKF = 500;
 
-    r = 0.001;
     q = 8e-4;
+    r = 0.001;
 
-    dt_seg = dt;
+    dt_seg = 0.5;
 
     resize_matrices();
 }
@@ -314,8 +334,8 @@ void CPE::resize_matrices()
 /****************************************************************************************
 *  Name     : update_L
 *  Function : Updates the lower triangular matrix L based on cholesky decomposition 
-*             formulas for the input matrix. For 2x2 and 4x4 matrices only, hence 
-*             why eigen is not used.
+*             formulas for the input matrix. Hardcoded for 2x2 and 4x4 matrices for
+*             efficiency.
 *             Formulas: 
 *             L_jj = sqrt(A_jj - sum_k=0^j-1 (L_jk)^2)
 *             L_ij = (1 / L_jj) * (A_jj) - sum_k=0^j-1 L_ik * L_jk)
@@ -724,8 +744,8 @@ double CPE::CE_estimation(
     else                       { var_P_i_largest = P_i(1, 1); }
 
     // This large a distance usually means no effective conflict zone, as
-    // practically 100% of probability mass inside 3.5 * standard deviations
-    // (assuming equal std dev in x, y (assumption))
+    // practically 100% of probability mass is inside 3.5 * standard deviations
+    // (assuming equal std dev in x, y)
     if (d_0i > d_safe + 3.5 * sqrt(var_P_i_largest)) 
     { 
         return P_c_CE; 

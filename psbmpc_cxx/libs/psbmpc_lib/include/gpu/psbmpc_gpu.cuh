@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
 #include "cpu/cpe_cpu.hpp"
 #include "cpu/mpc_cost_cpu.hpp"
@@ -65,7 +66,6 @@ namespace PSBMPC_LIB
 			double chi_opt_last;
 
 			double min_cost;
-			int min_index;
 
 			Ownship ownship;
 
@@ -184,7 +184,7 @@ namespace PSBMPC_LIB
 			CPU::MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 			PSBMPC();
-			PSBMPC(const std::string &config);
+			PSBMPC(const Ownship &ownship, const CPU::CPE &cpe, const PSBMPC_Parameters &pars); 
 			PSBMPC(const PSBMPC &other);
 
 			~PSBMPC();

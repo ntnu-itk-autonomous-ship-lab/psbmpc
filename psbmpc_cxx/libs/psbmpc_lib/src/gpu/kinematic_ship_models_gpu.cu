@@ -58,16 +58,16 @@ __host__ __device__ Kinematic_Ship::Kinematic_Ship()
 }
 
 Kinematic_Ship::Kinematic_Ship(
+	const float l,													// In: Ship length
+	const float w, 													// In: Ship width
 	const float T_U, 												// In: Ship first order speed time constant
 	const float T_chi, 												// In: Ship first order course time constant
 	const float R_a, 												// In: Ship radius of acceptance parameter in WP following
 	const float LOS_LD, 											// In: Ship lookahead distance parameter in LOS WP following
 	const float LOS_K_i 											// In: Ship integral gain parameter in LOS WP following
 	) : 
-	T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
+	l(l), w(w), T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
 {
-	l = 5.0f; // milliAmpere dims
-	w = 3.0f;
 
 	/*l = 10.0f; 
 	w = 4.0f; */

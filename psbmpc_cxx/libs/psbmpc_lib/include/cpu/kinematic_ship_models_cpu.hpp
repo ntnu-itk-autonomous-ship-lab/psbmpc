@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
 
 namespace PSBMPC_LIB
@@ -49,7 +50,9 @@ namespace PSBMPC_LIB
 
 			Kinematic_Ship();
 
-			Kinematic_Ship(const double T_U, const double  T_chi, const double R_a, const double LOS_LD, const double LOS_K_i);
+			//Kinematic_Ship(const Kinematic_Ship &other) = default;
+
+			Kinematic_Ship(const double l, const double w, const double T_U, const double  T_chi, const double R_a, const double LOS_LD, const double LOS_K_i);
 
 			double get_length() const { return l; }
 
@@ -101,7 +104,6 @@ namespace PSBMPC_LIB
 				const double chi_d,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Prediction_Method prediction_method,
-				const Guidance_Method guidance_method,
 				const double T,
 				const double dt);
 		};
