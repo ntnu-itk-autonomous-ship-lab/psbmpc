@@ -55,6 +55,8 @@ namespace PSBMPC_LIB
 
 			double get_width() const { return w; }
 
+			inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; this->wp_c_p = wp_c_0; }
+
 			void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Vector4d &xs);
 
 			void update_guidance_references(
@@ -64,6 +66,14 @@ namespace PSBMPC_LIB
 				const Eigen::Vector4d &xs,
 				const double dt,
 				const Guidance_Method guidance_method);
+
+			void update_guidance_references(
+				double &u_d, 
+				double &chi_d, 
+				const double e_m,
+				const Eigen::Matrix<double, 2, -1> &waypoints, 
+				const Eigen::Vector4d &xs,
+				const double dt);
 
 			Eigen::Vector4d predict(
 				const Eigen::Vector4d &xs_old, 
@@ -83,9 +93,20 @@ namespace PSBMPC_LIB
 				const Guidance_Method guidance_method,
 				const double T,
 				const double dt);
+
+			void predict_trajectory(
+				Eigen::MatrixXd &trajectory,
+				const double e_m,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const double T,
+				const double dt);
 		};
 
-		// The default ownship is the simple kinematic_ship class
+		// The default ownship is the Kinematic_Ship class
 		#if OWNSHIP_TYPE == 0
 			using Ownship = Kinematic_Ship;
 		#endif

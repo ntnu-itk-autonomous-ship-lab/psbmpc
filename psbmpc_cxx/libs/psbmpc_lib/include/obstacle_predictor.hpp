@@ -208,83 +208,21 @@ namespace PSBMPC_LIB
 
 			e = - (xs_i_0(0) - waypoints_i(0, 0)) * sin(alpha) + (xs_i_0(1) - waypoints_i(1, 0)) * cos(alpha);
 
-			switch (n_ps_LOS)
+			ct_offsets.resize(n_ps_LOS);
+			int multiplier = (n_ps_LOS - 1) / 2;
+			for (int ps = 0; ps < n_ps_LOS; ps++)
 			{
-				case 1:
+				if (ps < (n_ps_LOS - 1) / 2)
 				{
-					ct_offsets.resize(1);
-					ct_offsets(0) = - e;
-					break;
+					ct_offsets(ps) = - multiplier * r_ct - e;
+					multiplier -= 1;
 				}
-				case 3:
+				else
 				{
-					ct_offsets.resize(3);
-					ct_offsets << - r_ct - e, - e, r_ct - e;
-					break;
-				}
-				case 5:
-				{
-					ct_offsets.resize(5);
-					ct_offsets << - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e;
-					break;
-				}
-				case 7:
-				{
-					ct_offsets.resize(7);
-					ct_offsets << - 3 * r_ct - e, - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e, 3 * r_ct - e;
-					break;
-				}		
-				case 9:
-				{
-					ct_offsets.resize(9);
-					ct_offsets << - 4 * r_ct - e, - 3 * r_ct - e, - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e, 3 * r_ct - e, 4 * r_ct - e;
-					break;
-				}			
-				case 11:
-				{
-					ct_offsets.resize(11);
-					ct_offsets << - 5 * r_ct - e, - 4 * r_ct - e, - 3 * r_ct - e, - 2 * r_ct - e, - r_ct - e, - e, r_ct - e, 2 * r_ct - e, 3 * r_ct - e, 4 * r_ct - e, 5 * r_ct - e;
-					break;
+					ct_offsets(ps) = multiplier * r_ct - e;
+					multiplier += 1;
 				}				
-				default:
-					break;
 			}
-
-			/* switch (n_ps_LOS)
-			{
-				case 1:
-				{
-					ct_offsets.resize(1);
-					ct_offsets(0) = 0.0;
-					break;
-				}
-				case 3:
-				{
-					ct_offsets.resize(3);
-					ct_offsets << - r_ct, 0.0, r_ct;
-					break;
-				}
-				case 5:
-				{
-					ct_offsets.resize(5);
-					ct_offsets << - 2 * r_ct, - r_ct, 0.0, r_ct, 2 * r_ct;
-					break;
-				}
-				case 7:
-				{
-					ct_offsets.resize(7);
-					ct_offsets << - 3 * r_ct, - 2 * r_ct, - r_ct, 0.0, r_ct, 2 * r_ct, 3 * r_ct;
-					break;
-				}		
-				case 9:
-				{
-					ct_offsets.resize(9);
-					ct_offsets << - 4 * r_ct, - 3 * r_ct, - 2 * r_ct, - r_ct, 0.0, r_ct, 2 * r_ct, 3 * r_ct, 4 * r_ct;
-					break;
-				}				
-				default:
-					break;
-			} */
 		}
 
 		/****************************************************************************************
@@ -467,7 +405,7 @@ namespace PSBMPC_LIB
 		MROU mrou;
 
 		Obstacle_Predictor() 
-			: n_ps_MROU(3), n_ps_LOS(1), r_ct(10.0), mrou(0.01, 0.0, 0.01, 0.1, 0.1)
+			: n_ps_MROU(5), n_ps_LOS(5), r_ct(10.0), mrou(0.01, 0.0, 0.01, 0.1, 0.1)
 			//: n_ps_MROU(5), n_ps_LOS(5), r_ct(30.0), mrou(0.1, 0.0, 0.1, 0.1, 0.1)
 		{
 			if (n_ps_MROU == 3)

@@ -24,6 +24,7 @@
 #include "cpu/cpe_cpu.hpp"
 #include "cpu/mpc_cost_cpu.hpp"
 #include "cb_cost_functor_structures.cuh"
+#include <string>
 
 namespace PSBMPC_LIB
 {	
@@ -44,12 +45,12 @@ namespace PSBMPC_LIB
 
 		class CB_Cost_Functor_1;
 		class CB_Cost_Functor_2;
+		class CB_Cost_Functor_3;
 		class CB_Functor_Pars;
 		class CB_Functor_Data;
 		
 		class CPE;
 		class Cuda_Obstacle;
-		class Obstacle_SBMPC;
 		template <typename Parameters> class MPC_Cost;
 
 		class PSBMPC
@@ -72,32 +73,28 @@ namespace PSBMPC_LIB
 
 			CPU::CPE cpe_host;
 
-			std::vector<Prediction_Obstacle> pobstacles;
-
-			bool use_joint_prediction;
-
 			//=====================================================
 			// Device related objects read/write-ed upon by each
 			// GPU thread.
 			//=====================================================
-			//Device vector of thread indices/ID's, size n_threads x 1
-			thrust::device_vector<unsigned int> thread_index_dvec;
+			//Device vector of thread indices/ID's for the second cost functor
+			thrust::device_vector<int> thread_index_dvec;
 
-			// Device vector of control behaviours, size n_threads x 1
+			// Device vector of control behaviours
 			thrust::device_vector<TML::PDMatrix<float, 2 * MAX_N_M, 1>> cb_dvec;
 
-			// Device vector of control bevhaviour indices, obstacle indices, obstacle prediction scenario indices,
-			// intelligent obstacle prediction scenario indices,  size n_threads x 1
-			thrust::device_vector<unsigned int> cb_index_dvec, obstacle_index_dvec, obstacle_ps_index_dvec;
-			thrust::device_vector<int> jp_obstacle_ps_index_dvec;
+			// Device vector of control behaviour indices, static obstacle indices, dynamic obstacle indices, 
+			// dynamic obstacle prediction scenario indices and cpe indices
+			thrust::device_vector<int> cb_index_dvec, sobstacle_index_dvec, dobstacle_index_dvec, dobstacle_ps_index_dvec, cpe_index_dvec;
 
-			// Device vector of costs, size n_cbs x 1, consisting of the static obstacle and path related costs for each control behaviour
+			// Device vector of path related costs for each control behaviour
 			thrust::device_vector<float> cb_costs_1_dvec;
-			// Device vector of costs, size n_threads x 1. It is the dynamic obstacle cost when the own-ship
-			// follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, behaves as in
-			// prediction scenario <obstacle_ps_index>. The intention and COLREGS violation indicator for the intelligent prediction scenario is given as the
-			// second and third element
-			thrust::device_vector<thrust::tuple<float, Intention, bool>> cb_costs_2_dvec;
+			
+			// Device vector of costs, size n_threads x 1. It is the grounding obstacle cost (first tuple element) wrt one static
+			// obstacle, and the dynamic obstacle cost (second tuple element) and COLREGS violation indicator (third element) when 
+			// the own-ship  follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, 
+			// behaves as in prediction scenario <obstacle_ps_index>. 
+			thrust::device_vector<thrust::tuple<float, float, float>> cb_costs_2_dvec;
 			
 			std::unique_ptr<CB_Cost_Functor_1> cb_cost_functor_1;
 			std::unique_ptr<CB_Cost_Functor_2> cb_cost_functor_2;
@@ -110,18 +107,17 @@ namespace PSBMPC_LIB
 			CB_Functor_Data *fdata_device_ptr;
 
 			Cuda_Obstacle *obstacles_device_ptr;
-			Prediction_Obstacle *pobstacles_device_ptr;
 
 			CPE *cpe_device_ptr;
 
 			Ownship *ownship_device_ptr;
 
-			Obstacle_Ship *obstacle_ship_device_ptr;
-
-			Obstacle_SBMPC *obstacle_sbmpc_device_ptr;
+			Basic_Polygon *polygons_device_ptr;
 
 			MPC_Cost<CB_Functor_Pars> *mpc_cost_device_ptr;
 			//=====================================================
+			void preallocate_device_data();
+
 			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 			
 			void map_offset_sequences();
@@ -130,23 +126,15 @@ namespace PSBMPC_LIB
 
 			void increment_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
-			void map_thrust_dvecs();
+			void map_thrust_dvecs(const std::vector<polygon_2D> &polygons);
 
-			void find_optimal_control_behaviour(Obstacle_Data<Tracked_Obstacle> &data);
+			void find_optimal_control_behaviour(Obstacle_Data<Tracked_Obstacle> &data, const std::vector<polygon_2D> &polygons);
 
-			void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data);
-
-			void set_up_independent_obstacle_prediction(
-				std::vector<Intention> &ps_ordering,
-				Eigen::VectorXd &ps_course_changes,
-				Eigen::VectorXd &ps_maneuver_times,
-				const double t_cpa_i,
-				const int i);
+			void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 			
-			// Obstacle prediction scenario pruning related methods
 			void prune_obstacle_scenarios(Obstacle_Data<Tracked_Obstacle> &data);
 			
-			void calculate_instantaneous_collision_probabilities(
+			void calculate_collision_probabilities(
 				Eigen::MatrixXd &P_c_i, 
 				const Obstacle_Data<Tracked_Obstacle> &data, 
 				const int i, 
@@ -174,20 +162,20 @@ namespace PSBMPC_LIB
 				const TML::Vector2f &L_AB,
 				const float d_AB);
 
-			void update_conditional_obstacle_data(Obstacle_Data_GPU_Friendly &data, const int i_caller, const int k);
-
-			void predict_trajectories_jointly(Obstacle_Data<Tracked_Obstacle> &data, const Eigen::Matrix<double, 4, -1>& static_obstacles);
-
 			void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
 
 			void set_up_temporary_device_memory(
 				const double u_d,
 				const double chi_d, 
 				const Eigen::Matrix<double, 2, -1> &waypoints,
-				const Eigen::Matrix<double, 4, -1> &static_obstacles,
+				const double V_w,
+				const Eigen::Vector2d &wind_direction,
+				const std::vector<polygon_2D> &polygons,
 				const Obstacle_Data<Tracked_Obstacle> &data);
 
-			void clear_temporary_device_memory();
+			void assign_data(const PSBMPC &other);
+
+			void free();
 
 		public:
 
@@ -196,8 +184,15 @@ namespace PSBMPC_LIB
 			CPU::MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 			PSBMPC();
+			PSBMPC(const std::string &config);
+			PSBMPC(const PSBMPC &other);
 
 			~PSBMPC();
+
+			PSBMPC& operator=(const PSBMPC &other);
+
+			// Resets previous optimal offsets and predicted own-ship waypoint following
+			void reset() { u_opt_last = 1.0; chi_opt_last = 0.0; ownship.set_wp_counter(0);}
 
 			void calculate_optimal_offsets(
 				double &u_opt, 
@@ -207,7 +202,9 @@ namespace PSBMPC_LIB
 				const double chi_d, 
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::VectorXd &ownship_state,
-				const Eigen::Matrix<double, 4, -1> &static_obstacles,
+				const double V_w,
+				const Eigen::Vector2d &wind_direction,
+				const std::vector<polygon_2D> &polygons,
 				Obstacle_Data<Tracked_Obstacle> &data);
 
 		};

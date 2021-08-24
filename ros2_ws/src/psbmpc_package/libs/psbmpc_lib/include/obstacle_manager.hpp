@@ -25,7 +25,7 @@
 #include "psbmpc_parameters.hpp"
 #include "tracked_obstacle.hpp"
 
-#include "Eigen/StdVector"
+#include "Eigen/Dense"
 #include <string>
 
 
@@ -86,20 +86,20 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		template <class Parameter_Object>
+		template <class MPC_Type>
 		void determine_situation_type(
 			ST& st_A,																// In/out: Situation type of vessel A
 			ST& st_B,																// In/out: Situation type of vessel B
-			const Parameter_Object &mpc_pars, 										// In: Parameters of the obstacle manager boss	
 			const Eigen::Vector2d &v_A,												// In: (NE) Velocity vector of vessel A 
 			const double psi_A, 													// In: Heading of vessel A
 			const Eigen::Vector2d &v_B, 											// In: (NE) Velocity vector of vessel B
 			const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-			const double d_AB 														// In: Distance from vessel A to vessel B
+			const double d_AB, 														// In: Distance from vessel A to vessel B
+			const MPC_Type &mpc														// In: Calling MPC (either PSB-MPC or SB-MPC)
 			)
 		{
 			// Crash situation or outside consideration range
-			if(d_AB < mpc_pars.d_safe || d_AB > mpc_pars.d_close)
+			if(d_AB < mpc.pars.d_safe || d_AB > mpc.pars.d_close)
 			{
 				st_A = A; st_B = A;
 				return;
@@ -110,13 +110,13 @@ namespace PSBMPC_LIB
 				bool B_is_starboard, A_is_overtaken, B_is_overtaken;
 				bool is_ahead, is_passed, is_head_on, is_crossing;
 
-				is_ahead = v_A.dot(L_AB) > cos(mpc_pars.phi_AH) * v_A.norm();
+				is_ahead = v_A.dot(L_AB) > cos(mpc.pars.phi_AH) * v_A.norm();
 
-				A_is_overtaken = v_A.dot(v_B) > cos(mpc_pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
+				A_is_overtaken = v_A.dot(v_B) > cos(mpc.pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
 								v_A.norm() < v_B.norm()							  		&&
 								v_A.norm() > 0.25;
 
-				B_is_overtaken = v_B.dot(v_A) > cos(mpc_pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
+				B_is_overtaken = v_B.dot(v_A) > cos(mpc.pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
 								v_B.norm() < v_A.norm()							  		&&
 								v_B.norm() > 0.25;
 
@@ -126,14 +126,14 @@ namespace PSBMPC_LIB
 							!A_is_overtaken) 											||
 							(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
 							!B_is_overtaken)) 											&&
-							d_AB > mpc_pars.d_safe;
+							d_AB > mpc.pars.d_safe;
 
-				is_head_on = v_A.dot(v_B) < - cos(mpc_pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
+				is_head_on = v_A.dot(v_B) < - cos(mpc.pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
 							v_A.norm() > 0.25											&&
 							v_B.norm() > 0.25											&&
 							is_ahead;
 
-				is_crossing = v_A.dot(v_B) < cos(mpc_pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
+				is_crossing = v_A.dot(v_B) < cos(mpc.pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
 							v_A.norm() > 0.25											&&
 							v_B.norm() > 0.25											&&
 							!is_head_on 												&&
@@ -175,13 +175,11 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		template <class Parameter_Object>
+		template <class MPC_Type>
 		void update_obstacles(
-			const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
 			const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
 			const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
-			const Eigen::MatrixXd &obstacle_intention_probabilities, 							// In: Obstacle intention probability information
-			const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
+			const MPC_Type &mpc																	// In: Calling MPC (either PSB-MPC or SB-MPC)
 			) 			
 		{
 			int n_obst_old = data.obstacles.size();
@@ -200,10 +198,8 @@ namespace PSBMPC_LIB
 						data.obstacles[j].update(
 							obstacle_states.col(i), 
 							obstacle_covariances.col(i), 
-							obstacle_intention_probabilities.col(i),
-							obstacle_a_priori_CC_probabilities(i),
 							obstacle_filter_on,
-							mpc_pars.dt);
+							mpc.pars.dt);
 
 						data.new_obstacles.push_back(std::move(data.obstacles[j]));
 
@@ -217,11 +213,9 @@ namespace PSBMPC_LIB
 					data.new_obstacles.push_back(std::move(Tracked_Obstacle(
 						obstacle_states.col(i), 
 						obstacle_covariances.col(i),
-						obstacle_intention_probabilities.col(i), 
-						obstacle_a_priori_CC_probabilities(i),
 						obstacle_filter_on,  
-						mpc_pars.T, 
-						mpc_pars.dt)));
+						mpc.pars.T, 
+						mpc.pars.dt)));
 				}
 			}
 			// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
@@ -232,12 +226,12 @@ namespace PSBMPC_LIB
 			{
 				for (size_t j = 0; j < data.obstacles.size(); j++)
 				{
-					data.obstacles[j].increment_duration_lost(mpc_pars.dt * mpc_pars.p_step);
+					data.obstacles[j].increment_duration_lost(mpc.pars.dt * mpc.pars.p_step);
 
 					if (data.obstacles[j].get_duration_tracked() >= T_tracked_limit 	&&
-						(data.obstacles[j].get_duration_lost() < T_lost_limit || data.obstacles[j].kf->get_covariance()(0,0) <= 5.0))
+						(data.obstacles[j].get_duration_lost() < T_lost_limit || data.obstacles[j].kf.get_covariance()(0,0) <= 5.0))
 					{
-						data.obstacles[j].update(obstacle_filter_on, mpc_pars.dt);
+						data.obstacles[j].update(obstacle_filter_on, mpc.pars.dt);
 
 						data.new_obstacles.push_back(std::move(data.obstacles[j]));
 					}
@@ -256,11 +250,11 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		template <class Parameter_Object>
+		template <class MPC_Type>
 		void update_situation_type_and_transitional_variables(
-			const Parameter_Object &mpc_pars,								// In: Parameters of the obstacle manager boss
 			const Eigen::VectorXd &ownship_state,							// In: Current time own-ship state
-			const double ownship_length										// In: Dimension of ownship along longest axis
+			const double ownship_length,										// In: Dimension of ownship along longest axis
+			const MPC_Type &mpc												// In: Calling MPC (either PSB-MPC or SB-MPC)
 			)
 		{
 			bool is_close;
@@ -270,9 +264,9 @@ namespace PSBMPC_LIB
 			double psi_A, psi_B, d_AB;
 			if (ownship_state.size() == 4)
 			{
-				v_A(0) = ownship_state(2);
-				v_A(1) = ownship_state(3);
-				psi_A = atan2(v_A(1), v_A(0));
+				v_A(0) = ownship_state(3) * cos(ownship_state(2));
+				v_A(1) = ownship_state(3) * sin(ownship_state(2));
+				psi_A = ownship_state(2);
 			}
 			else
 			{
@@ -293,12 +287,12 @@ namespace PSBMPC_LIB
 			//std::cout << A << std::endl;
 			for (int i = 0; i < n_obst; i++)
 			{
-				v_B(0) = data.obstacles[i].kf->get_state()(2);
-				v_B(1) = data.obstacles[i].kf->get_state()(3);
+				v_B(0) = data.obstacles[i].kf.get_state()(2);
+				v_B(1) = data.obstacles[i].kf.get_state()(3);
 				psi_B = atan2(v_B(1), v_B(0));
 
-				L_AB(0) = data.obstacles[i].kf->get_state()(0) - ownship_state(0);
-				L_AB(1) = data.obstacles[i].kf->get_state()(1) - ownship_state(1);
+				L_AB(0) = data.obstacles[i].kf.get_state()(0) - ownship_state(0);
+				L_AB(1) = data.obstacles[i].kf.get_state()(1) - ownship_state(1);
 				d_AB = L_AB.norm();
 
 				// Decrease the distance between the vessels by their respective max dimension
@@ -306,7 +300,7 @@ namespace PSBMPC_LIB
 				
 				L_AB = L_AB.normalized();
 
-				determine_situation_type(data.ST_0[i], data.ST_i_0[i], mpc_pars, v_A, psi_A, v_B, L_AB, d_AB);
+				determine_situation_type(data.ST_0[i], data.ST_i_0[i], v_A, psi_A, v_B, L_AB, d_AB, mpc);
 				
 				//std::cout << "Own-ship situation type wrt obst i = " << i << " ? " << ST_0[i] << std::endl;
 				//std::cout << "Obst i = " << i << " situation type wrt ownship ? " << ST_i_0[i] << std::endl;
@@ -314,9 +308,9 @@ namespace PSBMPC_LIB
 				/*********************************************************************
 				* Transitional variable update
 				*********************************************************************/
-				is_close = d_AB <= mpc_pars.d_close;
+				is_close = d_AB <= mpc.pars.d_close;
 
-				data.AH_0[i] = v_A.dot(L_AB) > cos(mpc_pars.phi_AH) * v_A.norm();
+				data.AH_0[i] = v_A.dot(L_AB) > cos(mpc.pars.phi_AH) * v_A.norm();
 
 				//std::cout << "Obst i = " << i << " ahead at t0 ? " << AH_0[i] << std::endl;
 				
@@ -331,8 +325,8 @@ namespace PSBMPC_LIB
 				//std::cout << "Own-ship on starboard side of obst i = " << i << " at t0 ? " << S_i_TC_0[i] << std::endl;
 
 				// Ownship overtaking the obstacle
-				data.O_TC_0[i] = v_B.dot(v_A) > cos(mpc_pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-						v_B.norm() < v_B.norm()							    					&&
+				data.O_TC_0[i] = v_B.dot(v_A) > cos(mpc.pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
+						v_B.norm() < v_A.norm()							    					&&
 						v_B.norm() > 0.25														&&
 						is_close 																&&
 						data.AH_0[i];
@@ -340,7 +334,7 @@ namespace PSBMPC_LIB
 				//std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << O_TC_0[i] << std::endl;
 
 				// Obstacle overtaking the ownship
-				data.Q_TC_0[i] = v_A.dot(v_B) > cos(mpc_pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
+				data.Q_TC_0[i] = v_A.dot(v_B) > cos(mpc.pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
 						v_A.norm() < v_B.norm()							  						&&
 						v_A.norm() > 0.25 														&&
 						is_close 																&&
@@ -353,12 +347,12 @@ namespace PSBMPC_LIB
 						!data.Q_TC_0[i])		 										||
 						(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 			&& // Obstacle's perspective	
 						!data.O_TC_0[i]))		 										&&
-						d_AB > mpc_pars.d_safe;
+						d_AB > mpc.pars.d_safe;
 				
 				//std::cout << "Obst i = " << i << " passed by at t0 ? " << data.IP_0[i] << std::endl;
 
 				// This is not mentioned in article, but also implemented here..				
-				data.H_TC_0[i] = v_A.dot(v_B) < - cos(mpc_pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
+				data.H_TC_0[i] = v_A.dot(v_B) < - cos(mpc.pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
 						v_A.norm() > 0.25															&&
 						v_B.norm() > 0.25															&&
 						data.AH_0[i];
@@ -367,7 +361,7 @@ namespace PSBMPC_LIB
 
 				// Crossing situation, a bit redundant with the !is_passed condition also, 
 				// but better safe than sorry (could be replaced with B_is_ahead also)
-				data.X_TC_0[i] = v_A.dot(v_B) < cos(mpc_pars.phi_CR) * v_A.norm() * v_B.norm()	&&
+				data.X_TC_0[i] = v_A.dot(v_B) < cos(mpc.pars.phi_CR) * v_A.norm() * v_B.norm()	&&
 						!data.H_TC_0[i]															&&
 						!data.IP_0[i]															&&
 						v_A.norm() > 0.25														&&
@@ -395,20 +389,18 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		template <class Parameter_Object>
+		template <class MPC_Type>
 		void operator()(
-			const Parameter_Object &mpc_pars,													// In: Parameters of the obstacle manager boss
 			const Eigen::VectorXd &ownship_state,												// In: Current time own-ship state
 			const double ownship_length,														// In: Dimension of ownship along longest axis
 			const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
 			const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
-			const Eigen::MatrixXd &obstacle_intention_probabilities, 							// In: Obstacle intention probability information
-			const Eigen::VectorXd &obstacle_a_priori_CC_probabilities 							// In: Obstacle a priori COLREGS compliance probabilities
+			const MPC_Type &mpc																	// In: Calling MPC (either PSB-MPC or SB-MPC)
 			) 			
 		{
-			update_obstacles<Parameter_Object>(mpc_pars, obstacle_states, obstacle_covariances, obstacle_intention_probabilities, obstacle_a_priori_CC_probabilities);
+			update_obstacles(obstacle_states, obstacle_covariances, mpc);
 
-			update_situation_type_and_transitional_variables<Parameter_Object>(mpc_pars, ownship_state, ownship_length);
+			update_situation_type_and_transitional_variables(ownship_state, ownship_length, mpc);
 		}
 	};
 }

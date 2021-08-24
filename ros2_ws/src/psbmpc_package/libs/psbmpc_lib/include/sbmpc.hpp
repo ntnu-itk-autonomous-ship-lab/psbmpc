@@ -53,7 +53,7 @@ namespace PSBMPC_LIB
 
 		void increment_control_behaviour();
 
-		void initialize_prediction(Obstacle_Data<Tracked_Obstacle> &data);
+		void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
 
 		bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
 

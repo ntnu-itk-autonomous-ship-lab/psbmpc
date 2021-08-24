@@ -102,7 +102,8 @@ target_link_libraries(psbmpc_lib PUBLIC ${Matlab_LIBRARIES} ${Boost_LIBRARIES} E
 # Common build commands
 target_compile_options(psbmpc_lib
 	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -std=c++17 -Wall -Wextra -Wno-deprecated-copy -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0>
-	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0 -Xlinker -dlink>)
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DEIGEN_MAX_STATIC_ALIGN_BYTES=16 -DOWNSHIP_TYPE=0 -Xlinker -dlink>
+)
 
 if(CMAKE_BUILD_TYPE EQUAL release)
 	target_compile_options(psbmpc_lib PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -std=c++17 -j4>)

@@ -246,6 +246,10 @@ int main()
 	mxArray *pred_traj_mx;
 	double *p_pred_traj;
 
+	mxArray *d_safe_mx = mxCreateDoubleScalar(psbmpc.pars.get_dpar(i_dpar_d_safe));
+	double *p_d_safe = mxGetPr(d_safe_mx);
+
+	engPutVariable(ep, "d_safe", d_safe_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
 	engPutVariable(ep, "T_sim", T_sim_mx);
 	engPutVariable(ep, "WPs", wps_os_mx);

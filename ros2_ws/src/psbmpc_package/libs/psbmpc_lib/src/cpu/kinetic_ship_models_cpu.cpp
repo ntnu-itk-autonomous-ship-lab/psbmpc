@@ -44,7 +44,7 @@ Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
 	e_int = 0;
 	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
 	R_a = 20.0; 			    // WP acceptance radius (20.0)
-	LOS_LD = 250.0; 			// LOS lookahead distance (100.0) 
+	LOS_LD = 450.0; 			// LOS lookahead distance (100.0) 
 	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
@@ -432,7 +432,7 @@ void Telemetron::predict_trajectory(
 	{ 
 		if (k == maneuver_times[man_count]){
 			u_m = offset_sequence[2 * man_count];
-			chi_m = offset_sequence[2 * man_count + 1]; 
+			chi_m += offset_sequence[2 * man_count + 1]; 
 			if (man_count < maneuver_times.size() - 1) man_count += 1;
 		}  
 

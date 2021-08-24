@@ -28,8 +28,6 @@ ylabel(ax2,'Distance [m]');  xlabel(ax2,'Time [s]');
 th = 0 : 0.01 : 2.01 * pi;
 x_cs = cos(th); y_cs = sin(th);
 
-d_safe = 50;
-
 h_wps = plot(ax1, WPs(2, :), WPs(1, :), 'rx', 'Linewidth', 2);
 
 h_X = []; h_X_p = [];

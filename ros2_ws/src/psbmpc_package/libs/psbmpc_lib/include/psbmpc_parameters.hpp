@@ -49,7 +49,7 @@ namespace PSBMPC_LIB
 		CH 														// Course Hold
 	};
 
-
+	class Grounding_Hazard_Manager;
 	class Obstacle_Manager;
 	class Joint_Prediction_Manager;
 	
@@ -75,13 +75,19 @@ namespace PSBMPC_LIB
 		friend class GPU::PSBMPC;
 		friend class CPU::MPC_Cost<PSBMPC_Parameters>;
 		friend class GPU::MPC_Cost<PSBMPC_Parameters>;
+		friend class Obstacle_Predictor;
 		friend class Obstacle_Manager;
+		friend class Grounding_Hazard_Manager;
 		friend class Joint_Prediction_Manager;
 		friend class GPU::CB_Functor_Pars;
 
 		// Number of control behaviours, sequential maneuvers and maximum allowable 
 		// prediction scenarios for an obstacle, respectively
 		int n_cbs, n_M, n_r;
+
+		// Step between samples in prediction, collision probability estimation and
+		// grounding cost evaluation, respectively
+		int p_step, p_step_cpe, p_step_grounding;
 
 		// Finite sets of offsets considered to the own-ship surge and course references,
 		// for each maneuver in the horizon
@@ -99,9 +105,9 @@ namespace PSBMPC_LIB
 
 		Guidance_Method guidance_method;
 
-		double T, T_static, dt, p_step;
+		double T, dt;
 		double t_ts;
-		double d_safe, d_close, d_init;
+		double d_safe, d_close, d_init, d_so_relevant;
 		double K_coll;
 		double phi_AH, phi_OT, phi_HO, phi_CR;
 		double kappa, kappa_TC;
@@ -109,8 +115,8 @@ namespace PSBMPC_LIB
 		double K_chi_strb, K_dchi_strb;
 		double K_chi_port, K_dchi_port; 
 		double K_sgn, T_sgn;
-		double G;
-		double q, p;
+		double G_1, G_2, G_3, G_4;
+		double epsilon_rdp;
 		
 		bool obstacle_colav_on;
 
@@ -121,8 +127,8 @@ namespace PSBMPC_LIB
 	public:
 
 		PSBMPC_Parameters() { initialize_pars(); initialize_par_limits(); }
+		PSBMPC_Parameters(const std::string &config); 
 
-		//PSBMPC_Parameters(std::string tuning_file); // Not implemented yet
 
 		void set_par(const int index, const bool value);
 

@@ -52,113 +52,42 @@ namespace GPU
 *****************************************************************************************/
 PSBMPC::PSBMPC() 
 	: 
-	ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), 
-	obstacles_device_ptr(nullptr), pobstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr),
-	obstacle_ship_device_ptr(nullptr), obstacle_sbmpc_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(Ownship()), pars(PSBMPC_Parameters()), trajectory_device_ptr(nullptr), 
+	pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), 
+	polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	
 {
 	opt_offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
-	
-	u_opt_last = 1.0; chi_opt_last = 0.0;
-
-	min_cost = 1e12;
 
 	cpe_host = CPU::CPE(pars.cpe_method, pars.dt);
 
 	mpc_cost = CPU::MPC_Cost<PSBMPC_Parameters>(pars);
 
-	std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
-	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
-	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
-	std::cout << "Ownship trajectory size: " << sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>) << std::endl; 
-	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
-	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
-	std::cout << "Prediction Obstacle size: " << sizeof(Prediction_Obstacle) << std::endl;
-	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
-	std::cout << "Obstacle SBMPC size: " << sizeof(Obstacle_SBMPC) << std::endl;
-	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl;
+	preallocate_device_data();
+}
 
-	//================================================================================
-	// Cuda device memory allocation
-	//================================================================================
-	// Memory for most objects needed on the GPU are preallocated to save computation time
-	// Allocate for use by all threads a read-only Cuda_Obstacle array
-	cudaMalloc((void**)&obstacles_device_ptr, MAX_N_OBST * sizeof(Cuda_Obstacle));
-    cuda_check_errors("CudaMalloc of Cuda_Obstacle's failed.");
-	
-	// Allocate for use by all threads a control behaviour parameter object
-	CB_Functor_Pars temp_pars(pars); 
-	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
-	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
+PSBMPC::PSBMPC(const PSBMPC &other) 
+	:
+	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
+	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+{
+	assign_data(other);
 
-	cudaMemcpy(pars_device_ptr, &temp_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
-    cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
+	preallocate_device_data();
+}
 
-	// Allocate for use by all threads a control behaviour data object
-	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
-	cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
-	
-	// Allocate for each control behaviour an own-ship trajectory
-	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>));
-	cuda_check_errors("CudaMalloc of trajectory failed.");
-
-	// Allocate for each control behaviour an ownship
-	cudaMalloc((void**)&ownship_device_ptr, pars.n_cbs * sizeof(Ownship));
-	cuda_check_errors("CudaMalloc of Ownship failed.");
-
-	// A max number of allocations is considered to prevent memory allocation and transfer
-	// during iterations of the PSBMPC
-	// Allocate for each thread a Collision Probability Estimator
-	CPE temp_cpe(pars.cpe_method, pars.dt);
-	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_OBST * pars.n_r * sizeof(CPE));
-    cuda_check_errors("CudaMalloc of CPE failed.");
-
-	// Allocate for each thread an mpc cost object
-	MPC_Cost<CB_Functor_Pars> temp_mpc_cost(temp_pars);
-	cudaMalloc((void**)&mpc_cost_device_ptr, pars.n_cbs * MAX_N_OBST * pars.n_r * sizeof(MPC_Cost<CB_Functor_Pars>));
-	cuda_check_errors("CudaMalloc of MPC_Cost failed.");
-
-	for (int cb = 0; cb < pars.n_cbs; cb++)
+PSBMPC& PSBMPC::operator=(const PSBMPC &other)
+{
+	if (this != &other)
 	{
-		cudaMemcpy(&ownship_device_ptr[cb], &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of Ownship failed.");		
+		free();
+
+		assign_data(other);	
+
+		preallocate_device_data();
 	}
-
-	for (int thread = 0; thread < pars.n_cbs * MAX_N_OBST * pars.n_r; thread++)
-	{
-		cudaMemcpy(&cpe_device_ptr[thread], &temp_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of CPE failed.");
-
-		cudaMemcpy(&mpc_cost_device_ptr[thread], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
-	}
-
-	// NOT FINISHED YET, NEED TO FIX INDEXING OPERATION ON PREDICTION OBSTACLES ON THE DEVICE(CB_COST_FUNCTOR_2)
-	if (pars.obstacle_colav_on)
-	{
-		// Allocate for each thread that considers the intelligent prediction a max number of MAX_N_OBST * (MAX_N_OBST + 1) * pars.n_cbs prediction obstacles
-		Prediction_Obstacle temp_pobstacle;
-		cudaMalloc((void**)&pobstacles_device_ptr, MAX_N_OBST * (MAX_N_OBST + 1) * pars.n_cbs * sizeof(Prediction_Obstacle));
-		cuda_check_errors("CudaMalloc of Prediction obstacles failed.");
-
-		// Allocate for each thread that considers the intelligent prediction an obstacle ship and obstacle sbmpc
-		Obstacle_Ship obstacle_ship; 
-		cudaMalloc((void**)&obstacle_ship_device_ptr, MAX_N_OBST * pars.n_cbs * sizeof(Obstacle_Ship));
-		cuda_check_errors("CudaMalloc of Obstacle_Ship failed.");
-
-		Obstacle_SBMPC obstacle_sbmpc;
-		cudaMalloc((void**)&obstacle_sbmpc_device_ptr, MAX_N_OBST * pars.n_cbs * sizeof(Obstacle_SBMPC));
-		cuda_check_errors("CudaMalloc of Obstacle_SBMPC failed.");
-
-		for (int thread = 0; thread < MAX_N_OBST * pars.n_cbs; thread++)
-		{
-			cudaMemcpy(&obstacle_ship_device_ptr[thread], &obstacle_ship, sizeof(Obstacle_Ship), cudaMemcpyHostToDevice);
-			cuda_check_errors("CudaMemCpy of Obstacle_Ship failed.");
-
-			cudaMemcpy(&obstacle_sbmpc_device_ptr[thread], &obstacle_sbmpc, sizeof(Obstacle_SBMPC), cudaMemcpyHostToDevice);
-			cuda_check_errors("CudaMemCpy of Obstacle_SBMPC failed.");
-		}
-	}
+	return *this;
 }
 
 /****************************************************************************************
@@ -169,37 +98,7 @@ PSBMPC::PSBMPC()
 *****************************************************************************************/
 PSBMPC::~PSBMPC() 
 {
-	cudaFree(trajectory_device_ptr);
-	cuda_check_errors("CudaFree of trajectory failed.");
-
-	cudaFree(pars_device_ptr);
-	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
-
-	cudaFree(fdata_device_ptr); 
-	cuda_check_errors("cudaFree of fdata_device_ptr failed.");
-
-	obstacles_device_ptr = nullptr;	
-
-	cudaFree(cpe_device_ptr);
-	cuda_check_errors("CudaFree of CPE failed.");
-
-	cudaFree(ownship_device_ptr);
-	cuda_check_errors("CudaFree of Ownship failed.");	
-
-	if (pars.obstacle_colav_on)
-	{
-		cudaFree(pobstacles_device_ptr);
-		cuda_check_errors("CudaFree of Prediction_Obstacles failed.");	
-
-		cudaFree(obstacle_ship_device_ptr);
-		cuda_check_errors("CudaFree of Obstacle_Ship failed.");
-
-		cudaFree(obstacle_sbmpc_device_ptr);
-		cuda_check_errors("CudaFree of Obstacle_SBMPC failed.");
-	}
-
-	cudaFree(mpc_cost_device_ptr);
-	cuda_check_errors("CudaFree of MPC_Cost failed.");
+	free();
 };
 
 /****************************************************************************************
@@ -216,7 +115,9 @@ void PSBMPC::calculate_optimal_offsets(
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
-	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
+	const double V_w,														// In: Estimated wind speed
+	const Eigen::Vector2d &wind_direction,									// In: Unit vector in NE describing the estimated wind direction
+	const std::vector<polygon_2D> &polygons,								// In: Static obstacle information
 	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
 	)
 {	
@@ -228,7 +129,7 @@ void PSBMPC::calculate_optimal_offsets(
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
 	int n_obst = data.obstacles.size();
-	int n_static_obst = static_obstacles.cols();
+	int n_static_obst = polygons.size();
 
 	// Predict nominal trajectory first, assign as optimal if no need for
 	// COLAV, or use in the prediction initialization
@@ -250,14 +151,9 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 	
-	initialize_prediction(data);
-
-	if (use_joint_prediction)
-	{
-		predict_trajectories_jointly(data, static_obstacles);
-	}
+	setup_prediction(data);
 	
-	prune_obstacle_scenarios(data);
+	//prune_obstacle_scenarios(data);
 
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
@@ -267,35 +163,88 @@ void PSBMPC::calculate_optimal_offsets(
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
- 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
+	
+	mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
+ 	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
 
-	double *ptraj_os = mxGetPr(traj_os); 
+	double *p_init_state_os = mxGetPr(init_state_os_mx); 
+	double *p_traj_os = mxGetPr(traj_os_mx); 
 	double *p_wps_os = mxGetPr(wps_os); 
-
+	
+	Eigen::Map<Eigen::VectorXd> map_init_state_os(p_init_state_os, ownship_state.size(), 1);
 	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
+	map_init_state_os = ownship_state;
 	map_wps = waypoints;
 
-	mxArray *static_obst_mx = mxCreateDoubleMatrix(4, n_static_obst, mxREAL);
-	double *p_static_obst_mx = mxGetPr(static_obst_mx); 
-	Eigen::Map<Eigen::MatrixXd> map_static_obst(p_static_obst_mx, 4, n_static_obst);
-	map_static_obst = static_obstacles;
-
-	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx, *n_static_obst_mx;
+	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *n_static_obst_mx, *i_mx, *ps_mx, *d_safe_mx;
 	dt_sim = mxCreateDoubleScalar(pars.dt);
 	T_sim = mxCreateDoubleScalar(pars.T);
-	n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
-	n_obst_mx = mxCreateDoubleScalar(n_obst);
-	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
 
-	engPutVariable(ep, "X_static", static_obst_mx);
+	int n_ps_max(0);
+	for (int i = 0; i < n_obst; i++)
+	{
+		if (n_ps_max < n_ps[i])
+		{
+			n_ps_max = n_ps[i];
+		}
+	}
+	n_ps_mx = mxCreateDoubleScalar(n_ps_max);
+	n_obst_mx = mxCreateDoubleScalar(n_obst);
+	d_safe_mx = mxCreateDoubleScalar(pars.d_safe);
+	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
+	
+	engPutVariable(ep, "ownship_state", init_state_os_mx);
 	engPutVariable(ep, "n_ps", n_ps_mx);
-	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
+	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
 	engPutVariable(ep, "dt_sim", dt_sim);
 	engPutVariable(ep, "T_sim", T_sim);
 	engPutVariable(ep, "WPs", wps_os);
+	engPutVariable(ep, "d_safe", d_safe_mx);
 	engEvalString(ep, "inside_psbmpc_init_plot");
+
+	Eigen::Matrix<double, 2, -1> polygon_matrix;
+    int n_total_vertices = 0;
+    mxArray *polygon_matrix_mx(nullptr);
+	mxArray *d_0j_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
+	mxArray *j_mx(nullptr);
+    double *p_polygon_matrix(nullptr);
+	double *p_d_0j = mxGetPr(d_0j_mx);
+    
+	Eigen::Map<Eigen::Vector2d> map_d_0j(p_d_0j, 2, 1);
+	int pcount;
+	Eigen::Vector2d d_0j;
+	for (int j = 0; j < n_static_obst; j++)
+	{
+		j_mx = mxCreateDoubleScalar(j + 1);
+		n_total_vertices = 0;
+		for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; ++it)
+		{
+			n_total_vertices += 1;
+		}
+		polygon_matrix.resize(2, n_total_vertices);
+		pcount = 0;
+		for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; ++it)
+		{
+			polygon_matrix(0, pcount) = boost::geometry::get<0>(*it);
+			polygon_matrix(1, pcount) = boost::geometry::get<1>(*it);
+			
+			pcount += 1;
+		}
+		d_0j = mpc_cost.distance_to_polygon(ownship_state.block<2, 1>(0, 0), polygons[j]);
+		map_d_0j = d_0j;
+
+		polygon_matrix_mx = mxCreateDoubleMatrix(2, n_total_vertices, mxREAL);
+		p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+		Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, 2, n_total_vertices);
+		map_polygon_matrix = polygon_matrix;
+		engPutVariable(ep, "j", j_mx);
+		engPutVariable(ep, "d_0j", d_0j_mx);
+		std::cout << "Num vertices polygon j = " << j + 1 << ": " << n_total_vertices << std::endl;
+		engPutVariable(ep, "polygon_matrix_j", polygon_matrix_mx);
+		engEvalString(ep, "inside_psbmpc_static_obstacle_plot");
+	}
 
 	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
 	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
@@ -331,16 +280,20 @@ void PSBMPC::calculate_optimal_offsets(
 			engPutVariable(ep, "X_i", traj_i);
 			engEvalString(ep, "inside_psbmpc_obstacle_plot");
 		}
-	} */
+	}  */
 	
 	//===============================================================================================================
 
+	set_up_temporary_device_memory(u_d, chi_d, waypoints, V_w, wind_direction, polygons, data);
 	//===============================================================================================================
 	// Ownship trajectory prediction for all control behaviours 
 	//===============================================================================================================
-	set_up_temporary_device_memory(u_d, chi_d, waypoints, static_obstacles, data);
-
-	cb_cost_functor_1.reset(new CB_Cost_Functor_1(pars_device_ptr, fdata_device_ptr, ownship_device_ptr, trajectory_device_ptr, mpc_cost_device_ptr));
+	cb_cost_functor_1.reset(new CB_Cost_Functor_1(
+		pars_device_ptr, 
+		fdata_device_ptr, 
+		ownship_device_ptr, 
+		trajectory_device_ptr, 
+		mpc_cost_device_ptr));
 
 	cb_costs_1_dvec.resize(pars.n_cbs);
 	cb_index_dvec.resize(pars.n_cbs);
@@ -350,69 +303,72 @@ void PSBMPC::calculate_optimal_offsets(
 
 	auto cb_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.begin(), cb_dvec.begin()));
     auto cb_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(cb_index_dvec.end(), cb_dvec.end()));
-    
+	
 	thrust::transform(cb_tuple_begin, cb_tuple_end, cb_costs_1_dvec.begin(), *cb_cost_functor_1);
 	cuda_check_errors("Thrust transform for cost calculation part one failed.");
 
 	//===============================================================================================================
-	// Cost evaluation for all control behaviours wrt one dynamic obstacle behaving as in 
+	// Prepare thrust device vectors for the second cost functor call
+	//===============================================================================================================
+	map_thrust_dvecs(polygons);
+
+	//===============================================================================================================
+	// Cost evaluation for all control behaviours wrt one static obstacle OR a dynamic obstacle behaving as in 
 	// a certain prediction scenario
 	//===============================================================================================================
 	cb_cost_functor_2.reset(new CB_Cost_Functor_2(
 		pars_device_ptr, 
 		fdata_device_ptr, 
+		polygons_device_ptr,
 		obstacles_device_ptr, 
-		pobstacles_device_ptr,
 		cpe_device_ptr, 
 		ownship_device_ptr,
 		trajectory_device_ptr, 
-		obstacle_ship_device_ptr,
-		obstacle_sbmpc_device_ptr,
 		mpc_cost_device_ptr));
 
-	map_thrust_dvecs();
-
-	auto input_tuple_begin = thrust::make_zip_iterator(thrust::make_tuple(
+	auto input_tuple_2_begin = thrust::make_zip_iterator(thrust::make_tuple(
 		thread_index_dvec.begin(), 
 		cb_dvec.begin(),
 		cb_index_dvec.begin(),
-		obstacle_index_dvec.begin(),
-		obstacle_ps_index_dvec.begin(),
-		jp_obstacle_ps_index_dvec.begin()));
-    auto input_tuple_end = thrust::make_zip_iterator(thrust::make_tuple(
+		sobstacle_index_dvec.begin(),
+		dobstacle_index_dvec.begin(),
+		dobstacle_ps_index_dvec.begin(),
+		cpe_index_dvec.begin()));
+    auto input_tuple_2_end = thrust::make_zip_iterator(thrust::make_tuple(
 		thread_index_dvec.end(), 
 		cb_dvec.end(),
 		cb_index_dvec.end(),
-		obstacle_index_dvec.end(),
-		obstacle_ps_index_dvec.end(),
-		jp_obstacle_ps_index_dvec.end()));
+		sobstacle_index_dvec.end(),
+		dobstacle_index_dvec.end(),
+		dobstacle_ps_index_dvec.end(),
+		cpe_index_dvec.end()));
 
-	// Perform the calculations on the GPU
-    thrust::transform(input_tuple_begin, input_tuple_end, cb_costs_2_dvec.begin(), *cb_cost_functor_2);
-	cuda_check_errors("Thrust transform for cost calculation part two failed.");
+    thrust::transform(input_tuple_2_begin, input_tuple_2_end, cb_costs_2_dvec.begin(), *cb_cost_functor_2);
+	cuda_check_errors("Thrust transform for cost calculation part three failed.");
 
-	find_optimal_control_behaviour(data);
+	//===============================================================================================================
+	// Stitch together the GPU calculated costs to form the cost function for each control behaviour
+	// and find the optimal solution
+	//===============================================================================================================
+	find_optimal_control_behaviour(data, polygons);
 
-	// Set the trajectory to the optimal one and assign to the output trajectory
 	ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 	assign_optimal_trajectory(predicted_trajectory);
-
-	clear_temporary_device_memory();
 	//===============================================================================================================
 
 	//===============================================================================================================
 	// MATLAB PLOTTING FOR DEBUGGING
 	//===============================================================================================================
-	/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, trajectory.rows(), n_samples);
+	/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
 	map_traj = trajectory;
 
 	k_s = mxCreateDoubleScalar(n_samples);
 	engPutVariable(ep, "k", k_s);
 
-	engPutVariable(ep, "X", traj_os);
+	engPutVariable(ep, "X", traj_os_mx);
 	engEvalString(ep, "inside_psbmpc_upd_ownship_plot");  
 
-	engClose(ep);*/
+	engClose(ep); */
 	//===============================================================================================================
 
 	u_opt = opt_offset_sequence(0); 		u_opt_last = u_opt;
@@ -432,6 +388,79 @@ void PSBMPC::calculate_optimal_offsets(
 /****************************************************************************************
 	Private functions
 ****************************************************************************************/
+void PSBMPC::preallocate_device_data()
+{
+	/* std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
+	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
+	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
+	std::cout << "Ownship trajectory size: " << sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>) << std::endl; 
+	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
+	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
+	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
+	std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
+	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl; */
+
+	//================================================================================
+	// Cuda device memory allocation, preallocated to save computation time
+	//================================================================================
+	// Allocate for use by all threads a read-only Cuda_Obstacle array
+	cudaMalloc((void**)&obstacles_device_ptr, MAX_N_OBST * sizeof(Cuda_Obstacle));
+    cuda_check_errors("CudaMalloc of Cuda_Obstacle's failed.");
+	
+	// Allocate for use by all threads a control behaviour parameter object
+	CB_Functor_Pars temp_pars(pars); 
+	cudaMalloc((void**)&pars_device_ptr, sizeof(CB_Functor_Pars));
+	cuda_check_errors("CudaMalloc of CB_Functor_Pars failed.");
+
+	cudaMemcpy(pars_device_ptr, &temp_pars, sizeof(CB_Functor_Pars), cudaMemcpyHostToDevice);
+    cuda_check_errors("CudaMemCpy of CB_Functor_Pars failed.");
+
+	// Allocate for use by all threads a control behaviour data object
+	cudaMalloc((void**)&fdata_device_ptr, sizeof(CB_Functor_Data));
+	cuda_check_errors("CudaMalloc of CB_Functor_Data failed.");
+	
+	// Allocate for each control behaviour an own-ship trajectory
+	cudaMalloc((void**)&trajectory_device_ptr, pars.n_cbs * sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>));
+	cuda_check_errors("CudaMalloc of trajectory failed.");
+
+	// Allocate for each control behaviour an ownship
+	cudaMalloc((void**)&ownship_device_ptr, pars.n_cbs * sizeof(Ownship));
+	cuda_check_errors("CudaMalloc of Ownship failed.");
+
+	// Allocate for each thread that considers dynamic obstacles a Collision Probability Estimator
+	CPE temp_cpe(pars.cpe_method, pars.dt);
+	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_OBST * MAX_N_PS * sizeof(CPE));
+    cuda_check_errors("CudaMalloc of CPE failed.");
+
+	// Allocate for each thread an mpc cost object
+	MPC_Cost<CB_Functor_Pars> temp_mpc_cost(temp_pars);
+	int max_n_threads = pars.n_cbs * (MAX_N_POLYGONS + MAX_N_OBST * MAX_N_PS);
+	cudaMalloc((void**)&mpc_cost_device_ptr, max_n_threads * sizeof(MPC_Cost<CB_Functor_Pars>));
+	cuda_check_errors("CudaMalloc of MPC_Cost failed.");
+
+	for (int cb = 0; cb < pars.n_cbs; cb++)
+	{
+		cudaMemcpy(&ownship_device_ptr[cb], &ownship, sizeof(Ownship), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of Ownship failed.");		
+	}
+
+	for (int thread = 0; thread < pars.n_cbs * MAX_N_OBST * MAX_N_PS; thread++)
+	{
+		cudaMemcpy(&cpe_device_ptr[thread], &temp_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of CPE failed.");
+	}
+
+	for (int thread = 0; thread < max_n_threads; thread++)
+	{
+		cudaMemcpy(&mpc_cost_device_ptr[thread], &temp_mpc_cost, sizeof(MPC_Cost<CB_Functor_Pars>), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of MPC_Cost failed.");
+	}
+
+	// Allocate for use by all threads that consider static obstacles a read-only Basic_Polygon array
+	cudaMalloc((void**)&polygons_device_ptr, MAX_N_POLYGONS * sizeof(Basic_Polygon));
+    cuda_check_errors("CudaMalloc of Basic_Polygon`s failed.");
+}
+
 /****************************************************************************************
 *  Name     : determine_colav_active
 *  Function : Uses the dynamic obstacle vector and the number of static 
@@ -449,8 +478,8 @@ bool PSBMPC::determine_colav_active(
 	Eigen::Vector2d d_0i;
 	for (size_t i = 0; i < data.obstacles.size(); i++)
 	{
-		d_0i(0) = data.obstacles[i].kf->get_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].kf->get_state()(1) - xs(1);
+		d_0i(0) = data.obstacles[i].kf.get_state()(0) - xs(0);
+		d_0i(1) = data.obstacles[i].kf.get_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 
 		// If all obstacles are passed, even though inside colav range,
@@ -557,59 +586,87 @@ void PSBMPC::increment_control_behaviour(
 *  Name     : map_thrust_input_dvecs
 *  Function : Fills the device vectors in/out of the thrust calls with the proper
 *			  flattened values. Number of threads will be 
-*			  n_threads = n_cbs * (n_ps^1 + ... + n_ps^n_obst)
+*			  n_threads_1 = n_cbs * n_so for the second kernel, and 
+*			  n_threads_2 = n_cbs * (n_ps^1 + ... + n_ps^n_obst) for the third kernel
 *			  
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::map_thrust_dvecs()
+void PSBMPC::map_thrust_dvecs(
+	const std::vector<polygon_2D> &polygons 								// In: Static obstacle information
+	)
 {
 	// Figure out how many threads to schedule
 	int n_obst = n_ps.size();
 	int n_obst_ps_total(0);
+	int n_static_obst = polygons.size();
 	for (int i = 0; i < n_obst; i++)
 	{
 		n_obst_ps_total += n_ps[i];
 	}
-	int n_threads = pars.n_cbs * n_obst_ps_total;
-	thread_index_dvec.resize(n_threads);
-	thrust::sequence(thread_index_dvec.begin(), thread_index_dvec.end(), 0);
+	// Total number of GPU threads to schedule
+	int n_threads = pars.n_cbs * (n_static_obst + n_obst_ps_total);
+	std::cout << "n_threads = " << n_threads << " | n_static_obst = " << n_static_obst << " | n_obst_ps_total = " << n_obst_ps_total << std::endl;
 
 	cb_dvec.resize(n_threads);
 	cb_index_dvec.resize(n_threads);
-	obstacle_index_dvec.resize(n_threads);
-	obstacle_ps_index_dvec.resize(n_threads);
-	jp_obstacle_ps_index_dvec.resize(n_threads);
+	sobstacle_index_dvec.resize(n_threads);
+	dobstacle_index_dvec.resize(n_threads);
+	dobstacle_ps_index_dvec.resize(n_threads);
+	cpe_index_dvec.resize(n_threads);
+	thread_index_dvec.resize(n_threads);
+	thrust::sequence(thread_index_dvec.begin(), thread_index_dvec.end(), 0);
 	cb_costs_2_dvec.resize(n_threads);
 
-	unsigned int thread_index(0);
-	int jp_thread_index(0);
+	int thread_index(0), cpe_index(0);
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_tml(2 * pars.n_M);
-
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
 		TML::assign_eigen_object(offset_sequence_tml, offset_sequence);
 
-		for (int i = 0; i < n_obst; i++)
+		for (int j = 0; j < n_static_obst; j++)
 		{
-			if (use_joint_prediction)
+			cb_dvec[thread_index] = offset_sequence_tml;
+			cb_index_dvec[thread_index] = cb;
+
+			sobstacle_index_dvec[thread_index] = j;
+
+			// Set dynamic obstacle, prediction scenario index  and cpe index to -1 
+			// for threads where only the grounding cost should be computed
+			dobstacle_index_dvec[thread_index] = -1;
+			dobstacle_ps_index_dvec[thread_index] = -1;
+			cpe_index_dvec[thread_index] = -1;
+			thread_index += 1;
+
+			/* printf("thread %d | ", thread_index - 1);
+			printf("cb = ");
+			for (int M = 0; M < pars.n_M; M++)
 			{
-				for (int j = 0; j < n_obst + 1; j++)
-				{
-					jp_obstacle_ps_index_dvec[thread_index] = jp_thread_index;
-					jp_thread_index += 1;
-				}
+				printf("%.2f, %.2f", offset_sequence(2 * M), RAD2DEG * offset_sequence(2 * M + 1));
+				if (M < pars.n_M - 1) printf(", ");
 			}
+			printf(" | cb_index = %d | j = %d | i = %d | ps = %d\n", cb, j, -1, -1); */
+		}
+
+		for (int i = 0; i < n_obst; i++)
+		{	
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
 				cb_dvec[thread_index] = offset_sequence_tml;
 				cb_index_dvec[thread_index] = cb;
-				obstacle_index_dvec[thread_index] = i;
-				obstacle_ps_index_dvec[thread_index] = ps;
+
+				// Set static obstacle index to -1 for threads where only dynamic
+				// obstacle related costs/indicators should be computed
+				sobstacle_index_dvec[thread_index] = -1;
+
+				dobstacle_index_dvec[thread_index] = i;
+				dobstacle_ps_index_dvec[thread_index] = ps;
+				cpe_index_dvec[thread_index] = cpe_index;
 				
 				thread_index += 1;
+				cpe_index += 1;
 
 				/* printf("thread %d | ", thread_index - 1);
 				printf("cb = ");
@@ -618,7 +675,7 @@ void PSBMPC::map_thrust_dvecs()
 					printf("%.2f, %.2f", offset_sequence(2 * M), RAD2DEG * offset_sequence(2 * M + 1));
 					if (M < pars.n_M - 1) printf(", ");
 				}
-				printf(" | cb_index = %d | i = %d | ps = %d\n", cb, i, ps); */
+				printf(" | cb_index = %d | j = %d | i = %d | ps = %d\n", cb, -1, i, ps); */
 			}
 		}
 		increment_control_behaviour(offset_sequence_counter, offset_sequence);
@@ -634,43 +691,161 @@ void PSBMPC::map_thrust_dvecs()
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::find_optimal_control_behaviour(
-	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
+	Obstacle_Data<Tracked_Obstacle> &data,									// In/Out: Dynamic obstacle information
+	const std::vector<polygon_2D> &polygons 								// In: Static obstacle information
 )
 {
-	int n_obst = n_ps.size();
-	unsigned int thread_index(0);
+	int n_obst = data.obstacles.size();
+	int n_static_obst = polygons.size();
+	int thread_index(0);
 	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	Eigen::VectorXd max_cost_ps, cost_i(data.obstacles.size());
+	Eigen::VectorXd max_cost_i_ps, max_cost_j(n_static_obst), mu_i_ps, mu_i(n_obst), cost_do(n_obst);
 
-	double cost(0.0), cost_cb_ch_g(0.0);
-	Intention a_i_ps_jp(KCC); // Intention of obstacle i in its "intelligent" prediction scenario ps
-	bool mu_i_ps_jp(false); // COLREGS violation indicator of obstacle i in its "intelligent" prediction scenario ps
-
-	thrust::tuple<float, Intention, bool> tup;
+	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
 	min_cost = 1e12;
+
+	Eigen::MatrixXd cost_do_matrix(n_obst, pars.n_cbs);
+	Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
+	Eigen::MatrixXd max_cost_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
+	Eigen::MatrixXd max_cost_j_matrix(n_static_obst, pars.n_cbs);
+	if (n_static_obst == 0)
+	{
+		max_cost_j.resize(1); 
+		max_cost_j_matrix.resize(1, pars.n_cbs);
+		max_cost_j.setZero();
+		max_cost_j_matrix.setZero();
+	}
+	Eigen::MatrixXd mu_i_ps_matrix(n_obst * pars.n_r, pars.n_cbs);
+	Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
+	Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
+	Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs);
+	Eigen::MatrixXd n_ps_matrix(1, n_obst);
+
+	int n_ps_max(0);
+	for (int i = 0; i < n_obst; i++)
+	{
+		n_ps_matrix(0, i) = n_ps[i];
+		if (n_ps_max < n_ps[i])
+		{
+			n_ps_max = n_ps[i];
+		}
+	}
+	Eigen::MatrixXd Pr_s_i_matrix(n_obst, n_ps_max);
+	for (int i = 0; i < n_obst; i++)
+	{
+		n_ps_matrix(0, i) = n_ps[i];
+		for (int ps = 0; ps < n_ps[i]; ps++)
+		{
+			Pr_s_i_matrix(i, ps) = data.obstacles[i].get_scenario_probabilities()(ps);
+		}
+	}
+	int curr_ps_index(0);
+	//==================================================================
+	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
+	//==================================================================
+	/* Engine *ep = engOpen(NULL);
+	if (ep == NULL)
+	{
+		std::cout << "engine start failed!" << std::endl;
+	}
+	mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
+ 	mxArray *cost_do_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
+	mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
+	mxArray *max_cost_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
+	mxArray *max_cost_j_mx = mxCreateDoubleMatrix(n_static_obst, pars.n_cbs, mxREAL);
+	mxArray *mu_i_ps_mx = mxCreateDoubleMatrix(n_obst * pars.n_r, pars.n_cbs, mxREAL);
+	mxArray *cost_so_path_mx = mxCreateDoubleMatrix(2, pars.n_cbs, mxREAL);
+	mxArray *n_ps_mx = mxCreateDoubleMatrix(1, n_obst, mxREAL);
+	mxArray *cb_matrix_mx = mxCreateDoubleMatrix(2 * pars.n_M, pars.n_cbs, mxREAL);
+	mxArray *Pr_s_i_mx = mxCreateDoubleMatrix(n_obst, n_ps_max, mxREAL);
+	
+	double *ptr_total_cost = mxGetPr(total_cost_mx); 
+	double *ptr_cost_do = mxGetPr(cost_do_mx); 
+	double *ptr_cost_colregs = mxGetPr(cost_colregs_mx); 
+	double *ptr_max_cost_i_ps = mxGetPr(max_cost_i_ps_mx); 
+	double *ptr_max_cost_j = mxGetPr(max_cost_j_mx); 
+	double *ptr_mu_i_ps = mxGetPr(mu_i_ps_mx); 
+	double *ptr_cost_so_path = mxGetPr(cost_so_path_mx); 
+	double *ptr_n_ps = mxGetPr(n_ps_mx); 
+	double *ptr_cb_matrix = mxGetPr(cb_matrix_mx); 
+	double *ptr_Pr_s_i = mxGetPr(Pr_s_i_mx); 
+
+	Eigen::Map<Eigen::MatrixXd> map_total_cost(ptr_total_cost, 1, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_cost_do(ptr_cost_do, n_obst, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_cost_colregs(ptr_cost_colregs, 1, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_max_cost_i_ps(ptr_max_cost_i_ps, n_obst * pars.n_r, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_max_cost_j(ptr_max_cost_j, n_static_obst, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_mu_i_ps(ptr_mu_i_ps, n_obst * pars.n_r, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_cost_so_path(ptr_cost_so_path, 2, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps, 1, n_obst);
+	Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
+	Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_obst, n_ps_max);
+
+	mxArray *n_obst_mx = mxCreateDoubleScalar(n_obst), *opt_cb_index_mx(nullptr); */
+	//==================================================================
+	std::tuple<double, double> tup;
+	thrust::tuple<float, float, float> dev_tup;
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
+		h_do = 0.0; h_colregs = 0.0; h_so = 0.0; h_path = 0.0; 
+		for (int M = 0; M < pars.n_M; M++)
+		{
+			cb_matrix(2 * M, cb) = offset_sequence(2 * M);
+			cb_matrix(2 * M + 1, cb) = RAD2DEG * offset_sequence(2 * M + 1);
+		}
+		//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
+		//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 		cost = 0.0;
+
+		for (int j = 0; j < n_static_obst; j++)
+		{
+			dev_tup = cb_costs_2_dvec[thread_index];
+			max_cost_j(j) = (double)thrust::get<0>(dev_tup);
+			thread_index += 1;
+			/* printf("Thread %d | j = %d | i = -1 | ps = -1 | max cost j : %.4f | max cost i ps : DC | mu_i_ps : DC | cb_index : %d | cb : %.1f, %.1f \n", 
+					thread_index, j, max_cost_j(j), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
+		}
+		max_cost_j_matrix.block(0, cb, n_static_obst, 1) = max_cost_j;
+		h_so = max_cost_j.maxCoeff();
+		cost_so_path_matrix(0, cb) = h_so;
+
+		curr_ps_index = 0;
 		for (int i = 0; i < n_obst; i++)
 		{
-			max_cost_ps.resize(n_ps[i]);
+			max_cost_i_ps.resize(n_ps[i]); mu_i_ps.resize(n_ps[i]);
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
-				tup = cb_costs_2_dvec[thread_index];
-				max_cost_ps(ps) = thrust::get<0>(tup);
-				a_i_ps_jp = thrust::get<1>(tup);
-				mu_i_ps_jp = thrust::get<2>(tup);
-
+				dev_tup = cb_costs_2_dvec[thread_index];
+				max_cost_i_ps(ps) = (double)thrust::get<1>(dev_tup);
+				mu_i_ps(ps) = (double)thrust::get<2>(dev_tup);
 				thread_index += 1;
+				/* printf("Thread %d | j = -1 | i = %d | ps = %d | max cost j : DC | max cost i ps : %.4f | mu_i_ps : %.1f | cb_index : %d | cb : %.1f, %.1f \n", 
+					thread_index, i, ps, max_cost_i_ps(ps), mu_i_ps(ps), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 			}
 
-			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_ps, data, a_i_ps_jp, mu_i_ps_jp, i, use_joint_prediction);
+			tup = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, mu_i_ps, data, i);
+			cost_do(i) = std::get<0>(tup);
+			mu_i(i) = std::get<1>(tup);
+
+			// Matlab related data structure
+			max_cost_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = max_cost_i_ps;
+			mu_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = mu_i_ps;
+			curr_ps_index += n_ps[i];
 		}
 
-		cost_cb_ch_g = cb_costs_1_dvec[cb];
-		cost = cost_i.maxCoeff() + cost_cb_ch_g;
+		h_do = cost_do.sum();
+		cost_do_matrix.col(cb) = cost_do;
+
+		h_colregs = pars.kappa * std::min(1.0, mu_i.sum());
+		cost_colregs_matrix(0, cb) = h_colregs;
+
+		h_path = cb_costs_1_dvec[cb];
+		cost_so_path_matrix(1, cb) = h_path;
+
+		cost = h_do + h_colregs + h_so + h_path;
+		total_cost_matrix(cb) = cost;
 
 		if (cost < min_cost)
 		{
@@ -681,115 +856,90 @@ void PSBMPC::find_optimal_control_behaviour(
 
 		increment_control_behaviour(offset_sequence_counter, offset_sequence);
 	}
+	//==================================================================
+	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
+	//==================================================================
+	/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+	map_total_cost = total_cost_matrix;
+	map_cost_do = cost_do_matrix;
+	map_cost_colregs = cost_colregs_matrix;
+	map_max_cost_i_ps = max_cost_i_ps_matrix;
+	map_max_cost_j = max_cost_j_matrix;
+	map_mu_i_ps = mu_i_ps_matrix;
+	map_cost_so_path = cost_so_path_matrix;
+	map_n_ps = n_ps_matrix;
+	map_cb_matrix = cb_matrix;
+	map_Pr_s_i = Pr_s_i_matrix;
+
+	mxArray *is_gpu_mx = mxCreateDoubleScalar(1);
+	engPutVariable(ep, "is_gpu", is_gpu_mx);
+	engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
+	engPutVariable(ep, "total_cost", total_cost_mx);
+	engPutVariable(ep, "cost_do", cost_do_mx);
+	engPutVariable(ep, "cost_colregs", cost_colregs_mx);
+	engPutVariable(ep, "max_cost_i_ps", max_cost_i_ps_mx);
+	engPutVariable(ep, "max_cost_j", max_cost_j_mx);
+	engPutVariable(ep, "mu_i_ps", mu_i_ps_mx);
+	engPutVariable(ep, "cost_so_path", cost_so_path_mx);
+	engPutVariable(ep, "n_ps", n_ps_mx);
+	engPutVariable(ep, "cb_matrix", cb_matrix_mx);
+	engPutVariable(ep, "n_obst", n_obst_mx);
+	engPutVariable(ep, "opt_cb_index", opt_cb_index_mx);
+	engEvalString(ep, "psbmpc_cost_plotting");
+
+	mxDestroyArray(is_gpu_mx);
+	mxDestroyArray(total_cost_mx);
+	mxDestroyArray(cost_do_mx);
+	mxDestroyArray(cost_colregs_mx);
+	mxDestroyArray(max_cost_i_ps_mx);
+	mxDestroyArray(max_cost_j_mx);
+	mxDestroyArray(mu_i_ps_mx);
+	mxDestroyArray(cost_so_path_mx);
+	mxDestroyArray(n_ps_mx);
+	mxDestroyArray(cb_matrix_mx);
+	mxDestroyArray(n_obst_mx);
+	mxDestroyArray(opt_cb_index_mx);
+	
+	engClose(ep); */
+	//==================================================================
 }
 
 /****************************************************************************************
-*  Name     : initialize_prediction
+*  Name     : setup_prediction
 *  Function : Sets up the own-ship maneuvering times and number of prediction scenarios 
 *			  for each obstacle based on the current situation, and predicts
-*			  independent obstacle trajectories.
+*			  independent obstacle trajectories using the predictor class.
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::initialize_prediction(
+void PSBMPC::setup_prediction(
 	Obstacle_Data<Tracked_Obstacle> &data							// In: Dynamic obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
 	n_ps.resize(n_obst);
-
-	// pobstacles with the ownship as the last element, for the joint prediction
-	pobstacles.resize(n_obst + 1);
-	int n_a(0);
-	if (n_obst > 0)
-	{
-		n_a = data.obstacles[0].get_intention_probabilities().size();
-	} 
-
-	// Add the ownship as the last prediction obstacle
-	TML::PDMatrix<float, 9, 1>  xs_aug(9, 1); TML::Vector2f v_os_0;
-	xs_aug(0) = trajectory(0, 0); xs_aug(1) = trajectory(1, 0);
-	if (trajectory.rows() == 4)
-	{
-		v_os_0(0) = trajectory(3, 0) * cos(trajectory(2, 0));
-		v_os_0(1) = trajectory(3, 0) * sin(trajectory(2, 0));
-	}
-	else
-	{
-		v_os_0(0) = trajectory(3, 0); v_os_0(1) = trajectory(4, 0);
-		v_os_0 = rotate_vector_2D(v_os_0, trajectory(2, 0));
-	}
-	xs_aug(2) = v_os_0(0); xs_aug(3) = v_os_0(1);
-	xs_aug(4) = ownship.get_length() / 2; 
-	xs_aug(5) = ownship.get_length() / 2; 
-	xs_aug(6) = ownship.get_width() / 2; 
-	xs_aug(7) = ownship.get_width() / 2; 
-	xs_aug(8) = n_obst;
-
-	pobstacles[n_obst] = Prediction_Obstacle(xs_aug, pars.T, pars.dt);
-	//***********************************************************************************
-	// Obstacle prediction initialization
-	//***********************************************************************************
-	std::vector<Intention> ps_ordering_i;
-	Eigen::VectorXd ps_course_changes_i;
-	Eigen::VectorXd ps_maneuver_times_i;
-
-	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
-	Eigen::Vector2d p_cpa, d_AB, v_0;
-	Eigen::Vector4d xs_i_0;
-	TML::PDMatrix<double, 2, MAX_N_WPS> waypoints_i;
-
-	// only use intelligent prediction if n_a > 1 intentions are considered
-	// and obstacle colav is on
-	use_joint_prediction = false; 
 	for (int i = 0; i < n_obst; i++)
 	{
-		n_ps[i] = 1;
-		
-		xs_i_0 = data.obstacles[i].kf->get_state();
-		/* std::cout << "xs_i_0 = " << xs_i_0.transpose() << std::endl;
-		std::cout << "xs_0 = " << trajectory.col(0).transpose() << std::endl; */
-		CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), trajectory.col(0), xs_i_0);
-		/* std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
-		std::cout << "t_cpa(i) = " << t_cpa(i) << std::endl;
-		std::cout << "d_cpa(i) = " << d_cpa(i)<< std::endl; */
-		if (n_a == 1 || data.IP_0[i])
-		{
-			ps_ordering_i.resize(1);
-			ps_ordering_i[0] = KCC;			
-			ps_course_changes_i.resize(1);
-			ps_course_changes_i[0] = 0;
-			ps_maneuver_times_i.resize(1);
-			ps_maneuver_times_i(0) = 0;
-		}
-		else
-		{
-			set_up_independent_obstacle_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i, t_cpa(i), i);
-
-			pobstacles[i] = Prediction_Obstacle(data.obstacles[i]);
-			if (pars.obstacle_colav_on)
-			{
-				use_joint_prediction = true;
-
-				// Set obstacle waypoints to a straight line out from its current time position 
-				// if no future obstacle trajectory is available
-				waypoints_i.resize(2, 2);
-				TML::Vector4d xs_i_0_temp = pobstacles[i].get_initial_state();
-				waypoints_i.set_col(0,xs_i_0_temp.get_block<2, 1>(0, 0));
-				waypoints_i.set_col(1, waypoints_i.get_col(0) + xs_i_0_temp.get_block<2, 1>(2, 0) * pars.T);
-				pobstacles[i].set_waypoints(waypoints_i);
-				
-				n_ps[i] += 1;
-			}
-		}
-		data.obstacles[i].initialize_independent_prediction(ps_ordering_i, ps_course_changes_i, ps_maneuver_times_i);	
-
-		data.obstacles[i].predict_independent_trajectories(pars.T, pars.dt, trajectory.col(0), *this);
+		n_ps[i] = data.obstacles[i].get_scenario_probabilities().size();
 	}
-
 	//***********************************************************************************
 	// Own-ship prediction initialization
 	//***********************************************************************************
+	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
+	Eigen::Vector2d p_cpa, v_0;
+	Eigen::Vector4d xs_0, xs_i_0;
+	if (trajectory.rows() == 4)
+	{
+		v_0(0) = trajectory(3, 0) * cos(trajectory(2, 0));
+		v_0(1) = trajectory(3, 0) * sin(trajectory(2, 0));
+	}
+	else
+	{
+		v_0(0) = trajectory(3, 0); v_0(1) = trajectory(4, 0);
+		v_0 = CPU::rotate_vector_2D(v_0, trajectory(2, 0));
+	}
+	xs_0.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, 0);
+	xs_0(2) = v_0(0); xs_0(3) = v_0(1);
 	// First avoidance maneuver is always at t0
 	maneuver_times.setZero();
 
@@ -798,22 +948,24 @@ void PSBMPC::initialize_prediction(
 	int index_closest(-1);
 	for (int M = 1; M < pars.n_M; M++)
 	{
-		// This is the solution so far if n_obst = 0. And also:
 		// If a predicted collision occurs with the closest obstacle, avoidance maneuver 
-		// M is taken right after the obstacle possibly maneuvers (which will be at t_0 + M * t_ts
+		// M is taken right after the obstacle possibly maneuvers (modelled to be at t_0 + M * t_ts
 		// if the independent obstacle prediction scheme is used), given that t_cpa > t_ts. 
-		// If t_cpa < t_ts, the subsequent maneuver is taken at t_0 + M * t_ts + 1 anyways (simplification)
+		// If t_cpa < t_ts or n_obst = 0, the subsequent maneuver is taken at t_{M-1} + t_ts + 1 anyways (simplification)
 		maneuver_times(M) = maneuver_times(M - 1) + std::round((pars.t_ts + 1) / pars.dt);
 		
 		// Otherwise, find the closest obstacle (wrt t_cpa) that is a possible hazard
 		t_cpa_min = 1e10; index_closest = -1;
 		for (int i = 0; i < n_obst; i++)
 		{
+			xs_i_0 = data.obstacles[i].kf.get_state();
+			CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
+
 			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
 			// that the previous avoidance maneuver happened before CPA with this obstacle)
-			if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min)
+			if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min && t_cpa(i) <= pars.T)
 			{	
 				t_cpa_min = t_cpa(i);
 				index_closest = i;
@@ -835,74 +987,6 @@ void PSBMPC::initialize_prediction(
 	}
 	
 	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
-}
-
-/****************************************************************************************
-*  Name     : set_up_independent_obstacle_prediction_variables
-*  Function : 
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::set_up_independent_obstacle_prediction(
-	std::vector<Intention> &ps_ordering_i,									// In/out: Intention ordering of the independent obstacle prediction scenarios
-	Eigen::VectorXd &ps_course_changes_i, 									// In/out: Course changes of the independent obstacle prediction scenarios
-	Eigen::VectorXd &ps_maneuver_times_i, 									// In/out: Time of maneuvering for the independent obstacle prediction scenarios
-	const double t_cpa_i, 													// In: Time to Closest Point of Approach for obstacle i wrt own-ship
-	const int i 															// In: Index of obstacle in consideration
-	)
-{
-	int turn_count(0), turn_start(0), n_turns(0), course_change_count(0);
-
-	if (turn_start >= 0) // Alternative maneuvers are only up until cpa with the own-ship
-	{
-		n_turns = std::ceil((t_cpa_i - turn_start * pars.t_ts) / pars.t_ts);
-	}
-	else 							// or no alternative maneuvers at all if the obstacle never enters
-	{ 								// the own-ship COLREGS consideration zone
-		n_turns = 0;
-	}
-	n_ps[i] = 1 + 2 * pars.obstacle_course_changes.size() * n_turns;
-
-	ps_ordering_i.resize(n_ps[i]);
-	ps_ordering_i[0] = KCC;
-	ps_maneuver_times_i.resize(n_ps[i]);
-	ps_maneuver_times_i[0] = 0;
-	ps_course_changes_i.resize(n_ps[i]);
-	ps_course_changes_i[0] = 0;
-	
-	for (int ps = 1; ps < n_ps[i]; ps++)
-	{
-		// Starboard maneuvers
-		if (ps < (n_ps[i] - 1) / 2 + 1)
-		{
-			ps_ordering_i[ps] = SM;
-
-			ps_maneuver_times_i[ps] = (turn_start + turn_count) * std::floor(pars.t_ts / pars.dt);
-
-			ps_course_changes_i(ps) = pars.obstacle_course_changes(course_change_count);
-			if (++course_change_count == pars.obstacle_course_changes.size())
-			{
-				if(++turn_count == n_turns) turn_count = 0;
-				course_change_count = 0;
-			} 
-		}
-		// Port maneuvers
-		else
-		{
-			ps_ordering_i[ps] = PM;
-
-			ps_maneuver_times_i[ps] = (turn_start + turn_count) * std::floor(pars.t_ts / pars.dt);
-
-			ps_course_changes_i(ps) = - pars.obstacle_course_changes(course_change_count);
-			if (++course_change_count == pars.obstacle_course_changes.size())
-			{
-				if(++turn_count == n_turns) turn_count = 0;
-				course_change_count = 0;
-			} 
-		}	
-	}
-	std::cout << "Obstacle PS course changes : " << ps_course_changes_i.transpose() << std::endl;
-	std::cout << "Obstacle PS maneuver times : " << ps_maneuver_times_i.transpose() << std::endl;
 }
 
 /****************************************************************************************
@@ -934,7 +1018,7 @@ void PSBMPC::prune_obstacle_scenarios(
 		C_i.resize(n_ps[i]); R_c_i.resize(n_ps[i]);
 		risk_sorted_ps_indices_i.resize(n_ps[i]);
 		
-		calculate_instantaneous_collision_probabilities(P_c_i, data, i, dt_r, p_step);
+		calculate_collision_probabilities(P_c_i, data, i, dt_r, p_step);
 
 		calculate_ps_collision_probabilities(P_c_i_ps, P_c_i, i);
 
@@ -942,7 +1026,7 @@ void PSBMPC::prune_obstacle_scenarios(
 
 		calculate_ps_collision_risks(R_c_i, risk_sorted_ps_indices_i, C_i, P_c_i_ps, data, i);
 
-		std::cout << risk_sorted_ps_indices_i.transpose() << std::endl;
+		//std::cout << risk_sorted_ps_indices_i.transpose() << std::endl;
 
 		// Keep only the n_r prediction scenarios with the highest collision risk
 		if (n_ps[i] < pars.n_r)
@@ -957,26 +1041,10 @@ void PSBMPC::prune_obstacle_scenarios(
 		n_ps_new = kept_ps_indices_i.size(); 
 		// Sort indices of ps that are to be kept
 		std::sort(kept_ps_indices_i.data(), kept_ps_indices_i.data() + kept_ps_indices_i.size());
-		std::cout << kept_ps_indices_i.transpose() << std::endl;
-
-		// For n_a > 1: Joint prediction/intelligent scenario is the last one in the original set
-		if (use_joint_prediction && (kept_ps_indices_i(kept_ps_indices_i.size() - 1) == n_ps[i] - 1))
-		{
-			relevant_joint_pred_scenarios_count += 1;
-			// The intelligent prediction scenario is not added to the tracked obstacle
-			// data structure in this GPU version, 
-			// so it should not be considered in the Tracked Obstacle
-			kept_ps_indices_i.conservativeResize(kept_ps_indices_i.size() - 1);
-		}
+		//std::cout << kept_ps_indices_i.transpose() << std::endl;
 
 		n_ps[i] = n_ps_new;
 		data.obstacles[i].prune_ps(kept_ps_indices_i);
-	}
-
-	// For n_a > 1: All intelligent obstacle scenarios are in this case pruned away
-	if (!relevant_joint_pred_scenarios_count) 
-	{
-		use_joint_prediction = false;
 	}
 }
 
@@ -988,7 +1056,7 @@ void PSBMPC::prune_obstacle_scenarios(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::calculate_instantaneous_collision_probabilities(
+void PSBMPC::calculate_collision_probabilities(
 	Eigen::MatrixXd &P_c_i,								// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 	const Obstacle_Data<Tracked_Obstacle> &data,		// In: Dynamic obstacle information
 	const int i, 										// In: Index of obstacle
@@ -998,11 +1066,6 @@ void PSBMPC::calculate_instantaneous_collision_probabilities(
 {
 	Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
 	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
-	Eigen::MatrixXd xs_i_colav_p;
-	if (use_joint_prediction)
-	{
-		TML::assign_tml_object(xs_i_colav_p, pobstacles[i].get_trajectory());
-	}
 
 	// Increase safety zone by half the max obstacle dimension and ownship length
 	double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
@@ -1012,15 +1075,8 @@ void PSBMPC::calculate_instantaneous_collision_probabilities(
 	Eigen::Matrix<double, 1, -1> P_c_i_row(n_samples);
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
-		if (ps == n_ps[i] - 1 && use_joint_prediction)
-		{
-			cpe_host.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_colav_p, P_i_p, d_safe_i, dt, p_step);
-		}
-		else
-		{
-			cpe_host.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
-		}
-		
+		cpe_host.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
+
 		P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
 	}		
 }
@@ -1077,11 +1133,6 @@ void PSBMPC::calculate_ps_collision_consequences(
 	double collision_consequence(0.0), t(0.0), t_cpa(0.0), d_cpa(0.0);
 
 	std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
-	Eigen::MatrixXd xs_i_colav_p;
-	if (use_joint_prediction)
-	{
-		TML::assign_tml_object(xs_i_colav_p, pobstacles[i].get_trajectory());
-	}
 
 	Eigen::Vector2d p_cpa, v_0_p, v_i_p;
 
@@ -1104,18 +1155,9 @@ void PSBMPC::calculate_ps_collision_consequences(
 				v_0_p = CPU::rotate_vector_2D(v_0_p, trajectory(2, k));
 			}
 
-			if (ps == n_ps[i] - 1 && use_joint_prediction) // Intelligent prediction is the last prediction scenario
-			{
-				v_i_p = xs_i_colav_p.block<2, 1>(2, k);
+			v_i_p = xs_i_p[ps].block<2, 1>(2, k);
 
-				CPU::calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(k), xs_i_colav_p.col(k));
-			}
-			else
-			{
-				v_i_p = xs_i_p[ps].block<2, 1>(2, k);
-
-				CPU::calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(k), xs_i_p[ps].col(k));
-			}			
+			CPU::calculate_cpa(p_cpa, t_cpa, d_cpa, trajectory.col(k), xs_i_p[ps].col(k));		
 
 			collision_consequence = pow((v_0_p - v_i_p).norm(), 2) * exp(- abs(t - t_cpa));
 			//collision_consequence = pow((v_0_p - v_i_p).norm(), 2) * exp(- abs(t));
@@ -1148,42 +1190,21 @@ void PSBMPC::calculate_ps_collision_risks(
 
 	double Pr_ps_i_conditional(0.0);
 	Eigen::VectorXd Pr_c_i_conditional(n_ps[i]);
-	Eigen::VectorXd Pr_a_i = data.obstacles[i].get_intention_probabilities();
-	Eigen::VectorXi ps_intention_count_i = data.obstacles[i].get_ps_intention_count();
-	int n_a = Pr_a_i.size();
-
-	// The conditional probability of collision with obstacle i is predicted
-	// as the product of the conditional probability Pr(ps | a, I) of prediction scenario ps 
-	// (here taken as a uniform distribution) weighted by intention probabilities Pr(a | I), and the
-	// predicted scenario collision probability Pr(collision | i, s)
-	for (int a = 0; a < n_a; a++)
-	{
-		// Conditional probability of a prediction scenario is taken from a discrete uniform distribution
-		// over the number of prediction scenarios which corresponds to intention a, and is
-		// weighted by the corresponding intention probability
-		if (ps_intention_count_i(a))
-		{
-			Pr_ps_i_conditional += Pr_a_i(a) / (double)ps_intention_count_i(a);
-		}
-	}
+	Eigen::VectorXd Pr_s_i = data.obstacles[i].get_scenario_probabilities();
 	
 	for (int ps = 0; ps < n_ps[i]; ps++)
 	{
 		ps_indices_i[ps] = ps;
 
-		Pr_c_i_conditional(ps) = P_c_i_ps(ps) * Pr_ps_i_conditional;
+		Pr_c_i_conditional(ps) = P_c_i_ps(ps) * Pr_s_i(ps);
 
 		R_c_i(ps) = C_i(ps) * Pr_c_i_conditional(ps);
-		/* if (ps == n_ps[i] - 1 && use_joint_prediction)
-		{
-			R_c_i(ps) = 1e12;
-		} */
 	}
 
 	// Sort vector of ps indices to determine collision risk in sorted order
 	std::sort(ps_indices_i.data(), ps_indices_i.data() + n_ps[i], [&](const int index_lhs, const int index_rhs) { return R_c_i(index_lhs) > R_c_i(index_rhs); });
 	
-	 std::ios::fmtflags old_settings = std::cout.flags();
+	/* std::ios::fmtflags old_settings = std::cout.flags();
 	int old_precision = std::cout.precision(); 
 	int cw = 20;
 	//std::cout.setf(std::ios::fixed, std::ios::floatfield);
@@ -1204,7 +1225,7 @@ void PSBMPC::calculate_ps_collision_risks(
 	}
 	std::cout.flags(old_settings);
 	std::cout << std::setprecision(old_precision);
-	std::cout << "-------------------------------------------------------------------------------------------------------------------------------" << std::endl;
+	std::cout << "-------------------------------------------------------------------------------------------------------------------------------" << std::endl; */
 }
 
 /****************************************************************************************
@@ -1293,404 +1314,6 @@ void PSBMPC::determine_situation_type(
 }
 
 /****************************************************************************************
-*  Name     : update_conditional_obstacle_data
-*  Function : Updates the situation type for the calling obstacle (wrt all other 
-*			   obstacles) and obstacles (wrt own-ship) and the transitional cost 
-*			   indicators O, Q, X, S at the current time t0 wrt all obstacles.
-*  Author   : Trym Tengesdal
-*  Modified :
-****************************************************************************************/
-void PSBMPC::update_conditional_obstacle_data(
-	Obstacle_Data_GPU_Friendly &data, 												// In: Joint prediction information on other obstacles (including the own-ship) than obst i_caller
-	const int i_caller, 															// In: Index of obstacle asking for a situational awareness update
-	const int k																		// In: Index of the current predicted time t_k
-	)
-{
-	// A : Obstacle i_caller, B : Obstacle i
-	TML::Vector2f p_A, v_A, p_B, v_B, L_AB;
-	float psi_A, psi_B, d_AB;
-
-	p_A(0) = pobstacles[i_caller].get_trajectory_sample(k)(0);
-	p_A(1) = pobstacles[i_caller].get_trajectory_sample(k)(1);
-	v_A(0) = pobstacles[i_caller].get_trajectory_sample(k)(2);
-	v_A(1) = pobstacles[i_caller].get_trajectory_sample(k)(3);
-	psi_A = atan2(v_A(1), v_A(0));
-
-	int n_obst = n_ps.size(), i_count = 0;
-	data.ST_0.resize(n_obst, 1);   data.ST_i_0.resize(n_obst, 1);
-	
-	data.AH_0.resize(n_obst, 1);   data.S_TC_0.resize(n_obst, 1); data.S_i_TC_0.resize(n_obst, 1); 
-	data.O_TC_0.resize(n_obst, 1); data.Q_TC_0.resize(n_obst, 1); data.IP_0.resize(n_obst, 1); 
-	data.H_TC_0.resize(n_obst, 1); data.X_TC_0.resize(n_obst, 1);
-
-	bool is_close(false);
-	for (int i = 0; i < n_obst + 1; i++)
-	{
-		if (i != i_caller)
-		{
-			p_B(0) = pobstacles[i].get_trajectory_sample(k)(0);
-			p_B(1) = pobstacles[i].get_trajectory_sample(k)(1);
-			v_B(0) = pobstacles[i].get_trajectory_sample(k)(2);
-			v_B(1) = pobstacles[i].get_trajectory_sample(k)(3);
-			psi_B = atan2(v_B(1), v_B(0));
-
-			L_AB = p_B - p_A;
-			d_AB = L_AB.norm();
-
-			// Decrease the distance between the vessels by their respective max dimension
-			d_AB = d_AB - 0.5 * (pobstacles[i_caller].get_length() + pobstacles[i].get_length()); 				
-			L_AB = L_AB.normalized();
-
-			determine_situation_type(data.ST_0[i_count], data.ST_i_0[i_count], v_A, psi_A, v_B, L_AB, d_AB);
-			
-			//std::cout << "Obstacle i = " << i << " situation type wrt obst j = " << j << " ? " << data[i].ST_0[j] << std::endl;
-			//std::cout << "Obst j = " << j << " situation type wrt obstacle i = " << i << " ? " << data[i].ST_i_0[j] << std::endl;
-
-			//=====================================================================
-			// Transitional variable update
-			//=====================================================================
-			is_close = d_AB <= pars.d_close;
-
-			data.AH_0[i_count] = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
-
-			//std::cout << "Obst j = " << j << " ahead at t0 ? " << data[i].AH_0[j] << std::endl;
-			
-			// Obstacle on starboard side
-			data.S_TC_0[i_count] = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-			//std::cout << "Obst i = " << i << " on starboard side at t0 ? " << data[i].S_TC_0[j] << std::endl;
-
-			// Ownship on starboard side of obstacle
-			data.S_i_TC_0[i_count] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
-
-			//std::cout << "Obstacle i = " << i << " on starboard side of obstacle j = " << j << " at t0 ? " << data[i].S_i_TC_0[j] << std::endl;
-
-			// Ownship overtaking the obstacle
-			data.O_TC_0[i_count] = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-					v_B.norm() < v_A.norm()							    						&&
-					v_B.norm() > 0.25															&&
-					is_close 																	&&
-					data.AH_0[i_count];
-
-			//std::cout << "Own-ship overtaking obst j = " << j << " at t0 ? " << data[i].O_TC_0[j] << std::endl;
-
-			// Obstacle overtaking the ownship
-			data.Q_TC_0[i_count] = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() < v_B.norm()							  							&&
-					v_A.norm() > 0.25 															&&
-					is_close 																	&&
-					!data.AH_0[i_count];
-
-			//std::cout << "Obst j = " << j << " overtaking obstacle i = " << i << " at t0 ? " << data[i].Q_TC_0[j] << std::endl;
-
-			// Determine if the obstacle is passed by
-			data.IP_0[i_count] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()		&& // Ownship's perspective	
-					!data.Q_TC_0[i_count])		 											||
-					(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 					&& // Obstacle's perspective	
-					!data.O_TC_0[i_count]))		 											&&
-					d_AB > pars.d_safe;
-			
-			//std::cout << "Obst j = " << j << " passed by at t0 ? " << data[i].IP_0[j] << std::endl;
-
-			// This is not mentioned in article, but also implemented here..				
-			data.H_TC_0[i_count] = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-					v_A.norm() > 0.25																&&
-					v_B.norm() > 0.25																&&
-					data.AH_0[i_count];
-			
-			//std::cout << "Head-on at t0 wrt obst j = " << j << " ? " << data[i].H_TC_0[j] << std::endl;
-
-			// Crossing situation, a bit redundant with the !is_passed condition also, 
-			// but better safe than sorry (could be replaced with B_is_ahead also)
-			data.X_TC_0[i_count] = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()		&&
-					!data.H_TC_0[i_count]															&& 
-					!data.IP_0[i_count]																&&
-					v_A.norm() > 0.25																&&
-					v_B.norm() > 0.25;
-
-			//std::cout << "Crossing at t0 wrt obst j = " << j << " ? " << data[i].X_TC_0[j] << std::endl;
-
-			i_count += 1;
-		}
-	}	
-}
-
-/****************************************************************************************
-*  Name     : predict_trajectories_jointly
-*  Function : Predicts the trajectory of the obstacles with an active COLAV system,  
-*		      considering the fixed current control behaviour, and adds or overwrites
-*			  this information to the obstacle data structure
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
-void PSBMPC::predict_trajectories_jointly(
-	Obstacle_Data<Tracked_Obstacle> &data,						// In: Dynamic obstacle information
-	const Eigen::Matrix<double, 4, -1>& static_obstacles		// In: Static obstacle information
-	)
-{
-	int n_samples = trajectory.cols();
-	int n_obst = data.obstacles.size();
-	
-	Obstacle_Data_GPU_Friendly data_jp;
-	Obstacle_SBMPC obstacle_sbmpc;
-	Obstacle_Ship obstacle_ship;
-
-	std::vector<Eigen::Matrix<double, 4, -1>> predicted_trajectory_i(n_obst);
-	Eigen::MatrixXd traj_i;
-	TML::PDMatrix<float, 4, MAX_N_SAMPLES> pred_traj_i;
-
-	TML::PDMatrix<float, MAX_N_OBST, 1> u_opt_last_i(n_obst), chi_opt_last_i(n_obst), u_d_i(n_obst), chi_d_i(n_obst);
-	TML::Vector4f xs_i_p, xs_i_p_transformed;
-	
-	TML::PDMatrix<float, 4, MAX_N_OBST> static_obstacles_jp;
-	TML::assign_eigen_object(static_obstacles_jp, static_obstacles);
-
-	Eigen::Matrix<double, 2, -1> waypoints_i;
-	TML::Vector4f xs_i_0;
- 	for(int i = 0; i < n_obst; i++)
-	{
-		xs_i_0 = pobstacles[i].get_initial_state();
-		u_d_i(i) = xs_i_0.get_block<2, 1>(2, 0).norm();
-		chi_d_i(i) = atan2(xs_i_0(3), xs_i_0(2));
-
-		u_opt_last_i(i) = 1.0f; chi_opt_last_i(i) = 0.0f;
-
-		pobstacles[i].set_intention(KCC);
-	}
-
-	//===============================================================================================================
-	// MATLAB PLOTTING FOR DEBUGGING
-	//===============================================================================================================
-	/* Engine *ep = engOpen(NULL);
-	if (ep == NULL)
-	{
-		std::cout << "engine start failed!" << std::endl;
-	}
-	char buffer[BUFFSIZE+1]; 
-
- 	mxArray *traj_os_mx = mxCreateDoubleMatrix(6, n_samples, mxREAL);
-	mxArray *static_obst_mx = mxCreateDoubleMatrix(4, static_obstacles.cols(), mxREAL);
-	mxArray *dt_sim_mx(nullptr), *T_sim_mx(nullptr), *k_s_mx(nullptr), *d_safe_mx(nullptr), *n_obst_mx(nullptr), *i_mx(nullptr), *n_static_obst_mx(nullptr);
-
-	std::vector<mxArray*> wps_i_mx(n_obst);
-	std::vector<mxArray*> traj_i_mx(n_obst);
-	std::vector<mxArray*> pred_traj_i_mx(n_obst);
-
-	double *p_traj_os = mxGetPr(traj_os_mx); 
-	double *p_static_obst_mx = mxGetPr(static_obst_mx); 
-	double *p_wps_i = nullptr; 
-	double *p_traj_i = nullptr;
-	double *p_pred_traj_i = nullptr;
-
-	int n_wps_i = 2;
-	Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os, 6, n_samples);
-	Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_i, 2, n_wps_i);
-	Eigen::Map<Eigen::MatrixXd> map_traj_i(p_traj_i, 4, n_samples);
-	Eigen::Map<Eigen::MatrixXd> map_pred_traj_i(p_pred_traj_i, 4, n_samples);
-	Eigen::Map<Eigen::MatrixXd> map_static_obst(p_static_obst_mx, 4, static_obstacles.cols());
-
-	map_traj_os = trajectory;
-	map_static_obst = static_obstacles;
-
-	dt_sim_mx = mxCreateDoubleScalar(pars.dt);
-	T_sim_mx = mxCreateDoubleScalar(pars.T);
-	d_safe_mx = mxCreateDoubleScalar(pars.d_safe);
-	n_obst_mx = mxCreateDoubleScalar(n_obst);
-	n_static_obst_mx = mxCreateDoubleScalar(static_obstacles.cols());
-
-	engPutVariable(ep, "X", traj_os_mx);
-	engPutVariable(ep, "X_static", static_obst_mx);
-	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
-	engPutVariable(ep, "n_obst", n_obst_mx);
-	engPutVariable(ep, "d_safe", d_safe_mx);
-	engPutVariable(ep, "dt_sim", dt_sim_mx);
-	engPutVariable(ep, "T_sim", T_sim_mx);
-	engEvalString(ep, "joint_pred_init_plotting");
-
- 	for(int i = 0; i < n_obst; i++)
-	{
-		TML::assign_tml_object(waypoints_i, pobstacles[i].get_waypoints());
-		wps_i_mx[i] = mxCreateDoubleMatrix(2, 2, mxREAL);
-		traj_i_mx[i] = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-
-		p_wps_i = mxGetPr(wps_i_mx[i]);
-		new (&map_wps_i) Eigen::Map<Eigen::MatrixXd>(p_wps_i, 2, n_wps_i);
-		map_wps_i = waypoints_i;
-
-		engPutVariable(ep, "WPs_i", wps_i_mx[i]);
-		engEvalString(ep, "joint_pred_init_obstacle_plot");
-	}	 */
-	//===============================================================================================================
-	auto start = std::chrono::system_clock::now(), end = start;
-	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-	//double mean_t(0.0);
-
-	double t(0.0), u_c_i(0.0), chi_c_i(0.0), chi_i(0.0);
-	float chi_opt_i(0.0), u_opt_i(0.0);
-	TML::Vector2f v_os_k, p_os_k;
-	TML::Vector4f xs_os_k;
-	for (int k = 0; k < n_samples; k++)
-	{	
-		t = k * pars.dt;
-
-		if (trajectory.rows() == 4)
-		{
-			v_os_k(0) = trajectory(3, k) * cos(trajectory(2, k));
-			v_os_k(1) = trajectory(3, k) * sin(trajectory(2, k));
-		}
-		else
-		{
-			v_os_k(0) = trajectory(3, k); 
-			v_os_k(1) = trajectory(4, k); 
-			v_os_k = rotate_vector_2D(v_os_k, trajectory(2, k));
-		}
-		xs_os_k(0) = trajectory(0, k);
-		xs_os_k(1) = trajectory(1, k);
-		xs_os_k(2) = v_os_k(0);
-		xs_os_k(3) = v_os_k(1);
-
-		pobstacles[n_obst].set_trajectory_sample(xs_os_k, k);
-		//std::cout << "xs_os_aug_k = " << xs_os_aug_k.transpose() << std::endl;
-	
-		for (int i = 0; i < n_obst; i++)
-		{
-			// Update Obstacle Data for each prediction obstacle, taking all other obstacles
-			// including the ownship into account
-			update_conditional_obstacle_data(data_jp, i, k);
-
-			xs_i_p = pobstacles[i].get_trajectory_sample(k);
-
-			//std::cout << "xs_i_p = " << xs_i_p.transpose() << std::endl;
-
-			// Convert from X_i = [x, y, Vx, Vy] to X_i = [x, y, chi, U]
-			xs_i_p_transformed(0) = xs_i_p(0);
-			xs_i_p_transformed(1) = xs_i_p(1);
-			xs_i_p_transformed(2) = atan2(xs_i_p(3), xs_i_p(2));
-			xs_i_p_transformed(3) = xs_i_p.get_block<2, 1>(2, 0).norm();
-
-			// Determine the intention that obstacle i`s predicted trajectory
-			// corresponds to
-			chi_i = xs_i_p_transformed(2);
-			if (t < 30)
-			{
-				if (chi_i > 15 * DEG2RAD)								{ pobstacles[i].set_intention(SM); }
-				else if (chi_i < -15 * DEG2RAD)							{ pobstacles[i].set_intention(PM); }
-			}
-
-			obstacle_ship.update_guidance_references(
-				u_d_i(i), 
-				chi_d_i(i), 
-				pobstacles[i].get_waypoints(),
-				xs_i_p,
-				pars.dt,
-				pars.guidance_method);
-
-			if (fmod(t, 5) == 0)
-			{
-				start = std::chrono::system_clock::now();	
-
-				obstacle_sbmpc.calculate_optimal_offsets(
-					u_opt_i, 
-					chi_opt_i, 
-					pred_traj_i,
-					u_opt_last_i(i),
-					chi_opt_last_i(i),
-					u_d_i(i), 
-					chi_d_i(i),
-					pobstacles[i].get_waypoints(),
-					xs_i_p_transformed,
-					static_obstacles_jp,
-					data_jp,
-					pobstacles.data(),
-					i,
-					k);
-
-				end = std::chrono::system_clock::now();
-				elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-				/* mean_t = elapsed.count();
-				std::cout << "Obstacle_SBMPC time usage : " << mean_t << " milliseconds" << std::endl; */
-				u_opt_last_i(i) = u_opt_i; chi_opt_last_i(i) = chi_opt_i;
-			}
-			u_c_i = u_d_i(i) * u_opt_i; chi_c_i = chi_d_i(i) + chi_opt_i;
-
-			if (k < n_samples - 1)
-			{
-				xs_i_p_transformed = obstacle_ship.predict(xs_i_p_transformed, u_c_i, chi_c_i, pars.dt, pars.prediction_method);
-				
-				// Convert from X_i = [x, y, chi, U] to X_i = [x, y, Vx, Vy]
-				xs_i_p(0) = xs_i_p_transformed(0);
-				xs_i_p(1) = xs_i_p_transformed(1);
-				xs_i_p(2) = xs_i_p_transformed(3) * cos(xs_i_p_transformed(2));
-				xs_i_p(3) = xs_i_p_transformed(3) * sin(xs_i_p_transformed(2));
-
-				pobstacles[i].set_trajectory_sample(xs_i_p, k + 1);
-			}
-			
-		//============================================================================================
-		// Send data to matlab for live plotting
-		//============================================================================================
-		/* 	
-			k_s_mx = mxCreateDoubleScalar(k + 1);
-			engPutVariable(ep, "k", k_s_mx);
-
-			buffer[BUFFSIZE] = '\0';
-			engOutputBuffer(ep, buffer, BUFFSIZE);
-
-			TML::assign_tml_object(traj_i, pobstacles[i].get_trajectory());
-			TML::assign_tml_object(predicted_trajectory_i[i], pred_traj_i);
-			
-			pred_traj_i_mx[i] = mxCreateDoubleMatrix(4, predicted_trajectory_i[i].cols(), mxREAL);
-
-			p_traj_i = mxGetPr(traj_i_mx[i]);
-			p_pred_traj_i = mxGetPr(pred_traj_i_mx[i]);
-
-			new (&map_traj_i) Eigen::Map<Eigen::MatrixXd>(p_traj_i, 4, n_samples);
-			new (&map_pred_traj_i) Eigen::Map<Eigen::MatrixXd>(p_pred_traj_i, 4, predicted_trajectory_i[i].cols());
-			
-			
-			map_traj_i = traj_i;
-			map_pred_traj_i = predicted_trajectory_i[i];
-
-			i_mx = mxCreateDoubleScalar(i + 1);
-
-			engPutVariable(ep, "i", i_mx);
-			engPutVariable(ep, "X_i", traj_i_mx[i]);			
-			engPutVariable(ep, "X_i_pred", pred_traj_i_mx[i]);
-
-			engEvalString(ep, "update_joint_pred_obstacle_plot");
-
-			printf("%s", buffer);	 */
-			//============================================================================================				
-			
-		}
-		
-
-		/* engEvalString(ep, "update_joint_pred_ownship_plot"); */
-		//============================================================================================
-	}
-
-	//============================================================================================
-	// Clean up matlab arrays
-	//============================================================================================
-	/* mxDestroyArray(traj_os_mx);
-	mxDestroyArray(static_obst_mx);
-	mxDestroyArray(T_sim_mx);
-	mxDestroyArray(dt_sim_mx);
-	mxDestroyArray(i_mx);
-	mxDestroyArray(d_safe_mx);
-	mxDestroyArray(k_s_mx);
-
-	for (int i = 0; i < n_obst; i++)
-	{
-		mxDestroyArray(wps_i_mx[i]);
-		mxDestroyArray(traj_i_mx[i]);
-		mxDestroyArray(pred_traj_i_mx[i]);
-	}
-	engClose(ep); */
-}
-
-/****************************************************************************************
 *  Name     : assign_optimal_trajectory
 *  Function : Set the optimal trajectory to the current predicted trajectory
 *  Author   :
@@ -1730,11 +1353,14 @@ void PSBMPC::set_up_temporary_device_memory(
 	const double u_d,												// In: Own-ship surge reference
 	const double chi_d, 											// In: Own-ship course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,					// In: Own-ship waypoints to follow
-	const Eigen::Matrix<double, 4, -1> &static_obstacles,			// In: Static obstacle information
+	const double V_w,												// In: Estimated wind speed
+	const Eigen::Vector2d &wind_direction,							// In: Unit vector in NE describing the estimated wind direction
+	const std::vector<polygon_2D> &polygons,						// In: Static obstacle information represented as polygons
 	const Obstacle_Data<Tracked_Obstacle> &data 					// In: Dynamic obstacle information
 	)
 {
 	int n_obst = data.obstacles.size();
+	int n_static_obst = polygons.size();
 	
 	size_t limit = 0;
 
@@ -1752,59 +1378,101 @@ void PSBMPC::set_up_temporary_device_memory(
 		u_opt_last, 
 		chi_opt_last, 
 		u_d, chi_d, 
-		use_joint_prediction, 
 		ownship.get_wp_counter(),
 		ownship.get_length(),
 		waypoints, 
-		static_obstacles, 
+		V_w, 
+		wind_direction,
+		polygons,
 		n_ps, 
 		data);
 	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Data failed.");
 	
-	// Obstacles
+	// Dynamic obstacles
 	Cuda_Obstacle temp_transfer_cobstacle;
 	for (int i = 0; i < n_obst; i++)
 	{
 		temp_transfer_cobstacle = data.obstacles[i];
 
 		cudaMemcpy(&obstacles_device_ptr[i], &temp_transfer_cobstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
-    	cuda_check_errors("CudaMemCpy of Cuda_Obstacle i failed.");
+    	cuda_check_errors("CudaMemCpy of Cuda Obstacle i failed.");
 	}
 
-	Prediction_Obstacle temp_transfer_pobstacle;
-	int jp_thread(0);
-	if (use_joint_prediction)
+	// Static obstacles
+	Basic_Polygon temp_transfer_poly;
+	for (int j = 0; j < n_static_obst; j++)
 	{
-		for (int cb = 0; cb < pars.n_cbs; cb++)
-		{
-			for (int jp_ps = 0; jp_ps < n_obst; jp_ps++)
-			{
-				for (int i = 0; i < n_obst + 1; i++)
-				{
-					temp_transfer_pobstacle = pobstacles[i];
+		temp_transfer_poly = polygons[j];
 
-					cudaMemcpy(&pobstacles_device_ptr[jp_thread], &temp_transfer_pobstacle, sizeof(Prediction_Obstacle), cudaMemcpyHostToDevice);
-					cuda_check_errors("CudaMemCpy of Prediction_Obstacle i failed.");
-
-					jp_thread += 1;
-				}
-			}
-		}
+		cudaMemcpy(&polygons_device_ptr[j], &temp_transfer_poly, sizeof(Basic_Polygon), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of Basic Polygon j failed.");
 	}
 }
 
 /****************************************************************************************
-*  Name     : clear_temporary_device_memory
-*  Function : Clears/frees obstacle device memory used in one iteration 
-*			  in the PSB-MPC. 
+*  Name     : assign_data
+*  Function : 
 *  Author   :
 *  Modified :
 *****************************************************************************************/
-void PSBMPC::clear_temporary_device_memory()
-{    
-	/* cudaFree(obstacles_device_ptr);
-    cuda_check_errors("cudaFree of obstacles_device_ptr failed."); */
+void PSBMPC::assign_data(const PSBMPC &other)
+{
+	n_ps = other.n_ps;
+
+	opt_offset_sequence = other.opt_offset_sequence;
+	maneuver_times = other.maneuver_times;
+	
+	u_opt_last = other.u_opt_last;
+	chi_opt_last = other.chi_opt_last;
+
+	min_cost = other.min_cost;
+	min_index = other.min_index;
+
+	ownship = other.ownship;
+
+	trajectory = other.trajectory;
+
+	cpe_host = other.cpe_host;
+
+	// Device related data is DONT CARE in assigning process,
+	// as these are reset at each new MPC iteration anyways
+
+	pars = other.pars;
+	mpc_cost = other.mpc_cost;
+}
+
+/****************************************************************************************
+*  Name     : free
+*  Function : Frees device memory
+*  Author   :
+*  Modified :
+*****************************************************************************************/
+void PSBMPC::free()
+{
+	cudaFree(trajectory_device_ptr);
+	cuda_check_errors("CudaFree of trajectory failed.");
+
+	cudaFree(pars_device_ptr);
+	cuda_check_errors("CudaFree of CB_Functor_Pars failed.");
+
+	cudaFree(fdata_device_ptr); 
+	cuda_check_errors("CudaFree of CB_Functor_Data failed.");
+
+	cudaFree(obstacles_device_ptr);
+	cuda_check_errors("CudaFree of Cuda_Obstacles failed.");
+
+	cudaFree(cpe_device_ptr);
+	cuda_check_errors("CudaFree of CPE failed.");
+
+	cudaFree(ownship_device_ptr);
+	cuda_check_errors("CudaFree of Ownship failed.");	
+
+	cudaFree(polygons_device_ptr);
+	cuda_check_errors("CudaFree of Basic_Polygon`s failed.");
+
+	cudaFree(mpc_cost_device_ptr);
+	cuda_check_errors("CudaFree of MPC_Cost failed.");
 }
 
 }

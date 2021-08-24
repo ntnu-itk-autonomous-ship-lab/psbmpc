@@ -35,18 +35,24 @@ namespace GPU
 *****************************************************************************************/
 __host__ __device__ Kinematic_Ship::Kinematic_Ship()
 {
-	l = 20.0f;
+	l = 5.0f; // milliAmpere dims
+	w = 3.0f;
+
+	T_U = 1.44f;
+	T_chi = 0.92f; 		// Ad hoc identified time constants for milliAmpere
+
+	/*l = 10.0f; 
 	w = 4.0f;
 
-	T_chi = 3.0f; 		
 	T_U = 10.0f;
+	T_chi = 8.0f; 		// Ad hoc time constants for a 10m long ship */
 
 	// Guidance parameters
 	e_int = 0.0f;
-	e_int_max = 20.0f * M_PI / 180.0f; // Maximum integral correction in LOS guidance
-	R_a = 20.0f; 			    // WP acceptance radius (20.0)
-	LOS_LD = 150.0f; 			// LOS lookahead distance (100.0) 
-	LOS_K_i = 0.0f; 			    // LOS integral gain (0.0)
+	e_int_max = 20.0f * M_PI / 180.0f; 	// Maximum integral correction in LOS guidance
+	R_a = 5.0f; 			    		// WP acceptance radius (5.0 for milliampere, 20.0 for "normal ship")
+	LOS_LD = 66.0f; 					// LOS lookahead distance (66.0 for milliampere, 200.0 for "normal ship") 
+	LOS_K_i = 0.0f; 			    	// LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
 }
@@ -60,8 +66,11 @@ Kinematic_Ship::Kinematic_Ship(
 	) : 
 	T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
 {
-	l = 20.0f;
-	w = 4.0f;
+	l = 5.0f; // milliAmpere dims
+	w = 3.0f;
+
+	/*l = 10.0f; 
+	w = 4.0f; */
 
 	// Guidance parameters
 	e_int = 0.0f;
@@ -98,8 +107,8 @@ __host__ __device__ void Kinematic_Ship::determine_active_waypoint_segment(
 		segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
 
 		//(s > R_a && fabs(e) <= R_a))) 	
-		if (d_next_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
-		else										{ break; }		
+		if (d_next_wp.norm() <= R_a || segment_passed) 	{ wp_c_0++; } 
+		else											{ break; }		
 	}
 	wp_c_p = wp_c_0;
 }
@@ -307,7 +316,7 @@ __host__ __device__ void Kinematic_Ship::predict_trajectory(
 	
 	trajectory.resize(4, n_samples); // conserves existing values inside 4 x n_samples by default
 
-	initialize_wp_following();
+	wp_c_p = wp_c_0;
 
 	man_count = 0;
 	u_m = 1, u_d_p = u_d;
@@ -318,7 +327,7 @@ __host__ __device__ void Kinematic_Ship::predict_trajectory(
 	{ 
 		if (k == maneuver_times[man_count]){
 			u_m = offset_sequence[2 * man_count];
-			chi_m = offset_sequence[2 * man_count + 1]; 
+			chi_m += offset_sequence[2 * man_count + 1]; 
 			if (man_count < (int)maneuver_times.size() - 1) man_count += 1;
 		}  
 
@@ -348,33 +357,33 @@ __host__ __device__ void Kinematic_Ship::predict_trajectory(
 	
 	trajectory.resize(4, n_samples); // conserves existing values inside 4 x n_samples by default
 
-	initialize_wp_following();
-
+	wp_c_p = wp_c_0;
+	
 	man_count = 0;
-	u_m = 1, u_d_p = u_d;
-	chi_m = 0, chi_d_p = chi_d;
+	u_m = 1.0f, u_d_p = u_d;
+	chi_m = 0.0f, chi_d_p = chi_d;
 	xs_p(0) = ship_state(0);
 	xs_p(1) = ship_state(1);
 
 	if (ship_state.get_rows() == 4)
 	{
-		v_p(0) = ship_state(2);
-		v_p(1) = ship_state(3);
+		chi_p = ship_state(2);
+		U_p = ship_state(3);
 	}
 	else
 	{
-		v_p(0) = ship_state(3);
-		v_p(1) = ship_state(4);
-		rotate_vector_2D(v_p, ship_state(2));
+		chi_p = ship_state(2);
+		U_p = ship_state.get_block<2, 1>(3, 0, 2, 1).norm();
 	}
-	xs_p(2) = v_p(0);
-	xs_p(3) = v_p(1);
+	xs_p(2) = chi_p;
+	xs_p(3) = U_p;
+	trajectory.set_col(0, xs_p);
 
 	for (int k = 0; k < n_samples; k++)
 	{ 
 		if (k == maneuver_times[man_count]){
 			u_m = offset_sequence[2 * man_count];
-			chi_m = offset_sequence[2 * man_count + 1]; 
+			chi_m += offset_sequence[2 * man_count + 1]; 
 			if (man_count < (int)maneuver_times.size() - 1) man_count += 1;
 		}  
 

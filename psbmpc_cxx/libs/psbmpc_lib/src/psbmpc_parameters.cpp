@@ -429,7 +429,7 @@ void PSBMPC_Parameters::initialize_pars()
 	d_init = 300;								 
 	d_close = 300;
 	d_safe = 5; 							
-	K_coll = 3.0;	// 0.2 for sea traffic, 10.0 for nidelva	  					
+	K_coll = 3.0;	// 0.2 for sea traffic, 3.0 for nidelva	  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		

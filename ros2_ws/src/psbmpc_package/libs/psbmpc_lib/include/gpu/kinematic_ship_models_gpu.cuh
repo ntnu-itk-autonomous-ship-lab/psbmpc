@@ -50,9 +50,9 @@ namespace PSBMPC_LIB
 			//===================================
 			// Pre-allocated temporaries
 			int n_samples, n_wps, man_count;
-			float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
+			float u_m, u_d_p, chi_m, chi_d_p, chi_p, U_p, alpha, e;
 
-			TML::Vector2f d_next_wp, L_wp_segment, v_p;
+			TML::Vector2f d_next_wp, L_wp_segment;
 			bool segment_passed;
 
 			TML::Vector4f xs_p, xs_new;
@@ -70,7 +70,7 @@ namespace PSBMPC_LIB
 			
 			__host__ __device__ float get_width() const { return w; }
 
-			__host__ __device__ inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; }
+			__host__ __device__ inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; this->wp_c_p = wp_c_0; }
 
 			__host__ __device__ inline int get_wp_counter() const { return wp_c_0; }
 

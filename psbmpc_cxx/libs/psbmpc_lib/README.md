@@ -23,7 +23,9 @@ Note that the amount of memory you need on your GPU to run the algorithm will in
 
 <img src="psbmpc_lib_structure.png" width="400"> 
 
-Thus, there is a main library namespace **PSBMPC_LIB** which contains all the functionality. The namespace is further nested into **CPU** and **GPU** for versions of classes (with the same name, e.g. PSBMPC, Ownship,..) that have different implementation for the CPU and GPU version of the MPC, respectively. Common classes/functionality exists under the library namespace, such as a Kalman Filter, SBMPC, Mean-Reverting Ornstein-Uhlenbeck process, etc. 
+Thus, there is a main library namespace **PSBMPC_LIB** which contains all the functionality. The namespace is further nested into **CPU** and **GPU** for versions of classes (with the same name, e.g. PSBMPC, Ownship,..) that have different implementation for the CPU and GPU version of the MPC, respectively. Common classes/functionality exists under the library namespace, such as a Kalman Filter, SBMPC, Mean-Reverting Ornstein-Uhlenbeck process, etc.  <br>
+
+As Matlab is used for debugging and visualization, there are sections of commented out code in e.g. psbmpc.cpp that has the "title" "MATLAB PLOTTING FOR DEBUGGING". This code can be commented in to use to plot the different cost terms in the MPC, visualize the environment, plot the current own-ship trajectory, predicted obstacle trajectories, and plot the collision probabilities associated with them.
 
 The main modules (classes/structs) are explained below: </p>
 

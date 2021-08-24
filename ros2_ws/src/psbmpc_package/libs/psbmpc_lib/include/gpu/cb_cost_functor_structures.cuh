@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "grounding_hazard_manager.hpp"
 #include "obstacle_manager.hpp"
 #include "kinematic_ship_models_gpu.cuh"
 #include "kinetic_ship_models_gpu.cuh"
@@ -29,6 +30,46 @@ namespace PSBMPC_LIB
 {
 	namespace GPU
 	{
+		/****************************************************************************************
+		*  Name     : Basic_Polygon
+		*  Function : Polygon struct made for use on the GPU for grounding cost calculation
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
+		struct Basic_Polygon
+		{
+			TML::PDMatrix<double, 2, MAX_N_VERTICES> vertices;
+
+			TML::Matrix2d bbox; // Bounding box  for the polygon
+
+			__host__ __device__ Basic_Polygon() {}
+
+			// Only transfer outer ring of the polygon to the basic one
+			__host__ Basic_Polygon& operator=(const polygon_2D &poly)
+			{
+				int n_vertices(0), v_count(0);
+				for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
+				{
+					n_vertices += 1;
+				}
+
+				bbox(0, 0) = 1e6; bbox(1, 0) = 1e6; bbox(0, 1) = -1e6; bbox(1, 1) = -1e6;
+				vertices.resize(2, n_vertices);
+				for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
+				{
+					vertices(0, v_count) = boost::geometry::get<0>(*it); 
+					vertices(1, v_count) = boost::geometry::get<1>(*it);
+
+					if (vertices(0, v_count) < bbox(0, 0)) { bbox(0, 0) = vertices(0, v_count); } // x_min
+					if (vertices(1, v_count) < bbox(1, 0)) { bbox(1, 0) = vertices(1, v_count); } // y_min
+					if (vertices(0, v_count) > bbox(0, 1)) { bbox(0, 1) = vertices(0, v_count); } // x_max
+					if (vertices(1, v_count) > bbox(1, 1)) { bbox(1, 1) = vertices(1, v_count); } // y_max
+					v_count += 1;
+				}
+				return *this;
+			}
+		};
+	
 		/****************************************************************************************
 		*  Name     : Obstacle_Data_GPU_Friendly
 		*  Function : Data used by prediction obstacles in the joint prediction scheme in the 
@@ -60,6 +101,7 @@ namespace PSBMPC_LIB
 		struct CB_Functor_Pars
 		{
 			int n_M;
+			int p_step, p_step_cpe, p_step_grounding;
 
 			CPE_Method cpe_method;
 
@@ -67,7 +109,7 @@ namespace PSBMPC_LIB
 
 			Guidance_Method guidance_method;
 
-			float T, T_static, dt, p_step;
+			float T, dt;
 			float d_safe, d_close, d_init;
 			float K_coll;
 			float phi_AH, phi_OT, phi_HO, phi_CR;
@@ -76,8 +118,7 @@ namespace PSBMPC_LIB
 			float K_chi_strb, K_dchi_strb;
 			float K_chi_port, K_dchi_port; 
 			float K_sgn, T_sgn;
-			float G;
-			float q, p;
+			float G_1, G_2, G_3, G_4;
 			
 			bool obstacle_colav_on;
 
@@ -87,17 +128,19 @@ namespace PSBMPC_LIB
 			{
 				this->n_M = pars.n_M;
 
+				this->p_step = pars.p_step; this->p_step_cpe = pars.p_step_cpe; this->p_step_grounding = pars.p_step_grounding; 
+
 				this->cpe_method = pars.cpe_method;
 
 				this->prediction_method = pars.prediction_method;
 
 				this->guidance_method = pars.guidance_method;
 
-				this->T = pars.T; this->T_static = pars.T_static; this->dt = pars.dt; this->p_step = pars.p_step; 
+				this->T = pars.T; this->dt = pars.dt; 
 
-				this->d_safe = pars.d_safe; this->d_close = pars.d_close; this->d_init = pars.d_init;
+				this->d_safe = pars.d_safe; this->d_close = pars.d_close; this->d_init = pars.d_init; 
 
-				this->K_coll = pars.K_coll;
+				this->K_coll = pars.K_coll; 
 
 				this->phi_AH = pars.phi_AH; this->phi_OT = pars.phi_OT; this->phi_HO = pars.phi_HO; this->phi_CR = pars.phi_CR;
 
@@ -106,13 +149,12 @@ namespace PSBMPC_LIB
 				this->K_u = pars.K_u; this->K_du = pars.K_du;
 
 				this->K_chi_strb = pars.K_chi_strb; this->K_dchi_strb = pars.K_dchi_strb;
+
 				this->K_chi_port = pars.K_chi_port; this->K_dchi_port = pars.K_dchi_port;
 
 				this->K_sgn = pars.K_sgn; this->T_sgn = pars.T_sgn;
 
-				this->G = pars.G;
-
-				this->q = pars.q; this->p = pars.p;
+				this->G_1 = pars.G_1; this->G_2 = pars.G_2; this->G_3 = pars.G_3; this->G_4 = pars.G_4;
 
 				this->obstacle_colav_on = pars.obstacle_colav_on;
 			}
@@ -139,15 +181,15 @@ namespace PSBMPC_LIB
 			float u_opt_last;
 			float chi_opt_last;
 
-			bool use_joint_prediction;
-
 			int wp_c_0;
 
 			TML::PDMatrix<float, 2, MAX_N_WPS> waypoints;
 
-			TML::PDMatrix<float, 4, MAX_N_OBST> static_obstacles;
+			float V_w;
+			TML::Vector2f wind_direction;
 
 			int n_obst; 
+			int n_static_obst;
 
 			// Number of prediction scenarios for each obstacle, includes the intelligent prediction scenario
 			// if not pruned away
@@ -159,7 +201,7 @@ namespace PSBMPC_LIB
 
 			//=======================================================================================
 			//  Name     : CB_Functor_Data
-			//  Function : Class constructor
+			//  Function : Class constructor. Transfer miscellaneous relevant data from host to device.
 			//  Author   : 
 			//  Modified :
 			//=======================================================================================
@@ -172,11 +214,12 @@ namespace PSBMPC_LIB
 				const double chi_opt_last,
 				const double u_d, 
 				const double chi_d, 
-				const bool use_joint_prediction,
 				const int wp_c_0,
 				const double ownship_length,
 				const Eigen::Matrix<double, 2, -1> &waypoints, 
-				const Eigen::Matrix<double, 4, -1> &static_obstacles,
+				const double V_w,
+				const Eigen::Vector2d &wind_direction,
+				const std::vector<polygon_2D> &polygons,
 				const std::vector<int> &n_ps,
 				const Obstacle_Data<Tracked_Obstacle> &data)
 			{
@@ -194,13 +237,13 @@ namespace PSBMPC_LIB
 				this->u_opt_last = u_opt_last;
 				this->chi_opt_last = chi_opt_last;	
 
-				this->use_joint_prediction = use_joint_prediction;
-
 				TML::assign_eigen_object(this->waypoints, waypoints);	
 
-				TML::assign_eigen_object(this->static_obstacles, static_obstacles);
+				this->V_w = V_w;
+				TML::assign_eigen_object(this->wind_direction, wind_direction);
 
 				n_obst = data.obstacles.size();
+				n_static_obst = polygons.size();
 
 				this->n_ps.resize(n_obst, 1);
 

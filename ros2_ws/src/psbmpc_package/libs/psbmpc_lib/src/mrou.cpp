@@ -33,9 +33,9 @@ namespace PSBMPC_LIB
 *  Modified :
 *****************************************************************************************/
 MROU::MROU() :
-	sigma_x(0.1), 						
+	sigma_x(0.5), 						
 	sigma_xy(0.0), 
-	sigma_y(0.1), 
+	sigma_y(0.5), 
 	gamma_x(0.1), 						
 	gamma_y(0.1)
 {

@@ -53,6 +53,9 @@ int PSBMPC_Parameters::get_ipar(
 	switch(index){
 		case i_ipar_n_M 				: return n_M; 
 		case i_ipar_n_r					: return n_r;
+		case i_ipar_p_step				: return p_step;
+		case i_ipar_p_step_cpe			: return p_step_cpe;
+		case i_ipar_p_step_grounding	: return p_step_grounding;
 		default : 
 			// Throw
 			return 0;
@@ -65,12 +68,12 @@ double PSBMPC_Parameters::get_dpar(
 {
 	switch(index){
 		case i_dpar_T 					: return T;
-		case i_dpar_T_static 			: return T_static;
 		case i_dpar_dt 					: return dt;
-		case i_dpar_p_step				: return p_step;
 		case i_dpar_t_ts 				: return t_ts;
 		case i_dpar_d_safe 				: return d_safe;
 		case i_dpar_d_close 			: return d_close;
+		case i_dpar_d_init 				: return d_init;
+		case i_dpar_d_so_relevant 		: return d_so_relevant;
 		case i_dpar_K_coll 				: return K_coll;
 		case i_dpar_phi_AH 				: return phi_AH;
 		case i_dpar_phi_OT 				: return phi_OT;
@@ -86,9 +89,11 @@ double PSBMPC_Parameters::get_dpar(
 		case i_dpar_K_dchi_port 		: return K_dchi_port;
 		case i_dpar_K_sgn 				: return K_sgn;
 		case i_dpar_T_sgn 				: return T_sgn;
-		case i_dpar_G					: return G;
-		case i_dpar_q					: return q;
-		case i_dpar_p					: return p;
+		case i_dpar_G_1					: return G_1;
+		case i_dpar_G_2					: return G_2;
+		case i_dpar_G_3					: return G_3;
+		case i_dpar_G_4					: return G_4;
+		case i_dpar_epsilon_rdp			: return epsilon_rdp;
 		default : 
 			// Throw
 			return 0.0;
@@ -158,6 +163,9 @@ void PSBMPC_Parameters::set_par(
 		{
 			case i_ipar_n_M 				: n_M = value; break; 	// Should here resize offset matrices to make this change legal
 			case i_ipar_n_r					: n_r = value; break;
+			case i_ipar_p_step 				: p_step = value; break;
+			case i_ipar_p_step_cpe			: p_step_cpe = value; break;
+			case i_ipar_p_step_grounding	: p_step_grounding = value; break;
 			default : 
 				// Throw
 				break;
@@ -178,9 +186,7 @@ void PSBMPC_Parameters::set_par(
 	{
 		switch(index){
 			case i_dpar_T 					: T = value; break;
-			case i_dpar_T_static 			: T_static = value; break;
 			case i_dpar_dt 					: dt = value; break;
-			case i_dpar_p_step 				: p_step = value; break;
 			case i_dpar_t_ts 				: t_ts = value; break;
 			case i_dpar_d_safe :
 				// Limits on d_close and d_init depend on d_safe
@@ -190,6 +196,7 @@ void PSBMPC_Parameters::set_par(
 				break;
 			case i_dpar_d_close 			: d_close = value; break;
 			case i_dpar_d_init 				: d_init = value; break;
+			case i_dpar_d_so_relevant		: d_so_relevant = value; break;
 			case i_dpar_K_coll 				: K_coll = value; break;
 			case i_dpar_phi_AH 				: phi_AH = value; break;
 			case i_dpar_phi_OT 				: phi_OT = value; break;
@@ -205,9 +212,11 @@ void PSBMPC_Parameters::set_par(
 			case i_dpar_K_dchi_port 		: K_dchi_port = value; break;
 			case i_dpar_K_sgn 				: K_sgn = value; break;
 			case i_dpar_T_sgn 				: T_sgn = value; break;
-			case i_dpar_G 					: G = value; break;
-			case i_dpar_q 					: q = value; break;
-			case i_dpar_p 					: p = value; break;
+			case i_dpar_G_1 				: G_1 = value; break;
+			case i_dpar_G_2 				: G_2 = value; break;
+			case i_dpar_G_3 				: G_3 = value; break;
+			case i_dpar_G_4 				: G_4 = value; break;
+			case i_dpar_epsilon_rdp 		: epsilon_rdp = value; break;
 			default : // Throw invalid index
 				break;
 		}
@@ -306,9 +315,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 		dpar_high[i] = 1e12;
 	}
 	dpar_low[i_dpar_T] = 60.0;
-	dpar_low[i_dpar_T_static] = 10.0;
 	dpar_low[i_dpar_dt] = 0.001;
-	dpar_low[i_dpar_p_step] = 0.001;
 
 	dpar_low[i_dpar_d_safe] = 20.0;
 	dpar_low[i_dpar_d_close] = d_safe; 			
@@ -335,8 +342,8 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 1;
-	n_r = 3;
+	n_M = 2;
+	n_r = MAX_N_PS;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -347,20 +354,41 @@ void PSBMPC_Parameters::initialize_pars()
 			u_offsets[M].resize(3);
 
 			//u_offsets[M] << 1.0;
+			//u_offsets[M] << 1.0, 0.5;
 			u_offsets[M] << 1.0, 0.5, 0.0;
 
 			chi_offsets[M].resize(13);
 			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, -5.0, 0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
-		else
+		else if (M == 1)
 		{
 			u_offsets[M].resize(2);
 			//u_offsets[M] << 1.0;
 			u_offsets[M] << 1.0, 0.5;
+			//u_offsets[M] << 1.0, 0.5, 0.0;
+
+			chi_offsets[M].resize(13);
+			//chi_offsets[M] << 0.0;
+			//chi_offsets[M] << -30.0, 0.0, 30.0;
+			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+			//chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+			//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
+			chi_offsets[M] *= DEG2RAD;
+		}
+		else
+		{
+			u_offsets[M].resize(1);
+			u_offsets[M] << 1.0;
+			//u_offsets[M] << 1.0, 0.5;
 			//u_offsets[M] << 1.0, 0.5, 0.0;
 
 			chi_offsets[M].resize(7);
@@ -370,6 +398,8 @@ void PSBMPC_Parameters::initialize_pars()
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 			chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
 			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+			//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
 		n_cbs *= u_offsets[M].size() * chi_offsets[M].size();
@@ -384,37 +414,43 @@ void PSBMPC_Parameters::initialize_pars()
 
 	T = 150.0; 	     
 	dt = 5.0;
-  	T_static = 60.0;
 
 	p_step = 1;
+	p_step_cpe = 2;
+	p_step_grounding = 2;
 	if (prediction_method == ERK1)
 	{ 
 		dt = 0.5; 
 		p_step = 10;
 	}
-	t_ts = 35;
+	t_ts = 10;
 
-	d_init = 1500;								 
-	d_close = 1000;
-	d_safe = 50; 							
-	K_coll = 0.5;		  					
+	d_so_relevant = 200;
+	d_init = 300;								 
+	d_close = 300;
+	d_safe = 5; 							
+	K_coll = 3.0;	// 0.2 for sea traffic, 10.0 for nidelva	  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 8.0;		  					
-	kappa_TC = 10.0;						 
-	K_u = 4;		   						 
-	K_du = 2.5;		    					
+	kappa = 20.0;		  					
+	kappa_TC = 20.0;						 
+	K_u = 40;		   						 
+	K_du = 6;		    					
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					
 	K_dchi_strb = 0.9;	 			
 	K_dchi_port = 1.2;
-	K_sgn = 5;
-	T_sgn = 4 * t_ts;	  					
-	G = 1e3;		         					 
-	q = 4.0;
-	p = 1.0;
+	K_sgn = 8;
+	T_sgn = 4 * t_ts;	
+
+	G_1 = 100.0; 
+	G_2 = 5.0;
+	G_3 = 0.25;
+	G_4 = 0.01;
+
+	epsilon_rdp = 2.0;
 
 	obstacle_colav_on = false;
 }
