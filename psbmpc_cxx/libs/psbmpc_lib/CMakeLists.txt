@@ -12,6 +12,19 @@
 # Modified 	: 
 #======================================================================
 
+# Set default values to PSBMPC flags if they are not set
+if(NOT DEFINED USE_GPU_PSBMPC)
+	set(USE_GPU_PSBMPC 0)
+endif()
+
+if(NOT DEFINED OWNSHIP_TYPE)
+	set(OWNSHIP_TYPE 0)
+endif()
+
+if(NOT DEFINED ENABLE_PSBMPC_DEBUGGING)
+	set(ENABLE_PSBMPC_DEBUGGING 0)
+endif()
+
 # use the -D compile option to specify USE_GPU_PSBMPC=1 if you want to compile and use
 # the GPU version. The default is only compilation of the CPU version
 if(USE_GPU_PSBMPC)
