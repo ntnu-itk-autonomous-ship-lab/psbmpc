@@ -75,23 +75,26 @@ else()
 	)
 endif()
 
-find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
+if(ENABLE_PSBMPC_DEBUGGING) # Neccessary for running most of the psbmpc test files
+	find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
+	target_link_libraries(psbmpc_lib PUBLIC ${Matlab_LIBRARIES})
+	target_include_directories(psbmpc_lib PUBLIC ${Matlab_INCLUDE_DIRS})
+endif(ENABLE_PSBMPC_DEBUGGING)
 
 target_include_directories(psbmpc_lib 
 	PUBLIC
 		include
-		${Matlab_INCLUDE_DIRS}
 		${EIGEN3_INCLUDE_DIRS}
 		${Boost_INCLUDE_DIRS}
 )
 
-target_link_libraries(psbmpc_lib PUBLIC ${Matlab_LIBRARIES} ${Boost_LIBRARIES} Eigen3::Eigen)
+target_link_libraries(psbmpc_lib PUBLIC ${Boost_LIBRARIES} Eigen3::Eigen)
 
 message("Use GPU PSBMPC: ${USE_GPU_PSBMPC}")
 message("Own-ship type: ${OWNSHIP_TYPE}")
-message("Enable PSBMPC debugging: ${ENABLE_PSBMPC_DEBUGGING}")
+message("Enable PSBMPC debugging (Using MATLAB): ${ENABLE_PSBMPC_DEBUGGING}")
 
 target_compile_options(psbmpc_lib
 	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -std=c++17 -Wall -Wextra -Wno-deprecated-copy -DUSE_GPU_PSBMPC=${USE_GPU_PSBMPC} -DOWNSHIP_TYPE=${OWNSHIP_TYPE} -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16>

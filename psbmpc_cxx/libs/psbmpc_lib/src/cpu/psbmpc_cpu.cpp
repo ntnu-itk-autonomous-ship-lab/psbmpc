@@ -23,9 +23,11 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
-#include "engine.h"
 
-#define BUFFSIZE 100000
+#if ENABLE_PSBMPC_DEBUGGING
+	#include "engine.h"
+	#define BUFFSIZE 100000
+#endif
 
 namespace PSBMPC_LIB
 {
