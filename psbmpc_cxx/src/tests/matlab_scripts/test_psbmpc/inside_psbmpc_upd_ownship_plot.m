@@ -8,7 +8,7 @@ h_safe = plot(ax1, d_safe * y_cs + X(2, k),  d_safe * x_cs + X(1, k), 'r', 'Line
 
 h_X_ptch = patch(ax1, X(2, k)+boat_dim_l(2,:),X(1, k)+boat_dim_l(1,:),'k', 'Linewidth', 1.6);
 
-for s = 1 : 100 : n_samples
+for s = 1 : t_ts / dt_sim : n_samples
     delete(h_X_text_s{s}); delete(h_safe_s{s}); delete(h_X_s{s});
     h_X_text_s{s} = text(ax1, X(2, s) - 70, X(1, s) + 20, ['OS, t=', num2str((s-1) * dt_sim)]);
     
