@@ -307,7 +307,7 @@ void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 2;
-	n_r = MAX_N_PS;
+	n_r = 5;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -325,16 +325,16 @@ void PSBMPC_Parameters::initialize_pars()
 			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, -5.0, 0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else if (M == 1)
 		{
-			u_offsets[M].resize(2);
-			//u_offsets[M] << 1.0;
-			u_offsets[M] << 1.0, 0.5;
+			u_offsets[M].resize(1);
+			u_offsets[M] << 1.0;
+			//u_offsets[M] << 1.0, 0.5;
 			//u_offsets[M] << 1.0, 0.5, 0.0;
 
 			chi_offsets[M].resize(13);
@@ -343,8 +343,8 @@ void PSBMPC_Parameters::initialize_pars()
 			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 			//chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
-			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
-			chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			//chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
 			//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 			chi_offsets[M] *= DEG2RAD;
 		}
@@ -381,23 +381,23 @@ void PSBMPC_Parameters::initialize_pars()
 	p_step_grounding = 2;
 	if (prediction_method == ERK1)
 	{ 
-		dt = 0.5; 
+		dt = 1.0; 
 		p_step = 10;
 	}
-	t_ts = 10;
+	t_ts = 25;
 
-	d_so_relevant = 200;
-	d_init = 300;								 
-	d_close = 300;
-	d_safe = 5; 							
-	K_coll = 3.0;	// 0.2 for sea traffic, 3.0 for nidelva	  					
+	d_so_relevant = 1000;
+	d_init = 1000;								 
+	d_close = 400;
+	d_safe = 10; 							
+	K_coll = 2.0;	// 0.2 for sea traffic, 3.0 for nidelva	  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 20.0;		  					
+	kappa = 0.0;		  					
 	kappa_TC = 20.0;						 
-	K_u = 40;		   						 
+	K_u = 20;		   						 
 	K_du = 6;		    					
 	K_chi_strb = 1.3;	  					
 	K_chi_port =  1.6;	  					
@@ -408,8 +408,8 @@ void PSBMPC_Parameters::initialize_pars()
 
 	G_1 = 100.0; 
 	G_2 = 5.0;
-	G_3 = 0.25;
-	G_4 = 0.01;
+	G_3 = 0.5;
+	G_4 = 0.04;
 
 	epsilon_rdp = 2.0;
 

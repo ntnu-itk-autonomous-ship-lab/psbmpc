@@ -10,6 +10,7 @@ for i = 1 : n_obst
 end
 
 figure(3); 
+title('MPC Cost function');
 hold on; grid on;
 plot(total_cost, 'b');
 plot(cost_colregs, 'k');
@@ -57,9 +58,9 @@ fprintf('Corresponding control behaviour:\n');
 disp(cb_matrix(:, opt_cb_index));
 
 if is_gpu == 1
-    save('gpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'max_cost_i_ps', 'cost_so_path', ...
+    save('gpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'n_static_obst', 'max_cost_i_ps', 'cost_so_path', ...
         'max_cost_j', 'n_obst', 'n_ps', 'cb_matrix', 'opt_cb_index');
 else
-    save('cpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'max_cost_i_ps', 'cost_so_path', ...
+    save('cpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'n_static_obst', 'max_cost_i_ps', 'cost_so_path', ...
         'max_cost_j', 'n_obst', 'n_ps', 'cb_matrix', 'opt_cb_index');
 end

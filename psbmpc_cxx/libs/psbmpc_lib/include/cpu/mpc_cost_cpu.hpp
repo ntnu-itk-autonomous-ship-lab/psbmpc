@@ -42,10 +42,6 @@ namespace PSBMPC_LIB
 
 			inline double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); }
 
-			// Grounding hazard related methods
-			//===========================
-			// Static obstacles as no-go lines
-
 			int find_triplet_orientation(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r) const;                          
 
 			bool determine_if_on_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r) const; 
@@ -57,10 +53,9 @@ namespace PSBMPC_LIB
 			double distance_to_line(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2) const;   
 
 			double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) const;
-			//===========================
+			
 		public:
-			//===========================
-			// Static obstacles as polygons
+
 			bool determine_if_inside_polygon(const Eigen::Vector2d &p, const polygon_2D &poly) const;
 
 			Eigen::Vector2d distance_to_line_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2) const;   
@@ -368,7 +363,11 @@ namespace PSBMPC_LIB
 					}
 
 					// PSB-MPC formulation with probabilistic collision cost
-					cost_ps = l_i * cost_coll * P_c_i(ps, k);
+					//cost_ps = l_i * cost_coll * P_c_i(ps, k);
+
+					// Should discount time when using a prediction scheme where the uncertainty for
+					// each obstacle prediction scenario is bounded by r_ct
+					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(- (float)k * pars.dt / pars.T_sgn);
 
 					// Maximize wrt time
 					if (cost_ps > max_cost_i_ps(ps))
@@ -406,7 +405,7 @@ namespace PSBMPC_LIB
 			) const
 		{
 			// l_i is the collision cost modifier depending on the obstacle track loss.
-			double cost_do(0.0), cost_ps(0.0), mu_i(0.0), C(0.0), l_i(0.0);
+			double cost_do(0.0), cost_ps(0.0), mu_i(0.0), cost_coll(0.0), l_i(0.0);
 
 			int n_samples = trajectory.cols();
 			Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
@@ -449,7 +448,7 @@ namespace PSBMPC_LIB
 					v_i_p(0) = xs_i_p[ps](2, k);
 					v_i_p(1) = xs_i_p[ps](3, k);
 
-					C = calculate_collision_cost(v_0_p, v_i_p);
+					cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
 					if (k > 0 && mu_i_ps(ps) < 0.1)
 					{
@@ -469,7 +468,11 @@ namespace PSBMPC_LIB
 					}
 
 					// PSB-MPC formulation with probabilistic collision cost
-					cost_ps = l_i * C * P_c_i(ps, k);
+					//cost_ps = l_i * cost_coll * P_c_i(ps, k);
+
+					// Should discount time when using a prediction scheme where the uncertainty for
+					// each obstacle prediction scenario is bounded by r_ct
+					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(- (float)k * pars.dt / pars.T_sgn);
 
 					// Maximize wrt time
 					if (cost_ps > max_cost_i_ps(ps))
@@ -823,8 +826,8 @@ namespace PSBMPC_LIB
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
 
-					//cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
-					cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
+					//cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
+					cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
 
 					if (max_cost_g < cost_g)
 					{
@@ -866,8 +869,8 @@ namespace PSBMPC_LIB
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
 
-					//cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
-					cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * d_0j + pars.G_4 * t));
+					//cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
+					cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
 
 					if (max_cost_j(j) < cost_g)
 					{

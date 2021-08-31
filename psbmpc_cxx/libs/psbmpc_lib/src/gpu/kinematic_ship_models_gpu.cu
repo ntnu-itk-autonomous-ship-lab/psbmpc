@@ -312,6 +312,8 @@ __host__ __device__ void Kinematic_Ship::predict_trajectory(
 	const float dt 													// In: Prediction time step
 	)
 {
+	//printf("l = %.2f | w = %.2f | T_U = %.2f | T_chi = %.2f | R_a = %.2f | LOS_LD = %.2f\n", l, w, T_U, T_chi, R_a, LOS_LD);
+
 	n_samples = T / dt;
 	
 	trajectory.resize(4, n_samples); // conserves existing values inside 4 x n_samples by default

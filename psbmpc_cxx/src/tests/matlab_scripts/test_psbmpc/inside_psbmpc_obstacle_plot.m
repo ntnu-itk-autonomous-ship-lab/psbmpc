@@ -13,7 +13,7 @@ h_X_i_ptch{i, ps} = patch(ax1, X_i(2, end)+boat_dim_end(2,:),X_i(1, end)+boat_di
 ell = create_probability_contour(reshape(P_i_flat(:, end), 4, 4));
 h_P_i{i, ps} = plot(ax1, ell(:, 2) + X_i(2, end), ell(:, 1) + X_i(1, end), 'c');
 
-for s = 1 : 100 : n_samples
+for s = 1 : t_ts / dt_sim : n_samples
     
     %h_text_i{i, ps, s} = text(ax1, X_i(2, s) - 70, X_i(1, s) + 20, ['o,ps,k=', num2str((s-1) * 0.5)]);
        

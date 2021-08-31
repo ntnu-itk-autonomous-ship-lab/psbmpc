@@ -35,9 +35,11 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
-#include "engine.h"
 
-#define BUFFSIZE 100000
+#if ENABLE_PSBMPC_DEBUGGING
+	#include "engine.h"
+	#define BUFFSIZE 100000
+#endif
 
 namespace PSBMPC_LIB
 {
@@ -74,6 +76,9 @@ PSBMPC::PSBMPC(
 	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
 	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
 {
+	opt_offset_sequence.resize(2 * pars.n_M);
+	maneuver_times.resize(pars.n_M);
+	
 	preallocate_device_data();
 }
 
@@ -172,7 +177,9 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			std::cout << "engine start failed!" << std::endl;
 		}
-		
+		char buffer[BUFFSIZE+1]; 
+		buffer[BUFFSIZE] = '\0';
+		engOutputBuffer(ep, buffer, BUFFSIZE);
 		mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
 		mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 		mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
@@ -186,13 +193,23 @@ void PSBMPC::calculate_optimal_offsets(
 		map_init_state_os = ownship_state;
 		map_wps = waypoints;
 
-		mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *n_static_obst_mx, *i_mx, *ps_mx, *d_safe_mx;
+		int n_ps_max(0);
+		for (int i = 0; i < n_obst; i++)
+		{
+			if (n_ps_max < n_ps[i])
+			{
+				n_ps_max = n_ps[i];
+			}
+		}
+
+		mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *n_static_obst_mx, *i_mx, *ps_mx, *d_safe_mx, *t_ts_mx;
 		dt_sim = mxCreateDoubleScalar(pars.dt);
 		T_sim = mxCreateDoubleScalar(pars.T);
-		n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
+		n_ps_mx = mxCreateDoubleScalar(n_ps_max);
 		n_obst_mx = mxCreateDoubleScalar(n_obst);
 		d_safe_mx = mxCreateDoubleScalar(pars.d_safe);
 		n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
+		t_ts_mx = mxCreateDoubleScalar(pars.t_ts);
 		
 		engPutVariable(ep, "ownship_state", init_state_os_mx);
 		engPutVariable(ep, "n_ps", n_ps_mx);
@@ -202,6 +219,7 @@ void PSBMPC::calculate_optimal_offsets(
 		engPutVariable(ep, "T_sim", T_sim);
 		engPutVariable(ep, "WPs", wps_os);
 		engPutVariable(ep, "d_safe", d_safe_mx);
+		engPutVariable(ep, "t_ts", t_ts_mx);
 		engEvalString(ep, "inside_psbmpc_init_plot");
 
 		Eigen::Matrix<double, 2, -1> polygon_matrix;
@@ -368,6 +386,8 @@ void PSBMPC::calculate_optimal_offsets(
 
 		engPutVariable(ep, "X", traj_os_mx);
 		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");  
+
+		printf("%s", buffer);
 
 		engClose(ep);
 	#endif
@@ -1020,7 +1040,7 @@ void PSBMPC::setup_prediction(
 			}	
 		}
 
-		if (index_closest != -1)
+		/* if (index_closest != -1)
 		{
 			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[index_closest].get_width());
 			// If no predicted collision,  avoidance maneuver M with the closest
@@ -1031,7 +1051,7 @@ void PSBMPC::setup_prediction(
 				maneuvered_by[index_closest] = true;
 				maneuver_times(M) = std::round(t_cpa(index_closest) / pars.dt);
 			}
-		}
+		} */
 	}
 	
 	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;

@@ -499,13 +499,13 @@ namespace PSBMPC_LIB
 			{	
 				// Store the obstacle`s predicted waypoints if not done already
 				// (as straight line path if no other info is available)
-				if (data.obstacles[i].get_waypoints().cols() < 2)
-				{
-					waypoints_i.resize(2, 2);
-					waypoints_i.col(0) = data.obstacles[i].kf.get_state().block<2, 1>(0, 0);
-					waypoints_i.col(1) = waypoints_i.col(0) + mpc.pars.T * data.obstacles[i].kf.get_state().block<2, 1>(2, 0);
-					data.obstacles[i].set_waypoints(waypoints_i);
-				}
+				/* if (data.obstacles[i].get_waypoints().cols() < 2)
+				{ */
+				waypoints_i.resize(2, 2);
+				waypoints_i.col(0) = data.obstacles[i].kf.get_state().block<2, 1>(0, 0);
+				waypoints_i.col(1) = waypoints_i.col(0) + mpc.pars.T * data.obstacles[i].kf.get_state().block<2, 1>(2, 0);
+				data.obstacles[i].set_waypoints(waypoints_i);
+				
 
 				initialize_independent_prediction_v2(data, i, ownship_state, mpc);
 
@@ -519,11 +519,30 @@ namespace PSBMPC_LIB
 				// Calculate scenario probabilities using intention model,
 				// or just set to be uniform../triangle
 				Eigen::VectorXd Pr_s_i(n_ps[i]);
+
+				// Uniform
 				for (int ps = 0; ps < n_ps[i]; ps++)
 				{
 					Pr_s_i(ps) = 1;
 				}
 				Pr_s_i = Pr_s_i / Pr_s_i.sum();
+
+				// Triangle
+				/* double n_ps_half = (double)(n_ps[i] - 1) / 2.0;
+				double lower = 0.1;
+				for (int ps = 0; ps < n_ps[i]; ps++)
+				{
+					if (ps <= (n_ps[i] - 1) / 2)
+					{
+						Pr_s_i(ps) = ((1.0 - lower) / n_ps_half) * (double)ps + lower;
+					}
+					else
+					{
+						Pr_s_i(ps) = -((1.0 - lower) / n_ps_half) * (double)ps + lower;
+					}
+				}
+				Pr_s_i = Pr_s_i / Pr_s_i.sum();
+				std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl; */
 				data.obstacles[i].set_scenario_probabilities(Pr_s_i);
 				// ..............
 			}

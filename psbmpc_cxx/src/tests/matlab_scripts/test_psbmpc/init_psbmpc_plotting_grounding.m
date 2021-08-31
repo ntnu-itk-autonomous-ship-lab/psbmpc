@@ -10,7 +10,7 @@ ylim(ax1, ylimits_ne);
 
 
 ylimits_d = [0,  1000];
-tlim = [0 T_sim];
+tlim = [0 T_sim / dt_sim];
 
 % L_os = 0.04*ylimits(2);
 % w_os = 0.006*(xlimits(2) - xlimits(1));

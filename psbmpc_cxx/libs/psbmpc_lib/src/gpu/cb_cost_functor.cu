@@ -63,7 +63,7 @@ __device__ float CB_Cost_Functor_1::operator()(
 		pars->prediction_method, 
 		pars->guidance_method, 
 		pars->T, pars->dt);
-
+	
 	h_path += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
 	h_path += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times); 
 
