@@ -12,6 +12,7 @@
 # Modified 	: 
 #======================================================================
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
 # Set default values to PSBMPC flags if they are not set
 if(NOT DEFINED USE_GPU_PSBMPC)
 	set(USE_GPU_PSBMPC 0)

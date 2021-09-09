@@ -112,7 +112,7 @@ PSBMPC_Node::PSBMPC_Node(
     do_subscription_options.topic_stats_options.publish_period = topic_stats_publish_period;
   }
 
-  dynamic_obstacle_subscription = this->create_subscription<psbmpc_interfaces::msg::DynamicObstacleEstimates>(
+  dynamic_obstacle_subscription = this->create_subscription<bridge_msgs::msg::DynamicObstacleEstimates>(
     dynamic_obstacle_topic_name, 
     rclcpp::QoS(1), 
     std::bind(&PSBMPC_Node::dynamic_obstacle_callback, this, std::placeholders::_1),
@@ -156,7 +156,7 @@ PSBMPC_Node::PSBMPC_Node(
     waypoints_subscription_options.topic_stats_options.publish_period = topic_stats_publish_period;
   }
 
-  waypoints_subscription = this->create_subscription<psbmpc_interfaces::msg::Trajectory2>(
+  waypoints_subscription = this->create_subscription<bridge_msgs::msg::Trajectory2>(
     waypoints_topic_name, 
     rclcpp::QoS(1), 
     std::bind(&PSBMPC_Node::waypoints_callback, this, std::placeholders::_1),
@@ -172,7 +172,7 @@ PSBMPC_Node::PSBMPC_Node(
     n_missed_deadlines_pub++;
   };
 
-  trajectory_publisher = this->create_publisher<psbmpc_interfaces::msg::Trajectory4>(
+  trajectory_publisher = this->create_publisher<bridge_msgs::msg::Trajectory4>(
     reference_topic_name, 
     rclcpp::QoS(1).deadline(deadline_duration),
     trajectory_publisher_options);
@@ -187,7 +187,7 @@ PSBMPC_Node::PSBMPC_Node(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC_Node::dynamic_obstacle_callback(
-  const psbmpc_interfaces::msg::DynamicObstacleEstimates::SharedPtr msg   // Dynamic obstacle information (ID, state and covariances)
+  const bridge_msgs::msg::DynamicObstacleEstimates::SharedPtr msg   // Dynamic obstacle information (ID, state and covariances)
   )
 {
   int n_obst = msg->obstacle_ids.size();
@@ -213,13 +213,13 @@ void PSBMPC_Node::dynamic_obstacle_callback(
     obstacle_states.col(i) << xs_i, A, B, C, D, ID;
 
     P(0, 0) = msg->obstacle_estimates[i].pos_cov.var_x;
-    P(0, 1) = msg->obstacle_estimates[i].pos_cov.cor_xy;
-    P(1, 0) = msg->obstacle_estimates[i].pos_cov.cor_xy;
+    P(0, 1) = msg->obstacle_estimates[i].pos_cov.corr_xy;
+    P(1, 0) = msg->obstacle_estimates[i].pos_cov.corr_xy;
     P(1, 1) = msg->obstacle_estimates[i].pos_cov.var_y;
 
     P(2, 2) = msg->obstacle_estimates[i].vel_cov.var_x;
-    P(2, 3) = msg->obstacle_estimates[i].vel_cov.cor_xy;
-    P(2, 2) = msg->obstacle_estimates[i].vel_cov.cor_xy;
+    P(2, 3) = msg->obstacle_estimates[i].vel_cov.corr_xy;
+    P(2, 2) = msg->obstacle_estimates[i].vel_cov.corr_xy;
     P(3, 3) = msg->obstacle_estimates[i].vel_cov.var_y;
 
     pos_vel_cov(0, 0) = msg->obstacle_estimates[i].pos_vel_corr.corr_px_vx;
@@ -275,7 +275,7 @@ void PSBMPC_Node::state_callback(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC_Node::waypoints_callback(
-  const psbmpc_interfaces::msg::Trajectory2::SharedPtr msg         // In: Waypoint array message     
+  const bridge_msgs::msg::Trajectory2::SharedPtr msg         // In: Waypoint array message     
   )
 {
   int n_wps = msg->waypoints.size();
@@ -339,8 +339,8 @@ void PSBMPC_Node::publish_reference_trajectory()
   obstacle_manager.display_obstacle_information();
 
   int n_samples = predicted_trajectory.cols();
-  psbmpc_interfaces::msg::Reference reference_k; // r_k = [x, y, chi, U]^T
-  psbmpc_interfaces::msg::Trajectory4 trajectory_msg;
+  bridge_msgs::msg::Reference reference_k; // r_k = [x, y, chi, U]^T
+  bridge_msgs::msg::Trajectory4 trajectory_msg;
 
   for (int k = 0; k < n_samples; k++)
   {

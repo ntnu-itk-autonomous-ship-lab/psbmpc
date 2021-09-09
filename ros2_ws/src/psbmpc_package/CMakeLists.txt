@@ -1,40 +1,4 @@
 cmake_minimum_required(VERSION 3.5)
-project(psbmpc_package LANGUAGES CUDA CXX)
-
-# Default to C++17
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-endif()
-
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-
-  # debug:
-  #add_compile_options(-fno-omit-frame-pointer -g)
-endif()
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_components REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(lifecycle_msgs REQUIRED)
-find_package(nav_msgs REQUIRED)
-find_package(psbmpc_interfaces REQUIRED)
-find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
-find_package(Eigen3 REQUIRED)
-
-set(dependencies 
-  rclcpp
-  rclcpp_components
-  rclcpp_lifecycle
-  lifecycle_msgs
-  nav_msgs
-  psbmpc_interfaces
-  Matlab
-  Eigen3
-)
 
 # Toggle usage of the CPU(0)/GPU(1) version of PSBMPC
 set(USE_GPU_PSBMPC 1)
@@ -45,23 +9,68 @@ set(OWNSHIP_TYPE 0)
 # Toggle usage of PSBMPC debugging version of PSBMPC
 set(ENABLE_PSBMPC_DEBUGGING 0)
 
+if(USE_GPU_PSBMPC)
+  project(psbmpc_package LANGUAGES CUDA CXX)
+else()
+  project(psbmpc_package LANGUAGES CXX)
+endif()
+
+
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  #add_compile_options(-Wall -Wextra -Wpedantic)
+
+  # debug:
+  #add_compile_options(-fno-omit-frame-pointer -g)
+endif()
+
+set(CMAKE_BUILD_TYPE release) 
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(bridge_msgs REQUIRED)
+
+set(dependencies 
+  rclcpp
+  rclcpp_components
+  rclcpp_lifecycle
+  lifecycle_msgs
+  nav_msgs
+  bridge_msgs
+  Eigen3
+)
+
 add_subdirectory(libs/psbmpc_lib)
 
 add_executable(psbmpc_node src/psbmpc_node.cpp)
 
 ament_target_dependencies(psbmpc_node ${dependencies})
 
-target_link_libraries(psbmpc_node psbmpc_lib ${Matlab_LIBRARIES} Eigen3::Eigen)
+target_link_libraries(psbmpc_node psbmpc_lib Eigen3::Eigen)
 
 target_include_directories(psbmpc_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 
-set_target_properties(psbmpc_node PROPERTIES 
-  CUDA_SEPARABLE_COMPILATION ON
-  CUDA_ARCHITECTURES "61;86"
-)
+if(USE_GPU_PSBMPC)
+  set_target_properties(psbmpc_node PROPERTIES 
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_ARCHITECTURES "61;86"
+  )
+endif()
+
 
 #rclcpp_components_register_nodes(psbmpc_node "PSB-MPC")
 

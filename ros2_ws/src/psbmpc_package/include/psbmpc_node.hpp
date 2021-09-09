@@ -27,10 +27,10 @@
 #include "rclcpp/subscription.hpp"
 
 #include "nav_msgs/msg/odometry.hpp"
-#include "psbmpc_interfaces/msg/trajectory2.hpp"
-#include "psbmpc_interfaces/msg/trajectory4.hpp"
-#include "psbmpc_interfaces/msg/offset.hpp"
-#include "psbmpc_interfaces/msg/dynamic_obstacle_estimates.hpp"
+#include "bridge_msgs/msg/trajectory2.hpp"
+#include "bridge_msgs/msg/trajectory4.hpp"
+#include "bridge_msgs/msg/offset.hpp"
+#include "bridge_msgs/msg/dynamic_obstacle_estimates.hpp"
 
 #include "cpu/psbmpc_cpu.hpp"
 #if USE_GPU_PSBMPC
@@ -46,11 +46,11 @@ private:
   //==================================================
   // Subscribers and publishers
   //==================================================
-  rclcpp::Subscription<psbmpc_interfaces::msg::DynamicObstacleEstimates>::SharedPtr dynamic_obstacle_subscription;
+  rclcpp::Subscription<bridge_msgs::msg::DynamicObstacleEstimates>::SharedPtr dynamic_obstacle_subscription;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr state_subscription;
-  rclcpp::Subscription<psbmpc_interfaces::msg::Trajectory2>::SharedPtr waypoints_subscription;
+  rclcpp::Subscription<bridge_msgs::msg::Trajectory2>::SharedPtr waypoints_subscription;
   //rclcpp_lifecycle::LifecyclePublisher<psbmpc_interfaces::msg::Offset>::SharedPtr trajectory_publisher;
-  rclcpp_lifecycle::LifecyclePublisher<psbmpc_interfaces::msg::Trajectory4>::SharedPtr trajectory_publisher;
+  rclcpp_lifecycle::LifecyclePublisher<bridge_msgs::msg::Trajectory4>::SharedPtr trajectory_publisher;
 
   rclcpp::TimerBase::SharedPtr timer;
 
@@ -99,11 +99,11 @@ private:
   PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager;
   //====================================================
 
-  void dynamic_obstacle_callback(const psbmpc_interfaces::msg::DynamicObstacleEstimates::SharedPtr msg);
+  void dynamic_obstacle_callback(const bridge_msgs::msg::DynamicObstacleEstimates::SharedPtr msg);
 
   void state_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
 
-  void waypoints_callback(const psbmpc_interfaces::msg::Trajectory2::SharedPtr msg);
+  void waypoints_callback(const bridge_msgs::msg::Trajectory2::SharedPtr msg);
 
   void publish_reference_trajectory();
 

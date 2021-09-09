@@ -1,4 +1,4 @@
 # Information on each tracked dynamic obstacle
 
 std_msgs/Header header
-psbmpc_interfaces/DynamicObstacleEstimates dynamic_obstacle_estimates
+bridge_msgs/DynamicObstacleEstimates dynamic_obstacle_estimates
