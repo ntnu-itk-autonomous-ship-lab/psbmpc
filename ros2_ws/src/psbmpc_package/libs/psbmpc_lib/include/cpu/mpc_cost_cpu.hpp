@@ -20,10 +20,14 @@
 
 #pragma once
 
+#include "psbmpc_defines.hpp"
 #include "obstacle_manager.hpp"
 #include "cpu/prediction_obstacle_cpu.hpp"
 #include "grounding_hazard_manager.hpp"
-#include "engine.h"
+
+#if ENABLE_PSBMPC_DEBUGGING
+	#include "engine.h"
+#endif
 
 namespace PSBMPC_LIB
 {
@@ -1133,30 +1137,31 @@ namespace PSBMPC_LIB
 			//======================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//======================================================
-			/* Engine *ep = engOpen(NULL);
-			if (ep == NULL)
-			{
-				std::cout << "engine start failed!" << std::endl;
-			}
-			mxArray *polygon_matrix_mx(nullptr);
-			mxArray *polygon_side_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
-			//mxArray *d_0j_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
-			mxArray *p_os_ray_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
-			mxArray *bbox_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
-			double *p_polygon_matrix(nullptr);
-			double *p_polygon_side = mxGetPr(polygon_side_mx);
-			double *p_p_os_ray = mxGetPr(p_os_ray_mx);
-			double *p_bbox = mxGetPr(bbox_mx);
+			#if ENABLE_PSBMPC_DEBUGGING
+				/* Engine *ep = engOpen(NULL);
+				if (ep == NULL)
+				{
+					std::cout << "engine start failed!" << std::endl;
+				}
+				mxArray *polygon_matrix_mx(nullptr);
+				mxArray *polygon_side_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
+				//mxArray *d_0j_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
+				mxArray *p_os_ray_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
+				mxArray *bbox_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
+				double *p_polygon_matrix(nullptr);
+				double *p_polygon_side = mxGetPr(polygon_side_mx);
+				double *p_p_os_ray = mxGetPr(p_os_ray_mx);
+				double *p_bbox = mxGetPr(bbox_mx);
 
-			
-			Eigen::Map<Eigen::Matrix2d> map_polygon_side(p_polygon_side, 2, 2);
-			//Eigen::Map<Eigen::Vector2d> map_d_0j;
-			Eigen::Map<Eigen::Matrix2d> map_p_os_ray(p_p_os_ray, 2, 2);
-			Eigen::Map<Eigen::Matrix2d> map_bbox(p_bbox, 2, 2);
-			
-			Eigen::Matrix2d p_os_ray; p_os_ray.col(0) = p; 
-			Eigen::Matrix2d polygon_side; */
-			
+				
+				Eigen::Map<Eigen::Matrix2d> map_polygon_side(p_polygon_side, 2, 2);
+				//Eigen::Map<Eigen::Vector2d> map_d_0j;
+				Eigen::Map<Eigen::Matrix2d> map_p_os_ray(p_p_os_ray, 2, 2);
+				Eigen::Map<Eigen::Matrix2d> map_bbox(p_bbox, 2, 2);
+				
+				Eigen::Matrix2d p_os_ray; p_os_ray.col(0) = p; 
+				Eigen::Matrix2d polygon_side; */
+			#endif
 			//======================================================
 			int line_intersect_count(0), n_vertices(0);
 			Eigen::Vector2d v_prev, v, v_next;			
@@ -1191,19 +1196,21 @@ namespace PSBMPC_LIB
 			//======================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//======================================================
-			/* p_os_ray.col(1) = p_ray_end;
-			
-			polygon_matrix_mx = mxCreateDoubleMatrix(2, n_vertices, mxREAL);
-			p_polygon_matrix = mxGetPr(polygon_matrix_mx);
-			Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, 2, n_vertices);
-			map_polygon_matrix = vertices;
-			map_bbox = bbox;
-			map_p_os_ray = p_os_ray;
+			#if ENABLE_PSBMPC_DEBUGGING
+				/* p_os_ray.col(1) = p_ray_end;
+				
+				polygon_matrix_mx = mxCreateDoubleMatrix(2, n_vertices, mxREAL);
+				p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+				Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, 2, n_vertices);
+				map_polygon_matrix = vertices;
+				map_bbox = bbox;
+				map_p_os_ray = p_os_ray;
 
-			engPutVariable(ep, "polygon_vertices", polygon_matrix_mx);
-			engPutVariable(ep, "p_os_ray", p_os_ray_mx);
-			engPutVariable(ep, "bbox", bbox_mx);
-			engEvalString(ep, "init_plot_geometry_wrt_polygon"); */
+				engPutVariable(ep, "polygon_vertices", polygon_matrix_mx);
+				engPutVariable(ep, "p_os_ray", p_os_ray_mx);
+				engPutVariable(ep, "bbox", bbox_mx);
+				engEvalString(ep, "init_plot_geometry_wrt_polygon"); */
+			#endif
 			//======================================================
 			int o_11(0), o_12(0);
 			for(int l = 0; l < n_vertices; l++)
@@ -1217,10 +1224,12 @@ namespace PSBMPC_LIB
 				//======================================================
 				// MATLAB PLOTTING FOR DEBUGGING
 				//======================================================
-				/* polygon_side.col(0) = v; polygon_side.col(1) = v_next;
-				map_polygon_side = polygon_side;
-				engPutVariable(ep, "polygon_side", polygon_side_mx);
-				engEvalString(ep, "plot_geometry_wrt_polygon"); */
+				#if ENABLE_PSBMPC_DEBUGGING
+					/* polygon_side.col(0) = v; polygon_side.col(1) = v_next;
+					map_polygon_side = polygon_side;
+					engPutVariable(ep, "polygon_side", polygon_side_mx);
+					engEvalString(ep, "plot_geometry_wrt_polygon"); */
+				#endif
 				//======================================================
 				
 				if (determine_if_lines_intersect(p, p_ray_end, v, v_next))
@@ -1254,11 +1263,13 @@ namespace PSBMPC_LIB
 			//======================================================
 			// MATLAB PLOTTING FOR DEBUGGING
 			//======================================================
-			/* mxDestroyArray(polygon_matrix_mx);
-			mxDestroyArray(polygon_side_mx);
-			mxDestroyArray(p_os_ray_mx);
-			mxDestroyArray(bbox_mx);
-			engClose(ep); */
+			#if ENABLE_PSBMPC_DEBUGGING
+				/* mxDestroyArray(polygon_matrix_mx);
+				mxDestroyArray(polygon_side_mx);
+				mxDestroyArray(p_os_ray_mx);
+				mxDestroyArray(bbox_mx);
+				engClose(ep); */
+			#endif
 			//======================================================
 			return line_intersect_count % 2 == 1;
 		}

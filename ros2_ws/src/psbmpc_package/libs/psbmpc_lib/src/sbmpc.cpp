@@ -21,8 +21,6 @@
 #include "sbmpc.hpp"
 
 #include <iostream>
-#include "engine.h"
-
 namespace PSBMPC_LIB
 {
 /****************************************************************************************
@@ -96,79 +94,6 @@ void SBMPC::calculate_optimal_offsets(
 
 	setup_prediction(data);
 
-	//===============================================================================================================
-	// MATLAB PLOTTING FOR DEBUGGING
-	//===============================================================================================================
-	/* Engine *ep = engOpen(NULL);
-	if (ep == NULL)
-	{
-		std::cout << "engine start failed!" << std::endl;
-	}
- 	mxArray *traj_os = mxCreateDoubleMatrix(6, n_samples, mxREAL);
-	mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
-
-	double *ptraj_os = mxGetPr(traj_os); 
-	double *p_wps_os = mxGetPr(wps_os); 
-
-	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
-	map_wps = waypoints;
-
-	mxArray *static_obst_mx = mxCreateDoubleMatrix(4, n_static_obst, mxREAL);
-	double *p_static_obst_mx = mxGetPr(static_obst_mx); 
-	Eigen::Map<Eigen::MatrixXd> map_static_obst(p_static_obst_mx, 4, n_static_obst);
-	map_static_obst = static_obstacles;
-
-	mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *i_mx, *ps_mx, *n_static_obst_mx;
-	dt_sim = mxCreateDoubleScalar(pars.dt);
-	T_sim = mxCreateDoubleScalar(pars.T);
-	n_ps_mx = mxCreateDoubleScalar(1);
-	n_obst_mx = mxCreateDoubleScalar(n_obst);
-	n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
-
-	engPutVariable(ep, "X_static", static_obst_mx);
-	engPutVariable(ep, "n_ps", n_ps_mx);
-	engPutVariable(ep, "n_static_obst", n_static_obst_mx);
-	engPutVariable(ep, "n_obst", n_obst_mx);
-	engPutVariable(ep, "dt_sim", dt_sim);
-	engPutVariable(ep, "T_sim", T_sim);
-	engPutVariable(ep, "WPs", wps_os);
-	engEvalString(ep, "inside_psbmpc_init_plot");
-
-	mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-	mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
-
-	double *ptraj_i = mxGetPr(traj_i);
-	double *p_P_traj_i = mxGetPr(P_traj_i);
-	double *p_P_c_i;
-
-	Eigen::Map<Eigen::MatrixXd> map_traj_i(ptraj_i, 4, n_samples);
-	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
-
-	std::vector<mxArray*> P_c_i_mx(n_obst);
-
- 	for(int i = 0; i < n_obst; i++)
-	{
-		P_c_i_mx[i] = mxCreateDoubleMatrix(1, n_samples, mxREAL);
-
-		Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
-		std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
-
-		i_mx = mxCreateDoubleScalar(i + 1);
-		engPutVariable(ep, "i", i_mx);
-
-		map_P_traj_i = P_i_p;
-		engPutVariable(ep, "P_i_flat", P_traj_i);
-
-		ps_mx = mxCreateDoubleScalar(1);
-		engPutVariable(ep, "ps", ps_mx);
-
-		map_traj_i = xs_i_p[0];
-		
-		engPutVariable(ep, "X_i", traj_i);
-		engEvalString(ep, "inside_psbmpc_obstacle_plot");
-	} */
-	
-	//===============================================================================================================
 	double cost;
 	Eigen::VectorXd cost_i(n_obst);
 	data.HL_0.resize(n_obst); data.HL_0.setZero();
@@ -192,25 +117,6 @@ void SBMPC::calculate_optimal_offsets(
 		for (int i = 0; i < n_obst; i++)
 		{
 			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, data, i, ownship.get_length());
-
-			//===============================================================================================================
-			// MATLAB PLOTTING FOR DEBUGGING
-			//===============================================================================================================
-			/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
-			Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
-			map_P_c = P_c_i;
-
-			i_mx = mxCreateDoubleScalar(i + 1);
-			engPutVariable(ep, "i", i_mx);
-
-			engPutVariable(ep, "P_c_i", P_c_i_mx[i]);
-			for(int ps = 0; ps < n_ps[i]; ps++)
-			{
-				ps_mx = mxCreateDoubleScalar(ps + 1);
-				engPutVariable(ep, "ps", ps_mx);
-				engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-			} */
-			//===============================================================================================================
 		}
 
 		cost += cost_i.maxCoeff();
@@ -236,19 +142,6 @@ void SBMPC::calculate_optimal_offsets(
 			}	
 		}
 		increment_control_behaviour();
-
-		//===============================================================================================================
-		// MATLAB PLOTTING FOR DEBUGGING
-		//===============================================================================================================
-		/* Eigen::Map<Eigen::MatrixXd> map_traj(ptraj_os, 6, n_samples);
-		map_traj = trajectory;
-
-		k_s = mxCreateDoubleScalar(n_samples);
-		engPutVariable(ep, "k", k_s);
-
-		engPutVariable(ep, "X", traj_os);
-		engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
-		//===============================================================================================================
 	}
 
 	u_opt = opt_offset_sequence(0); 	u_opt_last = u_opt;
@@ -268,8 +161,6 @@ void SBMPC::calculate_optimal_offsets(
 	std::cout << std::endl;
 
 	std::cout << "Cost at optimum : " << min_cost << std::endl; */
-
-	/* engClose(ep); */ 
 }
 
 /****************************************************************************************
