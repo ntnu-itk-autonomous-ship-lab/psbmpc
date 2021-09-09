@@ -23,9 +23,11 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
-#include "engine.h"
 
-#define BUFFSIZE 100000
+#if ENABLE_PSBMPC_DEBUGGING
+	#include "engine.h"
+	#define BUFFSIZE 100000
+#endif
 
 namespace PSBMPC_LIB
 {
@@ -140,13 +142,22 @@ void PSBMPC::calculate_optimal_offsets(
 		map_init_state_os = ownship_state;
 		map_wps = waypoints;
 
-		mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *n_static_obst_mx, *i_mx, *ps_mx, *d_safe_mx;
+		int n_ps_max(0);
+		for (int i = 0; i < n_obst; i++)
+		{
+			if (n_ps_max < n_ps[i])
+			{
+				n_ps_max = n_ps[i];
+			}
+		}
+		mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *n_static_obst_mx, *i_mx, *ps_mx, *d_safe_mx, *t_ts_mx;
 		dt_sim = mxCreateDoubleScalar(pars.dt);
 		T_sim = mxCreateDoubleScalar(pars.T);
-		n_ps_mx = mxCreateDoubleScalar(n_ps[0]);
+		n_ps_mx = mxCreateDoubleScalar(n_ps_max);
 		n_obst_mx = mxCreateDoubleScalar(n_obst);
 		d_safe_mx = mxCreateDoubleScalar(pars.d_safe);
 		n_static_obst_mx = mxCreateDoubleScalar(n_static_obst);
+		t_ts_mx = mxCreateDoubleScalar(pars.t_ts);
 		
 		engPutVariable(ep, "ownship_state", init_state_os_mx);
 		engPutVariable(ep, "n_ps", n_ps_mx);
@@ -156,6 +167,7 @@ void PSBMPC::calculate_optimal_offsets(
 		engPutVariable(ep, "T_sim", T_sim);
 		engPutVariable(ep, "WPs", wps_os);
 		engPutVariable(ep, "d_safe", d_safe_mx);
+		engPutVariable(ep, "t_ts", t_ts_mx);
 		engEvalString(ep, "inside_psbmpc_init_plot");
 
 		Eigen::Matrix<double, 2, -1> polygon_matrix;

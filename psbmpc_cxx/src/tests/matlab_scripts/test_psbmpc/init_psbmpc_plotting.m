@@ -7,7 +7,7 @@ xlim(ax1, xlimits_ne);
 ylim(ax1, ylimits_ne);
 
 ylimits_d = [0 500];
-tlim = [0 T_sim];
+tlim = [0 T_sim / dt_sim];
 
 warning('off');
 
