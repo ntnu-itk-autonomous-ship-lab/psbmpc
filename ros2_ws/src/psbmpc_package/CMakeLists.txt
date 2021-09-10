@@ -32,23 +32,23 @@ set(CMAKE_BUILD_TYPE release)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+#set(EIGEN3_INCLUDE_DIRS /usr/include/eigen3)
+
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclcpp_components REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
-find_package(Eigen3 REQUIRED)
 find_package(bridge_msgs REQUIRED)
+#find_package(Eigen3 REQUIRED)
 
 set(dependencies 
   rclcpp
-  rclcpp_components
   rclcpp_lifecycle
   lifecycle_msgs
   nav_msgs
   bridge_msgs
-  Eigen3
+  #Eigen3
 )
 
 add_subdirectory(libs/psbmpc_lib)
@@ -57,11 +57,13 @@ add_executable(psbmpc_node src/psbmpc_node.cpp)
 
 ament_target_dependencies(psbmpc_node ${dependencies})
 
-target_link_libraries(psbmpc_node psbmpc_lib Eigen3::Eigen)
+#target_link_libraries(psbmpc_node psbmpc_lib Eigen3::Eigen)
+target_link_libraries(psbmpc_node psbmpc_lib)
 
 target_include_directories(psbmpc_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 if(USE_GPU_PSBMPC)
@@ -75,7 +77,7 @@ endif()
 #rclcpp_components_register_nodes(psbmpc_node "PSB-MPC")
 
 #ament_export_targets(export_psbmpc_node HAS_LIBRARY_TARGET)
-#ament_export_dependencies(${dependencies})
+ament_export_dependencies(${dependencies})
 
 install(TARGETS 
   psbmpc_node

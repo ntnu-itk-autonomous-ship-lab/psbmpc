@@ -13,7 +13,7 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(ament_cmake REQUIRED)
-find_package(builtin_interfaces REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 set(msg_files
@@ -33,15 +33,15 @@ set(msg_files
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
-  DEPENDENCIES builtin_interfaces
+  DEPENDENCIES std_msgs
  )
 
  ament_export_dependencies(rosidl_default_runtime)
 
-install(
-  FILES rosbridge_mapping_rules.yaml
-  DESTINATION share/${PROJECT_NAME}
-)
+#install(
+#  FILES rosbridge_mapping_rules.yaml
+#  DESTINATION share/${PROJECT_NAME}
+#)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
