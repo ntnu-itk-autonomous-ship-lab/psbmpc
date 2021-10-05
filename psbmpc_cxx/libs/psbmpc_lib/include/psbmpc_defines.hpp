@@ -24,11 +24,11 @@
 // Can be specified by e.g CMAKE
 // OWNSHIP_TYPE = 0 : Kinematic_Ship | 1 : Telemetron | 2 : MilliAmpere (NOT FINISHED IMPLEMENTATION YET)
 #ifndef OWNSHIP_TYPE
-#define OWNSHIP TYPE 0
+    #define OWNSHIP TYPE 0
 #endif
 
 #ifndef ENABLE_PSBMPC_DEBUGGING
-#define ENABLE_PSBMPC_DEBUGGING 0
+    #define ENABLE_PSBMPC_DEBUGGING 0
 #endif
 
 #define M_PI 3.14159265358979323846
@@ -45,11 +45,11 @@
 
 #define MAX_N_WPS 8                     // Max number of waypoints for the waypoint matrix allowable on the device
 
-#define MAX_N_OBST 3                    // Max number of obstacles allowable on the device
+#define MAX_N_OBST 4                    // Max number of obstacles allowable on the device
 #define MAX_N_PS 7                      // Max number of prediction scenarios allowable for obstacle trajectory matrices on the device
 
 #define MAX_N_SEG_SAMPLES 4             // Max number of samples in segment considered in the CPE method MCSKF4D
 #define MAX_N_CPE_SAMPLES 500           // Max number of samples allowable to draw in the CPE. 
 
-#define MAX_N_POLYGONS 5                // Max number of static obstacles/polygons allowable on the device
-#define MAX_N_VERTICES 3000             // Max number of vertices in a polygon allowable on the device
+#define MAX_N_POLYGONS 20               // Max number of static obstacles/polygons allowable on the device
+#define MAX_N_VERTICES 5900             // Max number of vertices in a polygon allowable on the device

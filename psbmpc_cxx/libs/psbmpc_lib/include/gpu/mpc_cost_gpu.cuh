@@ -451,7 +451,11 @@ namespace PSBMPC_LIB
 				l_i = 1;
 			}
 
-			cost_do = l_i * cost_coll * P_c_i;
+			// Should discount time when using a prediction scheme where the uncertainty for
+			// each obstacle prediction scenario is bounded by r_ct
+			//cost_do = l_i * cost_coll * P_c_i;
+			cost_do = l_i * cost_coll * P_c_i * exp(- (float)k * pars.dt / pars.T_sgn);
+
 
 			/* printf("k = %d | C = %.4f | P_c_i = %.6f | mu = %d | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n", 
 				k, cost_coll, P_c_i, mu, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
@@ -619,7 +623,7 @@ namespace PSBMPC_LIB
 
 					phi_j = fmaxf(0.0f, L_0j.dot(fdata->wind_direction));
 
-					cost_g += (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(- (pars.G_3 * d_0j + pars.G_4 * (float)k * pars.dt));
+					cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(- (pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * (float)k * pars.dt));
 
 					//printf("t = %.4f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
@@ -651,7 +655,7 @@ namespace PSBMPC_LIB
 
 				phi_j = fmaxf(0.0f, L_0j.dot(fdata->wind_direction));
 
-				cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(- (pars.G_3 * d_0j + pars.G_4 * (float)k * pars.dt));
+				cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(- (pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * (float)k * pars.dt));
 
 				//printf("t = %.4f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				if (max_cost_g < cost_g)

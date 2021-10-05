@@ -76,6 +76,9 @@ PSBMPC::PSBMPC(
 	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
 	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
 {
+	opt_offset_sequence.resize(2 * pars.n_M);
+	maneuver_times.resize(pars.n_M);
+	
 	preallocate_device_data();
 }
 
@@ -174,7 +177,9 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 			std::cout << "engine start failed!" << std::endl;
 		}
-		
+		char buffer[BUFFSIZE+1]; 
+		buffer[BUFFSIZE] = '\0';
+		engOutputBuffer(ep, buffer, BUFFSIZE);
 		mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
 		mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 		mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
@@ -381,6 +386,8 @@ void PSBMPC::calculate_optimal_offsets(
 
 		engPutVariable(ep, "X", traj_os_mx);
 		engEvalString(ep, "inside_psbmpc_upd_ownship_plot");  
+
+		printf("%s", buffer);
 
 		engClose(ep);
 	#endif
@@ -1033,7 +1040,7 @@ void PSBMPC::setup_prediction(
 			}	
 		}
 
-		if (index_closest != -1)
+		/* if (index_closest != -1)
 		{
 			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[index_closest].get_width());
 			// If no predicted collision,  avoidance maneuver M with the closest
@@ -1044,7 +1051,7 @@ void PSBMPC::setup_prediction(
 				maneuvered_by[index_closest] = true;
 				maneuver_times(M) = std::round(t_cpa(index_closest) / pars.dt);
 			}
-		}
+		} */
 	}
 	
 	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
