@@ -306,8 +306,8 @@ void PSBMPC_Parameters::initialize_par_limits()
 void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
-	n_M = 2;
-	n_r = 5;
+	n_M = 1;
+	n_r = MAX_N_PS;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -325,25 +325,25 @@ void PSBMPC_Parameters::initialize_pars()
 			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, -5.0, 0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 			chi_offsets[M] *= DEG2RAD;
 		} 
 		else if (M == 1)
 		{
-			u_offsets[M].resize(1);
-			u_offsets[M] << 1.0;
-			//u_offsets[M] << 1.0, 0.5;
+			u_offsets[M].resize(2);
+			//u_offsets[M] << 1.0;
+			u_offsets[M] << 1.0, 0.5;
 			//u_offsets[M] << 1.0, 0.5, 0.0;
 
-			chi_offsets[M].resize(13);
+			chi_offsets[M].resize(7);
 			//chi_offsets[M] << 0.0;
 			//chi_offsets[M] << -30.0, 0.0, 30.0;
 			//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
 			//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-			//chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
-			chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+			chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
+			//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 			//chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
 			//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 			chi_offsets[M] *= DEG2RAD;
@@ -381,35 +381,35 @@ void PSBMPC_Parameters::initialize_pars()
 	p_step_grounding = 2;
 	if (prediction_method == ERK1)
 	{ 
-		dt = 1.0; 
+		dt = 0.5; 
 		p_step = 10;
 	}
-	t_ts = 25;
+	t_ts = 10;
 
-	d_so_relevant = 800;
-	d_init = 800;								 
-	d_close = 500;
-	d_safe = 10; 							
-	K_coll = 2.0;	// 0.2 for sea traffic, 3.0 for nidelva	  					
+	d_so_relevant = 200;
+	d_init = 300;								 
+	d_close = 300;
+	d_safe = 5; 							
+	K_coll = 3.0;	// 0.2 for sea traffic, 10.0 for nidelva	  					
 	phi_AH = 68.5 * DEG2RAD;		 	
 	phi_OT = 68.5 * DEG2RAD;		 		 
 	phi_HO = 22.5 * DEG2RAD;		 		
 	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 0.0;		  					
+	kappa = 20.0;		  					
 	kappa_TC = 20.0;						 
-	K_u = 10;		   						 
-	K_du = 5;		    					
-	K_chi_strb = 1;	  					
-	K_chi_port =  2;	  					
-	K_dchi_strb = 1;	 			
-	K_dchi_port = 1.5;
+	K_u = 40;		   						 
+	K_du = 6;		    					
+	K_chi_strb = 1.3;	  					
+	K_chi_port =  1.6;	  					
+	K_dchi_strb = 0.9;	 			
+	K_dchi_port = 1.2;
 	K_sgn = 8;
 	T_sgn = 4 * t_ts;	
 
 	G_1 = 100.0; 
 	G_2 = 5.0;
-	G_3 = 0.4;
-	G_4 = 0.05;
+	G_3 = 0.25;
+	G_4 = 0.01;
 
 	epsilon_rdp = 2.0;
 
@@ -422,7 +422,7 @@ void PSBMPC_Parameters::initialize_pars(
 	const CPE_Method cpe_method,							// In: Collision probability estimator type to use
 	const Prediction_Method prediction_method,				// In: Prediction type to use
 	const Guidance_Method guidance_method,					// In: Guidance type to use
-	const std::vector<int64_t> &ipars, 							// In: Vector of integer parameters
+	const std::vector<int> &ipars, 							// In: Vector of integer parameters
 	const std::vector<double> &dpars						// In: Vector of double parameters
 	)
 {

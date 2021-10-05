@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "sbmpc_index.hpp"
 #include "psbmpc_parameters.hpp"
 
 namespace PSBMPC_LIB
@@ -43,17 +44,14 @@ namespace PSBMPC_LIB
 		friend class CPU::Obstacle_SBMPC;
 		
 		// Number of control behaviours and sequential maneuvers for the ownship, respectively
-		int n_cbs, n_M;
+		int n_cbs, n_M, n_r;
 
-		int p_step;
+		int p_step, p_step_grounding;
 		
 		// Finite sets of offsets considered to the own-ship surge and course references,
 		// for each maneuver in the horizon
 		std::vector<Eigen::VectorXd> u_offsets;
 		std::vector<Eigen::VectorXd> chi_offsets;
-
-		Eigen::VectorXd dpar_low, dpar_high;
-		Eigen::VectorXd ipar_low, ipar_high;
 
 		Prediction_Method prediction_method;
 
@@ -61,7 +59,7 @@ namespace PSBMPC_LIB
 
 		double T, dt;
 		double t_ts;
-		double d_safe, d_close, d_init;
+		double d_safe, d_close, d_init, d_so_relevant;
 		double K_coll;
 		double phi_AH, phi_OT, phi_HO, phi_CR;
 		double kappa, kappa_TC;
@@ -69,16 +67,33 @@ namespace PSBMPC_LIB
 		double K_chi_strb, K_dchi_strb;
 		double K_chi_port, K_dchi_port; 
 		double K_sgn, T_sgn;
-		double G;
+		double G_1, G_2, G_3, G_4;
+		double epsilon_rdp;
 		double q, p;
 
 		void initialize_pars(const bool is_obstacle_sbmpc);
+		void initialize_pars(
+			const std::vector<std::vector<double>> &u_offsets, 
+			const std::vector<std::vector<double>> &chi_offsets, 
+			const Prediction_Method prediction_method,
+			const Guidance_Method guidance_method,
+			const std::vector<int> &ipars, 
+			const std::vector<double> &dpars);
 
 	public:
 
 		SBMPC_Parameters() {}
 
 		SBMPC_Parameters(const bool is_obstacle_sbmpc) { initialize_pars(is_obstacle_sbmpc); }
-
+		SBMPC_Parameters(
+			const std::vector<std::vector<double>> &u_offsets, 
+			const std::vector<std::vector<double>> &chi_offsets, 
+			const Prediction_Method prediction_method,
+			const Guidance_Method guidance_method,
+			const std::vector<int> &ipars, 
+			const std::vector<double> &dpars)
+		{
+			initialize_pars(u_offsets, chi_offsets, prediction_method, guidance_method, ipars, dpars);
+		}
 	};
 }

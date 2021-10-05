@@ -68,6 +68,7 @@ namespace PSBMPC_LIB
 		CPU::MPC_Cost<SBMPC_Parameters> mpc_cost;
 
 		SBMPC();
+		SBMPC(const CPU::Ownship &ownship, const SBMPC_Parameters &pars);
 			
 		void calculate_optimal_offsets(
 			double &u_opt, 
@@ -78,6 +79,19 @@ namespace PSBMPC_LIB
 			const Eigen::Matrix<double, 2, -1> &waypoints,
 			const Eigen::VectorXd &ownship_state,
 			const Eigen::Matrix<double, 4, -1> &static_obstacles,
+			Obstacle_Data<Tracked_Obstacle> &data);
+
+		void calculate_optimal_offsets(
+			double &u_opt, 
+			double &chi_opt, 
+			Eigen::Matrix<double, 2, -1> &predicted_trajectory,
+			const double u_d, 
+			const double chi_d, 
+			const Eigen::Matrix<double, 2, -1> &waypoints,
+			const Eigen::VectorXd &ownship_state,
+			const double V_w,
+			const Eigen::Vector2d &wind_direction,
+			const std::vector<polygon_2D> &polygons,
 			Obstacle_Data<Tracked_Obstacle> &data);
 	};
 } 

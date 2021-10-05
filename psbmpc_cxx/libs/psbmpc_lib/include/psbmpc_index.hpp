@@ -24,7 +24,6 @@
 #define N_IPAR						5 							// Number of integer type parameters in PSBMPC
 #define N_DPAR						27 							// Number of double type parameters in PSBMPC
 #define N_OPAR						2							// Number of offset/control behavior related parameters in PSBMPC
-#define N_EVPAR						1							// Number of Eigen::Vector type parameters in PSBMPC
 
 // Indices for parameters of type bool
 #define i_bpar_obstacle_colav_on	0

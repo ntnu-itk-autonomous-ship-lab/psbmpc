@@ -35,7 +35,7 @@ namespace PSBMPC_LIB
 ****************************************************************************************/
 /****************************************************************************************
 *  Name     : initialize_pars
-*  Function : Sets initial values for SBMPC tuning parameters
+*  Function : Sets initial values for PSBMPC tuning parameters, two overloads.
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
@@ -91,6 +91,7 @@ void SBMPC_Parameters::initialize_pars(
 		dt = 5.0;
 
 		p_step = 1;
+		p_step_grounding = 2;
 		if (prediction_method == ERK1)
 		{ 
 			dt = 0.5; 
@@ -115,8 +116,14 @@ void SBMPC_Parameters::initialize_pars(
 		K_dchi_strb = 0.9;	 			
 		K_dchi_port = 1.2;
 		K_sgn = 8;
-		T_sgn = 4 * t_ts;	  					
-		G = 1e3;		         					 
+		T_sgn = 4 * t_ts;	
+
+		G_1 = 100.0; 
+		G_2 = 5.0;
+		G_3 = 0.25;
+		G_4 = 0.01;
+
+		epsilon_rdp = 2.0;		         					 
 		q = 4.0;
 		p = 1.0;
 	}
@@ -168,6 +175,7 @@ void SBMPC_Parameters::initialize_pars(
 		dt = 5.0;
 
 		p_step = 1;
+		p_step_grounding = 2;
 		if (prediction_method == ERK1)
 		{ 
 			dt = 0.5; 
@@ -191,11 +199,96 @@ void SBMPC_Parameters::initialize_pars(
 		K_chi_port =  1.6;	  					
 		K_dchi_strb = 0.9;	 			
 		K_dchi_port = 1.2;
-		K_sgn = 5;
-		T_sgn = 4 * t_ts;	  					
-		G = 1e3;		         					 
+		K_sgn = 8;
+		T_sgn = 4 * t_ts;	
+
+		G_1 = 100.0; 
+		G_2 = 5.0;
+		G_3 = 0.25;
+		G_4 = 0.01;
+
+		epsilon_rdp = 2.0;	         					 
 		q = 4.0;
 		p = 1.0;
 	}
 }
+
+void SBMPC_Parameters::initialize_pars(
+	const std::vector<std::vector<double>> &u_offsets, 		// In: Vector of vectors of surge modifications
+	const std::vector<std::vector<double>> &chi_offsets, 	// In: Vector of vectors of course modifications
+	const Prediction_Method prediction_method,				// In: Prediction type to use
+	const Guidance_Method guidance_method,					// In: Guidance type to use
+	const std::vector<int> &ipars, 							// In: Vector of integer parameters
+	const std::vector<double> &dpars						// In: Vector of double parameters
+	)
+{
+	n_M = ipars[i_ipar_n_M_SBMPC];
+	n_r = ipars[i_ipar_n_r_SBMPC];
+	assert(n_M == (int)u_offsets.size() && n_M == (int)chi_offsets.size());
+
+	p_step = ipars[i_ipar_p_step_SBMPC];
+	p_step_grounding = ipars[i_ipar_p_step_grounding_SBMPC];
+
+	this->u_offsets.resize(n_M); this->chi_offsets.resize(n_M);
+	for (int M = 0; M < n_M; M++)
+	{	
+		assert((int)u_offsets[M].size() > 0 && (int)chi_offsets[M].size() > 0);
+		this->u_offsets[M].resize(u_offsets[M].size());
+		for (size_t uo = 0; uo < u_offsets[M].size(); uo++)
+		{
+			this->u_offsets[M](uo) = u_offsets[M][uo];
+		}
+		this->chi_offsets[M].resize(chi_offsets[M].size());
+		for (size_t co = 0; co < chi_offsets[M].size(); co++)
+		{
+			// Input pars for chi_offsets are in degrees, so must convert to radians
+			this->chi_offsets[M](co) = chi_offsets[M][co] * DEG2RAD;
+		}
+	}
+
+	this->prediction_method = prediction_method;
+	this->guidance_method = guidance_method;
+
+	T = dpars[i_dpar_T_SBMPC]; 
+	dt = dpars[i_dpar_dt_SBMPC]; 
+	t_ts = dpars[i_dpar_t_ts_SBMPC];
+
+	d_safe = dpars[i_dpar_d_safe_SBMPC]; 
+	d_close = dpars[i_dpar_d_close_SBMPC];
+	d_init = dpars[i_dpar_d_init_SBMPC];
+	d_so_relevant = dpars[i_dpar_d_so_relevant_SBMPC];
+
+	K_coll = dpars[i_dpar_K_coll_SBMPC];
+
+	// Input pars for phi_AH - CR are in degrees, so must convert to radians
+	phi_AH = dpars[i_dpar_phi_AH_SBMPC] * DEG2RAD;
+	phi_OT = dpars[i_dpar_phi_OT_SBMPC] * DEG2RAD;
+	phi_HO = dpars[i_dpar_phi_HO_SBMPC] * DEG2RAD;
+	phi_CR = dpars[i_dpar_phi_CR_SBMPC] * DEG2RAD;
+
+	kappa = dpars[i_dpar_kappa_SBMPC];
+	kappa_TC = dpars[i_dpar_kappa_TC_SBMPC];
+
+	K_u = dpars[i_dpar_K_u_SBMPC];
+	K_du = dpars[i_dpar_K_du_SBMPC];
+
+	K_chi_strb = dpars[i_dpar_K_chi_strb_SBMPC];
+	K_dchi_strb = dpars[i_dpar_K_dchi_strb_SBMPC];
+	K_chi_port = dpars[i_dpar_K_chi_port_SBMPC];
+	K_dchi_port = dpars[i_dpar_K_dchi_port_SBMPC];
+
+	K_sgn = dpars[i_dpar_K_sgn_SBMPC];
+	T_sgn = dpars[i_dpar_T_sgn_SBMPC];
+
+	G_1 = dpars[i_dpar_G_1_SBMPC];
+	G_2 = dpars[i_dpar_G_2_SBMPC];
+	G_2 = dpars[i_dpar_G_3_SBMPC];
+	G_2 = dpars[i_dpar_G_4_SBMPC];
+
+	epsilon_rdp = dpars[i_dpar_epsilon_rdp_SBMPC];
+
+	q = dpars[i_dpar_q_SBMPC];
+	p = dpars[i_dpar_p_SBMPC];
+}
+
 }

@@ -127,7 +127,7 @@ namespace PSBMPC_LIB
 			const CPE_Method cpe_method,
 			const Prediction_Method prediction_method,
 			const Guidance_Method guidance_method,
-			const std::vector<int64_t> &ipars, 
+			const std::vector<int> &ipars, 
 			const std::vector<double> &dpars);
 
 	public:
@@ -139,7 +139,7 @@ namespace PSBMPC_LIB
 			const CPE_Method cpe_method,
 			const Prediction_Method prediction_method,
 			const Guidance_Method guidance_method,
-			const std::vector<int64_t> &ipars, 
+			const std::vector<int> &ipars, 
 			const std::vector<double> &dpars)
 		{
 			initialize_pars(u_offsets, chi_offsets, cpe_method, prediction_method, guidance_method, ipars, dpars);

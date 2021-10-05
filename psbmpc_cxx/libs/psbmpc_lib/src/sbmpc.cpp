@@ -41,6 +41,19 @@ SBMPC::SBMPC()
 	chi_opt_last = 0.0; u_opt_last = 1.0;
 }
 
+SBMPC::SBMPC(
+	const CPU::Ownship &ownship, 				// In: Own-ship with specific parameter set
+	const SBMPC_Parameters &pars 				// In: Parameter object to initialize the SB-MPC
+	)
+	: 
+	ownship(ownship), pars(pars), mpc_cost(pars)
+{
+	offset_sequence_counter.resize(2 * pars.n_M);
+	offset_sequence.resize(2 * pars.n_M);
+
+	chi_opt_last = 0.0; u_opt_last = 1.0;
+}
+
 /****************************************************************************************
 *  Name     : calculate_optimal_offsets
 *  Function : 
@@ -122,6 +135,124 @@ void SBMPC::calculate_optimal_offsets(
 		cost += cost_i.maxCoeff();
 
 		//cost += mpc_cost.calculate_grounding_cost(trajectory, static_obstacles, ownship.get_length());
+
+		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
+
+		cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
+
+		if (cost < min_cost) 
+		{
+			min_cost = cost;
+			opt_offset_sequence = offset_sequence;
+
+			assign_optimal_trajectory(predicted_trajectory);
+
+			// Assign current optimal hazard level for each obstacle
+			for (int i = 0; i < n_obst; i++)
+			{
+				if (cost_i.sum() > 0)
+					data.HL_0(i) = cost_i(i) / cost_i.sum();
+			}	
+		}
+		increment_control_behaviour();
+	}
+
+	u_opt = opt_offset_sequence(0); 	u_opt_last = u_opt;
+	chi_opt = opt_offset_sequence(1); 	chi_opt_last = chi_opt;
+
+	if(u_opt == 0)
+	{
+		chi_opt = 0; 	chi_opt_last = chi_opt;
+	}
+	
+	/* std::cout << "Optimal offset sequence : ";
+	for (int M = 0; M < pars.n_M; M++)
+	{
+		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
+		if (M < pars.n_M - 1) std::cout << ", ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "Cost at optimum : " << min_cost << std::endl; */
+}
+
+void SBMPC::calculate_optimal_offsets(									
+	double &u_opt, 															// In/out: Optimal surge offset
+	double &chi_opt, 														// In/out: Optimal course offset
+	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
+	const double u_d, 														// In: Surge reference
+	const double chi_d, 													// In: Course reference
+	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
+	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
+	const double V_w,														// In: Estimated wind speed
+	const Eigen::Vector2d &wind_direction,									// In: Unit vector in NE describing the estimated wind direction
+	const std::vector<polygon_2D> &polygons,								// In: Static obstacles parametrized as polygons
+	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
+	)
+{	
+	int n_samples = std::round(pars.T / pars.dt);
+
+	trajectory.resize(ownship_state.size(), n_samples);
+	trajectory.col(0) = ownship_state;
+
+	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
+
+	int n_obst = data.obstacles.size();
+	int n_static_obst = polygons.size();								
+
+	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
+
+	// Predict nominal trajectory first, assign as optimal if no need for
+	// COLAV, or use in the prediction initialization
+	for (int M = 0; M < pars.n_M; M++)
+	{
+		offset_sequence(2 * M) = 1.0; offset_sequence(2 * M + 1) = 0.0;
+	}
+	maneuver_times.setZero();
+	ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+
+
+	bool colav_active = determine_colav_active(data, n_static_obst);
+	if (!colav_active)
+	{
+		u_opt = 1.0; 		u_opt_last = u_opt;
+		chi_opt = 0.0; 		chi_opt_last = chi_opt;
+
+		assign_optimal_trajectory(predicted_trajectory);
+
+		return;
+	}
+
+	setup_prediction(data);
+
+	double cost;
+	Eigen::VectorXd cost_i(n_obst);
+	data.HL_0.resize(n_obst); data.HL_0.setZero();
+	min_cost = 1e12;
+	reset_control_behaviour();
+	for (int cb = 0; cb < pars.n_cbs; cb++)
+	{
+		cost = 0.0;
+
+		ownship.predict_trajectory(
+			trajectory, 
+			offset_sequence, 
+			maneuver_times, 
+			u_d, chi_d, 
+			waypoints, 
+			pars.prediction_method, 
+			pars.guidance_method, 
+			pars.T, 
+			pars.dt);
+
+		for (int i = 0; i < n_obst; i++)
+		{
+			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, data, i, ownship.get_length());
+		}
+
+		cost += cost_i.maxCoeff();
+
+		cost += mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
 
 		cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
 
@@ -302,7 +433,7 @@ void SBMPC::setup_prediction(
 		}
 	}
 	
-	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
+	//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 }
 
 
