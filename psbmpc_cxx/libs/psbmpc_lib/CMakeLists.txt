@@ -46,7 +46,6 @@ if(USE_GPU_PSBMPC)
 		src/psbmpc_parameters.cpp
 		src/sbmpc_parameters.cpp 
 		src/sbmpc.cpp 
-		src/obstacle_predictor.cpp
 		src/obstacle_manager.cpp
 		src/tracked_obstacle.cpp
 		src/kf.cpp  

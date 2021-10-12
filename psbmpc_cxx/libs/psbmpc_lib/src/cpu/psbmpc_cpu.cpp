@@ -128,7 +128,7 @@ void PSBMPC::calculate_optimal_offsets(
 			std::cout << "engine start failed!" << std::endl;
 		}
 		
-		/* char buffer[BUFFSIZE+1]; 
+		char buffer[BUFFSIZE+1]; 
 		mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
 		mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 		mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
@@ -245,7 +245,7 @@ void PSBMPC::calculate_optimal_offsets(
 				engPutVariable(ep, "X_i", traj_i);
 				engEvalString(ep, "inside_psbmpc_obstacle_plot");
 			}
-		} */
+		}
 		
 		Eigen::MatrixXd n_ps_matrix(1, n_obst);
 		int n_ps_max(0);
@@ -383,7 +383,7 @@ void PSBMPC::calculate_optimal_offsets(
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
 			#if ENABLE_PSBMPC_DEBUGGING
-				/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
+				p_P_c_i = mxGetPr(P_c_i_mx[i]);
 				Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 				map_P_c = P_c_i;
 
@@ -396,7 +396,7 @@ void PSBMPC::calculate_optimal_offsets(
 					ps_mx = mxCreateDoubleScalar(ps + 1);
 					engPutVariable(ep, "ps", ps_mx);
 					engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-				} */
+				}
 			#endif
 			//===============================================================================================================
 		}
@@ -457,14 +457,14 @@ void PSBMPC::calculate_optimal_offsets(
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
 		#if ENABLE_PSBMPC_DEBUGGING
-			/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
+			Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
 			map_traj = trajectory;
 
 			k_s = mxCreateDoubleScalar(n_samples);
 			engPutVariable(ep, "k", k_s);
 
 			engPutVariable(ep, "X", traj_os_mx);
-			engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
+			engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
 		#endif
 		//===============================================================================================================
 	}
