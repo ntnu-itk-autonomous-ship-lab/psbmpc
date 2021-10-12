@@ -1040,7 +1040,7 @@ void PSBMPC::setup_prediction(
 			}	
 		}
 
-		/* if (index_closest != -1)
+		if (index_closest != -1)
 		{
 			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[index_closest].get_width());
 			// If no predicted collision,  avoidance maneuver M with the closest
@@ -1051,7 +1051,7 @@ void PSBMPC::setup_prediction(
 				maneuvered_by[index_closest] = true;
 				maneuver_times(M) = std::round(t_cpa(index_closest) / pars.dt);
 			}
-		} */
+		}
 	}
 	
 	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;

@@ -128,7 +128,6 @@ void PSBMPC::calculate_optimal_offsets(
 			std::cout << "engine start failed!" << std::endl;
 		}
 		
-		char buffer[BUFFSIZE+1]; 
 		mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
 		mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
 		mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
@@ -142,12 +141,22 @@ void PSBMPC::calculate_optimal_offsets(
 		map_init_state_os = ownship_state;
 		map_wps = waypoints;
 
+		Eigen::MatrixXd n_ps_matrix(1, n_obst);
 		int n_ps_max(0);
 		for (int i = 0; i < n_obst; i++)
 		{
+			n_ps_matrix(0, i) = n_ps[i];
 			if (n_ps_max < n_ps[i])
 			{
 				n_ps_max = n_ps[i];
+			}
+		}
+		Eigen::MatrixXd Pr_s_i_matrix(n_obst, n_ps_max);
+		for (int i = 0; i < n_obst; i++)
+		{
+			for (int ps = 0; ps < n_ps[i]; ps++)
+			{
+				Pr_s_i_matrix(i, ps) = data.obstacles[i].get_scenario_probabilities()(ps);
 			}
 		}
 		mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_obst_mx, *n_static_obst_mx, *i_mx, *ps_mx, *d_safe_mx, *t_ts_mx;
@@ -247,24 +256,7 @@ void PSBMPC::calculate_optimal_offsets(
 			}
 		}
 		
-		Eigen::MatrixXd n_ps_matrix(1, n_obst);
-		int n_ps_max(0);
-		for (int i = 0; i < n_obst; i++)
-		{
-			n_ps_matrix(0, i) = n_ps[i];
-			if (n_ps_max < n_ps[i])
-			{
-				n_ps_max = n_ps[i];
-			}
-		}
-		Eigen::MatrixXd Pr_s_i_matrix(n_obst, n_ps_max);
-		for (int i = 0; i < n_obst; i++)
-		{
-			for (int ps = 0; ps < n_ps[i]; ps++)
-			{
-				Pr_s_i_matrix(i, ps) = data.obstacles[i].get_scenario_probabilities()(ps);
-			}
-		}
+		
 		mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
 		mxArray *cost_do_mx = mxCreateDoubleMatrix(n_obst, pars.n_cbs, mxREAL);
 		mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
@@ -699,7 +691,7 @@ void PSBMPC::setup_prediction(
 			}	
 		}
 
-		/* if (index_closest != -1)
+		if (index_closest != -1)
 		{
 			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[index_closest].get_width());
 			// If no predicted collision,  avoidance maneuver M with the closest
@@ -710,7 +702,7 @@ void PSBMPC::setup_prediction(
 				maneuvered_by[index_closest] = true;
 				maneuver_times(M) = std::round(t_cpa(index_closest) / pars.dt);
 			}
-		} */
+		}
 	}
 	
 	std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
