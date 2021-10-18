@@ -29,6 +29,8 @@ for release. To use the GPU PSB-MPC, you also have to specify the `USE_GPU_PSBMP
 
 The same goes for toggling between own-ship types (e.g. `-DOWNSHIP_TYPE=0`). <br>
 
+After running the cmake command, a makefile is generated in your build folder (debug or release), which you use to compile the code with `make`. For the case when using one of the test files, the generated executable file is then located in the build folder under *src/tests*, which you can run using `./tester` in the terminal. 
+
 To use the library in another cmake project, copy the library folder into your project, and use the `add_subdirectory(/path/to/psbmpc_lib)` command to add it to your project. </p>
 
 ## Common Pitfalls
