@@ -285,7 +285,7 @@ int main(){
 	engPutVariable(ep, "map_origin", map_origin_mx);
 	engPutVariable(ep, "P", polygon_matrix_mx);
 	engPutVariable(ep, "P_simplified", simplified_polygon_matrix_mx);
-
+	
 //*****************************************************************************************************************
 // Simulation
 //*****************************************************************************************************************	
@@ -365,6 +365,7 @@ int main(){
 		engEvalString(ep, "init_obstacle_plot_grounding");
 	}
 	//=========================================================
+	engEvalString(ep, "save('/home/trymte/Desktop/polygons', 'P', 'P_simplified', 'map_origin')");
 	
 	Eigen::Vector4d xs_i_k;
 	Eigen::VectorXd xs_aug(9);
