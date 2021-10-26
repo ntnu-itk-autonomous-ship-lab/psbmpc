@@ -149,6 +149,36 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
+		*  Name     : read_matrix_from_file
+		*  Function : Must be a resizeable eigen matrix type.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
+		template <class Eigen_Type>
+		inline Eigen_Type read_matrix_from_file(const std::string &filename)
+		{
+			Eigen_Type out;
+			std::ifstream indata(filename);
+
+			if(!indata) 
+			{
+				std::cerr << "Error: file could not be opened" << std::endl;
+				exit(1);
+			}
+			int n_rows(0), n_cols(0);
+			indata >> n_rows >> n_cols;
+			out.resize(n_rows, n_cols);
+			for (int i = 0; i < n_rows; i++)
+			{
+				for (int j = 0; j < n_cols; j++)
+				{
+					indata >> out(i, j);
+				}
+			}
+			return out;
+		}
+
+		/****************************************************************************************
 		*  Name     : wrap_angle_to_pmpi
 		*  Function : Shifts angle into [-pi, pi] interval
 		*  Author   :

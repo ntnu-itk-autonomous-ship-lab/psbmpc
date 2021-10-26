@@ -13,9 +13,10 @@ The library heavily relies on cmake, which you can learn more about e.g. here: <
 - CUDA and Thrust for the GPU version. Not tested for CUDA versions below 10.0.
 - cuRAND <https://docs.nvidia.com/cuda/curand/index.html> is used for the Collision Probability Estimator compatible on the device. 
 - Boost <https://www.boost.org/> for reading shapefile data into a vector of polygons in the Grounding Hazard Manager, and used in the grounding cost calculation of the PSB-MPC CPU version.
+- GeographicLib <https://geographiclib.sourceforge.io/html/index.html> for conversion between different coordinate types (UTM, UPS; cartesian, geocentric etc). Follow install instructions at the webpage, and you need to specify the `CMAKE_PREFIX_PATH` variable for cmake to find the package config files.
 
 ## PSB-MPC library usage
-<p> Several test functions exist under *src/tests* to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test, by using the `add_executable(..)` command. To use the library with one of the test files under *src/tests/*, for cmake, create a debug and or release directory, go into the chosen directory and type <br>  
+<p> Several test functions exist under *src/tests* to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test, by using the `add_executable(..)` command. To use the library with one of the test files under *src/tests/*, for cmake, create a debug and or release directory, go into the chosen directory and type <br>
 
 `cmake -DCMAKE_BUILD_TYPE=debug ..` 
 
@@ -28,6 +29,8 @@ for release. To use the GPU PSB-MPC, you also have to specify the `USE_GPU_PSBMP
 `cmake -DCMAKE_BUILD_TYPE=debug -DUSE_GPU_PSBMPC=1 ..` 
 
 The same goes for toggling between own-ship types (e.g. `-DOWNSHIP_TYPE=0`). <br>
+
+Similarly, to specify where to source built packages (such as GeographicLib), the `CMAKE_PREFIX_PATH` variable can also be specified using the `-DCMAKE_PREFIX_PATH=/path/to/package/config-files` flag. <br>
 
 After running the cmake command, a makefile is generated in your build folder (debug or release), which you use to compile the code with `make`. For the case when using one of the test files, the generated executable file is then located in the build folder under *src/tests*, which you can run using `./tester` in the terminal. 
 

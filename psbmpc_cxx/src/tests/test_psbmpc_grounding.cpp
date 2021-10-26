@@ -200,12 +200,28 @@ int main(){
 	if (val) {
 		std::cout << buffer1 << std::endl;
 	}
+	std::string relative_path = buffer1;
+
 	// Input the path to the land data
-    std::string filename = "../src/tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
+    std::string filename = "/src/tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
     
-   	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(filename, psbmpc);
+	double equatorial_radius(6378137.0), flattening_factor(0.003352810664747);
+	int utm_zone(33); 
+	Eigen::Vector2d lla_origin; lla_origin << 63.4389029083, 10.39908278;
+   	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(
+		relative_path + filename, 
+		equatorial_radius,
+		flattening_factor,
+		utm_zone,
+		true,
+		lla_origin,
+		"local_NED",
+		psbmpc);
+	Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin();
+	grounding_hazard_manager.read_other_polygons(relative_path + "/src/tests/grounding_hazard_data/trondheim/other_trondheim_harbour_polygons.txt");
 	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
 	std::vector<polygon_2D> simplified_polygons = grounding_hazard_manager.get_simplified_polygons();
+
 
     //Make matlab polygons type friendly array:
     Eigen::Matrix<double, -1, 2> polygon_matrix, simplified_polygon_matrix;
@@ -291,7 +307,7 @@ int main(){
 //*****************************************************************************************************************	
 
 	// Use positions relative to the map origin
-	Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin();
+	//Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin();
 
 	xs_os_0.block<2, 1>(0, 0) -= map_origin;
 	trajectory.block<2, 1>(0, 0) -= map_origin;

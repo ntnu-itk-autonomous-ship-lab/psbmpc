@@ -89,6 +89,7 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
+find_package(GeographicLib REQUIRED) # Specify CMAKE_PREFIX_PATH=/path/to/geographiclib/builddir for cmake to find the package config files
 if(ENABLE_PSBMPC_DEBUGGING) # Neccessary for running most of the psbmpc test files
 	find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 	target_link_libraries(psbmpc_lib PUBLIC ${Matlab_LIBRARIES})
@@ -100,9 +101,10 @@ target_include_directories(psbmpc_lib
 		include
 		${EIGEN3_INCLUDE_DIRS}
 		${Boost_INCLUDE_DIRS}
+		${GeographicLib_INCLUDE_DIRS}
 )
 
-target_link_libraries(psbmpc_lib PUBLIC ${Boost_LIBRARIES} Eigen3::Eigen)
+target_link_libraries(psbmpc_lib PRIVATE Eigen3::Eigen ${Boost_LIBRARIES} ${GeographicLib_LIBRARIES})
 
 message("Use GPU PSBMPC: ${USE_GPU_PSBMPC}")
 message("Own-ship type: ${OWNSHIP_TYPE}")

@@ -22,6 +22,8 @@
 #pragma once
 
 #include "psbmpc_parameters.hpp"
+#include "cpu/utilities_cpu.hpp"
+#include "utm_projection.hpp"
 #include "shapefile_related/shapefil.h"
 
 #include "Eigen/Dense"
@@ -49,6 +51,10 @@ namespace PSBMPC_LIB
 
 		std::vector<polygon_2D> polygons, simplified_polygons;
 
+		// Name of the NED frame polygons are specified relative to
+		std::string frame_name;
+
+		// Northing, easting origin of NED frame polygons are specified relative to
 		Eigen::Vector2d map_origin;
 
 		/****************************************************************************************
@@ -254,10 +260,14 @@ namespace PSBMPC_LIB
 	public:
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+		UTM_Projection utm_p;
+
+		Grounding_Hazard_Manager() {}
+
 		template <class MPC_Type>
 		Grounding_Hazard_Manager(const std::string &filename, const MPC_Type &mpc) 
 			: 
-			d_so_relevant(mpc.pars.d_so_relevant), epsilon(2.0),
+			d_so_relevant(mpc.pars.d_so_relevant), epsilon(2.0), frame_name("local_NED"),
 			map_origin(7042250, 270250) // Trondheim, just north of ravnkloa, brattora crossing
 		{
 			read_shapefile(filename, polygons);
@@ -268,7 +278,7 @@ namespace PSBMPC_LIB
 		template <class MPC_Type>
 		Grounding_Hazard_Manager(const std::string &filename, const Eigen::Vector2d &map_origin, const MPC_Type &mpc) 
 			: 
-			d_so_relevant(mpc.pars.d_so_relevant), epsilon(mpc.pars.epsilon_rdp),
+			d_so_relevant(mpc.pars.d_so_relevant), epsilon(mpc.pars.epsilon_rdp), frame_name("local_NED"),
 			map_origin(map_origin)
 		{
 			read_shapefile(filename, polygons);
@@ -278,7 +288,7 @@ namespace PSBMPC_LIB
 
 		template <class MPC_Type>
 		Grounding_Hazard_Manager(const std::string &filename, const std::vector<double> &map_origin, const MPC_Type &mpc) 
-			: d_so_relevant(mpc.pars.d_so_relevant), epsilon(mpc.pars.epsilon_rdp)
+			: d_so_relevant(mpc.pars.d_so_relevant), epsilon(mpc.pars.epsilon_rdp), frame_name("local_NED")
 		{
 			assert(map_origin.size() == 2);
 			this->map_origin(0) = map_origin[0]; this->map_origin(1) = map_origin[1];
@@ -288,10 +298,81 @@ namespace PSBMPC_LIB
 			create_simplified_polygons();
 		}
 
+		template <class MPC_Type>
+		Grounding_Hazard_Manager(
+			const std::string &filename, 		// In: Filename of shapefile to process
+			const double equatorial_radius,			// In: Radius  of ellipsoid parametrization for lla <-> UTM conversions
+			const double flattening_factor,			// In: Flattening factor of ellipsoid parametrization for lla <-> UTM conversions
+			const int utm_zone,						// In: UTM Zone to consider (NOTE: Must match the one used when generating the shapefiles)
+			const bool northp,						// In: Boolean determining if it is the northern or southern hemisphere
+			const Eigen::Vector2d &lla_origin,  	// In: Origin of map (from shapefile) in latitude, longitude format
+			const std::string frame_name,  			// In: Name of resulting local NED frame
+			const MPC_Type &mpc 					// In: Calling MPC (Either SB-MPC or PSB-MPC)
+			) 
+			: 
+			d_so_relevant(mpc.pars.d_so_relevant), 
+			epsilon(mpc.pars.epsilon_rdp), 
+			frame_name(frame_name), 
+			utm_p(equatorial_radius, flattening_factor, utm_zone, northp)
+		{
+			assert(map_origin.size() == 2);
+			utm_p.forward(this->map_origin(1), this->map_origin(0), lla_origin(0), lla_origin(1));
+
+			std::cout << std::fixed << std::setprecision(10) << "lla_origin = " << lla_origin.transpose() << std::endl;
+			std::cout << std::fixed << std::setprecision(10) << "map_origin = " << map_origin.transpose() << std::endl;
+
+			read_shapefile(filename, polygons);
+
+			create_simplified_polygons();
+		}
+
+		std::string get_frame_name() const { return frame_name; }
 		Eigen::Vector2d get_map_origin() const { return map_origin; }
 
 		std::vector<polygon_2D> get_polygons() const { return polygons; }
 		std::vector<polygon_2D> get_simplified_polygons() const { return simplified_polygons; }
+
+		/****************************************************************************************
+		*  Name     : read_other_polygons
+		*  Function : Reads other polygons from a file consisting of a matrix (2 x N) of polygon 
+		*			  vertices, separated by columns of -1 (tested for .csv type)
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
+		void read_other_polygons(const std::string &filename)
+		{
+			try
+			{
+				Eigen::MatrixXd M = PSBMPC_LIB::CPU::read_matrix_from_file<Eigen::MatrixXd>(filename);
+				assert(M.rows() == 2);
+				int n_cols = M.cols();
+
+				typename boost::geometry::point_type<polygon_2D>::type point;
+				polygon_2D polygon, polygon_copy;
+				for (int v = 0; v < n_cols; v++)
+				{
+					if (M(0, v) ==  -1.0 || v == n_cols - 1)
+					{
+						polygons.push_back(polygon_copy);
+						polygon_copy = polygon;
+					}
+					// want the points on format (northing, easting), and relative to the map origin
+					boost::geometry::assign_values(point, M(1, v) - map_origin(0), M(0, v) - map_origin(1)); 
+					boost::geometry::append(polygon_copy, point);
+				}
+
+				// Re-run RDP algorithm on the new set of polygons
+				create_simplified_polygons();
+			}
+			catch(const std::string &s)
+			{
+				throw s;
+			}
+			catch(...)
+			{
+				throw std::string("Other exception");
+			}
+		}
 
 		/****************************************************************************************
 		*  Name     : operator()

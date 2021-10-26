@@ -17,6 +17,7 @@ Note that the amount of memory you need on your GPU to run the algorithm will in
 - CUDA and Thrust for the GPU version. Not tested for CUDA versions below 10.0.
 - cuRAND <https://docs.nvidia.com/cuda/curand/index.html> is used for the Collision Probability Estimator compatible on the device. 
 - Boost <https://www.boost.org/> for reading shapefile data into a vector of polygons in the Grounding Hazard Manager, and used in the grounding cost calculation of the PSB-MPC CPU version.
+- GeographicLib <https://geographiclib.sourceforge.io/html/index.html> for conversion between different coordinate types (UTM, UPS; cartesian, geocentric etc). Follow install instructions at the webpage, and you need to specify the `CMAKE_PREFIX_PATH` variable for cmake to find the package config files.
 
 ## Overall Structure
 <p>The library for the GPU-implementation has the following structure <br>
