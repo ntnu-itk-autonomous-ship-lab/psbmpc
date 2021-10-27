@@ -148,6 +148,7 @@ namespace PSBMPC_LIB
 			std::vector<point_2D> vertices_in, vertices_out;
 
 			int n_polygons = polygons.size();
+			simplified_polygons.resize(n_polygons);
 			for (int j = 0; j < n_polygons; j++)
 			{
 				vertices_in.clear();
@@ -164,8 +165,8 @@ namespace PSBMPC_LIB
 					boost::geometry::append(poly, vertices_out[v]);
 				}
 				boost::geometry::append(poly, vertices_out[0]);
-				simplified_polygons.emplace_back(poly);
-				printf("Polygon: %d | Vertices before: %ld | Vertices after: %ld\n", j + 1, vertices_in.size(), vertices_out.size());
+				simplified_polygons[j] = poly;
+				//printf("Polygon: %d | Vertices before: %ld | Vertices after: %ld\n", j + 1, vertices_in.size(), vertices_out.size());
 			}
 		}
 
@@ -318,9 +319,6 @@ namespace PSBMPC_LIB
 			assert(map_origin.size() == 2);
 			utm_p.forward(this->map_origin(1), this->map_origin(0), lla_origin(0), lla_origin(1));
 
-			std::cout << std::fixed << std::setprecision(10) << "lla_origin = " << lla_origin.transpose() << std::endl;
-			std::cout << std::fixed << std::setprecision(10) << "map_origin = " << map_origin.transpose() << std::endl;
-
 			read_shapefile(filename, polygons);
 
 			create_simplified_polygons();
@@ -347,20 +345,31 @@ namespace PSBMPC_LIB
 				assert(M.rows() == 2);
 				int n_cols = M.cols();
 
-				typename boost::geometry::point_type<polygon_2D>::type point;
+				typename boost::geometry::point_type<polygon_2D>::type v_first, v;
 				polygon_2D polygon, polygon_copy;
-				for (int v = 0; v < n_cols; v++)
+				int vcount(0);
+				for (int i = 0; i < n_cols; i++)
 				{
-					if (M(0, v) ==  -1.0 || v == n_cols - 1)
+					if (M(0, i) <  0 || i == n_cols - 1)
 					{
+						// Add first vertex again to make the circle complete
+						boost::geometry::append(polygon_copy, v_first);
 						polygons.push_back(polygon_copy);
 						polygon_copy = polygon;
+						vcount = 0;
 					}
-					// want the points on format (northing, easting), and relative to the map origin
-					boost::geometry::assign_values(point, M(1, v) - map_origin(0), M(0, v) - map_origin(1)); 
-					boost::geometry::append(polygon_copy, point);
+					else
+					{
+						// want the points on format (northing, easting), and relative to the map origin
+						boost::geometry::assign_values(v, M(1, i) - map_origin(0), M(0, i) - map_origin(1)); 
+						boost::geometry::append(polygon_copy, v);
+						if (vcount == 0)
+						{
+							v_first = v;
+						}
+						vcount++;
+					}
 				}
-
 				// Re-run RDP algorithm on the new set of polygons
 				create_simplified_polygons();
 			}

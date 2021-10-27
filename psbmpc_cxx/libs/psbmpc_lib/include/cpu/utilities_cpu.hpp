@@ -165,15 +165,31 @@ namespace PSBMPC_LIB
 				std::cerr << "Error: file could not be opened" << std::endl;
 				exit(1);
 			}
+			std::string line, data;
+			
 			int n_rows(0), n_cols(0);
-			indata >> n_rows >> n_cols;
-			out.resize(n_rows, n_cols);
-			for (int i = 0; i < n_rows; i++)
+			int row_count(0), col_count(0);
+			while (std::getline(indata, line))
 			{
-				for (int j = 0; j < n_cols; j++)
+				std::stringstream ss(line);
+				if (row_count == 0)
 				{
-					indata >> out(i, j);
+					getline( ss, data, ',' );
+					n_rows = std::stoi(data);
+					getline( ss, data, ',' );
+					n_cols = std::stoi(data);
+					out.resize(n_rows, n_cols);
 				}
+				else
+				{
+					col_count = 0;
+					while (std::getline(ss, data, ','))
+					{
+						out(row_count - 1, col_count) = std::stod(data);
+						col_count++;
+					}
+				}
+				row_count++;
 			}
 			return out;
 		}

@@ -218,7 +218,6 @@ int main(){
 		"local_NED",
 		psbmpc);
 	Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin();
-	grounding_hazard_manager.read_other_polygons(relative_path + "/src/tests/grounding_hazard_data/trondheim/other_trondheim_harbour_polygons.txt");
 	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
 	std::vector<polygon_2D> simplified_polygons = grounding_hazard_manager.get_simplified_polygons();
 

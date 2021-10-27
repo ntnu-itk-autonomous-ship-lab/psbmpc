@@ -16,6 +16,7 @@
 #======================================================================
 
 find_package(Eigen3 REQUIRED)
+find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 
 # Pure host side test files
 #add_executable(tester test_psbmpc.cpp)
@@ -44,7 +45,10 @@ target_include_directories(tester PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_SOURCE_DIR}/libs/
 	${EIGEN3_INCLUDE_DIRS}
+	${Matlab_INCLUDE_DIRS}
 )
+
+target_link_libraries(tester PRIVATE ${Matlab_LIBRARIES})
 
 if (USE_GPU_PSBMPC)
 	set_target_properties(tester PROPERTIES 

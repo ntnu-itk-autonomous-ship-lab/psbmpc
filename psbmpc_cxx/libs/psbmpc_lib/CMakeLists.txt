@@ -92,8 +92,8 @@ find_package(Boost REQUIRED)
 find_package(GeographicLib REQUIRED) # Specify CMAKE_PREFIX_PATH=/path/to/geographiclib/builddir for cmake to find the package config files
 if(ENABLE_PSBMPC_DEBUGGING) # Neccessary for running most of the psbmpc test files
 	find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
-	target_link_libraries(psbmpc_lib PUBLIC ${Matlab_LIBRARIES})
-	target_include_directories(psbmpc_lib PUBLIC ${Matlab_INCLUDE_DIRS})
+	target_link_libraries(psbmpc_lib PRIVATE ${Matlab_LIBRARIES})
+	target_include_directories(psbmpc_lib PRIVATE ${Matlab_INCLUDE_DIRS})
 endif(ENABLE_PSBMPC_DEBUGGING)
 
 target_include_directories(psbmpc_lib 
