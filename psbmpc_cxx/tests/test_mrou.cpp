@@ -18,13 +18,13 @@
 *
 *****************************************************************************************/
 
-#include "cpu/utilities_cpu.h"
+#include "cpu/utilities_cpu.hpp"
 #include "mrou.hpp"
 #include <iostream>
 #include <vector>
 #include <memory>
-#include "Eigen/Core"
-#include "engine.h"
+#include <Eigen/Dense>
+#include <engine.h>
 
 #define BUFSIZE 1000000
 

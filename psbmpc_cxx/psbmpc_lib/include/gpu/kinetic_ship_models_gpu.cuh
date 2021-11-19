@@ -26,7 +26,8 @@
 
 #include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
-#include "tml.cuh"
+#include "tml/tml.cuh"
+
 #include <thrust/device_vector.h>
 
 namespace PSBMPC_LIB

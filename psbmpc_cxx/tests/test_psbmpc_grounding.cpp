@@ -23,8 +23,9 @@
 #include "gpu/psbmpc_gpu.cuh"
 #include "cpu/utilities_cpu.hpp"
 #include "grounding_hazard_manager.hpp"
-#include "engine.h"
 
+#include <Eigen/Dense>
+#include <engine.h>
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -203,7 +204,7 @@ int main(){
 	std::string relative_path = buffer1;
 
 	// Input the path to the land data
-    std::string filename = "/src/tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
+    std::string filename = "/../tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
     
 	double equatorial_radius(6378137.0), flattening_factor(0.003352810664747);
 	int utm_zone(33); 

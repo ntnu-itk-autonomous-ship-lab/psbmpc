@@ -24,6 +24,8 @@
 #include "gpu/psbmpc_gpu.cuh"
 #include "cpu/utilities_cpu.hpp"
 #include "grounding_hazard_manager.hpp"
+#include <Eigen/Dense>
+#include <engine.h>
 
 #define BUFSIZE 1000000
 

@@ -23,7 +23,9 @@
 
 #include "psbmpc_defines.hpp"
 #include "tracked_obstacle.hpp"
-#include "tml.cuh"
+#include "tml/tml.cuh"
+
+#include <Eigen/Dense>
 #include <thrust/device_vector.h>
 
 

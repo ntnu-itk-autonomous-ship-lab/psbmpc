@@ -22,7 +22,7 @@
 
 #include "psbmpc_parameters.hpp"
 #include "psbmpc_defines.hpp"
-#include "tml.cuh"
+#include "tml/tml.cuh"
 
 namespace PSBMPC_LIB
 {

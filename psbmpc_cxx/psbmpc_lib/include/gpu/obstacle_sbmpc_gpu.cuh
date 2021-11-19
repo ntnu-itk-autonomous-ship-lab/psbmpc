@@ -21,9 +21,10 @@
 
 #pragma once
 
-#include "obstacle_sbmpc_parameters_gpu.cuh"
-#include "kinematic_ship_models_gpu.cuh"
-#include "mpc_cost_gpu.cuh"
+#include "gpu/obstacle_sbmpc_parameters_gpu.cuh"
+#include "gpu/kinematic_ship_models_gpu.cuh"
+#include "gpu/mpc_cost_gpu.cuh"
+#include "tml/tml.cuh"
 
 #include <thrust/device_vector.h>
 #include <vector>

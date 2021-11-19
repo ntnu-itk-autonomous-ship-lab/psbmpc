@@ -25,8 +25,8 @@
 #endif
 #include <iostream>
 #include <memory>
-#include "Eigen/Dense"
-#include "engine.h"
+#include <Eigen/Dense>
+#include <engine.h>
 
 #define BUFSIZE 1000000
 

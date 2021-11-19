@@ -21,9 +21,9 @@
 
 #include "grounding_hazard_manager.hpp"
 #include "obstacle_manager.hpp"
-#include "kinematic_ship_models_gpu.cuh"
-#include "kinetic_ship_models_gpu.cuh"
-#include "tml.cuh"
+#include "gpu/kinematic_ship_models_gpu.cuh"
+#include "gpu/kinetic_ship_models_gpu.cuh"
+#include "tml/tml.cuh"
 #include <thrust/device_vector.h>
 
 namespace PSBMPC_LIB

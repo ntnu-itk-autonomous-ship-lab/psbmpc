@@ -23,8 +23,8 @@
 #include "gpu/mpc_cost_gpu.cuh"
 #include "cpu/utilities_cpu.hpp"
 #include "grounding_hazard_manager.hpp"
-#include "engine.h"
-
+#include <Eigen/Dense>
+#include <engine.h>
 #include <iostream>
 #include <vector>
 #include <chrono>

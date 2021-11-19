@@ -22,10 +22,10 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "tml.cuh"
+#include "tml/tml.cuh"
 #include <iostream>
 #include <random>
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 
 // Conversion does not work with non-const parameters, because the implicit conversion is temporary.
 void test_conversion(const TML::MatrixXd &m) { std::cout << m << std::endl; }

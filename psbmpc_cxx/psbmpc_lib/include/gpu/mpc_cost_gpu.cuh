@@ -22,8 +22,9 @@
 
 #include "psbmpc_parameters.hpp"
 #include "utilities_gpu.cuh"
-#include "cb_cost_functor_structures.cuh"
-#include "cuda_obstacle.cuh"
+#include "gpu/cb_cost_functor_structures.cuh"
+#include "gpu/cuda_obstacle.cuh"
+#include "tml/tml.cuh"
 
 namespace PSBMPC_LIB
 {

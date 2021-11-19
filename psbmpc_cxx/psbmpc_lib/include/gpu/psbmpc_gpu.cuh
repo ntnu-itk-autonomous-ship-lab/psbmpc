@@ -24,7 +24,10 @@
 #include "psbmpc_parameters.hpp"
 #include "cpu/cpe_cpu.hpp"
 #include "cpu/mpc_cost_cpu.hpp"
-#include "cb_cost_functor_structures.cuh"
+#include "gpu/cb_cost_functor_structures.cuh"
+#include "tml/tml.cuh"
+
+#include <Eigen/Dense>
 #include <string>
 
 namespace PSBMPC_LIB

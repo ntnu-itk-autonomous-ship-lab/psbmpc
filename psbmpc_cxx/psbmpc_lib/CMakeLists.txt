@@ -13,7 +13,9 @@
 #======================================================================
 cmake_minimum_required(VERSION 3.17.3)
 
-set(LIBRARY_TARGET_NAME PSBMPC_Lib)
+set(LIBRARY_TARGET_NAME PSBMPC)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
@@ -45,11 +47,11 @@ if(USE_GPU_PSBMPC)
 		include/gpu/psbmpc_gpu.cuh
 		include/gpu/utilities_gpu.cuh
 
-		include/gpu/tml/tml.cuh
-		include/gpu/tml/dynamic_matrix.cuh
-		include/gpu/tml/static_matrix.cuh
-		include/gpu/tml/pseudo_dynamic_matrix.cuh
-		include/gpu/tml/eigen_interface.cuh
+		include/tml/tml.cuh
+		include/tml/dynamic_matrix.cuh
+		include/tml/static_matrix.cuh
+		include/tml/pseudo_dynamic_matrix.cuh
+		include/tml/eigen_interface.cuh
 
 		include/grounding_hazard_manager.hpp
 		include/kf.hpp
@@ -136,33 +138,29 @@ else()
 endif()
 
 add_library(${LIBRARY_TARGET_NAME} STATIC ${${LIBRARY_TARGET_NAME}_SRC} ${${LIBRARY_TARGET_NAME}_HDR})
-set_target_properties(${LIBRARY_TARGET_NAME} PROPERTIES PUBLIC_HEADER ${${LIBRARY_TARGET_NAME}_HDR})
 
 if(USE_GPU_PSBMPC)
 	set_target_properties(${LIBRARY_TARGET_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
-	target_link_libraries(${LIBRARY_TARGET_NAME} INTERFACE CUDA::THRUST)
+	target_include_directories(${LIBRARY_TARGET_NAME} PUBLIC ${CUDA_INCLUDE_DIRS})
+	target_link_libraries(${LIBRARY_TARGET_NAME} PUBLIC ${CUDA_LIBRARIES})
 endif()
 
 if(ENABLE_PSBMPC_DEBUGGING)
-	target_link_libraries(${LIBRARY_TARGET_NAME} INTERFACE Matlab::MX_LIBRARY Matlab::ENG_LIBRARY)
+	target_include_directories(${LIBRARY_TARGET_NAME} PUBLIC ${Matlab_INCLUDE_DIRS})
+	target_link_libraries(${LIBRARY_TARGET_NAME} PUBLIC ${Matlab_LIBRARIES})
 endif(ENABLE_PSBMPC_DEBUGGING)
 
 target_include_directories(${LIBRARY_TARGET_NAME} 
-	PRIVATE
-		include
-	PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
+	PRIVATE include
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-target_link_libraries(${LIBRARY_TARGET_NAME} INTERFACE Eigen3::Eigen Boost GeographicLib)
+set_target_properties(${LIBRARY_TARGET_NAME} PROPERTIES PUBLIC_HEADER "${${LIBRARY_TARGET_NAME}_HDR}")
 
-message("Use GPU PSBMPC: ${USE_GPU_PSBMPC}")
-message("Own-ship type: ${OWNSHIP_TYPE}")
-message("Enable PSBMPC debugging (Using MATLAB): ${ENABLE_PSBMPC_DEBUGGING}")
+target_link_libraries(${LIBRARY_TARGET_NAME} PUBLIC Eigen3::Eigen ${Boost_LIBRARIES} GeographicLib)
 
 target_compile_options(${LIBRARY_TARGET_NAME}
-	PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -std=c++17 -Wall -Wextra -Wno-deprecated-copy -DUSE_GPU_PSBMPC=${USE_GPU_PSBMPC} -DOWNSHIP_TYPE=${OWNSHIP_TYPE} -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16>
-	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DUSE_GPU_PSBMPC=${USE_GPU_PSBMPC} -DOWNSHIP_TYPE=${OWNSHIP_TYPE} -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16  -Xlinker -dlink>
+	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wno-deprecated-copy -DUSE_GPU_PSBMPC=${USE_GPU_PSBMPC} -DOWNSHIP_TYPE=${OWNSHIP_TYPE} -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16>
+	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DUSE_GPU_PSBMPC=${USE_GPU_PSBMPC} -DOWNSHIP_TYPE=${OWNSHIP_TYPE} -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16  -Xlinker -dlink>
 )
 
 if(CMAKE_BUILD_TYPE EQUAL release)
@@ -174,3 +172,63 @@ else()
 	#	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -fno-omit-frame-pointer -g>
 	#	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  -Xcompiler -g -G -lineinfo -Wall -Wno-pedantic>)
 endif()
+
+# INSTALL LIBRARY
+include(CMakePackageConfigHelpers)
+include(GenerateExportHeader)
+include(GNUInstallDirs)
+install(TARGETS ${LIBRARY_TARGET_NAME}
+	EXPORT ${PROJECT_NAME}Targets
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/psbmpc_lib-${PSBMPC_LIB_VERSION}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/psbmpc_lib-${PSBMPC_LIB_VERSION}
+	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/psbmpc_lib-${PSBMPC_LIB_VERSION}
+  	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/psbmpc_lib-${PSBMPC_LIB_VERSION}
+)
+
+generate_export_header(${LIBRARY_TARGET_NAME})
+
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/share/psbmpc_lib-${PSBMPC_LIB_VERSION}
+)
+message(STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+  VERSION ${PSBMPC_LIB_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+export(EXPORT ${PROJECT_NAME}Targets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake"
+  NAMESPACE ${PROJECT_NAME}::
+)
+
+set(PSBMPC_PACKAGE_DIR lib/psbmpc_lib-${PSBMPC_LIB_VERSION}/cmake)
+set(PSBMPC_SHARE_DIR ${CMAKE_INSTALL_PREFIX}/share/psbmpc_lib-${PSBMPC_LIB_VERSION}/cmake)
+install(EXPORT ${PROJECT_NAME}Targets
+  FILE
+  	${PROJECT_NAME}Targets.cmake
+  NAMESPACE
+  	${PROJECT_NAME}::
+  DESTINATION
+    ${PSBMPC_PACKAGE_DIR}
+)
+
+install(
+  FILES
+  	${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+  DESTINATION
+    ${PSBMPC_PACKAGE_DIR}
+)
+
+install(
+  FILES
+  	${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+  DESTINATION
+  	${PSBMPC_SHARE_DIR}
+)
+
+export(PACKAGE ${PROJECT_NAME})

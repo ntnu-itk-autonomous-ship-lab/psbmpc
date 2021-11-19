@@ -31,7 +31,8 @@
 #include <vector>
 #include <memory>
 #include <chrono>
-#include "engine.h"
+#include <Eigen/Dense>
+#include <engine.h>
 
 #define BUFSIZE 1000000
 

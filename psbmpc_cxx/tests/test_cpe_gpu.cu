@@ -28,8 +28,8 @@
 	#include "gpu/kinetic_ship_models_gpu.cuh"
 #endif
 #include "xoshiro.hpp"
-#include "Eigen/Dense"
-#include "engine.h"
+#include <Eigen/Dense>
+#include <engine.h>
 
 #include <iostream>
 #include <vector>

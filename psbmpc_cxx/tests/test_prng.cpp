@@ -21,7 +21,7 @@
 #include <iostream>
 #include <random>
 #include <chrono>
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 
 #include "xoshiro.hpp"
 

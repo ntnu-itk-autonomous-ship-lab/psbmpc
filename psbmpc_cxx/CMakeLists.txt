@@ -36,67 +36,29 @@ endif()
 message(STATUS "OWNSHIP_TYPE set to ${OWNSHIP_TYPE}")
 
 if(NOT DEFINED ENABLE_PSBMPC_DEBUGGING)
-	set(ENABLE_PSBMPC_DEBUGGING 0)
+	set(ENABLE_PSBMPC_DEBUGGING 1)
 endif()
 message(STATUS "ENABLE_PSBMPC_DEBUGGING set to ${ENABLE_PSBMPC_DEBUGGING}")
 
-set(PSBMPC_LibVersion 1.0)
-if(USE_GPU_PSBMPC)
-	project(PSBMPC_Library VERSION ${PSBMPC_LibVersion} LANGUAGES CUDA CXX)
-else()
-	project(PSBMPC_Library VERSION ${PSBMPC_LibVersion} LANGUAGES CXX)
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
+set(PSBMPC_LIB_MAJOR_VERSION 1)
+set(PSBMPC_LIB_MINOR_VERSION 0)
+set(PSBMPC_LIB_VERSION ${PSBMPC_LIB_MAJOR_VERSION}.${PSBMPC_LIB_MINOR_VERSION})
+
+message(STATUS "PSBMPC_LIB_VERSION set to ${PSBMPC_LIB_VERSION}")
+if(USE_GPU_PSBMPC)
+	project(PSBMPC${PSBMPC_LIB_MAJOR_VERSION} VERSION ${PSBMPC_LIB_VERSION} LANGUAGES CUDA CXX)
+else()
+	project(PSBMPC${PSBMPC_LIB_MAJOR_VERSION} VERSION ${PSBMPC_LIB_VERSION} LANGUAGES CXX)
+endif()
 
 add_subdirectory(psbmpc_lib)
-add_subdirectory(tests)
 
-include(GenerateExportHeader)
-generate_export_header(PSBMPC_Lib)
-
-include(GNUInstallDirs)
-install(TARGETS PSBMPC_Lib
-	EXPORT PSBMPC_LibTargets
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/psbmpc_lib-${PSBMPC_LibVersion}
-	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/psbmpc_lib-${PSBMPC_LibVersion}
-	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/psbmpc_lib-${PSBMPC_LibVersion}
-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/psbmpc_lib-${PSBMPC_LibVersion}
-)
-
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_lib-${PSBMPC_LibVersion}/PSBMPC_LibConfigVersion.cmake"
-  VERSION ${PSBMPC_LibVersion}
-  COMPATIBILITY AnyNewerVersion
-)
-
-export(EXPORT PSBMPC_LibTargets
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_lib-${PSBMPC_LibVersion}/PSBMPC_LibTargets.cmake"
-  NAMESPACE PSBMPC_Lib1::
-)
-
-configure_file(cmake/PSBMPC_LibConfig.cmake
-  "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_lib-${PSBMPC_LibVersion}/PSBMPC_LibConfig.cmake"
-  COPYONLY
-)
-
-set(ConfigPackageLocation lib/cmake/psbmpc_lib-${PSBMPC_LibVersion})
-install(EXPORT PSBMPC_LibTargets
-  FILE
-  	PSBMPC_LibTargets.cmake
-  NAMESPACE
-  	PSBMPC_Lib1::
-  DESTINATION
-    ${ConfigPackageLocation}
-)
-install(
-  FILES
-    cmake/PSBMPC_LibConfig.cmake
-    "${CMAKE_CURRENT_BINARY_DIR}/psbmpc_lib-${PSBMPC_LibVersion}/PSBMPC_LibConfigVersion.cmake"
-  DESTINATION
-    ${ConfigPackageLocation}
-  COMPONENT
-    Devel
-)
+if(ENABLE_PSBMPC_DEBUGGING)
+  add_subdirectory(tests)
+endif()
