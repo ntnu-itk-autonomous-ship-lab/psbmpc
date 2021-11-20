@@ -1,2 +1,22 @@
 @PACKAGE_INIT@
 
+include ("${CMAKE_CURRENT_LIST_DIR}/PSBMPC1Targets.cmake")
+
+set(USE_GPU_PSBMPC "@USE_GPU_PSBMPC@")
+set(ENABLE_PSBMPC_DEBUGGING "@ENABLE_PSBMPC_DEBUGGING@")
+
+include(CMakeFindDependencyMacro)
+find_dependency(Threads)
+find_dependency(Eigen3)
+find_dependency(Boost)
+find_dependency(GeographicLib)
+
+if(USE_GPU_PSBMPC)
+    find_dependency(CUDA)
+endif()
+
+if(ENABLE_PSBMPC_DEBUGGING)
+    find_dependency(Matlab)
+endif()
+
+check_required_components(PSBMPC1)

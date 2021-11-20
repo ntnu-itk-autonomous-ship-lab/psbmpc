@@ -21,17 +21,17 @@ cmake_minimum_required(VERSION 3.17.3)
 
 # Set default values to PSBMPC flags if they are not set
 if(NOT DEFINED USE_GPU_PSBMPC)
-	set(USE_GPU_PSBMPC 1)
+	set(USE_GPU_PSBMPC 0)
 endif()
 message(STATUS "USE_GPU_PSBMPC set to ${USE_GPU_PSBMPC}")
 
-if(NOT DEFINED ${CMAKE_CUDA_ARCHITECTURES})
+if(USE_GPU_PSBMPC AND NOT DEFINED ${CMAKE_CUDA_ARCHITECTURES})
     set(CMAKE_CUDA_ARCHITECTURES 61 86)
 endif()
 message(STATUS "CUDA architectures set to ${CMAKE_CUDA_ARCHITECTURES}")
 
 if(NOT DEFINED OWNSHIP_TYPE)
-	set(OWNSHIP_TYPE 0)
+	set(OWNSHIP_TYPE 0 CACHE BOOL "Sets MPC own-ship model to use with the library.")
 endif()
 message(STATUS "OWNSHIP_TYPE set to ${OWNSHIP_TYPE}")
 

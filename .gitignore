@@ -1,6 +1,6 @@
 *.mat
 
-
+*.asv
 *.make
 *.cmake
 *.dir
@@ -51,13 +51,11 @@ ros2_ws/build/*
 ros2_ws/install/*
 ros2_ws/log/*
 ros2_ws/.vscode/*
+psbmpc_cxx/build/*
 psbmpc_cxx/debug/*
 psbmpc_cxx/release/*
-psbmpc_cxx/src/tests/grounding_hazard_data/*
+psbmpc_cxx/tests/grounding_hazard_data/*
 psbmpc_cxx/.vscode/*
-psbmpc_cxx/libs/psbmpc_lib/build/*
-psbmpc_cxx/libs/psbmpc_lib/release/*
-psbmpc_cxx/libs/psbmpc_lib/debug/*
 bridge_ws/build/*
 bridge_ws/install/*
 bridge_ws/log/*

@@ -6,16 +6,18 @@ The library heavily relies on cmake, which you can learn more about e.g. here: <
 ## Dependencies
 
 - C++17
-- CMake > 3.10 for building 
+- CMake > 3.17 for building 
 - Matlab C API for the debugging and plotting functionality. (Follow setup instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
-- Eigen3. Eigen is still experimental regarding CUDA compatibility. I have suppressed the warnings from eigen regarding CUDA-stuff, but hope that one day Eigen will be fully functionable and warning-free on the GPU. Not tested with other Eigen versions.
+- Eigen3. Eigen is still experimental regarding CUDA compatibility. I have suppressed the warnings from eigen regarding CUDA-stuff, but hope that one day Eigen will be fully functionable and warning-free on the GPU. Not tested with other Eigen versions. On Linux it can be installed using `sudo apt install libeigen3-dev`
 - xoshiro256+ random number generator used in the Collision Probability Estimator implemented for use in the CPU version (already included in repo under *libs/third_party_libs/*, implementation taken from <https://gist.github.com/imneme/3eb1bcc5418c4ae83c4c6a86d9cbb1cd#comments>). See <http://prng.di.unimi.it/> for more information. 
-- CUDA and Thrust for the GPU version. Not tested for CUDA versions below 10.0.
-- cuRAND <https://docs.nvidia.com/cuda/curand/index.html> is used for the Collision Probability Estimator compatible on the device. 
-- Boost <https://www.boost.org/> for reading shapefile data into a vector of polygons in the Grounding Hazard Manager, and used in the grounding cost calculation of the PSB-MPC CPU version.
-- GeographicLib <https://geographiclib.sourceforge.io/html/index.html> for conversion between different coordinate types (UTM, UPS; cartesian, geocentric etc). Follow install instructions at the webpage, and you need to specify the `CMAKE_PREFIX_PATH` variable for cmake to find the package config files.
+- CUDA and Thrust for the GPU version. Not tested for CUDA versions below 10.0. Install the CUDA toolkit at <https://developer.nvidia.com/cuda-toolkit>, and follow install instructions at <https://docs.nvidia.com/cuda/index.html>
+- cuRAND <https://docs.nvidia.com/cuda/curand/index.html> is used for the Collision Probability Estimator compatible on the device. Already included through CUDA. 
+- Boost <https://www.boost.org/> for reading shapefile data into a vector of polygons in the Grounding Hazard Manager, and used in the grounding cost calculation of the PSB-MPC CPU version. On Linux it can be installed using `sudo apt-get install libboost-all-dev`
+- GeographicLib <https://geographiclib.sourceforge.io/html/index.html> for conversion between different coordinate types (UTM, UPS; cartesian, geocentric etc). Follow install instructions at the webpage.
 
-## PSB-MPC library usage
+## Building the library
+
+## Getting familiar with the library
 <p> Several test functions exist under *src/tests* to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test, by using the `add_executable(..)` command. To use the library with one of the test files under *src/tests/*, for cmake, create a debug and or release directory, go into the chosen directory and type <br>
 
 `cmake -DCMAKE_BUILD_TYPE=debug ..` 

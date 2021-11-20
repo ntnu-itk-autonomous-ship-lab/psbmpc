@@ -13,62 +13,23 @@
 #======================================================================
 cmake_minimum_required(VERSION 3.17.3)
 
-set(LIBRARY_TARGET_NAME PSBMPC)
+include(GNUInstallDirs)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 
+set(LIBRARY_TARGET_NAME PSBMPC)
+set(PSBMPC_PACKAGE_INSTALL_DIR ${CMAKE_INSTALL_DATADIR}/psbmpc${PSBMPC_LIB_MAJOR_VERSION}/cmake)
+set(PSBMPC_INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR}/psbmpc${PSBMPC_LIB_MAJOR_VERSION})
+
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
-find_package(GeographicLib REQUIRED) # Specify CMAKE_PREFIX_PATH=/path/to/geographiclib/builddir for cmake to find the package config files
-if(ENABLE_PSBMPC_DEBUGGING) # Neccessary for running most of the psbmpc test files
+find_package(GeographicLib REQUIRED)
+if(ENABLE_PSBMPC_DEBUGGING)
 	find_package(Matlab COMPONENTS MX_LIBRARY ENG_LIBRARY REQUIRED)
 endif()
 
-# use the -D compile option to specify USE_GPU_PSBMPC=1 if you want to compile and use
-# the GPU version. The default is only compilation of the CPU version
 if(USE_GPU_PSBMPC)
 	find_package(CUDA COMPONENTS THRUST REQUIRED)
-
-	set(${LIBRARY_TARGET_NAME}_HDR
-		include/cpu/cpe_cpu.hpp
-		include/cpu/kinematic_ship_models_cpu.hpp
-		include/cpu/kinetic_ship_models_cpu.hpp
-		include/cpu/mpc_cost_cpu.hpp
-		include/cpu/psbmpc_cpu.hpp
-		include/cpu/utilities_cpu.hpp
-		
-		include/gpu/cb_cost_functor_structures.cuh
-		include/gpu/cb_cost_functor.cuh
-		include/gpu/cpe_gpu.cuh
-		include/gpu/cuda_obstacle.cuh
-		include/gpu/kinematic_ship_models_gpu.cuh
-		include/gpu/kinetic_ship_models_gpu.cuh
-		include/gpu/mpc_cost_gpu.cuh
-		include/gpu/psbmpc_gpu.cuh
-		include/gpu/utilities_gpu.cuh
-
-		include/tml/tml.cuh
-		include/tml/dynamic_matrix.cuh
-		include/tml/static_matrix.cuh
-		include/tml/pseudo_dynamic_matrix.cuh
-		include/tml/eigen_interface.cuh
-
-		include/grounding_hazard_manager.hpp
-		include/kf.hpp
-		include/mrou.hpp
-		include/obstacle_manager.hpp
-		include/obstacle_predictor.hpp
-		include/psbmpc_defines.hpp
-		include/psbmpc_index.hpp
-		include/psbmpc_parameters.hpp
-		include/sbmpc_index.hpp
-		include/sbmpc_parameters.hpp
-		include/sbmpc.hpp
-		include/tracked_obstacle.hpp
-		include/utm_projection.hpp
-		include/xoshiro.hpp
-		include/shapefile_related/shapefil.h
-	)
 
 	set(${LIBRARY_TARGET_NAME}_SRC
 		src/cpu/psbmpc_cpu.cpp
@@ -94,31 +55,6 @@ if(USE_GPU_PSBMPC)
 		src/shapefile_related/shpopen.cpp
 	)
 else()
-	set(${LIBRARY_TARGET_NAME}_HDR
-		include/cpu/cpe_cpu.hpp
-		include/cpu/kinematic_ship_models_cpu.hpp
-		include/cpu/kinetic_ship_models_cpu.hpp
-		include/cpu/mpc_cost_cpu.hpp
-		include/cpu/psbmpc_cpu.hpp
-		include/cpu/utilities_cpu.hpp
-
-		include/grounding_hazard_manager.hpp
-		include/kf.hpp
-		include/mrou.hpp
-		include/obstacle_manager.hpp
-		include/obstacle_predictor.hpp
-		include/psbmpc_defines.hpp
-		include/psbmpc_index.hpp
-		include/psbmpc_parameters.hpp
-		include/sbmpc_index.hpp
-		include/sbmpc_parameters.hpp
-		include/sbmpc.hpp
-		include/tracked_obstacle.hpp
-		include/utm_projection.hpp
-		include/xoshiro.hpp
-		include/shapefile_related/shapefil.h
-	)
-
 	set(${LIBRARY_TARGET_NAME}_SRC
 		src/cpu/psbmpc_cpu.cpp
 		src/cpu/cpe_cpu.cpp
@@ -137,7 +73,7 @@ else()
 	)
 endif()
 
-add_library(${LIBRARY_TARGET_NAME} STATIC ${${LIBRARY_TARGET_NAME}_SRC} ${${LIBRARY_TARGET_NAME}_HDR})
+add_library(${LIBRARY_TARGET_NAME} STATIC ${${LIBRARY_TARGET_NAME}_SRC})
 
 if(USE_GPU_PSBMPC)
 	set_target_properties(${LIBRARY_TARGET_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
@@ -152,9 +88,9 @@ endif(ENABLE_PSBMPC_DEBUGGING)
 
 target_include_directories(${LIBRARY_TARGET_NAME} 
 	PRIVATE include
-	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-
-set_target_properties(${LIBRARY_TARGET_NAME} PROPERTIES PUBLIC_HEADER "${${LIBRARY_TARGET_NAME}_HDR}")
+	PUBLIC 
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/psbmpc${PSBMPC_LIB_MAJOR_VERSION}>)
 
 target_link_libraries(${LIBRARY_TARGET_NAME} PUBLIC Eigen3::Eigen ${Boost_LIBRARIES} GeographicLib)
 
@@ -175,23 +111,20 @@ endif()
 
 # INSTALL LIBRARY
 include(CMakePackageConfigHelpers)
-include(GenerateExportHeader)
-include(GNUInstallDirs)
-install(TARGETS ${LIBRARY_TARGET_NAME}
-	EXPORT ${PROJECT_NAME}Targets
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/psbmpc_lib-${PSBMPC_LIB_VERSION}
-	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/psbmpc_lib-${PSBMPC_LIB_VERSION}
-	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/psbmpc_lib-${PSBMPC_LIB_VERSION}
-  	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/psbmpc_lib-${PSBMPC_LIB_VERSION}
-)
+install(DIRECTORY include/ DESTINATION ${PSBMPC_INCLUDE_DIR} COMPONENT Devel)
 
-generate_export_header(${LIBRARY_TARGET_NAME})
+install(
+	TARGETS ${LIBRARY_TARGET_NAME} 
+	EXPORT ${PROJECT_NAME}Targets
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/psbmpc${PSBMPC_LIB_MAJOR_VERSION}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/psbmpc${PSBMPC_LIB_MAJOR_VERSION}
+	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/psbmpc${PSBMPC_LIB_MAJOR_VERSION}
+)
 
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-  INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/share/psbmpc_lib-${PSBMPC_LIB_VERSION}
+  INSTALL_DESTINATION ${PSBMPC_PACKAGE_INSTALL_DIR}
 )
-message(STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
 
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
@@ -199,36 +132,16 @@ write_basic_package_version_file(
   COMPATIBILITY AnyNewerVersion
 )
 
-export(EXPORT ${PROJECT_NAME}Targets
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake"
-  NAMESPACE ${PROJECT_NAME}::
-)
-
-set(PSBMPC_PACKAGE_DIR lib/psbmpc_lib-${PSBMPC_LIB_VERSION}/cmake)
-set(PSBMPC_SHARE_DIR ${CMAKE_INSTALL_PREFIX}/share/psbmpc_lib-${PSBMPC_LIB_VERSION}/cmake)
-install(EXPORT ${PROJECT_NAME}Targets
-  FILE
-  	${PROJECT_NAME}Targets.cmake
-  NAMESPACE
-  	${PROJECT_NAME}::
-  DESTINATION
-    ${PSBMPC_PACKAGE_DIR}
-)
-
-install(
-  FILES
-  	${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
-  DESTINATION
-    ${PSBMPC_PACKAGE_DIR}
-)
-
-install(
-  FILES
-  	${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
-  DESTINATION
-  	${PSBMPC_SHARE_DIR}
-)
-
+export(TARGETS ${LIBRARY_TARGET_NAME} NAMESPACE ${PROJECT_NAME}:: FILE ${PROJECT_NAME}Targets.cmake)
 export(PACKAGE ${PROJECT_NAME})
+
+install(EXPORT ${PROJECT_NAME}Targets NAMESPACE ${PROJECT_NAME}:: DESTINATION ${PSBMPC_PACKAGE_INSTALL_DIR} COMPONENT Devel)
+install(
+	FILES
+		${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+		${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+	DESTINATION
+		${PSBMPC_PACKAGE_INSTALL_DIR}
+	COMPONENT
+		Devel
+)

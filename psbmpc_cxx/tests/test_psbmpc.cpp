@@ -239,8 +239,9 @@ int main()
 		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
 	
-	mxArray *T_sim_mx(nullptr), *n_obst_mx(nullptr);
+	mxArray *T_sim_mx(nullptr), *dt_sim_mx(nullptr), *n_obst_mx(nullptr);
 	T_sim_mx = mxCreateDoubleScalar(T_sim);
+	dt_sim_mx = mxCreateDoubleScalar(dt);
 	n_obst_mx = mxCreateDoubleScalar(n_obst);
 
 	mxArray *pred_traj_mx;
@@ -252,6 +253,7 @@ int main()
 	engPutVariable(ep, "d_safe", d_safe_mx);
 	engPutVariable(ep, "n_obst", n_obst_mx);
 	engPutVariable(ep, "T_sim", T_sim_mx);
+	engPutVariable(ep, "dt_sim", dt_sim_mx);
 	engPutVariable(ep, "WPs", wps_os_mx);
 
 	engEvalString(ep, "init_psbmpc_plotting");
@@ -395,6 +397,7 @@ int main()
 	mxDestroyArray(i_mx);
 	mxDestroyArray(k_s_mx);
 	mxDestroyArray(T_sim_mx);
+	mxDestroyArray(dt_sim_mx);
 	mxDestroyArray(n_obst_mx);
 	for (int i = 0; i < n_obst; i++)
 	{
