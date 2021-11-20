@@ -1,4 +1,4 @@
-# PSB-MPC C++
+# PSB-MPC 1.0 C++
 <p> This repository implements a library for the Probabilistic Scenario-based MPC [[2]](#2) in C++ and CUDA, one version for the CPU and another for the GPU (much faster). The algorithm is a new extended and improved version of the original one posed in [[1]](#1), which was implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3). The library is located under libs. <br>
 
 The library heavily relies on cmake, which you can learn more about e.g. here: <https://cliutils.gitlab.io/modern-cmake/> </p>
@@ -16,32 +16,36 @@ The library heavily relies on cmake, which you can learn more about e.g. here: <
 - GeographicLib <https://geographiclib.sourceforge.io/html/index.html> for conversion between different coordinate types (UTM, UPS; cartesian, geocentric etc). Follow install instructions at the webpage.
 
 ## Building the library
+Before you build and install the library locally in your computer, decide on the following:
+
+- If you want to build a debug (set compile time flag `CMAKE_BUILD_TYPE=debug`) or release (set flag to `CMAKE_BUILD_TYPE=release`) version.
+- If you want to use the GPU-functionality (set `USE_GPU_PSBMPC=1`, the default is 0).
+- If you want to enable Matlab and Debugging functionality (set ENABLE_PSBMPC_DEBUGGING=1, the default is 0).
+- What own-ship type you want to use as model in the MPC (set `OWNSHIP_TYPE=0` : Kinematic model, `OWNSHIP_TYPE=1` : Kinetic model). More details about this variable under *psbmpc_lib*
+
+Then, after figuring out this, you build and install the library with the following commands (assuming you are in the root directory *psbmpc_cxx/*:
+1: `mkdir build_type && cd build_type`
+2: `cmake -DCMAKE_BUILD_TYPE=build_type -DUSE_GPU_PSBMPC=use_gpu_psbmpc -DENABLE_PSBMPC_DEBUGGING=enable_psbmpc_debugging -DOWNSHIP_TYPE=ownship_type ..`
+3: `sudo make install -j4`
+
+where `build_type`, `use_gpu_psbmpc`, `enable_psbmpc_debugging` are chosen by you. The library is now installed with headers to `usr/local/include/`, static library file to `usr/local/lib/` and cmake config files to `usr/local/share/`. 
+
+You can now use the library in your project with `find_package(PSBMPC1 REQUIRED)`, and link to the PSBMPC-target using `target_link_libraries(your_executable_target PSBMPC1::PSBMPC).
 
 ## Getting familiar with the library
-<p> Several test functions exist under *src/tests* to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test, by using the `add_executable(..)` command. To use the library with one of the test files under *src/tests/*, for cmake, create a debug and or release directory, go into the chosen directory and type <br>
+<p> Several test functions exist under *src/tests* to showcase that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test, by using the `add_executable(..)` command. To use the library with one of the test files under *tests/*, for cmake, specify your chosen compile time flags (`USE_GPU_PSBMPC` etc..) , go into the chosen directory and build using <br>
 
-`cmake -DCMAKE_BUILD_TYPE=debug ..` 
+1: `mkdir build_type && cd build_type`
+2: `cmake -DCMAKE_BUILD_TYPE=build_type -DUSE_GPU_PSBMPC=use_gpu_psbmpc -DENABLE_PSBMPC_DEBUGGING=enable_psbmpc_debugging -DOWNSHIP_TYPE=ownship_type ..`
+3: `make`
 
-for debug and  <br>
-
-`cmake -DCMAKE_BUILD_TYPE=release ..` 
-
-for release. To use the GPU PSB-MPC, you also have to specify the `USE_GPU_PSBMPC=1` compile time flag: <br>
-
-`cmake -DCMAKE_BUILD_TYPE=debug -DUSE_GPU_PSBMPC=1 ..` 
-
-The same goes for toggling between own-ship types (e.g. `-DOWNSHIP_TYPE=0`). <br>
-
-Similarly, to specify where to source built packages (such as GeographicLib), the `CMAKE_PREFIX_PATH` variable can also be specified using the `-DCMAKE_PREFIX_PATH=/path/to/package/config-files` flag. <br>
-
-After running the cmake command, a makefile is generated in your build folder (debug or release), which you use to compile the code with `make`. For the case when using one of the test files, the generated executable file is then located in the build folder under *src/tests*, which you can run using `./tester` in the terminal. 
-
-To use the library in another cmake project, copy the library folder into your project, and use the `add_subdirectory(/path/to/psbmpc_lib)` command to add it to your project. </p>
+The generated executable file is then located in the build folder, which you can run using `./tester` in the terminal. </p>
 
 ## Common Pitfalls
 
 - Include error of some kind during compilation or when using your IDE: Re-check that you have the required dependencies (especially for Matlab, Eigen3 and Boost) and that they are included properly. 
 - Matlab engine start failed when attempting to run one of the test files. The most common error is that you did not add the MATLAB path to the environmental variables properly, as e.g. <https://se.mathworks.com/help/matlab/matlab_external/set-run-time-library-path-on-linux-systems.html> for Linux. 
+- Wrong configuration of the cmake flags (`USE_GPU_PSBMPC` etc..)
 
 
 ## References
