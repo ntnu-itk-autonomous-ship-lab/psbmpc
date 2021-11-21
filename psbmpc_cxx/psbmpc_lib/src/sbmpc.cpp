@@ -35,6 +35,7 @@ SBMPC::SBMPC()
 {
 	offset_sequence_counter.resize(2 * pars.n_M);
 	offset_sequence.resize(2 * pars.n_M);
+	maneuver_times.resize(pars.n_M);
 
 	mpc_cost = CPU::MPC_Cost<SBMPC_Parameters>(pars);
 
@@ -50,6 +51,7 @@ SBMPC::SBMPC(
 {
 	offset_sequence_counter.resize(2 * pars.n_M);
 	offset_sequence.resize(2 * pars.n_M);
+	maneuver_times.resize(pars.n_M);
 
 	chi_opt_last = 0.0; u_opt_last = 1.0;
 }
@@ -63,13 +65,14 @@ SBMPC::SBMPC(
 void SBMPC::calculate_optimal_offsets(									
 	double &u_opt, 															// In/out: Optimal surge offset
 	double &chi_opt, 														// In/out: Optimal course offset
-	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
+	Eigen::MatrixXd &predicted_trajectory,									// In/out: Predicted optimal ownship trajectory
 	const double u_d, 														// In: Surge reference
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
-	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information
-	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
+	const Eigen::Matrix<double, 4, -1> &static_obstacles,					// In: Static obstacle information parameterized as no-go lines
+	const Dynamic_Obstacles &obstacles,										// In: Dynamic obstacle information
+	const bool disable 														// In: Disable the COLAV functionality or not
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
@@ -79,8 +82,10 @@ void SBMPC::calculate_optimal_offsets(
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
-	int n_obst = data.obstacles.size();
-	int n_static_obst = static_obstacles.cols();								
+	update_transitional_variables(ownship_state, obstacles);
+
+	int n_do = obstacles.size();
+	int n_so = static_obstacles.cols();								
 
 	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
 
@@ -94,7 +99,7 @@ void SBMPC::calculate_optimal_offsets(
 	ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 
 
-	bool colav_active = determine_colav_active(data, n_static_obst);
+	bool colav_active = determine_colav_active(obstacles, n_so, disable);
 	if (!colav_active)
 	{
 		u_opt = 1.0; 		u_opt_last = u_opt;
@@ -105,11 +110,10 @@ void SBMPC::calculate_optimal_offsets(
 		return;
 	}
 
-	setup_prediction(data);
+	setup_prediction(obstacles);
 
 	double cost;
-	Eigen::VectorXd cost_i(n_obst);
-	data.HL_0.resize(n_obst); data.HL_0.setZero();
+	Eigen::VectorXd cost_i(n_do);
 	min_cost = 1e12;
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -127,9 +131,9 @@ void SBMPC::calculate_optimal_offsets(
 			pars.T, 
 			pars.dt);
 
-		for (int i = 0; i < n_obst; i++)
+		for (int i = 0; i < n_do; i++)
 		{
-			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, data, i, ownship.get_length());
+			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, obstacles, tv, i, ownship.get_length());
 		}
 
 		cost += cost_i.maxCoeff();
@@ -147,12 +151,6 @@ void SBMPC::calculate_optimal_offsets(
 
 			assign_optimal_trajectory(predicted_trajectory);
 
-			// Assign current optimal hazard level for each obstacle
-			for (int i = 0; i < n_obst; i++)
-			{
-				if (cost_i.sum() > 0)
-					data.HL_0(i) = cost_i(i) / cost_i.sum();
-			}	
 		}
 		increment_control_behaviour();
 	}
@@ -179,15 +177,16 @@ void SBMPC::calculate_optimal_offsets(
 void SBMPC::calculate_optimal_offsets(									
 	double &u_opt, 															// In/out: Optimal surge offset
 	double &chi_opt, 														// In/out: Optimal course offset
-	Eigen::Matrix<double, 2, -1> &predicted_trajectory,						// In/out: Predicted optimal ownship trajectory
+	Eigen::MatrixXd &predicted_trajectory,									// In/out: Predicted optimal ownship trajectory
 	const double u_d, 														// In: Surge reference
 	const double chi_d, 													// In: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,							// In: Next waypoints
 	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
 	const double V_w,														// In: Estimated wind speed
 	const Eigen::Vector2d &wind_direction,									// In: Unit vector in NE describing the estimated wind direction
-	const std::vector<polygon_2D> &polygons,								// In: Static obstacles parametrized as polygons
-	Obstacle_Data<Tracked_Obstacle> &data									// In/Out: Dynamic obstacle information
+	const Static_Obstacles &polygons,										// In: Static obstacles parameterized as polygons
+	const Dynamic_Obstacles &obstacles,										// In: Dynamic obstacle information
+	const bool disable 														// In: Disable the COLAV functionality or not
 	)
 {	
 	int n_samples = std::round(pars.T / pars.dt);
@@ -197,8 +196,8 @@ void SBMPC::calculate_optimal_offsets(
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
-	int n_obst = data.obstacles.size();
-	int n_static_obst = polygons.size();								
+	int n_do = obstacles.size();
+	int n_so = polygons.size();								
 
 	Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
 
@@ -212,7 +211,7 @@ void SBMPC::calculate_optimal_offsets(
 	ownship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 
 
-	bool colav_active = determine_colav_active(data, n_static_obst);
+	bool colav_active = determine_colav_active(obstacles, n_so, disable);
 	if (!colav_active)
 	{
 		u_opt = 1.0; 		u_opt_last = u_opt;
@@ -223,11 +222,10 @@ void SBMPC::calculate_optimal_offsets(
 		return;
 	}
 
-	setup_prediction(data);
+	setup_prediction(obstacles);
 
 	double cost;
-	Eigen::VectorXd cost_i(n_obst);
-	data.HL_0.resize(n_obst); data.HL_0.setZero();
+	Eigen::VectorXd cost_i(n_do);
 	min_cost = 1e12;
 	reset_control_behaviour();
 	for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -245,9 +243,9 @@ void SBMPC::calculate_optimal_offsets(
 			pars.T, 
 			pars.dt);
 
-		for (int i = 0; i < n_obst; i++)
+		for (int i = 0; i < n_do; i++)
 		{
-			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, data, i, ownship.get_length());
+			cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, obstacles, tv, i, ownship.get_length());
 		}
 
 		cost += cost_i.maxCoeff();
@@ -264,13 +262,6 @@ void SBMPC::calculate_optimal_offsets(
 			opt_offset_sequence = offset_sequence;
 
 			assign_optimal_trajectory(predicted_trajectory);
-
-			// Assign current optimal hazard level for each obstacle
-			for (int i = 0; i < n_obst; i++)
-			{
-				if (cost_i.sum() > 0)
-					data.HL_0(i) = cost_i(i) / cost_i.sum();
-			}	
 		}
 		increment_control_behaviour();
 	}
@@ -283,7 +274,7 @@ void SBMPC::calculate_optimal_offsets(
 		chi_opt = 0; 	chi_opt_last = chi_opt;
 	}
 	
-	/* std::cout << "Optimal offset sequence : ";
+	std::cout << "Optimal offset sequence : ";
 	for (int M = 0; M < pars.n_M; M++)
 	{
 		std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
@@ -291,7 +282,8 @@ void SBMPC::calculate_optimal_offsets(
 	}
 	std::cout << std::endl;
 
-	std::cout << "Cost at optimum : " << min_cost << std::endl; */
+	//
+	std::cout << "Cost at optimum : " << min_cost << std::endl;
 }
 
 /****************************************************************************************
@@ -354,6 +346,125 @@ void SBMPC::increment_control_behaviour()
 		offset_sequence(2 * M) = pars.u_offsets[M](offset_sequence_counter(2 * M));
 	}
 }
+
+/****************************************************************************************
+*  Name     : update_transitional_variables
+*  Function : Updates the transitional cost indicators O, Q, X, S 
+*			  at the current time t0 wrt all obstacles.
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void SBMPC::update_transitional_variables(
+	const Eigen::VectorXd &ownship_state,								// In: Current time own-ship state
+	const Dynamic_Obstacles &obstacles									// In: Dynamic obstacle information 
+	)
+{
+	bool is_close;
+
+	// A : Own-ship, B : Obstacle i
+	Eigen::Vector2d v_A, v_B, L_AB;
+	double psi_A, psi_B, d_AB;
+	if (ownship_state.size() == 4)
+	{
+		v_A(0) = ownship_state(3) * cos(ownship_state(2));
+		v_A(1) = ownship_state(3) * sin(ownship_state(2));
+		psi_A = ownship_state(2);
+	}
+	else
+	{
+		v_A(0) = ownship_state(3);
+		v_A(1) = ownship_state(4);
+		psi_A = ownship_state(2);
+		v_A = CPU::rotate_vector_2D(v_A, psi_A);
+	}
+	
+	int n_do = obstacles.size();
+	
+	tv.AH_0.resize(n_do);   tv.S_TC_0.resize(n_do); tv.S_i_TC_0.resize(n_do); 
+	tv.O_TC_0.resize(n_do); tv.Q_TC_0.resize(n_do); tv.IP_0.resize(n_do); 
+	tv.H_TC_0.resize(n_do); tv.X_TC_0.resize(n_do);
+
+	for (int i = 0; i < n_do; i++)
+	{
+		v_B(0) = obstacles[i].kf.get_state()(2);
+		v_B(1) = obstacles[i].kf.get_state()(3);
+		psi_B = atan2(v_B(1), v_B(0));
+
+		L_AB(0) = obstacles[i].kf.get_state()(0) - ownship_state(0);
+		L_AB(1) = obstacles[i].kf.get_state()(1) - ownship_state(1);
+		d_AB = L_AB.norm();
+
+		// Decrease the distance between the vessels by their respective max dimension
+		d_AB = d_AB - 0.5 * (ownship.get_length() + obstacles[i].get_length()); 
+		
+		L_AB = L_AB.normalized();
+
+		/*********************************************************************
+		* Transitional variable update
+		*********************************************************************/
+		is_close = d_AB <= pars.d_close;
+
+		tv.AH_0[i] = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
+
+		//std::cout << "Obst i = " << i << " ahead at t0 ? " << tv.AH_0[i] << std::endl;
+		
+		// Obstacle on starboard side
+		tv.S_TC_0[i] = CPU::angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
+
+		//std::cout << "Obst i = " << i << " on starboard side at t0 ? " << tv.S_TC_0[i] << std::endl;
+
+		// Ownship on starboard side of obstacle
+		tv.S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
+
+		//std::cout << "Own-ship on starboard side of obst i = " << i << " at t0 ? " << tv.S_i_TC_0[i] << std::endl;
+
+		// Ownship overtaking the obstacle
+		tv.O_TC_0[i] = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 		&&
+				v_B.norm() < v_A.norm()							    					&&
+				v_B.norm() > 0.25														&&
+				is_close 																&&
+				tv.AH_0[i];
+
+		//std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << tv.O_TC_0[i] << std::endl;
+
+		// Obstacle overtaking the ownship
+		tv.Q_TC_0[i] = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 		&&
+				v_A.norm() < v_B.norm()							  						&&
+				v_A.norm() > 0.25 														&&
+				is_close 																&&
+				!tv.AH_0[i];
+
+		//std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << tv.Q_TC_0[i] << std::endl;
+
+		// Determine if the obstacle is passed by
+		tv.IP_0[i] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()				&& // Ownship's perspective	
+				!tv.Q_TC_0[i])		 													||
+				(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 					&& // Obstacle's perspective	
+				!tv.O_TC_0[i]))		 													&&
+				d_AB > pars.d_safe;
+		
+		//std::cout << "Obst i = " << i << " passed by at t0 ? " << tv.IP_0[i] << std::endl;
+
+		// This is not mentioned in article, but also implemented here..				
+		tv.H_TC_0[i] = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 		&&
+				v_A.norm() > 0.25														&&
+				v_B.norm() > 0.25														&&
+				tv.AH_0[i];
+		
+		//std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << tv.H_TC_0[i] << std::endl;
+
+		// Crossing situation, a bit redundant with the !is_passed condition also, 
+		// but better safe than sorry (could be replaced with B_is_ahead also)
+		tv.X_TC_0[i] = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()		&&
+				!tv.H_TC_0[i]															&&
+				!tv.IP_0[i]																&&
+				v_A.norm() > 0.25														&&
+				v_B.norm() > 0.25;
+
+		//std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << tv.X_TC_0[i] << std::endl;
+	}
+}
+
 /****************************************************************************************
 *  Name     : setup_prediction
 *  Function : Sets up the own-ship maneuvering times.
@@ -361,15 +472,15 @@ void SBMPC::increment_control_behaviour()
 *  Modified :
 *****************************************************************************************/
 void SBMPC::setup_prediction(
-	Obstacle_Data<Tracked_Obstacle> &data									// In: Dynamic obstacle information
+	const Dynamic_Obstacles &obstacles									// In: Dynamic obstacle information
 	)
 {
-	int n_obst = data.obstacles.size();
+	int n_do = obstacles.size();
 	
 	//***********************************************************************************
 	// Own-ship prediction initialization
 	//***********************************************************************************
-	Eigen::VectorXd t_cpa(n_obst), d_cpa(n_obst);
+	Eigen::VectorXd t_cpa(n_do), d_cpa(n_do);
 	Eigen::Vector2d p_cpa, v_0;
 
 	Eigen::Vector4d xs_0, xs_i_0;
@@ -391,24 +502,24 @@ void SBMPC::setup_prediction(
 	maneuver_times.setZero();
 
 	double t_cpa_min(0.0), d_safe_i(0.0);
-	std::vector<bool> maneuvered_by(n_obst);
+	std::vector<bool> maneuvered_by(n_do);
 	int index_closest(-1);
 	for (int M = 1; M < pars.n_M; M++)
 	{
 		// If a predicted collision occurs with the closest obstacle, avoidance maneuver 
 		// M is taken right after the obstacle possibly maneuvers (modelled to be at t_0 + M * t_ts
-		// given that t_cpa > t_ts. If t_cpa < t_ts or n_obst = 0, the subsequent maneuver is taken 
+		// given that t_cpa > t_ts. If t_cpa < t_ts or n_do = 0, the subsequent maneuver is taken 
 		// at t_{M-1} + t_ts + 1 anyways (simplification)
 		maneuver_times(M) = maneuver_times(M - 1) + std::round((pars.t_ts + 1) / pars.dt);
 		
 		// Otherwise, find the closest obstacle (wrt t_cpa) that is a possible hazard
 		t_cpa_min = 1e10; index_closest = -1;
-		for (int i = 0; i < n_obst; i++)
+		for (int i = 0; i < n_do; i++)
 		{
-			xs_i_0 = data.obstacles[i].kf.get_state();
+			xs_i_0 = obstacles[i].kf.get_state();
 			CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
 
-			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
+			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
 			// that the previous avoidance maneuver happened before CPA with this obstacle)
@@ -421,7 +532,7 @@ void SBMPC::setup_prediction(
 
 		if (index_closest != -1)
 		{
-			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[index_closest].get_width());
+			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[index_closest].get_width());
 			// If no predicted collision,  avoidance maneuver M with the closest
 			// obstacle (that is not passed) is taken at t_cpa_min
 			if (d_cpa(index_closest) > d_safe_i)
@@ -445,25 +556,30 @@ void SBMPC::setup_prediction(
 *  Modified :
 *****************************************************************************************/
 bool SBMPC::determine_colav_active(
-	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
-	const int n_static_obst 												// In: Number of static obstacles
+	const Dynamic_Obstacles &obstacles,										// In: Dynamic obstacle information
+	const int n_so, 														// In: Number of static obstacles
+	const bool disable 														// In: Disable the COLAV functionality or not
 	)
 {
+	if (disable)
+	{
+		return false;
+	}
 	Eigen::VectorXd xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
-	for (size_t i = 0; i < data.obstacles.size(); i++)
+	for (size_t i = 0; i < obstacles.size(); i++)
 	{
-		d_0i(0) = data.obstacles[i].kf.get_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].kf.get_state()(1) - xs(1);
+		d_0i(0) = obstacles[i].kf.get_state()(0) - xs(0);
+		d_0i(1) = obstacles[i].kf.get_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 
 		// If all obstacles are passed, even though inside colav range,
 		// then no need for colav
-		if (data.IP_0[i]) 	{ colav_active = false; }
+		if (tv.IP_0[i]) 	{ colav_active = false; }
 		else 				{ colav_active = true; }
 	}
-	colav_active = colav_active || n_static_obst > 0;
+	colav_active = colav_active || n_so > 0;
 
 	return colav_active;
 }
@@ -475,7 +591,7 @@ bool SBMPC::determine_colav_active(
 *  Modified :
 *****************************************************************************************/
 void SBMPC::assign_optimal_trajectory(
-	Eigen::Matrix<double, 2, -1> &optimal_trajectory 									// In/out: Optimal PSB-MPC trajectory
+	Eigen::MatrixXd &optimal_trajectory 									// In/out: Optimal PSB-MPC trajectory
 	)
 {
 	int n_samples = std::round(pars.T / pars.dt);
@@ -483,17 +599,17 @@ void SBMPC::assign_optimal_trajectory(
 	if (false) //(pars.prediction_method > Linear)
 	{
 		int count = 0;
-		optimal_trajectory.resize(2, n_samples / pars.p_step);
+		optimal_trajectory.resize(trajectory.rows(), n_samples / pars.p_step);
 		for (int k = 0; k < n_samples; k += pars.p_step)
 		{
-			optimal_trajectory.col(count) = trajectory.block<2, 1>(0, k);
+			optimal_trajectory.col(count) = trajectory.col(k);
 			if (count < std::round(n_samples / pars.p_step) - 1) count++;					
 		}
 	} 
 	else
 	{
-		optimal_trajectory.resize(2, n_samples);
-		optimal_trajectory = trajectory.block(0, 0, 2, n_samples);
+		optimal_trajectory.resize(trajectory.rows(), n_samples);
+		optimal_trajectory = trajectory.block(0, 0, trajectory.rows(), n_samples);
 	}
 }
 

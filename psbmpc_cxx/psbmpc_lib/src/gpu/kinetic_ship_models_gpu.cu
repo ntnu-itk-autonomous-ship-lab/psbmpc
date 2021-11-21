@@ -143,9 +143,10 @@ __host__ __device__ void Kinetic_Ship_Base_3DOF::update_guidance_references(
 	switch (guidance_method)
 	{
 		case LOS : 
-			// Compute path tangential angle
+			// After last waypoint is reached the own-ship stops
 			if (wp_c_p == n_wps - 1)
 			{
+				u_d = 0.0;
 				alpha = atan2(waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1), 
 							waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1));
 			}

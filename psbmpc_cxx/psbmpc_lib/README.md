@@ -92,25 +92,12 @@ and also updates the current situation type that the own-ship is in, wrt to each
 
 An Obstacle_Data structure containing this dynamic obstacle information is sent to the PSBMPC at each COLAV iteration.
 
-### Joint Prediction Manager
-
-Prototype class, similar to the Obstacle Manager, just that it keeps track of information for all Prediction_Obstacles in the PSBMPC prediction where obstacles are assumed to have their own COLAV system. Only for the CPU-PSB-MPC, but not currently in use because joint prediction is too slow, so **Not used nor maintained**
-
 ### Obstacle Types
 
 The obstacle classes maintains information about the obstacle, in addition to its predicted trajectories and PSB-MPC cost function related parameters. Organized into a inheritance hierarchy with
 
 - Tracked Obstacle : Holding tracking and prediction related information and modules. This is the object maintained by the PSB-MPC to keep track of the nearby obstacles.
-- Prediction Obstacle: More minimalistic class than the Tracked Obstacle, used by obstacles in the PSB-MPC prediction when they have enabled their own collision avoidance system. **Not used nor maintained**
 - Cuda Obstacle: Used as a GPU-friendly data container of relevant Tracked Obstacle data needed on the GPU. Read-only when processing on the GPU.
-
-### Obstacle SBMPC Parameters
-
-Special case parameter class for the Obstacle SBMPC which is used on the GPU. Uses the TML library instead of Eigen for matrix/vector types.
-
-### Obstacle SBMPC
-
-A simple SB-MPC meant for use by obstacles in the PSB-MPC prediction when considering intelligent obstacles. One version each for the CPU/GPU implementation.
 
 ### Kinetic Ship Models
 
@@ -142,11 +129,11 @@ This is the Collision Probability Estimator used in the PSB-MPC predictions. Has
 
 ### Utilities
 
- Inlined functions commonly used across multiple modules, gathered in one file. One version each for the CPU/GPU implementation. 
+ Inlined functions commonly used across multiple modules, gathered in one file. One version each for the CPU/GPU implementation.
 
 ## TML (Tryms (shitty) matrix library)
 
-Custom matrix library made specifically for usage of matrices in CUDA kernels, as I did not find another satisfactory third-party solution for this. Hopefully, Eigen will have better CUDA support in the future, which is unfortunately very limited today. **NOTE:** This library should be used with care, as it is only tested for a subset of all "typical matrix functionality", i.e. only the operations currently used in the PSB-MPC GPU run code. 
+Custom matrix library made specifically for usage of matrices in CUDA kernels, as I did not find another satisfactory third-party solution for this. Hopefully, Eigen will have better CUDA support in the future, which is unfortunately very limited today. **NOTE:** This library should be used with care, as it is only tested for a subset of all "typical matrix functionality", i.e. only the operations currently used in the PSB-MPC GPU run code.
 
 The library implements three matrix type containers:
 

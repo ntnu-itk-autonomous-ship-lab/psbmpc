@@ -28,6 +28,7 @@ namespace PSBMPC_LIB
 	class SBMPC;
 	class Obstacle_Predictor;
 	class Obstacle_Manager;
+	class Grounding_Hazard_Manager;
 	namespace CPU
 	{
 		template <typename Parameters> class MPC_Cost;
@@ -38,8 +39,11 @@ namespace PSBMPC_LIB
 	{
 	private:
 
+		
 		friend class SBMPC;
+		friend class Obstacle_Predictor;
 		friend class Obstacle_Manager;
+		friend class Grounding_Hazard_Manager;
 		friend class CPU::MPC_Cost<SBMPC_Parameters>;
 		friend class CPU::Obstacle_SBMPC;
 		
@@ -95,5 +99,19 @@ namespace PSBMPC_LIB
 		{
 			initialize_pars(u_offsets, chi_offsets, prediction_method, guidance_method, ipars, dpars);
 		}
+
+		inline void set_prediction_method(const Prediction_Method prediction_method)  	{ if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
+
+		inline void set_guidance_method(const Guidance_Method guidance_method) 		 	{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
+
+		int get_ipar(const int index) const;
+		
+		double get_dpar(const int index) const;
+
+		std::vector<Eigen::VectorXd> get_opar(const int index) const;
+
+		inline Prediction_Method get_prediction_method() const { return prediction_method; };
+
+		inline Guidance_Method get_guidance_method() const { return guidance_method; };
 	};
 }

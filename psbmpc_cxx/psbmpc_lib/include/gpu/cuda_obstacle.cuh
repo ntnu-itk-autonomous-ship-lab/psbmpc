@@ -25,7 +25,6 @@
 #include "tracked_obstacle.hpp"
 #include "tml/tml.cuh"
 
-#include <Eigen/Dense>
 #include <thrust/device_vector.h>
 
 

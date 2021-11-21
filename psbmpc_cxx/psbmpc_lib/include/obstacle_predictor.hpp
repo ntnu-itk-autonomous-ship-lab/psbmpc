@@ -4,7 +4,7 @@
 *
 *  Function  : Header file for the obstacle predictor class used by the PSB-MPC.
 *			   Predicts dynamic obstacle trajectories using current time information.
-*			   Transfers the trajectory data to (tracked) obstacle data structures.
+*			   Transfers the trajectory data to (tracked) Tracked Obstacle data structures.
 *  
 *	           ---------------------
 *
@@ -66,10 +66,10 @@ namespace PSBMPC_LIB
 		*  Author   : 
 		*  Modified :
 		*****************************************************************************************/
-		template <class MPC_Type>
+		template <class MPC_Parameters>
 		void setup_mrou_prediction(
-			const int i, 															// In: Index of obstacle in consideration
-			const MPC_Type &mpc														// In: Calling MPC (either PSB-MPC or SB-MPC)
+			const int i, 																	// In: Index of obstacle in consideration
+			const MPC_Parameters &mpc_pars													// In: Calling MPC (either PSB-MPC or SB-MPC)
 			)
 		{
 			int n_cc(2); // Number of course changes for the obstacle (first at t_0)
@@ -88,7 +88,7 @@ namespace PSBMPC_LIB
 			for (int ps = 1; ps < n_ps[i]; ps++)
 			{
 				ps_maneuver_times_i(0, ps) = 0;
-				ps_maneuver_times_i(1, ps) = mpc.pars.t_ts;
+				ps_maneuver_times_i(1, ps) = mpc_pars.t_ts;
 
 				// Starboard maneuvers
 				if (ps < (n_ps[i] - 1) / 2 + 1)
@@ -117,12 +117,12 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		template <class MPC_Type>
+		template <class MPC_Parameters>
 		void initialize_independent_prediction_v1(
-			const Obstacle_Data<Tracked_Obstacle> &data,						// In/Out: Dynamic obstacle information
+			const Dynamic_Obstacles &obstacles,									// In/Out: Dynamic obstacle information
 			const int i, 														// In: Index of obstacle whose prediction to initialize
 			const Eigen::VectorXd &ownship_state,								// In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
-			const MPC_Type &mpc 												// In: Calling MPC (either PSB-MPC or SB-MPC)
+			const MPC_Parameters &mpc_pars 										// In: Calling MPC (either PSB-MPC or SB-MPC)
 			)
 		{
 			/* Eigen::VectorXd t_cpa, d_cpa;
@@ -142,14 +142,16 @@ namespace PSBMPC_LIB
 			xs_0.block<2, 1>(0, 0) = ownship_state.block<2, 1>(0, 0);
 			xs_0(2) = v_os_0(0); xs_0(3) = v_os_0(1);
 
-			xs_i_0 = data.obstacles[i].kf.get_state();
+			xs_i_0 = obstacles[i].kf.get_state();
 			/* std::cout << "xs_i_0 = " << xs_i_0.transpose() << std::endl;
 			std::cout << "xs_0 = " << xs_0.transpose() << std::endl; */
 			//CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
 			/* std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
 			std::cout << "t_cpa(i) = " << t_cpa(i) << std::endl;
 			std::cout << "d_cpa(i) = " << d_cpa(i)<< std::endl; */
-			if (data.IP_0[i])
+
+
+			if (CPU::ship_is_passed_by(xs_0, xs_i_0, mpc_pars.d_safe))
 			{
 				/* std::cout << "Obstacle i = " << i << "is passed => 1 PS only" << std::endl; */		
 				ps_course_changes_i.resize(1, 1);
@@ -160,22 +162,22 @@ namespace PSBMPC_LIB
 			}
 			else
 			{
-				setup_mrou_prediction(i, mpc);
+				setup_mrou_prediction(i, mpc_pars);
 			}
 		}
 
-		template <class MPC_Type>
+		template <class MPC_Parameters>
 		void initialize_independent_prediction_v2(
-			const Obstacle_Data<Tracked_Obstacle> &data,						// In/Out: Dynamic obstacle information
+			const Dynamic_Obstacles &obstacles,									// In/Out: Dynamic obstacle information
 			const int i, 														// In: Index of obstacle whose prediction to initialize
 			const Eigen::VectorXd &ownship_state,								// In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
-			const MPC_Type &mpc 												// In: Calling MPC (either PSB-MPC or SB-MPC)
+			const MPC_Parameters &mpc_pars 										// In: Calling MPC (either PSB-MPC or SB-MPC)
 			)
 		{
 			n_ps[i] = n_ps_LOS;
 
-			Eigen::MatrixXd waypoints_i = data.obstacles[i].get_waypoints();
-			Eigen::Vector4d xs_i_0 = data.obstacles[i].kf.get_state(), xs_0;
+			Eigen::MatrixXd waypoints_i = obstacles[i].get_waypoints();
+			Eigen::Vector4d xs_i_0 = obstacles[i].kf.get_state(), xs_0;
 			Eigen::Vector2d v_os_0;
 			if (ownship_state.rows() == 4)
 			{
@@ -192,9 +194,9 @@ namespace PSBMPC_LIB
 
 			// Either an irrelevant obstacle or too far away to consider (waypoints_i not initialized properly)
 			double d_0i = (xs_i_0.block<2, 1>(0, 0) - xs_0.block<2, 1>(0, 0)).norm();
-			if (data.IP_0[i] || d_0i > mpc.pars.d_init)
+			if (CPU::ship_is_passed_by(xs_0, xs_i_0, mpc_pars.d_safe) || d_0i > mpc_pars.d_init)
 			{
-				/* std::cout << "Obstacle i = " << i << " passed by ? << data.IP_0[i] << std::endl; */		
+				/* std::cout << "Obstacle i = " << i << " passed by ? << IP_0[i] << std::endl; */		
 				ct_offsets.resize(1);
 				ct_offsets(0) = 0.0;
 				n_ps[i] = 1;
@@ -232,19 +234,19 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		template <class MPC_Type>
+		template <class MPC_Parameters>
 		void predict_independent_trajectories_v1(
-			Obstacle_Data<Tracked_Obstacle> &data,				// In/Out: Dynamic obstacle information
+			Dynamic_Obstacles &obstacles,						// In/Out: Dynamic obstacle information
 			const int i,										// In: Index of obstacle whose trajectories to predict
-			const MPC_Type &mpc 								// In: Calling MPC (either PSB-MPC or SB-MPC)
+			const MPC_Parameters &mpc_pars						// In: Calling MPC (either PSB-MPC or SB-MPC)
 			)
 		{
-			int n_samples = std::round(mpc.pars.T / mpc.pars.dt);
+			int n_samples = std::round(mpc_pars.T / mpc_pars.dt);
 
 			Eigen::Matrix4d P_0, P;
 			Eigen::Matrix2d P_rot_2D;
 			P_i_p.resize(16, n_samples);
-			P_0 = data.obstacles[i].kf.get_covariance();
+			P_0 = obstacles[i].kf.get_covariance();
 			P_i_p.col(0) = CPU::flatten(P_0);
 
 			xs_i_p.resize(n_ps[i]);
@@ -256,16 +258,16 @@ namespace PSBMPC_LIB
 			for(int ps = 0; ps < n_ps[i]; ps++)
 			{
 				xs_i_p[ps].resize(4, n_samples);
-				xs_i_p[ps].col(0) = data.obstacles[i].kf.get_state();
+				xs_i_p[ps].col(0) = obstacles[i].kf.get_state();
 
-				v_p(0) = data.obstacles[i].kf.get_state()(2);
-				v_p(1) = data.obstacles[i].kf.get_state()(3);
+				v_p(0) = obstacles[i].kf.get_state()(2);
+				v_p(1) = obstacles[i].kf.get_state()(3);
 				v_ou_p_i[ps].resize(2, n_samples);
 
 				turn_count = 0;
 				for(int k = 0; k < n_samples; k++)
 				{
-					t = k * mpc.pars.dt;
+					t = k * mpc_pars.dt;
 
 					// Starboard/port maneuver velocity rotation
 					if (t == ps_maneuver_times_i(turn_count, ps) && ps != 0)
@@ -283,12 +285,12 @@ namespace PSBMPC_LIB
 					v_ou_p_i[ps].col(k) = v_p;
 					if (k < n_samples - 1)
 					{
-						xs_i_p[ps].col(k + 1) = mrou.predict_state(xs_i_p[ps].col(k), v_p, mpc.pars.dt);
+						xs_i_p[ps].col(k + 1) = mrou.predict_state(xs_i_p[ps].col(k), v_p, mpc_pars.dt);
 
 						chi_ps = atan2(xs_i_p[ps](3, k + 1), xs_i_p[ps](2, k + 1));
 						if (ps == 0) 
 						{
-							P = mrou.predict_covariance(P_0, t + mpc.pars.dt);
+							P = mrou.predict_covariance(P_0, t + mpc_pars.dt);
 							P_i_p.col(k + 1) = CPU::flatten(P);
 
 							// Add constraint on cross-track variance here
@@ -314,21 +316,21 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		template <class MPC_Type>
+		template <class MPC_Parameters>
 		void predict_independent_trajectories_v2(
-			Obstacle_Data<Tracked_Obstacle> &data,				// In/Out: Dynamic obstacle information
+			Dynamic_Obstacles &obstacles,						// In/Out: Dynamic obstacle information
 			const int i,										// In: Index of obstacle whose trajectories to predict
-			const MPC_Type &mpc 								// In: Calling MPC (either PSB-MPC or SB-MPC)
+			const MPC_Parameters &mpc_pars 						// In: Calling MPC (either PSB-MPC or SB-MPC)
 			)
 		{
-			int n_samples = std::round(mpc.pars.T / mpc.pars.dt);
+			int n_samples = std::round(mpc_pars.T / mpc_pars.dt);
 
-			Eigen::MatrixXd trajectory, waypoints = data.obstacles[i].get_waypoints();
+			Eigen::MatrixXd trajectory, waypoints = obstacles[i].get_waypoints();
 			Eigen::Vector4d xs_i_ps_k;
 			Eigen::Matrix4d P_0, P;
 			Eigen::Matrix2d P_rot_2D;
 			P_i_p.resize(16, n_samples);
-			P_0 = data.obstacles[i].kf.get_covariance();
+			P_0 = obstacles[i].kf.get_covariance();
 			P_i_p.col(0) = CPU::flatten(P_0);
 
 			xs_i_p.resize(n_ps[i]);
@@ -339,7 +341,7 @@ namespace PSBMPC_LIB
 			for(int ps = 0; ps < n_ps[i]; ps++)
 			{
 				xs_i_p[ps].resize(4, n_samples);
-				xs_i_p[ps].col(0) = data.obstacles[i].kf.get_state();
+				xs_i_p[ps].col(0) = obstacles[i].kf.get_state();
 
 				// Transform obstacle state from [x, y, Vx, Vy]^T to [x, y, chi, U]^T
 				xs_i_ps_k.block<2, 1>(0, 0) = xs_i_p[ps].block<2, 1>(0, 0);
@@ -349,12 +351,12 @@ namespace PSBMPC_LIB
 				trajectory.resize(4, n_samples);
 				trajectory.col(0) = xs_i_ps_k;
 
-				obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), xs_i_ps_k(3), xs_i_ps_k(2), waypoints, ERK1, mpc.pars.T, mpc.pars.dt);
+				obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), xs_i_ps_k(3), xs_i_ps_k(2), waypoints, ERK1, mpc_pars.T, mpc_pars.dt);
 
 				// Predict covariance using MROU model
 				for(int k = 0; k < n_samples; k++)
 				{
-					t = k * mpc.pars.dt;
+					t = k * mpc_pars.dt;
 
 					// Transform obstacle state from [x, y, chi, U]^T to [x, y, Vx, Vy]^T
 					xs_i_ps_k.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, k);
@@ -367,7 +369,7 @@ namespace PSBMPC_LIB
 						chi_ps = trajectory(2, k);
 						if (ps == (n_ps[i] - 1) / 2) 
 						{
-							P = mrou.predict_covariance(P_0, t + mpc.pars.dt);
+							P = mrou.predict_covariance(P_0, t + mpc_pars.dt);
 							/* std::cout << "P_MROU = " << std::endl;
 							std::cout << P << std::endl; */
 
@@ -445,6 +447,7 @@ namespace PSBMPC_LIB
 			}
 		}
 
+		template <class MPC_Parameters>
 		Obstacle_Predictor(
 			const double r_ct, 				// In: Cross-track spacing between obstacle trajectories
 			const double sigma_x, 			// In: MROU wiener process noise parameters
@@ -452,9 +455,9 @@ namespace PSBMPC_LIB
 			const double sigma_y, 
 			const double gamma_x, 			// In: MROU reversion strength parameters
 			const double gamma_y, 
-			const PSBMPC_Parameters &pars 	// In: Parameter class for the PSB-MPC
+			const MPC_Parameters &mpc_pars  // In: Parameters of calling MPC (SB or PSB-MPC)
 		) 
-			: n_ps_MROU(pars.n_r), n_ps_LOS(pars.n_r), r_ct(r_ct), mrou(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y)
+			: n_ps_MROU(mpc_pars.n_r), n_ps_LOS(mpc_pars.n_r), r_ct(r_ct), mrou(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y)
 		{
 			if (n_ps_MROU == 3)
 			{
@@ -485,39 +488,39 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		template <class MPC_Type>
+		template <class MPC_Parameters>
 		void operator()(
-			Obstacle_Data<Tracked_Obstacle> &data, 					// In/Out: Dynamic obstacle information
+			Dynamic_Obstacles &obstacles, 							// In/Out: Dynamic obstacle information
 			const Eigen::VectorXd &ownship_state, 					// In: Own-ship state at the current time
-			const MPC_Type &mpc										// In: Calling MPC (either PSB-MPC or SB-MPC)
+			const MPC_Parameters &mpc_pars							// In: Calling MPC (either PSB-MPC or SB-MPC)
 			)
 		{
-			int n_obst = data.obstacles.size();
-			n_ps.resize(n_obst);
+			int n_do = obstacles.size();
+			n_ps.resize(n_do);
 			Eigen::MatrixXd waypoints_i;
-			for (int i = 0; i < n_obst; i++)
+			for (int i = 0; i < n_do; i++)
 			{	
 				// Store the obstacle`s predicted waypoints if not done already
 				// (as straight line path if no other info is available)
-				/* if (data.obstacles[i].get_waypoints().cols() < 2)
+				/* if (obstacles[i].get_waypoints().cols() < 2)
 				{ */
 				waypoints_i.resize(2, 2);
-				waypoints_i.col(0) = data.obstacles[i].kf.get_state().block<2, 1>(0, 0);
-				waypoints_i.col(1) = waypoints_i.col(0) + mpc.pars.T * data.obstacles[i].kf.get_state().block<2, 1>(2, 0);
-				data.obstacles[i].set_waypoints(waypoints_i);
+				waypoints_i.col(0) = obstacles[i].kf.get_state().block<2, 1>(0, 0);
+				waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacles[i].kf.get_state().block<2, 1>(2, 0);
+				obstacles[i].set_waypoints(waypoints_i);
 				
 
-				initialize_independent_prediction_v2(data, i, ownship_state, mpc);
+				initialize_independent_prediction_v2(obstacles, i, ownship_state, mpc_pars);
 
-				predict_independent_trajectories_v2(data, i, mpc);
+				predict_independent_trajectories_v2(obstacles, i, mpc_pars);
 
-				// Transfer data to the tracked obstacle
-				data.obstacles[i].set_trajectories(xs_i_p);
-				data.obstacles[i].set_mean_velocity_trajectories(v_ou_p_i);
-				data.obstacles[i].set_trajectory_covariance(P_i_p);
+				// Transfer obstacles to the tracked obstacle
+				obstacles[i].set_trajectories(xs_i_p);
+				obstacles[i].set_mean_velocity_trajectories(v_ou_p_i);
+				obstacles[i].set_trajectory_covariance(P_i_p);
 
 				// Calculate scenario probabilities using intention model,
-				// or just set to be uniform../triangle
+				// or just set to be uniform
 				Eigen::VectorXd Pr_s_i(n_ps[i]);
 
 				// Uniform
@@ -527,24 +530,8 @@ namespace PSBMPC_LIB
 				}
 				Pr_s_i = Pr_s_i / Pr_s_i.sum();
 
-				// Triangle
-				/* double n_ps_half = (double)(n_ps[i] - 1) / 2.0;
-				double lower = 0.1;
-				for (int ps = 0; ps < n_ps[i]; ps++)
-				{
-					if (ps <= (n_ps[i] - 1) / 2)
-					{
-						Pr_s_i(ps) = ((1.0 - lower) / n_ps_half) * (double)ps + lower;
-					}
-					else
-					{
-						Pr_s_i(ps) = -((1.0 - lower) / n_ps_half) * (double)ps + lower;
-					}
-				}
-				Pr_s_i = Pr_s_i / Pr_s_i.sum();
-				std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl; */
-				data.obstacles[i].set_scenario_probabilities(Pr_s_i);
-				// ..............
+				//std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
+				obstacles[i].set_scenario_probabilities(Pr_s_i);
 			}
 		}
 	};

@@ -162,9 +162,10 @@ void Kinematic_Ship::update_guidance_references(
 	switch (guidance_method)
 	{
 		case LOS : 
-			// Compute path tangential angle
+			// After last waypoint is reached the own-ship stops
 			if (wp_c_p == n_wps - 1)
 			{
+				u_d = 0.0;
 				alpha = atan2(waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1), 
 							waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1));
 			}
@@ -242,9 +243,10 @@ void Kinematic_Ship::update_guidance_references(
 		} 
 	}
 
-	// Compute path tangential angle
+	// After last waypoint is reached the own-ship stops
 	if (wp_c_p == n_wps - 1)
 	{
+		u_d = 0.0;
 		alpha = atan2(waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1), 
 					waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1));
 	}
@@ -345,9 +347,14 @@ void Kinematic_Ship::predict_trajectory(
 			chi_m += offset_sequence[2 * man_count + 1]; 
 			if (man_count < maneuver_times.size() - 1) man_count += 1;
 		}  
-
+		
+		/* if (k < 10 && u_m == 1)
+		{
+			std::cout << "xs = " << xs.transpose() << std::endl;
+			std::cout << " u_m = " << u_m << " chi_m = " << chi_m << " u_d = " << u_d_p << " chi_d_p = " << chi_d_p << std::endl;
+		} */
 		update_guidance_references(u_d_p, chi_d_p, waypoints, xs, dt, guidance_method);
-
+		
 		xs = predict(xs, u_m * u_d_p , chi_d_p + chi_m, dt, prediction_method);
 		
 		if (k < n_samples - 1) trajectory.col(k + 1) = xs;

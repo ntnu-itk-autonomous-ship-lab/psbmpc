@@ -26,7 +26,6 @@
 #include <assert.h>
 #include <cmath>
 
-#include "dynamic_matrix.cuh"
 #include "pseudo_dynamic_matrix.cuh"
 #include "static_matrix.cuh"
 #include "eigen_interface.cuh"
@@ -62,20 +61,6 @@ namespace TML
 		__host__ __device__ Derived operator/(const T scalar) const;
 
 		__host__ __device__ Derived& operator/=(const T scalar);
-
-		/* __host__ __device__ inline T& operator()(const size_t index) const;
-
-		__host__ __device__ inline T& operator()(const size_t row, const size_t col) const
-		{
-			Derived& self = get_this();
-			assert(row < self.get_rows() && col < self.get_cols()); 
-
-			return (T&) self.get_data()[self.get_cols() * row + col]; 
-		}
-
-		__host__ __device__ inline T& operator[](const size_t index) const { Derived& self = get_this(); return self(index); }
-
-		__host__ __device__ inline operator T() const { Derived& self = get_this(); return self(0, 0); } */
 
 		__host__ __device__ T determinant() const;
 

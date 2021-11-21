@@ -49,14 +49,14 @@ for s = 1 : n_samples
     h_X_s{s, 1} = [];
 end
 
-h_X_i_s = cell(n_obst, n_ps);
-h_X_i = cell(n_obst, n_ps);
-h_X_i_ptch = cell(n_obst, n_ps);
+h_X_i_s = cell(n_do, n_ps);
+h_X_i = cell(n_do, n_ps);
+h_X_i_ptch = cell(n_do, n_ps);
 
-h_P_i = cell(n_obst, n_ps);
-h_P_c_i = cell(n_obst, n_ps);
-h_text_i = cell(n_obst, n_ps);
-for i = 1 : n_obst
+h_P_i = cell(n_do, n_ps);
+h_P_c_i = cell(n_do, n_ps);
+h_text_i = cell(n_do, n_ps);
+for i = 1 : n_do
     for ps = 1 : n_ps
         h_X_i{i, ps} = [];
         h_X_i_s{i, ps} = [];
@@ -67,10 +67,10 @@ for i = 1 : n_obst
     end
 end
 
-h_text_j = cell(n_static_obst, 1);
-h_polygon_j = cell(n_static_obst, 1);
-h_d_j = cell(n_static_obst, 1);
-for j = 1 : n_static_obst
+h_text_j = cell(n_so, 1);
+h_polygon_j = cell(n_so, 1);
+h_d_j = cell(n_so, 1);
+for j = 1 : n_so
     h_text_j{j} = [];
     h_polygon_j{j} = [];
     h_d_j{j} = [];

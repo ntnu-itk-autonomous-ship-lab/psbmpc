@@ -21,9 +21,8 @@
 #pragma once
 
 #include "psbmpc_parameters.hpp"
-#include "utilities_gpu.cuh"
-#include "gpu/cb_cost_functor_structures.cuh"
-#include "gpu/cuda_obstacle.cuh"
+#include "cb_cost_functor_structures.cuh"
+#include "cuda_obstacle.cuh"
 #include "tml/tml.cuh"
 
 namespace PSBMPC_LIB
@@ -48,13 +47,6 @@ namespace PSBMPC_LIB
 			TML::Vector2f v_0_p, v_i_p, L_0i_p;
 			float chi_m, psi_0_p, psi_i_p, d_0i_p;
 			bool mu, trans;
-
-			// COLREGS violation related
-			bool B_is_starboard, A_is_overtaken, B_is_overtaken;
-			bool is_ahead, is_close, is_passed, is_head_on, is_crossing;
-
-			// Transitional cost related
-			bool S_TC, S_i_TC, O_TC, Q_TC, X_TC, H_TC;
 
 			// Grounding hazard related
 			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k, projection;
@@ -88,49 +80,10 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ TML::Vector2f distance_to_polygon(const TML::Vector2f &p, const Basic_Polygon &poly);
 
-		
-
 			__host__ __device__ MPC_Cost() {}
 
 			__host__ __device__ MPC_Cost(const Parameters &pars) : pars(pars) {}
 
-			__host__ __device__ void determine_situation_type(
-				ST& st_A,
-				ST& st_B,
-				const TML::Vector2f &v_A,
-				const float psi_A,
-				const TML::Vector2f &v_B,
-				const TML::Vector2f &L_AB,
-				const float d_AB);
-
-			// PSBMPC, and CUDA kernel/Obstacle_SBMPC versions of the transitional cost function
-			template <class Obstacle_Data>
-			__host__ __device__ bool determine_transitional_cost_indicator(
-				const float psi_A, 
-				const float psi_B, 
-				const TML::Vector2f &L_AB, 
-				const float chi_m,
-				const Obstacle_Data &data,
-				const int i);
-			
-			__device__ bool determine_transitional_cost_indicator(
-				const CB_Functor_Data *fdata,
-				const float psi_A, 
-				const float psi_B, 
-				const TML::Vector2f &L_AB, 
-				const float chi_m,
-				const int i);
-			//
-			
-			__host__ __device__ bool determine_COLREGS_violation(
-				const TML::Vector2f &v_A, 
-				const float psi_A, 
-				const TML::Vector2f &v_B,
-				const TML::Vector2f &L_AB, 
-				const float d_AB);
-			//
-
-			// PSBMPC CUDA kernel and Obstacle_SBMPC versions of dynamic obstacle cost calculation, respectively
 			__device__ inline thrust::tuple<float, bool> calculate_dynamic_obstacle_cost(
 				const CB_Functor_Data *fdata,
 				const Cuda_Obstacle *obstacles,
@@ -141,18 +94,6 @@ namespace PSBMPC_LIB
 				const float chi_m,
 				const float ownship_length,
 				const int k);
-
-			template <class Obstacle_Data>
-			__host__ __device__ float calculate_dynamic_obstacle_cost(
-				const TML::Vector4f &xs_k_p,
-				const TML::Vector4f &xs_i_k_p,
-				const int k,
-				const Obstacle_Data &data, 
-				const int i, 
-				const float obstacle_i_length,
-				const float ownship_length,
-				const float chi_m);
-			//
 
 			__host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const { return pars.K_coll * (powf(v_1(0) - v_2(0), 2) + powf(v_1(1) - v_2(1), 2)); }
 
@@ -172,228 +113,6 @@ namespace PSBMPC_LIB
 				const CB_Functor_Data *fdata, 
 				const Basic_Polygon &poly);
 		};
-
-		//=======================================================================================
-		//  Name     : determine_situation_type
-		//  Function : Determines the situation type for vessel A and B  \in {A, B, C, D, E, F}
-		//  Author   : Trym Tengesdal
-		//  Modified :
-		//=======================================================================================
-		template <typename Parameters>
-		__host__ __device__ void MPC_Cost<Parameters>::determine_situation_type(
-			ST& st_A,																// In/out: Situation type of vessel A
-			ST& st_B,																// In/out: Situation type of vessel B	
-			const TML::Vector2f &v_A,												// In: (NE) Velocity vector of vessel A 
-			const float psi_A, 														// In: Heading of vessel A
-			const TML::Vector2f &v_B, 												// In: (NE) Velocity vector of vessel B
-			const TML::Vector2f &L_AB, 												// In: LOS vector pointing from vessel A to vessel B
-			const float d_AB 														// In: Distance from vessel A to vessel B
-			)
-		{
-			// Crash situation or outside consideration range
-			if(d_AB < pars.d_safe || d_AB > pars.d_close)
-			{
-				st_A = A; st_B = A;
-				return;
-			} 
-			// Inside consideration range
-			else
-			{
-				is_ahead = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
-
-				A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-								v_A.norm() < v_B.norm()							  		&&
-								v_A.norm() > 0.25;
-
-				B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-								v_B.norm() < v_A.norm()							  		&&
-								v_B.norm() > 0.25;
-
-				B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-				is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-							!A_is_overtaken) 											||
-							(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-							!B_is_overtaken)) 											&&
-							d_AB > pars.d_safe;
-
-				is_head_on = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-							v_A.norm() > 0.25											&&
-							v_B.norm() > 0.25											&&
-							is_ahead;
-
-				is_crossing = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
-							v_A.norm() > 0.25											&&
-							v_B.norm() > 0.25											&&
-							!is_head_on 												&&
-							!is_passed;
-				
-				if (A_is_overtaken) 
-				{ 
-					st_A = B; st_B = D;
-				} 
-				else if (B_is_overtaken) 
-				{ 
-					st_A = D; st_B = B; 
-				} 
-				else if (is_head_on) 
-				{ 
-					st_A = E; st_B = E; 
-				} 
-				else if (is_crossing)
-				{
-					if (B_is_starboard) 
-					{
-						st_A = F; st_B = C;
-					} else
-					{
-						st_A = C; st_B = F;
-					}
-				} 
-				else 
-				{
-					st_A = A; st_B = A;
-				}
-			}
-		}
-
-		/****************************************************************************************
-		*  Name     : determine_transitional_cost_indicator
-		*  Function : Determine if a transitional cost should be applied for the current
-		*			  control behavior, using the method in Hagen, 2018.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
-		template <typename Parameters>
-		template <class Obstacle_Data>
-		__host__ __device__ bool MPC_Cost<Parameters>::determine_transitional_cost_indicator(
-			const float psi_A, 													// In: Heading of vessel A
-			const float psi_B, 													// In: Heading of vessel B
-			const TML::Vector2f &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-			const float chi_m, 													// In: Candidate course offset currently followed
-			const Obstacle_Data &data,											// In: Dynamic obstacle information
-			const int i 														// In: Index of obstacle
-			)
-		{
-			// Obstacle on starboard side
-			S_TC = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-			// Ownship on starboard side of obstacle
-			S_i_TC = angle_difference_pmpi(atan2(-L_AB(1), -L_AB(0)), psi_B) > 0;
-
-			// For ownship overtaking the obstacle: Check if obstacle is on opposite side of 
-			// ownship to what was observed at t0
-			if (!data.S_TC_0[i]) { O_TC = data.O_TC_0[i] && S_TC; }
-			else { O_TC = data.O_TC_0[i] && !S_TC; };
-
-			// For obstacle overtaking the ownship: Check if ownship is on opposite side of 
-			// obstacle to what was observed at t0
-			if (!data.S_i_TC_0[i]) { Q_TC = data.Q_TC_0[i] && S_i_TC; }
-			else { Q_TC = data.Q_TC_0[i] && !S_i_TC; };
-
-			// For crossing: Check if obstacle is on opposite side of ownship to what was
-			// observed at t0
-			X_TC = data.X_TC_0[i] && data.S_TC_0[i] && S_TC && (chi_m < 0);
-
-			// This is not mentioned in article, but also implemented here..
-			// Transitional cost only valid by going from having obstacle on port side at
-			// t0, to starboard side at time t
-			if (!data.S_TC_0[i]) { H_TC = data.H_TC_0[i] && S_TC; }
-			else { H_TC = false; }
-			H_TC = H_TC && !X_TC;
-
-			return O_TC || Q_TC || X_TC || H_TC;
-		}
-
-		template <typename Parameters>
-		__device__ bool MPC_Cost<Parameters>::determine_transitional_cost_indicator(
-			const CB_Functor_Data *fdata,										// In: Pointer to control behaviour functor data
-			const float psi_A, 													// In: Heading of vessel A
-			const float psi_B, 													// In: Heading of vessel B
-			const TML::Vector2f &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-			const float chi_m, 													// In: Candidate course offset currently followed
-			const int i 														// In: Index of obstacle
-			)
-		{
-			// Obstacle on starboard side
-			S_TC = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-			// Ownship on starboard side of obstacle
-			S_i_TC = angle_difference_pmpi(atan2(-L_AB(1), -L_AB(0)), psi_B) > 0;
-
-			// For ownship overtaking the obstacle: Check if obstacle is on opposite side of 
-			// ownship to what was observed at t0
-			if (!fdata->S_TC_0[i]) { O_TC = fdata->O_TC_0[i] && S_TC; }
-			else { O_TC = fdata->O_TC_0[i] && !S_TC; };
-
-			// For obstacle overtaking the ownship: Check if ownship is on opposite side of 
-			// obstacle to what was observed at t0
-			if (!fdata->S_i_TC_0[i]) { Q_TC = fdata->Q_TC_0[i] && S_i_TC; }
-			else { Q_TC = fdata->Q_TC_0[i] && !S_i_TC; };
-
-			// For crossing: Check if obstacle is on opposite side of ownship to what was
-			// observed at t0
-			X_TC = fdata->X_TC_0[i] && fdata->S_TC_0[i] && S_TC && (chi_m < 0);
-
-			// This is not mentioned in article, but also implemented here..
-			// Transitional cost only valid by going from having obstacle on port side at
-			// t0, to starboard side at time t
-			if (!fdata->S_TC_0[i]) { H_TC = fdata->H_TC_0[i] && S_TC; }
-			else { H_TC = false; }
-			H_TC = H_TC && !X_TC;
-
-			return O_TC || Q_TC || X_TC || H_TC;
-		}
-
-		/****************************************************************************************
-		*  Name     : determine_COLREGS_violation
-		*  Function : Determine if vessel A violates COLREGS with respect to vessel B.
-		*			  
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
-		template <typename Parameters>
-		__host__ __device__ bool MPC_Cost<Parameters>::determine_COLREGS_violation(
-			const TML::Vector2f& v_A,												// In: (NE) Velocity vector of vessel A
-			const float psi_A, 													// In: Heading of vessel A
-			const TML::Vector2f& v_B, 											// In: (NE) Velocity vector of vessel B
-			const TML::Vector2f& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-			const float d_AB 														// In: Distance from vessel A to vessel B
-			)
-		{
-			is_ahead = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
-
-			is_close = d_AB <= pars.d_close;
-
-			A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-							v_A.norm() < v_B.norm()							  	&&
-							v_A.norm() > 0.25;
-
-			B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-							v_B.norm() < v_A.norm()							  	&&
-							v_B.norm() > 0.25;
-
-			B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
-
-			is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective	
-						!A_is_overtaken) 											||
-						(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective	
-						!B_is_overtaken)) 											&&
-						d_AB > pars.d_safe;
-
-			is_head_on = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-						v_A.norm() > 0.25											&&
-						v_B.norm() > 0.25											&&
-						is_ahead;
-
-			is_crossing = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
-						v_A.norm() > 0.25											&&
-						v_B.norm() > 0.25											&&
-						!is_head_on 												&&
-						!is_passed;
-
-			return is_close && (( B_is_starboard && is_head_on) || (B_is_starboard && is_crossing && !A_is_overtaken));
-		}
 
 		//=======================================================================================
 		//  Name     : calculate_dynamic_obstacle_cost
@@ -461,74 +180,6 @@ namespace PSBMPC_LIB
 			/* printf("k = %d | C = %.4f | P_c_i = %.6f | mu = %d | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n", 
 				k, cost_coll, P_c_i, mu, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
 			return thrust::tuple<float, bool>(cost_do, mu);
-		}
-
-		template <typename Parameters>
-		template <class Obstacle_Data>
-		__host__ __device__ float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
-			const TML::Vector4f &xs_k_p,												// In: Calling obstacle ownship state at the current (joint) predicted time
-			const TML::Vector4f &xs_i_k_p,												// In: Obstacle i state at the current (joint) predicted time
-			const int k,																// In: Index of the current predicted time
-			const Obstacle_Data &data,	 												// In: Dynamic obstacle information
-			const int i, 																// In: Index of obstacle
-			const float obstacle_i_length,												// In: Length of obstacle i
-			const float ownship_length,                                  				// In: Length of the ownship along the body x-axis
-			const float chi_m															// In: Current course modification followed by the calling obstacle ownship at the predicted time
-			)
-		{
-			cost_do = 0.0f;
-
-			psi_0_p = xs_k_p(2); 
-			v_0_p(0) = xs_k_p(3) * cos(psi_0_p); 
-			v_0_p(1) = xs_k_p(3) * sin(psi_0_p);
-
-			L_0i_p(0) = xs_i_k_p(0) - xs_k_p(0);
-			L_0i_p(1) = xs_i_k_p(1) - xs_k_p(1);
-			d_0i_p = L_0i_p.norm();
-
-			// Decrease the distance between the vessels by their respective max dimension
-			d_0i_p = abs(d_0i_p - 0.5 * (ownship_length + obstacle_i_length)); 
-
-			L_0i_p = L_0i_p.normalized();
-
-			v_i_p(0) = xs_i_k_p(2);
-			v_i_p(1) = xs_i_k_p(3);
-			psi_i_p = atan2(v_i_p(1), v_i_p(0));
-
-			cost_coll = calculate_collision_cost(v_0_p, v_i_p);
-
-			mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
-
-			trans = determine_transitional_cost_indicator(psi_0_p, psi_i_p, L_0i_p, chi_m, data, i);
-
-			R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
-
-			// SB-MPC formulation with ad-hoc collision risk
-			cost_do = cost_coll * R + pars.kappa * mu  + pars.kappa_TC * trans;
-
-			return cost_do;
-		}
-
-		/****************************************************************************************
-		*  Name     : calculate_ad_hoc_collision_risk
-		*  Function : 
-		*  Author   : 
-		*  Modified :
-		*****************************************************************************************/
-		template <typename Parameters>
-		__host__ __device__ float MPC_Cost<Parameters>::calculate_ad_hoc_collision_risk(
-			const float d_AB, 											// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
-																		// 	   reduced by half the length of the two vessels (or only own-ship if static obstacles are considered)
-			const float t 												// In: Prediction time t > t0 (= 0)
-			)
-		{
-			ahcr = 0;
-			if (d_AB <= pars.d_safe)
-			{
-				assert(t > 0);
-				ahcr = pow(pars.d_safe / d_AB, pars.q) * (1 / pow(fabs(t), pars.p)); 
-			}
-			return ahcr;
 		}
 
 		/****************************************************************************************

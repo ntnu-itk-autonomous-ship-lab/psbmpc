@@ -42,24 +42,27 @@ namespace PSBMPC_LIB
 		double u_opt_last;
 		double chi_opt_last;
 
-		// Cost at the optimal solution
 		double min_cost;
 
-		// Own-ship predicted trajectory
 		Eigen::MatrixXd trajectory;
 
 		CPU::Ownship ownship;
+
+		Transitional_Variables tv;
 
 		void reset_control_behaviour();
 
 		void increment_control_behaviour();
 
-		void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
+		void update_transitional_variables(
+			const Eigen::VectorXd &ownship_state, 
+			const Dynamic_Obstacles &obstacles);
 
-		bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
+		void setup_prediction(const Dynamic_Obstacles &obstacles);
 
-		//
-		void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
+		bool determine_colav_active(const Dynamic_Obstacles &obstacles, const int n_static_obst, const bool disable);
+
+		void assign_optimal_trajectory(Eigen::MatrixXd &optimal_trajectory);
 
 	public:
 
@@ -73,25 +76,27 @@ namespace PSBMPC_LIB
 		void calculate_optimal_offsets(
 			double &u_opt, 
 			double &chi_opt, 
-			Eigen::Matrix<double, 2, -1> &predicted_trajectory,
+			Eigen::MatrixXd &predicted_trajectory,
 			const double u_d, 
 			const double chi_d, 
 			const Eigen::Matrix<double, 2, -1> &waypoints,
 			const Eigen::VectorXd &ownship_state,
 			const Eigen::Matrix<double, 4, -1> &static_obstacles,
-			Obstacle_Data<Tracked_Obstacle> &data);
+			const Dynamic_Obstacles &obstacles,
+			const bool disable);
 
 		void calculate_optimal_offsets(
 			double &u_opt, 
 			double &chi_opt, 
-			Eigen::Matrix<double, 2, -1> &predicted_trajectory,
+			Eigen::MatrixXd &predicted_trajectory,
 			const double u_d, 
 			const double chi_d, 
 			const Eigen::Matrix<double, 2, -1> &waypoints,
 			const Eigen::VectorXd &ownship_state,
 			const double V_w,
 			const Eigen::Vector2d &wind_direction,
-			const std::vector<polygon_2D> &polygons,
-			Obstacle_Data<Tracked_Obstacle> &data);
+			const Static_Obstacles &polygons,
+			const Dynamic_Obstacles &obstacles,
+			const bool disable);
 	};
 } 

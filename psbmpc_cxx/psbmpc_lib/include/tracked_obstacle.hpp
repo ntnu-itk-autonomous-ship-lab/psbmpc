@@ -24,26 +24,14 @@
 #include "cpu/utilities_cpu.hpp"
 #include "kf.hpp"
 
+#include <Eigen/Dense>
 #include <vector>
-#include <memory>
 
 namespace PSBMPC_LIB
 {
-	enum Intention 
-	{
-		KCC, 					// Keep current course
-		SM, 					// Starboard maneuver
-		PM 						// Port maneuver
-	};
-
-	namespace CPU
-	{
-		class Prediction_Obstacle;
-	}
 	namespace GPU
 	{
 		class Cuda_Obstacle;
-		class Prediction_Obstacle;
 	}
 
 	class Tracked_Obstacle
@@ -51,8 +39,6 @@ namespace PSBMPC_LIB
 	private:
 
 		friend class GPU::Cuda_Obstacle;
-		friend class CPU::Prediction_Obstacle;
-		friend class GPU::Prediction_Obstacle;
 
 		int ID;
 
@@ -83,6 +69,8 @@ namespace PSBMPC_LIB
 		// or straight line path
 		Eigen::MatrixXd waypoints;
 
+		void assign_data(const Tracked_Obstacle &other);
+
 	public:
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -103,6 +91,19 @@ namespace PSBMPC_LIB
 			const double T, 
 			const double dt);
 
+		Tracked_Obstacle(
+			const std::vector<Eigen::MatrixXd> &xs_p, 
+			const Eigen::MatrixXd &P_p, 
+			const Eigen::VectorXd &Pr_s,
+			const Eigen::Vector4d &dims,
+			const double duration_tracked,
+			const double duration_lost,
+			const int ID);
+
+		Tracked_Obstacle(const Tracked_Obstacle &other);
+
+		Tracked_Obstacle& operator=(const Tracked_Obstacle &rhs);
+
 		inline int get_ID() const { return ID; };
 
 		inline double get_length() const { return l; };
@@ -114,9 +115,13 @@ namespace PSBMPC_LIB
 		inline void set_scenario_probabilities(const Eigen::VectorXd &Pr_s) { this->Pr_s = Pr_s; }
 		
 		// KF related methods
+		inline void set_duration_tracked(const double duration_tracked) { this->duration_tracked = duration_tracked; }
+
 		inline double get_duration_tracked() const { return duration_tracked; }
 
 		inline void reset_duration_tracked() { duration_tracked = 0.0; }
+
+		inline void set_duration_lost(const double duration_lost) { this->duration_lost = duration_lost; }
 
 		inline double get_duration_lost() const { return duration_lost; }
 
@@ -141,10 +146,6 @@ namespace PSBMPC_LIB
 		inline void set_trajectory_covariance(const Eigen::MatrixXd &P_p) { this->P_p = P_p; }
 
 		inline void set_waypoints(const Eigen::MatrixXd &waypoints) { this->waypoints = waypoints; }
-
-		void prune_ps(const Eigen::VectorXi &ps_indices);
-
-		void add_intelligent_prediction(const CPU::Prediction_Obstacle *po, const bool overwrite); // only used in the CPU PSBMPC implementation
 
 		void update(
 			const Eigen::VectorXd &xs_aug, 

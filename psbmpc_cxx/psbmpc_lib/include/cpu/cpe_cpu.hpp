@@ -27,6 +27,7 @@
 #include "xoshiro.hpp"
 
 #include <random>
+#include <Eigen/Dense>
 
 namespace PSBMPC_LIB
 {

@@ -27,7 +27,6 @@
 namespace TML
 {
 	template<class T, class Derived> class Matrix_Base;
-	template<class T> class Dynamic_Matrix;
 	template<class T, size_t Max_Rows, size_t Max_Cols> class PDMatrix;
 
 	template <class T, size_t Rows, size_t Cols>
@@ -38,9 +37,6 @@ namespace TML
 		T data[Rows * Cols];
 
 		__host__ __device__ void assign_data(const Static_Matrix &other);
-
-		template <class U>
-		__host__ __device__ void assign_data(const Dynamic_Matrix<U> &other);
 
 		template <class U, size_t Max_Rows, size_t Max_Cols>
 		__host__ __device__ void assign_data(const PDMatrix<U, Max_Rows, Max_Cols> &other);
@@ -53,9 +49,6 @@ namespace TML
 
 		__host__ __device__ Static_Matrix& operator=(const Static_Matrix &rhs);
 
-		template <class U>
-		__host__ __device__ Static_Matrix& operator=(const Dynamic_Matrix<U> &rhs);
-
 		template <class U, size_t Max_Rows, size_t Max_Cols>
 		__host__ __device__ Static_Matrix& operator=(const PDMatrix<U, Max_Rows, Max_Cols> &rhs);
 
@@ -66,20 +59,6 @@ namespace TML
 			for (size_t i = 0; i < New_Rows; i++)
 			{
 				for (size_t j = 0; j < New_Cols; j++)
-				{
-					result(i, j) = (U)data[Cols * i + j];
-				}
-			}
-			return result;
-		}
-
-		template <class U>
-		__host__ __device__ inline operator Dynamic_Matrix<U>() const
-		{
-			Dynamic_Matrix<U> result(Rows, Cols);
-			for (size_t i = 0; i < Rows; i++)
-			{
-				for (size_t j = 0; j < Cols; j++)
 				{
 					result(i, j) = (U)data[Cols * i + j];
 				}
@@ -230,17 +209,6 @@ namespace TML
 			return *this;
 		}
 
-		assign_data(rhs);
-		
-		return *this;
-	}
-
-	template <class T, size_t Rows, size_t Cols>
-	template <class U>
-	__host__ __device__ Static_Matrix<T, Rows, Cols>& Static_Matrix<T, Rows, Cols>::operator=(
-		const Dynamic_Matrix<U> &rhs 								// In: Right hand side matrix/vector to assign
-		)
-	{
 		assign_data(rhs);
 		
 		return *this;
@@ -669,23 +637,6 @@ namespace TML
 		const Static_Matrix<T, Rows, Cols> &other 									// In: Matrix whose data to assign to *this;
 		)
 	{
-		for (size_t i = 0; i < Rows; i++)
-		{
-			for (size_t j = 0; j < Cols; j++)
-			{
-				this->data[Cols * i + j] = other(i, j);
-			}
-		}
-	}
-
-	template <class T, size_t Rows, size_t Cols>
-	template <class U>
-	__host__ __device__ void Static_Matrix<T, Rows, Cols>::assign_data(
-		const Dynamic_Matrix<U> &other 									// In: Matrix whose data to assign to *this;
-		)
-	{
-		assert(Rows == other.get_rows() && Cols == other.get_cols());
-
 		for (size_t i = 0; i < Rows; i++)
 		{
 			for (size_t j = 0; j < Cols; j++)

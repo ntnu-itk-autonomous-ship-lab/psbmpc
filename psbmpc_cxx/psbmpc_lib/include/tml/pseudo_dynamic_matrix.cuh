@@ -29,7 +29,6 @@ namespace TML
 {
 	template <class T, class Derived> class Matrix_Base;
 	template <class T, size_t Rows, size_t Cols> class Static_Matrix;
-	template <class T> class Dynamic_Matrix;
 
 	template <class T, size_t Max_Rows, size_t Max_Cols>
 	class PDMatrix : public Matrix_Base<T, PDMatrix<T, Max_Rows, Max_Cols>> 
@@ -40,9 +39,6 @@ namespace TML
 		T data[Max_Rows * Max_Cols];
 		
 		__host__ __device__ void assign_data(const PDMatrix &other);
-
-		template <class U>
-		__host__ __device__ void assign_data(const Dynamic_Matrix<U> &other);
 
 		template <class U, size_t Rows, size_t Cols>
 		__host__ __device__ void assign_data(const Static_Matrix<U, Rows, Cols> &other);
@@ -57,16 +53,10 @@ namespace TML
 
 		__host__ __device__ PDMatrix(const PDMatrix &other) { assign_data(other); }
 
-		template <class U>
-		__host__ __device__ PDMatrix(const Dynamic_Matrix<U> &other) { assign_data(other); }
-
 		template <class U, size_t Rows, size_t Cols>
 		__host__ __device__ PDMatrix(const Static_Matrix<U, Rows, Cols> &other) { assign_data(other); }
 
 		__host__ __device__ PDMatrix& operator=(const PDMatrix &rhs){ if (this == &rhs) { return *this; } assign_data(rhs); return *this; }
-
-		template<class U>
-		__host__ __device__ PDMatrix& operator=(const Dynamic_Matrix<U> &rhs) { assign_data(rhs); return *this; }
 
 		template<class U, size_t Rows, size_t Cols>
 		__host__ __device__ PDMatrix& operator=(const Static_Matrix<U, Rows, Cols> &rhs) { assign_data(rhs); return *this; }
@@ -75,20 +65,6 @@ namespace TML
 		__host__ __device__ inline operator PDMatrix<U, New_Max_Rows, New_Max_Cols>() const
 		{
 			PDMatrix<U, New_Max_Rows, New_Max_Cols> result(n_rows, n_cols);
-			for (size_t i = 0; i < n_rows; i++)
-			{
-				for (size_t j = 0; j < n_cols; j++)
-				{
-					result(i, j) = (U)this->data[n_cols * i + j];
-				}
-			}
-			return result;
-		}
-
-		template <class U>
-		__host__ __device__ inline operator Dynamic_Matrix<U>() const
-		{
-			Dynamic_Matrix<U> result(n_rows, n_cols);
 			for (size_t i = 0; i < n_rows; i++)
 			{
 				for (size_t j = 0; j < n_cols; j++)
@@ -792,25 +768,6 @@ namespace TML
 		assert(other.n_rows <= Max_Rows && other.n_cols <= Max_Cols);
 		n_rows = other.n_rows;
 		n_cols = other.n_cols;
-	
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols; j++)
-			{
-				this->data[n_cols * i + j] = other(i, j);
-			}
-		}
-	}
-
-	template <class T, size_t Max_Rows, size_t Max_Cols>
-	template <class U>
-	__host__ __device__ void PDMatrix<T, Max_Rows, Max_Cols>::assign_data(
-		const Dynamic_Matrix<U> &other 																// In: Matrix whose data to assign to *this;
-		)
-	{
-		assert(other.get_rows() <= Max_Rows && other.get_cols() <= Max_Cols);
-		n_rows = other.get_rows();
-		n_cols = other.get_cols();
 	
 		for (size_t i = 0; i < n_rows; i++)
 		{

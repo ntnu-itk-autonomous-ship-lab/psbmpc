@@ -23,9 +23,8 @@
 #include <thrust/device_vector.h>
 #include <assert.h>
 #include <math.h>
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 
-#include "dynamic_matrix.cuh"
 #include "static_matrix.cuh"
 #include "tml.cuh"
 
@@ -40,20 +39,6 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template<class T, typename Eigen_Type_T>
-	__host__ __device__ void assign_eigen_object(Dynamic_Matrix<T> &lhs, const Eigen_Type_T &rhs)
-	{
-		size_t n_rows = rhs.rows(), n_cols = rhs.cols();
-		lhs.resize(n_rows, n_cols);
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols; j++)
-			{
-				lhs(i, j) = rhs(i, j);
-			}
-		}
-	}
-
 	template<class T, size_t Max_Rows, size_t Max_Cols, typename Eigen_Type_T>
 	__host__ __device__ void assign_eigen_object(PDMatrix<T, Max_Rows, Max_Cols> &lhs, const Eigen_Type_T &rhs)
 	{
@@ -93,20 +78,6 @@ namespace TML
 	*  Author   : 
 	*  Modified :
 	*****************************************************************************************/
-	template<class T, typename Eigen_Type_T>
-	__host__ __device__ void assign_tml_object(Eigen_Type_T &lhs, const Dynamic_Matrix<T> &rhs)
-	{
-		size_t n_rows = rhs.get_rows(), n_cols = rhs.get_cols();
-		lhs.resize(n_rows, n_cols);
-		for (size_t i = 0; i < n_rows; i++)
-		{
-			for (size_t j = 0; j < n_cols; j++)
-			{
-				lhs(i, j) = rhs(i, j);
-			}
-		}
-	}
-
 	template<class T, size_t Max_Rows, size_t Max_Cols, typename Eigen_Type_T>
 	__host__ __device__ void assign_tml_object(Eigen_Type_T &lhs, const PDMatrix<T, Max_Rows, Max_Cols> &rhs)
 	{

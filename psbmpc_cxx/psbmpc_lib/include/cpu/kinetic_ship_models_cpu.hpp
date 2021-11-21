@@ -26,6 +26,8 @@
 #include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
 
+#include <Eigen/Dense>
+
 namespace PSBMPC_LIB
 {
 	namespace CPU

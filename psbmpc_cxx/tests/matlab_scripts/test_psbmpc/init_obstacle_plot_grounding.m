@@ -9,11 +9,11 @@ h_X_i_ptch{i} = [];
 h_P_i{i} = [];
 h_d_i{i} = [];
 
-legend_strs = strings(n_obst + 1, 1);
+legend_strs = strings(n_do + 1, 1);
 legend_strs(1) = 'Safe dist.';
 count = 2;
-if i == n_obst
-    for i = 1 : n_obst
+if i == n_do
+    for i = 1 : n_do
         legend_strs(count) = ['i=' num2str(i)]; 
         count = count + 1;
     end

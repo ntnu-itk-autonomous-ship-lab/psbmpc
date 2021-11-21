@@ -61,11 +61,11 @@ h_X_text = []; h_X_k = [];
 h_X_ptch = [];
 h_safe = []; h_safe_k = [];
 
-h_d_i = cell(n_obst, 1);
-h_X_i = cell(n_obst, 1);
-h_X_i_ptch = cell(n_obst, 1);
-h_P_i = cell(n_obst, 1);
-for i = 1 : n_obst
+h_d_i = cell(n_do, 1);
+h_X_i = cell(n_do, 1);
+h_X_i_ptch = cell(n_do, 1);
+h_P_i = cell(n_do, 1);
+for i = 1 : n_do
     h_d_i{i} = [];
     h_X_i{i} = [];
     h_X_i_ptch{i} = [];

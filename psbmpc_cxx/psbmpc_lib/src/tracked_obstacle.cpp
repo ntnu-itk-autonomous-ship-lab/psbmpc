@@ -18,8 +18,7 @@
 *****************************************************************************************/
 
 #include "tracked_obstacle.hpp"
-#include "cpu/prediction_obstacle_cpu.hpp"
-#include "assert.h"
+#include <assert.h>
 #include <iostream> 
 
 namespace PSBMPC_LIB
@@ -116,62 +115,52 @@ Tracked_Obstacle::Tracked_Obstacle(
 	}
 }
 
-/****************************************************************************************
-*  Name     : prune_ps
-*  Function : Removes prediction data for prediction scenarios not in the 
-*			  input vector.
-*  Modified : Trym Tengesdal
-*****************************************************************************************/
-void Tracked_Obstacle::prune_ps(
-	const Eigen::VectorXi &ps_indices
+Tracked_Obstacle::Tracked_Obstacle(
+	const std::vector<Eigen::MatrixXd> &xs_p, 			// In: Predicted trajectories for the obstacle
+	const Eigen::MatrixXd &P_p, 						// In: Predicted covariance trajectory (same for all pred. scenarios) for the obstacle
+	const Eigen::VectorXd &Pr_s,						// In: Obstacle scenario probability vector
+	const Eigen::Vector4d &dims,						// In: Dimensions A, B, C, D for the obstacle
+	const double duration_tracked, 						// In: Duration in seconds that the obstacle has been tracked
+	const double duration_lost, 						// In: Duration in seconds that the obstacle has been lost
+	const int ID										// In: Obstacle ID		
+	) :
+	ID(ID),
+	A(dims(0)), B(dims(1)), C(dims(2)), D(dims(3)),
+	l(dims(0) + dims(1)), w(dims(2) + dims(3)), 
+	x_offset(dims(0) - dims(1)), y_offset(dims(3) - dims(2)),
+	xs_0(xs_p[0].col(0)), P_0(CPU::reshape(P_p.col(0), 4, 4)),
+	Pr_s(Pr_s),
+	duration_tracked(duration_tracked), duration_lost(duration_lost),
+	P_p(P_p), xs_p(xs_p)
+{
+	this->kf = KF(xs_0, P_0, ID, 0.0, 0.0); // dt and t_0 are dont care arguments
+}
+
+Tracked_Obstacle::Tracked_Obstacle(
+	const Tracked_Obstacle &other 			// In: Tracked Obstacle to copy construct
 	)
 {
-	int n_ps_old = xs_p.size();
-	int n_ps_new = ps_indices.size();
-	/* std::cout << "n_ps_new = " << n_ps_new << std::endl;
-	std::cout << "n_ps = " << n_ps << std::endl;
-	std::cout << "n_ps_independent = " << n_ps_independent << std::endl; */
-	std::vector<Eigen::MatrixXd> xs_p_copy(n_ps_new);
-	std::vector<Intention> ps_ordering_copy(n_ps_new);
-
-	int ps_count = 0;
-	for (int ps = 0; ps < n_ps_old; ps++)
-	{
-		if (ps == ps_indices(ps_count))
-		{
-			xs_p_copy[ps_count] = xs_p[ps];
-
-			if (ps_count < n_ps_new - 1)
-			{
-				ps_count += 1;
-			}
-		}
-	}
-	xs_p = xs_p_copy; 
+	assign_data(other);
 }
 
 /****************************************************************************************
-*  Name     : add_intelligent_prediction (CPU PSBMPC only)
-*  Function : Only used when obstacle predictions with their own COLAV system is enabled.
-*			  Adds prediction data for this obstacle`s intelligent prediction to the set
-*			  of trajectories. If an intelligent prediction has already been added before,
-*			  it is overwritten.
-*  Author   : Trym Tengesdal
-*  Modified :
+*  Name     : operator=
+*  Function : 
+*  Author   : 
+*  Modified : 
 *****************************************************************************************/
-void Tracked_Obstacle::add_intelligent_prediction(
-	const CPU::Prediction_Obstacle *po,					// In: Pointer to prediction obstacle with intelligent prediction information
-	const bool overwrite								// In: Flag to choose whether or not to add the first intelligent prediction, or overwrite the previous
+Tracked_Obstacle& Tracked_Obstacle::operator=(
+	const Tracked_Obstacle &rhs
 	)
 {
-	if (overwrite)
-	{
-		xs_p.back() = po->get_trajectory();
-	}
-	else
-	{
-		xs_p.push_back(po->get_trajectory());
-	}
+	if (this == &rhs)
+    {
+        return *this;
+    }
+
+	assign_data(rhs);
+
+	return *this;
 }
 
 /****************************************************************************************
@@ -278,4 +267,41 @@ void Tracked_Obstacle::update(
 /****************************************************************************************
 *  Private functions
 *****************************************************************************************/
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+void Tracked_Obstacle::assign_data(
+	const Tracked_Obstacle &other 				// In: Tracked Obstacle to assign data from
+	)
+{
+	this->ID = other.ID;
+
+	this->A = other.A;
+	this->B = other.B;
+	this->C = other.C;
+	this->D = other.D;
+	this->l = other.l;
+	this->w = other.w;
+
+	this->x_offset = other.x_offset; this->y_offset = other.y_offset;
+
+	this->xs_0 = other.xs_0; this->P_0 = other.P_0;
+
+	this->Pr_s = other.Pr_s;
+
+	this->duration_tracked = other.duration_tracked;
+	this->duration_lost = other.duration_lost;
+
+	this->P_p = other.P_p;
+
+	this->xs_p = other.xs_p;
+	this->v_ou_p = other.v_ou_p;
+
+	this->waypoints = other.waypoints;
+
+	this->kf = other.kf;
+}
 }

@@ -47,7 +47,6 @@ if(USE_GPU_PSBMPC)
 		src/psbmpc_parameters.cpp
 		src/sbmpc_parameters.cpp 
 		src/sbmpc.cpp 
-		src/obstacle_manager.cpp
 		src/tracked_obstacle.cpp
 		src/kf.cpp  
 		src/mrou.cpp 
@@ -64,7 +63,6 @@ else()
 		src/psbmpc_parameters.cpp
 		src/sbmpc_parameters.cpp 
 		src/sbmpc.cpp 
-		src/obstacle_manager.cpp
 		src/tracked_obstacle.cpp
 		src/kf.cpp  
 		src/mrou.cpp 
@@ -100,7 +98,7 @@ target_compile_options(${LIBRARY_TARGET_NAME}
 )
 
 if(CMAKE_BUILD_TYPE EQUAL release)
-	target_compile_options(${LIBRARY_TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -j4>)
+	target_compile_options(${LIBRARY_TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -j$(nproc)>)
 else()
 	# Host and device debug compilation and profiling, comment out if you want to compile with debugging symbols etc.
 	#set(CMAKE_VERBOSE_MAKEFILE ON)

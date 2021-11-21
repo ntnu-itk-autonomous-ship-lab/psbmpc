@@ -22,6 +22,7 @@
 #include "sbmpc_parameters.hpp"
 #include "Eigen/Dense"
 #include <vector>
+#include <iostream>
 
 namespace PSBMPC_LIB
 {
@@ -29,6 +30,82 @@ namespace PSBMPC_LIB
 /****************************************************************************************
 	Public functions
 ****************************************************************************************/
+/****************************************************************************************
+*  Name     : get_<type>par
+*  Function : Returns parameter with index <index>, "overloaded" for different data types
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+int SBMPC_Parameters::get_ipar(
+	const int index															// In: Index of parameter to return (Must be of int type)
+	) const
+{
+	switch(index){
+		case i_ipar_n_M_SBMPC 					: return n_M; 
+		case i_ipar_n_r_SBMPC					: return n_r;
+		case i_ipar_p_step_SBMPC				: return p_step;
+		case i_ipar_p_step_grounding_SBMPC		: return p_step_grounding;
+		default : 
+			// Throw
+			return 0;
+	}
+}
+	
+double SBMPC_Parameters::get_dpar(
+	const int index															// In: Index of parameter to return (Must be of double type)
+	) const
+{
+	switch(index){
+		case i_dpar_T_SBMPC 					: return T;
+		case i_dpar_dt_SBMPC 					: return dt;
+		case i_dpar_t_ts_SBMPC 					: return t_ts;
+		case i_dpar_d_safe_SBMPC 				: return d_safe;
+		case i_dpar_d_close_SBMPC 				: return d_close;
+		case i_dpar_d_init_SBMPC 				: return d_init;
+		case i_dpar_d_so_relevant_SBMPC 		: return d_so_relevant;
+		case i_dpar_K_coll_SBMPC 				: return K_coll;
+		case i_dpar_phi_AH_SBMPC 				: return phi_AH;
+		case i_dpar_phi_OT_SBMPC 				: return phi_OT;
+		case i_dpar_phi_HO_SBMPC 				: return phi_HO;
+		case i_dpar_phi_CR_SBMPC 				: return phi_CR;
+		case i_dpar_kappa_SBMPC 				: return kappa;
+		case i_dpar_kappa_TC_SBMPC 				: return kappa_TC;
+		case i_dpar_K_u_SBMPC 					: return K_u;
+		case i_dpar_K_du_SBMPC 					: return K_du;
+		case i_dpar_K_chi_strb_SBMPC 			: return K_chi_strb;
+		case i_dpar_K_dchi_strb_SBMPC 			: return K_dchi_strb;
+		case i_dpar_K_chi_port_SBMPC 			: return K_chi_port;
+		case i_dpar_K_dchi_port_SBMPC 			: return K_dchi_port;
+		case i_dpar_K_sgn_SBMPC 				: return K_sgn;
+		case i_dpar_T_sgn_SBMPC 				: return T_sgn;
+		case i_dpar_q_SBMPC 					: return q;
+		case i_dpar_p_SBMPC 					: return p;
+		case i_dpar_G_1_SBMPC					: return G_1;
+		case i_dpar_G_2_SBMPC					: return G_2;
+		case i_dpar_G_3_SBMPC					: return G_3;
+		case i_dpar_G_4_SBMPC					: return G_4;
+		case i_dpar_epsilon_rdp_SBMPC			: return epsilon_rdp;
+		default : 
+			// Throw
+			return 0.0;
+	}
+}
+
+std::vector<Eigen::VectorXd> SBMPC_Parameters::get_opar(
+	const int index															// In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
+	) const
+{
+	switch (index){
+		case i_opar_u_offsets_SBMPC			: return u_offsets;
+		case i_opar_chi_offsets_SBMPC 		: return chi_offsets;
+		default : 
+		{ 
+			// Throw
+			std::vector<Eigen::VectorXd> bs;
+			return bs; 
+		}
+	}
+}
 
 /****************************************************************************************
 	Private functions
@@ -224,11 +301,12 @@ void SBMPC_Parameters::initialize_pars(
 {
 	n_M = ipars[i_ipar_n_M_SBMPC];
 	n_r = ipars[i_ipar_n_r_SBMPC];
-	assert(n_M == (int)u_offsets.size() && n_M == (int)chi_offsets.size());
+	assert((int)u_offsets.size() > 0 && (int)chi_offsets.size() > 0 && n_M > 0 && n_r > 0);
 
 	p_step = ipars[i_ipar_p_step_SBMPC];
 	p_step_grounding = ipars[i_ipar_p_step_grounding_SBMPC];
-
+	
+	this->n_cbs = 1;
 	this->u_offsets.resize(n_M); this->chi_offsets.resize(n_M);
 	for (int M = 0; M < n_M; M++)
 	{	
@@ -244,6 +322,7 @@ void SBMPC_Parameters::initialize_pars(
 			// Input pars for chi_offsets are in degrees, so must convert to radians
 			this->chi_offsets[M](co) = chi_offsets[M][co] * DEG2RAD;
 		}
+		this->n_cbs *= this->u_offsets[M].size() * this->chi_offsets[M].size();
 	}
 
 	this->prediction_method = prediction_method;

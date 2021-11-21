@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "gpu/cb_cost_functor_structures.cuh"
+#include "cb_cost_functor_structures.cuh"
 #include "tml/tml.cuh"
 
 namespace PSBMPC_LIB

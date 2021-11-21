@@ -4,17 +4,17 @@
 *
 *  Function  : Header file for the PSB-MPC parameter struct.
 *
-*  
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -27,12 +27,12 @@
 
 namespace PSBMPC_LIB
 {
-	// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or 
+	// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or
 	// "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
-	enum CPE_Method 
+	enum CPE_Method
 	{
 		CE,														// Consider positional uncertainty only
-		MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments 
+		MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments
 	};
 
 	enum Prediction_Method
@@ -42,31 +42,28 @@ namespace PSBMPC_LIB
 		ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
 	};
 
-	enum Guidance_Method 
+	enum Guidance_Method
 	{
-		LOS, 													// Line-of-sight		
+		LOS, 													// Line-of-sight
 		WPP,													// Waypoint-Pursuit
 		CH 														// Course Hold
 	};
 
 	class Grounding_Hazard_Manager;
 	class Obstacle_Manager;
-	class Joint_Prediction_Manager;
-	
+
 	namespace CPU
 	{
 		class PSBMPC;
 		template <typename Parameters> class MPC_Cost;
-		class Obstacle_SBMPC;
 	}
 	namespace GPU
 	{
 		class PSBMPC;
 		template <typename Parameters> class MPC_Cost;
-		class Obstacle_SBMPC;
 		class CB_Functor_Pars;
 	}
-	
+
 	class PSBMPC_Parameters
 	{
 	private:
@@ -78,10 +75,9 @@ namespace PSBMPC_LIB
 		friend class Obstacle_Predictor;
 		friend class Obstacle_Manager;
 		friend class Grounding_Hazard_Manager;
-		friend class Joint_Prediction_Manager;
 		friend class GPU::CB_Functor_Pars;
 
-		// Number of control behaviours, sequential maneuvers and maximum allowable 
+		// Number of control behaviours, sequential maneuvers and maximum allowable
 		// prediction scenarios for an obstacle, respectively
 		int n_cbs, n_M, n_r;
 
@@ -107,48 +103,42 @@ namespace PSBMPC_LIB
 		double t_ts;
 		double d_safe, d_close, d_init, d_so_relevant;
 		double K_coll;
-		double phi_AH, phi_OT, phi_HO, phi_CR;
-		double kappa, kappa_TC;
+		double kappa_SO, kappa_GW;
 		double K_u, K_du;
 		double K_chi_strb, K_dchi_strb;
-		double K_chi_port, K_dchi_port; 
+		double K_chi_port, K_dchi_port;
 		double K_sgn, T_sgn;
 		double G_1, G_2, G_3, G_4;
 		double epsilon_rdp;
-		
-		bool obstacle_colav_on;
 
 		void initialize_par_limits();
 
 		void initialize_pars();
 		void initialize_pars(
-			const std::vector<std::vector<double>> &u_offsets, 
-			const std::vector<std::vector<double>> &chi_offsets, 
+			const std::vector<std::vector<double>> &u_offsets,
+			const std::vector<std::vector<double>> &chi_offsets,
 			const CPE_Method cpe_method,
 			const Prediction_Method prediction_method,
 			const Guidance_Method guidance_method,
-			const std::vector<int> &ipars, 
+			const std::vector<int> &ipars,
 			const std::vector<double> &dpars);
 
 	public:
 
 		PSBMPC_Parameters() { initialize_pars(); initialize_par_limits(); }
 		PSBMPC_Parameters(
-			const std::vector<std::vector<double>> &u_offsets, 
-			const std::vector<std::vector<double>> &chi_offsets, 
+			const std::vector<std::vector<double>> &u_offsets,
+			const std::vector<std::vector<double>> &chi_offsets,
 			const CPE_Method cpe_method,
 			const Prediction_Method prediction_method,
 			const Guidance_Method guidance_method,
-			const std::vector<int> &ipars, 
+			const std::vector<int> &ipars,
 			const std::vector<double> &dpars)
 		{
 			initialize_pars(u_offsets, chi_offsets, cpe_method, prediction_method, guidance_method, ipars, dpars);
 
 			initialize_par_limits();
 		}
-
-
-		void set_par(const int index, const bool value);
 
 		void set_par(const int index, const int value);
 
@@ -162,15 +152,13 @@ namespace PSBMPC_LIB
 
 		inline void set_guidance_method(const Guidance_Method guidance_method) 		 	{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
 
-		bool get_bpar(const int index) const;  
-
 		int get_ipar(const int index) const;
-		
+
 		double get_dpar(const int index) const;
 
 		std::vector<Eigen::VectorXd> get_opar(const int index) const;
 
-		inline CPE_Method get_cpe_method() const { return cpe_method; }; 
+		inline CPE_Method get_cpe_method() const { return cpe_method; };
 
 		inline Prediction_Method get_prediction_method() const { return prediction_method; };
 

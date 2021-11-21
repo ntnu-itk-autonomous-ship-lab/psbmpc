@@ -41,6 +41,7 @@ typedef boost::geometry::model::polygon<point_2D> polygon_2D;
 
 namespace PSBMPC_LIB
 {
+	using Static_Obstacles = std::vector<polygon_2D>;
 	class Grounding_Hazard_Manager
 	{
 	private:
@@ -49,7 +50,7 @@ namespace PSBMPC_LIB
 		// ramer-douglas-peucker algorithm distance tolerance threshold
 		double d_so_relevant, epsilon;
 
-		std::vector<polygon_2D> polygons, simplified_polygons;
+		Static_Obstacles polygons, simplified_polygons;
 
 		// Name of the NED frame polygons are specified relative to
 		std::string frame_name;
@@ -263,12 +264,17 @@ namespace PSBMPC_LIB
 
 		UTM_Projection utm_p;
 
+		/****************************************************************************************
+		*  Name     : Grounding_Hazard_Manager
+		*  Function : Class constructor, initializes variables, objects, parameters
+		*  Author   : 
+		*  Modified : 
+		*****************************************************************************************/
 		Grounding_Hazard_Manager() {}
 
-		template <class MPC_Type>
-		Grounding_Hazard_Manager(const std::string &filename, const MPC_Type &mpc) 
+		Grounding_Hazard_Manager(const std::string &filename) 
 			: 
-			d_so_relevant(mpc.pars.d_so_relevant), epsilon(2.0), frame_name("local_NED"),
+			d_so_relevant(1000), epsilon(2.0), frame_name("local_NED"),
 			map_origin(7042250, 270250) // Trondheim, just north of ravnkloa, brattora crossing
 		{
 			read_shapefile(filename, polygons);
@@ -276,10 +282,10 @@ namespace PSBMPC_LIB
 			create_simplified_polygons();
 		}
 
-		template <class MPC_Type>
-		Grounding_Hazard_Manager(const std::string &filename, const Eigen::Vector2d &map_origin, const MPC_Type &mpc) 
+		template <class MPC_Parameters>
+		Grounding_Hazard_Manager(const std::string &filename, const Eigen::Vector2d &map_origin, const MPC_Parameters &mpc_pars) 
 			: 
-			d_so_relevant(mpc.pars.d_so_relevant), epsilon(mpc.pars.epsilon_rdp), frame_name("local_NED"),
+			d_so_relevant(mpc_pars.d_so_relevant), epsilon(mpc_pars.epsilon_rdp), frame_name("local_NED"),
 			map_origin(map_origin)
 		{
 			read_shapefile(filename, polygons);
@@ -287,9 +293,9 @@ namespace PSBMPC_LIB
 			create_simplified_polygons();
 		}
 
-		template <class MPC_Type>
-		Grounding_Hazard_Manager(const std::string &filename, const std::vector<double> &map_origin, const MPC_Type &mpc) 
-			: d_so_relevant(mpc.pars.d_so_relevant), epsilon(mpc.pars.epsilon_rdp), frame_name("local_NED")
+		template <class MPC_Parameters>
+		Grounding_Hazard_Manager(const std::string &filename, const std::vector<double> &map_origin, const MPC_Parameters &mpc_pars) 
+			: d_so_relevant(mpc_pars.d_so_relevant), epsilon(mpc_pars.epsilon_rdp), frame_name("local_NED")
 		{
 			assert(map_origin.size() == 2);
 			this->map_origin(0) = map_origin[0]; this->map_origin(1) = map_origin[1];
@@ -299,20 +305,20 @@ namespace PSBMPC_LIB
 			create_simplified_polygons();
 		}
 
-		template <class MPC_Type>
+		template <class MPC_Parameters>
 		Grounding_Hazard_Manager(
-			const std::string &filename, 		// In: Filename of shapefile to process
+			const std::string &filename, 			// In: Filename of shapefile to process
 			const double equatorial_radius,			// In: Radius  of ellipsoid parametrization for lla <-> UTM conversions
 			const double flattening_factor,			// In: Flattening factor of ellipsoid parametrization for lla <-> UTM conversions
 			const int utm_zone,						// In: UTM Zone to consider (NOTE: Must match the one used when generating the shapefiles)
 			const bool northp,						// In: Boolean determining if it is the northern or southern hemisphere
 			const Eigen::Vector2d &lla_origin,  	// In: Origin of map (from shapefile) in latitude, longitude format
 			const std::string frame_name,  			// In: Name of resulting local NED frame
-			const MPC_Type &mpc 					// In: Calling MPC (Either SB-MPC or PSB-MPC)
+			const MPC_Parameters &mpc_pars			// In: Parameters of calling MPC (Either SB-MPC or PSB-MPC)
 			) 
 			: 
-			d_so_relevant(mpc.pars.d_so_relevant), 
-			epsilon(mpc.pars.epsilon_rdp), 
+			d_so_relevant(mpc_pars.d_so_relevant), 
+			epsilon(mpc_pars.epsilon_rdp), 
 			frame_name(frame_name), 
 			utm_p(equatorial_radius, flattening_factor, utm_zone, northp)
 		{
@@ -327,8 +333,8 @@ namespace PSBMPC_LIB
 		std::string get_frame_name() const { return frame_name; }
 		Eigen::Vector2d get_map_origin() const { return map_origin; }
 
-		std::vector<polygon_2D> get_polygons() const { return polygons; }
-		std::vector<polygon_2D> get_simplified_polygons() const { return simplified_polygons; }
+		Static_Obstacles get_polygons() const { return polygons; }
+		Static_Obstacles get_simplified_polygons() const { return simplified_polygons; }
 
 		/****************************************************************************************
 		*  Name     : read_other_polygons
@@ -386,15 +392,16 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : operator()
 		*  Function : Returns a vector of relevant static obstacles for use by the PSB/SB-MPC,
-		*		 	  given the current own-ship position.
+		*		 	  given the current own-ship position. Two overloads, latter one with
+		*			  input parameter determining radius for relevant obstacles.
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		std::vector<polygon_2D> operator()(
+		Static_Obstacles operator()(
 			const Eigen::VectorXd &ownship_state							// State of the own-ship, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
 			)
 		{
-			std::vector<polygon_2D> ret;
+			Static_Obstacles ret;
 
 			double d_0j = 0.0; // distance to static obstacle
 			point_2D p_os(ownship_state(0), ownship_state(1));
@@ -406,6 +413,26 @@ namespace PSBMPC_LIB
 					ret.emplace_back(poly);
 				}
 			
+			}
+			return ret;
+		}		
+
+		Static_Obstacles operator()(
+			const Eigen::VectorXd &ownship_state,							// State of the own-ship, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
+			const double d_so_relevant										// Radius of relevance for static obstacles 		
+			)
+		{
+			Static_Obstacles ret;
+
+			double d_0j = 0.0; // distance to static obstacle
+			point_2D p_os(ownship_state(0), ownship_state(1));
+			BOOST_FOREACH(polygon_2D const& poly, simplified_polygons)
+			{
+				d_0j = boost::geometry::distance(p_os, poly);
+				if (d_0j < d_so_relevant)
+				{
+					ret.emplace_back(poly);
+				}
 			}
 			return ret;
 		}		

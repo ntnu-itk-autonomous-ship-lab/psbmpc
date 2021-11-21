@@ -24,13 +24,13 @@
 #include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
 #include "obstacle_predictor.hpp"
-#include "cpu/obstacle_sbmpc_cpu.hpp"
 #if OWNSHIP_TYPE == 0
 	#include "cpu/kinematic_ship_models_cpu.hpp"
 #else 
 	#include "cpu/kinetic_ship_models_cpu.hpp"
 #endif
 #include "cpu/cpe_cpu.hpp"
+#include "cpu/mpc_cost_cpu.hpp"
 
 #include <vector>
 #include <memory>	
@@ -63,36 +63,22 @@ namespace PSBMPC_LIB
 
 			CPE cpe;
 
-			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
+			bool determine_colav_active(const Dynamic_Obstacles &obstacles, const int n_so, const bool disable);
 
 			void reset_control_behaviour();
 
 			void increment_control_behaviour();
 
-			void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
-
-			void prune_obstacle_scenarios(Obstacle_Data<Tracked_Obstacle> &data);
+			void setup_prediction(const Dynamic_Obstacles &obstacles);
 
 			void calculate_collision_probabilities(
 				Eigen::MatrixXd &P_c_i, 
-				const Obstacle_Data<Tracked_Obstacle> &data, 
+				const Dynamic_Obstacles &obstacles, 
 				const int i, 
 				const double dt, 
 				const int p_step);
 				
-			void calculate_ps_collision_probabilities(Eigen::VectorXd &P_c_i_ps, const Eigen::MatrixXd &P_c_i, const int i);
-
-			void calculate_ps_collision_consequences(Eigen::VectorXd &C_i, const Obstacle_Data<Tracked_Obstacle> &data, const int i, const double dt, const int p_step);
-
-			void calculate_ps_collision_risks(
-				Eigen::VectorXd &R_c_i, 
-				Eigen::VectorXi &indices_i, 
-				const Eigen::VectorXd &C_i, 
-				const Eigen::VectorXd &P_c_i_ps, 
-				const Obstacle_Data<Tracked_Obstacle> &data, 
-				const int i);
-
-			void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
+			void assign_optimal_trajectory(Eigen::MatrixXd &optimal_trajectory);
 
 		public:
 
@@ -106,31 +92,19 @@ namespace PSBMPC_LIB
 			// Resets previous optimal offsets and predicted own-ship waypoint following
 			void reset() { u_opt_last = 1.0; chi_opt_last = 0.0; ownship.set_wp_counter(0); }
 
-			// For use when grounding hazards are simplified as straight lines
 			void calculate_optimal_offsets(
 				double &u_opt, 
 				double &chi_opt, 
-				Eigen::Matrix<double, 2, -1> &predicted_trajectory,
-				const double u_d, 
-				const double chi_d, 
-				const Eigen::Matrix<double, 2, -1> &waypoints,
-				const Eigen::VectorXd &ownship_state,
-				const Eigen::Matrix<double, 4, -1> &static_obstacles,
-				Obstacle_Data<Tracked_Obstacle> &data);
-
-			// For use when reading grounding hazards as polygons from shapefiles
-			void calculate_optimal_offsets(
-				double &u_opt, 
-				double &chi_opt, 
-				Eigen::Matrix<double, 2, -1> &predicted_trajectory,
+				Eigen::MatrixXd &predicted_trajectory,
 				const double u_d, 
 				const double chi_d, 
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::VectorXd &ownship_state,
 				const double V_w,
 				const Eigen::Vector2d &wind_direction,
-				const std::vector<polygon_2D> &polygons,
-				Obstacle_Data<Tracked_Obstacle> &data);
+				const Static_Obstacles &polygons,
+				const Dynamic_Obstacles &obstacles,
+				const bool disable);
 
 		};
 	}

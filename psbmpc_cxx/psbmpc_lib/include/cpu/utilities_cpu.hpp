@@ -22,7 +22,7 @@
 #pragma once
 
 #include "psbmpc_defines.hpp"
-#include <Eigen/Dense>
+#include "Eigen/Dense"
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
@@ -110,9 +110,6 @@ namespace PSBMPC_LIB
 			if (depth != 0) 
 			{
 				throw std::logic_error("Unterminated vector string.");
-			} else 
-			{
-				throw std::logic_error("");
 			}
 
 			return result;
@@ -389,6 +386,52 @@ namespace PSBMPC_LIB
 				p_cpa = p_A + v_A * t_cpa;
 				d_cpa = (p_cpa - (p_B + v_B * t_cpa)).norm();
 			}
+		}
+
+		/****************************************************************************************
+		*  Name     : ship_is_passed_by
+		*  Function : Checks if an obstacle vessel B is passed by the ownship
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
+		inline bool ship_is_passed_by(
+				const Eigen::VectorXd &xs_0,
+				const Eigen::Vector4d &xs_i,
+				const double d_safe
+			)
+		{
+			Eigen::Vector2d v_0, v_i, L_0i;
+			double psi_0 = xs_0(2), d_0i;
+			if (xs_0.size() == 4)	
+			{
+				v_0(0) = xs_0(3) * cos(xs_0(2));
+				v_0(1) = xs_0(3) * sin(xs_0(2));
+			}
+			else
+			{
+				v_0(0) = xs_0(3);
+				v_0(1) = xs_0(4);
+				v_0 = rotate_vector_2D(v_0, psi_0);
+			}
+			v_i(0) = xs_i(2); v_i(1) = xs_i(3);
+			L_0i = xs_i.block<2, 1>(0, 0) - xs_0.block<2, 1>(0, 0);
+			d_0i = L_0i.norm();
+			L_0i.normalize();
+			
+			bool A_is_overtaken = v_0.dot(v_i) > cos(68.5 * DEG2RAD) * v_0.norm() * v_i.norm() 	&&
+							v_0.norm() < v_i.norm()							  					&&
+							v_0.norm() > 0.25;
+
+			bool B_is_overtaken = v_i.dot(v_0) > cos(68.5 * DEG2RAD) * v_i.norm() * v_0.norm() 	&&
+							v_i.norm() < v_0.norm()							  					&&
+							v_i.norm() > 0.25;
+
+			bool is_passed = ((v_0.dot(L_0i) < cos(112.5 * DEG2RAD) * v_0.norm()				&& // Vessel A's perspective
+						!A_is_overtaken) 														||
+						(v_i.dot(-L_0i) < cos(112.5 * DEG2RAD) * v_i.norm() 					&& // Vessel B's perspective
+						!B_is_overtaken)) 														&&
+						d_0i > d_safe;
+			return is_passed;
 		}
 	}
 }

@@ -34,18 +34,6 @@ namespace PSBMPC_LIB
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-bool PSBMPC_Parameters::get_bpar(
-	const int index															// In: Index of parameter to return (Must be of int type)
-	) const
-{
-	switch(index){
-		case i_bpar_obstacle_colav_on 				: return obstacle_colav_on; 
-		default : 
-			// Throw
-			return 0;
-	}
-}
-
 int PSBMPC_Parameters::get_ipar(
 	const int index															// In: Index of parameter to return (Must be of int type)
 	) const
@@ -75,12 +63,8 @@ double PSBMPC_Parameters::get_dpar(
 		case i_dpar_d_init 				: return d_init;
 		case i_dpar_d_so_relevant 		: return d_so_relevant;
 		case i_dpar_K_coll 				: return K_coll;
-		case i_dpar_phi_AH 				: return phi_AH;
-		case i_dpar_phi_OT 				: return phi_OT;
-		case i_dpar_phi_HO 				: return phi_HO;
-		case i_dpar_phi_CR 				: return phi_CR;
-		case i_dpar_kappa 				: return kappa;
-		case i_dpar_kappa_TC 			: return kappa_TC;
+		case i_dpar_kappa_SO 			: return kappa_SO;
+		case i_dpar_kappa_GW 			: return kappa_GW;
 		case i_dpar_K_u 				: return K_u;
 		case i_dpar_K_du 				: return K_du;
 		case i_dpar_K_chi_strb 			: return K_chi_strb;
@@ -123,20 +107,6 @@ std::vector<Eigen::VectorXd> PSBMPC_Parameters::get_opar(
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-void PSBMPC_Parameters::set_par(
-	const int index, 														// In: Index of parameter to set
-	const bool value 														// In: Value to set for parameter
-	)
-{	
-	switch(index)
-	{
-		case i_bpar_obstacle_colav_on 			: obstacle_colav_on = value; break;
-		default : 
-			// Throw invalid index
-			break;
-	}	
-}
-
 void PSBMPC_Parameters::set_par(
 	const int index, 														// In: Index of parameter to set
 	const int value 														// In: Value to set for parameter
@@ -183,12 +153,8 @@ void PSBMPC_Parameters::set_par(
 			case i_dpar_d_init 				: d_init = value; break;
 			case i_dpar_d_so_relevant		: d_so_relevant = value; break;
 			case i_dpar_K_coll 				: K_coll = value; break;
-			case i_dpar_phi_AH 				: phi_AH = value; break;
-			case i_dpar_phi_OT 				: phi_OT = value; break;
-			case i_dpar_phi_HO 				: phi_HO = value; break;
-			case i_dpar_phi_CR 				: phi_CR = value; break;
-			case i_dpar_kappa 				: kappa = value; break;
-			case i_dpar_kappa_TC 			: kappa_TC = value; break;
+			case i_dpar_kappa_SO 			: kappa_SO = value; break;
+			case i_dpar_kappa_GW 			: kappa_GW = value; break;
 			case i_dpar_K_u 				: K_u = value; break;
 			case i_dpar_K_du 				: K_du = value; break;
 			case i_dpar_K_chi_strb 			: K_chi_strb = value; break;
@@ -288,11 +254,6 @@ void PSBMPC_Parameters::initialize_par_limits()
 	dpar_high[i_dpar_K_dchi_strb] = 3.0;
 	dpar_high[i_dpar_K_dchi_port] = 3.0;
 
-	dpar_low[i_dpar_phi_AH] = -180.0 * DEG2RAD; 		dpar_high[i_dpar_phi_AH] = 180.0 * DEG2RAD;
-	dpar_low[i_dpar_phi_OT] = -180.0 * DEG2RAD;			dpar_high[i_dpar_phi_OT] = 180.0 * DEG2RAD;
-	dpar_low[i_dpar_phi_HO] = -180.0 * DEG2RAD; 		dpar_high[i_dpar_phi_HO] = 180.0 * DEG2RAD;
-	dpar_low[i_dpar_phi_CR] = -180.0 * DEG2RAD; 		dpar_high[i_dpar_phi_CR] = 180.0 * DEG2RAD;
-
 	//std::cout << "d_par_low = " << dpar_low.transpose() << std::endl;
 	//std::cout << "d_par_high = " << dpar_high.transpose() << std::endl;
 }
@@ -390,13 +351,9 @@ void PSBMPC_Parameters::initialize_pars()
 	d_init = 300;								 
 	d_close = 300;
 	d_safe = 5; 							
-	K_coll = 3.0;	// 0.2 for sea traffic, 10.0 for nidelva	  					
-	phi_AH = 68.5 * DEG2RAD;		 	
-	phi_OT = 68.5 * DEG2RAD;		 		 
-	phi_HO = 22.5 * DEG2RAD;		 		
-	phi_CR = 68.5 * DEG2RAD;	     		
-	kappa = 20.0;		  					
-	kappa_TC = 20.0;						 
+	K_coll = 3.0;	// 0.2 for sea traffic, 10.0 for nidelva	  						     		
+	kappa_SO = 10.0;		  					
+	kappa_GW = 20.0;						 
 	K_u = 40;		   						 
 	K_du = 6;		    					
 	K_chi_strb = 1.3;	  					
@@ -412,8 +369,6 @@ void PSBMPC_Parameters::initialize_pars()
 	G_4 = 0.01;
 
 	epsilon_rdp = 2.0;
-
-	obstacle_colav_on = false;
 }
 
 void PSBMPC_Parameters::initialize_pars(
@@ -428,12 +383,13 @@ void PSBMPC_Parameters::initialize_pars(
 {
 	n_M = ipars[i_ipar_n_M];
 	n_r = ipars[i_ipar_n_r];
-	assert(n_M == (int)u_offsets.size() && n_M == (int)chi_offsets.size());
+	assert((int)u_offsets.size() > 0 && (int)chi_offsets.size() > 0 && n_M > 0 && n_r > 0);
 
 	p_step = ipars[i_ipar_p_step];
 	p_step_cpe = ipars[i_ipar_p_step_cpe];
 	p_step_grounding = ipars[i_ipar_p_step_grounding];
 
+	this->n_cbs = 1;
 	this->u_offsets.resize(n_M); this->chi_offsets.resize(n_M);
 	for (int M = 0; M < n_M; M++)
 	{	
@@ -449,6 +405,7 @@ void PSBMPC_Parameters::initialize_pars(
 			// Input pars for chi_offsets are in degrees, so must convert to radians
 			this->chi_offsets[M](co) = chi_offsets[M][co] * DEG2RAD;
 		}
+		this->n_cbs *= this->u_offsets[M].size() * this->chi_offsets[M].size();
 	}
 
 	this->cpe_method = cpe_method;
@@ -466,14 +423,8 @@ void PSBMPC_Parameters::initialize_pars(
 
 	K_coll = dpars[i_dpar_K_coll];
 
-	// Input pars for phi_AH - CR are in degrees, so must convert to radians
-	phi_AH = dpars[i_dpar_phi_AH] * DEG2RAD;
-	phi_OT = dpars[i_dpar_phi_OT] * DEG2RAD;
-	phi_HO = dpars[i_dpar_phi_HO] * DEG2RAD;
-	phi_CR = dpars[i_dpar_phi_CR] * DEG2RAD;
-
-	kappa = dpars[i_dpar_kappa];
-	kappa_TC = dpars[i_dpar_kappa_TC];
+	kappa_SO = dpars[i_dpar_kappa_SO];
+	kappa_GW = dpars[i_dpar_kappa_GW];
 
 	K_u = dpars[i_dpar_K_u];
 	K_du = dpars[i_dpar_K_du];
@@ -492,8 +443,6 @@ void PSBMPC_Parameters::initialize_pars(
 	G_2 = dpars[i_dpar_G_4];
 
 	epsilon_rdp = dpars[i_dpar_epsilon_rdp];
-
-	obstacle_colav_on = false; // default
 }
 
 }

@@ -28,6 +28,7 @@
 #include "psbmpc_parameters.hpp"
 #include "tml/tml.cuh"
 
+#include <Eigen/Dense>
 #include <thrust/device_vector.h>
 
 namespace PSBMPC_LIB
@@ -198,71 +199,9 @@ namespace PSBMPC_LIB
 				const double dt);
 		};
 
-		// 3DOF milliampere class is NOT finished 
-		class MilliAmpere : public Kinetic_Ship_Base_3DOF
-		{
-		private:
-			float l_1, l_2; // distance from CG to front (1) and back (2) thrusters (symmetric here)
-
-			float min_rpm, max_rpm, min_thrust, max_thrust;
-
-			TML::Vector2f alpha, omega;
-
-			TML::Vector5f rpm_to_force_polynomial, force_to_rpm_polynomial;
-
-			void update_alpha();
-
-			void update_omega();
-		public:
-			MilliAmpere();
-
-			__host__ __device__ void update_ctrl_input(const float u_d, const float psi_d, const TML::Vector6f &xs);
-			
-			__host__ void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
-
-						__host__ __device__ void predict_trajectory(
-				TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory,
-				const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
-				const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
-				const float u_d,
-				const float chi_d,
-				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
-				const Prediction_Method prediction_method,
-				const Guidance_Method guidance_method,
-				const float T,
-				const float dt);
-
-			__host__ __device__ void predict_trajectory(
-				TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
-				const TML::PDVector6f &ownship_state,
-				const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
-				const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
-				const float u_d,
-				const float chi_d,
-				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
-				const Prediction_Method prediction_method,
-				const Guidance_Method guidance_method,
-				const float T,
-				const float dt);
-
-			__host__ void predict_trajectory(
-				Eigen::MatrixXd &trajectory,
-				const Eigen::VectorXd &offset_sequence,
-				const Eigen::VectorXd &maneuver_times,
-				const double u_d,
-				const double chi_d,
-				const Eigen::Matrix<double, 2, -1> &waypoints,
-				const Prediction_Method prediction_method,
-				const Guidance_Method guidance_method,
-				const double T,
-				const double dt);
-		};
-
 		// Default ownship type is Kinematic_Ship
 		#if OWNSHIP_TYPE == 1
 			using Ownship = Telemetron;
-		#elif OWNSHIP_TYPE == 2
-			using Ownship = MilliAmpere;
 		#endif
 	}
 }

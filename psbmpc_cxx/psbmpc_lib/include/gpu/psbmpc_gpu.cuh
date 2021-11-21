@@ -22,13 +22,16 @@
 
 #include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
+#include "gpu/ownship_gpu.cuh"
 #include "cpu/cpe_cpu.hpp"
 #include "cpu/mpc_cost_cpu.hpp"
-#include "gpu/cb_cost_functor_structures.cuh"
-#include "tml/tml.cuh"
+#include "gpu/mpc_cost_gpu.cuh"
+#include "cb_cost_functor_structures.cuh"
 
 #include <Eigen/Dense>
 #include <string>
+#include "tml/tml.cuh"
+#include <thrust/device_vector.h>
 
 namespace PSBMPC_LIB
 {	
@@ -49,7 +52,6 @@ namespace PSBMPC_LIB
 
 		class CB_Cost_Functor_1;
 		class CB_Cost_Functor_2;
-		class CB_Cost_Functor_3;
 		class CB_Functor_Pars;
 		class CB_Functor_Data;
 		
@@ -121,7 +123,7 @@ namespace PSBMPC_LIB
 			//=====================================================
 			void preallocate_device_data();
 
-			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst);
+			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst, const bool disable);
 			
 			void map_offset_sequences();
 
@@ -131,41 +133,11 @@ namespace PSBMPC_LIB
 
 			void map_thrust_dvecs(const std::vector<polygon_2D> &polygons);
 
-			void find_optimal_control_behaviour(Obstacle_Data<Tracked_Obstacle> &data, const std::vector<polygon_2D> &polygons);
+			void find_optimal_control_behaviour(const Obstacle_Data<Tracked_Obstacle> &data, const std::vector<polygon_2D> &polygons);
 
-			void setup_prediction(Obstacle_Data<Tracked_Obstacle> &data);
-			
-			void prune_obstacle_scenarios(Obstacle_Data<Tracked_Obstacle> &data);
-			
-			void calculate_collision_probabilities(
-				Eigen::MatrixXd &P_c_i, 
-				const Obstacle_Data<Tracked_Obstacle> &data, 
-				const int i, 
-				const double dt, 
-				const int p_step);
+			void setup_prediction(const Obstacle_Data<Tracked_Obstacle> &data);
 
-			void calculate_ps_collision_probabilities(Eigen::VectorXd &P_c_i_ps, const Eigen::MatrixXd &P_c_i, const int i);
-
-			void calculate_ps_collision_consequences(Eigen::VectorXd &C_i, const Obstacle_Data<Tracked_Obstacle> &data, const int i, const double dt, const int p_step);
-
-			void calculate_ps_collision_risks(
-				Eigen::VectorXd &R_c_i, 
-				Eigen::VectorXi &indices_i, 
-				const Eigen::VectorXd &C_i, 
-				const Eigen::VectorXd &P_c_i_ps, 
-				const Obstacle_Data<Tracked_Obstacle> &data, 
-				const int i);
-
-			void determine_situation_type(
-				ST& st_A,
-				ST& st_B,
-				const TML::Vector2f &v_A,
-				const float psi_A,
-				const TML::Vector2f &v_B,
-				const TML::Vector2f &L_AB,
-				const float d_AB);
-
-			void assign_optimal_trajectory(Eigen::Matrix<double, 2, -1> &optimal_trajectory);
+			void assign_optimal_trajectory(Eigen::MatrixXd &optimal_trajectory);
 
 			void set_up_temporary_device_memory(
 				const double u_d,
@@ -200,7 +172,7 @@ namespace PSBMPC_LIB
 			void calculate_optimal_offsets(
 				double &u_opt, 
 				double &chi_opt, 
-				Eigen::Matrix<double, 2, -1> &predicted_trajectory,
+				Eigen::MatrixXd &predicted_trajectory,
 				const double u_d, 
 				const double chi_d, 
 				const Eigen::Matrix<double, 2, -1> &waypoints,
@@ -208,7 +180,8 @@ namespace PSBMPC_LIB
 				const double V_w,
 				const Eigen::Vector2d &wind_direction,
 				const std::vector<polygon_2D> &polygons,
-				Obstacle_Data<Tracked_Obstacle> &data);
+				const Obstacle_Data<Tracked_Obstacle> &data,
+				const bool disable);
 
 		};
 	}
