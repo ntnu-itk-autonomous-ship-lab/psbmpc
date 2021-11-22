@@ -17,8 +17,8 @@
 cmake_minimum_required(VERSION 3.17.3)
 
 # Pure host side test files
-add_executable(tester test_psbmpc.cpp)
-#add_executable(tester test_psbmpc_grounding.cpp)
+#add_executable(tester test_psbmpc.cpp)
+add_executable(tester test_psbmpc_grounding.cpp)
 #add_executable(tester test_ownship_cpu.cpp)
 #add_executable(tester test_obstacle_ship_cpu.cpp)
 #add_executable(tester test_obstacle_cpu.cpp)

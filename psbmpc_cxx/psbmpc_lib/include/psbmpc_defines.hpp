@@ -31,6 +31,11 @@
 #define ENABLE_PSBMPC_DEBUGGING 0
 #endif
 
+#define PX 0
+#define PY 1
+#define COG 2
+#define SOG 3
+
 #define M_PI 3.14159265358979323846
 
 #define DEG2RAD M_PI / 180.0f

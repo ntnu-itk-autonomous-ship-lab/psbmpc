@@ -124,7 +124,7 @@ void PSBMPC::calculate_optimal_offsets(
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
 	#if ENABLE_PSBMPC_DEBUGGING
-		Engine *ep = engOpen(NULL);
+		/* Engine *ep = engOpen(NULL);
 		if (ep == NULL)
 		{
 			std::cout << "engine start failed!" << std::endl;
@@ -301,17 +301,16 @@ void PSBMPC::calculate_optimal_offsets(
 		int curr_ps_index(0);
 		int min_index = 0;
 		int thread_count = 1;
-		Eigen::VectorXd max_cost_i_ps, max_cost_j;
+		Eigen::VectorXd max_cost_i_ps;
 		if (n_so == 0)
 		{
-			max_cost_j.resize(1);
 			max_cost_j_matrix.resize(1, pars.n_cbs);
-			max_cost_j.setZero();
 			max_cost_j_matrix.setZero();
-		}
+		} */
 	#endif
 
 	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
+	Eigen::VectorXd max_cost_j;
 	Eigen::VectorXd cost_do(n_do);
 	Eigen::MatrixXd P_c_i;
 	min_cost = 1e12;
@@ -321,14 +320,14 @@ void PSBMPC::calculate_optimal_offsets(
 		cost = 0.0; h_do = 0.0; h_colregs = 0.0; h_so = 0.0; h_path = 0.0;
 
 		#if ENABLE_PSBMPC_DEBUGGING
-			for (int M = 0; M < pars.n_M; M++)
+			/* for (int M = 0; M < pars.n_M; M++)
 			{
 				cb_matrix(2 * M, cb) = offset_sequence(2 * M);
 				cb_matrix(2 * M + 1, cb) = RAD2DEG * offset_sequence(2 * M + 1);
 			}
 			curr_ps_index = 0;
 			//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
-			//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
+			//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl; */
 		#endif
 
 		ownship.predict_trajectory(
@@ -349,14 +348,14 @@ void PSBMPC::calculate_optimal_offsets(
 			calculate_collision_probabilities(P_c_i, obstacles, i, pars.p_step_cpe * pars.dt, pars.p_step_cpe);
 
 			#if ENABLE_PSBMPC_DEBUGGING
-				cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, trajectory, P_c_i, obstacles, i, ownship.get_length());
+				/* cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, trajectory, P_c_i, obstacles, i, ownship.get_length());
 				max_cost_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = max_cost_i_ps;
 				curr_ps_index += n_ps[i];
 				for (int ps = 0; ps < n_ps[i]; ps++)
 				{
 					//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f \n", thread_count, i, ps, cb, max_cost_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
 					thread_count += 1;
-				}
+				} */
 			#else
 				cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, P_c_i, obstacles, i, ownship.get_length());
 			#endif
@@ -365,7 +364,7 @@ void PSBMPC::calculate_optimal_offsets(
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
 			#if ENABLE_PSBMPC_DEBUGGING
-				p_P_c_i = mxGetPr(P_c_i_mx[i]);
+				/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
 				Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 				map_P_c = P_c_i;
 
@@ -378,7 +377,7 @@ void PSBMPC::calculate_optimal_offsets(
 					ps_mx = mxCreateDoubleScalar(ps + 1);
 					engPutVariable(ep, "ps", ps_mx);
 					engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-				}
+				} */
 			#endif
 			//===============================================================================================================
 		}
@@ -401,7 +400,7 @@ void PSBMPC::calculate_optimal_offsets(
 		cost = h_do + h_colregs + h_so + h_path;
 
 		#if ENABLE_PSBMPC_DEBUGGING
-			if (n_do > 0)
+			/* if (n_do > 0)
 			{
 				cost_do_matrix.col(cb) = cost_do;
 			}
@@ -416,7 +415,7 @@ void PSBMPC::calculate_optimal_offsets(
 			if (cost < min_cost)
 			{
 				min_index = cb;
-			}
+			} */
 		#endif
 
 		if (cost < min_cost)
@@ -432,14 +431,14 @@ void PSBMPC::calculate_optimal_offsets(
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
 		#if ENABLE_PSBMPC_DEBUGGING
-			Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
+			/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
 			map_traj = trajectory;
 
 			k_s = mxCreateDoubleScalar(n_samples);
 			engPutVariable(ep, "k", k_s);
 
 			engPutVariable(ep, "X", traj_os_mx);
-			engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
+			engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
 		#endif
 		//===============================================================================================================
 	}
@@ -447,7 +446,7 @@ void PSBMPC::calculate_optimal_offsets(
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
 	#if ENABLE_PSBMPC_DEBUGGING
-		opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+		/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 		map_total_cost = total_cost_matrix;
 		map_cost_colregs = cost_colregs_matrix;
 		if (n_so > 0)
@@ -493,7 +492,7 @@ void PSBMPC::calculate_optimal_offsets(
 		mxDestroyArray(n_so_copy_mx);
 		mxDestroyArray(opt_cb_index_mx);
 
-		engClose(ep);
+		engClose(ep); */
 	#endif
 	//==================================================================
 

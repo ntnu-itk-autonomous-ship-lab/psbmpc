@@ -23,7 +23,7 @@
 
 #include "psbmpc_defines.hpp"
 #include <Eigen/Dense>
-#include "tml.cuh"
+#include "tml/tml.cuh"
 #include <thrust/device_vector.h>
 #include <iostream>
 #include <fstream>
@@ -224,24 +224,6 @@ namespace PSBMPC_LIB
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
-		__host__ __device__ inline TML::MatrixXf flatten(const TML::MatrixXf &in)
-		{
-			int n_rows = in.get_rows();
-			int n_cols = in.get_cols();
-
-			TML::MatrixXf out(n_rows * n_cols, 1);
-			int count = 0;
-			for(int i = 0; i < n_rows; i++)
-			{
-				for(int j = 0; j < n_cols; j++)
-				{
-					out(count) = in(i, j);
-					count += 1;
-				}
-			}
-			return out;
-		}
-
 		template <size_t Rows, size_t Cols>
 		__host__ __device__ inline TML::Static_Matrix<float, Rows * Cols, 1> flatten(const TML::Static_Matrix<float, Rows, Cols> &in)
 		{
@@ -284,22 +266,6 @@ namespace PSBMPC_LIB
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
-		__host__ __device__ inline TML::MatrixXd reshape(const TML::MatrixXd &in, const int n_rows, const int n_cols)
-		{
-			TML::MatrixXd out(n_rows, n_cols);
-
-			int count = 0;
-			for(int i = 0; i < n_rows; i++)
-			{
-				for(int j = 0; j < n_cols; j++)
-				{
-					out(i, j) = in(count);
-					count += 1;
-				}
-			}
-			return out;
-		}
-
 		template <size_t Rows, size_t Cols, size_t New_Rows, size_t New_Cols>
 		__host__ __device__ inline TML::Static_Matrix<float, New_Rows, New_Cols> reshape(const TML::Static_Matrix<float, Rows, Cols> &in)
 		{

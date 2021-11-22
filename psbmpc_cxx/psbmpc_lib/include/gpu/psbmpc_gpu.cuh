@@ -22,7 +22,11 @@
 
 #include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
-#include "gpu/ownship_gpu.cuh"
+#if OWNSHIP_TYPE == 0
+	#include "gpu/kinematic_ship_models_gpu.cuh"
+#else 
+	#include "gpu/kinetic_ship_models_gpu.cuh"
+#endif
 #include "cpu/cpe_cpu.hpp"
 #include "cpu/mpc_cost_cpu.hpp"
 #include "gpu/mpc_cost_gpu.cuh"
@@ -62,8 +66,6 @@ namespace PSBMPC_LIB
 		class PSBMPC
 		{
 		private:
-
-			std::vector<int> n_ps;
 
 			Eigen::VectorXd opt_offset_sequence, maneuver_times;
 
@@ -123,19 +125,19 @@ namespace PSBMPC_LIB
 			//=====================================================
 			void preallocate_device_data();
 
-			bool determine_colav_active(const Obstacle_Data<Tracked_Obstacle> &data, const int n_static_obst, const bool disable);
+			bool determine_colav_active(const Dynamic_Obstacles &obstacles, const int n_static_obst, const bool disable);
 			
 			void map_offset_sequences();
 
-			void reset_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
+			void reset_control_behaviour(Eigen::VectorXi &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
-			void increment_control_behaviour(Eigen::VectorXd &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
+			void increment_control_behaviour(Eigen::VectorXi &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
 
-			void map_thrust_dvecs(const std::vector<polygon_2D> &polygons);
+			void map_thrust_dvecs(const Dynamic_Obstacles &obstacles, const Static_Obstacles &polygons);
 
-			void find_optimal_control_behaviour(const Obstacle_Data<Tracked_Obstacle> &data, const std::vector<polygon_2D> &polygons);
+			void find_optimal_control_behaviour(const Dynamic_Obstacles &obstacles, const Static_Obstacles &polygons);
 
-			void setup_prediction(const Obstacle_Data<Tracked_Obstacle> &data);
+			void setup_prediction(const Dynamic_Obstacles &obstacles);
 
 			void assign_optimal_trajectory(Eigen::MatrixXd &optimal_trajectory);
 
@@ -145,8 +147,8 @@ namespace PSBMPC_LIB
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const double V_w,
 				const Eigen::Vector2d &wind_direction,
-				const std::vector<polygon_2D> &polygons,
-				const Obstacle_Data<Tracked_Obstacle> &data);
+				const Static_Obstacles &polygons,
+				const Dynamic_Obstacles &obstacles);
 
 			void assign_data(const PSBMPC &other);
 
@@ -179,8 +181,8 @@ namespace PSBMPC_LIB
 				const Eigen::VectorXd &ownship_state,
 				const double V_w,
 				const Eigen::Vector2d &wind_direction,
-				const std::vector<polygon_2D> &polygons,
-				const Obstacle_Data<Tracked_Obstacle> &data,
+				const Static_Obstacles &polygons,
+				const Dynamic_Obstacles &obstacles,
 				const bool disable);
 
 		};

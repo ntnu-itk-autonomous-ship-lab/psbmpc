@@ -90,8 +90,7 @@ namespace PSBMPC_LIB
 			float T, dt;
 			float d_safe, d_close, d_init;
 			float K_coll;
-			float phi_AH, phi_OT, phi_HO, phi_CR;
-			float kappa, kappa_TC;
+			float kappa_SO, kappa_GW;
 			float K_u, K_du;
 			float K_chi_strb, K_dchi_strb;
 			float K_chi_port, K_dchi_port; 
@@ -118,9 +117,7 @@ namespace PSBMPC_LIB
 
 				this->K_coll = pars.K_coll; 
 
-				this->phi_AH = pars.phi_AH; this->phi_OT = pars.phi_OT; this->phi_HO = pars.phi_HO; this->phi_CR = pars.phi_CR;
-
-				this->kappa = pars.kappa; this->kappa_TC = pars.kappa_TC;
+				this->kappa_SO = pars.kappa_SO; this->kappa_GW = pars.kappa_GW;
 
 				this->K_u = pars.K_u; this->K_du = pars.K_du;
 
@@ -131,8 +128,6 @@ namespace PSBMPC_LIB
 				this->K_sgn = pars.K_sgn; this->T_sgn = pars.T_sgn;
 
 				this->G_1 = pars.G_1; this->G_2 = pars.G_2; this->G_3 = pars.G_3; this->G_4 = pars.G_4;
-
-				this->obstacle_colav_on = pars.obstacle_colav_on;
 			}
 		};
 
@@ -168,7 +163,7 @@ namespace PSBMPC_LIB
 			int n_so;
 
 			// Number of prediction scenarios for each dynamic obstacle
-			TML::PDMatrix<int, MAX_N_OBST, 1> n_ps;
+			TML::PDMatrix<int, MAX_N_DO, 1> n_ps;
 
 			//=======================================================================================
 			//  Name     : CB_Functor_Data
@@ -190,9 +185,8 @@ namespace PSBMPC_LIB
 				const Eigen::Matrix<double, 2, -1> &waypoints, 
 				const double V_w,
 				const Eigen::Vector2d &wind_direction,
-				const std::vector<polygon_2D> &polygons,
-				const std::vector<int> &n_ps,
-				const std::vector<Tracked_Obstacle> &obstacles)
+				const Static_Obstacles &polygons,
+				const Dynamic_Obstacles &obstacles)
 			{
 				this->ownship_length = ownship_length;
 				
@@ -219,7 +213,7 @@ namespace PSBMPC_LIB
 				this->n_ps.resize(n_do, 1);
 				for (int i = 0; i < n_do; i++)
 				{
-					this->n_ps[i] = n_ps[i];
+					this->n_ps[i] = obstacles[i].get_trajectories().size();
 				} 
 			}
 		};

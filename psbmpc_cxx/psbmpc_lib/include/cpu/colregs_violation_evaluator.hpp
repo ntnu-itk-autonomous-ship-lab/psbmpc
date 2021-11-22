@@ -49,7 +49,7 @@ public:
         if (!initial_ownship_state.has_value())
             return false;
 
-        bool distance_larger_than_critical = std::abs((initial_ownship_state->head(2) - initial_ownship_state->head(2)).norm()) > critical_distance_to_ignor_SO;
+        bool distance_larger_than_critical = std::abs((initial_ownship_state->head(2) - initial_ownship_state->head(2)).norm()) > critical_distance_to_ignore_SO;
         bool stands_on_correct = evaluate_course_change(ownship_trajectory) == CourseChange::None && evaluate_speed_change(ownship_trajectory) == SpeedChange::None;
         bool has_SO_role = colregs_situation == OT_en || colregs_situation == CR_PS;
         bool is_risk_of_collision = evaluate_risk_of_collision(ownship_trajectory, obstacle_trajectory);
@@ -79,7 +79,7 @@ private:
     static constexpr double overtaking_angle = (90 + 22.5) * DEG2RAD;
     static constexpr double max_acceptable_SO_speed_change = 1;
     static constexpr double max_acceptable_SO_course_change = 10 * DEG2RAD;
-    static constexpr double critical_distance_to_ignor_SO = 5;
+    static constexpr double critical_distance_to_ignore_SO = 5;
 
     enum COLREGS_Situation
     {
@@ -101,7 +101,7 @@ private:
 
     COLREGS_Situation evaluate_colregs_situation(const Eigen::VectorXd &ownship_state, const Eigen::Vector4d &obstacle_state) const
     {
-        const double heading_diff = wrapPI(obstacle_state(CHI) - ownship_state(CHI));
+        const double heading_diff = wrapPI(obstacle_state(COG) - ownship_state(COG));
         if (heading_diff < -M_PI + head_on_width / 2 || heading_diff > M_PI - head_on_width / 2)
             return HO;
 
@@ -135,9 +135,9 @@ private:
     {
         for (int i = 0; i < ownship_trajectory.cols(); ++i)
         {
-            if (ownship_trajectory(CHI, i) - initial_ownship_state.value()(CHI) < max_acceptable_SO_course_change)
+            if (ownship_trajectory(COG, i) - initial_ownship_state.value()(COG) < max_acceptable_SO_course_change)
                 return CourseChange::Portwards;
-            if (ownship_trajectory(CHI, i) - initial_ownship_state.value()(CHI) > max_acceptable_SO_course_change)
+            if (ownship_trajectory(COG, i) - initial_ownship_state.value()(COG) > max_acceptable_SO_course_change)
                 return CourseChange::Starboardwards;
         }
         return CourseChange::None;
@@ -153,9 +153,9 @@ private:
     {
         for (int i = 0; i < ownship_trajectory.cols(); ++i)
         {
-            if (ownship_trajectory(CHI, i) - initial_ownship_state.value()(U) > max_acceptable_SO_speed_change)
+            if (ownship_trajectory(COG, i) - initial_ownship_state.value()(SOG) > max_acceptable_SO_speed_change)
                 return SpeedChange::Higher;
-            if (ownship_trajectory(CHI, i) - initial_ownship_state.value()(U) < max_acceptable_SO_speed_change)
+            if (ownship_trajectory(COG, i) - initial_ownship_state.value()(SOG) < max_acceptable_SO_speed_change)
                 return SpeedChange::Lower;
         }
         return SpeedChange::None;

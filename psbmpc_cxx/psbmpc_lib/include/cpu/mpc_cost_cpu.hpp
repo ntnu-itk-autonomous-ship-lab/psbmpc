@@ -33,6 +33,7 @@
 
 namespace PSBMPC_LIB
 {
+	// Transitional variables are used  by the SBMPC to implement the transitional cost in Hagen, 2018.
 	struct Transitional_Variables
 	{
 		// Transitional indicator variables at the current time in addition to <obstacle ahead> (AH_0)

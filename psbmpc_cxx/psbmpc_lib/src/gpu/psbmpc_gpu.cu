@@ -131,8 +131,8 @@ void PSBMPC::calculate_optimal_offsets(
 	const Eigen::VectorXd &ownship_state, 									// In: Current ship state
 	const double V_w,														// In: Estimated wind speed
 	const Eigen::Vector2d &wind_direction,									// In: Unit vector in NE describing the estimated wind direction
-	const std::vector<polygon_2D> &polygons,								// In: Static obstacle information
-	const Obstacle_Data<Tracked_Obstacle> &data,							// In/Out: Dynamic obstacle information
+	const Static_Obstacles &polygons,										// In: Static obstacle information
+	const Dynamic_Obstacles &obstacles,										// In: Dynamic obstacle information
 	const bool disable 														// In: Disable the COLAV functionality or not
 	)
 {	
@@ -143,9 +143,9 @@ void PSBMPC::calculate_optimal_offsets(
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
-	int n_do = data.obstacles.size();
+	int n_do = obstacles.size();
 	int n_so = polygons.size();
-
+	int n_ps(0);
 	// Predict nominal trajectory first, assign as optimal if no need for
 	// COLAV, or use in the prediction initialization
 	for (int M = 0; M < pars.n_M; M++)
@@ -155,7 +155,7 @@ void PSBMPC::calculate_optimal_offsets(
 	maneuver_times.setZero();
 	ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 
-	bool colav_active = determine_colav_active(data, n_so, disable);
+	bool colav_active = determine_colav_active(obstacles, n_so, disable);
 	if (!colav_active)
 	{
 		u_opt = 1.0; 		u_opt_last = u_opt;
@@ -166,7 +166,7 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 	
-	setup_prediction(data);
+	setup_prediction(obstacles);
 
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
@@ -196,9 +196,10 @@ void PSBMPC::calculate_optimal_offsets(
 		int n_ps_max(0);
 		for (int i = 0; i < n_do; i++)
 		{
-			if (n_ps_max < n_ps[i])
+			n_ps = obstacles[i].get_trajectories().size();
+			if (n_ps_max < n_ps)
 			{
-				n_ps_max = n_ps[i];
+				n_ps_max = n_ps;
 			}
 		}
 
@@ -277,17 +278,17 @@ void PSBMPC::calculate_optimal_offsets(
 
 		for(int i = 0; i < n_do; i++)
 		{
-			P_c_i_mx[i] = mxCreateDoubleMatrix(n_ps[i], n_samples, mxREAL);
+			P_c_i_mx[i] = mxCreateDoubleMatrix(n_ps, n_samples, mxREAL);
 
-			Eigen::MatrixXd P_i_p = data.obstacles[i].get_trajectory_covariance();
-			std::vector<Eigen::MatrixXd> xs_i_p = data.obstacles[i].get_trajectories();
+			Eigen::MatrixXd P_i_p = obstacles[i].get_trajectory_covariance();
+			std::vector<Eigen::MatrixXd> xs_i_p = obstacles[i].get_trajectories();
 
 			i_mx = mxCreateDoubleScalar(i + 1);
 			engPutVariable(ep, "i", i_mx);
 
 			map_P_traj_i = P_i_p;
 			engPutVariable(ep, "P_i_flat", P_traj_i);
-			for (int ps = 0; ps < n_ps[i]; ps++)
+			for (int ps = 0; ps < n_ps; ps++)
 			{
 				ps_mx = mxCreateDoubleScalar(ps + 1);
 				engPutVariable(ep, "ps", ps_mx);
@@ -301,7 +302,7 @@ void PSBMPC::calculate_optimal_offsets(
 	#endif
 	//===============================================================================================================
 
-	set_up_temporary_device_memory(u_d, chi_d, waypoints, V_w, wind_direction, polygons, data);
+	set_up_temporary_device_memory(u_d, chi_d, waypoints, V_w, wind_direction, polygons, obstacles);
 	//===============================================================================================================
 	// Ownship trajectory prediction for all control behaviours 
 	//===============================================================================================================
@@ -327,7 +328,7 @@ void PSBMPC::calculate_optimal_offsets(
 	//===============================================================================================================
 	// Prepare thrust device vectors for the second cost functor call
 	//===============================================================================================================
-	map_thrust_dvecs(polygons);
+	map_thrust_dvecs(obstacles, polygons);
 
 	//===============================================================================================================
 	// Cost evaluation for all control behaviours wrt one static obstacle OR a dynamic obstacle behaving as in 
@@ -368,7 +369,7 @@ void PSBMPC::calculate_optimal_offsets(
 	// Stitch together the GPU calculated costs to form the cost function for each control behaviour
 	// and find the optimal solution
 	//===============================================================================================================
-	find_optimal_control_behaviour(data, polygons);
+	find_optimal_control_behaviour(obstacles, polygons);
 
 	ownship.predict_trajectory(trajectory, opt_offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
 	assign_optimal_trajectory(predicted_trajectory);
@@ -491,9 +492,9 @@ void PSBMPC::preallocate_device_data()
 *  Modified :
 *****************************************************************************************/
 bool PSBMPC::determine_colav_active(
-	const Obstacle_Data<Tracked_Obstacle> &data,							// In: Dynamic obstacle information
-	const int n_so, 												// In: Number of static obstacles
-	const bool disable 														// In: Disable the COLAV functionality or not
+	const Dynamic_Obstacles &obstacles,									// In: Dynamic obstacle information
+	const int n_so, 													// In: Number of static obstacles
+	const bool disable 													// In: Disable the COLAV functionality or not
 	)
 {
 	if (disable)
@@ -503,16 +504,16 @@ bool PSBMPC::determine_colav_active(
 	Eigen::VectorXd xs = trajectory.col(0);
 	bool colav_active = false;
 	Eigen::Vector2d d_0i;
-	for (size_t i = 0; i < data.obstacles.size(); i++)
+	for (size_t i = 0; i < obstacles.size(); i++)
 	{
-		d_0i(0) = data.obstacles[i].kf.get_state()(0) - xs(0);
-		d_0i(1) = data.obstacles[i].kf.get_state()(1) - xs(1);
+		d_0i(0) = obstacles[i].kf.get_state()(0) - xs(0);
+		d_0i(1) = obstacles[i].kf.get_state()(1) - xs(1);
 		if (d_0i.norm() < pars.d_init) colav_active = true;
 
 		// If all obstacles are passed, even though inside colav range,
 		// then no need for colav
-		if (data.IP_0[i]) 	{ colav_active = false; }
-		else 				{ colav_active = true; }
+		if (CPU::ship_is_passed_by(xs, obstacles[i].kf.get_state(), pars.d_safe)) 	{ colav_active = false; }
+		else 																		{ colav_active = true; }
 	}
 	colav_active = colav_active || n_so > 0;
 
@@ -528,7 +529,8 @@ bool PSBMPC::determine_colav_active(
 *****************************************************************************************/
 void PSBMPC::map_offset_sequences()
 {
-	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
+	Eigen::VectorXd offset_sequence(2 * pars.n_M);
+	Eigen::VectorXi offset_sequence_counter(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> tml_offset_sequence(2 * pars.n_M, 1);
@@ -553,7 +555,7 @@ void PSBMPC::map_offset_sequences()
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::reset_control_behaviour(
-	Eigen::VectorXd &offset_sequence_counter, 									// In/out: Counter to keep track of current offset sequence
+	Eigen::VectorXi &offset_sequence_counter, 									// In/out: Counter to keep track of current offset sequence
 	Eigen::VectorXd &offset_sequence 											// In/out: Control behaviour to increment
 )
 {
@@ -573,10 +575,11 @@ void PSBMPC::reset_control_behaviour(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::increment_control_behaviour(
-	Eigen::VectorXd &offset_sequence_counter, 									// In/out: Counter to keep track of current offset sequence
+	Eigen::VectorXi &offset_sequence_counter, 									// In/out: Counter to keep track of current offset sequence
 	Eigen::VectorXd &offset_sequence 											// In/out: Control behaviour to increment
 	)
 {
+	double value(0.0);
 	for (int M = pars.n_M - 1; M > -1; M--)
 	{
 		// Only increment counter for "leaf node offsets" on each iteration, which are the
@@ -593,7 +596,8 @@ void PSBMPC::increment_control_behaviour(
 			offset_sequence_counter(2 * M + 1) = 0;
 			offset_sequence_counter(2 * M) += 1;
 		}
-		offset_sequence(2 * M + 1) = pars.chi_offsets[M](offset_sequence_counter(2 * M + 1));
+
+		offset_sequence(2 * M + 1) = pars.chi_offsets[M](offset_sequence_counter.coeff(2 * M + 1));
 
 		// If one reaches the end of maneuver M's surge offsets, reset corresponding
 		// counter and increment course offset counter above (if any)
@@ -605,7 +609,7 @@ void PSBMPC::increment_control_behaviour(
 				offset_sequence_counter(2 * M - 1) += 1;
 			}
 		}
-		offset_sequence(2 * M) = pars.u_offsets[M](offset_sequence_counter(2 * M));
+		offset_sequence(2 * M) = pars.u_offsets[M](offset_sequence_counter.coeff(2 * M));
 	}
 }
 
@@ -620,16 +624,18 @@ void PSBMPC::increment_control_behaviour(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::map_thrust_dvecs(
-	const std::vector<polygon_2D> &polygons 								// In: Static obstacle information
+	const Dynamic_Obstacles &obstacles,										// In: Dynamic obstacle information
+	const Static_Obstacles &polygons 										// In: Static obstacle information
 	)
 {
 	// Figure out how many threads to schedule
-	int n_do = n_ps.size();
-	int n_do_ps_total(0);
+	int n_do = obstacles.size();
+	int n_do_ps_total(0), n_ps(0);
 	int n_so = polygons.size();
 	for (int i = 0; i < n_do; i++)
 	{
-		n_do_ps_total += n_ps[i];
+		n_ps = obstacles[i].get_trajectories().size();
+		n_do_ps_total += n_ps;
 	}
 	// Total number of GPU threads to schedule
 	int n_threads = pars.n_cbs * (n_so + n_do_ps_total);
@@ -647,7 +653,8 @@ void PSBMPC::map_thrust_dvecs(
 
 	int thread_index(0), cpe_index(0);
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_tml(2 * pars.n_M);
-	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
+	Eigen::VectorXd offset_sequence(2 * pars.n_M);
+	Eigen::VectorXi offset_sequence_counter(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
@@ -679,7 +686,7 @@ void PSBMPC::map_thrust_dvecs(
 
 		for (int i = 0; i < n_do; i++)
 		{	
-			for (int ps = 0; ps < n_ps[i]; ps++)
+			for (int ps = 0; ps < n_ps; ps++)
 			{
 				cb_dvec[thread_index] = offset_sequence_tml;
 				cb_index_dvec[thread_index] = cb;
@@ -718,17 +725,18 @@ void PSBMPC::map_thrust_dvecs(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::find_optimal_control_behaviour(
-	const Obstacle_Data<Tracked_Obstacle> &data,							// In/Out: Dynamic obstacle information
-	const std::vector<polygon_2D> &polygons 								// In: Static obstacle information
+	const Dynamic_Obstacles &obstacles,										// In: Dynamic obstacle information
+	const Static_Obstacles &polygons 										// In: Static obstacle information
 )
 {
-	int n_do = data.obstacles.size();
+	int n_do = obstacles.size();
 	int n_so = polygons.size();
-	int thread_index(0);
-	Eigen::VectorXd offset_sequence_counter(2 * pars.n_M), offset_sequence(2 * pars.n_M);
+	int thread_index(0), n_ps(0);
+	Eigen::VectorXd offset_sequence(2 * pars.n_M);
+	Eigen::VectorXi offset_sequence_counter(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	Eigen::VectorXd max_cost_i_ps, max_cost_j(n_so), mu_i_ps, mu_i(n_do), cost_do(n_do);
+	Eigen::VectorXd max_cost_i_ps, max_cost_j(n_so), cost_do(n_do);
 
 	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
 	min_cost = 1e12;
@@ -747,18 +755,19 @@ void PSBMPC::find_optimal_control_behaviour(
 		int n_ps_max(0);
 		for (int i = 0; i < n_do; i++)
 		{
-			n_ps_matrix(0, i) = n_ps[i];
-			if (n_ps_max < n_ps[i])
+			n_ps = obstacles[i].get_trajectories().size();
+			n_ps_matrix(0, i) = n_ps;
+			if (n_ps_max < n_ps)
 			{
-				n_ps_max = n_ps[i];
+				n_ps_max = n_ps;
 			}
 		}
 		Eigen::MatrixXd Pr_s_i_matrix(n_do, n_ps_max);
 		for (int i = 0; i < n_do; i++)
 		{
-			for (int ps = 0; ps < n_ps[i]; ps++)
+			for (int ps = 0; ps < n_ps; ps++)
 			{
-				Pr_s_i_matrix(i, ps) = data.obstacles[i].get_scenario_probabilities()(ps);
+				Pr_s_i_matrix(i, ps) = obstacles[i].get_scenario_probabilities()(ps);
 			}
 		}
 		int curr_ps_index(0), min_index(0);
@@ -768,7 +777,6 @@ void PSBMPC::find_optimal_control_behaviour(
 		mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
 		mxArray *max_cost_i_ps_mx = mxCreateDoubleMatrix(n_do * n_ps_max, pars.n_cbs, mxREAL);
 		mxArray *max_cost_j_mx = mxCreateDoubleMatrix(n_so, pars.n_cbs, mxREAL);
-		mxArray *mu_i_ps_mx = mxCreateDoubleMatrix(n_do * n_ps_max, pars.n_cbs, mxREAL);
 		mxArray *cost_so_path_mx = mxCreateDoubleMatrix(2, pars.n_cbs, mxREAL);
 		mxArray *n_ps_mx = mxCreateDoubleMatrix(1, n_do, mxREAL);
 		mxArray *cb_matrix_mx = mxCreateDoubleMatrix(2 * pars.n_M, pars.n_cbs, mxREAL);
@@ -779,7 +787,6 @@ void PSBMPC::find_optimal_control_behaviour(
 		double *ptr_cost_colregs = mxGetPr(cost_colregs_mx); 
 		double *ptr_max_cost_i_ps = mxGetPr(max_cost_i_ps_mx); 
 		double *ptr_max_cost_j = mxGetPr(max_cost_j_mx); 
-		double *ptr_mu_i_ps = mxGetPr(mu_i_ps_mx); 
 		double *ptr_cost_so_path = mxGetPr(cost_so_path_mx); 
 		double *ptr_n_ps = mxGetPr(n_ps_mx); 
 		double *ptr_cb_matrix = mxGetPr(cb_matrix_mx); 
@@ -790,7 +797,6 @@ void PSBMPC::find_optimal_control_behaviour(
 		Eigen::Map<Eigen::MatrixXd> map_cost_colregs(ptr_cost_colregs, 1, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_max_cost_i_ps(ptr_max_cost_i_ps, n_do * n_ps_max, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_max_cost_j(ptr_max_cost_j, n_so, pars.n_cbs);
-		Eigen::Map<Eigen::MatrixXd> map_mu_i_ps(ptr_mu_i_ps, n_do * n_ps_max, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_cost_so_path(ptr_cost_so_path, 2, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps, 1, n_do);
 		Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
@@ -809,14 +815,12 @@ void PSBMPC::find_optimal_control_behaviour(
 			max_cost_j.setZero();
 			max_cost_j_matrix.setZero();
 		}
-		Eigen::MatrixXd mu_i_ps_matrix(n_do * n_ps_max, pars.n_cbs); mu_i_ps_matrix.setZero();
 		Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
 		Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
 		Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs);
 	#endif
 	//=============================================================================================================
 
-	std::tuple<double, double> tup;
 	thrust::tuple<float, float, float> dev_tup;
 	for (int cb = 0; cb < pars.n_cbs; cb++)
 	{
@@ -842,7 +846,7 @@ void PSBMPC::find_optimal_control_behaviour(
 			dev_tup = cb_costs_2_dvec[thread_index];
 			max_cost_j(j) = (double)thrust::get<0>(dev_tup);
 			thread_index += 1;
-			/* printf("Thread %d | j = %d | i = -1 | ps = -1 | max cost j : %.4f | max cost i ps : DC | mu_i_ps : DC | cb_index : %d | cb : %.1f, %.1f \n", 
+			/* printf("Thread %d | j = %d | i = -1 | ps = -1 | max cost j : %.4f | max cost i ps : DC | cb_index : %d | cb : %.1f, %.1f \n", 
 					thread_index, j, max_cost_j(j), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 		}
 		if (n_so > 0)
@@ -852,28 +856,25 @@ void PSBMPC::find_optimal_control_behaviour(
 		
 		for (int i = 0; i < n_do; i++)
 		{
-			max_cost_i_ps.resize(n_ps[i]); mu_i_ps.resize(n_ps[i]);
-			for (int ps = 0; ps < n_ps[i]; ps++)
+			n_ps = obstacles[i].get_trajectories().size();
+			max_cost_i_ps.resize(n_ps);
+			for (int ps = 0; ps < n_ps; ps++)
 			{
 				dev_tup = cb_costs_2_dvec[thread_index];
 				max_cost_i_ps(ps) = (double)thrust::get<1>(dev_tup);
-				mu_i_ps(ps) = (double)thrust::get<2>(dev_tup);
 				thread_index += 1;
-				/* printf("Thread %d | j = -1 | i = %d | ps = %d | max cost j : DC | max cost i ps : %.4f | mu_i_ps : %.1f | cb_index : %d | cb : %.1f, %.1f \n", 
-					thread_index, i, ps, max_cost_i_ps(ps), mu_i_ps(ps), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
+				/* printf("Thread %d | j = -1 | i = %d | ps = %d | max cost j : DC | max cost i ps : %.4f | cb_index : %d | cb : %.1f, %.1f \n", 
+					thread_index, i, ps, max_cost_i_ps(ps), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 			}
 
-			tup = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, mu_i_ps, data, i);
-			cost_do(i) = std::get<0>(tup);
-			mu_i(i) = std::get<1>(tup);
+			cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, obstacles, i);
 
 			//==================================================================
 			// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 			//==================================================================
 			#if ENABLE_PSBMPC_DEBUGGING
-				max_cost_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = max_cost_i_ps;
-				mu_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = mu_i_ps;
-				curr_ps_index += n_ps[i];
+				max_cost_i_ps_matrix.block(curr_ps_index, cb, n_ps, 1) = max_cost_i_ps;
+				curr_ps_index += n_ps;
 			#endif
 			//==================================================================
 		}
@@ -881,7 +882,7 @@ void PSBMPC::find_optimal_control_behaviour(
 		{
 			h_do = cost_do.sum();
 
-			h_colregs = pars.kappa * std::min(1.0, mu_i.sum());
+			h_colregs = 0.0;
 		}		
 		
 		h_path = cb_costs_1_dvec[cb];
@@ -933,7 +934,6 @@ void PSBMPC::find_optimal_control_behaviour(
 		{
 			map_cost_do = cost_do_matrix;
 			map_max_cost_i_ps = max_cost_i_ps_matrix;
-			map_mu_i_ps = mu_i_ps_matrix;
 			map_Pr_s_i = Pr_s_i_matrix;
 		}
 		map_cost_colregs = cost_colregs_matrix;
@@ -946,7 +946,6 @@ void PSBMPC::find_optimal_control_behaviour(
 		engPutVariable(ep, "max_cost_j", max_cost_j_mx);
 		engPutVariable(ep, "cost_do", cost_do_mx);
 		engPutVariable(ep, "max_cost_i_ps", max_cost_i_ps_mx);
-		engPutVariable(ep, "mu_i_ps", mu_i_ps_mx);
 		engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
 		engPutVariable(ep, "total_cost", total_cost_mx);
 		engPutVariable(ep, "cost_colregs", cost_colregs_mx);
@@ -964,7 +963,6 @@ void PSBMPC::find_optimal_control_behaviour(
 		mxDestroyArray(cost_colregs_mx);
 		mxDestroyArray(max_cost_i_ps_mx);
 		mxDestroyArray(max_cost_j_mx);
-		mxDestroyArray(mu_i_ps_mx);
 		mxDestroyArray(cost_so_path_mx);
 		mxDestroyArray(n_ps_mx);
 		mxDestroyArray(cb_matrix_mx);
@@ -986,15 +984,10 @@ void PSBMPC::find_optimal_control_behaviour(
 *  Modified :
 *****************************************************************************************/
 void PSBMPC::setup_prediction(
-	const Obstacle_Data<Tracked_Obstacle> &data							// In: Dynamic obstacle information
+	const Dynamic_Obstacles &obstacles							// In: Dynamic obstacle information
 	)
 {
-	int n_do = data.obstacles.size();
-	n_ps.resize(n_do);
-	for (int i = 0; i < n_do; i++)
-	{
-		n_ps[i] = data.obstacles[i].get_scenario_probabilities().size();
-	}
+	int n_do = obstacles.size();
 	//***********************************************************************************
 	// Own-ship prediction initialization
 	//***********************************************************************************
@@ -1031,10 +1024,10 @@ void PSBMPC::setup_prediction(
 		t_cpa_min = 1e10; index_closest = -1;
 		for (int i = 0; i < n_do; i++)
 		{
-			xs_i_0 = data.obstacles[i].kf.get_state();
+			xs_i_0 = obstacles[i].kf.get_state();
 			CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
 
-			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[i].get_length());
+			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
 			// For the current avoidance maneuver, determine which obstacle that should be
 			// considered, i.e. the closest obstacle that is not already passed (which means
 			// that the previous avoidance maneuver happened before CPA with this obstacle)
@@ -1047,7 +1040,7 @@ void PSBMPC::setup_prediction(
 
 		/* if (index_closest != -1)
 		{
-			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + data.obstacles[index_closest].get_width());
+			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[index_closest].get_width());
 			// If no predicted collision,  avoidance maneuver M with the closest
 			// obstacle (that is not passed) is taken at t_cpa_min
 			if (d_cpa(index_closest) > d_safe_i)
@@ -1104,11 +1097,11 @@ void PSBMPC::set_up_temporary_device_memory(
 	const Eigen::Matrix<double, 2, -1> &waypoints,					// In: Own-ship waypoints to follow
 	const double V_w,												// In: Estimated wind speed
 	const Eigen::Vector2d &wind_direction,							// In: Unit vector in NE describing the estimated wind direction
-	const std::vector<polygon_2D> &polygons,						// In: Static obstacle information represented as polygons
-	const Obstacle_Data<Tracked_Obstacle> &data 					// In: Dynamic obstacle information
+	const Static_Obstacles &polygons,								// In: Static obstacle information represented as polygons
+	const Dynamic_Obstacles &obstacles 								// In: Dynamic obstacle information
 	)
 {
-	int n_do = data.obstacles.size();
+	int n_do = obstacles.size();
 	int n_so = polygons.size();
 	
 	size_t limit = 0;
@@ -1133,8 +1126,7 @@ void PSBMPC::set_up_temporary_device_memory(
 		V_w, 
 		wind_direction,
 		polygons,
-		n_ps, 
-		data);
+		obstacles);
 	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Data failed.");
 	
@@ -1142,7 +1134,7 @@ void PSBMPC::set_up_temporary_device_memory(
 	Cuda_Obstacle temp_transfer_cobstacle;
 	for (int i = 0; i < n_do; i++)
 	{
-		temp_transfer_cobstacle = data.obstacles[i];
+		temp_transfer_cobstacle = obstacles[i];
 
 		cudaMemcpy(&obstacles_device_ptr[i], &temp_transfer_cobstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of Cuda Obstacle i failed.");
@@ -1167,8 +1159,6 @@ void PSBMPC::set_up_temporary_device_memory(
 *****************************************************************************************/
 void PSBMPC::assign_data(const PSBMPC &other)
 {
-	n_ps = other.n_ps;
-
 	opt_offset_sequence = other.opt_offset_sequence;
 	maneuver_times = other.maneuver_times;
 	

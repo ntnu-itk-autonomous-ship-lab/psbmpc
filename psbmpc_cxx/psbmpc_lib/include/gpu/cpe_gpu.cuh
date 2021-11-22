@@ -28,7 +28,7 @@
 #include "psbmpc_parameters.hpp"
 #include "psbmpc_defines.hpp"
 #include "xoshiro.hpp"
-#include "tml.cuh"
+#include "tml/tml.cuh"
 #include "curand_kernel.h"
 #include <thrust/device_vector.h>
 #include <random>

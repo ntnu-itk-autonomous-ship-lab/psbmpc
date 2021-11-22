@@ -193,7 +193,7 @@ int main(){
 	Eigen::Matrix<double, 16, -1> obstacle_covariances;
 	obstacle_covariances.resize(16, n_do);
 
-	std::vector<polygon_2D> relevant_polygons;
+	PSBMPC_LIB::Static_Obstacles relevant_polygons;
 
 //*****************************************************************************************************************
 // Static Obstacles Setup
@@ -206,7 +206,7 @@ int main(){
 	std::string relative_path = buffer1;
 
 	// Input the path to the land data
-    std::string filename = "/tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
+    std::string filename = "/../tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
     
 	double equatorial_radius(6378137.0), flattening_factor(0.003352810664747);
 	int utm_zone(33); 
@@ -221,12 +221,15 @@ int main(){
 		"local_NED",
 		psbmpc.pars);
 	Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin();
-	std::vector<polygon_2D> polygons = grounding_hazard_manager.get_polygons();
-	std::vector<polygon_2D> simplified_polygons = grounding_hazard_manager.get_simplified_polygons();
+	PSBMPC_LIB::Static_Obstacles polygons_lla = grounding_hazard_manager.get_polygons_lla();
+	PSBMPC_LIB::Static_Obstacles polygons = grounding_hazard_manager.get_polygons_ned();
+	PSBMPC_LIB::Static_Obstacles simplified_polygons = grounding_hazard_manager.get_simplified_polygons_ned();
 
 
     //Make matlab polygons type friendly array:
-    Eigen::Matrix<double, -1, 2> polygon_matrix, simplified_polygon_matrix;
+    Eigen::Matrix<double, -1, 2> polygon_matrix_lla, polygon_matrix, simplified_polygon_matrix;
+
+	// NED POLYGONS
     int n_total_vertices = 0;
     BOOST_FOREACH(polygon_2D const &poly, polygons)
 	{
@@ -252,6 +255,35 @@ int main(){
 		// each polygon is separated with (-1, -1)
 		polygon_matrix(pcount, 1) = -1;
 		polygon_matrix(pcount, 0) = -1;
+		pcount += 1;
+    }
+
+	// LLA POLYGONS
+	int n_total_vertices_lla = 0;
+    BOOST_FOREACH(polygon_2D const &poly, polygons_lla)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			n_total_vertices_lla += 1;
+		}
+		n_total_vertices_lla += 1;
+    }
+    polygon_matrix_lla.resize(n_total_vertices_lla, 2); 
+
+    /*format polygon_matrix array for matlab plotting*/
+    pcount = 0; 
+    BOOST_FOREACH(polygon_2D const& poly, polygons_lla)
+	{
+        for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
+		{
+			polygon_matrix_lla(pcount, 0) = boost::geometry::get<0>(*it); //latitude
+			polygon_matrix_lla(pcount, 1) = boost::geometry::get<1>(*it); //longitude
+			
+			pcount += 1;
+		}
+		// each polygon is separated with (-1, -1)
+		polygon_matrix_lla(pcount, 1) = -1;
+		polygon_matrix_lla(pcount, 0) = -1;
 		pcount += 1;
     }
 
@@ -286,22 +318,27 @@ int main(){
 
 	mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
     mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
+	mxArray *polygon_matrix_lla_mx = mxCreateDoubleMatrix(n_total_vertices_lla, 2, mxREAL);
 	mxArray *simplified_polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices_simplified, 2, mxREAL);
 
 	double *p_map_origin = mxGetPr(map_origin_mx);
     double *p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+	double *p_polygon_matrix_lla = mxGetPr(polygon_matrix_lla_mx);
 	double *p_simplified_polygon_matrix = mxGetPr(simplified_polygon_matrix_mx);
 
 	Eigen::Map<Eigen::Vector2d> map_map_origin(p_map_origin, 2, 1);
     Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, n_total_vertices, 2);
+	Eigen::Map<Eigen::MatrixXd> map_polygon_matrix_lla(p_polygon_matrix_lla, n_total_vertices_lla, 2);
 	Eigen::Map<Eigen::MatrixXd> map_simplified_polygon_matrix(p_simplified_polygon_matrix, n_total_vertices_simplified, 2);
 
-	map_map_origin = grounding_hazard_manager.get_map_origin();
+	map_map_origin = map_origin;
 	map_polygon_matrix = polygon_matrix;
+	map_polygon_matrix_lla = polygon_matrix_lla;
 	map_simplified_polygon_matrix = simplified_polygon_matrix;
 
 	engPutVariable(ep, "map_origin", map_origin_mx);
 	engPutVariable(ep, "P", polygon_matrix_mx);
+	engPutVariable(ep, "P_lla", polygon_matrix_lla_mx);
 	engPutVariable(ep, "P_simplified", simplified_polygon_matrix_mx);
 	
 //*****************************************************************************************************************
@@ -383,7 +420,7 @@ int main(){
 		engEvalString(ep, "init_obstacle_plot_grounding");
 	}
 	//=========================================================
-	engEvalString(ep, "save('/home/trymte/Desktop/polygons', 'P', 'P_simplified', 'map_origin')");
+	engEvalString(ep, "save('/home/trymte/Desktop/polygons', 'P', 'P_lla', 'P_simplified', 'map_origin')");
 	
 	Eigen::Vector4d xs_i_k;
 	Eigen::VectorXd xs_aug(9);

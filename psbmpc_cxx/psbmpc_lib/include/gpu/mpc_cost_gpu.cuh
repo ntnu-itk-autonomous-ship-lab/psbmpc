@@ -84,6 +84,11 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ MPC_Cost(const Parameters &pars) : pars(pars) {}
 
+			__device__ inline double calculate_colregs_cost(
+					const TML::PDVector4f xs_p,
+					const Cuda_Obstacle *obstacles,
+					const int i); // TODO
+
 			__device__ inline thrust::tuple<float, bool> calculate_dynamic_obstacle_cost(
 				const CB_Functor_Data *fdata,
 				const Cuda_Obstacle *obstacles,
@@ -267,7 +272,7 @@ namespace PSBMPC_LIB
 			{
 				cost_g = 0.0f;
 				p_os_k = trajectory.get_block<2, 1>(0, k, 2, 1);
-				for (int j = 0; j < fdata->n_static_obst; j++)
+				for (int j = 0; j < fdata->n_so; j++)
 				{
 					L_0j = distance_to_polygon(p_os_k, polygons[j]);
 					d_0j = L_0j.norm();

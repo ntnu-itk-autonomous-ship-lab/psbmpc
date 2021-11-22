@@ -3,13 +3,8 @@
 #pragma once
 
 #include <math.h>
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 #include "psbmpc_defines.hpp"
-
-#define PX 0
-#define PY 1
-#define CHI 2
-#define U 3
 
 inline void wrapPI(double *value)
 {
@@ -56,7 +51,7 @@ inline double surgeSwayToSpeed(double surge, double sway)
 	return std::sqrt(std::pow(surge, 2) + std::pow(sway, 2));
 }
 
-//Line [px, py, CHI, U] to ax+by=c
+//Line [px, py, COG, SOG] to ax+by=c
 inline auto toStandardForm(const Eigen::Vector4d &line)
 {
 	struct
@@ -66,8 +61,8 @@ inline auto toStandardForm(const Eigen::Vector4d &line)
 		double c;
 	} res;
 
-	double s = sin(line(CHI));
-	double c = cos(line(CHI));
+	double s = sin(line(COG));
+	double c = cos(line(COG));
 	double x0 = line(PX);
 	double y0 = line(PY);
 
@@ -89,7 +84,7 @@ inline auto toStandardForm(const Eigen::Vector4d &line)
 	return res;
 }
 
-//Parameterised [px,py,CHI,U], U is unused
+//Parameterised [px,py,COG,U], U is unused
 inline auto intersectionpoint(const Eigen::Vector4d &line1, const Eigen::Vector4d &line2)
 {
 	struct
@@ -112,12 +107,12 @@ inline auto relativeBearing(const Eigen::Vector4d &obstacle_state, const double 
 	const auto dx = x - obstacle_state(PX);
 	const auto dy = y - obstacle_state(PY);
 	const auto bearing = std::atan2(dy, dx);
-	return wrapPI(bearing - obstacle_state(CHI));
+	return wrapPI(bearing - obstacle_state(COG));
 }
 
 inline double evaluate_arrival_time(const Eigen::Vector4d &line, const double x, const double y)
 {
-	if (line(U) < 1e-6)
+	if (line(SOG) < 1e-6)
 	{
 		if (std::abs(relativeBearing(line, x, y)) < 90 * DEG2RAD)
 		{
@@ -135,15 +130,15 @@ inline double evaluate_arrival_time(const Eigen::Vector4d &line, const double x,
 
 	if (dx > dy)
 	{
-		return dx / (line(U) * cos(line(CHI)));
+		return dx / (line(SOG) * cos(line(COG)));
 	}
 	else
 	{
-		return dy / (line(U) * sin(line(CHI)));
+		return dy / (line(SOG) * sin(line(COG)));
 	}
 }
 
-//Line parameterised as [px,py,CHI,U], point as [px,py]
+//Line parameterised as [px,py,COG,U], point as [px,py]
 inline auto closest_point_on_line(const Eigen::Vector4d &line, const Eigen::Vector2d &point)
 {
 	struct
@@ -224,8 +219,8 @@ inline CPA evaluateCPA(const Eigen::Vector4d &ship1, const Eigen::Vector4d &ship
 	CPA result;
 	const double dPx = ship2(PX) - ship1(PX);											  //Difference in pos x
 	const double dPy = ship2(PY) - ship1(PY);											  //Difference in pos y
-	const double dVx = ship2(U) * std::cos(ship2(CHI)) - ship1(U) * std::cos(ship1(CHI)); //Difference in velocity x
-	const double dVy = ship2(U) * std::sin(ship2(CHI)) - ship1(U) * std::sin(ship1(CHI)); //Difference in velocity x
+	const double dVx = ship2(SOG) * std::cos(ship2(COG)) - ship1(SOG) * std::cos(ship1(COG)); //Difference in velocity x
+	const double dVy = ship2(SOG) * std::sin(ship2(COG)) - ship1(SOG) * std::sin(ship1(COG)); //Difference in velocity x
 
 	const double A = std::pow(dVx, 2) + std::pow(dVy, 2);
 	const double B = dPx * dVx + dPy * dVy;
@@ -249,7 +244,7 @@ inline CPA evaluateCPA(const Eigen::Vector4d &ship1, const Eigen::Vector4d &ship
 	result.distance_at_CPA = evaluateDistance(dx_at_CPA, dy_at_CPA);
 
 	const double bearing = std::atan2(dy_at_CPA, dx_at_CPA);
-	result.bearing_relative_to_heading = bearing - ship1(CHI);
+	result.bearing_relative_to_heading = bearing - ship1(COG);
 	wrapPI(&result.bearing_relative_to_heading);
 
 	//Identify which passes in front
@@ -274,8 +269,8 @@ inline CPA evaluateCPA(const Eigen::MatrixXd &trajecotry, const Eigen::Vector4d 
 
 	const Eigen::Vector2d obstacle_initial_position = obstacle_state.block<2, 1>(0, 0);
 	Eigen::Vector2d obstacle_velocity;
-	obstacle_velocity(0) = std::cos(obstacle_state(CHI)) * obstacle_state(U);
-	obstacle_velocity(1) = std::sin(obstacle_state(CHI)) * obstacle_state(U);
+	obstacle_velocity(0) = std::cos(obstacle_state(COG)) * obstacle_state(SOG);
+	obstacle_velocity(1) = std::sin(obstacle_state(COG)) * obstacle_state(SOG);
 
 	bool found_closest_point = false;
 	size_t number_of_timesteps = trajecotry.cols();
@@ -292,7 +287,7 @@ inline CPA evaluateCPA(const Eigen::MatrixXd &trajecotry, const Eigen::Vector4d 
 			result.time_untill_CPA = current_time;
 
 			const double angle_to_other_ship = std::atan2(vector_to_obst(1), vector_to_obst(0));
-			result.bearing_relative_to_heading = angle_to_other_ship - trajecotry(CHI, i);
+			result.bearing_relative_to_heading = angle_to_other_ship - trajecotry(COG, i);
 			wrapPI(&result.bearing_relative_to_heading);
 		}
 		else
@@ -364,8 +359,8 @@ inline double crossingInFrontDistance(const Eigen::Vector4d &ship1, const Eigen:
 		return INFINITY;
 
 	//Find where ship 2 is when ship1 crosses
-	const auto Px2 = ship2[PX] + ship2[U] * cos(ship2[CHI]) * t1;
-	const auto Py2 = ship2[PY] + ship2[U] * sin(ship2[CHI]) * t1;
+	const auto Px2 = ship2[PX] + ship2[SOG] * cos(ship2[COG]) * t1;
+	const auto Py2 = ship2[PY] + ship2[SOG] * sin(ship2[COG]) * t1;
 	//Find distance
 	return evaluateDistance(Px2 - intersection_point.x, Py2 - intersection_point.y);
 }
@@ -379,8 +374,8 @@ inline double crossingInFrontDistanceTrajectory(const Eigen::MatrixXd &trajecotr
 		return INFINITY;
 
 	//Find where ship 2 is when ship1 is at intersection point
-	const auto Px2 = ship2[PX] + ship2[U] * cos(ship2[CHI]) * closest_point.ownship_arrival_time;
-	const auto Py2 = ship2[PY] + ship2[U] * sin(ship2[CHI]) * closest_point.ownship_arrival_time;
+	const auto Px2 = ship2[PX] + ship2[SOG] * cos(ship2[COG]) * closest_point.ownship_arrival_time;
+	const auto Py2 = ship2[PY] + ship2[SOG] * sin(ship2[COG]) * closest_point.ownship_arrival_time;
 	//Find distance
 	return evaluateDistance(Px2 - closest_point.x, Py2 - closest_point.y);
 }

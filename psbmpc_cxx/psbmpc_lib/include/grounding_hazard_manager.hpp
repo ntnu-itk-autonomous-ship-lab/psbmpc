@@ -50,7 +50,7 @@ namespace PSBMPC_LIB
 		// ramer-douglas-peucker algorithm distance tolerance threshold
 		double d_so_relevant, epsilon;
 
-		Static_Obstacles polygons, simplified_polygons;
+		Static_Obstacles polygons_lla, polygons_ned, simplified_polygons_ned, simplified_polygons_lla;
 
 		// Name of the NED frame polygons are specified relative to
 		std::string frame_name;
@@ -132,9 +132,39 @@ namespace PSBMPC_LIB
 			for (int v = outer_part_start; v < outer_part_end; v++)
 			{
 				// want the points on format (northing, easting), and relative to the map origin
-				typename boost::geometry::point_type<polygon_2D>::type point;
+				point_2D point;
 				boost::geometry::assign_values(point, y[v] - map_origin(0), x[v] - map_origin(1)); 
 				boost::geometry::append(polygon, point);
+			}
+		}
+
+		/****************************************************************************************
+		*  Name     : create_lla_referenced_polygons
+		*  Function : Transforms polygons referenced to map origin in NED, to latitude longitude
+		*			  coordinates
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
+		void create_lla_referenced_polygons()
+		{
+			int n_polygons = polygons_ned.size();
+			point_2D point_lla;
+			Eigen::Vector2d p_ne, p_lla;
+			for (int j = 0; j < n_polygons; j++)
+			{
+				polygon_2D poly_lla;
+				for(auto it = boost::begin(boost::geometry::exterior_ring(polygons_ned[j])); it != boost::end(boost::geometry::exterior_ring(polygons_ned[j])); it++)
+				{
+					p_ne(0) = boost::geometry::get<0>(*it) + map_origin(0);
+					p_ne(1) = boost::geometry::get<1>(*it) + map_origin(1);
+
+					utm_p.reverse(p_lla(0), p_lla(1), p_ne(1), p_ne(0)); 
+
+					boost::geometry::assign_values(point_lla, p_lla(0), p_lla(1)); 
+					boost::geometry::append(poly_lla, point_lla);
+				}
+
+				polygons_lla.push_back(poly_lla);
 			}
 		}
 
@@ -144,16 +174,16 @@ namespace PSBMPC_LIB
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		void create_simplified_polygons()
+		Static_Obstacles create_simplified_polygons(const Static_Obstacles &polygons_in)
 		{
+			Static_Obstacles polygons_out;
 			std::vector<point_2D> vertices_in, vertices_out;
 
-			int n_polygons = polygons.size();
-			simplified_polygons.resize(n_polygons);
+			int n_polygons = polygons_in.size();
 			for (int j = 0; j < n_polygons; j++)
 			{
 				vertices_in.clear();
-				for(auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; it++)
+				for(auto it = boost::begin(boost::geometry::exterior_ring(polygons_in[j])); it != boost::end(boost::geometry::exterior_ring(polygons_in[j])) - 1; it++)
 				{
 					vertices_in.emplace_back(*it);
 				}
@@ -166,9 +196,10 @@ namespace PSBMPC_LIB
 					boost::geometry::append(poly, vertices_out[v]);
 				}
 				boost::geometry::append(poly, vertices_out[0]);
-				simplified_polygons[j] = poly;
+				polygons_out.push_back(poly);
 				//printf("Polygon: %d | Vertices before: %ld | Vertices after: %ld\n", j + 1, vertices_in.size(), vertices_out.size());
 			}
+			return polygons_out;
 		}
 
 		/****************************************************************************************
@@ -277,9 +308,10 @@ namespace PSBMPC_LIB
 			d_so_relevant(1000), epsilon(2.0), frame_name("local_NED"),
 			map_origin(7042250, 270250) // Trondheim, just north of ravnkloa, brattora crossing
 		{
-			read_shapefile(filename, polygons);
-
-			create_simplified_polygons();
+			read_shapefile(filename, polygons_ned);
+			create_lla_referenced_polygons();
+			simplified_polygons_ned = create_simplified_polygons(polygons_ned);
+			simplified_polygons_lla = create_simplified_polygons(polygons_lla);
 		}
 
 		template <class MPC_Parameters>
@@ -288,9 +320,10 @@ namespace PSBMPC_LIB
 			d_so_relevant(mpc_pars.d_so_relevant), epsilon(mpc_pars.epsilon_rdp), frame_name("local_NED"),
 			map_origin(map_origin)
 		{
-			read_shapefile(filename, polygons);
-
-			create_simplified_polygons();
+			read_shapefile(filename, polygons_ned);
+			create_lla_referenced_polygons();
+			simplified_polygons_ned = create_simplified_polygons(polygons_ned);
+			simplified_polygons_lla = create_simplified_polygons(polygons_lla);
 		}
 
 		template <class MPC_Parameters>
@@ -300,9 +333,40 @@ namespace PSBMPC_LIB
 			assert(map_origin.size() == 2);
 			this->map_origin(0) = map_origin[0]; this->map_origin(1) = map_origin[1];
 
-			read_shapefile(filename, polygons);
+			read_shapefile(filename, polygons_ned);
+			create_lla_referenced_polygons();
+			simplified_polygons_ned = create_simplified_polygons(polygons_ned);
+			simplified_polygons_lla = create_simplified_polygons(polygons_lla);
+		}
 
-			create_simplified_polygons();
+		template <class MPC_Parameters>
+		Grounding_Hazard_Manager(
+			const std::string &filename, 			// In: Filename of shapefile to process
+			const double equatorial_radius,			// In: Radius  of ellipsoid parametrization for lla <-> UTM conversions
+			const double flattening_factor,			// In: Flattening factor of ellipsoid parametrization for lla <-> UTM conversions
+			const int utm_zone,						// In: UTM Zone to consider (NOTE: Must match the one used when generating the shapefiles)
+			const bool northp,						// In: Boolean determining if it is the northern or southern hemisphere
+			const Eigen::Vector2d &lla_origin,  	// In: Origin of map (from shapefile) in latitude, longitude format
+			const std::string frame_name,  			// In: Name of resulting local NED frame
+			const MPC_Parameters &mpc_pars,			// In: Parameters of calling MPC (Either SB-MPC or PSB-MPC)
+			const bool read_file					// In: Read input file <filename> or not
+			) 
+			: 
+			d_so_relevant(mpc_pars.d_so_relevant), 
+			epsilon(mpc_pars.epsilon_rdp), 
+			frame_name(frame_name), 
+			utm_p(equatorial_radius, flattening_factor, utm_zone, northp)
+		{
+			assert(map_origin.size() == 2);
+			utm_p.forward(this->map_origin(1), this->map_origin(0), lla_origin(0), lla_origin(1));
+
+			if (read_file)
+			{
+				read_shapefile(filename, polygons_ned);
+				create_lla_referenced_polygons();
+				simplified_polygons_ned = create_simplified_polygons(polygons_ned);
+				simplified_polygons_lla = create_simplified_polygons(polygons_lla);
+			}
 		}
 
 		template <class MPC_Parameters>
@@ -325,28 +389,43 @@ namespace PSBMPC_LIB
 			assert(map_origin.size() == 2);
 			utm_p.forward(this->map_origin(1), this->map_origin(0), lla_origin(0), lla_origin(1));
 
-			read_shapefile(filename, polygons);
+			read_shapefile(filename, polygons_ned);
 
-			create_simplified_polygons();
+			create_lla_referenced_polygons();
+			simplified_polygons_ned = create_simplified_polygons(polygons_ned);
+			simplified_polygons_lla = create_simplified_polygons(polygons_lla);
 		}
+
+		void clear_all_polygons() { polygons_lla.clear(); polygons_ned.clear(); simplified_polygons_ned.clear(); simplified_polygons_lla.clear(); }
 
 		std::string get_frame_name() const { return frame_name; }
 		Eigen::Vector2d get_map_origin() const { return map_origin; }
-
-		Static_Obstacles get_polygons() const { return polygons; }
-		Static_Obstacles get_simplified_polygons() const { return simplified_polygons; }
+		Static_Obstacles get_polygons_ned() const { return polygons_ned; }
+		Static_Obstacles get_polygons_lla() const { return polygons_lla; }
+		Static_Obstacles get_simplified_polygons_ned() const { return simplified_polygons_ned; }
+		Static_Obstacles get_simplified_polygons_lla() const { return simplified_polygons_lla; }
 
 		/****************************************************************************************
 		*  Name     : read_other_polygons
 		*  Function : Reads other polygons from a file consisting of a matrix (2 x N) of polygon 
-		*			  vertices, separated by columns of -1 (tested for .csv type)
+		*			  vertices, separated by columns of -1 (tested for .csv type).
+		*		      Either in (easting, northing) or (longitude, latitude format).
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
-		void read_other_polygons(const std::string &filename)
+		void read_other_polygons(
+			const std::string &filename, 							// In: Name of .csv file to process
+			const bool is_ned_frame, 								// In: Boolean determining type of coordinates in file
+			const bool clear_old_polygons 							// In: Boolean determining if the old polygons should be cleared or not
+			)
 		{
 			try
 			{
+				if (clear_old_polygons)
+				{
+					clear_all_polygons();
+				}
+				
 				Eigen::MatrixXd M = PSBMPC_LIB::CPU::read_matrix_from_file<Eigen::MatrixXd>(filename);
 				assert(M.rows() == 2);
 				int n_cols = M.cols();
@@ -360,14 +439,30 @@ namespace PSBMPC_LIB
 					{
 						// Add first vertex again to make the circle complete
 						boost::geometry::append(polygon_copy, v_first);
-						polygons.push_back(polygon_copy);
+						if (is_ned_frame)
+						{
+							polygons_ned.push_back(polygon_copy);
+						}
+						else
+						{
+							polygons_lla.push_back(polygon_copy);
+						}
+						
 						polygon_copy = polygon;
 						vcount = 0;
 					}
 					else
 					{
-						// want the points on format (northing, easting), and relative to the map origin
-						boost::geometry::assign_values(v, M(1, i) - map_origin(0), M(0, i) - map_origin(1)); 
+						if (is_ned_frame)
+						{
+							// want the points on format (northing, easting), and relative to the map origin
+							boost::geometry::assign_values(v, M(1, i) - map_origin(0), M(0, i) - map_origin(1)); 
+						}
+						else
+						{
+							boost::geometry::assign_values(v, M(1, i), M(0, i)); 
+						}
+						
 						boost::geometry::append(polygon_copy, v);
 						if (vcount == 0)
 						{
@@ -377,7 +472,15 @@ namespace PSBMPC_LIB
 					}
 				}
 				// Re-run RDP algorithm on the new set of polygons
-				create_simplified_polygons();
+				if (is_ned_frame)
+				{
+					simplified_polygons_ned = create_simplified_polygons(polygons_ned);
+				}
+				else
+				{
+					simplified_polygons_lla = create_simplified_polygons(polygons_lla);
+				}
+				
 			}
 			catch(const std::string &s)
 			{
@@ -405,7 +508,7 @@ namespace PSBMPC_LIB
 
 			double d_0j = 0.0; // distance to static obstacle
 			point_2D p_os(ownship_state(0), ownship_state(1));
-			BOOST_FOREACH(polygon_2D const& poly, simplified_polygons)
+			BOOST_FOREACH(polygon_2D const& poly, simplified_polygons_ned)
 			{
 				d_0j = boost::geometry::distance(p_os, poly);
 				if (d_0j < d_so_relevant)
@@ -426,7 +529,7 @@ namespace PSBMPC_LIB
 
 			double d_0j = 0.0; // distance to static obstacle
 			point_2D p_os(ownship_state(0), ownship_state(1));
-			BOOST_FOREACH(polygon_2D const& poly, simplified_polygons)
+			BOOST_FOREACH(polygon_2D const& poly, simplified_polygons_ned)
 			{
 				d_0j = boost::geometry::distance(p_os, poly);
 				if (d_0j < d_so_relevant)

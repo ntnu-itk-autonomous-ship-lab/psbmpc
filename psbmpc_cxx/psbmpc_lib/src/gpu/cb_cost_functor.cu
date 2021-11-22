@@ -22,9 +22,8 @@
 #include "gpu/cb_cost_functor.cuh"
 #include "gpu/cuda_obstacle.cuh"
 #include "gpu/cpe_gpu.cuh"
-#include "gpu/obstacle_sbmpc_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
-#include "gpu/prediction_obstacle_gpu.cuh"
+#include "gpu/mpc_cost_gpu.cuh"
 
 #include <cmath>
 #include <iostream>

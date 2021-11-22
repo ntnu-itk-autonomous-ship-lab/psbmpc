@@ -23,14 +23,14 @@
 #include "cb_cost_functor_structures.cuh"
 #include "tml/tml.cuh"
 
+#include <thrust/device_vector.h>
+
 namespace PSBMPC_LIB
 {
 	namespace GPU
 	{
 		class Cuda_Obstacle;
-		class Prediction_Obstacle;
 		class CPE;
-		class Obstacle_SBMPC;
 		template <typename Parameters> class MPC_Cost;
 
 		/****************************************************************************************
@@ -176,7 +176,8 @@ namespace PSBMPC_LIB
 				Ownship *ownship,
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,
 				MPC_Cost<CB_Functor_Pars> *mpc_cost):
-				pars(pars), fdata(fdata), polygons(polygons), obstacles(obstacles), cpe(cpe), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost) 
+				pars(pars), fdata(fdata), polygons(polygons), obstacles(obstacles), cpe(cpe), 
+				ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost) 
 				{}
 
 			__host__ __device__ ~CB_Cost_Functor_2() 
