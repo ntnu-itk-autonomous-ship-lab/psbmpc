@@ -56,7 +56,7 @@ namespace PSBMPC_LIB
 		std::string frame_name;
 
 		// Northing, easting origin of NED frame polygons are specified relative to
-		Eigen::Vector2d map_origin;
+		Eigen::Vector2d map_origin_ned;
 
 		/****************************************************************************************
 		*  Name     : read_shapefile
@@ -133,7 +133,7 @@ namespace PSBMPC_LIB
 			{
 				// want the points on format (northing, easting), and relative to the map origin
 				point_2D point;
-				boost::geometry::assign_values(point, y[v] - map_origin(0), x[v] - map_origin(1)); 
+				boost::geometry::assign_values(point, y[v] - map_origin_ned(0), x[v] - map_origin_ned(1)); 
 				boost::geometry::append(polygon, point);
 			}
 		}
@@ -147,6 +147,7 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		void create_lla_referenced_polygons()
 		{
+			polygons_lla.clear();
 			int n_polygons = polygons_ned.size();
 			point_2D point_lla;
 			Eigen::Vector2d p_ne, p_lla;
@@ -155,8 +156,8 @@ namespace PSBMPC_LIB
 				polygon_2D poly_lla;
 				for(auto it = boost::begin(boost::geometry::exterior_ring(polygons_ned[j])); it != boost::end(boost::geometry::exterior_ring(polygons_ned[j])); it++)
 				{
-					p_ne(0) = boost::geometry::get<0>(*it) + map_origin(0);
-					p_ne(1) = boost::geometry::get<1>(*it) + map_origin(1);
+					p_ne(0) = boost::geometry::get<0>(*it) + map_origin_ned(0);
+					p_ne(1) = boost::geometry::get<1>(*it) + map_origin_ned(1);
 
 					utm_p.reverse(p_lla(0), p_lla(1), p_ne(1), p_ne(0)); 
 
@@ -169,8 +170,39 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
+		*  Name     : create_ned_referenced_polygons
+		*  Function : Transforms polygons referenced in lla, to NED
+		*			  coordinates.
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
+		void create_ned_referenced_polygons()
+		{
+			polygons_ned.clear();
+			int n_polygons = polygons_lla.size();
+			point_2D point_ne;
+			Eigen::Vector2d p_ne, p_lla;
+			for (int j = 0; j < n_polygons; j++)
+			{
+				polygon_2D poly_ned;
+				for(auto it = boost::begin(boost::geometry::exterior_ring(polygons_lla[j])); it != boost::end(boost::geometry::exterior_ring(polygons_lla[j])); it++)
+				{
+					p_lla(0) = boost::geometry::get<0>(*it);
+					p_lla(1) = boost::geometry::get<1>(*it);
+
+					utm_p.forward(p_ne(1), p_ne(0), p_lla(0), p_lla(1)); 
+
+					boost::geometry::assign_values(point_ne, p_ne(0) - map_origin_ned(0), p_ne(1) - map_origin_ned(1)); 
+					boost::geometry::append(poly_ned, point_ne);
+				}
+
+				polygons_ned.push_back(poly_ned);
+			}
+		}
+
+		/****************************************************************************************
 		*  Name     : create_simplified_polygons
-		*  Function : Uses the 
+		*  Function : Uses the RDP algorithm to simplify the input polygons.
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
@@ -306,7 +338,7 @@ namespace PSBMPC_LIB
 		Grounding_Hazard_Manager(const std::string &filename) 
 			: 
 			d_so_relevant(1000), epsilon(2.0), frame_name("local_NED"),
-			map_origin(7042250, 270250) // Trondheim, just north of ravnkloa, brattora crossing
+			map_origin_ned(7042250, 270250) // Trondheim, just north of ravnkloa, brattora crossing
 		{
 			read_shapefile(filename, polygons_ned);
 			create_lla_referenced_polygons();
@@ -315,10 +347,10 @@ namespace PSBMPC_LIB
 		}
 
 		template <class MPC_Parameters>
-		Grounding_Hazard_Manager(const std::string &filename, const Eigen::Vector2d &map_origin, const MPC_Parameters &mpc_pars) 
+		Grounding_Hazard_Manager(const std::string &filename, const Eigen::Vector2d &map_origin_ned, const MPC_Parameters &mpc_pars) 
 			: 
 			d_so_relevant(mpc_pars.d_so_relevant), epsilon(mpc_pars.epsilon_rdp), frame_name("local_NED"),
-			map_origin(map_origin)
+			map_origin_ned(map_origin_ned)
 		{
 			read_shapefile(filename, polygons_ned);
 			create_lla_referenced_polygons();
@@ -327,11 +359,11 @@ namespace PSBMPC_LIB
 		}
 
 		template <class MPC_Parameters>
-		Grounding_Hazard_Manager(const std::string &filename, const std::vector<double> &map_origin, const MPC_Parameters &mpc_pars) 
+		Grounding_Hazard_Manager(const std::string &filename, const std::vector<double> &map_origin_ned, const MPC_Parameters &mpc_pars) 
 			: d_so_relevant(mpc_pars.d_so_relevant), epsilon(mpc_pars.epsilon_rdp), frame_name("local_NED")
 		{
-			assert(map_origin.size() == 2);
-			this->map_origin(0) = map_origin[0]; this->map_origin(1) = map_origin[1];
+			assert(map_origin_ned.size() == 2);
+			this->map_origin_ned(0) = map_origin_ned[0]; this->map_origin_ned(1) = map_origin_ned[1];
 
 			read_shapefile(filename, polygons_ned);
 			create_lla_referenced_polygons();
@@ -346,7 +378,7 @@ namespace PSBMPC_LIB
 			const double flattening_factor,			// In: Flattening factor of ellipsoid parametrization for lla <-> UTM conversions
 			const int utm_zone,						// In: UTM Zone to consider (NOTE: Must match the one used when generating the shapefiles)
 			const bool northp,						// In: Boolean determining if it is the northern or southern hemisphere
-			const Eigen::Vector2d &lla_origin,  	// In: Origin of map (from shapefile) in latitude, longitude format
+			const Eigen::Vector2d &map_origin_lla,  // In: Origin of map (from shapefile) in latitude, longitude format
 			const std::string frame_name,  			// In: Name of resulting local NED frame
 			const MPC_Parameters &mpc_pars,			// In: Parameters of calling MPC (Either SB-MPC or PSB-MPC)
 			const bool read_file					// In: Read input file <filename> or not
@@ -357,8 +389,8 @@ namespace PSBMPC_LIB
 			frame_name(frame_name), 
 			utm_p(equatorial_radius, flattening_factor, utm_zone, northp)
 		{
-			assert(map_origin.size() == 2);
-			utm_p.forward(this->map_origin(1), this->map_origin(0), lla_origin(0), lla_origin(1));
+			assert(map_origin_ned.size() == 2);
+			utm_p.forward(this->map_origin_ned(1), this->map_origin_ned(0), map_origin_lla(0), map_origin_lla(1));
 
 			if (read_file)
 			{
@@ -376,7 +408,7 @@ namespace PSBMPC_LIB
 			const double flattening_factor,			// In: Flattening factor of ellipsoid parametrization for lla <-> UTM conversions
 			const int utm_zone,						// In: UTM Zone to consider (NOTE: Must match the one used when generating the shapefiles)
 			const bool northp,						// In: Boolean determining if it is the northern or southern hemisphere
-			const Eigen::Vector2d &lla_origin,  	// In: Origin of map (from shapefile) in latitude, longitude format
+			const Eigen::Vector2d &map_origin_lla,  // In: Origin of map (from shapefile) in latitude, longitude format
 			const std::string frame_name,  			// In: Name of resulting local NED frame
 			const MPC_Parameters &mpc_pars			// In: Parameters of calling MPC (Either SB-MPC or PSB-MPC)
 			) 
@@ -386,11 +418,10 @@ namespace PSBMPC_LIB
 			frame_name(frame_name), 
 			utm_p(equatorial_radius, flattening_factor, utm_zone, northp)
 		{
-			assert(map_origin.size() == 2);
-			utm_p.forward(this->map_origin(1), this->map_origin(0), lla_origin(0), lla_origin(1));
+			assert(map_origin_ned.size() == 2);
+			utm_p.forward(this->map_origin_ned(1), this->map_origin_ned(0), map_origin_lla(0), map_origin_lla(1));
 
 			read_shapefile(filename, polygons_ned);
-
 			create_lla_referenced_polygons();
 			simplified_polygons_ned = create_simplified_polygons(polygons_ned);
 			simplified_polygons_lla = create_simplified_polygons(polygons_lla);
@@ -399,11 +430,36 @@ namespace PSBMPC_LIB
 		void clear_all_polygons() { polygons_lla.clear(); polygons_ned.clear(); simplified_polygons_ned.clear(); simplified_polygons_lla.clear(); }
 
 		std::string get_frame_name() const { return frame_name; }
-		Eigen::Vector2d get_map_origin() const { return map_origin; }
+		Eigen::Vector2d get_map_origin_ned() const { return map_origin_ned; }
 		Static_Obstacles get_polygons_ned() const { return polygons_ned; }
 		Static_Obstacles get_polygons_lla() const { return polygons_lla; }
 		Static_Obstacles get_simplified_polygons_ned() const { return simplified_polygons_ned; }
 		Static_Obstacles get_simplified_polygons_lla() const { return simplified_polygons_lla; }
+
+		/****************************************************************************************
+		*  Name     : switch_local_ned_frame
+		*  Function : Changes the local ned frame to another UTM zone and map origin
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
+		void switch_local_ned_frame(
+			const double equatorial_radius,			// In: Radius  of ellipsoid parametrization for lla <-> UTM conversions
+			const double flattening_factor,			// In: Flattening factor of ellipsoid parametrization for lla <-> UTM conversions
+			const int utm_zone,						// In: New UTM Zone to consider
+			const bool northp,						// In: Boolean determining if the origin is in the northern or southern hemisphere
+			const Eigen::Vector2d &map_origin_lla,  // In: Origin of frame in latitude, longitude format
+			const std::string frame_name  			// In: Name of resulting local NED frame
+			)
+		{
+			utm_p = UTM_Projection(equatorial_radius, flattening_factor, utm_zone, northp);
+			assert(map_origin_ned.size() == 2);
+			utm_p.forward(this->map_origin_ned(1), this->map_origin_ned(0), map_origin_lla(0), map_origin_lla(1));
+
+			create_ned_referenced_polygons();
+			simplified_polygons_ned = create_simplified_polygons(polygons_ned);
+
+			this->frame_name = frame_name;
+		}
 
 		/****************************************************************************************
 		*  Name     : read_other_polygons
@@ -456,7 +512,7 @@ namespace PSBMPC_LIB
 						if (is_ned_frame)
 						{
 							// want the points on format (northing, easting), and relative to the map origin
-							boost::geometry::assign_values(v, M(1, i) - map_origin(0), M(0, i) - map_origin(1)); 
+							boost::geometry::assign_values(v, M(1, i) - map_origin_ned(0), M(0, i) - map_origin_ned(1)); 
 						}
 						else
 						{
@@ -474,10 +530,12 @@ namespace PSBMPC_LIB
 				// Re-run RDP algorithm on the new set of polygons
 				if (is_ned_frame)
 				{
+					create_lla_referenced_polygons();
 					simplified_polygons_ned = create_simplified_polygons(polygons_ned);
 				}
 				else
 				{
+					create_ned_referenced_polygons();
 					simplified_polygons_lla = create_simplified_polygons(polygons_lla);
 				}
 				
@@ -491,6 +549,8 @@ namespace PSBMPC_LIB
 				throw std::string("Other exception");
 			}
 		}
+
+		
 
 		/****************************************************************************************
 		*  Name     : operator()

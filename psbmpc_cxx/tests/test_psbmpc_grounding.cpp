@@ -206,7 +206,7 @@ int main(){
 	std::string relative_path = buffer1;
 
 	// Input the path to the land data
-    std::string filename = "/../tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
+    std::string filename = "/tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
     
 	double equatorial_radius(6378137.0), flattening_factor(0.003352810664747);
 	int utm_zone(33); 
@@ -220,7 +220,17 @@ int main(){
 		lla_origin,
 		"local_NED",
 		psbmpc.pars);
-	Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin();
+	
+	std::string other_polygons_filename = "/tests/grounding_hazard_data/trondheim/manual_trondheim_harbour_polygons_ned.csv";
+ 	grounding_hazard_manager.read_other_polygons(relative_path + other_polygons_filename, true, false);
+	grounding_hazard_manager.switch_local_ned_frame(
+		equatorial_radius,
+		flattening_factor,
+		32,
+		true,
+		lla_origin,
+		"local_NED");
+	Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin_ned();
 	PSBMPC_LIB::Static_Obstacles polygons_lla = grounding_hazard_manager.get_polygons_lla();
 	PSBMPC_LIB::Static_Obstacles polygons = grounding_hazard_manager.get_polygons_ned();
 	PSBMPC_LIB::Static_Obstacles simplified_polygons = grounding_hazard_manager.get_simplified_polygons_ned();

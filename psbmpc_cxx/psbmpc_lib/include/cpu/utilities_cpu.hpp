@@ -147,7 +147,8 @@ namespace PSBMPC_LIB
 
 		/****************************************************************************************
 		*  Name     : read_matrix_from_file
-		*  Function : Must be a resizeable eigen matrix type.
+		*  Function : Must be a resizeable eigen matrix type. The matrix size must be given
+		*			  in the first row
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
