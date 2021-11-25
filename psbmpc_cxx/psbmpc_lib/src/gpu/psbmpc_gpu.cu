@@ -25,6 +25,7 @@
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/mpc_cost_gpu.cuh"
 #include "gpu/cb_cost_functor.cuh"
+#include "gpu/colregs_violation_evaluator.cuh"
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -342,7 +343,8 @@ void PSBMPC::calculate_optimal_offsets(
 		cpe_device_ptr, 
 		ownship_device_ptr,
 		trajectory_device_ptr, 
-		mpc_cost_device_ptr));
+		mpc_cost_device_ptr,
+		colregs_violation_evaluator_device_ptr));
 
 	auto input_tuple_2_begin = thrust::make_zip_iterator(thrust::make_tuple(
 		thread_index_dvec.begin(), 
@@ -457,8 +459,7 @@ void PSBMPC::preallocate_device_data()
     cuda_check_errors("CudaMalloc of CPE failed.");
 
 	// Allocate for each thread that considers dynamic obstacles a COLREGS Violation Evaluator
-	COLREGS_Violation_Evaluator temp_colregs_violation_evaluator(pars.cpe_method);
-	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_DO * MAX_N_PS * sizeof(CPE));
+	cudaMalloc((void**)&colregs_violation_evaluator_device_ptr, pars.n_cbs * MAX_N_DO * MAX_N_PS * sizeof(COLREGS_Violation_Evaluator));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
 	// Allocate for each thread an mpc cost object
@@ -1136,8 +1137,9 @@ void PSBMPC::set_up_temporary_device_memory(
 	cudaMemcpy(fdata_device_ptr, &temporary_fdata, sizeof(CB_Functor_Data), cudaMemcpyHostToDevice);
     cuda_check_errors("CudaMemCpy of CB_Functor_Data failed.");
 	
-	// Dynamic obstacles
+	// Dynamic obstacles and COLREGS Violation Evaluators
 	Cuda_Obstacle temp_transfer_cobstacle;
+	COLREGS_Violation_Evaluator colregs_violation_evaluator;
 	for (int i = 0; i < n_do; i++)
 	{
 		temp_transfer_cobstacle = obstacles[i];

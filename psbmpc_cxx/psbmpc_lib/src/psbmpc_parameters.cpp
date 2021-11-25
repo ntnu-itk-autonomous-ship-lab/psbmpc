@@ -59,7 +59,6 @@ double PSBMPC_Parameters::get_dpar(
 		case i_dpar_dt 					: return dt;
 		case i_dpar_t_ts 				: return t_ts;
 		case i_dpar_d_safe 				: return d_safe;
-		case i_dpar_d_close 			: return d_close;
 		case i_dpar_d_init 				: return d_init;
 		case i_dpar_d_so_relevant 		: return d_so_relevant;
 		case i_dpar_K_coll 				: return K_coll;
@@ -144,12 +143,10 @@ void PSBMPC_Parameters::set_par(
 			case i_dpar_dt 					: dt = value; break;
 			case i_dpar_t_ts 				: t_ts = value; break;
 			case i_dpar_d_safe :
-				// Limits on d_close and d_init depend on d_safe
+				// Limits on d_init depend on d_safe
 				d_safe = value; 
-				dpar_low[i_dpar_d_close] = d_safe;
 				dpar_low[i_dpar_d_init] = d_safe;
 				break;
-			case i_dpar_d_close 			: d_close = value; break;
 			case i_dpar_d_init 				: d_init = value; break;
 			case i_dpar_d_so_relevant		: d_so_relevant = value; break;
 			case i_dpar_K_coll 				: K_coll = value; break;
@@ -247,8 +244,7 @@ void PSBMPC_Parameters::initialize_par_limits()
 	dpar_low[i_dpar_T] = 60.0;
 	dpar_low[i_dpar_dt] = 0.001;
 
-	dpar_low[i_dpar_d_safe] = 20.0;
-	dpar_low[i_dpar_d_close] = d_safe; 			
+	dpar_low[i_dpar_d_safe] = 20.0;		
 	dpar_low[i_dpar_d_init] = d_safe; 			
 
 	dpar_high[i_dpar_K_dchi_strb] = 3.0;
@@ -349,7 +345,6 @@ void PSBMPC_Parameters::initialize_pars()
 
 	d_so_relevant = 200;
 	d_init = 300;								 
-	d_close = 300;
 	d_safe = 5; 							
 	K_coll = 3.0;	// 0.2 for sea traffic, 10.0 for nidelva	  						     		
 	kappa_SO = 10.0;		  					
@@ -417,7 +412,6 @@ void PSBMPC_Parameters::initialize_pars(
 	t_ts = dpars[i_dpar_t_ts];
 
 	d_safe = dpars[i_dpar_d_safe]; 
-	d_close = dpars[i_dpar_d_close];
 	d_init = dpars[i_dpar_d_init];
 	d_so_relevant = dpars[i_dpar_d_so_relevant];
 

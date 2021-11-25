@@ -125,6 +125,8 @@ namespace PSBMPC_LIB
 			TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory;
 
 			MPC_Cost<CB_Functor_Pars> *mpc_cost;
+
+			COLREGS_Violation_Evaluator *colregs_violation_evaluators;
 			//==============================================
 
 			//==============================================
@@ -135,10 +137,9 @@ namespace PSBMPC_LIB
 
 			int n_samples, n_seg_samples;
 
-			float max_h_so_j, max_cost_i_ps, mu_i_ps, cost_k, P_c_i;
-			bool mu_k;
+			float h_so_j, h_do_i_ps, h_do_i_ps_k, h_colregs_i_ps, P_c_i;
 
-			float d_safe_i, chi_m;
+			float d_safe_i;
 
 			thrust::tuple<float, bool> tup;
 
@@ -153,6 +154,10 @@ namespace PSBMPC_LIB
 			// For the CE-method:
 			TML::Vector2f p_os, p_i, v_os_prev, v_i_prev;
 			TML::Matrix2f P_i_2D;
+
+			// For the COLREGS violation
+			TML::PDVector4f xs_cpa, xs_i_cpa;
+			bool ownship_course_change, ownship_speed_change;
 			//==============================================
 
 		public: 
@@ -164,7 +169,8 @@ namespace PSBMPC_LIB
 				cpe(nullptr), 
 				ownship(nullptr), 
 				trajectory(nullptr), 
-				mpc_cost(nullptr) 
+				mpc_cost(nullptr),
+				colregs_violation_evaluators(nullptr)
 			{}
 
 			__host__ CB_Cost_Functor_2(
@@ -175,9 +181,10 @@ namespace PSBMPC_LIB
 				CPE *cpe,
 				Ownship *ownship,
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,
-				MPC_Cost<CB_Functor_Pars> *mpc_cost):
-				pars(pars), fdata(fdata), polygons(polygons), obstacles(obstacles), cpe(cpe), 
-				ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost) 
+				MPC_Cost<CB_Functor_Pars> *mpc_cost,
+				COLREGS_Violation_Evaluator *colregs_violation_evaluators):
+				pars(pars), fdata(fdata), polygons(polygons), obstacles(obstacles), cpe(cpe), ownship(ownship), 
+				trajectory(trajectory), mpc_cost(mpc_cost), colregs_violation_evaluators(colregs_violation_evaluators)
 				{}
 
 			__host__ __device__ ~CB_Cost_Functor_2() 
@@ -190,10 +197,11 @@ namespace PSBMPC_LIB
 				ownship = nullptr;
 				trajectory = nullptr; 
 				mpc_cost = nullptr;
+				colregs_violation_evaluators = nullptr;
 			}
 
 			__device__ thrust::tuple<float, float, float> operator()(
-				const thrust::tuple<const int, TML::PDMatrix<float, 2 * MAX_N_M, 1>, const int, const int, const int, const int, const int> &input_tuple);
+				const thrust::tuple<const int, TML::PDMatrix<float, 2 * MAX_N_M, 1>, const int, const int, const int, const int, const int>  &input_tuple);
 		};
 	}
 }

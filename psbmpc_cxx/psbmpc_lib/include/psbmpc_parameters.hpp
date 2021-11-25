@@ -27,6 +27,7 @@
 
 namespace PSBMPC_LIB
 {
+
 	// See "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions" and/or
 	// "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
 	enum CPE_Method
@@ -47,6 +48,40 @@ namespace PSBMPC_LIB
 		LOS, 													// Line-of-sight
 		WPP,													// Waypoint-Pursuit
 		CH 														// Course Hold
+	};
+
+	struct CVE_Pars
+	{
+		double max_distance_at_cpa = 100.0;
+		double d_close = 800.0;
+		double head_on_width = 10.0 * DEG2RAD;
+		double overtaking_angle = (90.0 + 22.5) * DEG2RAD;
+		double max_acceptable_SO_speed_change = 2.0;
+		double max_acceptable_SO_course_change = 2.5 * DEG2RAD;
+		double critical_distance_to_ignore_SO = 0.0;
+	};
+
+	enum COLREGS_Situation
+	{
+		HO,
+		OT_ing,
+		OT_en,
+		CR_PS,
+		CR_SS
+	};
+
+	enum class SpeedChange
+	{
+		Lower,
+		None,
+		Higher
+	};
+
+	enum class CourseChange
+	{
+		Portwards,
+		None,
+		Starboardwards
 	};
 
 	class Grounding_Hazard_Manager;
@@ -101,7 +136,7 @@ namespace PSBMPC_LIB
 
 		double T, dt;
 		double t_ts;
-		double d_safe, d_close, d_init, d_so_relevant;
+		double d_safe, d_init, d_so_relevant;
 		double K_coll;
 		double kappa_SO, kappa_GW;
 		double K_u, K_du;

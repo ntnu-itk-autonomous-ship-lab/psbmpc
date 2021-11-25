@@ -21,6 +21,7 @@
 #pragma once
 
 #include "psbmpc_parameters.hpp"
+#include "colregs_violation_evaluator.cuh"
 #include "cb_cost_functor_structures.cuh"
 #include "cuda_obstacle.cuh"
 #include "tml/tml.cuh"
@@ -47,7 +48,7 @@ namespace PSBMPC_LIB
 
 			TML::Vector2f v_0_p, v_i_p, L_0i_p;
 			float chi_m, psi_0_p, psi_i_p, d_0i_p;
-			bool mu, trans;
+			bool mu_GW, mu_SO, trans;
 
 			// Grounding hazard related
 			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k, projection;
@@ -85,21 +86,22 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ MPC_Cost(const Parameters &pars) : pars(pars) {}
 
-			__device__ inline double calculate_colregs_cost(
-					const TML::PDVector4f xs_p,
-					const Cuda_Obstacle *obstacles,
-					const int i); // TODO
-
-			__device__ inline thrust::tuple<float, bool> calculate_dynamic_obstacle_cost(
+			__device__ inline float calculate_dynamic_obstacle_cost(
 				const CB_Functor_Data *fdata,
 				const Cuda_Obstacle *obstacles,
 				const float P_c_i,
 				const TML::PDVector4f xs_p,
 				const TML::PDVector4f xs_i_p,
 				const int i,
-				const float chi_m,
 				const float ownship_length,
 				const int k);
+
+			__device__ inline float calculate_colregs_cost(
+				const COLREGS_Violation_Evaluator *colregs_violation_evaluators,
+				const TML::PDVector4f xs_p,
+				const TML::PDVector4f xs_i_p,
+				const Cuda_Obstacle *obstacles,
+				const int i);
 	
 			__host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const { return pars.K_coll * (powf(v_1(0) - v_2(0), 2) + powf(v_1(1) - v_2(1), 2)); }
 
@@ -128,19 +130,18 @@ namespace PSBMPC_LIB
 		//  Modified :
 		//=======================================================================================
 		template <typename Parameters>
-		__device__ inline thrust::tuple<float, bool> MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
+		__device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 			const CB_Functor_Data *fdata,												// In: Pointer to control behaviour functor data
 			const Cuda_Obstacle *obstacles, 											// In: Pointer to Cuda_Obstacle array
 			const float P_c_i,															// In: Predicted obstacle collision probabilities for obstacle in prediction scenario ps
-			const TML::PDVector4f xs_p, 												// In: Predicted own-ship state at time step k
-			const TML::PDVector4f xs_i_p, 												// In: Predicted obstacle state at time step k in prediction scenario ps
-			const int i, 																// In: Index of obstacle
-			const float chi_m,														 	// In: Course offset used by the own-ship at time step k
+			const TML::PDVector4f &xs_p, 												// In: Predicted own-ship state at time step k
+			const TML::PDVector4f &xs_i_p, 												// In: Predicted obstacle state at time step k in prediction scenario ps
+			const int i, 																// In: Index of obstacle in consideration
 			const float ownship_length,													// In: Length of the own-ship
 			const int k																	// In: Prediction time index
 			)
 		{
-			cost_do = 0.0f; mu = false;
+			cost_do = 0.0f;
 			
 			// l_i is the collision cost modifier depending on the obstacle track loss.
 			cost_coll = 0.0f; l_i = 0.0f;
@@ -162,11 +163,6 @@ namespace PSBMPC_LIB
 
 			cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
-			if (k > 0)
-			{
-				mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
-			}
-
 			// Track loss modifier to collision cost
 			if (obstacles[i].get_duration_lost() > pars.p_step)
 			{
@@ -183,9 +179,25 @@ namespace PSBMPC_LIB
 			cost_do = l_i * cost_coll * P_c_i * exp(- (float)k * pars.dt / pars.T_sgn);
 
 
-			/* printf("k = %d | C = %.4f | P_c_i = %.6f | mu = %d | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n", 
-				k, cost_coll, P_c_i, mu, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
-			return thrust::tuple<float, bool>(cost_do, mu);
+			/* printf("k = %d | C = %.4f | P_c_i = %.6f | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n", 
+				k, cost_coll, P_c_i, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
+			return cost_do;
+		}
+
+		/****************************************************************************************
+		*  Name     : calculate_colregs_cost
+		*  Function : Determines penalty due to using offsets to guidance references ++
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
+		__device__ inline float calculate_colregs_cost(
+			const COLREGS_Violation_Evaluator *colregs_violation_evaluators,			// In: Pointer to array of COLREGS Violation Evaluators wrt each own-ship obstacle trajectory pair
+			const TML::PDVector4f xs_p, 												// In: Current prediciton time own-ship state
+			const Cuda_Obstacle *obstacles, 											// In: Pointer to array of dynamic obstacle information
+			const int i 																// In: Index of obstacle in consideration
+			)
+		{
+
 		}
 
 		/****************************************************************************************

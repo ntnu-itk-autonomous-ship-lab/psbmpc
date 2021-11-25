@@ -87,10 +87,10 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 	const int, 								// Static obstacle j considered
 	const int, 								// Dynamic obstacle i considered
 	const int,								// Prediction scenario ps for the dynamic obstacle
-	const int> &input_tuple 				// CPE object index		
+	const int> &input_tuple				 	// CPE object and COLREGS Violation Evaluator object index		
 	)
 {
-	max_h_so_j = 0.0f; max_cost_i_ps = 0.0f; mu_i_ps = 0.0f;
+	h_so_j = 0.0f; h_do_i_ps = 0.0f; h_colregs_i_ps = 0.0f;
 
 	thread_index = thrust::get<0>(input_tuple);
 	offset_sequence = thrust::get<1>(input_tuple);
@@ -103,17 +103,17 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 	// Check if the thread is supposed to calculated the grounding cost
 	if (j >= 0 || i == -1 || ps == -1)
 	{
-		max_h_so_j = mpc_cost[thread_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons[j]);
+		h_so_j = mpc_cost[thread_index].calculate_grounding_cost(trajectory[cb_index], fdata, polygons[j]);
 
 		// Last two cost elements are dont care arguments for GPU threads only computing
 		// the partial static obstacle cost
-		return thrust::tuple<float, float, float>(max_h_so_j, -1.0f,  -1.0f);
+		return thrust::tuple<float, float, float>(h_so_j, -1.0f,  -1.0f);
 	}
 	// Else: Calculate the partial dynamic obstacle cost and COLREGS violation indicator
 	
 	n_samples = round(pars->T / pars->dt);
 
-	d_safe_i = 0.0; chi_m = 0.0; cost_k = 0.0;
+	d_safe_i = 0.0; h_do_i_ps_k = 0.0;
 
 	// Seed collision probability estimator using the cpe index
 	cpe[cpe_index].seed_prng(cpe_index);
@@ -145,25 +145,6 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 				xs_p_seg.get_col(n_seg_samples - 1), 
 				xs_i_p_seg.get_col(n_seg_samples - 1),  
 				d_safe_i);
-		}
-
-		// Determine active course modification at sample k
-		for (int M = 0; M < pars->n_M; M++)
-		{
-			if (M < pars->n_M - 1)
-			{
-				if (k >= fdata->maneuver_times[M] && k < fdata->maneuver_times[M + 1])
-				{
-					chi_m = offset_sequence[2 * M + 1];
-				}
-			}
-			else
-			{
-				if (k >= fdata->maneuver_times[M])
-				{
-					chi_m = offset_sequence[2 * M + 1];
-				}
-			}
 		}
 
 		/* printf("k = %d | xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", k, xs_p_seg(0, n_seg_samples - 1), xs_p_seg(1, n_seg_samples - 1), xs_p_seg(2, n_seg_samples - 1), xs_p_seg(3, n_seg_samples - 1), xs_p_seg(4, n_seg_samples - 1), xs_p_seg(5, n_seg_samples - 1));
@@ -203,27 +184,19 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 				break;
 		}
 
-		tup = mpc_cost[thread_index].calculate_dynamic_obstacle_cost(
+		h_do_i_ps = mpc_cost[thread_index].calculate_dynamic_obstacle_cost(
 			fdata,
 			obstacles, 
 			P_c_i, 
 			xs_p_seg.get_col(n_seg_samples - 1), 
 			xs_i_p_seg.get_col(n_seg_samples - 1), 
 			i, 
-			chi_m,
 			fdata->ownship_length,
 			k);
-		cost_k = thrust::get<0>(tup);
-		mu_k = thrust::get<1>(tup);
 		
-		if (max_cost_i_ps < cost_k)
+		if (h_do_i_ps < h_do_i_ps_k)
 		{
-			max_cost_i_ps = cost_k;
-		}
-		if (mu_i_ps < 0.1f) // Only set the COLREGS violation indicator if it has not been true (> 0.0f) yet
-		{
-			if (mu_k) 	{ mu_i_ps = 1.0f; }
-			else 		{ mu_i_ps = 0.0f; }
+			h_do_i_ps = h_do_i_ps_k;
 		}
 		//==========================================================================================
 		//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i, cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
@@ -231,18 +204,23 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 		//==============================================================================================
 	}
 	
-	bool os_speed_change(false);
+	// NEED:
+	// 1: OS + DO state at CPA,  2: course change OS, 3: speed change OS, 4:
+	ownship_course_change = false;
+	ownship_speed_change = false;
+
 	for(int k = 0; k < n_samples; k++)
 	{
-		
+		xs_cpa = trajectory[cb_index].get_col(k);
+		xs_i_cpa = obstacles[i].get_trajectory_sample(ps, k);
 	}
 	//==================================================================================================
-	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_i_ps, mu_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
+	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	//==================================================================================================
 	
 	// The first element (grounding cost element) is dont care for threads that only
 	// compute the partial dynamic obstacle cost and COLREGS violation indicator
-	return thrust::tuple<float, float, float>(-1.0f, max_cost_i_ps, mu_i_ps);
+	return thrust::tuple<float, float, float>(-1.0f, h_do_i_ps, h_colregs_i_ps);
 }
  
 //=======================================================================================

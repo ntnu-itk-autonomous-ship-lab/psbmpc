@@ -99,7 +99,7 @@ namespace PSBMPC_LIB
 			thrust::device_vector<float> cb_costs_1_dvec;
 			
 			// Device vector of costs, size n_threads x 1. It is the grounding obstacle cost (first tuple element) wrt one static
-			// obstacle, and the dynamic obstacle cost (second tuple element) and COLREGS violation indicator (third element) when 
+			// obstacle, and the dynamic obstacle cost (second tuple element) and COLREGS violation cost (third element) when 
 			// the own-ship  follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, 
 			// behaves as in prediction scenario <obstacle_ps_index>. 
 			thrust::device_vector<thrust::tuple<float, float, float>> cb_costs_2_dvec;
@@ -126,6 +126,7 @@ namespace PSBMPC_LIB
 
 			COLREGS_Violation_Evaluator *colregs_violation_evaluator_device_ptr;
 			//=====================================================
+			
 			void preallocate_device_data();
 
 			bool determine_colav_active(const Dynamic_Obstacles &obstacles, const int n_static_obst, const bool disable);
