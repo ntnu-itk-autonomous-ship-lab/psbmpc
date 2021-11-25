@@ -62,6 +62,7 @@ namespace PSBMPC_LIB
 		class CPE;
 		class Cuda_Obstacle;
 		template <typename Parameters> class MPC_Cost;
+		class COLREGS_Violation_Evaluator;
 
 		class PSBMPC
 		{
@@ -122,6 +123,8 @@ namespace PSBMPC_LIB
 			Basic_Polygon *polygons_device_ptr;
 
 			MPC_Cost<CB_Functor_Pars> *mpc_cost_device_ptr;
+
+			COLREGS_Violation_Evaluator *colregs_violation_evaluator_device_ptr;
 			//=====================================================
 			void preallocate_device_data();
 

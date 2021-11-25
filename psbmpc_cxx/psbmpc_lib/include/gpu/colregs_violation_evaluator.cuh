@@ -46,13 +46,13 @@ namespace PSBMPC_LIB
             __host__ COLREGS_Violation_Evaluator() = default;
 
             __host__ COLREGS_Violation_Evaluator(
-                const double max_distance_at_cpa,
-                const double d_close,
-                const double head_on_width,
-                const double overtaking_angle,
-                const double max_acceptable_SO_speed_change,
-                const double max_acceptable_SO_course_change,
-                const double critical_distance_to_ignore_SO) 
+                const float max_distance_at_cpa,
+                const float d_close,
+                const float head_on_width,
+                const float overtaking_angle,
+                const float max_acceptable_SO_speed_change,
+                const float max_acceptable_SO_course_change,
+                const float critical_distance_to_ignore_SO) 
                 : 
                 max_distance_at_cpa(max_distance_at_cpa), d_close(d_close), head_on_width(head_on_width), overtaking_angle(overtaking_angle), 
                 max_acceptable_SO_speed_change(max_acceptable_SO_speed_change), max_acceptable_SO_course_change(max_acceptable_SO_course_change), 
@@ -161,13 +161,13 @@ namespace PSBMPC_LIB
             };
 
             bool initialized = false;
-            double max_distance_at_cpa = 100.0;
-            double d_close = 800.0;
-            double head_on_width = 10.0 * DEG2RAD;
-            double overtaking_angle = (90.0 + 22.5) * DEG2RAD;
-            double max_acceptable_SO_speed_change = 2.0;
-            double max_acceptable_SO_course_change = 2.5 * DEG2RAD;
-            double critical_distance_to_ignore_SO = 0.0;
+            float max_distance_at_cpa = 100.0;
+            float d_close = 800.0;
+            float head_on_width = 10.0 * DEG2RAD;
+            float overtaking_angle = (90.0 + 22.5) * DEG2RAD;
+            float max_acceptable_SO_speed_change = 2.0;
+            float max_acceptable_SO_course_change = 2.5 * DEG2RAD;
+            float critical_distance_to_ignore_SO = 0.0;
 
             COLREGS_Situation colregs_situation;
             TML::Vector4f initial_ownship_state;
@@ -198,15 +198,15 @@ namespace PSBMPC_LIB
                 const TML::PDVector4f &obstacle_state
                 )
             {
-                const double heading_diff = wrapPI(obstacle_state(COG) - ownship_state(COG));
+                const float heading_diff = wrapPI(obstacle_state(COG) - ownship_state(COG));
                 if (heading_diff < -M_PI + head_on_width / 2 || heading_diff > M_PI - head_on_width / 2)
                     return HO;
 
-                const double bearing_to_obstacle_relative_to_ownship = relativeBearing(ownship_state, obstacle_state(PX), obstacle_state(PY));
+                const float bearing_to_obstacle_relative_to_ownship = relativeBearing(ownship_state, obstacle_state(PX), obstacle_state(PY));
                 if (bearing_to_obstacle_relative_to_ownship > overtaking_angle || bearing_to_obstacle_relative_to_ownship < -overtaking_angle)
                     return OT_en;
 
-                const double bearing_to_ownship_relative_to_obstacle = relativeBearing(obstacle_state, ownship_state(PX), ownship_state(PY));
+                const float bearing_to_ownship_relative_to_obstacle = relativeBearing(obstacle_state, ownship_state(PX), ownship_state(PY));
                 if (bearing_to_ownship_relative_to_obstacle > overtaking_angle || bearing_to_ownship_relative_to_obstacle < -overtaking_angle)
                     return OT_ing;
 

@@ -421,6 +421,7 @@ void PSBMPC::preallocate_device_data()
 	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl; 
 	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
 	std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
+	std::cout << "COLREGS Violation Evaluator size: " << sizeof(COLREGS_Violation_Evaluator) << std::endl;
 	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl; */
 
 	//================================================================================
@@ -452,6 +453,11 @@ void PSBMPC::preallocate_device_data()
 
 	// Allocate for each thread that considers dynamic obstacles a Collision Probability Estimator
 	CPE temp_cpe(pars.cpe_method);
+	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_DO * MAX_N_PS * sizeof(CPE));
+    cuda_check_errors("CudaMalloc of CPE failed.");
+
+	// Allocate for each thread that considers dynamic obstacles a COLREGS Violation Evaluator
+	COLREGS_Violation_Evaluator temp_colregs_violation_evaluator(pars.cpe_method);
 	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_DO * MAX_N_PS * sizeof(CPE));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
