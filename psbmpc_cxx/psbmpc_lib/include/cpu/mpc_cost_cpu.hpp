@@ -41,8 +41,8 @@ namespace PSBMPC_LIB
 		std::vector<bool> AH_0, S_TC_0, S_i_TC_0, O_TC_0, Q_TC_0, IP_0, H_TC_0, X_TC_0;
 
 		void clear()
-		{ 
-			AH_0.clear(); S_TC_0.clear(); S_i_TC_0.clear(); O_TC_0.clear(); 
+		{
+			AH_0.clear(); S_TC_0.clear(); S_i_TC_0.clear(); O_TC_0.clear();
 			Q_TC_0.clear(); IP_0.clear(); H_TC_0.clear(); X_TC_0.clear();
 		}
 
@@ -78,7 +78,7 @@ namespace PSBMPC_LIB
 			double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) const;
 
 			void update_colregs_violation_node(
-				const Eigen::VectorXd& ownship_state,
+				const Eigen::Vector4d& ownship_state,
 				const Eigen::Vector4d& obstacle_state,
 				int obstacle_ID)
 			{
@@ -115,7 +115,7 @@ namespace PSBMPC_LIB
 
 			MPC_Cost(const Parameters &pars) : pars(pars) {}
 
-			/* MPC_Cost(const Parameters &pars, const std::map<int, COLREGS_Violation_Evaluator> colregs_violation_evaluators) 
+			/* MPC_Cost(const Parameters &pars, const std::map<int, COLREGS_Violation_Evaluator> colregs_violation_evaluators)
 				: pars(pars), colregs_violation_evaluators(colregs_violation_evaluators) {} */
 
 			MPC_Cost& operator=(const MPC_Cost &other) = default;
@@ -198,7 +198,7 @@ namespace PSBMPC_LIB
 				double total_cost=0;
 				for(const auto& obstacle : obstacles)
 				{
-					update_colregs_violation_node(ownship_trajectory.col(0), obstacle.kf.get_state(), obstacle.get_ID());
+					update_colregs_violation_node(ownship_trajectory.col(0), obstacle.get_trajectories()[0].col(0), obstacle.get_ID());
 
 					const auto trajs = obstacle.get_trajectories();
 					const auto probabilities = obstacle.get_scenario_probabilities();

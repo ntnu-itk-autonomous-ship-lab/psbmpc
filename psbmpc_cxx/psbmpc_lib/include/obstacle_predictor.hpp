@@ -502,13 +502,13 @@ namespace PSBMPC_LIB
 			{	
 				// Store the obstacle`s predicted waypoints if not done already
 				// (as straight line path if no other info is available)
-				/* if (obstacles[i].get_waypoints().cols() < 2)
-				{ */
+				if (obstacles[i].get_waypoints().cols() < 2)
+				{
 				waypoints_i.resize(2, 2);
 				waypoints_i.col(0) = obstacles[i].kf.get_state().block<2, 1>(0, 0);
 				waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacles[i].kf.get_state().block<2, 1>(2, 0);
 				obstacles[i].set_waypoints(waypoints_i);
-				
+				}
 
 				initialize_independent_prediction_v2(obstacles, i, ownship_state, mpc_pars);
 
