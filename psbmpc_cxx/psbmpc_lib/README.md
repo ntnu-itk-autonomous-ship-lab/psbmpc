@@ -127,6 +127,10 @@ This is the Mean-reverting Ornstein-Uhlenbeck process used for the prediction of
 
 This is the Collision Probability Estimator used in the PSB-MPC predictions. Has incorporated two methods, one based on the Cross-Entropy method [[4]](#4) for estimation (reference will be underway soon enough), and another based on [[2]](#2). The estimator is sampling-based, and is among others the main reason for trying to implement the PSB-MPC on the GPU. **NOTE** Changed to facilitate only static data allocation, and only considers one obstacle at the time. A grid of CPEs is allocated prior to running GPU code, where each thread will read/write to their own CPE object. One version each for the CPU/GPU implementation, as the GPU version requires a tailor made PRNG, whereas the CPU version can use std:: type or other custom PRNG (like xoshiro, which is fast and efficient).
 
+### UTM Projection
+
+Class which interfaces with the Geographic library to enable coordinate transformations between latitude longitude (lla) and local NED frames in certain UTM zones. 
+
 ### Utilities
 
  Inlined functions commonly used across multiple modules, gathered in one file. One version each for the CPU/GPU implementation.
