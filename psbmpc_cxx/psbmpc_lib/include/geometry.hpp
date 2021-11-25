@@ -51,6 +51,16 @@ inline double surgeSwayToSpeed(double surge, double sway)
 	return std::sqrt(std::pow(surge, 2) + std::pow(sway, 2));
 }
 
+inline auto vx_vy_to_heading_speed_state(const Eigen::Vector4d &vx_vy_state){
+	const auto speed = std::sqrt(std::pow(vx_vy_state(VX),2)+std::pow(vx_vy_state(VY),2));
+	const auto course = std::atan2(vx_vy_state(VY),vx_vy_state(VX));
+	Eigen::Vector4d heading_speed_state = vx_vy_state;
+	heading_speed_state(COG) = course;
+	heading_speed_state(SOG) = speed;
+	return heading_speed_state;
+}
+
+
 //Line [px, py, COG, SOG] to ax+by=c
 inline auto toStandardForm(const Eigen::Vector4d &line)
 {
@@ -329,6 +339,7 @@ inline auto evaluateCPA(const Eigen::MatrixXd &ownship_trajectory, const Eigen::
 		{
 			result.closest_point_ownship = ownship_trajectory.col(i);
 			result.closest_point_obstacle_ship = obstacle_trajectory.col(i);
+			result.closest_distance = distance;
 		}
 		else
 		{

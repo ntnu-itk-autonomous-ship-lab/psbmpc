@@ -5,17 +5,17 @@
 *  Function  : File for Probabilistic Scneario-based Model Predictive Control, defining
 *              compile time flags, constants, max thresholds on size parameters for gpu
 *              gpu matrices.
-*  
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -35,6 +35,8 @@
 #define PY 1
 #define COG 2
 #define SOG 3
+#define VX 2
+#define VY 3
 
 #define M_PI 3.14159265358979323846
 
@@ -51,7 +53,7 @@
 #define MAX_N_PS 7                      // Max number of prediction scenarios allowable for dynamic obstacle trajectory matrices on the device
 
 #define MAX_N_SEG_SAMPLES 4             // Max number of samples in segment considered in the CPE method MCSKF4D
-#define MAX_N_CPE_SAMPLES 500           // Max number of samples allowable to draw in the CPE. 
+#define MAX_N_CPE_SAMPLES 500           // Max number of samples allowable to draw in the CPE.
 
 #define MAX_N_SO 5                      // Max number of static obstacles/polygons allowable on the device
 #define MAX_N_VERTICES 3000             // Max number of vertices in a polygon allowable on the device

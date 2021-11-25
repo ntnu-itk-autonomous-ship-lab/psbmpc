@@ -46,6 +46,8 @@
 *.dmg
 *.jar
 
+psbmpc_cxx/libs/third_party_libs/SMILE/smile_license.h
+intention_model_catkin_ws/
 # Folders
 ros2_ws/build/*
 ros2_ws/install/*
