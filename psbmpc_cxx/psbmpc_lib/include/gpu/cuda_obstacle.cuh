@@ -27,7 +27,6 @@
 
 #include <thrust/device_vector.h>
 
-
 namespace PSBMPC_LIB
 {	
 	namespace GPU

@@ -231,6 +231,11 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 		//==============================================================================================
 	}
 	
+	bool os_speed_change(false);
+	for(int k = 0; k < n_samples; k++)
+	{
+		
+	}
 	//==================================================================================================
 	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | mu_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, max_cost_i_ps, mu_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	//==================================================================================================

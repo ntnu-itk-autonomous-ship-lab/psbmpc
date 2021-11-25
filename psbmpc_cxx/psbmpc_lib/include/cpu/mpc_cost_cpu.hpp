@@ -86,8 +86,8 @@ namespace PSBMPC_LIB
 			}
 
 			double calculate_colregs_violation_cost(
-				const Eigen::MatrixXd ownship_trajectory,
-				const Eigen::MatrixXd obstacle_trajectory,
+				const Eigen::MatrixXd &ownship_trajectory,
+				const Eigen::MatrixXd &obstacle_trajectory,
 				int obstacle_ID
 				) const
 			{

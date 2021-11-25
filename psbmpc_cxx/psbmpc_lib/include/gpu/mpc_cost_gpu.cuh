@@ -24,6 +24,7 @@
 #include "cb_cost_functor_structures.cuh"
 #include "cuda_obstacle.cuh"
 #include "tml/tml.cuh"
+#include <thrust/device_vector.h>
 
 namespace PSBMPC_LIB
 {
@@ -99,7 +100,7 @@ namespace PSBMPC_LIB
 				const float chi_m,
 				const float ownship_length,
 				const int k);
-
+	
 			__host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const { return pars.K_coll * (powf(v_1(0) - v_2(0), 2) + powf(v_1(1) - v_2(1), 2)); }
 
 			__host__ __device__ float calculate_ad_hoc_collision_risk(const float d_AB, const float t);
