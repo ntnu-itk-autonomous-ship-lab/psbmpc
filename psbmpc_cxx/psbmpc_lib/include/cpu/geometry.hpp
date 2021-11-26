@@ -9,6 +9,7 @@
 
 namespace PSBMPC_LIB
 {
+
 	inline void wrapPI(double *value)
 	{
 		while (std::abs(*value) > M_PI)
@@ -24,35 +25,19 @@ namespace PSBMPC_LIB
 		}
 	}
 
+
 	inline double wrapPI(double value)
 	{
 		wrapPI(&value);
 		return value;
 	}
 
+
 	inline auto evaluateDistance(double dx, double dy)
 	{
 		return std::sqrt(std::pow(dx, 2) + std::pow(dy, 2));
 	}
 
-	inline double surgeSwayToCourse(double heading, double surge, double sway)
-	{
-		double crab_angle(0.0);
-		if (std::abs(surge) < 1e-02 && std::abs(sway) < 1e-02)
-		{
-			crab_angle = 0.0;
-		}
-		else
-		{
-			crab_angle = atan2(sway, surge);
-		}
-		return heading + crab_angle;
-	}
-
-	inline double surgeSwayToSpeed(double surge, double sway)
-	{
-		return std::sqrt(std::pow(surge, 2) + std::pow(sway, 2));
-	}
 
 	inline auto vx_vy_to_heading_speed_state(const Eigen::Vector4d &vx_vy_state){
 		const auto speed = std::sqrt(std::pow(vx_vy_state(VX),2)+std::pow(vx_vy_state(VY),2));
@@ -62,6 +47,7 @@ namespace PSBMPC_LIB
 		heading_speed_state(SOG) = speed;
 		return heading_speed_state;
 	}
+
 
 
 	//Line [px, py, COG, SOG] to ax+by=c
@@ -97,6 +83,7 @@ namespace PSBMPC_LIB
 		return res;
 	}
 
+
 	//Parameterised [px,py,COG,U], U is unused
 	inline auto intersectionpoint(const Eigen::Vector4d &line1, const Eigen::Vector4d &line2)
 	{
@@ -115,6 +102,7 @@ namespace PSBMPC_LIB
 		return res;
 	}
 
+
 	inline auto relativeBearing(const Eigen::Vector4d &obstacle_state, const double x, const double y)
 	{
 		const auto dx = x - obstacle_state(PX);
@@ -122,6 +110,7 @@ namespace PSBMPC_LIB
 		const auto bearing = std::atan2(dy, dx);
 		return wrapPI(bearing - obstacle_state(COG));
 	}
+
 
 	inline double evaluate_arrival_time(const Eigen::Vector4d &line, const double x, const double y)
 	{
@@ -151,72 +140,6 @@ namespace PSBMPC_LIB
 		}
 	}
 
-	//Line parameterised as [px,py,COG,U], point as [px,py]
-	inline auto closest_point_on_line(const Eigen::Vector4d &line, const Eigen::Vector2d &point)
-	{
-		struct
-		{
-			double x;
-			double y;
-			double distance;
-			double arrival_time;
-		} res;
-
-		auto sline = toStandardForm(line);
-
-		//Closest point is according to: https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
-		double x0 = point(PX);
-		double y0 = point(PY);
-		res.x = (sline.b * (sline.b * x0 - sline.a * y0) + sline.a * sline.c) / (std::pow(sline.a, 2) + std::pow(sline.b, 2));
-		res.y = (sline.a * (sline.a * y0 - sline.b * x0) + sline.b * sline.c) / (std::pow(sline.a, 2) + std::pow(sline.b, 2));
-		res.distance = std::abs(sline.a * x0 + sline.b * y0 - sline.c) / (std::sqrt(std::pow(sline.a, 2) + std::pow(sline.b, 2)));
-
-		//arrival time along the trajectory
-		res.arrival_time = evaluate_arrival_time(line, res.x, res.y);
-		return res;
-	}
-
-	inline auto closest_point_in_trajectory_to_line(const Eigen::MatrixXd &trajectory, const Eigen::Vector4d &obstacle_state, double dt)
-	{
-		size_t number_of_timesteps = trajectory.cols();
-		struct
-		{
-			double ownship_arrival_time;
-			double othership_arrival_time;
-			double x;
-			double y;
-		} res;
-		double minimal_distance = INFINITY;
-		bool found_closest_point = false;
-		for (size_t i = 0; i < number_of_timesteps; ++i)
-		{
-			auto closest_point = closest_point_on_line(obstacle_state, trajectory.block<2, 1>(0, i));
-			if (closest_point.distance < minimal_distance)
-			{
-				minimal_distance = closest_point.distance;
-				res.ownship_arrival_time = i * dt;
-				res.othership_arrival_time = closest_point.arrival_time;
-				res.x = trajectory(PX, i);
-				res.y = trajectory(PY, i);
-			}
-			else
-			{
-				found_closest_point = true;
-				break;
-			}
-		}
-		if (!found_closest_point)
-		{
-			//did not cross in trajectory, extrapolate straight path after trajectory
-			auto intersection_point = intersectionpoint(trajectory.col(number_of_timesteps - 1), obstacle_state);
-			res.ownship_arrival_time = number_of_timesteps * dt + evaluate_arrival_time(trajectory.col(number_of_timesteps - 1), intersection_point.x, intersection_point.y);
-			res.othership_arrival_time = evaluate_arrival_time(obstacle_state, intersection_point.x, intersection_point.y);
-			res.x = intersection_point.x;
-			res.y = intersection_point.y;
-		}
-		return res;
-	}
-
 	//CPA - closest point of approach
 	struct CPA
 	{
@@ -226,6 +149,8 @@ namespace PSBMPC_LIB
 		bool passing_in_front;
 		std::string has_passed;
 	};
+
+
 	inline CPA evaluateCPA(const Eigen::Vector4d &ship1, const Eigen::Vector4d &ship2)
 	{
 		//See the following for derivation: https://math.stackexchange.com/questions/1775476/shortest-distance-between-two-objects-moving-along-two-lines
@@ -275,54 +200,6 @@ namespace PSBMPC_LIB
 		return result;
 	}
 
-	//Evaluate closest point of approach (CPA) distance, and time untill CPA
-	inline CPA evaluateCPA(const Eigen::MatrixXd &trajectory, const Eigen::Vector4d &obstacle_state, double dt)
-	{
-		CPA result;
-
-		const Eigen::Vector2d obstacle_initial_position = obstacle_state.block<2, 1>(0, 0);
-		Eigen::Vector2d obstacle_velocity;
-		obstacle_velocity(0) = std::cos(obstacle_state(COG)) * obstacle_state(SOG);
-		obstacle_velocity(1) = std::sin(obstacle_state(COG)) * obstacle_state(SOG);
-
-		bool found_closest_point = false;
-		size_t number_of_timesteps = trajectory.cols();
-		for (size_t i = 0; i < number_of_timesteps; ++i)
-		{
-			double current_time = i * dt;
-			const Eigen::Vector2d obstacle_curent_position = obstacle_initial_position + obstacle_velocity * current_time;
-			const Eigen::Vector2d current_position = trajectory.block<2, 1>(0, i);
-			auto vector_to_obst = obstacle_curent_position - current_position;
-			double current_distane_to_obstacle = vector_to_obst.norm();
-			if (current_distane_to_obstacle < result.distance_at_CPA)
-			{
-				result.distance_at_CPA = current_distane_to_obstacle;
-				result.time_untill_CPA = current_time;
-
-				const double angle_to_other_ship = std::atan2(vector_to_obst(1), vector_to_obst(0));
-				result.bearing_relative_to_heading = angle_to_other_ship - trajectory(COG, i);
-				wrapPI(&result.bearing_relative_to_heading);
-			}
-			else
-			{
-				found_closest_point = true;
-				break;
-			}
-		}
-
-		//IF CPA was the last time-step, then evaluate forward in time assuming constant heading
-		if (!found_closest_point)
-		{
-			result = evaluateCPA(trajectory.col(number_of_timesteps - 1), obstacle_state);
-		}
-		else
-		{
-			auto closest_point = closest_point_in_trajectory_to_line(trajectory, obstacle_state, dt);
-			result.passing_in_front = closest_point.ownship_arrival_time < closest_point.othership_arrival_time;
-		}
-
-		return result;
-	}
 
 	inline auto evaluateCPA(const Eigen::MatrixXd &ownship_trajectory, const Eigen::MatrixXd &obstacle_trajectory)
 	{
@@ -352,89 +229,6 @@ namespace PSBMPC_LIB
 		return result;
 	}
 
-	inline double crossingInFrontDistance(const Eigen::Vector4d &ship1, const Eigen::Vector4d &ship2)
-	{
-		auto intersection_point = intersectionpoint(ship1, ship2);
-		if (!std::isfinite(intersection_point.x) || !std::isfinite(intersection_point.y))
-		{
-			return INFINITY;
-		}
-
-		//find when ship1 is at the intersection point
-		const auto t1 = evaluate_arrival_time(ship1, intersection_point.x, intersection_point.y);
-		const auto t2 = evaluate_arrival_time(ship2, intersection_point.x, intersection_point.y);
-		if (t1 < 0 || t2 < 0)
-		{
-			return INFINITY;
-		}
-		//Check if ship 1 is in front
-		//if it arrives last, then it passes behind
-		if (t1 > t2)
-			return INFINITY;
-
-		//Find where ship 2 is when ship1 crosses
-		const auto Px2 = ship2[PX] + ship2[SOG] * cos(ship2[COG]) * t1;
-		const auto Py2 = ship2[PY] + ship2[SOG] * sin(ship2[COG]) * t1;
-		//Find distance
-		return evaluateDistance(Px2 - intersection_point.x, Py2 - intersection_point.y);
-	}
-
-	inline double crossingInFrontDistanceTrajectory(const Eigen::MatrixXd &trajectory, const Eigen::Vector4d &ship2, double dt)
-	{
-		auto closest_point = closest_point_in_trajectory_to_line(trajectory, ship2, dt);
-		if (!std::isfinite(closest_point.x) || !std::isfinite(closest_point.y) || !std::isfinite(closest_point.othership_arrival_time) || !std::isfinite(closest_point.ownship_arrival_time))
-			return INFINITY;
-		if (closest_point.ownship_arrival_time > closest_point.othership_arrival_time)
-			return INFINITY;
-
-		//Find where ship 2 is when ship1 is at intersection point
-		const auto Px2 = ship2[PX] + ship2[SOG] * cos(ship2[COG]) * closest_point.ownship_arrival_time;
-		const auto Py2 = ship2[PY] + ship2[SOG] * sin(ship2[COG]) * closest_point.ownship_arrival_time;
-		//Find distance
-		return evaluateDistance(Px2 - closest_point.x, Py2 - closest_point.y);
-	}
-
-	inline double distanceToMidpointCourse(const Eigen::Vector4d &ship1, const Eigen::Vector4d &ship2)
-	{
-		//Find midpoint
-		const double midpoint_x = (ship1(PX) + ship2(PX)) / 2;
-		const double midpoint_y = (ship1(PY) + ship2(PY)) / 2;
-		Eigen::Vector4d midpoint_state;
-		midpoint_state << midpoint_x, midpoint_y, 0, 0;
-		//Find CPA-vector relative to midpoint
-		CPA cpa_to_midpoint = evaluateCPA(ship1, midpoint_state);
-
-		//Must pass with the midpoint on the port side
-		if (cpa_to_midpoint.bearing_relative_to_heading < 0)
-		{
-			return cpa_to_midpoint.distance_at_CPA;
-		}
-		else
-		{
-			return 0;
-		}
-	}
-
-	inline double distanceToMidpointTrajectory(const Eigen::MatrixXd &trajectory, const Eigen::Vector4d &ship2, double dt)
-	{
-		//Find midpoint
-		const double midpoint_x = (trajectory(PX, 0) + ship2(PX)) / 2;
-		const double midpoint_y = (trajectory(PY, 0) + ship2(PY)) / 2;
-		Eigen::Vector4d midpoint_state;
-		midpoint_state << midpoint_x, midpoint_y, 0, 0;
-		//Find CPA-vector relative to midpoint
-		CPA cpa_to_midpoint = evaluateCPA(trajectory, midpoint_state, dt);
-
-		//Must pass with the midpoint on the port side
-		if (cpa_to_midpoint.bearing_relative_to_heading < 0)
-		{
-			return cpa_to_midpoint.distance_at_CPA;
-		}
-		else
-		{
-			return 0;
-		}
-	}
 
 	inline bool evaluate_crossing_aft(const Eigen::MatrixXd &ownship_trajectory, const Eigen::MatrixXd &obstacle_trajectory)
 	{
@@ -475,6 +269,7 @@ namespace PSBMPC_LIB
 		//If ownship reaches the closest point last then it crosses aft
 		return crossing_point_index_ownship > crossing_point_index_obst_ship;
 	}
+
 
 	inline bool evaluate_crossing_port_to_port(const Eigen::MatrixXd &ownship_trajectory, const Eigen::MatrixXd &obstacle_trajectory)
 	{
