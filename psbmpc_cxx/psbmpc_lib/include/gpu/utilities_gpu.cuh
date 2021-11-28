@@ -387,5 +387,109 @@ namespace PSBMPC_LIB
 				d_cpa = (p_cpa - p_B_cpa).norm();
 			}
 		}
+		
+		/****************************************************************************************
+		*  Name     : evaluateDistance
+		*  Function : 
+		*  Author   : 
+		*  Modified :
+		*****************************************************************************************/
+		__host__ __device__ inline float evaluateDistance(
+			const TML::PDVector4f &xs_A, 											// In: State of vessel A 
+			const TML::PDVector4f &xs_B 											// In: State of vessel B
+			)
+		{
+			return (xs_A.get_block<2, 1>(0, 0, 2, 1) - xs_B.get_block<2, 1>(0, 0, 2, 1)).norm();
+		}
+		
+		/****************************************************************************************
+		*  Name     : relativeBearing
+		*  Function : 
+		*  Author   : 
+		*  Modified :
+		*****************************************************************************************/
+		__host__ __device__ inline float relativeBearing(
+			const TML::PDVector4f &xs_i, 
+			const float x, 
+			const float y
+			)
+		{
+			return wrap_angle_to_pmpi(atan2(y - xs_i(PY), x - xs_i(PX)) - xs_i(COG));
+		}
+		
+		/****************************************************************************************
+		*  Name     : intersectionpoint
+		*  Function : Parameterised [px,py,COG,U], U is unused
+		*  Author   : Sverre Velten Rothmund
+		*  Modified :
+		*****************************************************************************************/
+		__host__ __device__ inline auto intersectionpoint(const TML::PDVector4f &line1, const TML::PDVector4f &line2)
+		{
+			struct
+			{
+				float x;
+				float y;
+			} res;
+			
+			auto sline1 = toStandardForm(line1);
+			auto sline2 = toStandardForm(line2);
+
+			//according to https://math.stackexchange.com/questions/1992153/given-two-lines-each-defined-using-hesse-normal-form-find-the-intersection-poin
+			res.x = (sline1.c * sline2.b - sline1.b * sline2.c) / (sline1.a * sline2.b - sline1.b * sline2.a);
+			res.y = (sline1.a * sline2.c - sline1.c * sline2.a) / (sline1.a * sline2.b - sline1.b * sline2.a);
+
+			return res;
+		}
+		
+		/****************************************************************************************
+		*  Name     : toStandardForm
+		*  Function : Line [px, py, COG, SOG] to ax+by=c
+		*  Author   : Sverre Velten Rothmund
+		*  Modified :
+		*****************************************************************************************/
+		inline auto toStandardForm(
+			const TML::PDVector4f &line
+			)
+		{
+			struct
+			{
+				float a;
+				float b;
+				float c;
+			} res;
+
+			if (fabs(sin(line(COG))) > fabs(cos(line(COG))))
+			{
+				//sin is non-zero, division by sin possible
+				res.a = 1;
+				res.b = - cos(line(COG)) / sin(line(COG));
+				res.c = res.a * line(PX) + res.b * line(PY);
+			}
+			else
+			{
+				//cos is non-zero, division by cos posible
+				res.a = -sin(line(COG)) / cos(line(COG));
+				res.b = 1;
+				res.c = res.a * line(PX) + res.b * line(PY);
+			}
+
+			return res;
+		}
+	}
+
+	/****************************************************************************************
+	*  Name     : vx_vy_to_heading_speed_state
+	*  Function : change [x, y, Vx, Vy] state to [x, y, chi, U]
+	*  Author   : Sverre Velten Rothmund
+	*  Modified :
+	*****************************************************************************************/
+	inline auto vx_vy_to_heading_speed_state(
+		const TML::PDVector4f &vx_vy_state
+		)
+	{
+		TML::PDVector4f heading_speed_state = vx_vy_state;
+		heading_speed_state(COG) = atan2(vx_vy_state(VY), vx_vy_state(VX));
+		heading_speed_state(SOG) = sqrtf(powf(vx_vy_state(VX),2) + powf(vx_vy_state(VY),2));
+		return heading_speed_state;
 	}
 }

@@ -27,7 +27,7 @@
 #include <thrust/device_vector.h>
 #include "gpu/geometry.cuh"
 
-// TODO LEGG TIL DOCUMENTATION TEMPLATES ALA DET NEDENFOR FOR CPU CLASSEN OGSÅ!
+
 namespace PSBMPC_LIB
 {
 //NOTE! Ownship has states [X, Y, CHI, U], while obstacle ship has [X, Y, VX, VY]......
@@ -47,19 +47,7 @@ public:
     *****************************************************************************************/
     __host__ COLREGS_Violation_Evaluator() = default;
 
-    __host__ COLREGS_Violation_Evaluator(
-        const float max_distance_at_cpa,
-        const float d_close,
-        const float head_on_width,
-        const float overtaking_angle,
-        const float max_acceptable_SO_speed_change,
-        const float max_acceptable_SO_course_change,
-        const float critical_distance_to_ignore_SO)
-        :
-        max_distance_at_cpa(max_distance_at_cpa), d_close(d_close), head_on_width(head_on_width), overtaking_angle(overtaking_angle),
-        max_acceptable_SO_speed_change(max_acceptable_SO_speed_change), max_acceptable_SO_course_change(max_acceptable_SO_course_change),
-        critical_distance_to_ignore_SO(critical_distance_to_ignore_SO)
-    {}
+    __host__ COLREGS_Violation_Evaluator(const CVE_Pars &pars) : pars(pars) {}
 
     __host__ COLREGS_Violation_Evaluator(const COLREGS_Violation_Evaluator &other) = default;
 
@@ -74,7 +62,8 @@ public:
 
     /****************************************************************************************
     *  Name     : update
-    *  Function : TODO
+    *  Function : Determines if the COLREGS situation has started, sets initial states if
+    *             that is the case
     *  Author   :
     *  Modified :
     *****************************************************************************************/
@@ -92,7 +81,7 @@ public:
 
     /****************************************************************************************
     *  Name     : evaluate_SO_violation
-    *  Function : TODO
+    *  Function : 
     *  Author   :
     *  Modified :
     *****************************************************************************************/
@@ -105,10 +94,10 @@ public:
         if (!initialized)
             return false;
 
-        const bool distance_larger_than_critical = evaluateDistance(ownship_current_state,obstacle_current_state_vx_vy) > critical_distance_to_ignore_SO;
+        const bool distance_larger_than_critical = evaluateDistance(ownship_current_state,obstacle_current_state_vx_vy) > pars.critical_distance_to_ignore_SO;
         const bool stands_on_correct = !has_been_change_in_speed_or_course;
         const bool has_SO_role = colregs_situation == OT_en || colregs_situation == CR_PS;
-        const bool is_risk_of_collision = dCPA < max_distance_at_cpa;
+        const bool is_risk_of_collision = dCPA < pars.max_distance_at_cpa;
         const bool so_violation = is_risk_of_collision && distance_larger_than_critical && has_SO_role && !stands_on_correct;
         return so_violation;
     }
@@ -130,7 +119,7 @@ public:
         bool correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_CPA_state, obstacle_CPA_state_vx_vy);
         bool correct_CR_PS_maneuver = !has_been_change_in_course_to_port;
         const bool is_risk_of_collision = dCPA < max_distance_at_cpa;
-        bool gw_violation =  is_risk_of_collision                                        &&
+        bool gw_violation =  is_risk_of_collision                           &&
                 ((colregs_situation == HO && !correct_HO_maneuver)          ||
                 (colregs_situation == CR_SS && !correct_CR_SS_maneuver)     ||
                 (colregs_situation == CR_PS && !correct_CR_PS_maneuver));
@@ -139,24 +128,9 @@ public:
 
 private:
 
-    enum COLREGS_Situation
-    {
-        HO,
-        OT_ing,
-        OT_en,
-        CR_PS,
-        CR_SS
-    };
-
     bool initialized = false;
-    float max_distance_at_cpa = 100.0;
-    //distance where situation starts
-    float d_close = 800.0;
-    float head_on_width = 10.0 * DEG2RAD;
-    float overtaking_angle = (90.0 + 22.5) * DEG2RAD;
-    float max_acceptable_SO_speed_change = 2.0;
-    float max_acceptable_SO_course_change = 2.5 * DEG2RAD;
-    float critical_distance_to_ignore_SO = 0.0;
+    
+    CVE_Pars pars;
 
     COLREGS_Situation colregs_situation;
     TML::Vector4f initial_ownship_state;
@@ -164,7 +138,7 @@ private:
 
     /****************************************************************************************
     *  Name     : evaluate_situation_started
-    *  Function : TODO
+    *  Function : 
     *  Author   :
     *  Modified :
     *****************************************************************************************/
@@ -173,12 +147,12 @@ private:
         const TML::PDVector4f &obstacle_state
         )
     {
-        return evaluateDistance(ownship_state, obstacle_state) < d_close; // FIX UNITS TO EITHER M OR M/S
+        return evaluateDistance(ownship_state, obstacle_state) < pars.d_close;
     }
 
     /****************************************************************************************
     *  Name     : evaluate_colregs_situation
-    *  Function : TODO
+    *  Function : 
     *  Author   :
     *  Modified :
     *****************************************************************************************/
@@ -188,15 +162,15 @@ private:
         )
     {
         const float heading_diff = wrapPI(obstacle_state(COG) - ownship_state(COG));
-        if (heading_diff < -M_PI + head_on_width / 2 || heading_diff > M_PI - head_on_width / 2)
+        if (heading_diff < -M_PI + pars.head_on_width / 2 || heading_diff > M_PI - pars.head_on_width / 2)
             return HO;
 
         const float bearing_to_obstacle_relative_to_ownship = relativeBearing(ownship_state, obstacle_state(PX), obstacle_state(PY));
-        if (bearing_to_obstacle_relative_to_ownship > overtaking_angle || bearing_to_obstacle_relative_to_ownship < -overtaking_angle)
+        if (bearing_to_obstacle_relative_to_ownship > pars.overtaking_angle || bearing_to_obstacle_relative_to_ownship < -pars.overtaking_angle)
             return OT_en;
 
         const float bearing_to_ownship_relative_to_obstacle = relativeBearing(obstacle_state, ownship_state(PX), ownship_state(PY));
-        if (bearing_to_ownship_relative_to_obstacle > overtaking_angle || bearing_to_ownship_relative_to_obstacle < -overtaking_angle)
+        if (bearing_to_ownship_relative_to_obstacle > pars.overtaking_angle || bearing_to_ownship_relative_to_obstacle < -pars.overtaking_angle)
             return OT_ing;
 
         if (bearing_to_obstacle_relative_to_ownship < 0)
@@ -207,11 +181,14 @@ private:
 
     /****************************************************************************************
     *  Name     : evaluate_crossing_port_to_port
-    *  Function : TODO
+    *  Function : 
     *  Author   :
     *  Modified :
     *****************************************************************************************/
-    bool evaluate_crossing_port_to_port(const TML::PDVector4f &ownshipCPA, const TML::PDVector4f &obstacleCPA)
+    bool evaluate_crossing_port_to_port(
+        const TML::PDVector4f &ownshipCPA, 
+        const TML::PDVector4f &obstacleCPA
+        )
     {
         return relativeBearing(ownshipCPA, obstacleCPA(PX), obstacleCPA(PY)) < 0;
     }
@@ -220,7 +197,7 @@ private:
         //We are crossing behind if the intersection point is ahead of ownship at CPA
         auto intersection_point = intersectionpoint(ownshipCPA,obstacleCPA);
         auto bearing_to_intersection_point = relativeBearing(ownshipCPA, intersection_point.x, intersection_point.y);
-        return std::fabs(bearing_to_intersection_point) > 90*DEG2RAD;
+        return fabs(bearing_to_intersection_point) > 90*DEG2RAD;
     }
 };
 }

@@ -21,7 +21,7 @@ cmake_minimum_required(VERSION 3.17.3)
 
 # Set default values to PSBMPC flags if they are not set
 if(NOT DEFINED USE_GPU_PSBMPC)
-	set(USE_GPU_PSBMPC 0)
+	set(USE_GPU_PSBMPC 1)
 endif()
 message(STATUS "USE_GPU_PSBMPC set to ${USE_GPU_PSBMPC}")
 

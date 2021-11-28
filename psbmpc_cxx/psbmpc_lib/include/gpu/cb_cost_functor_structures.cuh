@@ -88,7 +88,7 @@ namespace PSBMPC_LIB
 			Guidance_Method guidance_method;
 
 			float T, dt;
-			float d_safe, d_close, d_init;
+			float d_safe, d_init;
 			float K_coll;
 			float kappa_SO, kappa_GW;
 			float K_u, K_du;
@@ -113,7 +113,7 @@ namespace PSBMPC_LIB
 
 				this->T = pars.T; this->dt = pars.dt; 
 
-				this->d_safe = pars.d_safe; this->d_close = pars.d_close; this->d_init = pars.d_init; 
+				this->d_safe = pars.d_safe; this->d_init = pars.d_init; 
 
 				this->K_coll = pars.K_coll; 
 

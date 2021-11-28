@@ -43,11 +43,23 @@ namespace PSBMPC_LIB
             std::optional<Eigen::Vector4d> initial_ownship_state;
             std::optional<Eigen::Vector4d> initial_obstacle_state;
 
+            /****************************************************************************************
+            *  Name     : evaluate_situation_started
+            *  Function : 
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
             bool evaluate_situation_started(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state) const
             {
-                return evaluateCPA(ownship_state, obstacle_state).time_untill_CPA < pars.d_close;
+                return evaluateDistance(ownship_state, obstacle_state) < pars.d_close;
             }
 
+            /****************************************************************************************
+            *  Name     : evaluate_colregs_situation
+            *  Function : 
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
             COLREGS_Situation evaluate_colregs_situation(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state) const
             {
                 const double heading_diff = wrapPI(obstacle_state(COG) - ownship_state(COG));
@@ -68,12 +80,24 @@ namespace PSBMPC_LIB
                 return CR_SS;
             }
 
+            /****************************************************************************************
+            *  Name     : evaluate_risk_of_collision
+            *  Function :
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
             bool evaluate_risk_of_collision(const Eigen::MatrixXd &ownship_trajectory, const Eigen::MatrixXd &obstacle_trajectory) const
             {
                 auto CPA = evaluateCPA(ownship_trajectory, obstacle_trajectory);
                 return CPA.closest_distance < pars.max_distance_at_cpa;
             }
 
+            /****************************************************************************************
+            *  Name     : evaluate_course_change
+            *  Function : 
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
             CourseChange evaluate_course_change(const Eigen::MatrixXd &ownship_trajectory) const
             {
                 for (int i = 0; i < ownship_trajectory.cols(); ++i)
@@ -88,6 +112,12 @@ namespace PSBMPC_LIB
                 return CourseChange::None;
             }
 
+            /****************************************************************************************
+            *  Name     : evaluate_speed_change
+            *  Function :
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
             SpeedChange evaluate_speed_change(const Eigen::MatrixXd &ownship_trajectory) const
             {
                 //Seems like the trajectories are slowing down towards the end as they are approaching the final wp, so im only considering the first half of the traj as there shouldnt be any changes in speed or course after that
@@ -102,12 +132,35 @@ namespace PSBMPC_LIB
             }
 
         public:
+
+            /****************************************************************************************
+            *  Name     : COLREGS_Violation_Evaluator
+            *  Function : Class constructor
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
             COLREGS_Violation_Evaluator() = default;
+
+            COLREGS_Violation_Evaluator(const CVE_Pars &pars) : pars(pars) {}
 
             COLREGS_Violation_Evaluator(const COLREGS_Violation_Evaluator &other) = default;
 
+
+            /****************************************************************************************
+            *  Name     : operator=
+            *  Function : Assignment operator
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
             COLREGS_Violation_Evaluator &operator=(const COLREGS_Violation_Evaluator &rhs) = default;
 
+            /****************************************************************************************
+            *  Name     : update
+            *  Function : Determines if the COLREGS situation has started, sets initial states if
+            *             that is the case
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
             void update(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state_vx_vy)
             {
                 const auto obstacle_state = vx_vy_to_heading_speed_state(obstacle_state_vx_vy);
@@ -119,6 +172,12 @@ namespace PSBMPC_LIB
                 }
             }
 
+            /****************************************************************************************
+            *  Name     : evaluate_SO_violation
+            *  Function : 
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
             bool evaluate_SO_violation(const Eigen::MatrixXd &ownship_trajectory, const Eigen::MatrixXd &obstacle_trajectory) const
             {
                 if (!initial_ownship_state.has_value())
@@ -134,6 +193,12 @@ namespace PSBMPC_LIB
                 return so_violation;
             }
 
+            /****************************************************************************************
+            *  Name     : evaluate_GW_violation
+            *  Function : 
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
             bool evaluate_GW_violation(const Eigen::MatrixXd &ownship_trajectory, const Eigen::MatrixXd &obstacle_trajectory) const
             {
                 if (!initial_ownship_state.has_value() || !initial_obstacle_state.has_value())
