@@ -31,7 +31,7 @@
 #define i_ipar_n_M					0                          
 #define i_ipar_n_r                  1       
 #define i_ipar_p_step 				2       
-#define i_ipar_p_step_cpe 			3
+#define i_ipar_p_step_do			3
 #define i_ipar_p_step_grounding		4             
 
 // Indices for parameters of type double

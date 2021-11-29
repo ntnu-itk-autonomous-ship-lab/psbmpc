@@ -404,17 +404,18 @@ namespace PSBMPC_LIB
 		
 		/****************************************************************************************
 		*  Name     : relativeBearing
-		*  Function : Calculates relative bearing of own-shp relative to obstacle i
+		*  Function : Calculates relative bearing of state xs = [x, y, COG, SOG] relative to 
+		*			  point (x, y).
 		*  Author   : 
 		*  Modified :
 		*****************************************************************************************/
 		__host__ __device__ inline float relativeBearing(
-			const TML::PDVector4f &xs_i, 
+			const TML::PDVector4f &xs, 
 			const float x, 
 			const float y
 			)
 		{
-			return wrap_angle_to_pmpi(atan2(y - xs_i(PY), x - xs_i(PX)) - xs_i(COG));
+			return wrap_angle_to_pmpi(atan2(y - xs(PY), x - xs(PX)) - xs(COG));
 		}
 		
 		/****************************************************************************************

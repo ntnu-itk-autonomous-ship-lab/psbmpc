@@ -98,13 +98,16 @@ target_compile_options(${LIBRARY_TARGET_NAME}
 )
 
 if(CMAKE_BUILD_TYPE EQUAL release)
-	target_compile_options(${LIBRARY_TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -j$(nproc)>)
+	target_compile_options(${LIBRARY_TARGET_NAME} 
+		PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -j$(nproc) -O3>
+		PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -j$(nproc) -Xptxas -O3>)
 else()
 	# Host and device debug compilation and profiling, comment out if you want to compile with debugging symbols etc.
 	#set(CMAKE_VERBOSE_MAKEFILE ON)
-	#target_compile_options(PSBMPC_Lib
-	#	PUBLIC $<$<COMPILE_LANGUAGE:CXX>: -fno-omit-frame-pointer -g>
-	#	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  -Xcompiler -g -G -lineinfo -Wall -Wno-pedantic>)
+	#target_compile_options(${LIBRARY_TARGET_NAME} 
+	#	PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fno-omit-frame-pointer -g>
+	#	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:  -Xcompiler -g -G -Wall -Wno-pedantic>
+	#)
 endif()
 
 # INSTALL LIBRARY

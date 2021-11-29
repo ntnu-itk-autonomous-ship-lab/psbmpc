@@ -200,13 +200,14 @@ int main()
 //*****************************************************************************************************************
 // PSB-MPC setup
 //*****************************************************************************************************************
-	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
-	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
 	#if USE_GPU_PSBMPC
 		PSBMPC_LIB::GPU::PSBMPC psbmpc;
 	#else
 		PSBMPC_LIB::CPU::PSBMPC psbmpc;
 	#endif
+
+	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
+	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor(psbmpc.pars);
 
 	double u_opt(1.0), chi_opt(0.0);
 

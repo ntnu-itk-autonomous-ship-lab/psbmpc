@@ -27,14 +27,15 @@
 #else 
 	#include "gpu/kinetic_ship_models_gpu.cuh"
 #endif
-#include "cpu/cpe_cpu.hpp"
+#include "gpu/cpe_gpu.cuh"
 #include "cpu/mpc_cost_cpu.hpp"
 #include "gpu/mpc_cost_gpu.cuh"
+#include "gpu/colregs_violation_evaluator.cuh"
 #include "cb_cost_functor_structures.cuh"
+#include "tml/tml.cuh"
 
 #include <Eigen/Dense>
 #include <string>
-#include "tml/tml.cuh"
 #include <thrust/device_vector.h>
 
 namespace PSBMPC_LIB
@@ -58,11 +59,8 @@ namespace PSBMPC_LIB
 		class CB_Cost_Functor_2;
 		class CB_Functor_Pars;
 		class CB_Functor_Data;
-		
-		class CPE;
 		class Cuda_Obstacle;
 		template <typename Parameters> class MPC_Cost;
-		class COLREGS_Violation_Evaluator;
 
 		class PSBMPC
 		{
@@ -80,7 +78,7 @@ namespace PSBMPC_LIB
 			Eigen::MatrixXd trajectory;
 
 			CPE cpe_gpu;
-			CVE_Pars<float> cve_pars;
+			COLREGS_Violation_Evaluator colregs_violation_evaluator_gpu;
 
 			//=====================================================
 			// Device related objects read/write-ed upon by each
@@ -93,8 +91,8 @@ namespace PSBMPC_LIB
 			thrust::device_vector<TML::PDMatrix<float, 2 * MAX_N_M, 1>> cb_dvec;
 
 			// Device vector of control behaviour indices, static obstacle indices, dynamic obstacle indices, 
-			// dynamic obstacle prediction scenario indices and cpe indices
-			thrust::device_vector<int> cb_index_dvec, sobstacle_index_dvec, dobstacle_index_dvec, dobstacle_ps_index_dvec, cpe_index_dvec;
+			// dynamic obstacle prediction scenario indices and cpe/colregs_violation_evaluator indices
+			thrust::device_vector<int> cb_index_dvec, sobstacle_index_dvec, dobstacle_index_dvec, dobstacle_ps_index_dvec, os_do_ps_pair_index_dvec;
 
 			// Device vector of path related costs for each control behaviour
 			thrust::device_vector<float> cb_costs_1_dvec;

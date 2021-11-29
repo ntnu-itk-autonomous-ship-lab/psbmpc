@@ -18,7 +18,6 @@
 *
 *****************************************************************************************/
 
-#include "cpu/cpe_cpu.cuh"
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
 #include <stdio.h>
@@ -35,8 +34,9 @@ namespace GPU
 *  Author   : 
 *  Modified :
 *****************************************************************************************/
-__host__ __device__ CPE::CPE(
-    const CPE_Method cpe_method                                    // In: Method to be used
+__host__ CPE::CPE(
+    const CPE_Method cpe_method,                                    // In: Method to be used
+    const double dt                                                    // In: Outer object (MPC) time step
     ) :
     method(cpe_method)
 {
@@ -70,7 +70,7 @@ __host__ __device__ CPE::CPE(
     q = 8e-4f;
     r = 0.001f;
 
-    dt_seg = 0.5f;
+    dt_seg = (float)dt;
 
     d_safe = 50.0f;
 
@@ -79,6 +79,7 @@ __host__ __device__ CPE::CPE(
 
 __host__ CPE::CPE(
     const CPU::CPE &cpe_host                                    // Host side CPE to copy over data/parameters from
+    )
 {
     assign_data(cpe_host);
 }

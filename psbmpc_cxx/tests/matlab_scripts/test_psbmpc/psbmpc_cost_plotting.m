@@ -24,31 +24,31 @@ ylabel('cost');
 xlabel('cb index');
 
 index = 1;
-max_cost_legend_strs = cell(1, n_do);
+h_do_i_ps_legend_strs = cell(1, n_do);
 for i = 1 : n_do
-    max_cost_legend_strs{i} = strings(1, n_ps(i));
+    h_do_i_ps_legend_strs{i} = strings(1, n_ps(i));
     for ps = 1 : n_ps(i)
-        max_cost_legend_strs{i}(ps) = strcat('ps=', num2str(ps));
+        h_do_i_ps_legend_strs{i}(ps) = strcat('ps=', num2str(ps));
     end
     figure(i + 3);
-    title(strcat('Obstacle i = ', num2str(i), ' | Max cost ps'));
+    title(strcat('Obstacle i = ', num2str(i), ' | h do i ps'));
     grid on;
-    plot(max_cost_i_ps(index : index + n_ps(i) - 1, :)');
-    legend(max_cost_legend_strs{i});
+    plot(h_do_i_ps(index : index + n_ps(i) - 1, :)');
+    legend(h_do_i_ps_legend_strs{i});
     ylabel('cost');
     xlabel('cb index');
     index = index + n_ps(i);
 end
 
-max_cost_j_legend_strs = cell(1, n_so);
+h_so_j_legend_strs = cell(1, n_so);
 figure(n_do + 4);
 title(strcat('Static obstacles max cost'));
 grid on; hold on;
 for j = 1 : n_so
-    max_cost_j_legend_strs{j} = strcat('j=', num2str(j));
-    plot(max_cost_j(j, :));
+    h_so_j_legend_strs{j} = strcat('j=', num2str(j));
+    plot(h_so_j(j, :));
 end
-legend(max_cost_j_legend_strs);
+legend(h_so_j_legend_strs);
 ylabel('cost');
 xlabel('cb index');
 
@@ -58,9 +58,9 @@ fprintf('Corresponding control behaviour:\n');
 disp(cb_matrix(:, opt_cb_index));
 
 if is_gpu == 1
-    save('gpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'n_so', 'max_cost_i_ps', 'cost_so_path', ...
-        'max_cost_j', 'n_do', 'n_ps', 'cb_matrix', 'opt_cb_index');
+    save('gpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'n_so', 'h_do_i_ps', 'cost_so_path', ...
+        'h_so_j', 'n_do', 'n_ps', 'cb_matrix', 'opt_cb_index');
 else
-    save('cpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'n_so', 'max_cost_i_ps', 'cost_so_path', ...
-        'max_cost_j', 'n_do', 'n_ps', 'cb_matrix', 'opt_cb_index');
+    save('cpu_psbmpc_cost_data', 'total_cost', 'cost_do', 'cost_colregs', 'n_so', 'h_do_i_ps', 'cost_so_path', ...
+        'h_so_j', 'n_do', 'n_ps', 'cb_matrix', 'opt_cb_index');
 end

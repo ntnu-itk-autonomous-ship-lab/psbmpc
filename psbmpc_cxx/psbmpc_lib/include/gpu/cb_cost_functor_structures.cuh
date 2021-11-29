@@ -79,7 +79,7 @@ namespace PSBMPC_LIB
 		struct CB_Functor_Pars
 		{
 			int n_M;
-			int p_step, p_step_cpe, p_step_grounding;
+			int p_step, p_step_do, p_step_grounding;
 
 			CPE_Method cpe_method;
 
@@ -103,7 +103,7 @@ namespace PSBMPC_LIB
 			{
 				this->n_M = pars.n_M;
 
-				this->p_step = pars.p_step; this->p_step_cpe = pars.p_step_cpe; this->p_step_grounding = pars.p_step_grounding; 
+				this->p_step = pars.p_step; this->p_step_do = pars.p_step_do; this->p_step_grounding = pars.p_step_grounding; 
 
 				this->cpe_method = pars.cpe_method;
 

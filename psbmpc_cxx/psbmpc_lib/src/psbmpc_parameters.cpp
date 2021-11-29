@@ -42,7 +42,7 @@ int PSBMPC_Parameters::get_ipar(
 		case i_ipar_n_M 				: return n_M; 
 		case i_ipar_n_r					: return n_r;
 		case i_ipar_p_step				: return p_step;
-		case i_ipar_p_step_cpe			: return p_step_cpe;
+		case i_ipar_p_step_do			: return p_step_do;
 		case i_ipar_p_step_grounding	: return p_step_grounding;
 		default : 
 			// Throw
@@ -118,7 +118,7 @@ void PSBMPC_Parameters::set_par(
 			case i_ipar_n_M 				: n_M = value; break; 	// Should here resize offset matrices to make this change legal
 			case i_ipar_n_r					: n_r = value; break;
 			case i_ipar_p_step 				: p_step = value; break;
-			case i_ipar_p_step_cpe			: p_step_cpe = value; break;
+			case i_ipar_p_step_do			: p_step_do = value; break;
 			case i_ipar_p_step_grounding	: p_step_grounding = value; break;
 			default : 
 				// Throw
@@ -264,7 +264,7 @@ void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 1;
-	n_r = MAX_N_PS;
+	n_r = 1;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -272,11 +272,11 @@ void PSBMPC_Parameters::initialize_pars()
 	{
 		if (M == 0)
 		{
-			u_offsets[M].resize(3);
+			u_offsets[M].resize(1);
 
-			//u_offsets[M] << 1.0;
+			u_offsets[M] << 1.0;
 			//u_offsets[M] << 1.0, 0.5;
-			u_offsets[M] << 1.0, 0.5, 0.0;
+			//u_offsets[M] << 1.0, 0.5, 0.0;
 
 			chi_offsets[M].resize(13);
 			//chi_offsets[M] << 0.0;
@@ -334,7 +334,7 @@ void PSBMPC_Parameters::initialize_pars()
 	dt = 5.0;
 
 	p_step = 1;
-	p_step_cpe = 2;
+	p_step_do = 2;
 	p_step_grounding = 2;
 	if (prediction_method == ERK1)
 	{ 
@@ -346,7 +346,7 @@ void PSBMPC_Parameters::initialize_pars()
 	d_so_relevant = 200;
 	d_init = 300;								 
 	d_safe = 5; 							
-	K_coll = 3.0;	// 0.2 for sea traffic, 10.0 for nidelva	  						     		
+	K_coll = 3.0;	// 0.2ish for sea traffic, 10.0ish for nidelva	  						     		
 	kappa_SO = 10.0;		  					
 	kappa_GW = 20.0;						 
 	K_u = 40;		   						 
@@ -381,7 +381,7 @@ void PSBMPC_Parameters::initialize_pars(
 	assert((int)u_offsets.size() > 0 && (int)chi_offsets.size() > 0 && n_M > 0 && n_r > 0);
 
 	p_step = ipars[i_ipar_p_step];
-	p_step_cpe = ipars[i_ipar_p_step_cpe];
+	p_step_do = ipars[i_ipar_p_step_do];
 	p_step_grounding = ipars[i_ipar_p_step_grounding];
 
 	this->n_cbs = 1;

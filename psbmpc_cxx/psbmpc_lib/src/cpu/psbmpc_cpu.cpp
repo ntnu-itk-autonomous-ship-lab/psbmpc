@@ -268,8 +268,8 @@ void PSBMPC::calculate_optimal_offsets(
 		mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
 		mxArray *cost_do_mx = mxCreateDoubleMatrix(n_do, pars.n_cbs, mxREAL);
 		mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
-		mxArray *max_cost_i_ps_mx = mxCreateDoubleMatrix(n_do * n_ps_max, pars.n_cbs, mxREAL);
-		mxArray *max_cost_j_mx = mxCreateDoubleMatrix(n_so, pars.n_cbs, mxREAL);
+		mxArray *h_do_i_ps_mx = mxCreateDoubleMatrix(n_do * n_ps_max, pars.n_cbs, mxREAL);
+		mxArray *h_so_j_mx = mxCreateDoubleMatrix(n_so, pars.n_cbs, mxREAL);
 		mxArray *cost_so_path_mx = mxCreateDoubleMatrix(2, pars.n_cbs, mxREAL);
 		mxArray *n_ps_copy_mx = mxCreateDoubleMatrix(1, n_do, mxREAL);
 		mxArray *cb_matrix_mx = mxCreateDoubleMatrix(2 * pars.n_M, pars.n_cbs, mxREAL);
@@ -278,8 +278,8 @@ void PSBMPC::calculate_optimal_offsets(
 		double *ptr_total_cost = mxGetPr(total_cost_mx);
 		double *ptr_cost_do = mxGetPr(cost_do_mx);
 		double *ptr_cost_colregs = mxGetPr(cost_colregs_mx);
-		double *ptr_max_cost_i_ps = mxGetPr(max_cost_i_ps_mx);
-		double *ptr_max_cost_j = mxGetPr(max_cost_j_mx);
+		double *ptr_h_do_i_ps = mxGetPr(h_do_i_ps_mx);
+		double *ptr_h_so_j = mxGetPr(h_so_j_mx);
 		double *ptr_cost_so_path = mxGetPr(cost_so_path_mx);
 		double *ptr_n_ps_copy = mxGetPr(n_ps_copy_mx);
 		double *ptr_cb_matrix = mxGetPr(cb_matrix_mx);
@@ -288,8 +288,8 @@ void PSBMPC::calculate_optimal_offsets(
 		Eigen::Map<Eigen::MatrixXd> map_total_cost(ptr_total_cost, 1, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_cost_do(ptr_cost_do, n_do, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_cost_colregs(ptr_cost_colregs, 1, pars.n_cbs);
-		Eigen::Map<Eigen::MatrixXd> map_max_cost_i_ps(ptr_max_cost_i_ps, n_do * n_ps_max, pars.n_cbs);
-		Eigen::Map<Eigen::MatrixXd> map_max_cost_j(ptr_max_cost_j, n_so, pars.n_cbs);
+		Eigen::Map<Eigen::MatrixXd> map_h_do_i_ps(ptr_h_do_i_ps, n_do * n_ps_max, pars.n_cbs);
+		Eigen::Map<Eigen::MatrixXd> map_h_so_j(ptr_h_so_j, n_so, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_cost_so_path(ptr_cost_so_path, 2, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps_copy, 1, n_do);
 		Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
@@ -299,8 +299,8 @@ void PSBMPC::calculate_optimal_offsets(
 
 		Eigen::MatrixXd cost_do_matrix(n_do, pars.n_cbs);
 		Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
-		Eigen::MatrixXd max_cost_i_ps_matrix(n_do * n_ps_max, pars.n_cbs);
-		Eigen::MatrixXd max_cost_j_matrix(n_so, pars.n_cbs);
+		Eigen::MatrixXd h_do_i_ps_matrix(n_do * n_ps_max, pars.n_cbs);
+		Eigen::MatrixXd h_so_j_matrix(n_so, pars.n_cbs);
 		Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
 		Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
 		Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs);
@@ -311,13 +311,13 @@ void PSBMPC::calculate_optimal_offsets(
 
 		if (n_so == 0)
 		{
-			max_cost_j_matrix.resize(1, pars.n_cbs);
-			max_cost_j_matrix.setZero();
+			h_so_j_matrix.resize(1, pars.n_cbs);
+			h_so_j_matrix.setZero();
 		}
 	#endif
 
 	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
-	Eigen::VectorXd max_cost_i_ps, max_cost_j;
+	Eigen::VectorXd h_do_i_ps, h_so_j;
 	Eigen::VectorXd cost_do(n_do);
 	Eigen::MatrixXd P_c_i;
 	min_cost = 1e12;
@@ -352,15 +352,15 @@ void PSBMPC::calculate_optimal_offsets(
 		{
 
 			P_c_i.resize(n_ps[i], n_samples); //P_c_i.setZero();
-			calculate_collision_probabilities(P_c_i, obstacles, i, pars.p_step_cpe * pars.dt, pars.p_step_cpe);
+			calculate_collision_probabilities(P_c_i, obstacles, i, pars.p_step_do * pars.dt, pars.p_step_do);
 
 			#if ENABLE_PSBMPC_DEBUGGING
-				cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, trajectory, P_c_i, obstacles, i, ownship.get_length());
-				max_cost_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = max_cost_i_ps;
+				cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(h_do_i_ps, trajectory, P_c_i, obstacles, i, ownship.get_length());
+				h_do_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = h_do_i_ps;
 				curr_ps_index += n_ps[i];
 				for (int ps = 0; ps < n_ps[i]; ps++)
 				{
-					//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f \n", thread_count, i, ps, cb, max_cost_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
+					//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f \n", thread_count, i, ps, cb, h_do_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
 					thread_count += 1;
 				}
 			#else
@@ -371,7 +371,7 @@ void PSBMPC::calculate_optimal_offsets(
 			// MATLAB PLOTTING FOR DEBUGGING
 			//===============================================================================================================
 			#if ENABLE_PSBMPC_DEBUGGING
-				p_P_c_i = mxGetPr(P_c_i_mx[i]);
+				/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
 				Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
 				map_P_c = P_c_i;
 
@@ -384,7 +384,7 @@ void PSBMPC::calculate_optimal_offsets(
 					ps_mx = mxCreateDoubleScalar(ps + 1);
 					engPutVariable(ep, "ps", ps_mx);
 					engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-				}
+				} */
 			#endif
 			//===============================================================================================================
 		}
@@ -396,7 +396,7 @@ void PSBMPC::calculate_optimal_offsets(
 		h_colregs= mpc_cost.calculate_colregs_violation_cost(trajectory, obstacles);
 
 		#if ENABLE_PSBMPC_DEBUGGING
-			h_so = mpc_cost.calculate_grounding_cost(max_cost_j, trajectory, polygons, V_w, wind_direction);
+			h_so = mpc_cost.calculate_grounding_cost(h_so_j, trajectory, polygons, V_w, wind_direction);
 		#else
 			h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
 		#endif
@@ -414,7 +414,7 @@ void PSBMPC::calculate_optimal_offsets(
 			cost_colregs_matrix(0, cb) = h_colregs;
 			if (n_so > 0)
 			{
-				max_cost_j_matrix.block(0, cb, n_so, 1) = max_cost_j;
+				h_so_j_matrix.block(0, cb, n_so, 1) = h_so_j;
 			}
 			cost_so_path_matrix(0, cb) = h_so;
 			cost_so_path_matrix(1, cb) = h_path;
@@ -438,17 +438,16 @@ void PSBMPC::calculate_optimal_offsets(
 		// MATLAB PLOTTING FOR DEBUGGING
 		//===============================================================================================================
 		#if ENABLE_PSBMPC_DEBUGGING
-			Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
+			/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
 			map_traj = trajectory;
 
 			k_s = mxCreateDoubleScalar(n_samples);
 			engPutVariable(ep, "k", k_s);
 
 			engPutVariable(ep, "X", traj_os_mx);
-			engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
+			engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
 		#endif
 		//===============================================================================================================
-		std::cout << "\n";
  	}
 	//==================================================================
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
@@ -459,12 +458,12 @@ void PSBMPC::calculate_optimal_offsets(
 		map_cost_colregs = cost_colregs_matrix;
 		if (n_so > 0)
 		{
-			map_max_cost_j = max_cost_j_matrix;
+			map_h_so_j = h_so_j_matrix;
 		}
 		if (n_do > 0)
 		{
 			map_cost_do = cost_do_matrix;
-			map_max_cost_i_ps = max_cost_i_ps_matrix;
+			map_h_do_i_ps = h_do_i_ps_matrix;
 			map_Pr_s_i = Pr_s_i_matrix;
 		}
 		map_cost_so_path = cost_so_path_matrix;
@@ -473,10 +472,10 @@ void PSBMPC::calculate_optimal_offsets(
 
 		mxArray *is_gpu_mx = mxCreateDoubleScalar(0);
 		engPutVariable(ep, "is_gpu", is_gpu_mx);
-		engPutVariable(ep, "max_cost_j", max_cost_j_mx);
+		engPutVariable(ep, "h_so_j", h_so_j_mx);
 		engPutVariable(ep, "total_cost", total_cost_mx);
 		engPutVariable(ep, "cost_do", cost_do_mx);
-		engPutVariable(ep, "max_cost_i_ps", max_cost_i_ps_mx);
+		engPutVariable(ep, "h_do_i_ps", h_do_i_ps_mx);
 		engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
 		engPutVariable(ep, "cost_colregs", cost_colregs_mx);
 		engPutVariable(ep, "cost_so_path", cost_so_path_mx);
@@ -491,8 +490,8 @@ void PSBMPC::calculate_optimal_offsets(
 		mxDestroyArray(total_cost_mx);
 		mxDestroyArray(cost_do_mx);
 		mxDestroyArray(cost_colregs_mx);
-		mxDestroyArray(max_cost_i_ps_mx);
-		mxDestroyArray(max_cost_j_mx);
+		mxDestroyArray(h_do_i_ps_mx);
+		mxDestroyArray(h_so_j_mx);
 		mxDestroyArray(cost_so_path_mx);
 		mxDestroyArray(n_ps_copy_mx);
 		mxDestroyArray(cb_matrix_mx);

@@ -25,7 +25,6 @@
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/mpc_cost_gpu.cuh"
 #include "gpu/cb_cost_functor.cuh"
-#include "gpu/colregs_violation_evaluator.cuh"
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -56,9 +55,12 @@ PSBMPC::PSBMPC()
 	: 
 	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(Ownship()), pars(PSBMPC_Parameters()), mpc_cost(pars),
 	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
-	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr),
+	colregs_violation_evaluators_device_ptr(nullptr)
 	
 {
+	cpe_gpu = CPE(pars.cpe_method, pars.dt);
+	
 	opt_offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
 
@@ -71,9 +73,11 @@ PSBMPC::PSBMPC(
 	const PSBMPC_Parameters &psbmpc_pars, 	// In: Parameter object to initialize the PSB-MPC
 	const CVE_Pars<float> &cve_pars 		// In: Parameter object to initialize the COLREGS Violation Evaluators
 	) :
-	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(ownship), cpe_gpu(cpe), pars(psbmpc_pars), mpc_cost(pars), 
+	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(ownship), cpe_gpu(cpe), colregs_violation_evaluator_gpu(cve_pars),
+	pars(psbmpc_pars), mpc_cost(pars), 
 	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
-	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr),
+	colregs_violation_evaluators_device_ptr(nullptr)
 {
 	opt_offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
@@ -84,7 +88,8 @@ PSBMPC::PSBMPC(
 PSBMPC::PSBMPC(const PSBMPC &other) 
 	:
 	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
-	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
+	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr),
+	colregs_violation_evaluators_device_ptr(nullptr)
 {
 	assign_data(other);
 
@@ -358,7 +363,7 @@ void PSBMPC::calculate_optimal_offsets(
 		sobstacle_index_dvec.begin(),
 		dobstacle_index_dvec.begin(),
 		dobstacle_ps_index_dvec.begin(),
-		cpe_index_dvec.begin()));
+		os_do_ps_pair_index_dvec.begin()));
 
     auto input_tuple_2_end = thrust::make_zip_iterator(thrust::make_tuple(
 		thread_index_dvec.end(), 
@@ -367,7 +372,7 @@ void PSBMPC::calculate_optimal_offsets(
 		sobstacle_index_dvec.end(),
 		dobstacle_index_dvec.end(),
 		dobstacle_ps_index_dvec.end(),
-		cpe_index_dvec.end()));
+		os_do_ps_pair_index_dvec.end()));
 
     thrust::transform(input_tuple_2_begin, input_tuple_2_end, cb_costs_2_dvec.begin(), *cb_cost_functor_2);
 	cuda_check_errors("Thrust transform for cost calculation part three failed.");
@@ -386,7 +391,7 @@ void PSBMPC::calculate_optimal_offsets(
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
 	#if ENABLE_PSBMPC_DEBUGGING
-		Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
+		/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
@@ -397,7 +402,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		printf("%s", buffer);
 
-		engClose(ep);
+		engClose(ep); */
 	#endif
 	//====================================================================
 
@@ -482,6 +487,9 @@ void PSBMPC::preallocate_device_data()
 	{
 		cudaMemcpy(&cpe_device_ptr[thread], &cpe_gpu, sizeof(CPE), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of CPE failed.");
+
+		cudaMemcpy(&colregs_violation_evaluators_device_ptr[thread], &colregs_violation_evaluator_gpu, sizeof(COLREGS_Violation_Evaluator), cudaMemcpyHostToDevice);
+    	cuda_check_errors("CudaMemCpy of COLREGS Violation Evaluator failed.");
 	}
 
 	for (int thread = 0; thread < max_n_threads; thread++)
@@ -657,12 +665,12 @@ void PSBMPC::map_thrust_dvecs(
 	sobstacle_index_dvec.resize(n_threads);
 	dobstacle_index_dvec.resize(n_threads);
 	dobstacle_ps_index_dvec.resize(n_threads);
-	cpe_index_dvec.resize(n_threads);
+	os_do_ps_pair_index_dvec.resize(n_threads);
 	thread_index_dvec.resize(n_threads);
 	thrust::sequence(thread_index_dvec.begin(), thread_index_dvec.end(), 0);
 	cb_costs_2_dvec.resize(n_threads);
 
-	int thread_index(0), cpe_index(0);
+	int thread_index(0), os_do_ps_pair_index(0);
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_tml(2 * pars.n_M);
 	Eigen::VectorXd offset_sequence(2 * pars.n_M);
 	Eigen::VectorXi offset_sequence_counter(2 * pars.n_M);
@@ -682,7 +690,7 @@ void PSBMPC::map_thrust_dvecs(
 			// for threads where only the grounding cost should be computed
 			dobstacle_index_dvec[thread_index] = -1;
 			dobstacle_ps_index_dvec[thread_index] = -1;
-			cpe_index_dvec[thread_index] = -1;
+			os_do_ps_pair_index_dvec[thread_index] = -1;
 			thread_index += 1;
 
 			/* printf("thread %d | ", thread_index - 1);
@@ -708,10 +716,10 @@ void PSBMPC::map_thrust_dvecs(
 
 				dobstacle_index_dvec[thread_index] = i;
 				dobstacle_ps_index_dvec[thread_index] = ps;
-				cpe_index_dvec[thread_index] = cpe_index;
+				os_do_ps_pair_index_dvec[thread_index] = os_do_ps_pair_index;
 				
 				thread_index += 1;
-				cpe_index += 1;
+				os_do_ps_pair_index += 1;
 
 				/* printf("thread %d | ", thread_index - 1);
 				printf("cb = ");
@@ -857,7 +865,7 @@ void PSBMPC::find_optimal_control_behaviour(
 			dev_tup = cb_costs_2_dvec[thread_index];
 			h_so_j(j) = (double)thrust::get<0>(dev_tup);
 			thread_index += 1;
-			/* printf("Thread %d | j = %d | i = -1 | ps = -1 | max cost j : %.4f | max cost i ps : DC | cb_index : %d | cb : %.1f, %.1f \n", 
+			/* printf("Thread %d | j = %d | i = -1 | ps = -1 | h_so_j : %.4f | h_do_i_ps : DC | cb_index : %d | cb : %.1f, %.1f \n", 
 					thread_index, j, h_so_j(j), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 		}
 		if (n_so > 0)
@@ -875,7 +883,7 @@ void PSBMPC::find_optimal_control_behaviour(
 				h_do_i_ps(ps) = (double)thrust::get<1>(dev_tup);
 				h_colregs_i_ps(ps) = (double)thrust::get<2>(dev_tup);
 				thread_index += 1;
-				/* printf("Thread %d | j = -1 | i = %d | ps = %d | max cost j : DC | max cost i ps : %.4f | cb_index : %d | cb : %.1f, %.1f \n", 
+				/* printf("Thread %d | j = -1 | i = %d | ps = %d | h_so_j : DC | h_do_i_ps : %.4f | cb_index : %d | cb : %.1f, %.1f \n", 
 					thread_index, i, ps, h_do_i_ps(ps), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 			}
 
@@ -1146,7 +1154,6 @@ void PSBMPC::set_up_temporary_device_memory(
 	
 	// Dynamic obstacles and COLREGS Violation Evaluators
 	Cuda_Obstacle temp_transfer_cobstacle;
-	std::vector<COLREGS_Violation_Evaluator> colregs_violation_evaluator(cve_pars);
 	for (int i = 0; i < n_do; i++)
 	{
 		temp_transfer_cobstacle = obstacles[i];
@@ -1190,6 +1197,7 @@ void PSBMPC::assign_data(const PSBMPC &other)
 	// as these are reset at each new MPC iteration anyways
 
 	cpe_gpu = other.cpe_gpu;
+	colregs_violation_evaluator_gpu = other.colregs_violation_evaluator_gpu;
 
 	pars = other.pars;
 	mpc_cost = other.mpc_cost;

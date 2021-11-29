@@ -27,9 +27,10 @@
 
 #include "psbmpc_parameters.hpp"
 #include "psbmpc_defines.hpp"
-#include "xoshiro.hpp"
+#include "cpu/cpe_cpu.hpp"
 #include "tml/tml.cuh"
-#include "curand_kernel.h"
+
+#include <curand_kernel.h>
 #include <thrust/device_vector.h>
 #include <random>
 
@@ -162,11 +163,11 @@ namespace PSBMPC_LIB
 
 		public:
 
-			__host__ __device__ CPE() {}
+			__host__ CPE() {}
 
-			__host__ __device__ CPE(const CPE_Method cpe_method);
+			__host__ CPE(const CPE_Method cpe_method, const double dt);
 
-			__host__ __device__ CPE(const CPE &cpe);
+			__host__ CPE(const CPE &cpe);
 
 			__host__ CPE(const CPU::CPE &cpe_host);
 

@@ -119,7 +119,7 @@ namespace PSBMPC_LIB
 
 		// Step between samples in prediction, collision probability estimation and
 		// grounding cost evaluation, respectively
-		int p_step, p_step_cpe, p_step_grounding;
+		int p_step, p_step_do, p_step_grounding;
 
 		// Finite sets of offsets considered to the own-ship surge and course references,
 		// for each maneuver in the horizon

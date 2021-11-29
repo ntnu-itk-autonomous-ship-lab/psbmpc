@@ -133,7 +133,8 @@ namespace PSBMPC_LIB
 			//==============================================
 			// Pre-allocated temporaries (local to the thread stack)
 			//==============================================
-			int thread_index, cb_index, j, i, ps, cpe_index;
+			int thread_index, cb_index, j, i, ps;
+			int os_do_ps_pair_index; // Index of own-ship - dynamic obstacle i in prediction sccenario ps pair to consider in thread
 			TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
 
 			int n_samples, n_seg_samples;
@@ -144,6 +145,8 @@ namespace PSBMPC_LIB
 
 			thrust::tuple<float, bool> tup;
 
+			TML::Vector2f p_os, p_i;
+
 			// Allocate predicted ownship state and predicted obstacle i state and covariance for their prediction scenarios (ps)
 			// Only keeps n_seg_samples at a time, sliding window. Minimum 2
 			// If cpe_method = MCSKF, then dt_seg must be equal to dt;
@@ -153,12 +156,12 @@ namespace PSBMPC_LIB
 			TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_p_seg;
 
 			// For the CE-method:
-			TML::Vector2f p_os, p_i, v_os_prev, v_i_prev;
+			TML::Vector2f v_os_prev, v_i_prev;
 			TML::Matrix2f P_i_2D;
 
 			// For the COLREGS violation
 			TML::PDVector4f xs_cpa, xs_i_cpa;
-			bool ownship_course_change, ownship_speed_change;
+			float chi_0, U_0, d_0i_0, d_0i, d_cpa;
 			//==============================================
 
 		public: 

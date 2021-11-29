@@ -99,7 +99,7 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 	j = thrust::get<3>(input_tuple);
 	i = thrust::get<4>(input_tuple);
 	ps = thrust::get<5>(input_tuple);
-	cpe_index = thrust::get<6>(input_tuple);
+	os_do_ps_pair_index = thrust::get<6>(input_tuple);
 
 	// Check if the thread is supposed to calculated the grounding cost
 	if (j >= 0 || i == -1 || ps == -1)
@@ -117,10 +117,10 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 	d_safe_i = 0.0; h_do_i_ps_k = 0.0;
 
 	// Seed collision probability estimator using the cpe index
-	cpe[cpe_index].seed_prng(cpe_index);
+	cpe[os_do_ps_pair_index].seed_prng(os_do_ps_pair_index);
 
 	// In case cpe_method = MCSKF4D, this is the number of samples in the segment considered
-	n_seg_samples = std::round(cpe[thread_index].get_segment_discretization_time() / pars->dt) + 1;
+	n_seg_samples = round(cpe[os_do_ps_pair_index].get_segment_discretization_time() / pars->dt) + 1;
 	
 	xs_p_seg.resize(4, n_seg_samples);
 	xs_i_p_seg.resize(4, n_seg_samples);
@@ -129,7 +129,11 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 	d_safe_i = pars->d_safe + 0.5 * (fdata->ownship_length + obstacles[i].get_length());
 	//printf("d_safe = %.2f | d_safe_i = %.6f\n", pars->d_safe, d_safe_i);
 	v_os_prev.set_zero(); v_i_prev.set_zero();
-	for (int k = 0; k < n_samples; k += pars->p_step_cpe)
+
+	d_cpa = 1e10;
+
+	colregs_violation_evaluators[os_do_ps_pair_index].reset();
+	for (int k = 0; k < n_samples; k += pars->p_step_do)
 	{	
 		xs_p_seg.shift_columns_left();
 		xs_p_seg.set_col(n_seg_samples - 1, trajectory[cb_index].get_col(k));
@@ -140,12 +144,20 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 		xs_i_p_seg.shift_columns_left();
 		xs_i_p_seg.set_col(n_seg_samples - 1, obstacles[i].get_trajectory_sample(ps, k));
 
+		p_os = xs_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+		p_i = xs_i_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
+
 		if (k == 0)
 		{
-			cpe[cpe_index].initialize(
-				xs_p_seg.get_col(n_seg_samples - 1), 
-				xs_i_p_seg.get_col(n_seg_samples - 1),  
-				d_safe_i);
+			chi_0 = xs_p_seg(2, n_seg_samples - 1);
+			U_0 = xs_p_seg(3, n_seg_samples - 1);
+			d_0i_0 = (p_os - p_i).norm();
+			xs_cpa = xs_p_seg.get_col(n_seg_samples - 1);
+			xs_i_cpa = xs_i_p_seg.get_col(n_seg_samples - 1);
+
+			cpe[os_do_ps_pair_index].initialize(xs_cpa, xs_i_cpa, d_safe_i);
+
+			colregs_violation_evaluators[os_do_ps_pair_index].update(xs_cpa, xs_i_cpa); // 
 		}
 
 		/* printf("k = %d | xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", k, xs_p_seg(0, n_seg_samples - 1), xs_p_seg(1, n_seg_samples - 1), xs_p_seg(2, n_seg_samples - 1), xs_p_seg(3, n_seg_samples - 1), xs_p_seg(4, n_seg_samples - 1), xs_p_seg(5, n_seg_samples - 1));
@@ -167,17 +179,15 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 					
 					v_i_prev = xs_i_p_seg.get_block<2, 1>(2, n_seg_samples - 2, 2, 1);
 				}
-				p_os = xs_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
-				p_i = xs_i_p_seg.get_block<2, 1>(0, n_seg_samples - 1, 2, 1);
 
 				P_i_2D = reshape<16, 1, 4, 4>(P_i_p_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-				P_c_i = cpe[cpe_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt);
+				P_c_i = cpe[os_do_ps_pair_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt * pars->p_step_do);
 				break;
 			case MCSKF4D :                
 				if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
 				{
-					P_c_i = cpe[cpe_index].MCSKF4D_estimate(xs_p_seg, xs_i_p_seg, P_i_p_seg);						
+					P_c_i = cpe[os_do_ps_pair_index].MCSKF4D_estimate(xs_p_seg, xs_i_p_seg, P_i_p_seg);						
 				}	
 				break;
 			default :
@@ -185,7 +195,7 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 				break;
 		}
 
-		h_do_i_ps = mpc_cost[thread_index].calculate_dynamic_obstacle_cost(
+		h_do_i_ps_k = mpc_cost[thread_index].calculate_dynamic_obstacle_cost(
 			fdata,
 			obstacles, 
 			P_c_i, 
@@ -199,30 +209,40 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 		{
 			h_do_i_ps = h_do_i_ps_k;
 		}
+
+
+		d_0i = (p_os - p_i).norm();
+		if (d_0i < d_cpa)
+		{
+			d_cpa = d_0i;
+			xs_cpa = xs_p_seg.get_col(n_seg_samples - 1);
+			xs_i_cpa = xs_i_p_seg.get_col(n_seg_samples - 1);
+		}
+
+		colregs_violation_evaluators[os_do_ps_pair_index].evaluate_maneuver_changes(
+			xs_p_seg(2, n_seg_samples - 1), 
+			chi_0, 
+			xs_p_seg(3, n_seg_samples - 1), 
+			U_0);
+		//======================================
+
 		//==========================================================================================
-		//printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | cost_ps = %.4f | cb : %.1f, %.1f\n", i, ps, k, P_c_i, cost_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
+		printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | h_do_i_ps = %.4f | has_UCHI_changed = %d | has_CHI_changed_port = %d |  cb : %.1f, %.1f\n", i, ps, k, P_c_i, h_do_i_ps,
+			colregs_violation_evaluators[os_do_ps_pair_index].has_been_change_in_speed_or_course, colregs_violation_evaluators[os_do_ps_pair_index].has_been_change_in_course_to_port,
+			offset_sequence(0), RAD2DEG * offset_sequence(1));
 
 		//==============================================================================================
 	}
 	
-	// NEED:
-	// 1: OS + DO state at CPA,  2: course change OS, 3: speed change OS, 4:
-	ownship_course_change = false;
-	ownship_speed_change = false;
+	h_colregs_i_ps = pars->kappa_GW * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_GW_violation(xs_cpa, xs_i_cpa, d_cpa) + 
+					 pars->kappa_SO * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_SO_violation(d_0i_0, d_cpa);
 
-	for(int k = 0; k < n_samples; k++)
-	{
-		xs_cpa = trajectory[cb_index].get_col(k);
-		xs_i_cpa = obstacles[i].get_trajectory_sample(ps, k);
-
-		h_colregs_i_ps = mpc_cost->calculate_colregs_cost(colregs_violation_evaluators, xs_p, xs_i_p, obstacles, i);
-	}
 	//==================================================================================================
-	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
+	printf("Thread %d | i = %d | ps = %d | cb index %d | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 	//==================================================================================================
 	
 	// The first element (grounding cost element) is dont care for threads that only
-	// compute the partial dynamic obstacle cost and COLREGS violation indicator
+	// compute the partial dynamic obstacle cost and COLREGS violation cost
 	return thrust::tuple<float, float, float>(-1.0f, h_do_i_ps, h_colregs_i_ps);
 }
  

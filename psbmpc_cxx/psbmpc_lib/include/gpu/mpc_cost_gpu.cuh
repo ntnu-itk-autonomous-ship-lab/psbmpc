@@ -95,13 +95,6 @@ namespace PSBMPC_LIB
 				const int i,
 				const float ownship_length,
 				const int k);
-
-			__device__ inline float calculate_colregs_cost(
-				const COLREGS_Violation_Evaluator *colregs_violation_evaluators,
-				const TML::PDVector4f &xs_p,
-				const TML::PDVector4f &xs_i_p,
-				const Cuda_Obstacle *obstacles,
-				const int i);
 	
 			__host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const { return pars.K_coll * (powf(v_1(0) - v_2(0), 2) + powf(v_1(1) - v_2(1), 2)); }
 
@@ -182,24 +175,6 @@ namespace PSBMPC_LIB
 			/* printf("k = %d | C = %.4f | P_c_i = %.6f | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n", 
 				k, cost_coll, P_c_i, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
 			return cost_do;
-		}
-
-		/****************************************************************************************
-		*  Name     : calculate_colregs_cost
-		*  Function : Determines penalty due to using offsets to guidance references ++
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
-		__device__ inline float calculate_colregs_cost(
-			const COLREGS_Violation_Evaluator *colregs_violation_evaluators,			// In: Pointer to array of COLREGS Violation Evaluators wrt each own-ship obstacle trajectory pair
-			const TML::PDVector4f xs_p, 												// In: Current prediciton time own-ship state
-			const TML::PDVector4f &xs_i_p, 												// In: Predicted obstacle state at time step k in prediction scenario ps
-			const Cuda_Obstacle *obstacles, 											// In: Pointer to array of dynamic obstacle information
-			const int i 																// In: Index of obstacle in consideration
-			)
-		{
-			evaluateCPA()
-			return colregs_violation_evaluators[i].evaluate_GW_violation()
 		}
 
 		/****************************************************************************************
