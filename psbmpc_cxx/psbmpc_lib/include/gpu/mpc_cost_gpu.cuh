@@ -90,16 +90,16 @@ namespace PSBMPC_LIB
 				const CB_Functor_Data *fdata,
 				const Cuda_Obstacle *obstacles,
 				const float P_c_i,
-				const TML::PDVector4f xs_p,
-				const TML::PDVector4f xs_i_p,
+				const TML::PDVector4f &xs_p,
+				const TML::PDVector4f &xs_i_p,
 				const int i,
 				const float ownship_length,
 				const int k);
 
 			__device__ inline float calculate_colregs_cost(
 				const COLREGS_Violation_Evaluator *colregs_violation_evaluators,
-				const TML::PDVector4f xs_p,
-				const TML::PDVector4f xs_i_p,
+				const TML::PDVector4f &xs_p,
+				const TML::PDVector4f &xs_i_p,
 				const Cuda_Obstacle *obstacles,
 				const int i);
 	
@@ -193,11 +193,13 @@ namespace PSBMPC_LIB
 		__device__ inline float calculate_colregs_cost(
 			const COLREGS_Violation_Evaluator *colregs_violation_evaluators,			// In: Pointer to array of COLREGS Violation Evaluators wrt each own-ship obstacle trajectory pair
 			const TML::PDVector4f xs_p, 												// In: Current prediciton time own-ship state
+			const TML::PDVector4f &xs_i_p, 												// In: Predicted obstacle state at time step k in prediction scenario ps
 			const Cuda_Obstacle *obstacles, 											// In: Pointer to array of dynamic obstacle information
 			const int i 																// In: Index of obstacle in consideration
 			)
 		{
-
+			evaluateCPA()
+			return colregs_violation_evaluators[i].evaluate_GW_violation()
 		}
 
 		/****************************************************************************************

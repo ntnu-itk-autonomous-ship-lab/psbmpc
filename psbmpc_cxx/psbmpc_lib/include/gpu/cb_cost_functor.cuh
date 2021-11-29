@@ -32,6 +32,7 @@ namespace PSBMPC_LIB
 		class Cuda_Obstacle;
 		class CPE;
 		template <typename Parameters> class MPC_Cost;
+		class COLREGS_Violation_Evaluator;
 
 		/****************************************************************************************
 		*  Name     : CB_Cost_Functor_1

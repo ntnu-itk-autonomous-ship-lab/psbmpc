@@ -77,32 +77,6 @@ namespace PSBMPC_LIB
 
 			double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) const;
 
-			void update_colregs_violation_node(
-				const Eigen::Vector4d& ownship_state,
-				const Eigen::Vector4d& obstacle_state,
-				int obstacle_ID)
-			{
-					colregs_violation_evaluators[obstacle_ID].update(ownship_state, obstacle_state);
-			}
-
-			double calculate_colregs_violation_cost(
-				const Eigen::MatrixXd &ownship_trajectory,
-				const Eigen::MatrixXd &obstacle_trajectory,
-				int obstacle_ID
-				) const
-			{
-					if(colregs_violation_evaluators.count(obstacle_ID))
-					{
-						return pars.kappa_SO * colregs_violation_evaluators.at(obstacle_ID).evaluate_SO_violation(ownship_trajectory, obstacle_trajectory)
-							+ pars.kappa_GW * colregs_violation_evaluators.at(obstacle_ID).evaluate_GW_violation(ownship_trajectory, obstacle_trajectory);
-					}
-					else
-					{
-						throw std::runtime_error("Attempting to evaluate colregs violation for an uninitialized ship");
-						//Run colregs_violation_evaluators to fix
-					}
-			}
-
 		public:
 
 			bool determine_if_inside_polygon(const Eigen::Vector2d &p, const polygon_2D &poly) const;
@@ -138,13 +112,13 @@ namespace PSBMPC_LIB
 			// PSBMPC and SBMPC dynamic obstacle cost, respectively
 			// This one is used in the GPU PSBMPC on the host side
 			double calculate_dynamic_obstacle_cost(
-				const Eigen::VectorXd &max_cost_ps,
+				const Eigen::VectorXd &h_do_i_ps,
 				const Dynamic_Obstacles &obstacles,
 				const int i);
 
 			// This one is used in the CPU PSBMPC for cost plotting
 			double calculate_dynamic_obstacle_cost(
-				Eigen::VectorXd &max_cost_ps,
+				Eigen::VectorXd &h_do_i_ps,
 				const Eigen::MatrixXd &trajectory,
 				const Eigen::MatrixXd &P_c_i,
 				const Dynamic_Obstacles &obstacles,
@@ -191,9 +165,37 @@ namespace PSBMPC_LIB
 				const double V_w,
 				const Eigen::Vector2d &wind_direction) const;
 
+			void update_colregs_violation_node(
+				const Eigen::Vector4d& ownship_state,
+				const Eigen::Vector4d& obstacle_state,
+				const int i
+				)
+			{
+					colregs_violation_evaluators[i].update(ownship_state, obstacle_state);
+			}
+
 			double calculate_colregs_violation_cost(
 				const Eigen::MatrixXd &ownship_trajectory,
-				const Dynamic_Obstacles &obstacles)
+				const Eigen::MatrixXd &obstacle_trajectory,
+				const int i
+				) const
+			{
+					if(colregs_violation_evaluators.count(i))
+					{
+						return pars.kappa_SO * colregs_violation_evaluators.at(i).evaluate_SO_violation(ownship_trajectory, obstacle_trajectory)
+							+ pars.kappa_GW * colregs_violation_evaluators.at(i).evaluate_GW_violation(ownship_trajectory, obstacle_trajectory);
+					}
+					else
+					{
+						throw std::runtime_error("Attempting to evaluate colregs violation for an uninitialized ship");
+						//Run colregs_violation_evaluators to fix
+					}
+			}
+			
+			double calculate_colregs_violation_cost(
+				const Eigen::MatrixXd &ownship_trajectory,
+				const Dynamic_Obstacles &obstacles
+				)
 			{
 				double total_cost=0;
 				for(const auto& obstacle : obstacles)
@@ -208,6 +210,17 @@ namespace PSBMPC_LIB
 					}
 				}
 				return total_cost;
+			}
+
+			double calculate_colregs_violation_cost(
+				const Eigen::VectorXd& h_colregs_i_ps,
+				const Dynamic_Obstacles& obstacles,
+				const int i
+				) const
+			{
+				Eigen::VectorXd Pr_s_i = obstacles[i].get_scenario_probabilities();
+				assert(Pr_s_i.size() == h_colregs_i_ps.size());
+				return Pr_s_i.dot(h_colregs_i_ps);
 			}
 		};
 
@@ -322,7 +335,7 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
-			const Eigen::VectorXd &max_cost_i_ps,                       // In: Max cost wrt obstacle i in prediction scenario ps, and the control behaviour from the calling loop
+			const Eigen::VectorXd &h_do_i_ps,                       // In: Max cost wrt obstacle i in prediction scenario ps, and the control behaviour from the calling loop
 			const Dynamic_Obstacles &obstacles,				// In: Dynamic obstacle information
 			const int i 												// In: Index of obstacle
 			)
@@ -330,11 +343,11 @@ namespace PSBMPC_LIB
 			double cost_do(0.0);
 
 			Eigen::VectorXd Pr_s_i = obstacles[i].get_scenario_probabilities();
-			assert(max_cost_i_ps.size() == Pr_s_i.size());
+			assert(h_do_i_ps.size() == Pr_s_i.size());
 
-			cost_do = Pr_s_i.dot(max_cost_i_ps);
+			cost_do = Pr_s_i.dot(h_do_i_ps);
 
-			/* std::cout << "max_cost_i_ps = " << max_cost_i_ps.transpose() << std::endl;
+			/* std::cout << "h_do_i_ps = " << h_do_i_ps.transpose() << std::endl;
 			std::cout << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
 			std::cout << "cost_do = " << cost_do << std::endl; */
 
@@ -343,7 +356,7 @@ namespace PSBMPC_LIB
 
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
-			Eigen::VectorXd &max_cost_i_ps,								// In/Out: Max dynamic obstacle cost associated with the current control behaviour, wrt obstacle i in prediction scenario ps
+			Eigen::VectorXd &h_do_i_ps,								// In/Out: Max dynamic obstacle cost associated with the current control behaviour, wrt obstacle i in prediction scenario ps
 			const Eigen::MatrixXd &trajectory,                          // In: Own-ship trajectory when following the current offset_sequence/control behaviour
 			const Eigen::MatrixXd &P_c_i,								// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 			const Dynamic_Obstacles &obstacles,							// In: Dynamic obstacle information
@@ -360,8 +373,8 @@ namespace PSBMPC_LIB
 
 			int n_ps = xs_i_p.size();
 
-			max_cost_i_ps.resize(n_ps);
-			max_cost_i_ps.setZero();
+			h_do_i_ps.resize(n_ps);
+			h_do_i_ps.setZero();
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), d_0i_p(0.0);
@@ -414,9 +427,9 @@ namespace PSBMPC_LIB
 					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(- (float)k * pars.dt / pars.T_sgn);
 
 					// Maximize wrt time
-					if (cost_ps > max_cost_i_ps(ps))
+					if (cost_ps > h_do_i_ps(ps))
 					{
-						max_cost_i_ps(ps) = cost_ps;
+						h_do_i_ps(ps) = cost_ps;
 					}
 					/* if (ps == 1)
 						printf("k = %d | C = %.4f | P_c_i = %.6f | mu = %d | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n",
@@ -425,13 +438,13 @@ namespace PSBMPC_LIB
 			}
 
 			Eigen::VectorXd Pr_s_i = obstacles[i].get_scenario_probabilities();
-			assert(Pr_s_i.size() == max_cost_i_ps.size());
+			assert(Pr_s_i.size() == h_do_i_ps.size());
 
 			// Weight prediction scenario costs by the scenario probabilities
-			cost_do = Pr_s_i.dot(max_cost_i_ps);
+			cost_do = Pr_s_i.dot(h_do_i_ps);
 
 			/*
-			std::cout << "max_cost_i_ps = " << max_cost_i_ps.transpose() << std::endl;
+			std::cout << "h_do_i_ps = " << h_do_i_ps.transpose() << std::endl;
 			std::cout << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
 			std::cout << "cost_i(i) = " << cost_do << std::endl; */
 
@@ -455,8 +468,8 @@ namespace PSBMPC_LIB
 			std::vector<Eigen::MatrixXd> xs_i_p = obstacles[i].get_trajectories();
 
 			int n_ps = xs_i_p.size();
-			Eigen::VectorXd max_cost_i_ps(n_ps);
-			max_cost_i_ps.setZero();
+			Eigen::VectorXd h_do_i_ps(n_ps);
+			h_do_i_ps.setZero();
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), d_0i_p(0.0);
@@ -509,20 +522,20 @@ namespace PSBMPC_LIB
 					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(- (float)k * pars.dt / pars.T_sgn);
 
 					// Maximize wrt time
-					if (cost_ps > max_cost_i_ps(ps))
+					if (cost_ps > h_do_i_ps(ps))
 					{
-						max_cost_i_ps(ps) = cost_ps;
+						h_do_i_ps(ps) = cost_ps;
 					}
 				}
 			}
 
 			Eigen::VectorXd Pr_s_i = obstacles[i].get_scenario_probabilities();
-			assert(Pr_s_i.size() == max_cost_i_ps.size());
+			assert(Pr_s_i.size() == h_do_i_ps.size());
 
 			// Weight prediction scenario costs by the scenario probabilities
-			cost_do = Pr_s_i.dot(max_cost_i_ps);
+			cost_do = Pr_s_i.dot(h_do_i_ps);
 			/*
-			std::cout << "max_cost_i_ps = " << max_cost_i_ps.transpose() << std::endl;
+			std::cout << "h_do_i_ps = " << h_do_i_ps.transpose() << std::endl;
 			std::cout << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
 			std::cout << "cost_i(i) = " << cost_do << std::endl; */
 

@@ -50,15 +50,16 @@ namespace PSBMPC_LIB
 		CH 														// Course Hold
 	};
 
+	template<class T>
 	struct CVE_Pars
 	{
-		double max_distance_at_cpa = 100.0;
-		double d_close = 800.0;
-		double head_on_width = 10.0 * DEG2RAD;
-		double overtaking_angle = (90.0 + 22.5) * DEG2RAD;
-		double max_acceptable_SO_speed_change = 2.0;
-		double max_acceptable_SO_course_change = 2.5 * DEG2RAD;
-		double critical_distance_to_ignore_SO = 0.0;
+		T max_distance_at_cpa;						// Max allowable distance at CPA before considered violating COLREGS
+		T d_close;									// Threshold for initializing the COLREGS violation evaluator
+		T head_on_width; 							// Width of zone where vessels are considered head-on wrt own-ship
+		T overtaking_angle; 						// Bearing angle wrt own-ship/obstacle where vessels are considered to overtake
+		T max_acceptable_SO_speed_change; 			// Max allowable stand-on speed change before considered violating COLREGS
+		T max_acceptable_SO_course_change;			// Max allowable stand-on course change before considered violating COLREGS
+		T critical_distance_to_ignore_SO; 			// Distance where the own-ship SO role should be aborted to make a safety maneuver
 	};
 
 	enum COLREGS_Situation

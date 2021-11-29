@@ -24,6 +24,7 @@
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
 #include "gpu/mpc_cost_gpu.cuh"
+#include "gpu/colregs_violation_evaluator.cuh"
 
 #include <cmath>
 #include <iostream>
@@ -213,6 +214,8 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 	{
 		xs_cpa = trajectory[cb_index].get_col(k);
 		xs_i_cpa = obstacles[i].get_trajectory_sample(ps, k);
+
+		h_colregs_i_ps = mpc_cost->calculate_colregs_cost(colregs_violation_evaluators, xs_p, xs_i_p, obstacles, i);
 	}
 	//==================================================================================================
 	//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));

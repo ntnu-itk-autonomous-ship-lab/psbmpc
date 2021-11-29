@@ -79,7 +79,8 @@ namespace PSBMPC_LIB
 
 			Eigen::MatrixXd trajectory;
 
-			CPU::CPE cpe_host;
+			CPE cpe_gpu;
+			CVE_Pars<float> cve_pars;
 
 			//=====================================================
 			// Device related objects read/write-ed upon by each
@@ -124,7 +125,7 @@ namespace PSBMPC_LIB
 
 			MPC_Cost<CB_Functor_Pars> *mpc_cost_device_ptr;
 
-			COLREGS_Violation_Evaluator *colregs_violation_evaluator_device_ptr;
+			COLREGS_Violation_Evaluator *colregs_violation_evaluators_device_ptr;
 			//=====================================================
 			
 			void preallocate_device_data();
@@ -165,7 +166,7 @@ namespace PSBMPC_LIB
 			CPU::MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 			PSBMPC();
-			PSBMPC(const Ownship &ownship, const CPU::CPE &cpe, const PSBMPC_Parameters &pars); 
+			PSBMPC(const Ownship &ownship, const CPU::CPE &cpe, const PSBMPC_Parameters &psbmpc_pars, const CVE_Pars<float> &cve_pars); 
 			PSBMPC(const PSBMPC &other);
 
 			~PSBMPC();

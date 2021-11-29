@@ -62,17 +62,16 @@ PSBMPC::PSBMPC()
 	opt_offset_sequence.resize(2 * pars.n_M);
 	maneuver_times.resize(pars.n_M);
 
-	cpe_host = CPU::CPE(pars.cpe_method);
-
 	preallocate_device_data();
 }
 
 PSBMPC::PSBMPC(
 	const Ownship &ownship, 				// In: Own-ship with specific parameter set
 	const CPU::CPE &cpe, 					// In: CPE with specific parameter set
-	const PSBMPC_Parameters &pars 			// In: Parameter object to initialize the PSB-MPC
+	const PSBMPC_Parameters &psbmpc_pars, 	// In: Parameter object to initialize the PSB-MPC
+	const CVE_Pars<float> &cve_pars 		// In: Parameter object to initialize the COLREGS Violation Evaluators
 	) :
-	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(ownship), cpe_host(cpe), pars(pars), mpc_cost(pars), 
+	u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(ownship), cpe_gpu(cpe), pars(psbmpc_pars), mpc_cost(pars), 
 	trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr), 
 	cpe_device_ptr(nullptr), ownship_device_ptr(nullptr), polygons_device_ptr(nullptr), mpc_cost_device_ptr(nullptr)
 {
@@ -92,6 +91,12 @@ PSBMPC::PSBMPC(const PSBMPC &other)
 	preallocate_device_data();
 }
 
+/****************************************************************************************
+*  Name     : operator=
+*  Function : Assignment operator
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
 PSBMPC& PSBMPC::operator=(const PSBMPC &other)
 {
 	if (this != &other)
@@ -344,7 +349,7 @@ void PSBMPC::calculate_optimal_offsets(
 		ownship_device_ptr,
 		trajectory_device_ptr, 
 		mpc_cost_device_ptr,
-		colregs_violation_evaluator_device_ptr));
+		colregs_violation_evaluators_device_ptr));
 
 	auto input_tuple_2_begin = thrust::make_zip_iterator(thrust::make_tuple(
 		thread_index_dvec.begin(), 
@@ -454,12 +459,11 @@ void PSBMPC::preallocate_device_data()
 	cuda_check_errors("CudaMalloc of Ownship failed.");
 
 	// Allocate for each thread that considers dynamic obstacles a Collision Probability Estimator
-	CPE temp_cpe(pars.cpe_method);
 	cudaMalloc((void**)&cpe_device_ptr, pars.n_cbs * MAX_N_DO * MAX_N_PS * sizeof(CPE));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
 	// Allocate for each thread that considers dynamic obstacles a COLREGS Violation Evaluator
-	cudaMalloc((void**)&colregs_violation_evaluator_device_ptr, pars.n_cbs * MAX_N_DO * MAX_N_PS * sizeof(COLREGS_Violation_Evaluator));
+	cudaMalloc((void**)&colregs_violation_evaluators_device_ptr, pars.n_cbs * MAX_N_DO * MAX_N_PS * sizeof(COLREGS_Violation_Evaluator));
     cuda_check_errors("CudaMalloc of CPE failed.");
 
 	// Allocate for each thread an mpc cost object
@@ -476,7 +480,7 @@ void PSBMPC::preallocate_device_data()
 
 	for (int thread = 0; thread < pars.n_cbs * MAX_N_DO * MAX_N_PS; thread++)
 	{
-		cudaMemcpy(&cpe_device_ptr[thread], &temp_cpe, sizeof(CPE), cudaMemcpyHostToDevice);
+		cudaMemcpy(&cpe_device_ptr[thread], &cpe_gpu, sizeof(CPE), cudaMemcpyHostToDevice);
     	cuda_check_errors("CudaMemCpy of CPE failed.");
 	}
 
@@ -743,7 +747,7 @@ void PSBMPC::find_optimal_control_behaviour(
 	Eigen::VectorXi offset_sequence_counter(2 * pars.n_M);
 	reset_control_behaviour(offset_sequence_counter, offset_sequence);
 
-	Eigen::VectorXd max_cost_i_ps, max_cost_j(n_so), cost_do(n_do);
+	Eigen::VectorXd h_do_i_ps, h_so_j(n_so), h_colregs_i_ps, cost_colregs(n_do), cost_do(n_do);
 
 	double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
 	min_cost = 1e12;
@@ -782,8 +786,8 @@ void PSBMPC::find_optimal_control_behaviour(
 		mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
 		mxArray *cost_do_mx = mxCreateDoubleMatrix(n_do, pars.n_cbs, mxREAL);
 		mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
-		mxArray *max_cost_i_ps_mx = mxCreateDoubleMatrix(n_do * n_ps_max, pars.n_cbs, mxREAL);
-		mxArray *max_cost_j_mx = mxCreateDoubleMatrix(n_so, pars.n_cbs, mxREAL);
+		mxArray *h_do_i_ps_mx = mxCreateDoubleMatrix(n_do * n_ps_max, pars.n_cbs, mxREAL);
+		mxArray *h_so_j_mx = mxCreateDoubleMatrix(n_so, pars.n_cbs, mxREAL);
 		mxArray *cost_so_path_mx = mxCreateDoubleMatrix(2, pars.n_cbs, mxREAL);
 		mxArray *n_ps_mx = mxCreateDoubleMatrix(1, n_do, mxREAL);
 		mxArray *cb_matrix_mx = mxCreateDoubleMatrix(2 * pars.n_M, pars.n_cbs, mxREAL);
@@ -792,8 +796,8 @@ void PSBMPC::find_optimal_control_behaviour(
 		double *ptr_total_cost = mxGetPr(total_cost_mx); 
 		double *ptr_cost_do = mxGetPr(cost_do_mx); 
 		double *ptr_cost_colregs = mxGetPr(cost_colregs_mx); 
-		double *ptr_max_cost_i_ps = mxGetPr(max_cost_i_ps_mx); 
-		double *ptr_max_cost_j = mxGetPr(max_cost_j_mx); 
+		double *ptr_h_do_i_ps = mxGetPr(h_do_i_ps_mx); 
+		double *ptr_h_so_j = mxGetPr(h_so_j_mx); 
 		double *ptr_cost_so_path = mxGetPr(cost_so_path_mx); 
 		double *ptr_n_ps = mxGetPr(n_ps_mx); 
 		double *ptr_cb_matrix = mxGetPr(cb_matrix_mx); 
@@ -802,8 +806,8 @@ void PSBMPC::find_optimal_control_behaviour(
 		Eigen::Map<Eigen::MatrixXd> map_total_cost(ptr_total_cost, 1, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_cost_do(ptr_cost_do, n_do, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_cost_colregs(ptr_cost_colregs, 1, pars.n_cbs);
-		Eigen::Map<Eigen::MatrixXd> map_max_cost_i_ps(ptr_max_cost_i_ps, n_do * n_ps_max, pars.n_cbs);
-		Eigen::Map<Eigen::MatrixXd> map_max_cost_j(ptr_max_cost_j, n_so, pars.n_cbs);
+		Eigen::Map<Eigen::MatrixXd> map_h_do_i_ps(ptr_h_do_i_ps, n_do * n_ps_max, pars.n_cbs);
+		Eigen::Map<Eigen::MatrixXd> map_h_so_j(ptr_h_so_j, n_so, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_cost_so_path(ptr_cost_so_path, 2, pars.n_cbs);
 		Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps, 1, n_do);
 		Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
@@ -813,14 +817,14 @@ void PSBMPC::find_optimal_control_behaviour(
 
 		Eigen::MatrixXd cost_do_matrix(n_do, pars.n_cbs);
 		Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
-		Eigen::MatrixXd max_cost_i_ps_matrix(n_do * n_ps_max, pars.n_cbs);
-		Eigen::MatrixXd max_cost_j_matrix(n_so, pars.n_cbs);
+		Eigen::MatrixXd h_do_i_ps_matrix(n_do * n_ps_max, pars.n_cbs);
+		Eigen::MatrixXd h_so_j_matrix(n_so, pars.n_cbs);
 		if (n_so == 0)
 		{
-			max_cost_j.resize(1); 
-			max_cost_j_matrix.resize(1, pars.n_cbs);
-			max_cost_j.setZero();
-			max_cost_j_matrix.setZero();
+			h_so_j.resize(1); 
+			h_so_j_matrix.resize(1, pars.n_cbs);
+			h_so_j.setZero();
+			h_so_j_matrix.setZero();
 		}
 		Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
 		Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
@@ -851,36 +855,39 @@ void PSBMPC::find_optimal_control_behaviour(
 		for (int j = 0; j < n_so; j++)
 		{
 			dev_tup = cb_costs_2_dvec[thread_index];
-			max_cost_j(j) = (double)thrust::get<0>(dev_tup);
+			h_so_j(j) = (double)thrust::get<0>(dev_tup);
 			thread_index += 1;
 			/* printf("Thread %d | j = %d | i = -1 | ps = -1 | max cost j : %.4f | max cost i ps : DC | cb_index : %d | cb : %.1f, %.1f \n", 
-					thread_index, j, max_cost_j(j), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
+					thread_index, j, h_so_j(j), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 		}
 		if (n_so > 0)
 		{
-			h_so = max_cost_j.maxCoeff();
+			h_so = h_so_j.maxCoeff();
 		}
 		
 		for (int i = 0; i < n_do; i++)
 		{
 			n_ps = obstacles[i].get_trajectories().size();
-			max_cost_i_ps.resize(n_ps);
+			h_do_i_ps.resize(n_ps); h_colregs_i_ps.resize(n_ps);
 			for (int ps = 0; ps < n_ps; ps++)
 			{
 				dev_tup = cb_costs_2_dvec[thread_index];
-				max_cost_i_ps(ps) = (double)thrust::get<1>(dev_tup);
+				h_do_i_ps(ps) = (double)thrust::get<1>(dev_tup);
+				h_colregs_i_ps(ps) = (double)thrust::get<2>(dev_tup);
 				thread_index += 1;
 				/* printf("Thread %d | j = -1 | i = %d | ps = %d | max cost j : DC | max cost i ps : %.4f | cb_index : %d | cb : %.1f, %.1f \n", 
-					thread_index, i, ps, max_cost_i_ps(ps), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
+					thread_index, i, ps, h_do_i_ps(ps), cb, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 			}
 
-			cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(max_cost_i_ps, obstacles, i);
+			cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(h_do_i_ps, obstacles, i);
+
+			cost_colregs(i) = mpc_cost.calculate_colregs_violation_cost(h_colregs_i_ps, obstacles, i);
 
 			//==================================================================
 			// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 			//==================================================================
 			#if ENABLE_PSBMPC_DEBUGGING
-				max_cost_i_ps_matrix.block(curr_ps_index, cb, n_ps, 1) = max_cost_i_ps;
+				h_do_i_ps_matrix.block(curr_ps_index, cb, n_ps, 1) = h_do_i_ps;
 				curr_ps_index += n_ps;
 			#endif
 			//==================================================================
@@ -889,7 +896,7 @@ void PSBMPC::find_optimal_control_behaviour(
 		{
 			h_do = cost_do.sum();
 
-			h_colregs = 0.0;
+			h_colregs = cost_colregs.sum();
 		}		
 		
 		h_path = cb_costs_1_dvec[cb];
@@ -902,7 +909,7 @@ void PSBMPC::find_optimal_control_behaviour(
 		#if ENABLE_PSBMPC_DEBUGGING
 			if (n_so > 0)
 			{
-				max_cost_j_matrix.block(0, cb, n_so, 1) = max_cost_j;
+				h_so_j_matrix.block(0, cb, n_so, 1) = h_so_j;
 			}
 			cost_so_path_matrix(0, cb) = h_so;
 			if (n_do > 0)
@@ -935,12 +942,12 @@ void PSBMPC::find_optimal_control_behaviour(
 		map_total_cost = total_cost_matrix;
 		if (n_so > 0)
 		{
-			map_max_cost_j = max_cost_j_matrix;
+			map_h_so_j = h_so_j_matrix;
 		}
 		if (n_do > 0)
 		{
 			map_cost_do = cost_do_matrix;
-			map_max_cost_i_ps = max_cost_i_ps_matrix;
+			map_h_do_i_ps = h_do_i_ps_matrix;
 			map_Pr_s_i = Pr_s_i_matrix;
 		}
 		map_cost_colregs = cost_colregs_matrix;
@@ -950,9 +957,9 @@ void PSBMPC::find_optimal_control_behaviour(
 		
 		mxArray *is_gpu_mx = mxCreateDoubleScalar(1);
 		engPutVariable(ep, "is_gpu", is_gpu_mx);
-		engPutVariable(ep, "max_cost_j", max_cost_j_mx);
+		engPutVariable(ep, "h_so_j", h_so_j_mx);
 		engPutVariable(ep, "cost_do", cost_do_mx);
-		engPutVariable(ep, "max_cost_i_ps", max_cost_i_ps_mx);
+		engPutVariable(ep, "h_do_i_ps", h_do_i_ps_mx);
 		engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
 		engPutVariable(ep, "total_cost", total_cost_mx);
 		engPutVariable(ep, "cost_colregs", cost_colregs_mx);
@@ -968,8 +975,8 @@ void PSBMPC::find_optimal_control_behaviour(
 		mxDestroyArray(total_cost_mx);
 		mxDestroyArray(cost_do_mx);
 		mxDestroyArray(cost_colregs_mx);
-		mxDestroyArray(max_cost_i_ps_mx);
-		mxDestroyArray(max_cost_j_mx);
+		mxDestroyArray(h_do_i_ps_mx);
+		mxDestroyArray(h_so_j_mx);
 		mxDestroyArray(cost_so_path_mx);
 		mxDestroyArray(n_ps_mx);
 		mxDestroyArray(cb_matrix_mx);
@@ -1139,7 +1146,7 @@ void PSBMPC::set_up_temporary_device_memory(
 	
 	// Dynamic obstacles and COLREGS Violation Evaluators
 	Cuda_Obstacle temp_transfer_cobstacle;
-	COLREGS_Violation_Evaluator colregs_violation_evaluator;
+	std::vector<COLREGS_Violation_Evaluator> colregs_violation_evaluator(cve_pars);
 	for (int i = 0; i < n_do; i++)
 	{
 		temp_transfer_cobstacle = obstacles[i];
@@ -1179,10 +1186,10 @@ void PSBMPC::assign_data(const PSBMPC &other)
 
 	trajectory = other.trajectory;
 
-	cpe_host = other.cpe_host;
-
 	// Device related data is DONT CARE in assigning process,
 	// as these are reset at each new MPC iteration anyways
+
+	cpe_gpu = other.cpe_gpu;
 
 	pars = other.pars;
 	mpc_cost = other.mpc_cost;
@@ -1219,6 +1226,9 @@ void PSBMPC::free()
 
 	cudaFree(mpc_cost_device_ptr);
 	cuda_check_errors("CudaFree of MPC_Cost failed.");
+
+	cudaFree(colregs_violation_evaluators_device_ptr);
+	cuda_check_errors("CudaFree of COLREGS Violation Evaluators failed.");
 }
 
 }

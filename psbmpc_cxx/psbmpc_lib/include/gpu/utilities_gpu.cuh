@@ -404,7 +404,7 @@ namespace PSBMPC_LIB
 		
 		/****************************************************************************************
 		*  Name     : relativeBearing
-		*  Function : 
+		*  Function : Calculates relative bearing of own-shp relative to obstacle i
 		*  Author   : 
 		*  Modified :
 		*****************************************************************************************/
@@ -418,36 +418,12 @@ namespace PSBMPC_LIB
 		}
 		
 		/****************************************************************************************
-		*  Name     : intersectionpoint
-		*  Function : Parameterised [px,py,COG,U], U is unused
-		*  Author   : Sverre Velten Rothmund
-		*  Modified :
-		*****************************************************************************************/
-		__host__ __device__ inline auto intersectionpoint(const TML::PDVector4f &line1, const TML::PDVector4f &line2)
-		{
-			struct
-			{
-				float x;
-				float y;
-			} res;
-			
-			auto sline1 = toStandardForm(line1);
-			auto sline2 = toStandardForm(line2);
-
-			//according to https://math.stackexchange.com/questions/1992153/given-two-lines-each-defined-using-hesse-normal-form-find-the-intersection-poin
-			res.x = (sline1.c * sline2.b - sline1.b * sline2.c) / (sline1.a * sline2.b - sline1.b * sline2.a);
-			res.y = (sline1.a * sline2.c - sline1.c * sline2.a) / (sline1.a * sline2.b - sline1.b * sline2.a);
-
-			return res;
-		}
-		
-		/****************************************************************************************
 		*  Name     : toStandardForm
 		*  Function : Line [px, py, COG, SOG] to ax+by=c
 		*  Author   : Sverre Velten Rothmund
 		*  Modified :
 		*****************************************************************************************/
-		inline auto toStandardForm(
+		__host__ __device__ inline auto toStandardForm(
 			const TML::PDVector4f &line
 			)
 		{
@@ -475,21 +451,42 @@ namespace PSBMPC_LIB
 
 			return res;
 		}
-	}
 
-	/****************************************************************************************
-	*  Name     : vx_vy_to_heading_speed_state
-	*  Function : change [x, y, Vx, Vy] state to [x, y, chi, U]
-	*  Author   : Sverre Velten Rothmund
-	*  Modified :
-	*****************************************************************************************/
-	inline auto vx_vy_to_heading_speed_state(
-		const TML::PDVector4f &vx_vy_state
-		)
-	{
-		TML::PDVector4f heading_speed_state = vx_vy_state;
-		heading_speed_state(COG) = atan2(vx_vy_state(VY), vx_vy_state(VX));
-		heading_speed_state(SOG) = sqrtf(powf(vx_vy_state(VX),2) + powf(vx_vy_state(VY),2));
-		return heading_speed_state;
+		/****************************************************************************************
+		*  Name     : intersectionpoint
+		*  Function : Calculates intersection point between two lines.
+		*			  Parameterised [px,py,COG,U], U is unused.
+		*  Author   : Sverre Velten Rothmund
+		*  Modified :
+		*****************************************************************************************/
+		__host__ __device__ inline TML::Vector2f intersectionpoint(const TML::PDVector4f &line1, const TML::PDVector4f &line2)
+		{
+			TML::Vector2f res;
+
+			auto sline1 = toStandardForm(line1);
+			auto sline2 = toStandardForm(line2);
+
+			//according to https://math.stackexchange.com/questions/1992153/given-two-lines-each-defined-using-hesse-normal-form-find-the-intersection-poin
+			res(0) = (sline1.c * sline2.b - sline1.b * sline2.c) / (sline1.a * sline2.b - sline1.b * sline2.a);
+			res(1) = (sline1.a * sline2.c - sline1.c * sline2.a) / (sline1.a * sline2.b - sline1.b * sline2.a);
+
+			return res;
+		}
+
+		/****************************************************************************************
+		*  Name     : vx_vy_to_heading_speed_state
+		*  Function : change [x, y, Vx, Vy] state to [x, y, chi, U]
+		*  Author   : Sverre Velten Rothmund
+		*  Modified :
+		*****************************************************************************************/
+		__host__ __device__ inline TML::PDVector4f vx_vy_to_heading_speed_state(
+			const TML::PDVector4f &vx_vy_state
+			)
+		{
+			TML::PDVector4f heading_speed_state = vx_vy_state;
+			heading_speed_state(COG) = atan2(vx_vy_state(VY), vx_vy_state(VX));
+			heading_speed_state(SOG) = sqrtf(powf(vx_vy_state(VX),2) + powf(vx_vy_state(VY),2));
+			return heading_speed_state;
+		}
 	}
 }

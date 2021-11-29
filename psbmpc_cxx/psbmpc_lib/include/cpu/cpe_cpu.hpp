@@ -31,12 +31,19 @@
 
 namespace PSBMPC_LIB
 {
+	namespace GPU
+	{
+		class CPE;
+	}
+	
 	namespace CPU
 	{
 		class CPE
 		{
 		private:
 
+			friend class GPU::CPE;
+			
 			// Active CPE method
 			CPE_Method method;
 

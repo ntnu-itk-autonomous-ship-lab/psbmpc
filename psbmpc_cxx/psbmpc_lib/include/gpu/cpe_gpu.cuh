@@ -125,6 +125,9 @@ namespace PSBMPC_LIB
 			TML::Matrix2d Sigma_2D_inv;
 			TML::Matrix4d Sigma_4D_inv;
 			//====================================
+			__host__ __device__ void assign_data(const CPE &other);
+			__host__ __device__ void assign_data(const CPU::CPE &cpe_host);
+
 			__host__ __device__ void resize_matrices();
 
 			__host__ __device__ void update_L(const TML::Matrix2f &in);
@@ -164,6 +167,11 @@ namespace PSBMPC_LIB
 			__host__ __device__ CPE(const CPE_Method cpe_method);
 
 			__host__ __device__ CPE(const CPE &cpe);
+
+			__host__ CPE(const CPU::CPE &cpe_host);
+
+			__host__ CPE& operator=(const CPE &other);
+			__host__ CPE& operator=(const CPU::CPE &cpe_host);
 
 			__host__ __device__ void set_method(const CPE_Method cpe_method) { method = cpe_method; resize_matrices(); }
 

@@ -93,6 +93,8 @@ void PSBMPC::calculate_optimal_offsets(
 
 	ownship.determine_active_waypoint_segment(waypoints, ownship_state);
 
+	
+
 	int n_do = obstacles.size();
 	int n_so = polygons.size();
 
@@ -118,6 +120,11 @@ void PSBMPC::calculate_optimal_offsets(
 		return;
 	}
 
+	for (int i = 0; i < n_do; i++)
+	{
+		mpc_cost.update_colregs_violation_node(ownship_state, obstacles[i].kf.get_state(), i);
+	}
+	
 	setup_prediction(obstacles);
 
 	//==================================================================

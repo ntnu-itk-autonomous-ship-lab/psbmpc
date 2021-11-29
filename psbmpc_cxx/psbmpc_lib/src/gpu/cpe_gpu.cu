@@ -18,6 +18,7 @@
 *
 *****************************************************************************************/
 
+#include "cpu/cpe_cpu.cuh"
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
 #include <stdio.h>
@@ -74,6 +75,41 @@ __host__ __device__ CPE::CPE(
     d_safe = 50.0f;
 
     resize_matrices();
+}
+
+__host__ CPE::CPE(
+    const CPU::CPE &cpe_host                                    // Host side CPE to copy over data/parameters from
+{
+    assign_data(cpe_host);
+}
+
+/****************************************************************************************
+*  Name     : operator=
+*  Function : Assignment operator
+*  Author   : 
+*  Modified :
+*****************************************************************************************/
+__host__ CPE& CPE::operator=(
+    const CPE &other                                    // In: Device side CPE to assign
+    )
+{
+    if (this == &other)
+    {
+        return *this;
+    }
+
+    assign_data(other);
+
+    return *this;
+}
+
+__host__ CPE& CPE::operator=(
+    const CPU::CPE &cpe_host                                    // In: Host CPE to assign
+    )
+{
+    assign_data(cpe_host);
+
+    return *this;
 }
 
 /****************************************************************************************
@@ -727,5 +763,78 @@ __device__ float CPE::CE_estimate(
     return 0;
 }
 
+/****************************************************************************************
+*  Name     : assign_data
+*  Function : 
+*  Author   : Trym Tengesdal
+*  Modified :
+*****************************************************************************************/
+__host__ __device__ void CPE::assign_data(
+    const CPE &other                // Device side CPE to copy over data/parameters from
+    )
+{
+    // CE pars
+
+    n_CE = other.n_CE;
+    
+    sigma_inject = other.sigma_inject;
+
+    alpha_n = other.alpha_n;
+
+    gate = other.gate;
+
+    rho = other.rho;
+
+    max_it = other.max_it;
+
+    converged_last = other.converged_last;
+
+    // MCSKF4D pars
+    
+    n_MCSKF = other.n_MCSKF;
+
+    q = other.q;
+    r = other.r;
+
+    dt_seg = other.dt_seg;
+
+    d_safe = other.d_safe;
+
+    resize_matrices();
+}
+
+__host__ __device__ void CPE::assign_data(
+    const CPU::CPE &cpe_host                // Host side CPE to copy over data/parameters from
+    )
+{
+    // CE pars
+
+    n_CE = cpe_host.n_CE;
+    
+    sigma_inject = cpe_host.sigma_inject;
+
+    alpha_n = cpe_host.alpha_n;
+
+    gate = cpe_host.gate;
+
+    rho = cpe_host.rho;
+
+    max_it = cpe_host.max_it;
+
+    converged_last = cpe_host.converged_last;
+
+    // MCSKF4D pars
+    
+    n_MCSKF = cpe_host.n_MCSKF;
+
+    q = cpe_host.q;
+    r = cpe_host.r;
+
+    dt_seg = cpe_host.dt_seg;
+
+    d_safe = cpe_host.d_safe;
+
+    resize_matrices();
+}
 }
 }

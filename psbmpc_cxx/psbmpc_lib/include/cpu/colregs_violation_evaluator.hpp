@@ -20,7 +20,7 @@
 #pragma once
 
 #include "psbmpc_parameters.hpp"
-#include "cpu/geometry.hpp"
+#include "cpu/utilities_cpu.hpp"
 
 #include <Eigen/Dense>
 #include <optional>
@@ -37,7 +37,7 @@ namespace PSBMPC_LIB
         {
         private:
             
-            CVE_Pars pars;
+            CVE_Pars<double> pars;
 
             std::optional<COLREGS_Situation> colregs_situation;
             std::optional<Eigen::Vector4d> initial_ownship_state;
@@ -51,7 +51,7 @@ namespace PSBMPC_LIB
             *****************************************************************************************/
             bool evaluate_situation_started(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state) const
             {
-                return evaluateDistance(ownship_state, obstacle_state) < pars.d_close;
+                return (ownship_state.block(0, 0, 2, 1) - obstacle_state.block(0, 0, 2, 1)).norm() < pars.d_close;
             }
 
             /****************************************************************************************
@@ -62,7 +62,7 @@ namespace PSBMPC_LIB
             *****************************************************************************************/
             COLREGS_Situation evaluate_colregs_situation(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state) const
             {
-                const double heading_diff = wrapPI(obstacle_state(COG) - ownship_state(COG));
+                const double heading_diff = wrap_angle_to_pmpi(obstacle_state(COG) - ownship_state(COG));
                 if (heading_diff < -M_PI + pars.head_on_width / 2 || heading_diff > M_PI - pars.head_on_width / 2)
                     return HO;
 
@@ -141,7 +141,7 @@ namespace PSBMPC_LIB
             *****************************************************************************************/
             COLREGS_Violation_Evaluator() = default;
 
-            COLREGS_Violation_Evaluator(const CVE_Pars &pars) : pars(pars) {}
+            COLREGS_Violation_Evaluator(const CVE_Pars<double> &pars) : pars(pars) {}
 
             COLREGS_Violation_Evaluator(const COLREGS_Violation_Evaluator &other) = default;
 

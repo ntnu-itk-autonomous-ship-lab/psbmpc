@@ -140,7 +140,6 @@ namespace PSBMPC_LIB
 		}
 	}
 
-	//CPA - closest point of approach
 	struct CPA
 	{
 		double bearing_relative_to_heading;

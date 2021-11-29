@@ -436,9 +436,9 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : relativeBearing
-		*  Function : Sverre Velten Rothmund
-		*  Author   : 
+		*  Name     : evaluateDistance
+		*  Function : 
+		*  Author   : Sverre Velten Rothmund
 		*  Modified :
 		*****************************************************************************************/
 		inline auto evaluateDistance(double dx, double dy)
@@ -457,7 +457,69 @@ namespace PSBMPC_LIB
 			const auto dx = x - obstacle_state(PX);
 			const auto dy = y - obstacle_state(PY);
 			const auto bearing = std::atan2(dy, dx);
-			return wrapPI(bearing - obstacle_state(COG));
+			return wrap_angle_to_pmpi(bearing - obstacle_state(COG));
+		}
+
+		/****************************************************************************************
+		*  Name     : toStandardForm
+		*  Function : Line [px, py, COG, SOG] to ax+by=c
+		*  Author   : Sverre Velten Rothmund
+		*  Modified :
+		*****************************************************************************************/
+		inline auto toStandardForm(const Eigen::Vector4d &line)
+		{
+			struct
+			{
+				double a;
+				double b;
+				double c;
+			} res;
+
+			double s = sin(line(COG));
+			double c = cos(line(COG));
+			double x0 = line(PX);
+			double y0 = line(PY);
+
+			if (std::abs(s) > std::abs(c))
+			{
+				//sin is non-zero, division by sin possible
+				res.a = 1;
+				res.b = -c / s;
+				res.c = res.a * x0 + res.b * y0;
+			}
+			else
+			{
+				//cos is non-zero, division by cos possible
+				res.a = -s / c;
+				res.b = 1;
+				res.c = res.a * x0 + res.b * y0;
+			}
+
+			return res;
+		}
+		
+		/****************************************************************************************
+		*  Name     : intersectionpoint
+		*  Function : Parameterised [px,py,COG,U], U is unused
+		*  Author   : Sverre Velten Rothmund
+		*  Modified :
+		*****************************************************************************************/
+		inline auto intersectionpoint(const Eigen::Vector4d &line1, const Eigen::Vector4d &line2)
+		{
+			struct
+			{
+				double x;
+				double y;
+			} res;
+
+			auto sline1 = toStandardForm(line1);
+			auto sline2 = toStandardForm(line2);
+
+			//according to https://math.stackexchange.com/questions/1992153/given-two-lines-each-defined-using-hesse-normal-form-find-the-intersection-poin
+			res.x = (sline1.c * sline2.b - sline1.b * sline2.c) / (sline1.a * sline2.b - sline1.b * sline2.a);
+			res.y = (sline1.a * sline2.c - sline1.c * sline2.a) / (sline1.a * sline2.b - sline1.b * sline2.a);
+
+			return res;
 		}
 
 		/****************************************************************************************
@@ -544,7 +606,7 @@ namespace PSBMPC_LIB
 
 			const double bearing = std::atan2(dy_at_CPA, dx_at_CPA);
 			result.bearing_relative_to_heading = bearing - ship1(COG);
-			wrapPI(&result.bearing_relative_to_heading);
+			wrap_angle_to_pmpi(result.bearing_relative_to_heading);
 
 			//Identify which passes in front
 			//Find intersectpoint of the two paths (if there is one)
@@ -661,68 +723,6 @@ namespace PSBMPC_LIB
 			auto CPA = evaluateCPA(ownship_trajectory, obstacle_trajectory);
 			auto bearing_to_obstacle_at_CPA = relativeBearing(CPA.closest_point_ownship, CPA.closest_point_obstacle_ship(PX), CPA.closest_point_obstacle_ship(PY));
 			return bearing_to_obstacle_at_CPA < 0;
-		}
-
-		/****************************************************************************************
-		*  Name     : intersectionpoint
-		*  Function : Parameterised [px,py,COG,U], U is unused
-		*  Author   : Sverre Velten Rothmund
-		*  Modified :
-		*****************************************************************************************/
-		inline auto intersectionpoint(const Eigen::Vector4d &line1, const Eigen::Vector4d &line2)
-		{
-			struct
-			{
-				double x;
-				double y;
-			} res;
-
-			auto sline1 = toStandardForm(line1);
-			auto sline2 = toStandardForm(line2);
-
-			//according to https://math.stackexchange.com/questions/1992153/given-two-lines-each-defined-using-hesse-normal-form-find-the-intersection-poin
-			res.x = (sline1.c * sline2.b - sline1.b * sline2.c) / (sline1.a * sline2.b - sline1.b * sline2.a);
-			res.y = (sline1.a * sline2.c - sline1.c * sline2.a) / (sline1.a * sline2.b - sline1.b * sline2.a);
-
-			return res;
-		}
-
-		/****************************************************************************************
-		*  Name     : toStandardForm
-		*  Function : Line [px, py, COG, SOG] to ax+by=c
-		*  Author   : Sverre Velten Rothmund
-		*  Modified :
-		*****************************************************************************************/
-		inline auto toStandardForm(const Eigen::Vector4d &line)
-		{
-			struct
-			{
-				double a;
-				double b;
-				double c;
-			} res;
-
-			double s = sin(line(COG));
-			double c = cos(line(COG));
-			double x0 = line(PX);
-			double y0 = line(PY);
-
-			if (std::abs(s) > std::abs(c))
-			{
-				//sin is non-zero, division by sin possible
-				res.a = 1;
-				res.b = -c / s;
-				res.c = res.a * x0 + res.b * y0;
-			}
-			else
-			{
-				//cos is non-zero, division by cos possible
-				res.a = -s / c;
-				res.b = 1;
-				res.c = res.a * x0 + res.b * y0;
-			}
-
-			return res;
 		}
 
 		/****************************************************************************************
