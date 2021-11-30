@@ -42,6 +42,8 @@ namespace PSBMPC_LIB
             std::optional<COLREGS_Situation> colregs_situation;
             std::optional<Eigen::Vector4d> initial_ownship_state;
             std::optional<Eigen::Vector4d> initial_obstacle_state;
+            bool has_changed_course_or_speed = false;
+            bool has_changed_course_to_port = false;
 
             /****************************************************************************************
             *  Name     : evaluate_situation_started
@@ -173,11 +175,15 @@ namespace PSBMPC_LIB
             void update(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state_vx_vy)
             {
                 const auto obstacle_state = vx_vy_to_heading_speed_state(obstacle_state_vx_vy);
-                if (evaluate_situation_started(ownship_state, obstacle_state))
+                if (!initial_ownship_state.has_value() && evaluate_situation_started(ownship_state, obstacle_state))
                 {
                     colregs_situation = evaluate_colregs_situation(ownship_state, obstacle_state);
                     initial_ownship_state = ownship_state;
                     initial_obstacle_state = obstacle_state;
+                }
+                else if(initial_ownship_state.has_value()){
+                    has_changed_course_or_speed = has_changed_course_or_speed || fabs(wrap_angle_to_pmpi(ownship_state(COG) - (*initial_ownship_state)(COG))) > pars.max_acceptable_SO_course_change || fabs(ownship_state(SOG) - (*initial_ownship_state)(SOG)) > pars.max_acceptable_SO_speed_change;
+                    has_changed_course_to_port = has_changed_course_to_port || wrap_angle_to_pmpi(ownship_state(COG) - (*initial_ownship_state)(COG)) < -pars.max_acceptable_SO_course_change;
                 }
             }
 
@@ -195,7 +201,7 @@ namespace PSBMPC_LIB
                 const bool distance_larger_than_critical = std::abs((ownship_trajectory.col(0).head(2) - obstacle_trajectory.col(0).head(2)).norm()) > pars.critical_distance_to_ignore_SO;
                 const auto course_change = evaluate_course_change(ownship_trajectory);
                 const auto speed_change = evaluate_speed_change(ownship_trajectory);
-                const bool stands_on_correct =  course_change == CourseChange::None &&  speed_change == SpeedChange::None;
+                const bool stands_on_correct = !has_changed_course_or_speed && course_change == CourseChange::None &&  speed_change == SpeedChange::None;
                 const bool has_SO_role = colregs_situation == OT_en || colregs_situation == CR_PS;
                 const bool is_risk_of_collision = evaluate_risk_of_collision(ownship_trajectory, obstacle_trajectory);
                 const bool so_violation = is_risk_of_collision && distance_larger_than_critical && has_SO_role && !stands_on_correct;
@@ -215,7 +221,7 @@ namespace PSBMPC_LIB
 
                 bool correct_HO_maneuver = evaluate_crossing_port_to_port(ownship_trajectory, obstacle_trajectory);
                 bool correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_trajectory, obstacle_trajectory);
-                bool correct_CR_PS_maneuver = evaluate_course_change(ownship_trajectory) != CourseChange::Portwards;
+                bool correct_CR_PS_maneuver = !has_changed_course_to_port && evaluate_course_change(ownship_trajectory) != CourseChange::Portwards;
                 bool is_risk_of_collision = evaluate_risk_of_collision(ownship_trajectory, obstacle_trajectory);
                 bool gw_violation =  is_risk_of_collision                                        &&
                         ((colregs_situation == HO && !correct_HO_maneuver)          ||
