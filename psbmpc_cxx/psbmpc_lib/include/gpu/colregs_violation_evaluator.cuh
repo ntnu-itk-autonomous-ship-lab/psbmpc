@@ -44,15 +44,15 @@ namespace PSBMPC_LIB
             __host__ COLREGS_Violation_Evaluator()
             {
                 pars.max_distance_at_cpa = 10000.0;
-                pars.d_close = 800.0;
+                pars.d_init_colregs_situation = 800.0;
                 pars.head_on_width = 30.0 * DEG2RAD;
                 pars.overtaking_angle = (90.0 + 22.5) * DEG2RAD;
                 pars.max_acceptable_SO_speed_change = 2.0;
                 pars.max_acceptable_SO_course_change = 2.5 * DEG2RAD;
                 pars.critical_distance_to_ignore_SO = 0.0;
-                pars.safety_margin = 10.0;
+                pars.GW_safety_margin = 10.0;
             }
-                
+
             __host__ COLREGS_Violation_Evaluator(const CVE_Pars<float> &pars) : pars(pars) {}
 
             /****************************************************************************************
@@ -63,7 +63,7 @@ namespace PSBMPC_LIB
             *  Modified :
             *****************************************************************************************/
             __device__ void update(const TML::PDVector4f &ownship_state, const TML::PDVector4f &obstacle_state_vx_vy)
-            {               
+            {
                 obstacle_state = vx_vy_to_heading_speed_state(obstacle_state_vx_vy);
                 if (!initialized && evaluate_situation_started(ownship_state, obstacle_state))
                 {
@@ -80,7 +80,7 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_actual_maneuver_changes
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
@@ -98,7 +98,7 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_predicted_maneuver_changes
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
@@ -116,7 +116,7 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_SO_violation
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
@@ -127,10 +127,10 @@ namespace PSBMPC_LIB
             {
                 if (!initialized)
                     return false;
- 
-                return  d_cpa < pars.max_distance_at_cpa                                && 
-                        d_0i_0 > pars.critical_distance_to_ignore_SO                    && 
-                        (colregs_situation == OT_en || colregs_situation == CR_PS)      && 
+
+                return  d_cpa < pars.max_distance_at_cpa                                &&
+                        d_0i_0 > pars.critical_distance_to_ignore_SO                    &&
+                        (colregs_situation == OT_en || colregs_situation == CR_PS)      &&
                         (actual_ownship_speed_or_course_change || predicted_ownship_change_in_speed_or_course);
             }
 
@@ -156,36 +156,29 @@ namespace PSBMPC_LIB
                         ((colregs_situation == HO && !correct_HO_maneuver)          ||
                         (colregs_situation == CR_SS && !correct_CR_SS_maneuver)     ||
                         (colregs_situation == CR_PS && !correct_CR_PS_maneuver)     ||
-                        d_cpa < pars.safety_margin);
+                        d_cpa < pars.GW_safety_margin);
             }
 
             __device__ void reset() { predicted_ownship_change_in_course_to_port = false; predicted_ownship_change_in_speed_or_course = false; }
 
+        private:
+
+            CVE_Pars<float> pars;
             bool initialized = false;
             bool predicted_ownship_change_in_course_to_port = false;
             bool predicted_ownship_change_in_speed_or_course = false;
             bool actual_ownship_speed_or_course_change = false;
             bool actual_ownship_course_change_port = false;
+
             COLREGS_Situation colregs_situation;
-
-            bool correct_HO_maneuver;
-            bool correct_CR_SS_maneuver;
-            bool correct_CR_PS_maneuver;
-
-        private:
-
-            
-
-            CVE_Pars<float> pars;
-
-            
             TML::PDVector4f initial_ownship_state;
             TML::PDVector4f initial_obstacle_state;
 
             //=================================
             // Temporaries
-            
-
+            bool correct_HO_maneuver;
+            bool correct_CR_SS_maneuver;
+            bool correct_CR_PS_maneuver;
             float heading_diff;
             float bearing_to_obstacle_relative_to_ownship;
             float bearing_to_ownship_relative_to_obstacle;
@@ -199,7 +192,7 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_situation_started
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
@@ -208,12 +201,12 @@ namespace PSBMPC_LIB
                 const TML::PDVector4f &obstacle_state
                 )
             {
-                return evaluateDistance(ownship_state, obstacle_state) < pars.d_close;
+                return evaluateDistance(ownship_state, obstacle_state) < pars.d_init_colregs_situation;
             }
 
             /****************************************************************************************
             *  Name     : evaluate_colregs_situation
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
@@ -242,12 +235,12 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_crossing_port_to_port
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
             __host__ __device__ bool evaluate_crossing_port_to_port(
-                const TML::PDVector4f &ownshipCPA, 
+                const TML::PDVector4f &ownshipCPA,
                 const TML::PDVector4f &obstacleCPA
                 )
             {
@@ -256,19 +249,19 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_crossing_aft
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
             __host__ __device__ bool evaluate_crossing_aft(
-                const TML::PDVector4f &ownshipCPA, 
+                const TML::PDVector4f &ownshipCPA,
                 const TML::PDVector4f &obstacleCPA
                 )
             {
                 intersection_point = intersectionpoint(ownshipCPA, obstacleCPA);
                 ownship_crossing_arrival_time  = evaluate_arrival_time(ownshipCPA, intersection_point(0), intersection_point(1));
                 obstacle_crossing_arrival_time = evaluate_arrival_time(obstacleCPA, intersection_point(0), intersection_point(1));
-                return ownship_crossing_arrival_time > obstacle_crossing_arrival_time; 
+                return ownship_crossing_arrival_time > obstacle_crossing_arrival_time;
             }
         };
     }

@@ -2,19 +2,19 @@
 *
 *  File name : psbmpc.cuh
 *
-*  Function  : Header file for Probabilistic Scenario-based Model Predictive Control, 
+*  Function  : Header file for Probabilistic Scenario-based Model Predictive Control,
 *			   slightly modified for this GPU-implementation.
-*			   
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -24,7 +24,7 @@
 #include "psbmpc_parameters.hpp"
 #if OWNSHIP_TYPE == 0
 	#include "gpu/kinematic_ship_models_gpu.cuh"
-#else 
+#else
 	#include "gpu/kinetic_ship_models_gpu.cuh"
 #endif
 #include "gpu/cpe_gpu.cuh"
@@ -39,7 +39,7 @@
 #include <thrust/device_vector.h>
 
 namespace PSBMPC_LIB
-{	
+{
 	namespace GPU
 	{
 		// Host only due to stderr usage
@@ -90,19 +90,19 @@ namespace PSBMPC_LIB
 			// Device vector of control behaviours
 			thrust::device_vector<TML::PDMatrix<float, 2 * MAX_N_M, 1>> cb_dvec;
 
-			// Device vector of control behaviour indices, static obstacle indices, dynamic obstacle indices, 
+			// Device vector of control behaviour indices, static obstacle indices, dynamic obstacle indices,
 			// dynamic obstacle prediction scenario indices and cpe/colregs_violation_evaluator indices
 			thrust::device_vector<int> cb_index_dvec, sobstacle_index_dvec, dobstacle_index_dvec, dobstacle_ps_index_dvec, os_do_ps_pair_index_dvec;
 
 			// Device vector of path related costs for each control behaviour
 			thrust::device_vector<float> cb_costs_1_dvec;
-			
+
 			// Device vector of costs, size n_threads x 1. It is the grounding obstacle cost (first tuple element) wrt one static
-			// obstacle, and the dynamic obstacle cost (second tuple element) and COLREGS violation cost (third element) when 
-			// the own-ship  follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>, 
-			// behaves as in prediction scenario <obstacle_ps_index>. 
+			// obstacle, and the dynamic obstacle cost (second tuple element) and COLREGS violation cost (third element) when
+			// the own-ship  follows a control behaviour with index cb_index, and a dynamic obstacle with index <obstacle_index>,
+			// behaves as in prediction scenario <obstacle_ps_index>.
 			thrust::device_vector<thrust::tuple<float, float, float>> cb_costs_2_dvec;
-			
+
 			std::unique_ptr<CB_Cost_Functor_1> cb_cost_functor_1;
 			std::unique_ptr<CB_Cost_Functor_2> cb_cost_functor_2;
 
@@ -125,11 +125,11 @@ namespace PSBMPC_LIB
 
 			COLREGS_Violation_Evaluator *colregs_violation_evaluators_device_ptr;
 			//=====================================================
-			
+
 			void preallocate_device_data();
 
 			bool determine_colav_active(const Dynamic_Obstacles &obstacles, const int n_static_obst, const bool disable);
-			
+
 			void map_offset_sequences();
 
 			void reset_control_behaviour(Eigen::VectorXi &offset_sequence_counter, Eigen::VectorXd &offset_sequence);
@@ -146,7 +146,7 @@ namespace PSBMPC_LIB
 
 			void set_up_temporary_device_memory(
 				const double u_d,
-				const double chi_d, 
+				const double chi_d,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const double V_w,
 				const Eigen::Vector2d &wind_direction,
@@ -164,7 +164,7 @@ namespace PSBMPC_LIB
 			CPU::MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 			PSBMPC();
-			PSBMPC(const Ownship &ownship, const CPU::CPE &cpe, const PSBMPC_Parameters &psbmpc_pars, const CVE_Pars<float> &cve_pars); 
+			PSBMPC(const Ownship &ownship, const CPU::CPE &cpe, const PSBMPC_Parameters &psbmpc_pars, const CVE_Pars<float> &cve_pars);
 			PSBMPC(const PSBMPC &other);
 
 			~PSBMPC();
@@ -175,11 +175,11 @@ namespace PSBMPC_LIB
 			void reset() { u_opt_last = 1.0; chi_opt_last = 0.0; ownship.set_wp_counter(0);}
 
 			void calculate_optimal_offsets(
-				double &u_opt, 
-				double &chi_opt, 
+				double &u_opt,
+				double &chi_opt,
 				Eigen::MatrixXd &predicted_trajectory,
-				const double u_d, 
-				const double chi_d, 
+				const double u_d,
+				const double chi_d,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::VectorXd &ownship_state,
 				const double V_w,

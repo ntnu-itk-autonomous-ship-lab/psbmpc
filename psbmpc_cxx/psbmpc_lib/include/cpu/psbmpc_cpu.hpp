@@ -5,17 +5,17 @@
 *  Function  : Header file for Probabilistic Scneario-based Model Predictive Control
 *			   on the CPU.
 *
-*  
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -25,15 +25,15 @@
 #include "psbmpc_parameters.hpp"
 #include "obstacle_predictor.hpp"
 #if OWNSHIP_TYPE == 0
-	#include "cpu/kinematic_ship_models_cpu.hpp"
-#else 
-	#include "cpu/kinetic_ship_models_cpu.hpp"
+#include "cpu/kinematic_ship_models_cpu.hpp"
+#else
+#include "cpu/kinetic_ship_models_cpu.hpp"
 #endif
 #include "cpu/cpe_cpu.hpp"
 #include "cpu/mpc_cost_cpu.hpp"
 
 #include <vector>
-#include <memory>	
+#include <memory>
 
 namespace PSBMPC_LIB
 {
@@ -72,32 +72,36 @@ namespace PSBMPC_LIB
 			void setup_prediction(const Dynamic_Obstacles &obstacles);
 
 			void calculate_collision_probabilities(
-				Eigen::MatrixXd &P_c_i, 
-				const Dynamic_Obstacles &obstacles, 
-				const int i, 
-				const double dt, 
+				Eigen::MatrixXd &P_c_i,
+				const Dynamic_Obstacles &obstacles,
+				const int i,
+				const double dt,
 				const int p_step);
-				
+
 			void assign_optimal_trajectory(Eigen::MatrixXd &optimal_trajectory);
 
 		public:
-
 			PSBMPC_Parameters pars;
 
 			MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 			PSBMPC();
-			PSBMPC(const Ownship &ownship, const CPE &cpe, const PSBMPC_Parameters &pars); 
+			PSBMPC(const Ownship &ownship, const CPE &cpe, const PSBMPC_Parameters &psbmpc_pars);
 
 			// Resets previous optimal offsets and predicted own-ship waypoint following
-			void reset() { u_opt_last = 1.0; chi_opt_last = 0.0; ownship.set_wp_counter(0); }
+			void reset()
+			{
+				u_opt_last = 1.0;
+				chi_opt_last = 0.0;
+				ownship.set_wp_counter(0);
+			}
 
 			void calculate_optimal_offsets(
-				double &u_opt, 
-				double &chi_opt, 
+				double &u_opt,
+				double &chi_opt,
 				Eigen::MatrixXd &predicted_trajectory,
-				const double u_d, 
-				const double chi_d, 
+				const double u_d,
+				const double chi_d,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::VectorXd &ownship_state,
 				const double V_w,
@@ -105,7 +109,6 @@ namespace PSBMPC_LIB
 				const Static_Obstacles &polygons,
 				const Dynamic_Obstacles &obstacles,
 				const bool disable);
-
 		};
 	}
 }

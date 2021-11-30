@@ -24,7 +24,6 @@
 #include "Eigen/Dense"
 #include <vector>
 
-
 namespace PSBMPC_LIB
 {
 
@@ -32,35 +31,35 @@ namespace PSBMPC_LIB
 	// "Collision Probability Estimation for Maritime Collision Avoidance Using the Cross-Entropy Method" for more information on CPE
 	enum CPE_Method
 	{
-		CE,														// Consider positional uncertainty only
-		MCSKF4D													// Consider uncertainty in both position and velocity along piece-wise linear segments
+		CE,		// Consider positional uncertainty only
+		MCSKF4D // Consider uncertainty in both position and velocity along piece-wise linear segments
 	};
 
 	enum Prediction_Method
 	{
-		Linear,													// Linear prediction
-		ERK1, 													// Explicit Runge Kutta 1 = Eulers method
-		ERK4 													// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
+		Linear, // Linear prediction
+		ERK1,	// Explicit Runge Kutta 1 = Eulers method
+		ERK4	// Explicit Runge Kutta of fourth order, not implemented yet nor needed.
 	};
 
 	enum Guidance_Method
 	{
-		LOS, 													// Line-of-sight
-		WPP,													// Waypoint-Pursuit
-		CH 														// Course Hold
+		LOS, // Line-of-sight
+		WPP, // Waypoint-Pursuit
+		CH	 // Course Hold
 	};
 
-	template<class T>
+	template <class T>
 	struct CVE_Pars
 	{
-		T max_distance_at_cpa;						// Max allowable distance at CPA before considered violating COLREGS
-		T d_close;									// Threshold for initializing the COLREGS violation evaluator
-		T head_on_width; 							// Width of zone where vessels are considered head-on wrt own-ship
-		T overtaking_angle; 						// Bearing angle wrt own-ship/obstacle where vessels are considered to overtake
-		T max_acceptable_SO_speed_change; 			// Max allowable stand-on speed change before considered violating COLREGS
-		T max_acceptable_SO_course_change;			// Max allowable stand-on course change before considered violating COLREGS
-		T critical_distance_to_ignore_SO; 			// Distance where the own-ship SO role should be aborted to make a safety maneuver
-		T safety_margin; 							// Minimum distance to keep to other vessel for a COLREGS compliant maneuver to be correct
+		T max_distance_at_cpa;			   // Max allowable distance at CPA before considered violating COLREGS
+		T d_init_colregs_situation;		   // Threshold for initializing the COLREGS violation evaluator
+		T head_on_width;				   // Width of zone where vessels are considered head-on wrt own-ship
+		T overtaking_angle;				   // Bearing angle wrt own-ship/obstacle where vessels are considered to overtake
+		T max_acceptable_SO_speed_change;  // Max allowable stand-on speed change before considered violating COLREGS
+		T max_acceptable_SO_course_change; // Max allowable stand-on course change before considered violating COLREGS
+		T critical_distance_to_ignore_SO;  // Distance where the own-ship SO role should be aborted to make a safety maneuver
+		T GW_safety_margin;				   // Minimum distance to keep to other vessel for a COLREGS compliant maneuver to be correct
 	};
 
 	enum COLREGS_Situation
@@ -92,19 +91,20 @@ namespace PSBMPC_LIB
 	namespace CPU
 	{
 		class PSBMPC;
-		template <typename Parameters> class MPC_Cost;
+		template <typename Parameters>
+		class MPC_Cost;
 	}
 	namespace GPU
 	{
 		class PSBMPC;
-		template <typename Parameters> class MPC_Cost;
+		template <typename Parameters>
+		class MPC_Cost;
 		class CB_Functor_Pars;
 	}
 
 	class PSBMPC_Parameters
 	{
 	private:
-
 		friend class CPU::PSBMPC;
 		friend class GPU::PSBMPC;
 		friend class CPU::MPC_Cost<PSBMPC_Parameters>;
@@ -161,8 +161,11 @@ namespace PSBMPC_LIB
 			const std::vector<double> &dpars);
 
 	public:
-
-		PSBMPC_Parameters() { initialize_pars(); initialize_par_limits(); }
+		PSBMPC_Parameters()
+		{
+			initialize_pars();
+			initialize_par_limits();
+		}
 		PSBMPC_Parameters(
 			const std::vector<std::vector<double>> &u_offsets,
 			const std::vector<std::vector<double>> &chi_offsets,
@@ -183,11 +186,23 @@ namespace PSBMPC_LIB
 
 		void set_par(const int index, const std::vector<Eigen::VectorXd> &value);
 
-		inline void set_cpe_method(const CPE_Method cpe_method) 						{ if (cpe_method >= CE && cpe_method <= MCSKF4D) this->cpe_method = cpe_method; };
+		inline void set_cpe_method(const CPE_Method cpe_method)
+		{
+			if (cpe_method >= CE && cpe_method <= MCSKF4D)
+				this->cpe_method = cpe_method;
+		};
 
-		inline void set_prediction_method(const Prediction_Method prediction_method)  	{ if (prediction_method >= Linear && prediction_method <= ERK4) this->prediction_method = prediction_method; };
+		inline void set_prediction_method(const Prediction_Method prediction_method)
+		{
+			if (prediction_method >= Linear && prediction_method <= ERK4)
+				this->prediction_method = prediction_method;
+		};
 
-		inline void set_guidance_method(const Guidance_Method guidance_method) 		 	{ if (guidance_method >= LOS && guidance_method <= CH) this->guidance_method = guidance_method; };
+		inline void set_guidance_method(const Guidance_Method guidance_method)
+		{
+			if (guidance_method >= LOS && guidance_method <= CH)
+				this->guidance_method = guidance_method;
+		};
 
 		int get_ipar(const int index) const;
 
@@ -200,6 +215,5 @@ namespace PSBMPC_LIB
 		inline Prediction_Method get_prediction_method() const { return prediction_method; };
 
 		inline Guidance_Method get_guidance_method() const { return guidance_method; };
-
 	};
 }

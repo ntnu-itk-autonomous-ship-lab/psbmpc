@@ -36,7 +36,6 @@ namespace PSBMPC_LIB
         class COLREGS_Violation_Evaluator
         {
         private:
-            
             CVE_Pars<double> pars;
 
             std::optional<COLREGS_Situation> colregs_situation;
@@ -47,18 +46,18 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_situation_started
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
             bool evaluate_situation_started(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state) const
             {
-                return (ownship_state.block(0, 0, 2, 1) - obstacle_state.block(0, 0, 2, 1)).norm() < pars.d_close;
+                return (ownship_state.block(0, 0, 2, 1) - obstacle_state.block(0, 0, 2, 1)).norm() < pars.d_init_colregs_situation;
             }
 
             /****************************************************************************************
             *  Name     : evaluate_colregs_situation
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
@@ -96,7 +95,7 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_course_change
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
@@ -104,10 +103,12 @@ namespace PSBMPC_LIB
             {
                 for (int i = 0; i < ownship_trajectory.cols(); ++i)
                 {
-                    if (ownship_trajectory(COG, i) - initial_ownship_state.value()(COG) < -pars.max_acceptable_SO_course_change){
+                    if (ownship_trajectory(COG, i) - initial_ownship_state.value()(COG) < -pars.max_acceptable_SO_course_change)
+                    {
                         return CourseChange::Portwards;
                     }
-                    if (ownship_trajectory(COG, i) - initial_ownship_state.value()(COG) > pars.max_acceptable_SO_course_change){
+                    if (ownship_trajectory(COG, i) - initial_ownship_state.value()(COG) > pars.max_acceptable_SO_course_change)
+                    {
                         return CourseChange::Starboardwards;
                     }
                 }
@@ -123,7 +124,7 @@ namespace PSBMPC_LIB
             SpeedChange evaluate_speed_change(const Eigen::MatrixXd &ownship_trajectory) const
             {
                 //Seems like the trajectories are slowing down towards the end as they are approaching the final wp, so im only considering the first half of the traj as there shouldnt be any changes in speed or course after that
-                for (int i = 0; i < ownship_trajectory.cols()/2; ++i)
+                for (int i = 0; i < ownship_trajectory.cols() / 2; ++i)
                 {
                     if (ownship_trajectory(SOG, i) - initial_ownship_state.value()(SOG) > pars.max_acceptable_SO_speed_change)
                         return SpeedChange::Higher;
@@ -134,7 +135,6 @@ namespace PSBMPC_LIB
             }
 
         public:
-
             /****************************************************************************************
             *  Name     : COLREGS_Violation_Evaluator
             *  Function : Class constructor
@@ -144,13 +144,13 @@ namespace PSBMPC_LIB
             COLREGS_Violation_Evaluator()
             {
                 pars.max_distance_at_cpa = 100.0;
-                pars.d_close = 800.0;
+                pars.d_init_colregs_situation = 800.0;
                 pars.head_on_width = 30.0 * DEG2RAD;
                 pars.overtaking_angle = (90.0 + 22.5) * DEG2RAD;
                 pars.max_acceptable_SO_speed_change = 2.0;
                 pars.max_acceptable_SO_course_change = 2.5 * DEG2RAD;
                 pars.critical_distance_to_ignore_SO = 0.0;
-                pars.safety_margin = 10.0;
+                pars.GW_safety_margin = 10.0;
             }
 
             COLREGS_Violation_Evaluator(const CVE_Pars<double> &pars) : pars(pars) {}
@@ -171,7 +171,8 @@ namespace PSBMPC_LIB
                     initial_ownship_state = ownship_state;
                     initial_obstacle_state = obstacle_state;
                 }
-                else if(initial_ownship_state.has_value()){
+                else if (initial_ownship_state.has_value())
+                {
                     has_changed_course_or_speed = has_changed_course_or_speed || fabs(wrap_angle_to_pmpi(ownship_state(COG) - (*initial_ownship_state)(COG))) > pars.max_acceptable_SO_course_change || fabs(ownship_state(SOG) - (*initial_ownship_state)(SOG)) > pars.max_acceptable_SO_speed_change;
                     has_changed_course_to_port = has_changed_course_to_port || wrap_angle_to_pmpi(ownship_state(COG) - (*initial_ownship_state)(COG)) < -pars.max_acceptable_SO_course_change;
                 }
@@ -179,7 +180,7 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_SO_violation
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
@@ -189,10 +190,10 @@ namespace PSBMPC_LIB
                     return false;
 
                 const bool distance_larger_than_critical = std::abs((ownship_trajectory.col(0).head(2) - obstacle_trajectory.col(0).head(2)).norm()) > pars.critical_distance_to_ignore_SO;
-                //const bool safety_margin_violated = d_cpa < pars.safety_margin;
+                //const bool GW_safety_margin_violated = d_cpa < pars.GW_safety_margin;
                 const auto course_change = evaluate_course_change(ownship_trajectory);
                 const auto speed_change = evaluate_speed_change(ownship_trajectory);
-                const bool stands_on_correct = !has_changed_course_or_speed && course_change == CourseChange::None &&  speed_change == SpeedChange::None;
+                const bool stands_on_correct = !has_changed_course_or_speed && course_change == CourseChange::None && speed_change == SpeedChange::None;
                 const bool has_SO_role = colregs_situation == OT_en || colregs_situation == CR_PS;
                 const bool is_risk_of_collision = evaluate_risk_of_collision(ownship_trajectory, obstacle_trajectory);
                 const bool so_violation = is_risk_of_collision && distance_larger_than_critical && has_SO_role && !stands_on_correct;
@@ -201,7 +202,7 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_GW_violation
-            *  Function : 
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
@@ -214,10 +215,10 @@ namespace PSBMPC_LIB
                 bool correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_trajectory, obstacle_trajectory);
                 bool correct_CR_PS_maneuver = !has_changed_course_to_port && evaluate_course_change(ownship_trajectory) != CourseChange::Portwards;
                 bool is_risk_of_collision = evaluate_risk_of_collision(ownship_trajectory, obstacle_trajectory);
-                bool gw_violation =  is_risk_of_collision                                        &&
-                        ((colregs_situation == HO && !correct_HO_maneuver)          ||
-                        (colregs_situation == CR_SS && !correct_CR_SS_maneuver)     ||
-                        (colregs_situation == CR_PS && !correct_CR_PS_maneuver));
+                bool gw_violation = is_risk_of_collision &&
+                                    ((colregs_situation == HO && !correct_HO_maneuver) ||
+                                     (colregs_situation == CR_SS && !correct_CR_SS_maneuver) ||
+                                     (colregs_situation == CR_PS && !correct_CR_PS_maneuver));
                 return gw_violation;
             }
         };
