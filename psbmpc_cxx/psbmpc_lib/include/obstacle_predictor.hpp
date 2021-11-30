@@ -408,7 +408,7 @@ namespace PSBMPC_LIB
 
 		Obstacle_Predictor() 
 			//: n_ps_MROU(5), n_ps_LOS(5), r_ct(10.0), mrou(0.01, 0.0, 0.01, 0.1, 0.1)
-			: n_ps_MROU(5), n_ps_LOS(5), r_ct(30.0), mrou(0.1, 0.0, 0.1, 0.1, 0.1)
+			: n_ps_MROU(5), n_ps_LOS(5), r_ct(50.0), mrou(0.1, 0.0, 0.1, 0.1, 0.1)
 		{
 			if (n_ps_MROU == 3)
 			{
@@ -528,7 +528,8 @@ namespace PSBMPC_LIB
 				{
 					Pr_s_i(ps) = 0;
 				}
-				Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
+				//Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
+				Pr_s_i(n_ps[i] - 1) = 1;
 				Pr_s_i = Pr_s_i / Pr_s_i.sum();
 
 				//std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;

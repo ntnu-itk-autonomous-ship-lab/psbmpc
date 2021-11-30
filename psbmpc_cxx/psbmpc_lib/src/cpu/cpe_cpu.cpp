@@ -213,7 +213,7 @@ void CPE::estimate_over_trajectories(
                     v_i_prev = xs_i_p.block<2, 1>(2, k - p_step);
                 }
 
-                P_c_i(0, k) = CE_estimation(xs_p.block<2, 1>(0, k), xs_i_p.block<2, 1>(0, k), P_i_2D, v_os_prev, v_i_prev, dt);
+                P_c_i(0, k) = CE_estimation(xs_p.block<2, 1>(0, k), xs_i_p.block<2, 1>(0, k), P_i_2D, v_os_prev, v_i_prev, dt * p_step);
 
                 P_c_i.block(0, k, 1, p_step) = P_c_i(0, k) * Eigen::MatrixXd::Ones(1, p_step);
 

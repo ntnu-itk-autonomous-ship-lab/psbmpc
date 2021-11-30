@@ -497,7 +497,11 @@ namespace PSBMPC_LIB
 		*  Author   : Sverre Velten Rothmund
 		*  Modified :
 		*****************************************************************************************/
-		__host__ __device__ inline float evaluate_arrival_time(const TML::PDVector4f &ship, const float x, const float y)
+		__host__ __device__ inline float evaluate_arrival_time(
+			const TML::PDVector4f &ship, 
+			const float x, 
+			const float y
+			)
 		{
 			//If no speed then it will take forever to arrive.
 			if (ship(SOG) < 1e-6)

@@ -143,7 +143,7 @@ namespace PSBMPC_LIB
             {
                 pars.max_distance_at_cpa = 100.0;
                 pars.d_close = 800.0;
-                pars.head_on_width = 10.0 * DEG2RAD;
+                pars.head_on_width = 30.0 * DEG2RAD;
                 pars.overtaking_angle = (90.0 + 22.5) * DEG2RAD;
                 pars.max_acceptable_SO_speed_change = 2.0;
                 pars.max_acceptable_SO_course_change = 2.5 * DEG2RAD;
@@ -151,17 +151,6 @@ namespace PSBMPC_LIB
             }
 
             COLREGS_Violation_Evaluator(const CVE_Pars<double> &pars) : pars(pars) {}
-
-            COLREGS_Violation_Evaluator(const COLREGS_Violation_Evaluator &other) = default;
-
-
-            /****************************************************************************************
-            *  Name     : operator=
-            *  Function : Assignment operator
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            COLREGS_Violation_Evaluator &operator=(const COLREGS_Violation_Evaluator &rhs) = default;
 
             /****************************************************************************************
             *  Name     : update

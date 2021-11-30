@@ -225,9 +225,9 @@ __device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(cons
 		//======================================
 
 		//==========================================================================================
-		printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | h_do_i_ps = %.4f | has_UCHI_changed = %d | has_CHI_changed_port = %d |  cb : %.1f, %.1f\n", i, ps, k, P_c_i, h_do_i_ps,
+		printf("i = %d | ps = %d | k = %d | P_c_i = %.6f | h_do_i_ps = %.4f | has_UCHI_changed = %d | has_CHI_changed_port = %d | COLREGS_situation = %d |  cb : %.1f, %.1f\n", i, ps, k, P_c_i, h_do_i_ps,
 			colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_speed_or_course, colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_course_to_port,
-			offset_sequence(0), RAD2DEG * offset_sequence(1));
+			colregs_violation_evaluators[os_do_ps_pair_index].colregs_situation, offset_sequence(0), RAD2DEG * offset_sequence(1));
 
 		//==============================================================================================
 	}

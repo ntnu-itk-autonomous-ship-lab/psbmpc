@@ -45,7 +45,7 @@ namespace PSBMPC_LIB
             {
                 pars.max_distance_at_cpa = 100.0;
                 pars.d_close = 800.0;
-                pars.head_on_width = 10.0 * DEG2RAD;
+                pars.head_on_width = 30.0 * DEG2RAD;
                 pars.overtaking_angle = (90.0 + 22.5) * DEG2RAD;
                 pars.max_acceptable_SO_speed_change = 2.0;
                 pars.max_acceptable_SO_course_change = 2.5 * DEG2RAD;
@@ -53,16 +53,6 @@ namespace PSBMPC_LIB
             }
                 
             __host__ COLREGS_Violation_Evaluator(const CVE_Pars<float> &pars) : pars(pars) {}
-
-            __host__ COLREGS_Violation_Evaluator(const COLREGS_Violation_Evaluator &other) = default;
-
-            /****************************************************************************************
-            *  Name     : operator=
-            *  Function : Assignment operator
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            __host__ COLREGS_Violation_Evaluator &operator=(const COLREGS_Violation_Evaluator &rhs) = default;
 
             /****************************************************************************************
             *  Name     : update
@@ -99,7 +89,7 @@ namespace PSBMPC_LIB
                 )
             {
                 if (!actual_ownship_speed_or_course_change)
-                    actual_ownship_speed_or_course_change = fabs(wrap_angle_to_pmpi(chi_0 - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change || U_0 - initial_ownship_state(SOG) > pars.max_acceptable_SO_speed_change;
+                    actual_ownship_speed_or_course_change = fabs(wrap_angle_to_pmpi(chi_0 - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change || fabs(U_0 - initial_ownship_state(SOG)) > pars.max_acceptable_SO_speed_change;
 
                 if (!actual_ownship_course_change_port)
                     actual_ownship_course_change_port = wrap_angle_to_pmpi(chi_0 - initial_ownship_state(COG)) < -pars.max_acceptable_SO_course_change;
@@ -117,7 +107,7 @@ namespace PSBMPC_LIB
                 )
             {
                 if (!predicted_ownship_change_in_speed_or_course)
-                    predicted_ownship_change_in_speed_or_course = fabs(wrap_angle_to_pmpi(chi - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change || U - initial_ownship_state(SOG) > pars.max_acceptable_SO_speed_change;
+                    predicted_ownship_change_in_speed_or_course = fabs(wrap_angle_to_pmpi(chi - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change || fabs(U - initial_ownship_state(SOG)) > pars.max_acceptable_SO_speed_change;
 
                 if (!predicted_ownship_change_in_course_to_port)
                     predicted_ownship_change_in_course_to_port = wrap_angle_to_pmpi(chi - initial_ownship_state(COG)) < -pars.max_acceptable_SO_course_change;
@@ -145,7 +135,7 @@ namespace PSBMPC_LIB
 
             /****************************************************************************************
             *  Name     : evaluate_GW_violation
-            *  Function : TODO
+            *  Function :
             *  Author   :
             *  Modified :
             *****************************************************************************************/
@@ -172,7 +162,8 @@ namespace PSBMPC_LIB
             bool initialized = false;
             bool predicted_ownship_change_in_course_to_port = false;
             bool predicted_ownship_change_in_speed_or_course = false;
-        
+            COLREGS_Situation colregs_situation;
+
         private:
 
             bool actual_ownship_speed_or_course_change = false;
@@ -180,7 +171,7 @@ namespace PSBMPC_LIB
 
             CVE_Pars<float> pars;
 
-            COLREGS_Situation colregs_situation;
+            
             TML::PDVector4f initial_ownship_state;
             TML::PDVector4f initial_obstacle_state;
 

@@ -264,7 +264,7 @@ void PSBMPC_Parameters::initialize_pars()
 {
 	n_cbs = 1;
 	n_M = 1;
-	n_r = 1;
+	n_r = 5;
 
 	chi_offsets.resize(n_M);
 	u_offsets.resize(n_M);
@@ -330,7 +330,7 @@ void PSBMPC_Parameters::initialize_pars()
 	prediction_method = ERK1;
 	guidance_method = LOS;
 
-	T = 150.0; 	     
+	T = 50.0; 	     
 	dt = 5.0;
 
 	p_step = 1;
@@ -338,7 +338,7 @@ void PSBMPC_Parameters::initialize_pars()
 	p_step_grounding = 2;
 	if (prediction_method == ERK1)
 	{ 
-		dt = 0.5; 
+		dt = 1.0; 
 		p_step = 10;
 	}
 	t_ts = 10;
@@ -346,7 +346,7 @@ void PSBMPC_Parameters::initialize_pars()
 	d_so_relevant = 200;
 	d_init = 300;								 
 	d_safe = 5; 							
-	K_coll = 3.0;	// 0.2ish for sea traffic, 10.0ish for nidelva	  						     		
+	K_coll = 1.0;	// 0.2ish for sea traffic, 10.0ish for nidelva	  						     		
 	kappa_SO = 10.0;		  					
 	kappa_GW = 20.0;						 
 	K_u = 40;		   						 

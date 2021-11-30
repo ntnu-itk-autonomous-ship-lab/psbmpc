@@ -391,7 +391,7 @@ void PSBMPC::calculate_optimal_offsets(
 	// MATLAB PLOTTING FOR DEBUGGING AND TUNING
 	//==================================================================
 	#if ENABLE_PSBMPC_DEBUGGING
-		/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
+		Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
 		map_traj = trajectory;
 
 		k_s = mxCreateDoubleScalar(n_samples);
@@ -402,7 +402,7 @@ void PSBMPC::calculate_optimal_offsets(
 
 		printf("%s", buffer);
 
-		engClose(ep); */
+		engClose(ep);
 	#endif
 	//====================================================================
 
