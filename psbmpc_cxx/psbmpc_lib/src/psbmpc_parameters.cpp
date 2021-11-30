@@ -338,7 +338,7 @@ void PSBMPC_Parameters::initialize_pars()
 	p_step_grounding = 2;
 	if (prediction_method == ERK1)
 	{ 
-		dt = 1.0; 
+		dt = 0.5; 
 		p_step = 10;
 	}
 	t_ts = 10;
@@ -346,7 +346,7 @@ void PSBMPC_Parameters::initialize_pars()
 	d_so_relevant = 200;
 	d_init = 300;								 
 	d_safe = 5; 							
-	K_coll = 1.0;	// 0.2ish for sea traffic, 10.0ish for nidelva	  						     		
+	K_coll = 3.0;	// 0.2ish for sea traffic, 10.0ish for nidelva	  						     		
 	kappa_SO = 10.0;		  					
 	kappa_GW = 20.0;						 
 	K_u = 40;		   						 

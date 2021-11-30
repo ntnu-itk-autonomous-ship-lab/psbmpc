@@ -42,7 +42,7 @@ __host__ CPE::CPE(
 {
     // CE pars
 
-    n_CE = 500;
+    n_CE = 700;
     
     sigma_inject = 1.0f / 3.0f; // dependent on d_safe wrt obstacle i => set in CE-method
 

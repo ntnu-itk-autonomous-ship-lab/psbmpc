@@ -46,7 +46,7 @@ int main()
 //*****************************************************************************************************************
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	xs_os_0 << 0, 0, 0, 8, 0, 0;
-	double u_d(9.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
+	double u_d(8.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 
 	PSBMPC_LIB::CPU::Ownship ownship;
 
@@ -171,11 +171,13 @@ int main()
 		}
 		else
 		{
-			//xs_i_0[i] << 300, 0, 180 * DEG2RAD, 2, 0, 0;
-			xs_i_0[i] << 200, -200, 90 * DEG2RAD, 8, 0, 0;
-			waypoints_i[i] << 	xs_i_0[i](0), 200,
-								xs_i_0[i](1), 200;
-			u_d_i[i] = 8.0; chi_d_i[i] = 180 * DEG2RAD;
+			xs_i_0[i] << 300, 0, 180 * DEG2RAD, 2, 0, 0;
+			//xs_i_0[i] << 200, 200, -90 * DEG2RAD, 8, 0, 0;
+			//xs_i_0[i] << -200, 0, 0 * DEG2RAD, 13, 0, 0;
+			//xs_i_0[i] << 200, 0, 0 * DEG2RAD, 4, 0, 0;
+			waypoints_i[i] << 	xs_i_0[i](0), -600,
+								xs_i_0[i](1), 0;
+			u_d_i[i] = 4.0; chi_d_i[i] = 0 * DEG2RAD;
 		}
 
 		#if OWNSHIP_TYPE == 0
@@ -188,11 +190,11 @@ int main()
 			trajectory_i[i].col(0) = xs_i_0[i];
 		#endif
 
-		offset_sequence_i[i].resize(6);
-		offset_sequence_i[i] << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
+		offset_sequence_i[i].resize(4);
+		offset_sequence_i[i] << 1, 30 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 
-		maneuver_times_i[i].resize(3);
-		maneuver_times_i[i] << 0, 100, 150;
+		maneuver_times_i[i].resize(2);
+		maneuver_times_i[i] << 0, 30;
 
 		// Simulate obstacle trajectory independent on the ownship
 		obstacle_sim.predict_trajectory(trajectory_i[i], offset_sequence_i[i], maneuver_times_i[i], u_d_i[i], chi_d_i[i], waypoints_i[i], PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T_sim, dt);

@@ -43,13 +43,14 @@ namespace PSBMPC_LIB
             *****************************************************************************************/
             __host__ COLREGS_Violation_Evaluator()
             {
-                pars.max_distance_at_cpa = 100.0;
+                pars.max_distance_at_cpa = 10000.0;
                 pars.d_close = 800.0;
                 pars.head_on_width = 30.0 * DEG2RAD;
                 pars.overtaking_angle = (90.0 + 22.5) * DEG2RAD;
                 pars.max_acceptable_SO_speed_change = 2.0;
                 pars.max_acceptable_SO_course_change = 2.5 * DEG2RAD;
                 pars.critical_distance_to_ignore_SO = 0.0;
+                pars.safety_margin = 10.0;
             }
                 
             __host__ COLREGS_Violation_Evaluator(const CVE_Pars<float> &pars) : pars(pars) {}
@@ -148,13 +149,14 @@ namespace PSBMPC_LIB
                 if (!initialized)
                     return false;
 
-                correct_HO_maneuver = evaluate_crossing_port_to_port(ownship_CPA_state, obstacle_CPA_state_vx_vy);
-                correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_CPA_state, obstacle_CPA_state_vx_vy);
+                correct_HO_maneuver = evaluate_crossing_port_to_port(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy));
+                correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy));
                 correct_CR_PS_maneuver = !(actual_ownship_course_change_port || predicted_ownship_change_in_course_to_port);
                 return  d_cpa < pars.max_distance_at_cpa                            &&
                         ((colregs_situation == HO && !correct_HO_maneuver)          ||
                         (colregs_situation == CR_SS && !correct_CR_SS_maneuver)     ||
-                        (colregs_situation == CR_PS && !correct_CR_PS_maneuver));
+                        (colregs_situation == CR_PS && !correct_CR_PS_maneuver)     ||
+                        d_cpa < pars.safety_margin);
             }
 
             __device__ void reset() { predicted_ownship_change_in_course_to_port = false; predicted_ownship_change_in_speed_or_course = false; }
@@ -162,12 +164,17 @@ namespace PSBMPC_LIB
             bool initialized = false;
             bool predicted_ownship_change_in_course_to_port = false;
             bool predicted_ownship_change_in_speed_or_course = false;
+            bool actual_ownship_speed_or_course_change = false;
+            bool actual_ownship_course_change_port = false;
             COLREGS_Situation colregs_situation;
+
+            bool correct_HO_maneuver;
+            bool correct_CR_SS_maneuver;
+            bool correct_CR_PS_maneuver;
 
         private:
 
-            bool actual_ownship_speed_or_course_change = false;
-            bool actual_ownship_course_change_port = false;
+            
 
             CVE_Pars<float> pars;
 
@@ -177,14 +184,14 @@ namespace PSBMPC_LIB
 
             //=================================
             // Temporaries
-            bool correct_HO_maneuver;
-            bool correct_CR_SS_maneuver;
-            bool correct_CR_PS_maneuver;
+            
 
             float heading_diff;
             float bearing_to_obstacle_relative_to_ownship;
             float bearing_to_ownship_relative_to_obstacle;
             float bearing_to_intersection_point;
+            float ownship_crossing_arrival_time;
+            float obstacle_crossing_arrival_time;
 
             TML::PDVector4f obstacle_state;
             TML::Vector2f intersection_point;
@@ -259,9 +266,9 @@ namespace PSBMPC_LIB
                 )
             {
                 intersection_point = intersectionpoint(ownshipCPA, obstacleCPA);
-                const auto ownship_crossing_arrival_time = evaluate_arrival_time(ownshipCPA, intersection_point(0), intersection_point(1));
-                const auto obstacle_crossing_arrival_time = evaluate_arrival_time(obstacleCPA, intersection_point(0), intersection_point(1));
-                return ownship_crossing_arrival_time>obstacle_crossing_arrival_time;
+                ownship_crossing_arrival_time  = evaluate_arrival_time(ownshipCPA, intersection_point(0), intersection_point(1));
+                obstacle_crossing_arrival_time = evaluate_arrival_time(obstacleCPA, intersection_point(0), intersection_point(1));
+                return ownship_crossing_arrival_time > obstacle_crossing_arrival_time; 
             }
         };
     }

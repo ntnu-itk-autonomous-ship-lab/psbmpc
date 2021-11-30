@@ -60,6 +60,7 @@ namespace PSBMPC_LIB
 		T max_acceptable_SO_speed_change; 			// Max allowable stand-on speed change before considered violating COLREGS
 		T max_acceptable_SO_course_change;			// Max allowable stand-on course change before considered violating COLREGS
 		T critical_distance_to_ignore_SO; 			// Distance where the own-ship SO role should be aborted to make a safety maneuver
+		T safety_margin; 							// Minimum distance to keep to other vessel for a COLREGS compliant maneuver to be correct
 	};
 
 	enum COLREGS_Situation

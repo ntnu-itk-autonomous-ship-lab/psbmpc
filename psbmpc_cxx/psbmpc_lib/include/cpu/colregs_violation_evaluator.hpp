@@ -150,6 +150,7 @@ namespace PSBMPC_LIB
                 pars.max_acceptable_SO_speed_change = 2.0;
                 pars.max_acceptable_SO_course_change = 2.5 * DEG2RAD;
                 pars.critical_distance_to_ignore_SO = 0.0;
+                pars.safety_margin = 10.0;
             }
 
             COLREGS_Violation_Evaluator(const CVE_Pars<double> &pars) : pars(pars) {}
@@ -188,6 +189,7 @@ namespace PSBMPC_LIB
                     return false;
 
                 const bool distance_larger_than_critical = std::abs((ownship_trajectory.col(0).head(2) - obstacle_trajectory.col(0).head(2)).norm()) > pars.critical_distance_to_ignore_SO;
+                //const bool safety_margin_violated = d_cpa < pars.safety_margin;
                 const auto course_change = evaluate_course_change(ownship_trajectory);
                 const auto speed_change = evaluate_speed_change(ownship_trajectory);
                 const bool stands_on_correct = !has_changed_course_or_speed && course_change == CourseChange::None &&  speed_change == SpeedChange::None;
