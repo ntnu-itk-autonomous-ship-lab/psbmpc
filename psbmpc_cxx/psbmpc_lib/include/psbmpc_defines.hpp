@@ -55,5 +55,5 @@
 #define MAX_N_SEG_SAMPLES 4   // Max number of samples in segment considered in the CPE method MCSKF4D
 #define MAX_N_CPE_SAMPLES 700 // Max number of samples allowable to draw in the CPE.
 
-#define MAX_N_SO 10         // Max number of static obstacles/polygons allowable on the device
+#define MAX_N_SO 12         // Max number of static obstacles/polygons allowable on the device
 #define MAX_N_VERTICES 2000 // Max number of vertices in a polygon allowable on the device
