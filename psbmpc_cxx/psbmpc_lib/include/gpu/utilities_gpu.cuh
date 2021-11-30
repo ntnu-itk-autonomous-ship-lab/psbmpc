@@ -489,5 +489,41 @@ namespace PSBMPC_LIB
 			heading_speed_state(SOG) = sqrtf(powf(vx_vy_state(VX),2) + powf(vx_vy_state(VY),2));
 			return heading_speed_state;
 		}
+
+		/****************************************************************************************
+		*  Name     : evaluate_arrival_time
+		*  Function : Evaluate when a ship keeping constant speed and course will
+					  arrive at location x,y. Assumes that x,y is on the line.
+		*  Author   : Sverre Velten Rothmund
+		*  Modified :
+		*****************************************************************************************/
+		__host__ __device__ inline float evaluate_arrival_time(const TML::PDVector4f &ship, const float x, const float y)
+		{
+			//If no speed then it will take forever to arrive.
+			if (ship(SOG) < 1e-6)
+			{
+				if (std::fabs(relativeBearing(ship, x, y)) < 90 * DEG2RAD)
+				{
+					return INFINITY;
+				}
+				else
+				{
+					return -INFINITY;
+				}
+			}
+
+			//0/inf can happen if res.x-line(PX) ~=0. Avoid this by using the biggest of x and y to evaluate
+			float dx = x - ship(PX);
+			float dy = y - ship(PY);
+
+			if (dx > dy)
+			{
+				return dx / (ship(SOG) * cos(ship(COG)));
+			}
+			else
+			{
+				return dy / (ship(SOG) * sin(ship(COG)));
+			}
+		}
 	}
 }

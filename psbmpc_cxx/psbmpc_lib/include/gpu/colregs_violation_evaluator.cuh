@@ -262,10 +262,10 @@ namespace PSBMPC_LIB
                 const TML::PDVector4f &obstacleCPA
                 )
             {
-                //We are crossing behind if the intersection point is ahead of ownship at CPA
                 intersection_point = intersectionpoint(ownshipCPA, obstacleCPA);
-                bearing_to_intersection_point = relativeBearing(ownshipCPA, intersection_point(0), intersection_point(1));
-                return fabs(bearing_to_intersection_point) > 90 * DEG2RAD;
+                const auto ownship_crossing_arrival_time = evaluate_arrival_time(ownshipCPA, intersection_point(0), intersection_point(1));
+                const auto obstacle_crossing_arrival_time = evaluate_arrival_time(obstacleCPA, intersection_point(0), intersection_point(1));
+                return ownship_crossing_arrival_time>obstacle_crossing_arrival_time;
             }
         };
     }
