@@ -171,9 +171,9 @@ int main()
 		}
 		else
 		{
-			xs_i_0[i] << 200, 0, 180 * DEG2RAD, 2, 0, 0;
-			waypoints_i[i] << 	xs_i_0[i](0), 0,
-								xs_i_0[i](1), -400;
+			xs_i_0[i] << 300, 0, 180 * DEG2RAD, 2, 0, 0;
+			waypoints_i[i] << 	xs_i_0[i](0), -200,
+								xs_i_0[i](1), 0;
 			u_d_i[i] = 8.0; chi_d_i[i] = 180 * DEG2RAD;
 		}
 

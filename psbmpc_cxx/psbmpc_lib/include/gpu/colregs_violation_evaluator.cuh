@@ -71,54 +71,56 @@ namespace PSBMPC_LIB
             *  Author   :
             *  Modified :
             *****************************************************************************************/
-           __host__ void update(const Eigen::Vector4d &ownship_state_eigen, const Eigen::Vector4d &obstacle_state_vx_vy_eigen)
-            {
-                TML::PDVector4f ownship_state, obstacle_state_vx_vy;
-                TML::assign_eigen_object(obstacle_state_vx_vy, obstacle_state_vx_vy_eigen);
-                TML::assign_eigen_object(ownship_state, ownship_state_eigen);
-
+            __device__ void update(const TML::PDVector4f &ownship_state, const TML::PDVector4f &obstacle_state_vx_vy)
+            {               
                 obstacle_state = vx_vy_to_heading_speed_state(obstacle_state_vx_vy);
-                if (evaluate_situation_started(ownship_state, obstacle_state))
+                if (!initialized && evaluate_situation_started(ownship_state, obstacle_state))
                 {
                     initialized = true;
                     colregs_situation = evaluate_colregs_situation(ownship_state, obstacle_state);
                     initial_ownship_state = ownship_state;
                     initial_obstacle_state = obstacle_state;
                 }
-            }
-
-            __device__ void update(const TML::PDVector4f &ownship_state, const TML::PDVector4f &obstacle_state_vx_vy)
-            {
-                obstacle_state = vx_vy_to_heading_speed_state(obstacle_state_vx_vy);
-                if (evaluate_situation_started(ownship_state, obstacle_state))
+                else if(initialized)
                 {
-                    initialized = true;
-                    has_been_change_in_course_to_port = false;
-                    has_been_change_in_speed_or_course = false;
-                    colregs_situation = evaluate_colregs_situation(ownship_state, obstacle_state);
-                    initial_ownship_state = ownship_state;
-                    initial_obstacle_state = obstacle_state;
+                    evaluate_actual_maneuver_changes(ownship_state(COG), ownship_state(SOG));
                 }
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_maneuver_changes
+            *  Name     : evaluate_actual_maneuver_changes
             *  Function : 
             *  Author   :
             *  Modified :
             *****************************************************************************************/
-            __device__ void evaluate_maneuver_changes(
-                const float chi,                                    // In: Own-ship course at the current predicted time k
-                const float chi_0,                                  // In: Own-ship course at the current time t_0
-                const float U,                                      // In: Own-ship speed at the current predicted time k
-                const float U_0                                     // In: Own-ship speed at the current time t_0
+            __device__ void evaluate_actual_maneuver_changes(
+                const float chi_0,                                   // In: Own-ship course at the current time t_0
+                const float U_0                                      // In: Own-ship speed at the current time t_0
                 )
             {
-                if (!has_been_change_in_speed_or_course)
-                    has_been_change_in_speed_or_course = fabs(wrap_angle_to_pmpi(chi - chi_0)) > pars.max_acceptable_SO_course_change || U - U_0 > pars.max_acceptable_SO_speed_change;
+                if (!actual_ownship_speed_or_course_change)
+                    actual_ownship_speed_or_course_change = fabs(wrap_angle_to_pmpi(chi_0 - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change || U_0 - initial_ownship_state(SOG) > pars.max_acceptable_SO_speed_change;
 
-                if (!has_been_change_in_course_to_port)
-                    has_been_change_in_course_to_port = wrap_angle_to_pmpi(chi - chi_0) < -pars.max_acceptable_SO_course_change;
+                if (!actual_ownship_course_change_port)
+                    actual_ownship_course_change_port = wrap_angle_to_pmpi(chi_0 - initial_ownship_state(COG)) < -pars.max_acceptable_SO_course_change;
+            }
+
+            /****************************************************************************************
+            *  Name     : evaluate_predicted_maneuver_changes
+            *  Function : 
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
+            __device__ void evaluate_predicted_maneuver_changes(
+                const float chi,                                    // In: Own-ship course at the current predicted time k
+                const float U                                      // In: Own-ship speed at the current predicted time k
+                )
+            {
+                if (!predicted_ownship_change_in_speed_or_course)
+                    predicted_ownship_change_in_speed_or_course = fabs(wrap_angle_to_pmpi(chi - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change || U - initial_ownship_state(SOG) > pars.max_acceptable_SO_speed_change;
+
+                if (!predicted_ownship_change_in_course_to_port)
+                    predicted_ownship_change_in_course_to_port = wrap_angle_to_pmpi(chi - initial_ownship_state(COG)) < -pars.max_acceptable_SO_course_change;
             }
 
             /****************************************************************************************
@@ -138,7 +140,7 @@ namespace PSBMPC_LIB
                 return  d_cpa < pars.max_distance_at_cpa                                && 
                         d_0i_0 > pars.critical_distance_to_ignore_SO                    && 
                         (colregs_situation == OT_en || colregs_situation == CR_PS)      && 
-                        has_been_change_in_speed_or_course;
+                        (actual_ownship_speed_or_course_change || predicted_ownship_change_in_speed_or_course);
             }
 
             /****************************************************************************************
@@ -158,20 +160,23 @@ namespace PSBMPC_LIB
 
                 correct_HO_maneuver = evaluate_crossing_port_to_port(ownship_CPA_state, obstacle_CPA_state_vx_vy);
                 correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_CPA_state, obstacle_CPA_state_vx_vy);
-                correct_CR_PS_maneuver = !has_been_change_in_course_to_port;
+                correct_CR_PS_maneuver = !(actual_ownship_course_change_port || predicted_ownship_change_in_course_to_port);
                 return  d_cpa < pars.max_distance_at_cpa                            &&
                         ((colregs_situation == HO && !correct_HO_maneuver)          ||
                         (colregs_situation == CR_SS && !correct_CR_SS_maneuver)     ||
                         (colregs_situation == CR_PS && !correct_CR_PS_maneuver));
             }
 
-            __device__ void reset() { has_been_change_in_course_to_port = false; has_been_change_in_speed_or_course = false; }
+            __device__ void reset() { predicted_ownship_change_in_course_to_port = false; predicted_ownship_change_in_speed_or_course = false; }
 
             bool initialized = false;
-            bool has_been_change_in_course_to_port = false;
-            bool has_been_change_in_speed_or_course = false;
+            bool predicted_ownship_change_in_course_to_port = false;
+            bool predicted_ownship_change_in_speed_or_course = false;
         
         private:
+
+            bool actual_ownship_speed_or_course_change = false;
+            bool actual_ownship_course_change_port = false;
 
             CVE_Pars<float> pars;
 

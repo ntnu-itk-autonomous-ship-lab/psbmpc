@@ -502,7 +502,7 @@ namespace PSBMPC_LIB
 			//If no speed then it will take forever to arrive.
 			if (ship(SOG) < 1e-6)
 			{
-				if (std::fabs(relativeBearing(ship, x, y)) < 90 * DEG2RAD)
+				if (fabs(relativeBearing(ship, x, y)) < 90 * DEG2RAD)
 				{
 					return INFINITY;
 				}
