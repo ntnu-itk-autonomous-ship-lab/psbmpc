@@ -148,10 +148,9 @@ namespace PSBMPC_LIB
                 if (!initialized)
                     return false;
 
-                close = d_cpa < pars.GW_safety_margin; //Penalty for crossing too close is only given when there is a gw role
-                correct_HO_maneuver = evaluate_crossing_port_to_port(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy)) && !close;
-                correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy)) && !close;
-                correct_OT_ing_maneuver = !close;
+                correct_HO_maneuver = evaluate_crossing_port_to_port(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy)) && d_cpa >= pars.GW_safety_margin;
+                correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy)) && d_cpa >= pars.GW_safety_margin;
+                correct_OT_ing_maneuver = d_cpa >= pars.GW_safety_margin;
                 correct_CR_PS_maneuver = !(actual_ownship_course_change_port || predicted_ownship_change_in_course_to_port);
                 return d_cpa < pars.max_distance_at_cpa &&
                        ((colregs_situation == HO && !correct_HO_maneuver) ||
@@ -184,7 +183,6 @@ namespace PSBMPC_LIB
             bool correct_CR_SS_maneuver;
             bool correct_CR_PS_maneuver;
             bool correct_OT_ing_maneuver;
-            bool close;
             float heading_diff;
             float bearing_to_obstacle_relative_to_ownship;
             float bearing_to_ownship_relative_to_obstacle;
