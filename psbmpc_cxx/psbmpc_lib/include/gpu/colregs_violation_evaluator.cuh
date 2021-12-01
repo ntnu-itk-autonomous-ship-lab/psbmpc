@@ -74,6 +74,13 @@ namespace PSBMPC_LIB
                 else if (initialized)
                 {
                     evaluate_actual_maneuver_changes(ownship_state(COG), ownship_state(SOG));
+                
+                    if(!has_passed){
+                        //If the intersection point is in the past, then the ships have passed
+                        const TML::Vector2f intersection_point = intersectionpoint(ownship_state, vx_vy_to_heading_speed_state(obstacle_state_vx_vy));
+                        has_passed = evaluate_arrival_time(ownshipCPA, intersection_point(0), intersection_point(1)) < 0;
+                    }
+                    
                 }
             }
 
@@ -124,7 +131,7 @@ namespace PSBMPC_LIB
                 const float d_cpa   // In: Distance at predicted CPA between ownship and obstacle i
             )
             {
-                if (!initialized)
+                if (!initialized || has_passed)
                     return false;
 
                 return d_cpa < pars.max_distance_at_cpa &&
@@ -145,7 +152,7 @@ namespace PSBMPC_LIB
                 const float d_cpa                                // In: Distance at actual predicted CPA between ownship and obstacle i
             )
             {
-                if (!initialized)
+                if (!initialized || has_passed)
                     return false;
 
                 correct_HO_maneuver = evaluate_crossing_port_to_port(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy)) && d_cpa >= pars.GW_safety_margin;
@@ -172,6 +179,7 @@ namespace PSBMPC_LIB
             bool predicted_ownship_change_in_speed_or_course = false;
             bool actual_ownship_speed_or_course_change = false;
             bool actual_ownship_course_change_port = false;
+            bool has_passed = false; //If the ships have passed each other, then dont give any penalty
 
             COLREGS_Situation colregs_situation;
             TML::PDVector4f initial_ownship_state;
