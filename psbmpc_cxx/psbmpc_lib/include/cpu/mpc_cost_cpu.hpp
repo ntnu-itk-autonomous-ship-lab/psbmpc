@@ -25,7 +25,7 @@
 #include "colregs_violation_evaluator.hpp"
 
 #if ENABLE_PSBMPC_DEBUGGING
-	#include <engine.h>
+#include <engine.h>
 #endif
 #include <map>
 #include <vector>
@@ -42,8 +42,14 @@ namespace PSBMPC_LIB
 
 		void clear()
 		{
-			AH_0.clear(); S_TC_0.clear(); S_i_TC_0.clear(); O_TC_0.clear();
-			Q_TC_0.clear(); IP_0.clear(); H_TC_0.clear(); X_TC_0.clear();
+			AH_0.clear();
+			S_TC_0.clear();
+			S_i_TC_0.clear();
+			O_TC_0.clear();
+			Q_TC_0.clear();
+			IP_0.clear();
+			H_TC_0.clear();
+			X_TC_0.clear();
 		}
 
 		Transitional_Variables() {}
@@ -54,16 +60,27 @@ namespace PSBMPC_LIB
 		class MPC_Cost
 		{
 		private:
-
 			Parameters pars;
 
 			std::map<int, COLREGS_Violation_Evaluator> colregs_violation_evaluators;
 
-			inline double Delta_u(const double u_1, const double u_2) const 		{ return pars.K_du * fabs(u_1 - u_2); }
+			inline double Delta_u(const double u_1, const double u_2) const { return pars.K_du * fabs(u_1 - u_2); }
 
-			inline double K_chi(const double chi) const								{ if (chi > 0) return pars.K_chi_strb * pow(chi, 2); else return pars.K_chi_port * pow(chi, 2); }
+			inline double K_chi(const double chi) const
+			{
+				if (chi > 0)
+					return pars.K_chi_strb * pow(chi, 2);
+				else
+					return pars.K_chi_port * pow(chi, 2);
+			}
 
-			inline double Delta_chi(const double chi_1, const double chi_2) const 	{ if (chi_1 > 0) return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2); else return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2); }
+			inline double Delta_chi(const double chi_1, const double chi_2) const
+			{
+				if (chi_1 > 0)
+					return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2);
+				else
+					return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2);
+			}
 
 			int find_triplet_orientation(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r) const;
 
@@ -78,7 +95,6 @@ namespace PSBMPC_LIB
 			double distance_to_static_obstacle(const Eigen::Vector2d &p, const Eigen::Vector2d &v_1, const Eigen::Vector2d &v_2) const;
 
 		public:
-
 			bool determine_if_inside_polygon(const Eigen::Vector2d &p, const polygon_2D &poly) const;
 
 			Eigen::Vector2d distance_to_line_segment(const Eigen::Vector2d &p, const Eigen::Vector2d &q_1, const Eigen::Vector2d &q_2) const;
@@ -92,7 +108,7 @@ namespace PSBMPC_LIB
 			/* MPC_Cost(const Parameters &pars, const std::map<int, COLREGS_Violation_Evaluator> colregs_violation_evaluators)
 				: pars(pars), colregs_violation_evaluators(colregs_violation_evaluators) {} */
 
-			MPC_Cost& operator=(const MPC_Cost &other) = default;
+			MPC_Cost &operator=(const MPC_Cost &other) = default;
 
 			bool determine_transitional_cost_indicator(
 				const Transitional_Variables &tv,
@@ -151,7 +167,7 @@ namespace PSBMPC_LIB
 
 			double calculate_chattering_cost(const Eigen::VectorXd &offset_sequence, const Eigen::VectorXd &maneuver_times) const;
 
-			double calculate_grounding_cost(const Eigen::MatrixXd &trajectory, const Eigen::Matrix<double, 4, -1>& static_obstacles, const double ownship_length) const;
+			double calculate_grounding_cost(const Eigen::MatrixXd &trajectory, const Eigen::Matrix<double, 4, -1> &static_obstacles, const double ownship_length) const;
 			double calculate_grounding_cost(
 				const Eigen::MatrixXd &trajectory,
 				const Static_Obstacles &polygons,
@@ -166,45 +182,41 @@ namespace PSBMPC_LIB
 				const Eigen::Vector2d &wind_direction) const;
 
 			void update_colregs_violation_node(
-				const Eigen::Vector4d& ownship_state,
-				const Eigen::Vector4d& obstacle_state,
-				const int i
-				)
+				const Eigen::Vector4d &ownship_state,
+				const Eigen::Vector4d &obstacle_state,
+				const int i)
 			{
-					colregs_violation_evaluators[i].update(ownship_state, obstacle_state);
+				colregs_violation_evaluators[i].update(ownship_state, obstacle_state);
 			}
 
 			double calculate_colregs_violation_cost(
 				const Eigen::MatrixXd &ownship_trajectory,
 				const Eigen::MatrixXd &obstacle_trajectory,
-				const int i
-				) const
+				const int i) const
 			{
-					if(colregs_violation_evaluators.count(i))
-					{
-						return pars.kappa_SO * colregs_violation_evaluators.at(i).evaluate_SO_violation(ownship_trajectory, obstacle_trajectory)
-							+ pars.kappa_GW * colregs_violation_evaluators.at(i).evaluate_GW_violation(ownship_trajectory, obstacle_trajectory);
-					}
-					else
-					{
-						throw std::runtime_error("Attempting to evaluate colregs violation for an uninitialized ship");
-						//Run colregs_violation_evaluators to fix
-					}
+				if (colregs_violation_evaluators.count(i))
+				{
+					return pars.kappa_SO * colregs_violation_evaluators.at(i).evaluate_SO_violation(ownship_trajectory, obstacle_trajectory) + pars.kappa_GW * colregs_violation_evaluators.at(i).evaluate_GW_violation(ownship_trajectory, obstacle_trajectory);
+				}
+				else
+				{
+					throw std::runtime_error("Attempting to evaluate colregs violation for an uninitialized ship");
+					//Run colregs_violation_evaluators to fix
+				}
 			}
-			
+
 			double calculate_colregs_violation_cost(
 				const Eigen::MatrixXd &ownship_trajectory,
-				const Dynamic_Obstacles &obstacles
-				)
+				const Dynamic_Obstacles &obstacles)
 			{
-				double total_cost=0;
-				for(const auto& obstacle : obstacles)
+				double total_cost = 0;
+				for (const auto &obstacle : obstacles)
 				{
 					update_colregs_violation_node(ownship_trajectory.col(0), obstacle.get_trajectories()[0].col(0), obstacle.get_ID());
 
 					const auto trajs = obstacle.get_trajectories();
 					const auto probabilities = obstacle.get_scenario_probabilities();
-					for(size_t i = 0; i < trajs.size(); ++i)
+					for (size_t i = 0; i < trajs.size(); ++i)
 					{
 						total_cost += probabilities(i) * calculate_colregs_violation_cost(ownship_trajectory, trajs[i], obstacle.get_ID());
 					}
@@ -213,10 +225,9 @@ namespace PSBMPC_LIB
 			}
 
 			double calculate_colregs_violation_cost(
-				const Eigen::VectorXd& h_colregs_i_ps,
-				const Dynamic_Obstacles& obstacles,
-				const int i
-				) const
+				const Eigen::VectorXd &h_colregs_i_ps,
+				const Dynamic_Obstacles &obstacles,
+				const int i) const
 			{
 				Eigen::VectorXd Pr_s_i = obstacles[i].get_scenario_probabilities();
 				assert(Pr_s_i.size() == h_colregs_i_ps.size());
@@ -233,13 +244,13 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		bool MPC_Cost<Parameters>::determine_transitional_cost_indicator(
-			const Transitional_Variables &tv, 										// In: Struct of all current time obstacle transitional variables
-			const double psi_A, 													// In: Heading of vessel A
-			const double psi_B, 													// In: Heading of vessel B
-			const Eigen::Vector2d &L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-			const double chi_m, 													// In: Candidate course offset currently followed
-			const int i 															// In: Index of obstacle
-			) const
+			const Transitional_Variables &tv, // In: Struct of all current time obstacle transitional variables
+			const double psi_A,				  // In: Heading of vessel A
+			const double psi_B,				  // In: Heading of vessel B
+			const Eigen::Vector2d &L_AB,	  // In: LOS vector pointing from vessel A to vessel B
+			const double chi_m,				  // In: Candidate course offset currently followed
+			const int i						  // In: Index of obstacle
+		) const
 		{
 			bool S_TC(false), S_i_TC(false), O_TC(false), Q_TC(false), X_TC(false), H_TC(false);
 
@@ -251,13 +262,25 @@ namespace PSBMPC_LIB
 
 			// For ownship overtaking the obstacle: Check if obstacle is on opposite side of
 			// ownship to what was observed at t0
-			if (!tv.S_TC_0[i]) { O_TC = tv.O_TC_0[i] && S_TC; }
-			else { O_TC = tv.O_TC_0[i] && !S_TC; };
+			if (!tv.S_TC_0[i])
+			{
+				O_TC = tv.O_TC_0[i] && S_TC;
+			}
+			else
+			{
+				O_TC = tv.O_TC_0[i] && !S_TC;
+			};
 
 			// For obstacle overtaking the ownship: Check if ownship is on opposite side of
 			// obstacle to what was observed at t0
-			if (!tv.S_i_TC_0[i]) { Q_TC = tv.Q_TC_0[i] && S_i_TC; }
-			else { Q_TC = tv.Q_TC_0[i] && !S_i_TC; };
+			if (!tv.S_i_TC_0[i])
+			{
+				Q_TC = tv.Q_TC_0[i] && S_i_TC;
+			}
+			else
+			{
+				Q_TC = tv.Q_TC_0[i] && !S_i_TC;
+			};
 
 			// For crossing: Check if obstacle is on opposite side of ownship to what was
 			// observed at t0
@@ -266,8 +289,14 @@ namespace PSBMPC_LIB
 			// This is not mentioned in article, but also implemented here..
 			// Transitional cost only valid by going from having obstacle on port side at
 			// t0, to starboard side at time t
-			if (!tv.S_TC_0[i]) { H_TC = tv.H_TC_0[i] && S_TC; }
-			else { H_TC = false; }
+			if (!tv.S_TC_0[i])
+			{
+				H_TC = tv.H_TC_0[i] && S_TC;
+			}
+			else
+			{
+				H_TC = false;
+			}
 			H_TC = H_TC && !X_TC;
 
 			return O_TC || Q_TC || X_TC || H_TC;
@@ -282,12 +311,12 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		bool MPC_Cost<Parameters>::determine_COLREGS_violation(
-			const Eigen::Vector2d& v_A,												// In: (NE) Velocity vector of vessel A
-			const double psi_A, 													// In: Heading of vessel A
-			const Eigen::Vector2d& v_B, 											// In: (NE) Velocity vector of vessel B
-			const Eigen::Vector2d& L_AB, 											// In: LOS vector pointing from vessel A to vessel B
-			const double d_AB 														// In: Distance from vessel A to vessel B
-			) const
+			const Eigen::Vector2d &v_A,	 // In: (NE) Velocity vector of vessel A
+			const double psi_A,			 // In: Heading of vessel A
+			const Eigen::Vector2d &v_B,	 // In: (NE) Velocity vector of vessel B
+			const Eigen::Vector2d &L_AB, // In: LOS vector pointing from vessel A to vessel B
+			const double d_AB			 // In: Distance from vessel A to vessel B
+		) const
 		{
 			bool B_is_starboard(false), A_is_overtaken(false), B_is_overtaken(false);
 			bool is_ahead(false), is_passed(false), is_head_on(false), is_crossing(false);
@@ -296,34 +325,34 @@ namespace PSBMPC_LIB
 
 			bool is_close = d_AB <= pars.d_close;
 
-			A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() 	&&
-							v_A.norm() < v_B.norm()							  	&&
-							v_A.norm() > 0.25;
+			A_is_overtaken = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() &&
+							 v_A.norm() < v_B.norm() &&
+							 v_A.norm() > 0.25;
 
-			B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() 	&&
-							v_B.norm() < v_A.norm()							  	&&
-							v_B.norm() > 0.25;
+			B_is_overtaken = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() &&
+							 v_B.norm() < v_A.norm() &&
+							 v_B.norm() > 0.25;
 
 			B_is_starboard = angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
 
-			is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm()			&& // Vessel A's perspective
-						!A_is_overtaken) 											||
-						(v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() 		&& // Vessel B's perspective
-						!B_is_overtaken)) 											&&
+			is_passed = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm() && // Vessel A's perspective
+						  !A_is_overtaken) ||
+						 (v_B.dot(-L_AB) < cos(112.5 * DEG2RAD) * v_B.norm() && // Vessel B's perspective
+						  !B_is_overtaken)) &&
 						d_AB > pars.d_safe;
 
-			is_head_on = v_A.dot(v_B) < - cos(pars.phi_HO) * v_A.norm() * v_B.norm() 	&&
-						v_A.norm() > 0.25											&&
-						v_B.norm() > 0.25											&&
-						is_ahead;
+			is_head_on = v_A.dot(v_B) < -cos(pars.phi_HO) * v_A.norm() * v_B.norm() &&
+						 v_A.norm() > 0.25 &&
+						 v_B.norm() > 0.25 &&
+						 is_ahead;
 
-			is_crossing = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm()  	&&
-						v_A.norm() > 0.25											&&
-						v_B.norm() > 0.25											&&
-						!is_head_on 												&&
-						!is_passed;
+			is_crossing = v_A.dot(v_B) < cos(pars.phi_CR) * v_A.norm() * v_B.norm() &&
+						  v_A.norm() > 0.25 &&
+						  v_B.norm() > 0.25 &&
+						  !is_head_on &&
+						  !is_passed;
 
-			return is_close && (( B_is_starboard && is_head_on) || (B_is_starboard && is_crossing && !A_is_overtaken));
+			return is_close && ((B_is_starboard && is_head_on) || (B_is_starboard && is_crossing && !A_is_overtaken));
 		}
 
 		/****************************************************************************************
@@ -335,10 +364,10 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
-			const Eigen::VectorXd &h_do_i_ps,                       // In: Max cost wrt obstacle i in prediction scenario ps, and the control behaviour from the calling loop
-			const Dynamic_Obstacles &obstacles,				// In: Dynamic obstacle information
-			const int i 												// In: Index of obstacle
-			)
+			const Eigen::VectorXd &h_do_i_ps,	// In: Max cost wrt obstacle i in prediction scenario ps, and the control behaviour from the calling loop
+			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
+			const int i							// In: Index of obstacle
+		)
 		{
 			double cost_do(0.0);
 
@@ -356,13 +385,13 @@ namespace PSBMPC_LIB
 
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
-			Eigen::VectorXd &h_do_i_ps,								// In/Out: Max dynamic obstacle cost associated with the current control behaviour, wrt obstacle i in prediction scenario ps
-			const Eigen::MatrixXd &trajectory,                          // In: Own-ship trajectory when following the current offset_sequence/control behaviour
-			const Eigen::MatrixXd &P_c_i,								// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
-			const Dynamic_Obstacles &obstacles,							// In: Dynamic obstacle information
-			const int i, 												// In: Index of obstacle
-			const double ownship_length                                 // In: Length of the ownship along the body x-axis
-			) const
+			Eigen::VectorXd &h_do_i_ps,			// In/Out: Max dynamic obstacle cost associated with the current control behaviour, wrt obstacle i in prediction scenario ps
+			const Eigen::MatrixXd &trajectory,	// In: Own-ship trajectory when following the current offset_sequence/control behaviour
+			const Eigen::MatrixXd &P_c_i,		// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
+			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
+			const int i,						// In: Index of obstacle
+			const double ownship_length			// In: Length of the ownship along the body x-axis
+		) const
 		{
 			// l_i is the collision cost modifier depending on the obstacle track loss.
 			double cost_do(0.0), cost_ps(0.0), cost_coll(0.0), l_i(0.0);
@@ -378,7 +407,7 @@ namespace PSBMPC_LIB
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), d_0i_p(0.0);
-			for(int k = 0; k < n_samples; k++)
+			for (int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
 				{
@@ -394,7 +423,7 @@ namespace PSBMPC_LIB
 					v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
 				}
 
-				for(int ps = 0; ps < n_ps; ps++)
+				for (int ps = 0; ps < n_ps; ps++)
 				{
 					L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
 					d_0i_p = L_0i_p.norm();
@@ -424,7 +453,7 @@ namespace PSBMPC_LIB
 
 					// Should discount time when using a prediction scheme where the uncertainty for
 					// each obstacle prediction scenario is bounded by r_ct
-					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(- (float)k * pars.dt / pars.T_sgn);
+					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(-(float)k * pars.dt / pars.T_sgn);
 
 					// Maximize wrt time
 					if (cost_ps > h_do_i_ps(ps))
@@ -453,12 +482,12 @@ namespace PSBMPC_LIB
 
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
-			const Eigen::MatrixXd &trajectory,                          // In: Own-ship trajectory when following the current offset_sequence/control behaviour
-			const Eigen::MatrixXd &P_c_i,								// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
-			const Dynamic_Obstacles &obstacles,							// In: Dynamic obstacle information
-			const int i, 												// In: Index of obstacle
-			const double ownship_length                                 // In: Length of the ownship along the body x-axis
-			) const
+			const Eigen::MatrixXd &trajectory,	// In: Own-ship trajectory when following the current offset_sequence/control behaviour
+			const Eigen::MatrixXd &P_c_i,		// In: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
+			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
+			const int i,						// In: Index of obstacle
+			const double ownship_length			// In: Length of the ownship along the body x-axis
+		) const
 		{
 			// l_i is the collision cost modifier depending on the obstacle track loss.
 			double cost_do(0.0), cost_ps(0.0), cost_coll(0.0), l_i(0.0);
@@ -473,7 +502,7 @@ namespace PSBMPC_LIB
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), d_0i_p(0.0);
-			for(int k = 0; k < n_samples; k++)
+			for (int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
 				{
@@ -489,7 +518,7 @@ namespace PSBMPC_LIB
 					v_0_p = rotate_vector_2D(v_0_p, psi_0_p);
 				}
 
-				for(int ps = 0; ps < n_ps; ps++)
+				for (int ps = 0; ps < n_ps; ps++)
 				{
 					L_0i_p = xs_i_p[ps].block<2, 1>(0, k) - trajectory.block<2, 1>(0, k);
 					d_0i_p = L_0i_p.norm();
@@ -519,7 +548,7 @@ namespace PSBMPC_LIB
 
 					// Should discount time when using a prediction scheme where the uncertainty for
 					// each obstacle prediction scenario is bounded by r_ct
-					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(- (float)k * pars.dt / pars.T_sgn);
+					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(-(float)k * pars.dt / pars.T_sgn);
 
 					// Maximize wrt time
 					if (cost_ps > h_do_i_ps(ps))
@@ -545,14 +574,14 @@ namespace PSBMPC_LIB
 		// SBMPC do cost
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
-			const Eigen::MatrixXd &trajectory,                          // In: Own-ship trajectory when following the current offset_sequence/control behaviour
-			const Eigen::VectorXd &offset_sequence,                     // In: Offset sequence currently followed by the own-ship
-			const Eigen::VectorXd &maneuver_times,                      // In: Time of each maneuver in the offset sequence
-			const Dynamic_Obstacles &obstacles,							// In: Dynamic obstacle information
-			const Transitional_Variables &tv, 							// In: Struct of all current time obstacle transitional variables
-			const int i, 												// In: Index of obstacle
-			const double ownship_length                                 // In: Length of the ownship along the body x-axis
-			) const
+			const Eigen::MatrixXd &trajectory,		// In: Own-ship trajectory when following the current offset_sequence/control behaviour
+			const Eigen::VectorXd &offset_sequence, // In: Offset sequence currently followed by the own-ship
+			const Eigen::VectorXd &maneuver_times,	// In: Time of each maneuver in the offset sequence
+			const Dynamic_Obstacles &obstacles,		// In: Dynamic obstacle information
+			const Transitional_Variables &tv,		// In: Struct of all current time obstacle transitional variables
+			const int i,							// In: Index of obstacle
+			const double ownship_length				// In: Length of the ownship along the body x-axis
+		) const
 		{
 			// l_i is the collision cost modifier depending on the obstacle track loss.
 			double cost(0.0), max_cost(0.0), C(0.0), l_i(0.0), R(0.0);
@@ -564,7 +593,7 @@ namespace PSBMPC_LIB
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);
 			bool mu(false), trans(false);
-			for(int k = 0; k < n_samples; k++)
+			for (int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
 				{
@@ -588,7 +617,6 @@ namespace PSBMPC_LIB
 						if (k >= maneuver_times[M] && k < maneuver_times[M + 1])
 						{
 							chi_m = offset_sequence[2 * M + 1];
-
 						}
 					}
 					else
@@ -627,13 +655,14 @@ namespace PSBMPC_LIB
 				if (obstacles[i].get_duration_lost() > pars.p_step)
 				{
 					l_i = pars.dt * pars.p_step / obstacles[i].get_duration_lost();
-				} else
+				}
+				else
 				{
 					l_i = 1;
 				}
 
 				// SB-MPC formulation with ad-hoc collision risk
-				cost = l_i * C * R + pars.kappa * mu  + pars.kappa_TC * trans;
+				cost = l_i * C * R + pars.kappa * mu + pars.kappa_TC * trans;
 
 				if (cost > max_cost)
 				{
@@ -651,10 +680,10 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_ad_hoc_collision_risk(
-			const double d_AB, 											// In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
-																		// 	   reduced by half the length of the two vessels (or only own-ship if static obstacles are considered)
-			const double t 												// In: Prediction time t > t0 (= 0)
-			) const
+			const double d_AB, // In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
+							   // 	   reduced by half the length of the two vessels (or only own-ship if static obstacles are considered)
+			const double t	   // In: Prediction time t > t0 (= 0)
+		) const
 		{
 			double R = 0;
 			if (d_AB <= pars.d_safe)
@@ -673,10 +702,10 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_control_deviation_cost(
-			const Eigen::VectorXd &offset_sequence,                         // In: Offset_sequence currently followed by the own-ship
-			const double u_m_last,                                          // In: Previous optimal output surge modification
-			const double chi_m_last                                         // In: Previous optimal output course modification
-			) const
+			const Eigen::VectorXd &offset_sequence, // In: Offset_sequence currently followed by the own-ship
+			const double u_m_last,					// In: Previous optimal output surge modification
+			const double chi_m_last					// In: Previous optimal output course modification
+		) const
 		{
 			double cost = 0;
 			for (int i = 0; i < pars.n_M; i++)
@@ -684,12 +713,12 @@ namespace PSBMPC_LIB
 				if (i == 0)
 				{
 					cost += pars.K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_m_last) +
-							K_chi(offset_sequence[1])      + Delta_chi(offset_sequence[1], chi_m_last);
+							K_chi(offset_sequence[1]) + Delta_chi(offset_sequence[1], chi_m_last);
 				}
 				else
 				{
 					cost += pars.K_u * (1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
-							K_chi(offset_sequence[2 * i + 1])  + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
+							K_chi(offset_sequence[2 * i + 1]) + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 				}
 			}
 			/* printf("K_u (1 - u_m_0) = %.4f | Delta_u(u_m_0, u_m_last) = %.4f | K_chi(chi_0) = %.4f | Delta_chi(chi_0, chi_last) = %.4f\n",
@@ -707,9 +736,9 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_chattering_cost(
-			const Eigen::VectorXd &offset_sequence,                         // In: Offset sequence currently followed by the own-ship
-			const Eigen::VectorXd &maneuver_times                           // In: Time of each maneuver in the offset sequence
-			) const
+			const Eigen::VectorXd &offset_sequence, // In: Offset sequence currently followed by the own-ship
+			const Eigen::VectorXd &maneuver_times	// In: Time of each maneuver in the offset sequence
+		) const
 		{
 			double cost = 0.0;
 
@@ -719,7 +748,7 @@ namespace PSBMPC_LIB
 			}
 
 			double delta_t = 0.0;
-			for(int M = 0; M < pars.n_M; M++)
+			for (int M = 0; M < pars.n_M; M++)
 			{
 				if (M < pars.n_M - 1)
 				{
@@ -727,7 +756,7 @@ namespace PSBMPC_LIB
 						(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) > 0))
 					{
 						delta_t = maneuver_times(M + 1) - maneuver_times(M);
-						cost += pars.K_sgn * exp( - delta_t / pars.T_sgn);
+						cost += pars.K_sgn * exp(-delta_t / pars.T_sgn);
 					}
 				}
 			}
@@ -742,14 +771,14 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_grounding_cost(
-			const Eigen::MatrixXd &trajectory,									// In: Predicted ownship trajectory
-			const Static_Obstacles &polygons,									// In: Static obstacle information
-			const double V_w,													// In: Estimated wind speed
-			const Eigen::Vector2d &wind_direction 								// In: Unit vector in NE describing the estimated wind direction
-			) const
+			const Eigen::MatrixXd &trajectory,	  // In: Predicted ownship trajectory
+			const Static_Obstacles &polygons,	  // In: Static obstacle information
+			const double V_w,					  // In: Estimated wind speed
+			const Eigen::Vector2d &wind_direction // In: Unit vector in NE describing the estimated wind direction
+		) const
 		{
 			int n_samples = std::round(pars.T / pars.dt);
-			int n_static_obst = polygons.size();
+			int n_so = polygons.size();
 			double max_cost_g(0.0), cost_g(0.0);
 
 			Eigen::Vector2d L_0j;
@@ -760,7 +789,7 @@ namespace PSBMPC_LIB
 				t = pars.dt * k;
 
 				cost_g = 0.0;
-				for (int j = 0; j < n_static_obst; j++)
+				for (int j = 0; j < n_so; j++)
 				{
 					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
 					d_0j = L_0j.norm();
@@ -768,8 +797,14 @@ namespace PSBMPC_LIB
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
 
-					//cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
-					cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
+					if (d_0j >= pars.d_safe)
+					{
+						cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-(pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
+					}
+					else
+					{
+						cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-pars.G_4 * t);
+					}
 
 					if (max_cost_g < cost_g)
 					{
@@ -777,33 +812,33 @@ namespace PSBMPC_LIB
 					}
 					//printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
-
 			}
 			return max_cost_g;
 		}
 
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_grounding_cost(
-			Eigen::VectorXd &max_cost_j, 										// In/Out: Max costs wrt to each static obstacle, for debugging purposes
-			const Eigen::MatrixXd &trajectory,									// In: Predicted ownship trajectory
-			const Static_Obstacles &polygons,									// In: Static obstacle information
-			const double V_w,													// In: Estimated wind speed
-			const Eigen::Vector2d &wind_direction 								// In: Unit vector in NE describing the estimated wind direction
-			) const
+			Eigen::VectorXd &max_cost_j,		  // In/Out: Max costs wrt to each static obstacle, for debugging purposes
+			const Eigen::MatrixXd &trajectory,	  // In: Predicted ownship trajectory
+			const Static_Obstacles &polygons,	  // In: Static obstacle information
+			const double V_w,					  // In: Estimated wind speed
+			const Eigen::Vector2d &wind_direction // In: Unit vector in NE describing the estimated wind direction
+		) const
 		{
 			int n_samples = std::round(pars.T / pars.dt);
-			int n_static_obst = polygons.size();
+			int n_so = polygons.size();
 			double max_cost_g(0.0), cost_g(0.0);
 
 			Eigen::Vector2d L_0j;
 			double d_0j(0.0), t(0.0), phi_j(0.0);
-			max_cost_j.resize(n_static_obst); max_cost_j.setZero();
+			max_cost_j.resize(n_so);
+			max_cost_j.setZero();
 			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
 			{
 				t = pars.dt * k;
 
 				cost_g = 0.0;
-				for (int j = 0; j < n_static_obst; j++)
+				for (int j = 0; j < n_so; j++)
 				{
 					L_0j = distance_to_polygon(trajectory.block<2, 1>(0, k), polygons[j]);
 					d_0j = L_0j.norm();
@@ -811,9 +846,14 @@ namespace PSBMPC_LIB
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
 
-					//cost_g += (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
-					cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(- (pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
-
+					if (d_0j >= pars.d_safe)
+					{
+						cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-(pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
+					}
+					else
+					{
+						cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-pars.G_4 * t);
+					}
 					if (max_cost_j(j) < cost_g)
 					{
 						max_cost_j(j) = cost_g;
@@ -824,7 +864,6 @@ namespace PSBMPC_LIB
 					}
 					//printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
-
 			}
 			return max_cost_g;
 		}
@@ -837,23 +876,23 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_grounding_cost(
-			const Eigen::MatrixXd &trajectory,                                          // In: Own-ship trajectory when following the current offset_sequence/control behaviour
-			const Eigen::Matrix<double, 4, -1>& static_obstacles,						// In: Static obstacle information
-			const double ownship_length                                                 // In: Length of the ownship along the body x-axis
-			) const
+			const Eigen::MatrixXd &trajectory,					  // In: Own-ship trajectory when following the current offset_sequence/control behaviour
+			const Eigen::Matrix<double, 4, -1> &static_obstacles, // In: Static obstacle information
+			const double ownship_length							  // In: Length of the ownship along the body x-axis
+		) const
 		{
 			double d_geo(0.0), t(0.0), g_cost(0.0);
-			int n_static_obst = static_obstacles.cols();
+			int n_so = static_obstacles.cols();
 			int n_samples = std::round(pars.T / pars.dt);
 			// so 1 and 2 : endpoints of line describing static obstacle
 			Eigen::Vector2d p_0, p_1, so_1, so_2;
 
-			Eigen::VectorXd cost_j(n_static_obst);
+			Eigen::VectorXd cost_j(n_so);
 			cost_j.setZero();
 
 			// Check if it is necessary to calculate this cost
 			bool is_geo_constraint = false;
-			for (int j = 0; j < n_static_obst; j++)
+			for (int j = 0; j < n_so; j++)
 			{
 				p_0 << trajectory.block<2, 1>(0, 0);
 				p_1 << trajectory.block<2, 1>(0, n_samples - 1);
@@ -873,7 +912,7 @@ namespace PSBMPC_LIB
 				}
 			}
 
-			if (n_static_obst == 0 || !is_geo_constraint)
+			if (n_so == 0 || !is_geo_constraint)
 			{
 				return 0.0;
 			}
@@ -882,7 +921,7 @@ namespace PSBMPC_LIB
 			{
 				t = (k + 1) * pars.dt;
 
-				for (int j = 0; j < n_static_obst; j++)
+				for (int j = 0; j < n_so; j++)
 				{
 					p_0 << trajectory.block<2, 1>(0, k);
 
@@ -921,17 +960,25 @@ namespace PSBMPC_LIB
 		int MPC_Cost<Parameters>::find_triplet_orientation(
 			const Eigen::Vector2d &p,
 			const Eigen::Vector2d &q,
-			const Eigen::Vector2d &r
-			) const
+			const Eigen::Vector2d &r) const
 		{
 			double epsilon = 1e-8; // abs(val) less than 1e-8 m^2 is considered zero for this check
 			// Calculate z-component of cross product (q - p) x (r - q)
 			double val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
 			//printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
-			if (val > -epsilon && val < epsilon) 	{ return 0; } // colinear
-			else if (val > epsilon) 				{ return 1; } // clockwise
-			else 									{ return 2; } // counterclockwise
+			if (val > -epsilon && val < epsilon)
+			{
+				return 0;
+			} // colinear
+			else if (val > epsilon)
+			{
+				return 1;
+			} // clockwise
+			else
+			{
+				return 2;
+			} // counterclockwise
 		}
 
 		/****************************************************************************************
@@ -945,8 +992,7 @@ namespace PSBMPC_LIB
 		bool MPC_Cost<Parameters>::determine_if_on_segment(
 			const Eigen::Vector2d &p,
 			const Eigen::Vector2d &q,
-			const Eigen::Vector2d &r
-			) const
+			const Eigen::Vector2d &r) const
 		{
 			if (q(0) <= std::max(p(0), r(0)) && q(0) >= std::min(p(0), r(0)) &&
 				q(1) <= std::max(p(1), r(1)) && q(1) >= std::min(p(1), r(1)))
@@ -967,8 +1013,7 @@ namespace PSBMPC_LIB
 			const Eigen::Vector2d &p_1,
 			const Eigen::Vector2d &v_1,
 			const Eigen::Vector2d &v_2,
-			const double distance_to_line
-			) const
+			const double distance_to_line) const
 		{
 			Eigen::Vector2d v_diff, n;
 
@@ -991,8 +1036,7 @@ namespace PSBMPC_LIB
 			const Eigen::Vector2d &p_1,
 			const Eigen::Vector2d &q_1,
 			const Eigen::Vector2d &p_2,
-			const Eigen::Vector2d &q_2
-			) const
+			const Eigen::Vector2d &q_2) const
 		{
 			// Find the four orientations needed for general and
 			// special cases
@@ -1003,20 +1047,35 @@ namespace PSBMPC_LIB
 
 			//printf("o_1 = %d | o_2 = %d | o_3 = %d | o_4 = %d\n", o_1, o_2, o_3, o_4);
 			// General case
-			if (o_1 != o_2 && o_3 != o_4) { return true; }
+			if (o_1 != o_2 && o_3 != o_4)
+			{
+				return true;
+			}
 
 			// Special Cases
 			// p_1, q_1 and p_2 are colinear and p_2 lies on segment p_1 -> q_1
-			if (o_1 == 0 && determine_if_on_segment(p_1, p_2, q_1)) { return true; }
+			if (o_1 == 0 && determine_if_on_segment(p_1, p_2, q_1))
+			{
+				return true;
+			}
 
 			// p_1, q_1 and q_2 are colinear and q_2 lies on segment p_1 -> q_1
-			if (o_2 == 0 && determine_if_on_segment(p_1, q_2, q_1)) { return true; }
+			if (o_2 == 0 && determine_if_on_segment(p_1, q_2, q_1))
+			{
+				return true;
+			}
 
 			// p_2, q_2 and p_1 are colinear and p_1 lies on segment p_2 -> q_2
-			if (o_3 == 0 && determine_if_on_segment(p_2, p_1, q_2)) { return true; }
+			if (o_3 == 0 && determine_if_on_segment(p_2, p_1, q_2))
+			{
+				return true;
+			}
 
 			// p_2, q_2 and q_1 are colinear and q_1 lies on segment p_2 -> q_2
-			if (o_4 == 0 && determine_if_on_segment(p_2, q_1, q_2)) { return true; }
+			if (o_4 == 0 && determine_if_on_segment(p_2, q_1, q_2))
+			{
+				return true;
+			}
 
 			return false; // Doesn't fall in any of the above cases
 		}
@@ -1031,8 +1090,7 @@ namespace PSBMPC_LIB
 		double MPC_Cost<Parameters>::distance_to_line(
 			const Eigen::Vector2d &p,
 			const Eigen::Vector2d &q_1,
-			const Eigen::Vector2d &q_2
-			) const
+			const Eigen::Vector2d &q_2) const
 		{
 			Eigen::Vector3d a;
 			Eigen::Vector3d b;
@@ -1040,8 +1098,10 @@ namespace PSBMPC_LIB
 			b << (p - q_2), 0.0;
 
 			Eigen::Vector3d c = a.cross(b);
-			if (a.norm() > 0) return c.norm() / a.norm();
-			else return -1;
+			if (a.norm() > 0)
+				return c.norm() / a.norm();
+			else
+				return -1;
 		}
 
 		/****************************************************************************************
@@ -1054,13 +1114,14 @@ namespace PSBMPC_LIB
 		double MPC_Cost<Parameters>::distance_to_static_obstacle(
 			const Eigen::Vector2d &p,
 			const Eigen::Vector2d &v_1,
-			const Eigen::Vector2d &v_2
-			) const
+			const Eigen::Vector2d &v_2) const
 		{
 			double d2line = distance_to_line(p, v_1, v_2);
 
-			if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line)) return d2line;
-			else return std::min((v_1 - p).norm(),(v_2 - p).norm());
+			if (determine_if_behind(p, v_1, v_2, d2line) || determine_if_behind(p, v_2, v_1, d2line))
+				return d2line;
+			else
+				return std::min((v_1 - p).norm(), (v_2 - p).norm());
 		}
 
 		/****************************************************************************************
@@ -1072,14 +1133,13 @@ namespace PSBMPC_LIB
 		template <typename Parameters>
 		bool MPC_Cost<Parameters>::determine_if_inside_polygon(
 			const Eigen::Vector2d &p,
-			const polygon_2D &poly
-			) const
+			const polygon_2D &poly) const
 		{
-			//======================================================
-			// MATLAB PLOTTING FOR DEBUGGING
-			//======================================================
-			#if ENABLE_PSBMPC_DEBUGGING
-				/* Engine *ep = engOpen(NULL);
+//======================================================
+// MATLAB PLOTTING FOR DEBUGGING
+//======================================================
+#if ENABLE_PSBMPC_DEBUGGING
+			/* Engine *ep = engOpen(NULL);
 				if (ep == NULL)
 				{
 					std::cout << "engine start failed!" << std::endl;
@@ -1102,7 +1162,7 @@ namespace PSBMPC_LIB
 
 				Eigen::Matrix2d p_os_ray; p_os_ray.col(0) = p;
 				Eigen::Matrix2d polygon_side; */
-			#endif
+#endif
 			//======================================================
 			int line_intersect_count(0), n_vertices(0);
 			Eigen::Vector2d v_prev, v, v_next;
@@ -1110,35 +1170,53 @@ namespace PSBMPC_LIB
 			Eigen::MatrixXd vertices(2, 50000);
 			// Find bounding box of polygon to use for ray creation
 			Eigen::Matrix2d bbox;
-			bbox(0, 0) = 1e10; bbox(1, 0) = 1e10; bbox(0, 1) = -1e10; bbox(1, 1) = -1e10;
-			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
+			bbox(0, 0) = 1e10;
+			bbox(1, 0) = 1e10;
+			bbox(0, 1) = -1e10;
+			bbox(1, 1) = -1e10;
+			for (auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
 			{
-				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
+				v(0) = boost::geometry::get<0>(*it);
+				v(1) = boost::geometry::get<1>(*it);
 
 				vertices(0, n_vertices) = v(0);
 				vertices(1, n_vertices) = v(1);
 
-				if (v(0) < bbox(0, 0)) { bbox(0, 0) = v(0); } // x_min
-				if (v(1) < bbox(1, 0)) { bbox(1, 0) = v(1); } // y_min
-				if (v(0) > bbox(0, 1)) { bbox(0, 1) = v(0); } // x_max
-				if (v(1) > bbox(1, 1)) { bbox(1, 1) = v(1); } // y_max
+				if (v(0) < bbox(0, 0))
+				{
+					bbox(0, 0) = v(0);
+				} // x_min
+				if (v(1) < bbox(1, 0))
+				{
+					bbox(1, 0) = v(1);
+				} // y_min
+				if (v(0) > bbox(0, 1))
+				{
+					bbox(0, 1) = v(0);
+				} // x_max
+				if (v(1) > bbox(1, 1))
+				{
+					bbox(1, 1) = v(1);
+				} // y_max
 				n_vertices += 1;
 			}
 			vertices.conservativeResize(2, n_vertices);
 			if (n_vertices < 3 ||
 				p(0) < bbox(0, 0) || p(0) > bbox(0, 1) || p(1) < bbox(1, 0) || p(1) > bbox(1, 1))
-			{ return false; }
+			{
+				return false;
+			}
 
 			Eigen::Vector2d p_ray_end;
 			p_ray_end = bbox.col(1); // set ray end to x_max, y_max of polygon bbox
 			p_ray_end(0) += 0.1;
 			p_ray_end = p + 1.1 * (bbox.col(1) - p);
 
-			//======================================================
-			// MATLAB PLOTTING FOR DEBUGGING
-			//======================================================
-			#if ENABLE_PSBMPC_DEBUGGING
-				/* p_os_ray.col(1) = p_ray_end;
+//======================================================
+// MATLAB PLOTTING FOR DEBUGGING
+//======================================================
+#if ENABLE_PSBMPC_DEBUGGING
+			/* p_os_ray.col(1) = p_ray_end;
 
 				polygon_matrix_mx = mxCreateDoubleMatrix(2, n_vertices, mxREAL);
 				p_polygon_matrix = mxGetPr(polygon_matrix_mx);
@@ -1151,26 +1229,38 @@ namespace PSBMPC_LIB
 				engPutVariable(ep, "p_os_ray", p_os_ray_mx);
 				engPutVariable(ep, "bbox", bbox_mx);
 				engEvalString(ep, "init_plot_geometry_wrt_polygon"); */
-			#endif
+#endif
 			//======================================================
 			int o_11(0), o_12(0);
-			for(int l = 0; l < n_vertices; l++)
+			for (int l = 0; l < n_vertices; l++)
 			{
-				if (l == 0)					{ v_prev = vertices.col(n_vertices - 1); }
-				else 						{ v_prev = vertices.col(l - 1); }
+				if (l == 0)
+				{
+					v_prev = vertices.col(n_vertices - 1);
+				}
+				else
+				{
+					v_prev = vertices.col(l - 1);
+				}
 				v = vertices.col(l);
-				if (l == n_vertices - 1)	{ v_next = vertices.col(0); }
-				else 						{ v_next = vertices.col(l + 1); }
+				if (l == n_vertices - 1)
+				{
+					v_next = vertices.col(0);
+				}
+				else
+				{
+					v_next = vertices.col(l + 1);
+				}
 
-				//======================================================
-				// MATLAB PLOTTING FOR DEBUGGING
-				//======================================================
-				#if ENABLE_PSBMPC_DEBUGGING
-					/* polygon_side.col(0) = v; polygon_side.col(1) = v_next;
+//======================================================
+// MATLAB PLOTTING FOR DEBUGGING
+//======================================================
+#if ENABLE_PSBMPC_DEBUGGING
+				/* polygon_side.col(0) = v; polygon_side.col(1) = v_next;
 					map_polygon_side = polygon_side;
 					engPutVariable(ep, "polygon_side", polygon_side_mx);
 					engEvalString(ep, "plot_geometry_wrt_polygon"); */
-				#endif
+#endif
 				//======================================================
 
 				if (determine_if_lines_intersect(p, p_ray_end, v, v_next))
@@ -1201,16 +1291,16 @@ namespace PSBMPC_LIB
 					}
 				}
 			}
-			//======================================================
-			// MATLAB PLOTTING FOR DEBUGGING
-			//======================================================
-			#if ENABLE_PSBMPC_DEBUGGING
-				/* mxDestroyArray(polygon_matrix_mx);
+//======================================================
+// MATLAB PLOTTING FOR DEBUGGING
+//======================================================
+#if ENABLE_PSBMPC_DEBUGGING
+			/* mxDestroyArray(polygon_matrix_mx);
 				mxDestroyArray(polygon_side_mx);
 				mxDestroyArray(p_os_ray_mx);
 				mxDestroyArray(bbox_mx);
 				engClose(ep); */
-			#endif
+#endif
 			//======================================================
 			return line_intersect_count % 2 == 1;
 		}
@@ -1225,8 +1315,7 @@ namespace PSBMPC_LIB
 		Eigen::Vector2d MPC_Cost<Parameters>::distance_to_line_segment(
 			const Eigen::Vector2d &p,
 			const Eigen::Vector2d &q_1,
-			const Eigen::Vector2d &q_2
-			) const
+			const Eigen::Vector2d &q_2) const
 		{
 			double epsilon = 0.00001, l_sqrt(0.0), t_line(0.0);
 			Eigen::Vector3d a, b;
@@ -1235,7 +1324,10 @@ namespace PSBMPC_LIB
 			b << (p - q_1), 0.0;
 
 			l_sqrt = a(0) * a(0) + a(1) * a(1);
-			if (l_sqrt <= epsilon)	{ return q_1 - p; }
+			if (l_sqrt <= epsilon)
+			{
+				return q_1 - p;
+			}
 
 			t_line = std::max(0.0, std::min(1.0, a.dot(b) / l_sqrt));
 			projection = q_1 + t_line * (q_2 - q_1);
@@ -1252,21 +1344,24 @@ namespace PSBMPC_LIB
 		template <typename Parameters>
 		Eigen::Vector2d MPC_Cost<Parameters>::distance_to_polygon(
 			const Eigen::Vector2d &p,
-			const polygon_2D &poly
-			) const
+			const polygon_2D &poly) const
 		{
 			Eigen::Vector2d d2poly, d2line;
 			if (determine_if_inside_polygon(p, poly))
 			{
-				d2poly(0) = 0.0; d2poly(1) = 0.0;
+				d2poly(0) = 0.0;
+				d2poly(1) = 0.0;
 				return d2poly;
 			}
-			d2poly(0) = 1e10; d2poly(1) = 1e10;
+			d2poly(0) = 1e10;
+			d2poly(1) = 1e10;
 			Eigen::Vector2d v, v_next;
-			for(auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
+			for (auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)) - 1; it++)
 			{
-				v(0) = boost::geometry::get<0>(*it); v(1) = boost::geometry::get<1>(*it);
-				v_next(0) = boost::geometry::get<0>(*(it + 1)); v_next(1) = boost::geometry::get<1>(*(it + 1));
+				v(0) = boost::geometry::get<0>(*it);
+				v(1) = boost::geometry::get<1>(*it);
+				v_next(0) = boost::geometry::get<0>(*(it + 1));
+				v_next(1) = boost::geometry::get<1>(*(it + 1));
 
 				d2line = distance_to_line_segment(p, v, v_next);
 

@@ -313,7 +313,7 @@ namespace PSBMPC_LIB
 
 				phi_j = fmaxf(0.0f, L_0j.dot(fdata->wind_direction));
 
-				if (d_0j > pars.d_safe)
+				if (d_0j >= pars.d_safe)
 				{
 					cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-(pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * (float)k * pars.dt));
 				}
