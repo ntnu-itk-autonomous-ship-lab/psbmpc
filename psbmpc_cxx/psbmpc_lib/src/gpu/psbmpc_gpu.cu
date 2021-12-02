@@ -667,7 +667,7 @@ namespace PSBMPC_LIB
 			}
 			// Total number of GPU threads to schedule
 			int n_threads = pars.n_cbs * (n_so + n_do_ps_total);
-			std::cout << "n_threads = " << n_threads << " | n_so = " << n_so << " | n_do_ps_total = " << n_do_ps_total << std::endl;
+			//std::cout << "n_threads = " << n_threads << " | n_so = " << n_so << " | n_do_ps_total = " << n_do_ps_total << std::endl;
 
 			cb_dvec.resize(n_threads);
 			cb_index_dvec.resize(n_threads);
