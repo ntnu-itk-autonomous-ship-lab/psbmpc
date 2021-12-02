@@ -2,20 +2,20 @@
 *
 *  File name : utilities_gpu.cuh
 *
-*  Function  : Header file for all-purpose math functions which can/are used by multiple 
-*			   device library files. Thus, do NOT add a function here if it belongs to one 
+*  Function  : Header file for all-purpose math functions which can/are used by multiple
+*			   device library files. Thus, do NOT add a function here if it belongs to one
 *			   distinct class. Overloads for tml type matrices.
-*  
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -30,10 +30,10 @@
 #include <cstdlib>
 
 namespace PSBMPC_LIB
-{	
+{
 	namespace GPU
 	{
-		enum Axis 
+		enum Axis
 		{
 			Roll,
 			Pitch,
@@ -41,11 +41,11 @@ namespace PSBMPC_LIB
 		};
 
 		/****************************************************************************************
-		*  Place inline functions here	
+		*  Place inline functions here
 		****************************************************************************************/
 		/****************************************************************************************
 		*  Name     : save_matrix_to_file
-		*  Function : 
+		*  Function :
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
@@ -56,7 +56,7 @@ namespace PSBMPC_LIB
 			int n_rows = in.get_rows();
 			int n_cols = in.get_cols();
 
-			if(!outdata) 
+			if (!outdata)
 			{
 				std::cerr << "Error: file could not be opened" << std::endl;
 				exit(1);
@@ -67,15 +67,21 @@ namespace PSBMPC_LIB
 				for (int j = 0; j < n_cols; j++)
 				{
 					outdata << in(i, j);
-					if (j != n_cols - 1) { outdata << ","; }
+					if (j != n_cols - 1)
+					{
+						outdata << ",";
+					}
 				}
-				if (i != n_rows - 1) { outdata << std::endl; }
+				if (i != n_rows - 1)
+				{
+					outdata << std::endl;
+				}
 			}
 		}
 
 		/****************************************************************************************
 		*  Name     : read_matrix_from_file
-		*  Function : 
+		*  Function :
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
@@ -85,7 +91,7 @@ namespace PSBMPC_LIB
 			TML::PDMatrix<T, Max_Rows, Max_Cols> out(n_rows, n_cols);
 			std::ifstream indata("/home/trymte/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv");
 
-			if(!indata) 
+			if (!indata)
 			{
 				std::cerr << "Error: file could not be opened" << std::endl;
 				exit(1);
@@ -108,19 +114,23 @@ namespace PSBMPC_LIB
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
-		__host__ __device__ inline double wrap_angle_to_pmpi(const double angle) 
+		__host__ __device__ inline double wrap_angle_to_pmpi(const double angle)
 		{
 			double a = fmod(angle, 2 * M_PI);
-			if (a <= -M_PI) a += 2 * M_PI;
-			if (a > M_PI) a -= 2 * M_PI;
+			if (a <= -M_PI)
+				a += 2 * M_PI;
+			if (a > M_PI)
+				a -= 2 * M_PI;
 			return a;
 		}
 
-		__host__ __device__ inline float wrap_angle_to_pmpi(const float angle) 
+		__host__ __device__ inline float wrap_angle_to_pmpi(const float angle)
 		{
 			float a = fmod(angle, 2 * M_PI);
-			if (a <= -M_PI) a += 2 * M_PI;
-			if (a > M_PI) a -= 2 * M_PI;
+			if (a <= -M_PI)
+				a += 2 * M_PI;
+			if (a > M_PI)
+				a -= 2 * M_PI;
 			return a;
 		}
 
@@ -130,17 +140,19 @@ namespace PSBMPC_LIB
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
-		__host__ __device__ inline double wrap_angle_to_02pi(const double angle) 
+		__host__ __device__ inline double wrap_angle_to_02pi(const double angle)
 		{
 			double a = fmod(angle, 2 * M_PI);
-			if (a < 0) a += 2 * M_PI;
+			if (a < 0)
+				a += 2 * M_PI;
 			return a;
 		}
 
-		__host__ __device__ inline float wrap_angle_to_02pi(const float angle) 
+		__host__ __device__ inline float wrap_angle_to_02pi(const float angle)
 		{
 			float a = fmod(angle, 2 * M_PI);
-			if (a < 0) a += 2 * M_PI;
+			if (a < 0)
+				a += 2 * M_PI;
 			return a;
 		}
 
@@ -150,19 +162,23 @@ namespace PSBMPC_LIB
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
-		__host__ __device__ inline double angle_difference_pmpi(const double a_1, const double a_2) 
+		__host__ __device__ inline double angle_difference_pmpi(const double a_1, const double a_2)
 		{
 			double diff = wrap_angle_to_pmpi(a_1) - wrap_angle_to_pmpi(a_2);
-			while (diff > M_PI) diff -= 2 * M_PI;
-			while (diff < -M_PI) diff += 2 * M_PI;
+			while (diff > M_PI)
+				diff -= 2 * M_PI;
+			while (diff < -M_PI)
+				diff += 2 * M_PI;
 			return diff;
 		}
 
-		__host__ __device__ inline float angle_difference_pmpi(const float a_1, const float a_2) 
+		__host__ __device__ inline float angle_difference_pmpi(const float a_1, const float a_2)
 		{
 			float diff = wrap_angle_to_pmpi(a_1) - wrap_angle_to_pmpi(a_2);
-			while (diff > M_PI) diff -= 2 * M_PI;
-			while (diff < -M_PI) diff += 2 * M_PI;
+			while (diff > M_PI)
+				diff -= 2 * M_PI;
+			while (diff < -M_PI)
+				diff += 2 * M_PI;
 			return diff;
 		}
 
@@ -190,30 +206,32 @@ namespace PSBMPC_LIB
 		{
 			assert(v.get_rows() == 3 && v.get_cols() == 1);
 			TML::Vector3f v_temp;
-			switch (axis) 
+			switch (axis)
 			{
-				case Roll : 
-				{
-					v_temp(0) = v(0);
-					v_temp(1) = v(1) * cos(angle) - v(2) * sin(angle);
-					v_temp(2) = v(1) * sin(angle) + v(2) * cos(angle);
-					break;
-				}
-				case Pitch : 
-				{
-					v_temp(0) = v(0) * cos(angle) + v(2) * sin(angle);
-					v_temp(1) = v(1);
-					v_temp(2) = - v(0) * sin(angle) + v(2) * cos(angle);	
-					break;
-				}			
-				case Yaw : 
-				{
-					v_temp(0) = v(0) * cos(angle) - v(1) * sin(angle);
-					v_temp(1) = v(0) * sin(angle) + v(1) * cos(angle);
-					v_temp(2) = v(2);
-					break;
-				}
-				default : v_temp.set_zero(); return v_temp;
+			case Roll:
+			{
+				v_temp(0) = v(0);
+				v_temp(1) = v(1) * cos(angle) - v(2) * sin(angle);
+				v_temp(2) = v(1) * sin(angle) + v(2) * cos(angle);
+				break;
+			}
+			case Pitch:
+			{
+				v_temp(0) = v(0) * cos(angle) + v(2) * sin(angle);
+				v_temp(1) = v(1);
+				v_temp(2) = -v(0) * sin(angle) + v(2) * cos(angle);
+				break;
+			}
+			case Yaw:
+			{
+				v_temp(0) = v(0) * cos(angle) - v(1) * sin(angle);
+				v_temp(1) = v(0) * sin(angle) + v(1) * cos(angle);
+				v_temp(2) = v(2);
+				break;
+			}
+			default:
+				v_temp.set_zero();
+				return v_temp;
 			}
 			return v_temp;
 		}
@@ -229,9 +247,9 @@ namespace PSBMPC_LIB
 		{
 			TML::Static_Matrix<float, Rows * Cols, 1> out;
 			int count = 0;
-			for(int i = 0; i < Rows; i++)
+			for (int i = 0; i < Rows; i++)
 			{
-				for(int j = 0; j < Cols; j++)
+				for (int j = 0; j < Cols; j++)
 				{
 					out(count) = in(i, j);
 					count += 1;
@@ -248,9 +266,9 @@ namespace PSBMPC_LIB
 
 			TML::PDMatrix<float, Max_Rows * Max_Cols, 1> out(n_rows, n_cols);
 			int count = 0;
-			for(int i = 0; i < n_rows; i++)
+			for (int i = 0; i < n_rows; i++)
 			{
-				for(int j = 0; j < n_cols; j++)
+				for (int j = 0; j < n_cols; j++)
 				{
 					out(count) = in(i, j);
 					count += 1;
@@ -261,8 +279,8 @@ namespace PSBMPC_LIB
 
 		/****************************************************************************************
 		*  Name     : reshape
-		*  Function : Reshapes a vector of size n_rows * n_cols x 1 to  a matrix of 
-		*			  n_rows x n_cols 
+		*  Function : Reshapes a vector of size n_rows * n_cols x 1 to  a matrix of
+		*			  n_rows x n_cols
 		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
@@ -272,9 +290,9 @@ namespace PSBMPC_LIB
 			TML::Static_Matrix<float, New_Rows, New_Cols> out;
 
 			int count = 0;
-			for(int i = 0; i < New_Rows; i++)
+			for (int i = 0; i < New_Rows; i++)
 			{
-				for(int j = 0; j < New_Cols; j++)
+				for (int j = 0; j < New_Cols; j++)
 				{
 					out(i, j) = in(count);
 					count += 1;
@@ -290,9 +308,9 @@ namespace PSBMPC_LIB
 			TML::PDMatrix<float, New_Max_Rows, New_Max_Cols> out(n_rows, n_cols);
 
 			int count = 0;
-			for(int i = 0; i < n_rows; i++)
+			for (int i = 0; i < n_rows; i++)
 			{
-				for(int j = 0; j < n_cols; j++)
+				for (int j = 0; j < n_cols; j++)
 				{
 					out(i, j) = in(count);
 					count += 1;
@@ -303,31 +321,55 @@ namespace PSBMPC_LIB
 
 		/****************************************************************************************
 		*  Name     : calculate_cpa
-		*  Function : Calculates time, distance (vector) and position (vector) at the Closest 
+		*  Function : Calculates time, distance (vector) and position (vector) at the Closest
 		*			  Point of Approach between vessel A and B
-		*  Author   : 
+		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
 		__host__ __device__ inline void calculate_cpa(
-			TML::Vector2f &p_cpa, 													// In/out: Position of vessel A at CPA
-			float &t_cpa, 															// In/out: Time to CPA
-			float &d_cpa, 															// In/out: Distance at CPA
-			const TML::PDVector6f &xs_A, 											// In: State of vessel A 
-			const TML::PDVector6f &xs_B 											// In: State of vessel B
-			)
+			TML::Vector2f &p_cpa,		 // In/out: Position of vessel A at CPA
+			float &t_cpa,				 // In/out: Time to CPA
+			float &d_cpa,				 // In/out: Distance at CPA
+			const TML::PDVector6f &xs_A, // In: State of vessel A
+			const TML::PDVector6f &xs_B	 // In: State of vessel B
+		)
 		{
 			float epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
 			float psi_A(0.0f), psi_B(0.0f);
 			TML::Vector2f v_A, v_B, p_A, p_B, L_AB, p_B_cpa;
-			p_A(0) = xs_A(0); p_A(1) = xs_A(1);
-			p_B(0) = xs_B(0); p_B(1) = xs_B(1);
+			p_A(0) = xs_A(0);
+			p_A(1) = xs_A(1);
+			p_B(0) = xs_B(0);
+			p_B(1) = xs_B(1);
 
 			// Either xs = [x, y, psi, u, v, r]^T or [x, y, Vx, Vy]
-			if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
-			else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
-			
-			if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); rotate_vector_2D(v_B, psi_B); }
-			else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
+			if (xs_A.size() == 6)
+			{
+				psi_A = xs_A[2];
+				v_A(0) = xs_A(3);
+				v_A(1) = xs_A(4);
+				rotate_vector_2D(v_A, psi_A);
+			}
+			else
+			{
+				psi_A = atan2(xs_A(3), xs_A(2));
+				v_A(0) = xs_A(2);
+				v_A(1) = xs_A(3);
+			}
+
+			if (xs_B.size() == 6)
+			{
+				psi_B = xs_B[2];
+				v_B(1) = xs_B(4);
+				v_B(1) = xs_B(4);
+				rotate_vector_2D(v_B, psi_B);
+			}
+			else
+			{
+				psi_B = atan2(xs_B(3), xs_B(2));
+				v_B(0) = xs_B(2);
+				v_B(1) = xs_B(3);
+			}
 
 			// Check if the relative speed is too low, or if the vessels are moving away from each other with the current velocity vectors
 			float dt_incr = 0.1;
@@ -339,35 +381,61 @@ namespace PSBMPC_LIB
 			}
 			else
 			{
-				t_cpa = - (p_A - p_B).dot(v_A - v_B) / powf((v_A - v_B).norm(), 2);
-				p_cpa = v_A * t_cpa; p_cpa += p_A;
+				t_cpa = -(p_A - p_B).dot(v_A - v_B) / powf((v_A - v_B).norm(), 2);
+				p_cpa = v_A * t_cpa;
+				p_cpa += p_A;
 
-				p_B_cpa = v_B * t_cpa; p_B_cpa += p_B;
+				p_B_cpa = v_B * t_cpa;
+				p_B_cpa += p_B;
 				d_cpa = (p_cpa - p_B_cpa).norm();
 			}
 		}
 
 		__host__ __device__ inline void calculate_cpa(
-			TML::Vector2d &p_cpa, 													// In/out: Position of vessel A at CPA
-			double &t_cpa, 															// In/out: Time to CPA
-			double &d_cpa, 															// In/out: Distance at CPA
-			const TML::PDVector6f &xs_A, 											// In: State of vessel A 
-			const TML::PDVector6f &xs_B 											// In: State of vessel B
-			)
+			TML::Vector2d &p_cpa,		 // In/out: Position of vessel A at CPA
+			double &t_cpa,				 // In/out: Time to CPA
+			double &d_cpa,				 // In/out: Distance at CPA
+			const TML::PDVector6f &xs_A, // In: State of vessel A
+			const TML::PDVector6f &xs_B	 // In: State of vessel B
+		)
 		{
 
 			float epsilon = 0.25; // lower boundary on relative speed to calculate t_cpa "safely"
 			float psi_A(0.0f), psi_B(0.0f);
 			TML::Vector2f v_A, v_B, p_A, p_B, L_AB, p_B_cpa;
-			p_A(0) = xs_A(0); p_A(1) = xs_A(1);
-			p_B(0) = xs_B(0); p_B(1) = xs_B(1);
+			p_A(0) = xs_A(0);
+			p_A(1) = xs_A(1);
+			p_B(0) = xs_B(0);
+			p_B(1) = xs_B(1);
 
 			// Either xs = [x, y, psi, u, v, r]^T or [x, y, Vx, Vy]
-			if (xs_A.size() == 6) { psi_A = xs_A[2]; v_A(0) = xs_A(3); v_A(1) = xs_A(4); rotate_vector_2D(v_A, psi_A); }
-			else 				  { psi_A = atan2(xs_A(3), xs_A(2)); v_A(0) = xs_A(2); v_A(1) = xs_A(3); }
-			
-			if (xs_B.size() == 6) { psi_B = xs_B[2]; v_B(1) = xs_B(4); v_B(1) = xs_B(4); rotate_vector_2D(v_B, psi_B); }
-			else 				  { psi_B = atan2(xs_B(3), xs_B(2)); v_B(0) = xs_B(2); v_B(1) = xs_B(3); }
+			if (xs_A.size() == 6)
+			{
+				psi_A = xs_A[2];
+				v_A(0) = xs_A(3);
+				v_A(1) = xs_A(4);
+				rotate_vector_2D(v_A, psi_A);
+			}
+			else
+			{
+				psi_A = atan2(xs_A(3), xs_A(2));
+				v_A(0) = xs_A(2);
+				v_A(1) = xs_A(3);
+			}
+
+			if (xs_B.size() == 6)
+			{
+				psi_B = xs_B[2];
+				v_B(1) = xs_B(4);
+				v_B(1) = xs_B(4);
+				rotate_vector_2D(v_B, psi_B);
+			}
+			else
+			{
+				psi_B = atan2(xs_B(3), xs_B(2));
+				v_B(0) = xs_B(2);
+				v_B(1) = xs_B(3);
+			}
 
 			// Check if the relative speed is too low, or if the vessels are moving away from each other with the current velocity vectors
 			float dt_incr = 0.1;
@@ -379,45 +447,82 @@ namespace PSBMPC_LIB
 			}
 			else
 			{
-				t_cpa = - (p_A - p_B).dot(v_A - v_B) / powf((v_A - v_B).norm(), 2);
-				p_cpa(0) = v_A * t_cpa + p_A(0); 
+				t_cpa = -(p_A - p_B).dot(v_A - v_B) / powf((v_A - v_B).norm(), 2);
+				p_cpa(0) = v_A * t_cpa + p_A(0);
 				p_cpa(1) = v_A * t_cpa + p_A(1);
 
-				p_B_cpa = v_B * (float)t_cpa; p_B_cpa += p_B;
+				p_B_cpa = v_B * (float)t_cpa;
+				p_B_cpa += p_B;
 				d_cpa = (p_cpa - p_B_cpa).norm();
 			}
 		}
-		
+
+		/****************************************************************************************
+		*  Name     : ship_is_passed_by
+		*  Function : Checks if an obstacle vessel B is passed by the ownship
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
+		__host__ __device__ inline bool ship_is_passed_by(
+			const TML::PDVector4f &xs_0,
+			const TML::PDVector4f &xs_i,
+			const float d_safe)
+		{
+			TML::Vector2f v_0, v_i, L_0i;
+			float psi_0 = xs_0(2), d_0i;
+			v_0(0) = xs_0(3) * cos(xs_0(2));
+			v_0(1) = xs_0(3) * sin(xs_0(2));
+			v_i(0) = xs_i(2);
+			v_i(1) = xs_i(3);
+			L_0i = xs_i.get_block<2, 1>(0, 0, 2, 1) - xs_0.get_block<2, 1>(0, 0, 2, 1);
+			d_0i = L_0i.norm();
+			L_0i.normalize();
+
+			bool A_is_overtaken = v_0.dot(v_i) > cos(68.5 * DEG2RAD) * v_0.norm() * v_i.norm() &&
+								  v_0.norm() < v_i.norm() &&
+								  v_0.norm() > 0.25;
+
+			bool B_is_overtaken = v_i.dot(v_0) > cos(68.5 * DEG2RAD) * v_i.norm() * v_0.norm() &&
+								  v_i.norm() < v_0.norm() &&
+								  v_i.norm() > 0.25;
+
+			bool is_passed = ((v_0.dot(L_0i) < cos(112.5 * DEG2RAD) * v_0.norm() && // Vessel A's perspective
+							   !A_is_overtaken) ||
+							  (v_i.dot(-L_0i) < cos(112.5 * DEG2RAD) * v_i.norm() && // Vessel B's perspective
+							   !B_is_overtaken)) &&
+							 d_0i > d_safe;
+			return is_passed;
+		}
+
 		/****************************************************************************************
 		*  Name     : evaluateDistance
-		*  Function : 
-		*  Author   : 
+		*  Function :
+		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
 		__host__ __device__ inline float evaluateDistance(
-			const TML::PDVector4f &xs_A, 											// In: State of vessel A 
-			const TML::PDVector4f &xs_B 											// In: State of vessel B
-			)
+			const TML::PDVector4f &xs_A, // In: State of vessel A
+			const TML::PDVector4f &xs_B	 // In: State of vessel B
+		)
 		{
 			return (xs_A.get_block<2, 1>(0, 0, 2, 1) - xs_B.get_block<2, 1>(0, 0, 2, 1)).norm();
 		}
-		
+
 		/****************************************************************************************
 		*  Name     : relativeBearing
-		*  Function : Calculates relative bearing of state xs = [x, y, COG, SOG] relative to 
+		*  Function : Calculates relative bearing of state xs = [x, y, COG, SOG] relative to
 		*			  point (x, y).
-		*  Author   : 
+		*  Author   :
 		*  Modified :
 		*****************************************************************************************/
 		__host__ __device__ inline float relativeBearing(
-			const TML::PDVector4f &xs, 
-			const float x, 
-			const float y
-			)
+			const TML::PDVector4f &xs,
+			const float x,
+			const float y)
 		{
 			return wrap_angle_to_pmpi(atan2(y - xs(PY), x - xs(PX)) - xs(COG));
 		}
-		
+
 		/****************************************************************************************
 		*  Name     : toStandardForm
 		*  Function : Line [px, py, COG, SOG] to ax+by=c
@@ -425,8 +530,7 @@ namespace PSBMPC_LIB
 		*  Modified :
 		*****************************************************************************************/
 		__host__ __device__ inline auto toStandardForm(
-			const TML::PDVector4f &line
-			)
+			const TML::PDVector4f &line)
 		{
 			struct
 			{
@@ -439,7 +543,7 @@ namespace PSBMPC_LIB
 			{
 				//sin is non-zero, division by sin possible
 				res.a = 1;
-				res.b = - cos(line(COG)) / sin(line(COG));
+				res.b = -cos(line(COG)) / sin(line(COG));
 				res.c = res.a * line(PX) + res.b * line(PY);
 			}
 			else
@@ -481,12 +585,11 @@ namespace PSBMPC_LIB
 		*  Modified :
 		*****************************************************************************************/
 		__host__ __device__ inline TML::PDVector4f vx_vy_to_heading_speed_state(
-			const TML::PDVector4f &vx_vy_state
-			)
+			const TML::PDVector4f &vx_vy_state)
 		{
 			TML::PDVector4f heading_speed_state = vx_vy_state;
 			heading_speed_state(COG) = atan2(vx_vy_state(VY), vx_vy_state(VX));
-			heading_speed_state(SOG) = sqrtf(powf(vx_vy_state(VX),2) + powf(vx_vy_state(VY),2));
+			heading_speed_state(SOG) = sqrtf(powf(vx_vy_state(VX), 2) + powf(vx_vy_state(VY), 2));
 			return heading_speed_state;
 		}
 
@@ -498,10 +601,9 @@ namespace PSBMPC_LIB
 		*  Modified :
 		*****************************************************************************************/
 		__host__ __device__ inline float evaluate_arrival_time(
-			const TML::PDVector4f &ship, 
-			const float x, 
-			const float y
-			)
+			const TML::PDVector4f &ship,
+			const float x,
+			const float y)
 		{
 			//If no speed then it will take forever to arrive.
 			if (ship(SOG) < 1e-6)

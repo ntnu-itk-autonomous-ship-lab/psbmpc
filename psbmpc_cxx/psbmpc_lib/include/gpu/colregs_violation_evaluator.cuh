@@ -75,12 +75,13 @@ namespace PSBMPC_LIB
                 {
                     evaluate_actual_maneuver_changes(ownship_state(COG), ownship_state(SOG));
 
-                    if (!has_passed){
-                        //If the intersection point is in the past, then the ships have passed
+                    if (!has_passed)
+                    {
+                        /* //If the intersection point is in the past, then the ships have passed
                         ipoint = intersectionpoint(ownship_state, vx_vy_to_heading_speed_state(obstacle_state_vx_vy));
-                        has_passed = evaluate_arrival_time(ownship_state, ipoint(0), ipoint(1)) < 0;
+                        has_passed = evaluate_arrival_time(ownship_state, ipoint(0), ipoint(1)) < 0; */
+                        has_passed = ship_is_passed_by(ownship_state, obstacle_state_vx_vy, pars.GW_safety_margin);
                     }
-
                 }
             }
 
@@ -172,7 +173,6 @@ namespace PSBMPC_LIB
                 predicted_ownship_change_in_speed_or_course = false;
             }
 
-
             CVE_Pars<float> pars;
             bool initialized = false;
             bool predicted_ownship_change_in_course_to_port = false;
@@ -200,6 +200,7 @@ namespace PSBMPC_LIB
 
             TML::PDVector4f obstacle_state;
             TML::Vector2f ipoint;
+
         private:
             //=================================
 
