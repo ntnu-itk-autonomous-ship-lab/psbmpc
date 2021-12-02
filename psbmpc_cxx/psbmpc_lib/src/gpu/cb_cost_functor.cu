@@ -81,14 +81,15 @@ namespace PSBMPC_LIB
 *  Author   : Trym Tengesdal
 *  Modified :
 *****************************************************************************************/
-		__device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(const thrust::tuple<
-																					const int,							  // Thread index
-																					TML::PDMatrix<float, 2 * MAX_N_M, 1>, // Control behaviour considered
-																					const int,							  // Control behaviour index
-																					const int,							  // Static obstacle j considered
-																					const int,							  // Dynamic obstacle i considered
-																					const int,							  // Prediction scenario ps for the dynamic obstacle
-																					const int> &input_tuple				  // CPE object and COLREGS Violation Evaluator object index
+		__device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(
+			const thrust::tuple<
+				const int,							  // Thread index
+				TML::PDMatrix<float, 2 * MAX_N_M, 1>, // Control behaviour considered
+				const int,							  // Control behaviour index
+				const int,							  // Static obstacle j considered
+				const int,							  // Dynamic obstacle i considered
+				const int,							  // Prediction scenario ps for the dynamic obstacle
+				const int> &input_tuple				  // CPE object and COLREGS Violation Evaluator object index
 		)
 		{
 			h_so_j = 0.0f;

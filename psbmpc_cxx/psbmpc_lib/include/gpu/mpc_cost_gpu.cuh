@@ -313,15 +313,22 @@ namespace PSBMPC_LIB
 
 				phi_j = fmaxf(0.0f, L_0j.dot(fdata->wind_direction));
 
-				cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-(pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * (float)k * pars.dt));
+				if (d_0j > pars.d_safe)
+				{
+					cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-(pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * (float)k * pars.dt));
+				}
+				else
+				{
+					cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-pars.G_4 * (float)k * pars.dt);
+				}
 
-				/* if (k == 0)
-					printf("t = %.1f | d_0j = %.6f | cost_g = %.1f | max_cost_g = %.1f | G_1 = %.2f | G_2 = %.3f | G_3 = %.3f | G_4 = %.3f\n",
-						   k * pars.dt, d_0j, cost_g, max_cost_g, pars.G_1, pars.G_2, pars.G_3, pars.G_4); */
 				if (max_cost_g < cost_g)
 				{
 					max_cost_g = cost_g;
 				}
+				/* if (k == 0)
+					printf("t = %.1f | d_0j = %.6f | cost_g = %.1f | max_cost_g = %.1f \n",
+						   k * pars.dt, d_0j, cost_g, max_cost_g); */
 			}
 			return max_cost_g;
 		}
