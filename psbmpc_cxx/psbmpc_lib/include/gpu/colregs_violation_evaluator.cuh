@@ -164,7 +164,7 @@ namespace PSBMPC_LIB
                        ((colregs_situation == HO && !correct_HO_maneuver) ||
                         (colregs_situation == CR_SS && !correct_CR_SS_maneuver) ||
                         (colregs_situation == CR_PS && !correct_CR_PS_maneuver) ||
-                        (colregs_situation == OT_ing && correct_OT_ing_maneuver));
+                        (colregs_situation == OT_ing && !correct_OT_ing_maneuver));
             }
 
             __device__ void reset()
