@@ -143,13 +143,13 @@ namespace PSBMPC_LIB
             *****************************************************************************************/
             COLREGS_Violation_Evaluator()
             {
-                pars.max_distance_at_cpa = 50.0;
-                pars.d_init_colregs_situation = 500.0;
+                pars.max_distance_at_cpa = 40.0;
+                pars.d_init_colregs_situation = 400.0;
                 pars.head_on_width = 30.0 * DEG2RAD;
-                pars.overtaking_angle = (90.0 + 22.5) * DEG2RAD;
-                pars.max_acceptable_SO_speed_change = 2.0;
-                pars.max_acceptable_SO_course_change = 2.5 * DEG2RAD;
-                pars.critical_distance_to_ignore_SO = 30.0;
+                pars.overtaking_angle = 112.5 * DEG2RAD;
+                pars.max_acceptable_SO_speed_change = 1.5;
+                pars.max_acceptable_SO_course_change = 30.0 * DEG2RAD;
+                pars.critical_distance_to_ignore_SO = 15.0;
                 pars.GW_safety_margin = 10.0;
             }
 

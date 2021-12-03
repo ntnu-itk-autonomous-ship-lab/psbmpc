@@ -4,7 +4,12 @@ This repository implements a library for the Probabilistic Scenario-based MPC [[
 
 The library heavily relies on cmake, which you can learn more about e.g. here: <https://cliutils.gitlab.io/modern-cmake/>
 
-## Dependencies
+## Hardware dependencies
+
+- The library is only tested on NVIDIA GPUs with compute-capabilities 6.1 or higher, so you should check your GPU. The compute capability should be atleast 5.2.
+
+
+## Software dependencies
 
 - C++17
 - CMake > 3.17 for building
