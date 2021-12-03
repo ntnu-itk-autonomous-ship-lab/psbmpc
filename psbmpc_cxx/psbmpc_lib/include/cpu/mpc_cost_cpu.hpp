@@ -1,22 +1,22 @@
 /****************************************************************************************
-*
-*  File name : mpc_cost.hpp
-*
-*  Function  : Header file for the MPC Cost class (PSB/SB-MPC), which contains
-*              implementations for the COLAV MPC cost functions.
-*
-*            ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : mpc_cost.hpp
+ *
+ *  Function  : Header file for the MPC Cost class (PSB/SB-MPC), which contains
+ *              implementations for the COLAV MPC cost functions.
+ *
+ *            ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Trym Tengesdal
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 
 #pragma once
 #include "psbmpc_defines.hpp"
@@ -192,16 +192,37 @@ namespace PSBMPC_LIB
 			double calculate_colregs_violation_cost(
 				const Eigen::MatrixXd &ownship_trajectory,
 				const Eigen::MatrixXd &obstacle_trajectory,
-				const int i) const
+				const int i)
 			{
+				colregs_violation_evaluators.at(i).reset();
+				float d_0i_0 = evaluateDistance(ownship_trajectory.col(0), obstacle_trajectory.col(0)); // In: Distance at the current time t_0 between ownship and obstacle i
+				float d_cpa = INFINITY;																	// In: Distance at predicted CPA between ownship and obstacle i
+				Eigen::Vector4d ownship_CPA_state;														// In: Ownship state at CPA
+				Eigen::Vector4d obstacle_CPA_state_vx_vy;												// In: Obstacle i state at CPA
+
+				for (auto t = 0; t < std::min(ownship_trajectory.cols(), obstacle_trajectory.cols()); ++t)
+				{
+					const auto current_distance = evaluateDistance(ownship_trajectory.col(t), obstacle_trajectory.col(t));
+					if (current_distance < d_cpa)
+					{
+						d_cpa = current_distance;
+						ownship_CPA_state = ownship_trajectory.col(t);
+						obstacle_CPA_state_vx_vy = obstacle_trajectory.col(t);
+					}
+					colregs_violation_evaluators.at(i).evaluate_predicted_maneuver_changes(ownship_trajectory(2,t),ownship_trajectory(3,t));
+				}
+
 				if (colregs_violation_evaluators.count(i))
 				{
-					return pars.kappa_SO * colregs_violation_evaluators.at(i).evaluate_SO_violation(ownship_trajectory, obstacle_trajectory) + pars.kappa_GW * colregs_violation_evaluators.at(i).evaluate_GW_violation(ownship_trajectory, obstacle_trajectory);
+					bool so_violation = colregs_violation_evaluators.at(i).evaluate_SO_violation(d_0i_0, d_cpa);
+					bool gw_violation = colregs_violation_evaluators.at(i).evaluate_GW_violation(ownship_CPA_state,obstacle_CPA_state_vx_vy,d_cpa);
+					return pars.kappa_SO *so_violation
+					 + pars.kappa_GW * gw_violation;
 				}
 				else
 				{
 					throw std::runtime_error("Attempting to evaluate colregs violation for an uninitialized ship");
-					//Run colregs_violation_evaluators to fix
+					// Run colregs_violation_evaluators to fix
 				}
 			}
 
@@ -212,7 +233,7 @@ namespace PSBMPC_LIB
 				double total_cost = 0;
 				for (const auto &obstacle : obstacles)
 				{
-					update_colregs_violation_node(ownship_trajectory.col(0), obstacle.get_trajectories()[0].col(0), obstacle.get_ID());
+					//update_colregs_violation_node(ownship_trajectory.col(0), obstacle.get_trajectories()[0].col(0), obstacle.get_ID());
 
 					const auto trajs = obstacle.get_trajectories();
 					const auto probabilities = obstacle.get_scenario_probabilities();
@@ -236,12 +257,12 @@ namespace PSBMPC_LIB
 		};
 
 		/****************************************************************************************
-		*  Name     : determine_transitional_cost_indicator
-		*  Function : Determine if a transitional cost should be applied for the current
-		*			  control behavior, using the method in Hagen, 2018. Used in the SBMPC
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : determine_transitional_cost_indicator
+		 *  Function : Determine if a transitional cost should be applied for the current
+		 *			  control behavior, using the method in Hagen, 2018. Used in the SBMPC
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		bool MPC_Cost<Parameters>::determine_transitional_cost_indicator(
 			const Transitional_Variables &tv, // In: Struct of all current time obstacle transitional variables
@@ -303,12 +324,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : determine_COLREGS_violation
-		*  Function : Determine if vessel A violates COLREGS with respect to vessel B.
-		*
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : determine_COLREGS_violation
+		 *  Function : Determine if vessel A violates COLREGS with respect to vessel B.
+		 *
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		bool MPC_Cost<Parameters>::determine_COLREGS_violation(
 			const Eigen::Vector2d &v_A,	 // In: (NE) Velocity vector of vessel A
@@ -356,12 +377,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : calculate_dynamic_obstacle_cost
-		*  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i
-		*             Overloads depending on if its PSBMPC (GPU/CPU)/SBMPC.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : calculate_dynamic_obstacle_cost
+		 *  Function : Calculates maximum (wrt to time) hazard with dynamic obstacle i
+		 *             Overloads depending on if its PSBMPC (GPU/CPU)/SBMPC.
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
 			const Eigen::VectorXd &h_do_i_ps,	// In: Max cost wrt obstacle i in prediction scenario ps, and the control behaviour from the calling loop
@@ -449,7 +470,7 @@ namespace PSBMPC_LIB
 					}
 
 					// PSB-MPC formulation with probabilistic collision cost
-					//cost_ps = l_i * cost_coll * P_c_i(ps, k);
+					// cost_ps = l_i * cost_coll * P_c_i(ps, k);
 
 					// Should discount time when using a prediction scheme where the uncertainty for
 					// each obstacle prediction scenario is bounded by r_ct
@@ -544,7 +565,7 @@ namespace PSBMPC_LIB
 					}
 
 					// PSB-MPC formulation with probabilistic collision cost
-					//cost_ps = l_i * cost_coll * P_c_i(ps, k);
+					// cost_ps = l_i * cost_coll * P_c_i(ps, k);
 
 					// Should discount time when using a prediction scheme where the uncertainty for
 					// each obstacle prediction scenario is bounded by r_ct
@@ -591,7 +612,7 @@ namespace PSBMPC_LIB
 			std::vector<Eigen::MatrixXd> xs_i_p = obstacles[i].get_trajectories();
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
-			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); //R(0.0);
+			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); // R(0.0);
 			bool mu(false), trans(false);
 			for (int k = 0; k < n_samples; k++)
 			{
@@ -673,11 +694,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : calculate_ad_hoc_collision_risk
-		*  Function :
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : calculate_ad_hoc_collision_risk
+		 *  Function :
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_ad_hoc_collision_risk(
 			const double d_AB, // In: Distance between vessel A (typically the own-ship) and vessel B (typically an obstacle)
@@ -695,11 +716,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : calculate_control_deviation_cost
-		*  Function : Determines penalty due to using offsets to guidance references ++
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : calculate_control_deviation_cost
+		 *  Function : Determines penalty due to using offsets to guidance references ++
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_control_deviation_cost(
 			const Eigen::VectorXd &offset_sequence, // In: Offset_sequence currently followed by the own-ship
@@ -728,12 +749,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : calculate_chattering_cost
-		*  Function : Determines penalty due to using wobbly (changing between positive and negative)
-		* 			  course modifications
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : calculate_chattering_cost
+		 *  Function : Determines penalty due to using wobbly (changing between positive and negative)
+		 * 			  course modifications
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_chattering_cost(
 			const Eigen::VectorXd &offset_sequence, // In: Offset sequence currently followed by the own-ship
@@ -764,11 +785,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : calculate_grounding_cost
-		*  Function : Determines penalty due to grounding ownship on static obstacles (no-go zones)
-		*  Author   : Trym Tengesdal & Tom Daniel Grande
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : calculate_grounding_cost
+		 *  Function : Determines penalty due to grounding ownship on static obstacles (no-go zones)
+		 *  Author   : Trym Tengesdal & Tom Daniel Grande
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_grounding_cost(
 			const Eigen::MatrixXd &trajectory,	  // In: Predicted ownship trajectory
@@ -810,7 +831,7 @@ namespace PSBMPC_LIB
 					{
 						max_cost_g = cost_g;
 					}
-					//printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
+					// printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
 			}
 			return max_cost_g;
@@ -862,18 +883,18 @@ namespace PSBMPC_LIB
 					{
 						max_cost_g = cost_g;
 					}
-					//printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
+					// printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
 			}
 			return max_cost_g;
 		}
 
 		/****************************************************************************************
-		*  Name     : calculate_grounding_cost
-		*  Function : Determines penalty due grounding ownship on static obstacles (no-go zones)
-		*  Author   : Trym Tengesdal & Giorgio D. Kwame Minde Kufoalor
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : calculate_grounding_cost
+		 *  Function : Determines penalty due grounding ownship on static obstacles (no-go zones)
+		 *  Author   : Trym Tengesdal & Giorgio D. Kwame Minde Kufoalor
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::calculate_grounding_cost(
 			const Eigen::MatrixXd &trajectory,					  // In: Own-ship trajectory when following the current offset_sequence/control behaviour
@@ -951,11 +972,11 @@ namespace PSBMPC_LIB
 			Private functions
 		****************************************************************************************/
 		/****************************************************************************************
-		*  Name     : find_triplet_orientation
-		*  Function : Find orientation of ordered triplet (p, q, r)
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : find_triplet_orientation
+		 *  Function : Find orientation of ordered triplet (p, q, r)
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		int MPC_Cost<Parameters>::find_triplet_orientation(
 			const Eigen::Vector2d &p,
@@ -966,7 +987,7 @@ namespace PSBMPC_LIB
 			// Calculate z-component of cross product (q - p) x (r - q)
 			double val = (q(0) - p(0)) * (r(1) - q(1)) - (q(1) - p(1)) * (r(0) - q(0));
 
-			//printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
+			// printf("p = %.6f, %.6f | q = %.6f, %.6f | r = %.6f, %.6f | val = %.15f\n", p(0), p(1), q(0), q(1), r(0), r(1), val);
 			if (val > -epsilon && val < epsilon)
 			{
 				return 0;
@@ -982,12 +1003,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : determine_if_on_segment
-		*  Function : Determine if the point q is on the segment pr
-		*			  (really if q is inside the rectangle with diagonal pr...)
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : determine_if_on_segment
+		 *  Function : Determine if the point q is on the segment pr
+		 *			  (really if q is inside the rectangle with diagonal pr...)
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		bool MPC_Cost<Parameters>::determine_if_on_segment(
 			const Eigen::Vector2d &p,
@@ -1003,11 +1024,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : determine_if_behind
-		*  Function : Check if the point p_1 is behind the line defined by v_1 and v_2
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
-		*****************************************************************************************/
+		 *  Name     : determine_if_behind
+		 *  Function : Check if the point p_1 is behind the line defined by v_1 and v_2
+		 *  Author   : Giorgio D. Kwame Minde Kufoalor
+		 *  Modified : By Trym Tengesdal for more readability
+		 *****************************************************************************************/
 		template <typename Parameters>
 		bool MPC_Cost<Parameters>::determine_if_behind(
 			const Eigen::Vector2d &p_1,
@@ -1026,11 +1047,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : determine_if_lines_intersect
-		*  Function : Determine if the line segments defined by p_1, q_1 and p_2, q_2 intersects
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
-		*****************************************************************************************/
+		 *  Name     : determine_if_lines_intersect
+		 *  Function : Determine if the line segments defined by p_1, q_1 and p_2, q_2 intersects
+		 *  Author   : Giorgio D. Kwame Minde Kufoalor
+		 *  Modified : By Trym Tengesdal for more readability
+		 *****************************************************************************************/
 		template <typename Parameters>
 		bool MPC_Cost<Parameters>::determine_if_lines_intersect(
 			const Eigen::Vector2d &p_1,
@@ -1045,8 +1066,8 @@ namespace PSBMPC_LIB
 			int o_3 = find_triplet_orientation(p_2, q_2, p_1);
 			int o_4 = find_triplet_orientation(p_2, q_2, q_1);
 
-			//printf("o_1 = %d | o_2 = %d | o_3 = %d | o_4 = %d\n", o_1, o_2, o_3, o_4);
-			// General case
+			// printf("o_1 = %d | o_2 = %d | o_3 = %d | o_4 = %d\n", o_1, o_2, o_3, o_4);
+			//  General case
 			if (o_1 != o_2 && o_3 != o_4)
 			{
 				return true;
@@ -1081,11 +1102,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : distance_to_line
-		*  Function : Calculate distance from p to the line defined by q_1 and q_2
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
-		*****************************************************************************************/
+		 *  Name     : distance_to_line
+		 *  Function : Calculate distance from p to the line defined by q_1 and q_2
+		 *  Author   : Giorgio D. Kwame Minde Kufoalor
+		 *  Modified : By Trym Tengesdal for more readability
+		 *****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::distance_to_line(
 			const Eigen::Vector2d &p,
@@ -1105,11 +1126,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : distance_to_static_obstacle
-		*  Function : Calculate distance from p to obstacle defined by line segment {v_1, v_2}
-		*  Author   : Giorgio D. Kwame Minde Kufoalor
-		*  Modified : By Trym Tengesdal for more readability
-		*****************************************************************************************/
+		 *  Name     : distance_to_static_obstacle
+		 *  Function : Calculate distance from p to obstacle defined by line segment {v_1, v_2}
+		 *  Author   : Giorgio D. Kwame Minde Kufoalor
+		 *  Modified : By Trym Tengesdal for more readability
+		 *****************************************************************************************/
 		template <typename Parameters>
 		double MPC_Cost<Parameters>::distance_to_static_obstacle(
 			const Eigen::Vector2d &p,
@@ -1125,11 +1146,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : determine_if_inside_polygon
-		*  Function :
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : determine_if_inside_polygon
+		 *  Function :
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		bool MPC_Cost<Parameters>::determine_if_inside_polygon(
 			const Eigen::Vector2d &p,
@@ -1306,11 +1327,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : distance_to_line_segment
-		*  Function : Calculate distance from p to line segment {v_1, v_2}
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : distance_to_line_segment
+		 *  Function : Calculate distance from p to line segment {v_1, v_2}
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		Eigen::Vector2d MPC_Cost<Parameters>::distance_to_line_segment(
 			const Eigen::Vector2d &p,
@@ -1336,11 +1357,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : distance_to_polygon
-		*  Function : Calculate distance vector from p to polygon
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : distance_to_polygon
+		 *  Function : Calculate distance vector from p to polygon
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename Parameters>
 		Eigen::Vector2d MPC_Cost<Parameters>::distance_to_polygon(
 			const Eigen::Vector2d &p,

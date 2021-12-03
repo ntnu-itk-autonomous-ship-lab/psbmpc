@@ -1,77 +1,228 @@
 /****************************************************************************************
-*
-*  File name : colregs_violation_evaluator.hpp
-*
-*  Function  : Header file for the COLREGS Violation Evaluator class, which keeps
-*              track of and calculates the COLREGS violation cost.
-*
-*            ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Sverre Velten Rothmund, Trym Tengesdal NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Sverre Velten Rothmund
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : colregs_violation_evaluator.cuh
+ *
+ *  Function  : Header file for the COLREGS Violation Evaluator class, which keeps
+ *              track of and calculates the COLREGS violation cost.
+ *
+ *            ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Sverre Velten Rothmund, Trym Tengesdal NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Sverre Velten Rothmund
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 #pragma once
 
 #include "psbmpc_parameters.hpp"
 #include "cpu/utilities_cpu.hpp"
-
-#include <Eigen/Dense>
-#include <optional>
+#include "Eigen/Dense"
 #include <cmath>
 
 namespace PSBMPC_LIB
 {
+    // NOTE! Ownship has states [X, Y, CHI, U], while obstacle ship has [X, Y, VX, VY]
     namespace CPU
     {
-
-        //NOTE! Ownship has states [X, Y, CHI, u], while obstacle ship has [X, Y, VX, VY]......
-        //This greatly increases the chance of bugs and makes this code difficult to check.
         class COLREGS_Violation_Evaluator
         {
-        private:
-            CVE_Pars<double> pars;
+        public:
 
-            std::optional<COLREGS_Situation> colregs_situation;
-            std::optional<Eigen::Vector4d> initial_ownship_state;
-            std::optional<Eigen::Vector4d> initial_obstacle_state;
-            bool has_changed_course_or_speed = false;
-            bool has_changed_course_to_port = false;
+            struct{
+                double max_distance_at_cpa = 1000.0;
+                double d_init_colregs_situation = 500.0;
+                double head_on_width = 30.0 * DEG2RAD;
+                double overtaking_angle = (90.0 + 22.5) * DEG2RAD;
+                double max_acceptable_SO_speed_change = 2.0;
+                double max_acceptable_SO_course_change = 2.5 * DEG2RAD;
+                double critical_distance_to_ignore_SO = 10.0;
+                double GW_safety_margin = -0.0;
+            } pars;
+            bool initialized = false;
+            bool predicted_ownship_change_in_course_to_port = false;
+            bool predicted_ownship_change_in_speed_or_course = false;
+            bool actual_ownship_speed_or_course_change = false;
+            bool actual_ownship_course_change_port = false;
+            bool has_passed = false; // If the ships have passed each other, then dont give any penalty
+
+            COLREGS_Situation colregs_situation;
+            Eigen::Vector4d initial_ownship_state;
+            Eigen::Vector4d initial_obstacle_state;
+
+            //=================================
+            // Temporaries
+            bool correct_HO_maneuver;
+            bool correct_CR_SS_maneuver;
+            bool correct_CR_PS_maneuver;
+            bool correct_OT_ing_maneuver;
+            float heading_diff;
+            float bearing_to_obstacle_relative_to_ownship;
+            float bearing_to_ownship_relative_to_obstacle;
+            float bearing_to_intersection_point;
+            float ownship_crossing_arrival_time;
+            float obstacle_crossing_arrival_time;
+
+            Eigen::Vector4d obstacle_state;
+            Eigen::Vector2d ipoint;
 
             /****************************************************************************************
-            *  Name     : evaluate_situation_started
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            bool evaluate_situation_started(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state) const
+             *  Name     : update
+             *  Function : Determines if the COLREGS situation has started, sets initial states if
+             *             that is the case
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            void update(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state_vx_vy)
             {
-                return (ownship_state.block(0, 0, 2, 1) - obstacle_state.block(0, 0, 2, 1)).norm() < pars.d_init_colregs_situation;
+                obstacle_state = vx_vy_to_heading_speed_state(obstacle_state_vx_vy);
+                if (!initialized && evaluate_situation_started(ownship_state, obstacle_state))
+                {
+                    initialized = true;
+                    colregs_situation = evaluate_colregs_situation(ownship_state, obstacle_state);
+                    initial_ownship_state = ownship_state;
+                    initial_obstacle_state = obstacle_state;
+                }
+                else if (initialized)
+                {
+                    evaluate_actual_maneuver_changes(ownship_state(COG), ownship_state(SOG));
+
+                    if (!has_passed)
+                    {
+                        /* //If the intersection point is in the past, then the ships have passed
+                        ipoint = intersectionpoint(ownship_state, vx_vy_to_heading_speed_state(obstacle_state_vx_vy));
+                        has_passed = evaluate_arrival_time(ownship_state, ipoint(0), ipoint(1)) < 0; */
+                        has_passed = ship_is_passed_by(ownship_state, obstacle_state_vx_vy, pars.GW_safety_margin);
+                    }
+                }
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_colregs_situation
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            COLREGS_Situation evaluate_colregs_situation(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state) const
+             *  Name     : evaluate_actual_maneuver_changes
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            void evaluate_actual_maneuver_changes(
+                const float chi_0, // In: Own-ship course at the current time t_0
+                const float U_0    // In: Own-ship speed at the current time t_0
+            )
             {
-                const double heading_diff = wrap_angle_to_pmpi(obstacle_state(COG) - ownship_state(COG));
+                if (!actual_ownship_speed_or_course_change)
+                    actual_ownship_speed_or_course_change = fabs(wrap_angle_to_pmpi(chi_0 - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change || fabs(U_0 - initial_ownship_state(SOG)) > pars.max_acceptable_SO_speed_change;
+
+                if (!actual_ownship_course_change_port)
+                    actual_ownship_course_change_port = wrap_angle_to_pmpi(chi_0 - initial_ownship_state(COG)) < -pars.max_acceptable_SO_course_change;
+            }
+
+            /****************************************************************************************
+             *  Name     : evaluate_predicted_maneuver_changes
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            void evaluate_predicted_maneuver_changes(
+                const float chi, // In: Own-ship course at the current predicted time k
+                const float U    // In: Own-ship speed at the current predicted time k
+            )
+            {
+                if (!predicted_ownship_change_in_speed_or_course)
+                    predicted_ownship_change_in_speed_or_course = fabs(wrap_angle_to_pmpi(chi - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change || fabs(U - initial_ownship_state(SOG)) > pars.max_acceptable_SO_speed_change;
+
+                if (!predicted_ownship_change_in_course_to_port)
+                    predicted_ownship_change_in_course_to_port = wrap_angle_to_pmpi(chi - initial_ownship_state(COG)) < -pars.max_acceptable_SO_course_change;
+            }
+
+            /****************************************************************************************
+             *  Name     : evaluate_SO_violation
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            bool evaluate_SO_violation(
+                const float d_0i_0, // In: Distance at the current time t_0 between ownship and obstacle i
+                const float d_cpa   // In: Distance at predicted CPA between ownship and obstacle i
+            )
+            {
+                if (!initialized || has_passed)
+                    return false;
+
+                return d_cpa < pars.max_distance_at_cpa &&
+                       d_0i_0 > pars.critical_distance_to_ignore_SO &&
+                       (colregs_situation == OT_en || colregs_situation == CR_PS) &&
+                       (actual_ownship_speed_or_course_change || predicted_ownship_change_in_speed_or_course);
+            }
+
+            /****************************************************************************************
+             *  Name     : evaluate_GW_violation
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            bool evaluate_GW_violation (
+                const Eigen::Vector4d &ownship_CPA_state,        // In: Ownship state at CPA
+                const Eigen::Vector4d &obstacle_CPA_state_vx_vy, // In: Obstacle i state at CPA
+                const float d_cpa                                // In: Distance at actual predicted CPA between ownship and obstacle i
+            )
+            {
+                if (!initialized || has_passed)
+                    return false;
+
+                correct_HO_maneuver = evaluate_crossing_port_to_port(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy)) && d_cpa >= pars.GW_safety_margin;
+                correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy)) && d_cpa >= pars.GW_safety_margin;
+                correct_OT_ing_maneuver = d_cpa >= pars.GW_safety_margin;
+                correct_CR_PS_maneuver = !(actual_ownship_course_change_port || predicted_ownship_change_in_course_to_port);
+                return d_cpa < pars.max_distance_at_cpa &&
+                       ((colregs_situation == HO && !correct_HO_maneuver) ||
+                        (colregs_situation == CR_SS && !correct_CR_SS_maneuver) ||
+                        (colregs_situation == CR_PS && !correct_CR_PS_maneuver) ||
+                        (colregs_situation == OT_ing && !correct_OT_ing_maneuver));
+            }
+
+            void reset()
+            {
+                predicted_ownship_change_in_course_to_port = false;
+                predicted_ownship_change_in_speed_or_course = false;
+            }
+
+        private:
+            //=================================
+            /****************************************************************************************
+             *  Name     : evaluate_situation_started
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            bool evaluate_situation_started(
+                const Eigen::Vector4d &ownship_state,
+                const Eigen::Vector4d &obstacle_state)
+            {
+                return evaluateDistance(ownship_state, obstacle_state) < pars.d_init_colregs_situation;
+            }
+
+            /****************************************************************************************
+             *  Name     : evaluate_colregs_situation
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            COLREGS_Situation evaluate_colregs_situation(
+                const Eigen::Vector4d &ownship_state,
+                const Eigen::Vector4d &obstacle_state)
+            {
+                heading_diff = wrap_angle_to_pmpi(obstacle_state(COG) - ownship_state(COG));
                 if (heading_diff < -M_PI + pars.head_on_width / 2 || heading_diff > M_PI - pars.head_on_width / 2)
                     return HO;
 
-                const double bearing_to_obstacle_relative_to_ownship = relativeBearing(ownship_state, obstacle_state(PX), obstacle_state(PY));
+                bearing_to_obstacle_relative_to_ownship = relativeBearing(ownship_state, obstacle_state(PX), obstacle_state(PY));
                 if (bearing_to_obstacle_relative_to_ownship > pars.overtaking_angle || bearing_to_obstacle_relative_to_ownship < -pars.overtaking_angle)
                     return OT_en;
 
-                const double bearing_to_ownship_relative_to_obstacle = relativeBearing(obstacle_state, ownship_state(PX), ownship_state(PY));
+                bearing_to_ownship_relative_to_obstacle = relativeBearing(obstacle_state, ownship_state(PX), ownship_state(PY));
                 if (bearing_to_ownship_relative_to_obstacle > pars.overtaking_angle || bearing_to_ownship_relative_to_obstacle < -pars.overtaking_angle)
                     return OT_ing;
 
@@ -82,144 +233,32 @@ namespace PSBMPC_LIB
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_risk_of_collision
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            bool evaluate_risk_of_collision(const Eigen::MatrixXd &ownship_trajectory, const Eigen::MatrixXd &obstacle_trajectory) const
+             *  Name     : evaluate_crossing_port_to_port
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            bool evaluate_crossing_port_to_port(
+                const Eigen::Vector4d &ownshipCPA,
+                const Eigen::Vector4d &obstacleCPA)
             {
-                auto CPA = evaluateCPA(ownship_trajectory, obstacle_trajectory);
-                return CPA.closest_distance < pars.max_distance_at_cpa;
+                return relativeBearing(ownshipCPA, obstacleCPA(PX), obstacleCPA(PY)) < 0;
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_course_change
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            CourseChange evaluate_course_change(const Eigen::MatrixXd &ownship_trajectory) const
+             *  Name     : evaluate_crossing_aft
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            bool evaluate_crossing_aft(
+                const Eigen::Vector4d &ownshipCPA,
+                const Eigen::Vector4d &obstacleCPA)
             {
-                for (int i = 0; i < ownship_trajectory.cols(); ++i)
-                {
-                    if (ownship_trajectory(COG, i) - initial_ownship_state.value()(COG) < -pars.max_acceptable_SO_course_change)
-                    {
-                        return CourseChange::Portwards;
-                    }
-                    if (ownship_trajectory(COG, i) - initial_ownship_state.value()(COG) > pars.max_acceptable_SO_course_change)
-                    {
-                        return CourseChange::Starboardwards;
-                    }
-                }
-                return CourseChange::None;
-            }
-
-            /****************************************************************************************
-            *  Name     : evaluate_speed_change
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            SpeedChange evaluate_speed_change(const Eigen::MatrixXd &ownship_trajectory) const
-            {
-                //Seems like the trajectories are slowing down towards the end as they are approaching the final wp, so im only considering the first half of the traj as there shouldnt be any changes in speed or course after that
-                for (int i = 0; i < ownship_trajectory.cols() / 2; ++i)
-                {
-                    if (ownship_trajectory(SOG, i) - initial_ownship_state.value()(SOG) > pars.max_acceptable_SO_speed_change)
-                        return SpeedChange::Higher;
-                    if (ownship_trajectory(SOG, i) - initial_ownship_state.value()(SOG) < -pars.max_acceptable_SO_speed_change)
-                        return SpeedChange::Lower;
-                }
-                return SpeedChange::None;
-            }
-
-        public:
-            /****************************************************************************************
-            *  Name     : COLREGS_Violation_Evaluator
-            *  Function : Class constructor
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            COLREGS_Violation_Evaluator()
-            {
-                pars.max_distance_at_cpa = 40.0;
-                pars.d_init_colregs_situation = 400.0;
-                pars.head_on_width = 30.0 * DEG2RAD;
-                pars.overtaking_angle = 112.5 * DEG2RAD;
-                pars.max_acceptable_SO_speed_change = 1.5;
-                pars.max_acceptable_SO_course_change = 30.0 * DEG2RAD;
-                pars.critical_distance_to_ignore_SO = 15.0;
-                pars.GW_safety_margin = 10.0;
-            }
-
-            COLREGS_Violation_Evaluator(const CVE_Pars<double> &pars) : pars(pars) {}
-
-            /****************************************************************************************
-            *  Name     : update
-            *  Function : Determines if the COLREGS situation has started, sets initial states if
-            *             that is the case
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            void update(const Eigen::Vector4d &ownship_state, const Eigen::Vector4d &obstacle_state_vx_vy)
-            {
-                const auto obstacle_state = vx_vy_to_heading_speed_state(obstacle_state_vx_vy);
-                if (!initial_ownship_state.has_value() && evaluate_situation_started(ownship_state, obstacle_state))
-                {
-                    colregs_situation = evaluate_colregs_situation(ownship_state, obstacle_state);
-                    initial_ownship_state = ownship_state;
-                    initial_obstacle_state = obstacle_state;
-                }
-                else if (initial_ownship_state.has_value())
-                {
-                    has_changed_course_or_speed = has_changed_course_or_speed || fabs(wrap_angle_to_pmpi(ownship_state(COG) - (*initial_ownship_state)(COG))) > pars.max_acceptable_SO_course_change || fabs(ownship_state(SOG) - (*initial_ownship_state)(SOG)) > pars.max_acceptable_SO_speed_change;
-                    has_changed_course_to_port = has_changed_course_to_port || wrap_angle_to_pmpi(ownship_state(COG) - (*initial_ownship_state)(COG)) < -pars.max_acceptable_SO_course_change;
-                }
-            }
-
-            /****************************************************************************************
-            *  Name     : evaluate_SO_violation
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            bool evaluate_SO_violation(const Eigen::MatrixXd &ownship_trajectory, const Eigen::MatrixXd &obstacle_trajectory) const
-            {
-                if (!initial_ownship_state.has_value())
-                    return false;
-
-                const bool distance_larger_than_critical = std::abs((ownship_trajectory.col(0).head(2) - obstacle_trajectory.col(0).head(2)).norm()) > pars.critical_distance_to_ignore_SO;
-                //const bool GW_safety_margin_violated = d_cpa < pars.GW_safety_margin;
-                const auto course_change = evaluate_course_change(ownship_trajectory);
-                const auto speed_change = evaluate_speed_change(ownship_trajectory);
-                const bool stands_on_correct = !has_changed_course_or_speed && course_change == CourseChange::None && speed_change == SpeedChange::None;
-                const bool has_SO_role = colregs_situation == OT_en || colregs_situation == CR_PS;
-                const bool is_risk_of_collision = evaluate_risk_of_collision(ownship_trajectory, obstacle_trajectory);
-                const bool so_violation = is_risk_of_collision && distance_larger_than_critical && has_SO_role && !stands_on_correct;
-                return so_violation;
-            }
-
-            /****************************************************************************************
-            *  Name     : evaluate_GW_violation
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            bool evaluate_GW_violation(const Eigen::MatrixXd &ownship_trajectory, const Eigen::MatrixXd &obstacle_trajectory) const
-            {
-                if (!initial_ownship_state.has_value() || !initial_obstacle_state.has_value())
-                    return false;
-
-                bool correct_HO_maneuver = evaluate_crossing_port_to_port(ownship_trajectory, obstacle_trajectory);
-                bool correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_trajectory, obstacle_trajectory);
-                bool correct_CR_PS_maneuver = !has_changed_course_to_port && evaluate_course_change(ownship_trajectory) != CourseChange::Portwards;
-                bool is_risk_of_collision = evaluate_risk_of_collision(ownship_trajectory, obstacle_trajectory);
-                bool gw_violation = is_risk_of_collision &&
-                                    ((colregs_situation == HO && !correct_HO_maneuver) ||
-                                     (colregs_situation == CR_SS && !correct_CR_SS_maneuver) ||
-                                     (colregs_situation == CR_PS && !correct_CR_PS_maneuver));
-                return gw_violation;
+                ipoint = intersectionpoint(ownshipCPA, obstacleCPA);
+                ownship_crossing_arrival_time = evaluate_arrival_time(ownshipCPA, ipoint(0), ipoint(1));
+                obstacle_crossing_arrival_time = evaluate_arrival_time(obstacleCPA, ipoint(0), ipoint(1));
+                return ownship_crossing_arrival_time > obstacle_crossing_arrival_time;
             }
         };
     }
