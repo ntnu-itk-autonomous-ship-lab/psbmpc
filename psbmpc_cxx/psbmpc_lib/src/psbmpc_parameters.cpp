@@ -42,10 +42,10 @@ namespace PSBMPC_LIB
 		{
 		case i_ipar_n_M:
 			return n_M;
-		case i_ipar_n_r:
-			return n_r;
-		case i_ipar_p_step:
-			return p_step;
+		case i_ipar_n_do_ps:
+			return n_do_ps;
+		case i_ipar_p_step_opt:
+			return p_step_opt;
 		case i_ipar_p_step_do:
 			return p_step_do;
 		case i_ipar_p_step_grounding:
@@ -70,8 +70,8 @@ namespace PSBMPC_LIB
 			return t_ts;
 		case i_dpar_d_safe:
 			return d_safe;
-		case i_dpar_d_init:
-			return d_init;
+		case i_dpar_d_do_relevant:
+			return d_do_relevant;
 		case i_dpar_d_so_relevant:
 			return d_so_relevant;
 		case i_dpar_K_coll:
@@ -150,11 +150,11 @@ namespace PSBMPC_LIB
 			case i_ipar_n_M:
 				n_M = value;
 				break; // Should here resize offset matrices to make this change legal
-			case i_ipar_n_r:
-				n_r = value;
+			case i_ipar_n_do_ps:
+				n_do_ps = value;
 				break;
-			case i_ipar_p_step:
-				p_step = value;
+			case i_ipar_p_step_opt:
+				p_step_opt = value;
 				break;
 			case i_ipar_p_step_do:
 				p_step_do = value;
@@ -192,12 +192,12 @@ namespace PSBMPC_LIB
 				t_ts = value;
 				break;
 			case i_dpar_d_safe:
-				// Limits on d_init depend on d_safe
+				// Limits on d_do_relevant depend on d_safe
 				d_safe = value;
-				dpar_low[i_dpar_d_init] = d_safe;
+				dpar_low[i_dpar_d_do_relevant] = d_safe;
 				break;
-			case i_dpar_d_init:
-				d_init = value;
+			case i_dpar_d_do_relevant:
+				d_do_relevant = value;
 				break;
 			case i_dpar_d_so_relevant:
 				d_so_relevant = value;
@@ -318,8 +318,8 @@ namespace PSBMPC_LIB
 		}
 		ipar_low[i_ipar_n_M] = 1;
 		ipar_high[i_ipar_n_M] = 10;
-		ipar_low[i_ipar_n_r] = 1;
-		ipar_high[i_ipar_n_r] = MAX_N_PS;
+		ipar_low[i_ipar_n_do_ps] = 1;
+		ipar_high[i_ipar_n_do_ps] = MAX_N_PS;
 
 		//std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
 		//std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
@@ -335,7 +335,7 @@ namespace PSBMPC_LIB
 		dpar_low[i_dpar_dt] = 0.001;
 
 		dpar_low[i_dpar_d_safe] = 20.0;
-		dpar_low[i_dpar_d_init] = d_safe;
+		dpar_low[i_dpar_d_do_relevant] = d_safe;
 
 		dpar_high[i_dpar_K_dchi_strb] = 3.0;
 		dpar_high[i_dpar_K_dchi_port] = 3.0;
@@ -354,7 +354,7 @@ namespace PSBMPC_LIB
 	{
 		n_cbs = 1;
 		n_M = 1;
-		n_r = 5;
+		n_do_ps = 5;
 
 		chi_offsets.resize(n_M);
 		u_offsets.resize(n_M);
@@ -423,18 +423,18 @@ namespace PSBMPC_LIB
 		T = 50.0;
 		dt = 5.0;
 
-		p_step = 1;
+		p_step_opt = 1;
 		p_step_do = 2;
 		p_step_grounding = 2;
 		if (prediction_method == ERK1)
 		{
 			dt = 0.5;
-			p_step = 10;
+			p_step_opt = 10;
 		}
 		t_ts = 10;
 
 		d_so_relevant = 200;
-		d_init = 300;
+		d_do_relevant = 300;
 		d_safe = 5;
 		K_coll = 3.0; // 0.2ish for sea traffic, 10.0ish for nidelva
 		kappa_SO = 10.0;
@@ -468,10 +468,10 @@ namespace PSBMPC_LIB
 	{
 		assert(ipars.size() == N_IPAR && dpars.size() == N_DPAR);
 		n_M = ipars[i_ipar_n_M];
-		n_r = ipars[i_ipar_n_r];
-		assert((int)u_offsets.size() > 0 && (int)chi_offsets.size() > 0 && n_M > 0 && n_r > 0);
+		n_do_ps = ipars[i_ipar_n_do_ps];
+		assert((int)u_offsets.size() > 0 && (int)chi_offsets.size() > 0 && n_M > 0 && n_do_ps > 0);
 
-		p_step = ipars[i_ipar_p_step];
+		p_step_opt = ipars[i_ipar_p_step_opt];
 		p_step_do = ipars[i_ipar_p_step_do];
 		p_step_grounding = ipars[i_ipar_p_step_grounding];
 
@@ -504,7 +504,7 @@ namespace PSBMPC_LIB
 		t_ts = dpars[i_dpar_t_ts];
 
 		d_safe = dpars[i_dpar_d_safe];
-		d_init = dpars[i_dpar_d_init];
+		d_do_relevant = dpars[i_dpar_d_do_relevant];
 		d_so_relevant = dpars[i_dpar_d_so_relevant];
 
 		K_coll = dpars[i_dpar_K_coll];

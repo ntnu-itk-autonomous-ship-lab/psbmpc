@@ -4,69 +4,69 @@
 *
 *  Function  : Index file for Probabilistic Scneario-based Model Predictive Control
 *
-*  
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
 #pragma once
 
-#define N_BPAR						0							// Number of boolean tyoe parameters in PSBMPC
-#define N_IPAR						5 							// Number of integer type parameters in PSBMPC
-#define N_DPAR						22 							// Number of double type parameters in PSBMPC
-#define N_OPAR						2							// Number of offset/control behavior related parameters in PSBMPC
+#define N_BPAR 0  // Number of boolean tyoe parameters in PSBMPC
+#define N_IPAR 5  // Number of integer type parameters in PSBMPC
+#define N_DPAR 22 // Number of double type parameters in PSBMPC
+#define N_OPAR 2  // Number of offset/control behavior related parameters in PSBMPC
 
 // Indices for parameters of type bool
 
 // Indices for parameters of type int
-#define i_ipar_n_M					0                          
-#define i_ipar_n_r                  1       
-#define i_ipar_p_step 				2       
-#define i_ipar_p_step_do			3
-#define i_ipar_p_step_grounding		4             
+#define i_ipar_n_M 0              // Number of sequential avoidance maneuvers considered in MPC
+#define i_ipar_n_do_ps 1          // Max number of dynamic obstacle prediction scenarios in the MPC
+#define i_ipar_p_step_opt 2       // Step between state samples in optimal trajectory, used to downsample output.
+#define i_ipar_p_step_do 3        // Step between state samples in dynamic obstacle cost eval, used for faster cost eval.
+#define i_ipar_p_step_grounding 4 // Step between state samples in static obstacle cost eval, used for faster cost eval.
 
 // Indices for parameters of type double
-#define i_dpar_T 					0
-#define i_dpar_dt 					1
+#define i_dpar_T 0  // MPC Prediction horizon
+#define i_dpar_dt 1 // MPC Prediction time step
 
-#define i_dpar_t_ts					2
+#define i_dpar_t_ts 2 // Time spacing between own-ship trajectories
 
-#define i_dpar_d_safe				3
-#define i_dpar_d_init				4
-#define i_dpar_d_so_relevant    	5
+#define i_dpar_d_safe 3        // Own-ship safety zone radius
+#define i_dpar_d_do_relevant 4 // Range for considering dynamic obstacles in the MPC
+#define i_dpar_d_so_relevant 5 // Range for considering static ostacles in the MPC
 
-#define i_dpar_K_coll				6
+#define i_dpar_K_coll 6 // Collision cost parameter
 
-#define i_dpar_kappa_SO				7
-#define i_dpar_kappa_GW				8
+#define i_dpar_kappa_SO 7 // COLREGS stand-on penalty parameter
+#define i_dpar_kappa_GW 8 // COLREGS giwe-way penalty parameter
 
-#define i_dpar_K_u					9
-#define i_dpar_K_du					10
+#define i_dpar_K_u 9   // Speed change penalty parameter from the current speed reference
+#define i_dpar_K_du 10 // Penalty parameter for speed change between current and previous speed modification
 
-#define i_dpar_K_chi_strb			11
-#define i_dpar_K_dchi_strb			12
-#define i_dpar_K_chi_port			13
-#define i_dpar_K_dchi_port			14
+#define i_dpar_K_chi_strb 11  // Course modification penalty parameter to starboard
+#define i_dpar_K_dchi_strb 12 // Penalty parameter for course change between current (starboard) and previous course modification
+#define i_dpar_K_chi_port 13  // Course modification penalty parameter to port
+#define i_dpar_K_dchi_port 14 // Penalty parameter for course change between current (port) and previous course modification
 
-#define i_dpar_K_sgn				15
-#define i_dpar_T_sgn				16
+#define i_dpar_K_sgn 15 // Penalty parameter in the MPC chattering cost for change in sign of course modification between sequential avoidance maneuvers in a predicted own-ship trajectory
+#define i_dpar_T_sgn 16 // Time discounting factor for the chattering cost
 
-#define i_dpar_G_1 					17
-#define i_dpar_G_2 					18
-#define i_dpar_G_3 					19
-#define i_dpar_G_4 					20
+#define i_dpar_G_1 17 // Grounding cost penalty parameter
+#define i_dpar_G_2 18 // Grounding cost penalty parameter connected to non-zero wind speed
+#define i_dpar_G_3 19 // Grounding cost distance discount parameter
+#define i_dpar_G_4 20 // Grounding cost time discount parameter
 
-#define i_dpar_epsilon_rdp          21
+#define i_dpar_epsilon_rdp 21 // Ramer-Douglas-Peucker distance threshold parameter
 
 // Indices for offset/control behaviour parameters of type std::vector/Eigen::MatrixXd
-#define i_opar_u_offsets			0
-#define i_opar_chi_offsets			1
+#define i_opar_u_offsets 0
+#define i_opar_chi_offsets 1

@@ -45,9 +45,9 @@ namespace PSBMPC_LIB
 		friend class CPU::MPC_Cost<SBMPC_Parameters>;
 
 		// Number of control behaviours and sequential maneuvers for the ownship, respectively
-		int n_cbs, n_M, n_r;
+		int n_cbs, n_M, n_do_ps;
 
-		int p_step, p_step_grounding;
+		int p_step_opt, p_step_grounding;
 
 		// Finite sets of offsets considered to the own-ship surge and course references,
 		// for each maneuver in the horizon
@@ -60,7 +60,7 @@ namespace PSBMPC_LIB
 
 		double T, dt;
 		double t_ts;
-		double d_safe, d_close, d_init, d_so_relevant;
+		double d_safe, d_close, d_do_relevant, d_so_relevant;
 		double K_coll;
 		double phi_AH, phi_OT, phi_HO, phi_CR;
 		double kappa, kappa_TC;

@@ -168,9 +168,9 @@ namespace PSBMPC_LIB
 			cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
 			// Track loss modifier to collision cost
-			if (obstacles[i].get_duration_lost() > pars.p_step)
+			if (obstacles[i].get_duration_lost() > pars.p_step_do)
 			{
-				l_i = pars.dt * pars.p_step / obstacles[i].get_duration_lost();
+				l_i = pars.dt * pars.p_step_do / obstacles[i].get_duration_lost();
 			}
 			else
 			{

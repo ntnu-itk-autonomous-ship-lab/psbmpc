@@ -464,12 +464,13 @@ namespace PSBMPC_LIB
 		*  Modified :
 		*****************************************************************************************/
 		__host__ __device__ inline bool ship_is_passed_by(
-			const TML::PDVector4f &xs_0,
-			const TML::PDVector4f &xs_i,
-			const float d_safe)
+			const TML::PDVector4f &xs_0, // In: Own-ship state
+			const TML::PDVector4f &xs_i, // In: Obstacle i state
+			const float d_safe			 // In: Own-ship safety zone radius
+		)
 		{
 			TML::Vector2f v_0, v_i, L_0i;
-			float psi_0 = xs_0(2), d_0i;
+			float d_0i(0.0);
 			v_0(0) = xs_0(3) * cos(xs_0(2));
 			v_0(1) = xs_0(3) * sin(xs_0(2));
 			v_i(0) = xs_i(2);

@@ -116,11 +116,11 @@ namespace PSBMPC_LIB
 
 		// Number of control behaviours, sequential maneuvers and maximum allowable
 		// prediction scenarios for an obstacle, respectively
-		int n_cbs, n_M, n_r;
+		int n_cbs, n_M, n_do_ps;
 
 		// Step between samples in prediction, collision probability estimation and
 		// grounding cost evaluation, respectively
-		int p_step, p_step_do, p_step_grounding;
+		int p_step_opt, p_step_do, p_step_grounding;
 
 		// Finite sets of offsets considered to the own-ship surge and course references,
 		// for each maneuver in the horizon
@@ -138,7 +138,7 @@ namespace PSBMPC_LIB
 
 		double T, dt;
 		double t_ts;
-		double d_safe, d_init, d_so_relevant;
+		double d_safe, d_do_relevant, d_so_relevant;
 		double K_coll;
 		double kappa_SO, kappa_GW;
 		double K_u, K_du;

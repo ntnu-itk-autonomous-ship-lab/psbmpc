@@ -529,7 +529,7 @@ namespace PSBMPC_LIB
 			{
 				d_0i(0) = obstacles[i].kf.get_state()(0) - xs(0);
 				d_0i(1) = obstacles[i].kf.get_state()(1) - xs(1);
-				if (d_0i.norm() < pars.d_init)
+				if (d_0i.norm() < pars.d_do_relevant)
 					colav_active = true;
 
 				// If all obstacles are passed, even though inside colav range,
@@ -1109,11 +1109,11 @@ namespace PSBMPC_LIB
 			if (false) //(pars.prediction_method > Linear)
 			{
 				int count = 0;
-				optimal_trajectory.resize(trajectory.rows(), n_samples / pars.p_step);
-				for (int k = 0; k < n_samples; k += pars.p_step)
+				optimal_trajectory.resize(trajectory.rows(), n_samples / pars.p_step_opt);
+				for (int k = 0; k < n_samples; k += pars.p_step_opt)
 				{
 					optimal_trajectory.col(count) = trajectory.col(k);
-					if (count < std::round(n_samples / pars.p_step) - 1)
+					if (count < std::round(n_samples / pars.p_step_opt) - 1)
 						count++;
 				}
 			}

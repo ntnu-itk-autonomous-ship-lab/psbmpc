@@ -439,9 +439,9 @@ namespace PSBMPC_LIB
 					cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
 					// Track loss modifier to collision cost
-					if (obstacles[i].get_duration_lost() > pars.p_step)
+					if (obstacles[i].get_duration_lost() > pars.p_step_do)
 					{
-						l_i = pars.dt * pars.p_step / obstacles[i].get_duration_lost();
+						l_i = pars.dt * pars.p_step_do / obstacles[i].get_duration_lost();
 					}
 					else
 					{
@@ -534,9 +534,9 @@ namespace PSBMPC_LIB
 					cost_coll = calculate_collision_cost(v_0_p, v_i_p);
 
 					// Track loss modifier to collision cost
-					if (obstacles[i].get_duration_lost() > pars.p_step)
+					if (obstacles[i].get_duration_lost() > pars.p_step_do)
 					{
-						l_i = pars.dt * pars.p_step / obstacles[i].get_duration_lost();
+						l_i = pars.dt * pars.p_step_do / obstacles[i].get_duration_lost();
 					}
 					else
 					{
@@ -652,9 +652,9 @@ namespace PSBMPC_LIB
 				R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
 
 				// Track loss modifier to collision cost
-				if (obstacles[i].get_duration_lost() > pars.p_step)
+				if (obstacles[i].get_duration_lost() > pars.p_step_opt)
 				{
-					l_i = pars.dt * pars.p_step / obstacles[i].get_duration_lost();
+					l_i = pars.dt * pars.p_step_opt / obstacles[i].get_duration_lost();
 				}
 				else
 				{
