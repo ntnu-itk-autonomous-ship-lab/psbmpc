@@ -2,18 +2,18 @@
 *
 *  File name : kinetic_ship_models_gpu.cu
 *
-*  Function  : Class functions for the GPU used kinetic ship models. 
-*  
+*  Function  : Class functions for the GPU used kinetic ship models.
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -30,11 +30,11 @@ namespace PSBMPC_LIB
 {
 namespace GPU
 {
-	
+
 /****************************************************************************************
 *  Name     : Kinetic_Ship_Base_3DOF
 *  Function : Class constructors
-*  Author   : 
+*  Author   :
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
@@ -47,7 +47,7 @@ __host__ __device__ Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
 	e_int = 0;
 	e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
 	R_a = 20.0; 			    // WP acceptance radius (20.0)
-	LOS_LD = 450.0; 			// LOS lookahead distance (100.0) 
+	LOS_LD = 450.0; 			// LOS lookahead distance (100.0)
 	LOS_K_i = 0.0; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
@@ -58,13 +58,13 @@ __host__ __device__ Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
 /****************************************************************************************
 *  Name     : determine_active_waypoint_segment
 *  Function : Two overloads depending on matrix library used.
-*  Author   : 
+*  Author   :
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segment(
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,  			// In: Waypoints to follow
 	const TML::Vector6f &xs 										// In: Ship state
-	)	
+	)
 {
 	n_wps = waypoints.get_cols();
 	segment_passed = false;
@@ -82,9 +82,8 @@ __host__ __device__ void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segme
 
 		segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
 
-		//(s > R_a && fabs(e) <= R_a))) 	
-		if (d_next_wp.norm() <= R_a || segment_passed) { wp_c_0++; } 
-		else										{ break; }		
+		if (d_next_wp.norm() <= R_a || segment_passed) 	{ wp_c_0++; }
+		else											{ break; }
 	}
 	wp_c_p = wp_c_0;
 }
@@ -92,7 +91,7 @@ __host__ __device__ void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segme
 __host__ void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segment(
 	const Eigen::Matrix<double, 2, -1> &waypoints,  			// In: Waypoints to follow
 	const Eigen::Matrix<double, 6, 1> &xs 						// In: Ship state
-	)	
+	)
 {
 	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints_copy;
 	TML::Vector6f xs_copy;
@@ -103,86 +102,83 @@ __host__ void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segment(
 }
 
 /****************************************************************************************
-*  Name     : update_guidance_references 
-*  Function : 
-*  Author   : 
+*  Name     : update_guidance_references
+*  Function :
+*  Author   :
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Kinetic_Ship_Base_3DOF::update_guidance_references(
 	float &u_d,																	// In/out: Surge reference
-	float &chi_d,																// In/out: Course reference 
+	float &chi_d,																// In/out: Course reference
 	const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,						// In: Waypoints to follow.
-	const TML::Vector6f &xs, 													// In: Ship state	
+	const TML::Vector6f &xs, 													// In: Ship state
 	const float dt, 															// In: Time step
-	const Guidance_Method guidance_method										// In: Type of guidance used	
+	const Guidance_Method guidance_method										// In: Type of guidance used
 	)
 {
 	n_wps = waypoints.get_cols();
 	alpha = 0.0f; e = 0.0f;
 	segment_passed = false;
-	
-	if (wp_c_p < n_wps - 1 && (guidance_method == LOS || guidance_method == WPP))
+	inside_wp_R_a = false;
+
+	if (guidance_method == LOS || guidance_method == WPP)
 	{
 		// Determine if a switch must be made to the next waypoint segment, for LOS and WPP
-		d_next_wp(0) = waypoints(0, wp_c_p + 1) - xs(0);
-		d_next_wp(1) = waypoints(1, wp_c_p + 1) - xs(1);
+		if (wp_c_p == n_wps - 1)
+		{
+			d_next_wp(0) = waypoints(0, wp_c_p) - xs(0);
+			d_next_wp(1) = waypoints(1, wp_c_p) - xs(1);
+			L_wp_segment(0) = waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1);
+			L_wp_segment(1) = waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1);
+			alpha = atan2(d_next_wp(1), d_next_wp(0));
+		}
+		else
+		{
+			d_next_wp(0) = waypoints(0, wp_c_p + 1) - xs(0);
+			d_next_wp(1) = waypoints(1, wp_c_p + 1) - xs(1);
+			L_wp_segment(0) = waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p);
+			L_wp_segment(1) = waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p);
+			alpha = atan2(L_wp_segment(1), L_wp_segment(0));
+		}
 
-		L_wp_segment(0) = waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p);
-		L_wp_segment(1) = waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p);
 		L_wp_segment = L_wp_segment.normalized();
 
 		segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
 
-		if (d_next_wp.norm() <= R_a || segment_passed) //(s > 0 && e <= R_a))
+		inside_wp_R_a = d_next_wp.norm() <= R_a;
+
+		if (inside_wp_R_a || segment_passed)
 		{
-			e_int = 0.0f;
-			wp_c_p ++;
-		} 
+			e_int = 0;
+			if (wp_c_p < n_wps - 1)
+			{
+				wp_c_p++;
+			}
+		}
+	}
+
+	// After last waypoint is reached the own-ship stops
+	if (wp_c_p == n_wps - 1 && inside_wp_R_a)
+	{
+		u_d = 0.0;
 	}
 
 	switch (guidance_method)
 	{
-		case LOS : 
-			// After last waypoint is reached the own-ship stops
-			if (wp_c_p == n_wps - 1)
-			{
-				u_d = 0.0;
-				alpha = atan2(waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1), 
-							waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1));
-			}
-			else
-			{
-				alpha = atan2(waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p), 
-							waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p));
-			}
+		case LOS :
 			// Compute cross track error and integrate it
 			e = - (xs(0) - waypoints(0, wp_c_p)) * sin(alpha) + (xs(1) - waypoints(1, wp_c_p)) * cos(alpha);
 			e_int += e * dt;
 			if (e_int >= e_int_max) e_int -= e * dt;
-
 			chi_d = alpha + atan2( - (e + LOS_K_i * e_int), LOS_LD);
 			break;
 		case WPP :
-			// Note that the WPP method will make the own-ship drive in roundabouts
-			// around and towards the last waypoint, unless some LOS-element such 
-			// as cross-track error and path tangential angle is used, or a 
-			// forced keep current course is implemented
-			if (wp_c_p == n_wps - 1)
-			{
-				d_next_wp(0) = waypoints(0, wp_c_p) - xs(0);
-				d_next_wp(1) = waypoints(1, wp_c_p) - xs(1);
-			}
-			else
-			{
-				d_next_wp(0) = waypoints(0, wp_c_p + 1) - xs(0);
-				d_next_wp(1) = waypoints(1, wp_c_p + 1) - xs(1);
-			}
-			chi_d = atan2(d_next_wp(1), d_next_wp(0));	
+			chi_d = atan2(d_next_wp(1), d_next_wp(0));
 			break;
 		case CH :
 			chi_d = xs(2);
 			break;
-		default : 
+		default :
 			// Throw
 			break;
 	}
@@ -190,17 +186,17 @@ __host__ __device__ void Kinetic_Ship_Base_3DOF::update_guidance_references(
 
 __host__ void Kinetic_Ship_Base_3DOF::update_guidance_references(
 	double &u_d,												// In/out: Surge reference
-	double &chi_d,												// In/out: Course reference 
+	double &chi_d,												// In/out: Course reference
 	const Eigen::Matrix<double, 2, -1> &waypoints,				// In: Waypoints to follow.
-	const Eigen::Matrix<double, 6, 1> &xs, 						// In: Ship state	
+	const Eigen::Matrix<double, 6, 1> &xs, 						// In: Ship state
 	const double dt, 											// In: Time step
-	const Guidance_Method guidance_method						// In: Type of guidance used	
+	const Guidance_Method guidance_method						// In: Type of guidance used
 	)
 {
 	TML::Vector6f xs_copy;
 	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints_copy;
-	TML::assign_eigen_object(waypoints_copy, waypoints); 
-	TML::assign_eigen_object(xs_copy, xs); 
+	TML::assign_eigen_object(waypoints_copy, waypoints);
+	TML::assign_eigen_object(xs_copy, xs);
 
 	float u_d_copy = (float)u_d, chi_d_copy = (float)chi_d;
 	update_guidance_references(u_d_copy, chi_d_copy, waypoints_copy, xs_copy, (float)dt, guidance_method);
@@ -209,9 +205,9 @@ __host__ void Kinetic_Ship_Base_3DOF::update_guidance_references(
 
 /****************************************************************************************
 *  Name     : predict
-*  Function : Predicts the ship state xs a number of dt units forward in time with the 
+*  Function : Predicts the ship state xs a number of dt units forward in time with the
 *			  chosen prediction method
-*  Author   : 
+*  Author   :
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ TML::Vector6f Kinetic_Ship_Base_3DOF::predict(
@@ -225,23 +221,23 @@ __host__ __device__ TML::Vector6f Kinetic_Ship_Base_3DOF::predict(
 
 	switch (prediction_method)
 	{
-		case Linear : 
+		case Linear :
 			// Straight line trajectory with the current heading and surge speed
 			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
 			nu(0) = nu(0);
 			nu(1) = 0.0f;
 			nu(2) = 0.0f;
-			xs_new.set_block<3, 1>(0, 0, eta); 
+			xs_new.set_block<3, 1>(0, 0, eta);
 			xs_new.set_block<3, 1>(3, 0, nu);
 			break;
-		case ERK1 : 
-			update_Cvv(nu); 
+		case ERK1 :
+			update_Cvv(nu);
 			update_Dvv(nu);
 
 			eta = eta + dt * rotate_vector_3D(nu, eta(2), Yaw);
 			nu  = nu  + dt * M_inv * (- Cvv - Dvv + tau);
-			
-			xs_new.set_block<3, 1>(0, 0, eta); 
+
+			xs_new.set_block<3, 1>(0, 0, eta);
 			xs_new.set_block<3, 1>(3, 0, nu);
 			break;
 		default :
@@ -274,34 +270,34 @@ __host__ Eigen::Matrix<double, 6, 1> Kinetic_Ship_Base_3DOF::predict(
 
 /****************************************************************************************
 *  Name     : Cvv
-*  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on 
+*  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on
 *			  Fossen 2011.
-*  Author   : 
+*  Author   :
 *  Modified :
 *****************************************************************************************/
 void Kinetic_Ship_Base_3DOF::update_Cvv(
-	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T				
+	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T
 	)
-{	
+{
 	/* C(nu) = [ 0 		0 		c13(nu)]
 			   [ 0 		0 		c23(nu)]
-			   [c31(nu) c32(nu) 	0] 
-	with 
+			   [c31(nu) c32(nu) 	0]
+	with
 	c13(nu) = -m21 * u - m22 * v - m23 * r,
 	c23(nu) = 	m11 * u + m12 * v + m13 * r
-	c31(nu) = -c13(nu), c32(nu) = -c23(nu)	 
-	Written out (without temporaries c13 and c23 introduced):  
+	c31(nu) = -c13(nu), c32(nu) = -c23(nu)
+	Written out (without temporaries c13 and c23 introduced):
 	*/
 	Cvv(0) = - (M(1, 0) * nu(0) + M(1, 1) * nu(1) + M(1, 2) * nu(2)) * nu(2);
 	Cvv(1) = (M(0, 0) * nu(0) + M(0, 1) * nu(1) + M(0, 2) * nu(2)) * nu(2);
-	Cvv(2) = M(1, 0) * nu(0) * nu(0) 			+ 
-			(M(1, 1) - M(0, 0)) * nu(0) * nu(1) - 
-			M(0, 1) * nu(1) * nu(1) 			+ 
-			M(1, 2) * nu(0) * nu(2) 			- 
+	Cvv(2) = M(1, 0) * nu(0) * nu(0) 			+
+			(M(1, 1) - M(0, 0)) * nu(0) * nu(1) -
+			M(0, 1) * nu(1) * nu(1) 			+
+			M(1, 2) * nu(0) * nu(2) 			-
 			M(0, 2) * nu(1) * nu(2);
 
-	
-	/* 
+
+	/*
 	Alternative requiring more memory
 	float c13 = - (M(1, 0) * nu(0) + M(1, 1) * nu(1) + M(1, 2) * nu(2));
 	float c23 = (M(0, 0) * nu(0) + M(0, 1) * nu(1) + M(0, 2) * nu(2));
@@ -312,23 +308,23 @@ void Kinetic_Ship_Base_3DOF::update_Cvv(
 
 /****************************************************************************************
 *  Name     : Dvv
-*  Function : Calculates the "damping vector" for the 3DOF surface vessel based on 
+*  Function : Calculates the "damping vector" for the 3DOF surface vessel based on
 *			  Fossen 2011
-*  Author   : 
+*  Author   :
 *  Modified :
 *****************************************************************************************/
 void Kinetic_Ship_Base_3DOF::update_Dvv(
 	const TML::Vector3f &nu 									// In: BODY velocity vector nu = [u, v, r]^T
 	)
 {
-	Dvv(0) = 	- D_l(0, 0) * nu(0) - D_l(0, 1) * nu(1) - D_l(0, 2) * nu(2) 	
+	Dvv(0) = 	- D_l(0, 0) * nu(0) - D_l(0, 1) * nu(1) - D_l(0, 2) * nu(2)
 			 	- X_uu * fabs(nu(0)) * nu(0) - X_uuu * nu(0) * nu(0) * nu(0);
 
 	Dvv(1) = 	- D_l(1, 0) * nu(0) - D_l(1, 1) * nu(1) - D_l(1, 2) * nu(2)
 				- Y_vv * fabs(nu(1)) * nu(1) - Y_rv * fabs(nu(2)) * nu(1) - Y_vr * fabs(nu(1)) * nu(2) - Y_rr * fabs(nu(2)) * nu(2)
-				- Y_vvv * nu(1) * nu(1) * nu(1); 
+				- Y_vvv * nu(1) * nu(1) * nu(1);
 
-	Dvv(2) = 	- D_l(2, 0) * nu(0) - D_l(2, 1) * nu(1) - D_l(2, 2) * nu(2) 	
+	Dvv(2) = 	- D_l(2, 0) * nu(0) - D_l(2, 1) * nu(1) - D_l(2, 2) * nu(2)
 				- N_vv * fabs(nu(1)) * nu(1) - N_rv * fabs(nu(2)) * nu(1) - N_vr * fabs(nu(1)) * nu(2) - N_rr * fabs(nu(2)) * nu(2)
 				- N_rrr * nu(2) * nu(2) * nu(2);
 }
@@ -342,7 +338,7 @@ void Kinetic_Ship_Base_3DOF::update_Dvv(
 /****************************************************************************************
 *  Name     : Telemetron
 *  Function : Class constructor
-*  Author   : 
+*  Author   :
 *  Modified :
 *****************************************************************************************/
 Telemetron::Telemetron()
@@ -355,7 +351,7 @@ Telemetron::Telemetron()
 	e_int = 0.0f;
 	e_int_max = 20.0f * M_PI / 180.0f; // Maximum integral correction in LOS guidance
 	R_a = 20.0f; 			    // WP acceptance radius (20.0)
-	LOS_LD = 250.0f; 			// LOS lookahead distance (100.0) 
+	LOS_LD = 250.0f; 			// LOS lookahead distance (100.0)
 	LOS_K_i = 0.0f; 			    // LOS integral gain (0.0)
 
 	wp_c_0 = 0;	wp_c_p = 0;
@@ -378,7 +374,7 @@ Telemetron::Telemetron()
 	M_RB(0, 0) = m; M_RB(1, 1) = m; M_RB(2, 2) = I_z;
 
 	TML::Matrix3f M_A; M_A.set_zero();
-	
+
 	// Total inertia matrix
 	M = M_RB + M_A;
 	M_inv = M.inverse();
@@ -405,15 +401,15 @@ Telemetron::Telemetron()
 	Kp_psi = 5.0f;
 	Kd_psi = 1.0f;
 	Kp_r = 8.0f;
-		
+
 	//Motion limits
 	r_max = 0.34f * DEG2RAD; // [rad/s] default max yaw rate
 }
 
 /****************************************************************************************
 *  Name     : update_ctrl_input
-*  Function : 
-*  Author   : 
+*  Function :
+*  Author   :
 *  Modified :
 *****************************************************************************************/
 __host__ void Telemetron::update_ctrl_input(
@@ -426,7 +422,7 @@ __host__ void Telemetron::update_ctrl_input(
 	update_Dvv(xs.get_block<3, 1>(3, 0));
 
 	Fx = Cvv(0) + Dvv(0) + Kp_u * m * (u_d - xs(3));
-	
+
 	psi_diff = angle_difference_pmpi(psi_d, xs(2));
 	Fy = (Kp_psi * I_z ) * (psi_diff - Kd_psi * xs(5));
     Fy *= 1.0 / l_r;
@@ -456,9 +452,9 @@ __host__ void Telemetron::update_ctrl_input(
 
 /****************************************************************************************
 *  Name     : predict_trajectory
-*  Function : Predicts the ship trajectory for a sequence of avoidance maneuvers in the 
-*			  offset sequence. Two overloads depending on matrix library used. 
-*  Author   : 
+*  Function : Predicts the ship trajectory for a sequence of avoidance maneuvers in the
+*			  offset sequence. Two overloads depending on matrix library used.
+*  Author   :
 *  Modified :
 *****************************************************************************************/
 __host__ __device__ void Telemetron::predict_trajectory(
@@ -484,12 +480,12 @@ __host__ __device__ void Telemetron::predict_trajectory(
 	xs_p = trajectory.get_col(0);
 
 	for (int k = 0; k < n_samples; k++)
-	{ 
+	{
 		if (k == maneuver_times[man_count]){
 			u_m = offset_sequence[2 * man_count];
-			chi_m += offset_sequence[2 * man_count + 1]; 
+			chi_m += offset_sequence[2 * man_count + 1];
 			if (man_count < (int)maneuver_times.size() - 1) man_count += 1;
-		}  
+		}
 
 		update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
 
@@ -498,8 +494,8 @@ __host__ __device__ void Telemetron::predict_trajectory(
 		xs_p = predict(xs_p, dt, prediction_method);
 
 		//printf("xs = %f %f %f %f %f %f \n", xs(0), xs(1), xs(2), xs(3), xs(4), xs(5));
-		
-		if (k < n_samples - 1) 
+
+		if (k < n_samples - 1)
 		{
 			trajectory.set_col(k + 1, xs_p);
 		}
@@ -528,14 +524,14 @@ __host__ __device__ void Telemetron::predict_trajectory(
 	u_m = 1.0f, u_d_p = u_d;
 	chi_m = 0.0f, chi_d_p = chi_d;
 	xs_p = ship_state;
-	
+
 	for (int k = 0; k < n_samples; k++)
-	{ 
+	{
 		if (k == maneuver_times[man_count]){
 			u_m = offset_sequence[2 * man_count];
-			chi_m += offset_sequence[2 * man_count + 1]; 
+			chi_m += offset_sequence[2 * man_count + 1];
 			if (man_count < (int)maneuver_times.size() - 1) man_count += 1;
-		}  
+		}
 
 		update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
 
@@ -566,16 +562,16 @@ __host__ void Telemetron::predict_trajectory(
 	const double dt 												// In: Prediction time step
 	)
 {
-	
+
 	TML::PDMatrix<float, 6, MAX_N_SAMPLES> trajectory_copy;
 	TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence_copy;
 	TML::PDMatrix<float, MAX_N_M, 1> maneuver_times_copy;
 	TML::PDMatrix<float, 2, MAX_N_WPS> waypoints_copy;
-	
-	TML::assign_eigen_object(trajectory_copy, trajectory); 
-	TML::assign_eigen_object(offset_sequence_copy, offset_sequence); 
-	TML::assign_eigen_object(maneuver_times_copy, maneuver_times); 
-	TML::assign_eigen_object(waypoints_copy, waypoints); 
+
+	TML::assign_eigen_object(trajectory_copy, trajectory);
+	TML::assign_eigen_object(offset_sequence_copy, offset_sequence);
+	TML::assign_eigen_object(maneuver_times_copy, maneuver_times);
+	TML::assign_eigen_object(waypoints_copy, waypoints);
 
 	predict_trajectory(trajectory_copy, offset_sequence_copy, maneuver_times_copy, u_d, chi_d, waypoints_copy, prediction_method, guidance_method, T, dt);
 

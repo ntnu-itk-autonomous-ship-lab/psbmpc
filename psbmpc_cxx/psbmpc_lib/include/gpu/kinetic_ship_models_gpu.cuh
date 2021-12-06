@@ -5,20 +5,20 @@
 *  Function  : Header file for the GPU used kinetic ship model(s).
 *			   Facilitates Guidance, Navigation and Control (GNC) of a surface vessel
 *			   Uses mainly Eigen for matrix functionality.
-*  			   
-*			   Implements a base Ship class, on which (atm) 2 derived variants are 
+*
+*			   Implements a base Ship class, on which (atm) 2 derived variants are
 *			   implemented.
-*  
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -41,7 +41,7 @@ namespace PSBMPC_LIB
 			// Control input vector
 			TML::Vector3f tau;
 
-			// Inertia matrix, sum of the rigid body mass matrix M_RB 
+			// Inertia matrix, sum of the rigid body mass matrix M_RB
 			// and the added mass matrix M_A
 			TML::Matrix3f M, M_inv;
 
@@ -64,11 +64,11 @@ namespace PSBMPC_LIB
 			float x_offset, y_offset;
 
 			// Guidance parameters
-			float e_int, e_int_max; 
+			float e_int, e_int_max;
 			float R_a;
 			float LOS_LD, LOS_K_i;
 
-			// Counter variables to keep track of the active WP segment at the current 
+			// Counter variables to keep track of the active WP segment at the current
 			// time and predicted time
 			int wp_c_0, wp_c_p;
 
@@ -76,7 +76,7 @@ namespace PSBMPC_LIB
 			float Fx_min;
 			float Fx_max;
 			float Fy_min;
-			float Fy_max; 
+			float Fy_max;
 
 			//===================================
 			// Pre-allocated temporaries
@@ -84,7 +84,7 @@ namespace PSBMPC_LIB
 			float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
 
 			TML::Vector2f d_next_wp, L_wp_segment, v_p;
-			bool segment_passed;
+			bool segment_passed, inside_wp_R_a;
 
 			TML::Vector6f xs_new, xs_p;
 			TML::Vector3f eta, nu;
@@ -108,17 +108,17 @@ namespace PSBMPC_LIB
 			__host__ __device__ void determine_active_waypoint_segment(const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, const TML::Vector6f &xs);
 
 			__host__ __device__ void update_guidance_references(
-				float &u_d, 
-				float &chi_d, 
-				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, 
+				float &u_d,
+				float &chi_d,
+				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
 				const TML::Vector6f &xs,
 				const float dt,
 				const Guidance_Method guidance_method);
 
 			__host__ void update_guidance_references(
-				double &u_d, 
-				double &chi_d, 
-				const Eigen::Matrix<double, 2, -1> &waypoints, 
+				double &u_d,
+				double &chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::Matrix<double, 6, 1> &xs,
 				const double dt,
 				const Guidance_Method guidance_method);
@@ -148,17 +148,17 @@ namespace PSBMPC_LIB
 
 			// Controller parameters
 			float Kp_u, Kp_psi, Kd_psi, Kp_r;
-			
-			float r_max; 
+
+			float r_max;
 
             //Force limits
-			float Fx_min, Fx_max, Fy_min, Fy_max; 
+			float Fx_min, Fx_max, Fy_min, Fy_max;
 
 		public:
 			Telemetron();
 
 			__host__ __device__ void update_ctrl_input(const float u_d, const float psi_d, const TML::Vector6f &xs);
-			
+
 			__host__ void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
 			__host__ __device__ void predict_trajectory(
