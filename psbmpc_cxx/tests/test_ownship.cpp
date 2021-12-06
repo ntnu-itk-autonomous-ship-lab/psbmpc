@@ -1,28 +1,37 @@
 /****************************************************************************************
 *
-*  File name : test_ownship.cpp
+*  File name : test_ownship.cu
 *
-*  Function  : Test file for the Ownship class for PSB-MPC, using Matlab for 
-*			   visualization 
-*			   
+*  Function  : Test file for the Ownship class for GPU PSB-MPC, using Matlab for
+*			   visualization
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
+#if USE_GPU_PSBMPC
 #if OWNSHIP_TYPE == 0
-	#include "cpu/kinematic_ship_models_cpu.hpp"
-#else 
-	#include "cpu/kinetic_ship_models_cpu.hpp"
+#include "gpu/kinematic_ship_models_gpu.cuh"
+#else
+#include "gpu/kinetic_ship_models_gpu.cuh"
 #endif
+#else
+#if OWNSHIP_TYPE == 0
+#include "cpu/kinematic_ship_models_cpu.hpp"
+#else
+#include "cpu/kinetic_ship_models_cpu.hpp"
+#endif
+#endif
+
 #include <iostream>
 #include <memory>
 #include <Eigen/Dense>
@@ -30,53 +39,60 @@
 
 #define BUFSIZE 1000000
 
-int main(){
+int main()
+{
 	// Matlab engine setup
 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1];
+	char buffer[BUFSIZE + 1];
 
 	//*****************************************************************************************************************
 	// Own-ship prediction setup
 	//*****************************************************************************************************************
 	Eigen::Matrix<double, 6, 1> xs;
-	xs << 0, 0, 0, 6, 0, 0;
+	xs << 0, 0, 0, 15, 0, 0;
 
-	double T = 250; double dt = 0.5;
+	double T = 200;
+	double dt = 0.5;
 
-	double u_d = 6.0; double chi_d = 0.0;
+	double u_d = 10.0;
+	double chi_d = 0.0;
 
 	Eigen::VectorXd offset_sequence(6);
 	Eigen::Vector3d maneuver_times;
 	offset_sequence << 1, -90 * M_PI / 180.0, 1, -30 * M_PI / 180.0, 1, 0;
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
-	
-	std::unique_ptr<PSBMPC_LIB::CPU::Ownship> asv(new PSBMPC_LIB::CPU::Ownship()); 
+
+#if USE_GPU_PSBMPC
+	std::unique_ptr<PSBMPC_LIB::GPU::Ownship> ownship(new PSBMPC_LIB::GPU::Ownship());
+#else
+	std::unique_ptr<PSBMPC_LIB::CPU::Ownship> ownship(new PSBMPC_LIB::CPU::Ownship());
+#endif
 
 	int n_samples = std::round(T / dt);
-	Eigen::MatrixXd trajectory; 
+	Eigen::MatrixXd trajectory;
 	Eigen::Matrix<double, 2, -1> waypoints;
 
-	#if OWNSHIP_TYPE == 0
-		trajectory.resize(4, n_samples);
-		trajectory.col(0) = xs.block<4, 1>(0, 0);
-	#else
-		trajectory.resize(6, n_samples);
-		trajectory.col(0) = xs;
-	#endif
+#if OWNSHIP_TYPE == 0
+	trajectory.resize(4, n_samples);
+	trajectory.col(0) = xs.block<4, 1>(0, 0);
+#else
+	trajectory.resize(6, n_samples);
+	trajectory.col(0) = xs;
+#endif
 
-	waypoints.resize(2, 7); 
-	waypoints << 0, 200, 200, 0,    0, 300, 1000,
-				 0, -50,  -200, -200,  0, 300, 0;
+	waypoints.resize(2, 7);
+	waypoints << 0, 200, 200, 0, 0, 300, 1000,
+		0, -50, -200, -200, 0, 300, 0;
 
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
-	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
+	ownship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
 	//*****************************************************************************************************************
 	// Send data to matlab
@@ -100,7 +116,6 @@ int main(){
 	engPutVariable(ep, "WPs", wps_mx);
 
 	engEvalString(ep, "test_ownship_plot");
-	
 	printf("%s", buffer);
 	mxDestroyArray(traj_mx);
 	mxDestroyArray(wps_mx);

@@ -159,7 +159,6 @@ namespace PSBMPC_LIB
 					d_next_wp(1) = waypoints(1, wp_c_p) - xs(1);
 					L_wp_segment(0) = waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1);
 					L_wp_segment(1) = waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1);
-					alpha = atan2(d_next_wp(1), d_next_wp(0));
 				}
 				else
 				{
@@ -167,9 +166,7 @@ namespace PSBMPC_LIB
 					d_next_wp(1) = waypoints(1, wp_c_p + 1) - xs(1);
 					L_wp_segment(0) = waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p);
 					L_wp_segment(1) = waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p);
-					alpha = atan2(L_wp_segment(1), L_wp_segment(0));
 				}
-
 				L_wp_segment = L_wp_segment.normalized();
 
 				segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
@@ -195,12 +192,11 @@ namespace PSBMPC_LIB
 			switch (guidance_method)
 			{
 			case LOS:
-				// Compute cross track error and integrate it
+				alpha = atan2(L_wp_segment(1), L_wp_segment(0));
 				e = -(xs(0) - waypoints(0, wp_c_p)) * sin(alpha) + (xs(1) - waypoints(1, wp_c_p)) * cos(alpha);
 				e_int += e * dt;
 				if (e_int >= e_int_max)
 					e_int -= e * dt;
-
 				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
 				break;
 			case WPP:
@@ -224,52 +220,56 @@ namespace PSBMPC_LIB
 			const double dt								   // In: Time step
 		)
 		{
-			// No surge modification
+			// Nominally no surge modification
 			u_d = u_d;
 
 			int n_wps = waypoints.cols();
 			double alpha(0.0), e(0.0);
 			Eigen::Vector2d d_next_wp, L_wp_segment;
-			bool segment_passed = false;
+			bool segment_passed(false), inside_wp_R_a(false);
 
-			if (wp_c_p < n_wps - 1)
+			// Determine if a switch must be made to the next waypoint segment, for LOS and WPP
+			if (wp_c_p == n_wps - 1)
 			{
-				// Determine if a switch must be made to the next waypoint segment, for LOS and WPP
+				d_next_wp(0) = waypoints(0, wp_c_p) - xs(0);
+				d_next_wp(1) = waypoints(1, wp_c_p) - xs(1);
+				L_wp_segment(0) = waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1);
+				L_wp_segment(1) = waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1);
+			}
+			else
+			{
 				d_next_wp(0) = waypoints(0, wp_c_p + 1) - xs(0);
 				d_next_wp(1) = waypoints(1, wp_c_p + 1) - xs(1);
-
 				L_wp_segment(0) = waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p);
 				L_wp_segment(1) = waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p);
-				L_wp_segment = L_wp_segment.normalized();
+			}
+			L_wp_segment = L_wp_segment.normalized();
 
-				segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
+			segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
 
-				if (d_next_wp.norm() <= R_a || segment_passed) //(s > 0 && e <= R_a))
+			inside_wp_R_a = d_next_wp.norm() <= R_a;
+
+			if (inside_wp_R_a || segment_passed)
+			{
+				e_int = 0;
+				if (wp_c_p < n_wps - 1)
 				{
-					e_int = 0;
 					wp_c_p++;
 				}
 			}
 
 			// After last waypoint is reached the own-ship stops
-			if (wp_c_p == n_wps - 1)
+			if (wp_c_p == n_wps - 1 && inside_wp_R_a)
 			{
 				u_d = 0.0;
-				alpha = atan2(waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1),
-							  waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1));
 			}
-			else
-			{
-				alpha = atan2(waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p),
-							  waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p));
-			}
-			// Compute cross track error and integrate it
+
+			alpha = atan2(L_wp_segment(1), L_wp_segment(0));
 			e = -(xs(0) - waypoints(0, wp_c_p)) * sin(alpha) + (xs(1) - waypoints(1, wp_c_p)) * cos(alpha);
 			e += e_m; // Add artificial cross track error to cause different path alignment, for obstacle prediction
 			e_int += e * dt;
 			if (e_int >= e_int_max)
 				e_int -= e * dt;
-
 			chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
 		}
 

@@ -1,25 +1,28 @@
 /****************************************************************************************
 *
-*  File name : test_obstacle_ship.cu
+*  File name : test_obstacle_ship.cpp
 *
-*  Function  : Test file for the Obstacle_Ship class for PSB-MPC, using Matlab for 
+*  Function  : Test file for the Obstacle_Ship class for PSB-MPC, using Matlab for
 *			   visualization.
-*			   
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
-
+#if USE_GPU_PSBMPC
 #include "gpu/kinematic_ship_models_gpu.cuh"
+#else
+#include "cpu/kinematic_ship_models_cpu.hpp"
+#endif
 #include <iostream>
 #include <memory>
 #include <Eigen/Dense>
@@ -27,54 +30,65 @@
 
 #define BUFSIZE 1000000
 
-int main(){
+int main()
+{
 	// Matlab engine setup
 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1];
+	char buffer[BUFSIZE + 1];
 
 	//*****************************************************************************************************************
 	// Own-ship prediction setup
 	//*****************************************************************************************************************
 	Eigen::Matrix<double, 4, 1> xs;
-	xs << 0, 0, 0, 6;
+	xs << 0, 0, 0, 15;
 
-	double T = 200; double dt = 0.5;
+	double T = 200;
+	double dt = 0.5;
 
-	double u_d = 6.0; double chi_d = 0.0;
+	double u_d = 10.0;
+	double chi_d = 0.0;
 
 	Eigen::VectorXd offset_sequence(6);
 	Eigen::Vector3d maneuver_times;
-	offset_sequence << 1, -90 * M_PI / 180.0, 1, -30 * M_PI / 180.0, 1, 0;
+	//offset_sequence << 1, -90 * M_PI / 180.0, 1, -30 * M_PI / 180.0, 1, 0;
 	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
 	maneuver_times << 0, 100, 150;
-	
-	std::unique_ptr<PSBMPC_LIB::GPU::Obstacle_Ship> obstacle_ship(new PSBMPC_LIB::GPU::Obstacle_Ship()); 
 
-	Eigen::MatrixXd trajectory; 
+	double l(10.0), w(4.0), T_U = 10, T_chi = 7.5, R_a = 30.0, LOS_LD = 200.0;
+
+#if USE_GPU_PSBMPC
+	PSBMPC_LIB::GPU::Obstacle_Ship obstacle_ship(l, w, T_U, T_chi, R_a, LOS_LD, 0); // xs = [x, y, chi, U]^T for this ship
+#else
+	PSBMPC_LIB::CPU::Obstacle_Ship obstacle_ship(l, w, T_U, T_chi, R_a, LOS_LD, 0); // xs = [x, y, chi, U]^T for this ship
+#endif
+
+	Eigen::MatrixXd trajectory;
 	Eigen::Matrix<double, 2, -1> waypoints;
 
 	int n_samples = std::round(T / dt);
 	trajectory.resize(4, n_samples);
 	trajectory.block<4, 1>(0, 0) << xs;
 
-	int n_wps = 7;
-	waypoints.resize(2, n_wps); 
-	waypoints << 0, 200, 200, 0,    0, 300, 1000,
+	int n_wps = 4;
+	waypoints.resize(2, n_wps);
+	waypoints << 0, 1000, 200, 0,
+		0, 0, -100, -100;
+	/* waypoints << 0, 200, 200, 0,    0, 300, 1000,
 				 0, -50,  -200, -200,  0, 300, 0;
 
 	waypoints << 0, 200, 200, 0,    0, 300, 1000,
-				 0, 50,  200, 200,  0, -300, 0;
+				 0, 50,  200, 200,  0, -300, 0; */
 
 	//*****************************************************************************************************************
 	// Prediction
 	//*****************************************************************************************************************
-	obstacle_ship->determine_active_waypoint_segment(waypoints, trajectory.col(0));
+	obstacle_ship.determine_active_waypoint_segment(waypoints, trajectory.col(0));
 
-	obstacle_ship->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
+	obstacle_ship.predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
 
 	//*****************************************************************************************************************
 	// Send data to matlab
@@ -102,7 +116,7 @@ int main(){
 	engPutVariable(ep, "dt_sim", dt_sim_mx);
 
 	engEvalString(ep, "test_obstacle_ship_plot");
-	
+
 	printf("%s", buffer);
 	mxDestroyArray(traj_mx);
 	mxDestroyArray(wps_mx);

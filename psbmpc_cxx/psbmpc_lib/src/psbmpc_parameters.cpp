@@ -433,8 +433,8 @@ namespace PSBMPC_LIB
 		}
 		t_ts = 10;
 
-		d_so_relevant = 200;
-		d_do_relevant = 300;
+		d_so_relevant = 500;
+		d_do_relevant = 1000;
 		d_safe = 5;
 		K_coll = 3.0; // 0.2ish for sea traffic, 10.0ish for nidelva
 		kappa_SO = 10.0;

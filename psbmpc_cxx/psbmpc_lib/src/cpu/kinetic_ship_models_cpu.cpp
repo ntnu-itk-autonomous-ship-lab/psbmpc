@@ -131,7 +131,6 @@ namespace PSBMPC_LIB
 					d_next_wp(1) = waypoints(1, wp_c_p) - xs(1);
 					L_wp_segment(0) = waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1);
 					L_wp_segment(1) = waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1);
-					alpha = atan2(d_next_wp(1), d_next_wp(0));
 				}
 				else
 				{
@@ -139,9 +138,7 @@ namespace PSBMPC_LIB
 					d_next_wp(1) = waypoints(1, wp_c_p + 1) - xs(1);
 					L_wp_segment(0) = waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p);
 					L_wp_segment(1) = waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p);
-					alpha = atan2(L_wp_segment(1), L_wp_segment(0));
 				}
-
 				L_wp_segment = L_wp_segment.normalized();
 
 				segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
@@ -167,12 +164,11 @@ namespace PSBMPC_LIB
 			switch (guidance_method)
 			{
 			case LOS:
-				// Compute cross track error and integrate it
+				alpha = atan2(L_wp_segment(1), L_wp_segment(0));
 				e = -(xs(0) - waypoints(0, wp_c_p)) * sin(alpha) + (xs(1) - waypoints(1, wp_c_p)) * cos(alpha);
 				e_int += e * dt;
 				if (e_int >= e_int_max)
 					e_int -= e * dt;
-
 				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
 				break;
 			case WPP:

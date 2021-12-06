@@ -2,19 +2,19 @@
 *
 *  File name : test_obstacle_predictor.cpp
 *
-*  Function  : Test file for the Mean-reverting Ornstein-Uhlenbeck process 
+*  Function  : Test file for the Mean-reverting Ornstein-Uhlenbeck process
 *			   class for PSB-MPC.
-*			   
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -34,9 +34,10 @@ int main()
 	{
 		std::cout << "engine start failed!" << std::endl;
 	}
-	char buffer[BUFSIZE+1];
-	
-	double T = 110; double dt = 0.5;
+	char buffer[BUFSIZE + 1];
+
+	double T = 110;
+	double dt = 0.5;
 	int n_samples = std::round(T / dt);
 
 	Eigen::Vector4d xs_i_0;
@@ -44,22 +45,22 @@ int main()
 
 	Eigen::Matrix4d P_0;
 	P_0 << 100, 0, 0, 0,
-			0, 100, 0, 0,
-			0, 0, 0.025, 0,
-			0, 0, 0, 0.025;
+		0, 100, 0, 0,
+		0, 0, 0.025, 0,
+		0, 0, 0, 0.025;
 
-	Eigen::MatrixXd waypoints_i(2, 2), trajectory_i(4, n_samples); 
+	Eigen::MatrixXd waypoints_i(2, 2), trajectory_i(4, n_samples);
 	waypoints_i << xs_i_0(0), 1000,
-				   xs_i_0(1), 0;
+		xs_i_0(1), 0;
 
-	trajectory_i(0, 0) = xs_i_0(0); 
+	trajectory_i(0, 0) = xs_i_0(0);
 	trajectory_i(1, 0) = xs_i_0(1);
-	trajectory_i(2, 0) = 0.0; 
+	trajectory_i(2, 0) = 0.0;
 	trajectory_i(3, 0) = xs_i_0(2);
 
 	Eigen::VectorXd maneuver_times(2), offset_sequence(4);
 	maneuver_times << 0, 50;
-	offset_sequence << 1.0, -90 * DEG2RAD, 1.0, 45 * DEG2RAD;
+	offset_sequence << 1.0, -90 * DEG2RAD, 1.0, 90 * DEG2RAD;
 
 	PSBMPC_LIB::CPU::Obstacle_Ship oship;
 	oship.predict_trajectory(trajectory_i, offset_sequence, maneuver_times, xs_i_0(2), xs_i_0(3), waypoints_i, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
@@ -67,23 +68,24 @@ int main()
 	Eigen::VectorXd xs_i_aug(9);
 	xs_i_aug << xs_i_0, 5, 5, 5, 5, 0;
 
-	Eigen::VectorXd Pr_s(3); Pr_s << 1, 1, 1;
+	Eigen::VectorXd Pr_s(3);
+	Pr_s << 1, 1, 1;
 	Pr_s / Pr_s.sum();
 
-	Eigen::VectorXd ownship_state(4); ownship_state << 500, 0, 180 * DEG2RAD, 9.0;
+	Eigen::VectorXd ownship_state(4);
+	ownship_state << 500, 0, 180 * DEG2RAD, 9.0;
 
-	PSBMPC_LIB::Obstacle_Data<PSBMPC_LIB::Tracked_Obstacle> data;
-	data.obstacles.push_back(PSBMPC_LIB::Tracked_Obstacle(xs_i_aug, PSBMPC_LIB::CPU::flatten(P_0), Pr_s, false, T, dt));
+	PSBMPC_LIB::Dynamic_Obstacles obstacles;
+	obstacles.push_back(PSBMPC_LIB::Tracked_Obstacle(xs_i_aug, PSBMPC_LIB::CPU::flatten(P_0), Pr_s, false, T, dt));
 
 	PSBMPC_LIB::CPU::PSBMPC psbmpc;
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
 
-	data.IP_0.resize(1); data.IP_0[0] = false;
-
 	//==============================================
 	// Matlab plotting init
 	//==============================================
-	std::vector<Eigen::MatrixXd> v_p(1); v_p[0].resize(2, n_samples);
+	std::vector<Eigen::MatrixXd> v_p(1);
+	v_p[0].resize(2, n_samples);
 
 	mxArray *wps_i_mx = mxCreateDoubleMatrix(2, 2, mxREAL);
 	mxArray *traj_mx = mxCreateDoubleMatrix(4, n_samples, mxREAL);
@@ -101,7 +103,7 @@ int main()
 
 	Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_i, 2, 2);
 	Eigen::Map<Eigen::MatrixXd> map_traj(p_traj, 4, n_samples);
-			
+
 	map_traj = trajectory_i;
 	map_wps_i = waypoints_i;
 
@@ -121,7 +123,7 @@ int main()
 		xs_i_aug.block<2, 1>(0, 0) = trajectory_i.block<2, 1>(0, k);
 		xs_i_aug(2) = trajectory_i(3, k) * cos(trajectory_i(2, k));
 		xs_i_aug(3) = trajectory_i(3, k) * sin(trajectory_i(2, k));
-		data.obstacles[0].update(xs_i_aug, PSBMPC_LIB::CPU::flatten(P_0), Pr_s, false, dt);
+		obstacles[0].update(xs_i_aug, PSBMPC_LIB::CPU::flatten(P_0), Pr_s, false, dt);
 
 		if (k % 20 == 0)
 		{
@@ -129,10 +131,10 @@ int main()
 			//==============================================
 			// Setup and predict using the developed class
 			//==============================================
-			obstacle_predictor(data, ownship_state, psbmpc);
+			obstacle_predictor(obstacles, ownship_state, psbmpc.pars);
 			//==============================================
-			xs_p = data.obstacles[0].get_trajectories();
-			P_p = data.obstacles[0].get_trajectory_covariance();
+			xs_p = obstacles[0].get_trajectories();
+			P_p = obstacles[0].get_trajectory_covariance();
 			int n_ps = xs_p.size();
 
 			k_mx = mxCreateDoubleScalar(k + 1);
@@ -148,15 +150,15 @@ int main()
 				{
 					ps_mx = mxCreateDoubleScalar(ps + 1);
 					engPutVariable(ep, "ps", ps_mx);
-				
-					Eigen::Map<Eigen::MatrixXd> map_pred_traj(p_pred_traj, 4, n_samples);
-					Eigen::Map<Eigen::MatrixXd> map_v_traj(p_v_traj, 2, n_samples);
-					Eigen::Map<Eigen::MatrixXd> map_P_traj(p_P_traj, 16, n_samples);
-					
+
+					Eigen::Map<Eigen::MatrixXd> map_pred_traj(p_pred_traj, xs_p[ps].rows(), xs_p[ps].cols());
+					Eigen::Map<Eigen::MatrixXd> map_v_traj(p_v_traj, v_p[0].rows(), v_p[0].cols());
+					Eigen::Map<Eigen::MatrixXd> map_P_traj(p_P_traj, P_p.rows(), P_p.cols());
+
 					map_pred_traj = xs_p[ps];
 					map_v_traj = v_p[0];
 					map_P_traj = P_p;
-				
+
 					buffer[BUFSIZE] = '\0';
 					engOutputBuffer(ep, buffer, BUFSIZE);
 
@@ -168,9 +170,8 @@ int main()
 					printf("%s", buffer);
 				}
 			}
-		}				
+		}
 	}
-	
 
 	mxDestroyArray(ps_mx);
 	mxDestroyArray(k_mx);
@@ -184,6 +185,6 @@ int main()
 	mxDestroyArray(v_traj_mx);
 	mxDestroyArray(P_traj_mx);
 	engClose(ep);
-	
+
 	return 0;
 }
