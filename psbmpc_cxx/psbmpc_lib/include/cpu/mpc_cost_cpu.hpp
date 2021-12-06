@@ -209,15 +209,14 @@ namespace PSBMPC_LIB
 						ownship_CPA_state = ownship_trajectory.col(t);
 						obstacle_CPA_state_vx_vy = obstacle_trajectory.col(t);
 					}
-					colregs_violation_evaluators.at(i).evaluate_predicted_maneuver_changes(ownship_trajectory(2,t),ownship_trajectory(3,t));
+					colregs_violation_evaluators.at(i).evaluate_predicted_maneuver_changes(ownship_trajectory(2, t), ownship_trajectory(3, t));
 				}
 
 				if (colregs_violation_evaluators.count(i))
 				{
 					bool so_violation = colregs_violation_evaluators.at(i).evaluate_SO_violation(d_0i_0, d_cpa);
-					bool gw_violation = colregs_violation_evaluators.at(i).evaluate_GW_violation(ownship_CPA_state,obstacle_CPA_state_vx_vy,d_cpa);
-					return pars.kappa_SO *so_violation
-					 + pars.kappa_GW * gw_violation;
+					bool gw_violation = colregs_violation_evaluators.at(i).evaluate_GW_violation(ownship_CPA_state, obstacle_CPA_state_vx_vy, d_cpa);
+					return pars.kappa_SO * so_violation + pars.kappa_GW * gw_violation;
 				}
 				else
 				{
