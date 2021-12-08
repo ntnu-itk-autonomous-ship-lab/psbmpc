@@ -438,7 +438,7 @@ namespace PSBMPC_LIB
 			const double d_safe)
 		{
 			Eigen::Vector2d v_0, v_i, L_0i;
-			double psi_0 = xs_0(2), d_0i;
+			double d_0i;
 			if (xs_0.size() == 4)
 			{
 				v_0(0) = xs_0(3) * cos(xs_0(2));
@@ -448,7 +448,7 @@ namespace PSBMPC_LIB
 			{
 				v_0(0) = xs_0(3);
 				v_0(1) = xs_0(4);
-				v_0 = rotate_vector_2D(v_0, psi_0);
+				v_0 = rotate_vector_2D(v_0, xs_0(2));
 			}
 			v_i(0) = xs_i(2);
 			v_i(1) = xs_i(3);

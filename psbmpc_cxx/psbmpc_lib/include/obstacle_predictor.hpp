@@ -183,28 +183,13 @@ namespace PSBMPC_LIB
 			n_ps[i] = n_ps_LOS;
 
 			Eigen::MatrixXd waypoints_i = obstacles[i].get_waypoints();
-			Eigen::Vector4d xs_i_0 = obstacles[i].kf.get_state(), xs_0;
-			Eigen::Vector2d v_os_0;
-			if (ownship_state.rows() == 4)
-			{
-				v_os_0(0) = ownship_state(3) * cos(ownship_state(2));
-				v_os_0(1) = ownship_state(3) * sin(ownship_state(2));
-			}
-			else
-			{
-				v_os_0(0) = ownship_state(3);
-				v_os_0(1) = ownship_state(4);
-				v_os_0 = CPU::rotate_vector_2D(v_os_0, ownship_state(2, 0));
-			}
-			xs_0.block<2, 1>(0, 0) = ownship_state.block<2, 1>(0, 0);
-			xs_0(2) = v_os_0(0);
-			xs_0(3) = v_os_0(1);
+			Eigen::Vector4d xs_i_0 = obstacles[i].kf.get_state();
 
-			// Either an irrelevant obstacle or too far away to consider (waypoints_i not initialized properly)
-			double d_0i = (xs_i_0.block<2, 1>(0, 0) - xs_0.block<2, 1>(0, 0)).norm();
-			if (CPU::ship_is_passed_by(xs_0, xs_i_0, mpc_pars.d_safe) || d_0i > mpc_pars.d_do_relevant)
+			// Either an irrelevant obstacle or too far away to consider
+			double d_0i = (xs_i_0.block<2, 1>(0, 0) - ownship_state.block<2, 1>(0, 0)).norm();
+			bool is_passed = CPU::ship_is_passed_by(ownship_state, xs_i_0, mpc_pars.d_safe);
+			if (is_passed || d_0i > mpc_pars.d_do_relevant)
 			{
-				/* std::cout << "Obstacle i = " << i << " passed by ? << IP_0[i] << std::endl; */
 				ct_offsets.resize(1);
 				ct_offsets(0) = 0.0;
 				n_ps[i] = 1;
