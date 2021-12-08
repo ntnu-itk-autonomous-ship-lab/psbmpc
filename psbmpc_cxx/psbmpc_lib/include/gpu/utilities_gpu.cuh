@@ -460,7 +460,7 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : ship_is_passed_by
 		*  Function : Checks if an obstacle vessel B is passed by the ownship
-		*  Author   :
+		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
 		__host__ __device__ inline bool ship_is_passed_by(

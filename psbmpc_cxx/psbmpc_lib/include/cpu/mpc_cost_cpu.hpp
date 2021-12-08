@@ -195,14 +195,14 @@ namespace PSBMPC_LIB
 				const int i)
 			{
 				colregs_violation_evaluators.at(i).reset();
-				float d_0i_0 = evaluateDistance(ownship_trajectory.col(0), obstacle_trajectory.col(0)); // In: Distance at the current time t_0 between ownship and obstacle i
-				float d_cpa = INFINITY;																	// In: Distance at predicted CPA between ownship and obstacle i
-				Eigen::Vector4d ownship_CPA_state;														// In: Ownship state at CPA
-				Eigen::Vector4d obstacle_CPA_state_vx_vy;												// In: Obstacle i state at CPA
+				double d_0i_0 = evaluateDistance(ownship_trajectory.col(0), obstacle_trajectory.col(0)); // In: Distance at the current time t_0 between ownship and obstacle i
+				double d_cpa = INFINITY;																 // In: Distance at predicted CPA between ownship and obstacle i
+				Eigen::Vector4d ownship_CPA_state;														 // In: Ownship state at CPA
+				Eigen::Vector4d obstacle_CPA_state_vx_vy;												 // In: Obstacle i state at CPA
 
 				for (auto t = 0; t < std::min(ownship_trajectory.cols(), obstacle_trajectory.cols()); ++t)
 				{
-					const auto current_distance = evaluateDistance(ownship_trajectory.col(t), obstacle_trajectory.col(t));
+					const double current_distance = evaluateDistance(ownship_trajectory.col(t), obstacle_trajectory.col(t));
 					if (current_distance < d_cpa)
 					{
 						d_cpa = current_distance;
@@ -214,7 +214,7 @@ namespace PSBMPC_LIB
 
 				if (colregs_violation_evaluators.count(i))
 				{
-					bool so_violation = colregs_violation_evaluators.at(i).evaluate_SO_violation(d_0i_0, d_cpa);
+					bool so_violation = colregs_violation_evaluators.at(i).evaluate_SO_violation(d_0i_0);
 					bool gw_violation = colregs_violation_evaluators.at(i).evaluate_GW_violation(ownship_CPA_state, obstacle_CPA_state_vx_vy, d_cpa);
 					return pars.kappa_SO * so_violation + pars.kappa_GW * gw_violation;
 				}

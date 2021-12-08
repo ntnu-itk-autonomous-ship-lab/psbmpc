@@ -238,12 +238,12 @@ namespace PSBMPC_LIB
 			}
 
 			h_colregs_i_ps = pars->kappa_GW * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_GW_violation(xs_cpa, xs_i_cpa, d_cpa) +
-							 pars->kappa_SO * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_SO_violation(d_0i_0, d_cpa);
+							 pars->kappa_SO * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_SO_violation(d_0i_0);
 
 			//==================================================================================================
-			/* printf("i = %d | ps = %d | h_colregs_i_ps = %.1f | pred_UCHI_changed = %d | pred_CHI_changed_port = %d | act_UCHI_changed = %d |  cb : %.1f, %.1f\n", i, ps, h_colregs_i_ps,
+			/* printf("i = %d | ps = %d | h_colregs_i_ps = %.1f | pred_UCHI_changed = %d | pred_CHI_changed_port = %d | act_UCHI_changed = %d | act_UCHI_changed = %d |  cb : %.1f, %.1f\n", i, ps, h_colregs_i_ps,
 				   colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_speed_or_course, colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_course_to_port,
-				   colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_speed_or_course_change, offset_sequence(0), RAD2DEG * offset_sequence(1));
+				   colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_speed_or_course_change, colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_course_change_port, offset_sequence(0), RAD2DEG * offset_sequence(1));
  */
 			//			printf("Thread %d | i = %d | ps = %d | cb index %d | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 
