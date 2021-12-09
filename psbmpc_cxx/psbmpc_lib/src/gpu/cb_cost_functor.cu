@@ -137,6 +137,9 @@ namespace PSBMPC_LIB
 
 			d_cpa = 1e10;
 
+			/* printf("Thread %d | i = %d | ps = %d | k = %d | n_ps = %d | n_samples = %d | cb : %.1f, %.1f\n", thread_index, i, ps,
+				   0, obstacles[i].get_n_prediction_scenarios(), obstacles[i].get_n_trajectory_samples(), offset_sequence(0), RAD2DEG * offset_sequence(1));
+ */
 			colregs_violation_evaluators[os_do_ps_pair_index].reset();
 			for (int k = 0; k < n_samples; k += pars->p_step_do)
 			{

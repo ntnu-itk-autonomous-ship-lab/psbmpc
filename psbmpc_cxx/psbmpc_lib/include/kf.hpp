@@ -4,20 +4,20 @@
 *
 *  Function  : Header file for a hardcoded Kalman Filter (KF) to add extra robustness
 *              against track loss. See "Autonomous COLREGS compliant decision
-*              making using maritime radar tracking and model predictive control". 
-*              This is an alternative version of the one created by Giorgio D. Kwame 
+*              making using maritime radar tracking and model predictive control".
+*              This is an alternative version of the one created by Giorgio D. Kwame
 *              Minde Kufoalor through the Autosea project.
-*  
+*
 *            ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -30,7 +30,6 @@ namespace PSBMPC_LIB
   class KF
   {
   private:
-
     int ID;
 
     double t_0, t;
@@ -48,18 +47,25 @@ namespace PSBMPC_LIB
 
     KF();
 
-    KF(const Eigen::Vector4d& xs_0, const Eigen::Matrix4d& P_0, const int ID, const double dt, const double t_0);
+    KF(const Eigen::Vector4d &xs_0, const Eigen::Matrix4d &P_0, const int ID, const double dt, const double t_0);
 
     // Use the constructor below for simulations where the KF is used as a tracking system outside the COLAV algorithm
     // where typically only position measurements of vessels are used.
     KF(
-      const Eigen::Vector4d &xs_0, 
-      const Eigen::Matrix4d &P_0, 
-      const int ID, 
-      const double dt, 
-      const double t_0, 
-      const Eigen::Matrix4d &Q,
-      const Eigen::Matrix4d &R);
+        const Eigen::Vector4d &xs_0,
+        const Eigen::Matrix4d &P_0,
+        const int ID,
+        const double dt,
+        const double t_0,
+        const Eigen::Matrix4d &Q,
+        const Eigen::Matrix4d &R);
+
+    // Use below constructor when initial state is unknown and initialize to initial measurement, time variables are dont care here
+    KF(
+        const Eigen::Matrix4d &P_0,
+        const Eigen::Matrix4d &Q,
+        const Eigen::Matrix4d &R,
+        const int ID);
 
     int get_ID() const { return ID; };
 
@@ -80,6 +86,5 @@ namespace PSBMPC_LIB
     // Use this update function when the KF is used as a tracking system outside the COLAV algorithm
     // where typically only position measurements of vessels are used.
     void update(const Eigen::Vector2d &y_m, const double dt, const bool dead_reckon);
-
   };
 }
