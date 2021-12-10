@@ -191,7 +191,7 @@ namespace PSBMPC_LIB
 		if (duration_lost == 0.0)
 		{
 
-			Eigen::MatrixXd K(C.rows(), C.cols());
+			Eigen::Matrix<double, 4, 4> K;
 			K = P_p * C.transpose() * (C * P_p * C.transpose() + R).inverse();
 
 			xs_upd = xs_p + K * (y_m - C * xs_p);
@@ -222,7 +222,7 @@ namespace PSBMPC_LIB
 
 		if (!dead_reckon)
 		{
-			Eigen::MatrixXd K(C.rows(), C.cols());
+			Eigen::Matrix<double, 4, 2> K;
 			K = P_p * C.transpose() * (C * P_p * C.transpose() + R.block<2, 2>(0, 0)).inverse();
 
 			xs_upd = xs_p + K * (y_m - C * xs_p);
