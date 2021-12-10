@@ -438,7 +438,7 @@ namespace PSBMPC_LIB
 			const double d_safe)
 		{
 			Eigen::Vector2d v_0, v_i, L_0i;
-			double psi_0 = xs_0(2), d_0i;
+			double d_0i;
 			if (xs_0.size() == 4)
 			{
 				v_0(0) = xs_0(3) * cos(xs_0(2));
@@ -448,7 +448,7 @@ namespace PSBMPC_LIB
 			{
 				v_0(0) = xs_0(3);
 				v_0(1) = xs_0(4);
-				v_0 = rotate_vector_2D(v_0, psi_0);
+				v_0 = rotate_vector_2D(v_0, xs_0(2));
 			}
 			v_i(0) = xs_i(2);
 			v_i(1) = xs_i(3);
@@ -478,7 +478,7 @@ namespace PSBMPC_LIB
 		 *  Author   :
 		 *  Modified :
 		 *****************************************************************************************/
-		inline float evaluateDistance(
+		inline double evaluateDistance(
 			const Eigen::Vector4d &xs_A, // In: State of vessel A
 			const Eigen::Vector4d &xs_B	 // In: State of vessel B
 		)
@@ -493,10 +493,10 @@ namespace PSBMPC_LIB
 		 *  Author   :
 		 *  Modified :
 		 *****************************************************************************************/
-		inline float relativeBearing(
+		inline double relativeBearing(
 			const Eigen::Vector4d &xs,
-			const float x,
-			const float y)
+			const double x,
+			const double y)
 		{
 			return wrap_angle_to_pmpi(atan2(y - xs(PY), x - xs(PX)) - xs(COG));
 		}
@@ -512,9 +512,9 @@ namespace PSBMPC_LIB
 		{
 			struct
 			{
-				float a;
-				float b;
-				float c;
+				double a;
+				double b;
+				double c;
 			} res;
 
 			if (fabs(sin(line(COG))) > fabs(cos(line(COG))))
@@ -578,10 +578,10 @@ namespace PSBMPC_LIB
 		*  Author   : Sverre Velten Rothmund
 		*  Modified :
 		*****************************************************************************************/
-		inline float evaluate_arrival_time(
+		inline double evaluate_arrival_time(
 			const Eigen::Vector4d &ship,
-			const float x,
-			const float y)
+			const double x,
+			const double y)
 		{
 			// If no speed then it will take forever to arrive.
 			if (ship(SOG) < 1e-6)
@@ -597,8 +597,8 @@ namespace PSBMPC_LIB
 			}
 
 			// 0/inf can happen if res.x-line(PX) ~=0. Avoid this by using the biggest of x and y to evaluate
-			float dx = x - ship(PX);
-			float dy = y - ship(PY);
+			double dx = x - ship(PX);
+			double dy = y - ship(PY);
 
 			if (dx > dy)
 			{

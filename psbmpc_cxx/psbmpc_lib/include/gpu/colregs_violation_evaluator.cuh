@@ -33,7 +33,108 @@ namespace PSBMPC_LIB
     {
         class COLREGS_Violation_Evaluator
         {
+        private:
+            //=================================
+
+            /****************************************************************************************
+            *  Name     : evaluate_situation_started
+            *  Function :
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
+            __host__ __device__ bool evaluate_situation_started(
+                const TML::PDVector4f &ownship_state,
+                const TML::PDVector4f &obstacle_state)
+            {
+                return evaluateDistance(ownship_state, obstacle_state) < pars.d_init_colregs_situation;
+            }
+
+            /****************************************************************************************
+            *  Name     : evaluate_colregs_situation
+            *  Function :
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
+            __host__ __device__ COLREGS_Situation evaluate_colregs_situation(
+                const TML::PDVector4f &ownship_state,
+                const TML::PDVector4f &obstacle_state)
+            {
+                heading_diff = wrap_angle_to_pmpi(obstacle_state(COG) - ownship_state(COG));
+                if (heading_diff < -M_PI + pars.head_on_width / 2 || heading_diff > M_PI - pars.head_on_width / 2)
+                    return HO;
+
+                bearing_to_obstacle_relative_to_ownship = relativeBearing(ownship_state, obstacle_state(PX), obstacle_state(PY));
+                if (bearing_to_obstacle_relative_to_ownship > pars.overtaking_angle || bearing_to_obstacle_relative_to_ownship < -pars.overtaking_angle)
+                    return OT_en;
+
+                bearing_to_ownship_relative_to_obstacle = relativeBearing(obstacle_state, ownship_state(PX), ownship_state(PY));
+                if (bearing_to_ownship_relative_to_obstacle > pars.overtaking_angle || bearing_to_ownship_relative_to_obstacle < -pars.overtaking_angle)
+                    return OT_ing;
+
+                if (bearing_to_obstacle_relative_to_ownship < 0)
+                    return CR_PS;
+
+                return CR_SS;
+            }
+
+            /****************************************************************************************
+            *  Name     : evaluate_crossing_port_to_port
+            *  Function :
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
+            __host__ __device__ bool evaluate_crossing_port_to_port(
+                const TML::PDVector4f &ownshipCPA,
+                const TML::PDVector4f &obstacleCPA)
+            {
+                return relativeBearing(ownshipCPA, obstacleCPA(PX), obstacleCPA(PY)) < 0;
+            }
+
+            /****************************************************************************************
+            *  Name     : evaluate_crossing_aft
+            *  Function :
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
+            __host__ __device__ bool evaluate_crossing_aft(
+                const TML::PDVector4f &ownshipCPA,
+                const TML::PDVector4f &obstacleCPA)
+            {
+                ipoint = intersectionpoint(ownshipCPA, obstacleCPA);
+                ownship_crossing_arrival_time = evaluate_arrival_time(ownshipCPA, ipoint(0), ipoint(1));
+                obstacle_crossing_arrival_time = evaluate_arrival_time(obstacleCPA, ipoint(0), ipoint(1));
+                return ownship_crossing_arrival_time > obstacle_crossing_arrival_time;
+            }
+
         public:
+            CVE_Pars<float> pars;
+            bool initialized = false;
+            bool predicted_ownship_change_in_course_to_port = false;
+            bool predicted_ownship_change_in_speed_or_course = false;
+            bool actual_ownship_speed_or_course_change = false;
+            bool actual_ownship_course_change_port = false;
+            bool has_passed = false; //If the ships have passed each other, then dont give any penalty
+
+            COLREGS_Situation colregs_situation;
+            TML::PDVector4f initial_ownship_state;
+            TML::PDVector4f initial_obstacle_state;
+
+            //=================================
+            // Temporaries
+            bool correct_HO_maneuver;
+            bool correct_CR_SS_maneuver;
+            bool correct_CR_PS_maneuver;
+            bool correct_OT_ing_maneuver;
+            float heading_diff;
+            float bearing_to_obstacle_relative_to_ownship;
+            float bearing_to_ownship_relative_to_obstacle;
+            float bearing_to_intersection_point;
+            float ownship_crossing_arrival_time;
+            float obstacle_crossing_arrival_time;
+
+            TML::PDVector4f obstacle_state;
+            TML::Vector2f ipoint;
+
             /****************************************************************************************
             *  Name     : COLREGS_Violation_Evaluator
             *  Function : Class constructor
@@ -42,7 +143,6 @@ namespace PSBMPC_LIB
             *****************************************************************************************/
             __host__ COLREGS_Violation_Evaluator()
             {
-                pars.max_distance_at_cpa = 50.0;
                 pars.d_init_colregs_situation = 500.0;
                 pars.head_on_width = 30.0 * DEG2RAD;
                 pars.overtaking_angle = (90.0 + 22.5) * DEG2RAD;
@@ -128,15 +228,13 @@ namespace PSBMPC_LIB
             *  Modified :
             *****************************************************************************************/
             __device__ bool evaluate_SO_violation(
-                const float d_0i_0, // In: Distance at the current time t_0 between ownship and obstacle i
-                const float d_cpa   // In: Distance at predicted CPA between ownship and obstacle i
+                const float d_0i_0 // In: Distance at the current time t_0 between ownship and obstacle i
             )
             {
                 if (!initialized || has_passed)
                     return false;
 
-                return d_cpa < pars.max_distance_at_cpa &&
-                       d_0i_0 > pars.critical_distance_to_ignore_SO &&
+                return d_0i_0 > pars.critical_distance_to_ignore_SO &&
                        (colregs_situation == OT_en || colregs_situation == CR_PS) &&
                        (actual_ownship_speed_or_course_change || predicted_ownship_change_in_speed_or_course);
             }
@@ -160,118 +258,22 @@ namespace PSBMPC_LIB
                 correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy)) && d_cpa >= pars.GW_safety_margin;
                 correct_OT_ing_maneuver = d_cpa >= pars.GW_safety_margin;
                 correct_CR_PS_maneuver = !(actual_ownship_course_change_port || predicted_ownship_change_in_course_to_port);
-                return d_cpa < pars.max_distance_at_cpa &&
-                       ((colregs_situation == HO && !correct_HO_maneuver) ||
+                return ((colregs_situation == HO && !correct_HO_maneuver) ||
                         (colregs_situation == CR_SS && !correct_CR_SS_maneuver) ||
                         (colregs_situation == CR_PS && !correct_CR_PS_maneuver) ||
                         (colregs_situation == OT_ing && !correct_OT_ing_maneuver));
             }
 
-            __device__ void reset()
+            /****************************************************************************************
+            *  Name     : reset
+            *  Function :
+            *  Author   :
+            *  Modified :
+            *****************************************************************************************/
+            __device__ inline void reset()
             {
                 predicted_ownship_change_in_course_to_port = false;
                 predicted_ownship_change_in_speed_or_course = false;
-            }
-
-            CVE_Pars<float> pars;
-            bool initialized = false;
-            bool predicted_ownship_change_in_course_to_port = false;
-            bool predicted_ownship_change_in_speed_or_course = false;
-            bool actual_ownship_speed_or_course_change = false;
-            bool actual_ownship_course_change_port = false;
-            bool has_passed = false; //If the ships have passed each other, then dont give any penalty
-
-            COLREGS_Situation colregs_situation;
-            TML::PDVector4f initial_ownship_state;
-            TML::PDVector4f initial_obstacle_state;
-
-            //=================================
-            // Temporaries
-            bool correct_HO_maneuver;
-            bool correct_CR_SS_maneuver;
-            bool correct_CR_PS_maneuver;
-            bool correct_OT_ing_maneuver;
-            float heading_diff;
-            float bearing_to_obstacle_relative_to_ownship;
-            float bearing_to_ownship_relative_to_obstacle;
-            float bearing_to_intersection_point;
-            float ownship_crossing_arrival_time;
-            float obstacle_crossing_arrival_time;
-
-            TML::PDVector4f obstacle_state;
-            TML::Vector2f ipoint;
-
-        private:
-            //=================================
-
-            /****************************************************************************************
-            *  Name     : evaluate_situation_started
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            __host__ __device__ bool evaluate_situation_started(
-                const TML::PDVector4f &ownship_state,
-                const TML::PDVector4f &obstacle_state)
-            {
-                return evaluateDistance(ownship_state, obstacle_state) < pars.d_init_colregs_situation;
-            }
-
-            /****************************************************************************************
-            *  Name     : evaluate_colregs_situation
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            __host__ __device__ COLREGS_Situation evaluate_colregs_situation(
-                const TML::PDVector4f &ownship_state,
-                const TML::PDVector4f &obstacle_state)
-            {
-                heading_diff = wrap_angle_to_pmpi(obstacle_state(COG) - ownship_state(COG));
-                if (heading_diff < -M_PI + pars.head_on_width / 2 || heading_diff > M_PI - pars.head_on_width / 2)
-                    return HO;
-
-                bearing_to_obstacle_relative_to_ownship = relativeBearing(ownship_state, obstacle_state(PX), obstacle_state(PY));
-                if (bearing_to_obstacle_relative_to_ownship > pars.overtaking_angle || bearing_to_obstacle_relative_to_ownship < -pars.overtaking_angle)
-                    return OT_en;
-
-                bearing_to_ownship_relative_to_obstacle = relativeBearing(obstacle_state, ownship_state(PX), ownship_state(PY));
-                if (bearing_to_ownship_relative_to_obstacle > pars.overtaking_angle || bearing_to_ownship_relative_to_obstacle < -pars.overtaking_angle)
-                    return OT_ing;
-
-                if (bearing_to_obstacle_relative_to_ownship < 0)
-                    return CR_PS;
-
-                return CR_SS;
-            }
-
-            /****************************************************************************************
-            *  Name     : evaluate_crossing_port_to_port
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            __host__ __device__ bool evaluate_crossing_port_to_port(
-                const TML::PDVector4f &ownshipCPA,
-                const TML::PDVector4f &obstacleCPA)
-            {
-                return relativeBearing(ownshipCPA, obstacleCPA(PX), obstacleCPA(PY)) < 0;
-            }
-
-            /****************************************************************************************
-            *  Name     : evaluate_crossing_aft
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
-            __host__ __device__ bool evaluate_crossing_aft(
-                const TML::PDVector4f &ownshipCPA,
-                const TML::PDVector4f &obstacleCPA)
-            {
-                ipoint = intersectionpoint(ownshipCPA, obstacleCPA);
-                ownship_crossing_arrival_time = evaluate_arrival_time(ownshipCPA, ipoint(0), ipoint(1));
-                obstacle_crossing_arrival_time = evaluate_arrival_time(obstacleCPA, ipoint(0), ipoint(1));
-                return ownship_crossing_arrival_time > obstacle_crossing_arrival_time;
             }
         };
     }

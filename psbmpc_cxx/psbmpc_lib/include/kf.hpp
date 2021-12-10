@@ -8,6 +8,7 @@
 *              This is an alternative version of the one created by Giorgio D. Kwame
 *              Minde Kufoalor through the Autosea project.
 *              Also extended to be deployable for other applications.
+*              NOTE: THIS FILTER ONLY CONSIDERS A STRAIGHT LINE PREDICTION MODEL
 *
 *            ---------------------
 *
@@ -24,7 +25,7 @@
 
 #pragma once
 
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 
 namespace PSBMPC_LIB
 {
@@ -36,27 +37,39 @@ namespace PSBMPC_LIB
     bool initialized;
 
     Eigen::Vector4d xs_p, xs_upd;
-
-    Eigen::Matrix4d A, C, Q, R, I;
-
     Eigen::Matrix4d P_0, P_p, P_upd;
+
+    Eigen::Matrix4d A, Q, R, I;
+    Eigen::MatrixXd C;
+    double q; // Process noise strength
+
+    void set_measurement_matrix(const bool use_velocity_measurements);
 
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     KF();
 
-    KF(const Eigen::Vector4d &xs_0, const Eigen::Matrix4d &P_0, const double dt, const double t_0);
-
-    // Use the constructor below for simulations where the KF is used as a tracking system outside the COLAV algorithm
-    // where typically only position measurements of vessels are used.
     KF(
         const Eigen::Vector4d &xs_0,
         const Eigen::Matrix4d &P_0,
-        const double dt,
         const double t_0,
-        const Eigen::Matrix4d &Q,
-        const Eigen::Matrix4d &R);
+        const bool use_velocity_measurements);
+
+    KF(
+        const Eigen::Matrix4d &P_0,
+        const Eigen::Matrix4d &R,
+        const double q,
+        const double t_0,
+        const bool use_velocity_measurements);
+
+    KF(
+        const Eigen::Vector4d &xs_0,
+        const Eigen::Matrix4d &P_0,
+        const Eigen::Matrix4d &R,
+        const double q,
+        const double t_0,
+        const bool use_velocity_measurements);
 
     double get_time() const { return t; };
 
@@ -69,7 +82,6 @@ namespace PSBMPC_LIB
     void reset(const Eigen::Vector4d &xs_0, const Eigen::Matrix4d &P_0, const double t_0);
 
     void predict(const double dt);
-    void predict(const double t_k, const double t_k_);
 
     void update(const Eigen::Vector4d &y_m, const double duration_lost, const double dt);
 

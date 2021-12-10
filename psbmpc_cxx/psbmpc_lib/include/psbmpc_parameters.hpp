@@ -52,7 +52,6 @@ namespace PSBMPC_LIB
 	template <class T>
 	struct CVE_Pars
 	{
-		T max_distance_at_cpa;			   // Max allowable distance at CPA before considered violating COLREGS
 		T d_init_colregs_situation;		   // Threshold for initializing the COLREGS violation evaluator
 		T head_on_width;				   // Width of zone where vessels are considered head-on wrt own-ship
 		T overtaking_angle;				   // Bearing angle wrt own-ship/obstacle where vessels are considered to overtake

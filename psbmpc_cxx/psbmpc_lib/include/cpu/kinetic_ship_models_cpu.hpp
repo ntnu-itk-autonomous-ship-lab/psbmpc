@@ -5,19 +5,19 @@
 *  Function  : Header file for the CPU used kinetic ship model(s).
 *			   Facilitates Guidance, Navigation and Control (GNC) of a surface vessel
 *			   Uses mainly Eigen for matrix functionality.
-*  			   
-*			   Implements a base Ship class, on which (atm) 2 derived variants are 
+*
+*			   Implements a base Ship class, on which (atm) 2 derived variants are
 *			   implemented.
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -38,7 +38,7 @@ namespace PSBMPC_LIB
 			// Control input vector
 			Eigen::Vector3d tau;
 
-			// Inertia matrix, sum of the rigid body mass matrix M_RB 
+			// Inertia matrix, sum of the rigid body mass matrix M_RB
 			// and the added mass matrix M_A
 			Eigen::Matrix3d M;
 
@@ -61,16 +61,20 @@ namespace PSBMPC_LIB
 			double x_offset, y_offset;
 
 			// Guidance parameters
-			double e_int, e_int_max; 
+			double e_int, e_int_max;
 			double R_a;
 			double LOS_LD, LOS_K_i;
 
-			// Counter variables to keep track of the active WP segment at the current 
+			// Counter variables to keep track of the active WP segment at the current
 			// time and predicted time
 			int wp_c_0, wp_c_p;
 
 			// Calculates the offsets according to the position of the GPS receiver
-			inline void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
+			inline void calculate_position_offsets()
+			{
+				x_offset = A - B;
+				y_offset = D - C;
+			};
 
 			void update_Cvv(const Eigen::Vector3d &nu);
 
@@ -82,9 +86,9 @@ namespace PSBMPC_LIB
 			void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
 
 			void update_guidance_references(
-				double &u_d, 
-				double &chi_d, 
-				const Eigen::Matrix<double, 2, -1> &waypoints, 
+				double &u_d,
+				double &chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::Matrix<double, 6, 1> &xs,
 				const double dt,
 				const Guidance_Method guidance_method);
@@ -93,8 +97,13 @@ namespace PSBMPC_LIB
 
 			inline double get_width() const { return w; }
 
-			inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; this->wp_c_p = wp_c_0; }
+			inline int get_wp_counter() const { return wp_c_0; }
 
+			inline void set_wp_counter(const int wp_c_0)
+			{
+				this->wp_c_0 = wp_c_0;
+				this->wp_c_p = wp_c_0;
+			}
 		};
 
 		class Telemetron : public Kinetic_Ship_Base_3DOF
@@ -109,14 +118,14 @@ namespace PSBMPC_LIB
 			double Kp_psi;
 			double Kd_psi;
 			double Kp_r;
-			
-			double r_max; 
 
-            //Force limits
+			double r_max;
+
+			//Force limits
 			double Fx_min;
 			double Fx_max;
 			double Fy_min;
-			double Fy_max; 
+			double Fy_max;
 
 		public:
 			Telemetron();
@@ -128,10 +137,10 @@ namespace PSBMPC_LIB
 			// Overloaded the predict function to match that of the kinematic ship model,
 			// to get an equal interface in the simulations
 			Eigen::Matrix<double, 6, 1> predict(
-				const Eigen::Matrix<double, 6, 1> &xs_old, 
-				const double u_d, 
-				const double chi_d, 
-				const double dt, 
+				const Eigen::Matrix<double, 6, 1> &xs_old,
+				const double u_d,
+				const double chi_d,
+				const double dt,
 				const Prediction_Method prediction_method);
 
 			void predict_trajectory(
@@ -147,7 +156,7 @@ namespace PSBMPC_LIB
 				const double dt);
 		};
 
-		// 3DOF milliampere class is NOT finished 
+		// 3DOF milliampere class is NOT finished
 		class MilliAmpere : public Kinetic_Ship_Base_3DOF
 		{
 		private:
@@ -162,18 +171,19 @@ namespace PSBMPC_LIB
 			void update_alpha();
 
 			void update_omega();
+
 		public:
 			MilliAmpere();
 
 			void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
 
 			Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
-			
+
 			Eigen::Matrix<double, 6, 1> predict(
-				const Eigen::Matrix<double, 6, 1> &xs_old, 
-				const double u_d, 
-				const double chi_d, 
-				const double dt, 
+				const Eigen::Matrix<double, 6, 1> &xs_old,
+				const double u_d,
+				const double chi_d,
+				const double dt,
 				const Prediction_Method prediction_method);
 
 			void predict_trajectory(
@@ -189,11 +199,11 @@ namespace PSBMPC_LIB
 				const double dt);
 		};
 
-		// Default ownship type is Kinematic_Ship
-		#if OWNSHIP_TYPE == 1
-			using Ownship = Telemetron;
-		#elif OWNSHIP_TYPE == 2
-			using Ownship = MilliAmpere;
-		#endif
-	}	
+// Default ownship type is Kinematic_Ship
+#if OWNSHIP_TYPE == 1
+		using Ownship = Telemetron;
+#elif OWNSHIP_TYPE == 2
+		using Ownship = MilliAmpere;
+#endif
+	}
 }
