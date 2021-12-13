@@ -36,9 +36,14 @@ namespace PSBMPC_LIB
 
     bool initialized;
 
+    // Predicted and updated state
     Eigen::Vector4d xs_p, xs_upd;
+
+    // Initial, predicted and updated state error covariance
     Eigen::Matrix4d P_0, P_p, P_upd;
 
+    // System matrices (A and C), process noise and measurement noise covariances (Q and R),
+    // and identity matrix
     Eigen::Matrix4d A, Q, R, I;
     Eigen::MatrixXd C;
     double q; // Process noise strength
