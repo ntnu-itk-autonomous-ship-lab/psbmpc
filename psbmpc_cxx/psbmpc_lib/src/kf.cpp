@@ -22,6 +22,7 @@
 
 #include "kf.hpp"
 #include <stdexcept>
+#include <iostream>
 
 namespace PSBMPC_LIB
 {

@@ -63,6 +63,7 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : forward
 		*  Function : Calculates easting (x) and northing (y) from latitude and longitude
+		*		  	  NOTE: ANGLES IN DEGREES.
 		*  Author   : 
 		*  Modified :
 		*****************************************************************************************/
@@ -76,6 +77,7 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 		*  Name     : reverse
 		*  Function : Calculates latitude and longitude from easting (x) and northing (y)
+		*			  NOTE: ANGLES IN DEGREES.
 		*  Author   : 
 		*  Modified :
 		*****************************************************************************************/
