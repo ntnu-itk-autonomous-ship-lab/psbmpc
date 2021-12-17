@@ -931,21 +931,21 @@ namespace PSBMPC_LIB
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
 				/* if (n_so > 0)
-			{
-				h_so_j_matrix.block(0, cb, n_so, 1) = h_so_j;
-			}
-			cost_so_path_matrix(0, cb) = h_so;
-			if (n_do > 0)
-			{
-				cost_do_matrix.col(cb) = cost_do;
-			}
-			cost_colregs_matrix(0, cb) = h_colregs;
-			cost_so_path_matrix(1, cb) = h_path;
-			total_cost_matrix(cb) = cost;
-			if (cost < min_cost)
-			{
-				min_index = cb;
-			} */
+				{
+					h_so_j_matrix.block(0, cb, n_so, 1) = h_so_j;
+				}
+				cost_so_path_matrix(0, cb) = h_so;
+				if (n_do > 0)
+				{
+					cost_do_matrix.col(cb) = cost_do;
+				}
+				cost_colregs_matrix(0, cb) = h_colregs;
+				cost_so_path_matrix(1, cb) = h_path;
+				total_cost_matrix(cb) = cost;
+				if (cost < min_cost)
+				{
+					min_index = cb;
+				} */
 #endif
 				//===================================================================
 
@@ -962,52 +962,52 @@ namespace PSBMPC_LIB
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
 			/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
-		map_total_cost = total_cost_matrix;
-		if (n_so > 0)
-		{
-			map_h_so_j = h_so_j_matrix;
-		}
-		if (n_do > 0)
-		{
-			map_cost_do = cost_do_matrix;
-			map_h_do_i_ps = h_do_i_ps_matrix;
-			map_Pr_s_i = Pr_s_i_matrix;
-		}
-		map_cost_colregs = cost_colregs_matrix;
-		map_cost_so_path = cost_so_path_matrix;
-		map_n_ps = n_ps_matrix;
-		map_cb_matrix = cb_matrix;
+			map_total_cost = total_cost_matrix;
+			if (n_so > 0)
+			{
+				map_h_so_j = h_so_j_matrix;
+			}
+			if (n_do > 0)
+			{
+				map_cost_do = cost_do_matrix;
+				map_h_do_i_ps = h_do_i_ps_matrix;
+				map_Pr_s_i = Pr_s_i_matrix;
+			}
+			map_cost_colregs = cost_colregs_matrix;
+			map_cost_so_path = cost_so_path_matrix;
+			map_n_ps = n_ps_matrix;
+			map_cb_matrix = cb_matrix;
 
-		mxArray *is_gpu_mx = mxCreateDoubleScalar(1);
-		engPutVariable(ep, "is_gpu", is_gpu_mx);
-		engPutVariable(ep, "h_so_j", h_so_j_mx);
-		engPutVariable(ep, "cost_do", cost_do_mx);
-		engPutVariable(ep, "h_do_i_ps", h_do_i_ps_mx);
-		engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
-		engPutVariable(ep, "total_cost", total_cost_mx);
-		engPutVariable(ep, "cost_colregs", cost_colregs_mx);
-		engPutVariable(ep, "cost_so_path", cost_so_path_mx);
-		engPutVariable(ep, "n_ps", n_ps_mx);
-		engPutVariable(ep, "cb_matrix", cb_matrix_mx);
-		engPutVariable(ep, "n_do", n_do_mx);
-		engPutVariable(ep, "n_so", n_so_mx);
-		engPutVariable(ep, "opt_cb_index", opt_cb_index_mx);
-		engEvalString(ep, "psbmpc_cost_plotting");
+			mxArray *is_gpu_mx = mxCreateDoubleScalar(1);
+			engPutVariable(ep, "is_gpu", is_gpu_mx);
+			engPutVariable(ep, "h_so_j", h_so_j_mx);
+			engPutVariable(ep, "cost_do", cost_do_mx);
+			engPutVariable(ep, "h_do_i_ps", h_do_i_ps_mx);
+			engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
+			engPutVariable(ep, "total_cost", total_cost_mx);
+			engPutVariable(ep, "cost_colregs", cost_colregs_mx);
+			engPutVariable(ep, "cost_so_path", cost_so_path_mx);
+			engPutVariable(ep, "n_ps", n_ps_mx);
+			engPutVariable(ep, "cb_matrix", cb_matrix_mx);
+			engPutVariable(ep, "n_do", n_do_mx);
+			engPutVariable(ep, "n_so", n_so_mx);
+			engPutVariable(ep, "opt_cb_index", opt_cb_index_mx);
+			engEvalString(ep, "psbmpc_cost_plotting");
 
-		mxDestroyArray(is_gpu_mx);
-		mxDestroyArray(total_cost_mx);
-		mxDestroyArray(cost_do_mx);
-		mxDestroyArray(cost_colregs_mx);
-		mxDestroyArray(h_do_i_ps_mx);
-		mxDestroyArray(h_so_j_mx);
-		mxDestroyArray(cost_so_path_mx);
-		mxDestroyArray(n_ps_mx);
-		mxDestroyArray(cb_matrix_mx);
-		mxDestroyArray(n_do_mx);
-		mxDestroyArray(n_so_mx);
-		mxDestroyArray(opt_cb_index_mx);
+			mxDestroyArray(is_gpu_mx);
+			mxDestroyArray(total_cost_mx);
+			mxDestroyArray(cost_do_mx);
+			mxDestroyArray(cost_colregs_mx);
+			mxDestroyArray(h_do_i_ps_mx);
+			mxDestroyArray(h_so_j_mx);
+			mxDestroyArray(cost_so_path_mx);
+			mxDestroyArray(n_ps_mx);
+			mxDestroyArray(cb_matrix_mx);
+			mxDestroyArray(n_do_mx);
+			mxDestroyArray(n_so_mx);
+			mxDestroyArray(opt_cb_index_mx);
 
-		engClose(ep); */
+			engClose(ep); */
 #endif
 			//==================================================================
 		}

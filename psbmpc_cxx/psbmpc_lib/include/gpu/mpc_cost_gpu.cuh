@@ -40,14 +40,13 @@ namespace PSBMPC_LIB
 			//==============================================
 			// Pre-allocated temporaries
 			//==============================================
-			float cost_cd, cost_ch, delta_t, max_cost_g, cost_g, ahcr;
+			float cost_cd, cost_ch, delta_t, h_so_j, h_so_j_k;
 
 			// Dynamic obstacle cost related (do cost)
-			float cost_k, cost_do, R, cost_coll, l_i;
+			float cost_k, cost_do, cost_coll, l_i;
 
-			TML::Vector2f v_0_p, v_i_p, L_0i_p;
-			float chi_m, psi_0_p, psi_i_p, d_0i_p;
-			bool mu_GW, mu_SO, trans;
+			TML::Vector2f v_0_p, v_i_p;
+			bool mu_GW, mu_SO;
 
 			// Grounding hazard related
 			TML::Vector2f v_diff, n, L_0j, d2poly, d2line, p_os_k, projection;
@@ -103,21 +102,13 @@ namespace PSBMPC_LIB
 				const TML::PDVector4f &xs_p,
 				const TML::PDVector4f &xs_i_p,
 				const int i,
-				const float ownship_length,
 				const int k);
 
 			__host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const { return pars.K_coll * (powf(v_1(0) - v_2(0), 2) + powf(v_1(1) - v_2(1), 2)); }
 
-			__host__ __device__ float calculate_ad_hoc_collision_risk(const float d_AB, const float t);
-
 			__host__ __device__ float calculate_control_deviation_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const float u_opt_last, const float chi_opt_last);
 
 			__host__ __device__ float calculate_chattering_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times);
-
-			__host__ __device__ float calculate_grounding_cost(
-				const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
-				const CB_Functor_Data *fdata,
-				const Basic_Polygon *polygons);
 
 			__host__ __device__ float calculate_grounding_cost(
 				const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
@@ -140,7 +131,6 @@ namespace PSBMPC_LIB
 			const TML::PDVector4f &xs_p,	// In: Predicted own-ship state at time step k
 			const TML::PDVector4f &xs_i_p,	// In: Predicted obstacle state at time step k in prediction scenario ps
 			const int i,					// In: Index of obstacle in consideration
-			const float ownship_length,		// In: Length of the own-ship
 			const int k						// In: Prediction time index
 		)
 		{
@@ -152,16 +142,6 @@ namespace PSBMPC_LIB
 
 			v_0_p(0) = xs_p(3) * cos(xs_p(2));
 			v_0_p(1) = xs_p(3) * sin(xs_p(2));
-			psi_0_p = xs_p(2);
-
-			L_0i_p = xs_i_p.get_block<2, 1>(0, 0, 2, 1) - xs_p.get_block<2, 1>(0, 0, 2, 1);
-			d_0i_p = L_0i_p.norm();
-
-			// Decrease the distance between the vessels by their respective max dimension
-			d_0i_p = fabsf(d_0i_p - 0.5 * (ownship_length + obstacles[i].get_length()));
-
-			L_0i_p.normalize();
-
 			v_i_p(0) = xs_i_p(2);
 			v_i_p(1) = xs_i_p(3);
 
@@ -252,46 +232,6 @@ namespace PSBMPC_LIB
 			return cost_ch / (float)(pars.n_M - 1);
 		}
 
-		/****************************************************************************************
-		*  Name     : calculate_grounding_cost
-		*  Function : Determines penalty due to grounding ownship on static obstacles
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
-		template <typename Parameters>
-		__host__ __device__ float MPC_Cost<Parameters>::calculate_grounding_cost(
-			const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, // In: Calling Own-ship trajectory
-			const CB_Functor_Data *fdata,							  // In: Pointer to various device data needed for the GPU calculations
-			const Basic_Polygon *polygons							  // In: Pointer to static obstacles to compute grounding cost wrt
-		)
-		{
-			max_cost_g = 0.0f;
-
-			n_samples = trajectory.get_cols();
-			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
-			{
-				cost_g = 0.0f;
-				p_os_k = trajectory.get_block<2, 1>(0, k, 2, 1);
-				for (int j = 0; j < fdata->n_so; j++)
-				{
-					L_0j = distance_to_polygon(p_os_k, polygons[j]);
-					d_0j = L_0j.norm();
-					L_0j.normalize();
-
-					phi_j = fmaxf(0.0f, L_0j.dot(fdata->wind_direction));
-
-					cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-(pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * (float)k * pars.dt));
-
-					//printf("t = %.4f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
-				}
-				if (max_cost_g < cost_g)
-				{
-					max_cost_g = cost_g;
-				}
-			}
-			return max_cost_g;
-		}
-
 		template <typename Parameters>
 		__host__ __device__ float MPC_Cost<Parameters>::calculate_grounding_cost(
 			const TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory, // In: Calling Own-ship trajectory
@@ -299,8 +239,8 @@ namespace PSBMPC_LIB
 			const Basic_Polygon &poly								  // In: Static obstacle to compute grounding cost wrt
 		)
 		{
-			max_cost_g = 0.0f;
-			cost_g = 0.0f;
+			h_so_j = 0.0f;
+			h_so_j_k = 0.0f;
 
 			n_samples = trajectory.get_cols();
 			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
@@ -315,22 +255,22 @@ namespace PSBMPC_LIB
 
 				if (d_0j >= pars.d_safe)
 				{
-					cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-(pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * (float)k * pars.dt));
+					h_so_j_k = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-(pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * (float)k * pars.dt));
 				}
 				else
 				{
-					cost_g = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-pars.G_4 * (float)k * pars.dt);
+					h_so_j_k = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-pars.G_4 * (float)k * pars.dt);
 				}
 
-				if (max_cost_g < cost_g)
+				if (h_so_j < h_so_j_k)
 				{
-					max_cost_g = cost_g;
+					h_so_j = h_so_j_k;
 				}
 				/* if (k == 0)
-					printf("t = %.1f | d_0j = %.6f | cost_g = %.1f | max_cost_g = %.1f \n",
-						   k * pars.dt, d_0j, cost_g, max_cost_g); */
+					printf("t = %.1f | d_0j = %.6f | h_so_j_k = %.1f | h_so_j = %.1f \n",
+						   k * pars.dt, d_0j, h_so_j_k, h_so_j); */
 			}
-			return max_cost_g;
+			return h_so_j;
 		}
 
 		/****************************************************************************************

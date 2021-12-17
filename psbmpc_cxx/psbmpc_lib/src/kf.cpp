@@ -210,10 +210,8 @@ namespace PSBMPC_LIB
 		t += dt; // Time used for fault detection (measurement loss)
 	}
 
-	// Use this update function when the KF is used as a tracking system outside the COLAV algorithm
-	// where typically only position measurements of vessels are used.
 	void KF::update(
-		const Eigen::Vector2d &y_m, // In: Measurement of cartesian position
+		const Eigen::Vector2d &y_m, // In: Measurement of NED position (x, y)
 		const double dt,			// In: Sampling interval
 		const bool dead_reckon		// In: Boolean flag to determine whether to use measurements or not
 	)
@@ -221,9 +219,39 @@ namespace PSBMPC_LIB
 		if (!initialized)
 			throw std::runtime_error("Filter is not initialized!");
 
+		assert(C.rows() == 2);
 		if (!dead_reckon)
 		{
 			Eigen::Matrix<double, 4, 2> K;
+			K = P_p * C.transpose() * (C * P_p * C.transpose() + R.block<2, 2>(0, 0)).inverse();
+
+			xs_upd = xs_p + K * (y_m - C * xs_p);
+
+			P_upd = (I - K * C) * P_p;
+		}
+		else
+		{
+			xs_upd = xs_p;
+
+			P_upd = P_p;
+		}
+
+		t += dt;
+	}
+
+	void KF::update(
+		const Eigen::Vector4d &y_m, // In: Measurement of NED position and velocity (x, y, Vx, Vy)
+		const double dt,			// In: Sampling interval
+		const bool dead_reckon		// In: Boolean flag to determine whether to use measurements or not
+	)
+	{
+		if (!initialized)
+			throw std::runtime_error("Filter is not initialized!");
+
+		assert(C.rows() == 4);
+		if (!dead_reckon)
+		{
+			Eigen::Matrix4d K;
 			K = P_p * C.transpose() * (C * P_p * C.transpose() + R.block<2, 2>(0, 0)).inverse();
 
 			xs_upd = xs_p + K * (y_m - C * xs_p);
