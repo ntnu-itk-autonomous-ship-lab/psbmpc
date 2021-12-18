@@ -243,13 +243,10 @@ namespace PSBMPC_LIB
 							 pars->kappa_SO * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_SO_violation(d_0i_0);
 
 			//==================================================================================================
-			/* if (i == 0)
-			{
-				printf("i = %d | ps = %d | h_colregs_i_ps = %.1f | p_UCHI_chngd = %d | p_CHI_chng_port = %d | act_UCHI_chngd = %d | act_UCHI_chng_port = %d | crct_HO_man = %d | COLREGS_Sit = %d |  cb : %.1f, %.1f\n", i, ps, h_colregs_i_ps,
-					   colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_speed_or_course, colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_course_to_port,
-					   colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_speed_or_course_change, colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_course_change_port,
-					   colregs_violation_evaluators[os_do_ps_pair_index].correct_HO_maneuver, colregs_violation_evaluators[os_do_ps_pair_index].colregs_situation, offset_sequence(0), RAD2DEG * offset_sequence(1));
-			} */
+			/* printf("i = %d | ps = %d | h_do_i_ps : %.2f| h_colregs_i_ps = %.0f | p_UCHI_chngd = %d | p_CHI_chng_port = %d | act_UCHI_chngd = %d | act_UCHI_chng_port = %d | crct_HO_man = %d | COLREGS_Sit = %d |  cb : %.1f, %.1f\n", i, ps, h_do_i_ps, h_colregs_i_ps,
+				   colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_speed_or_course, colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_course_to_port,
+				   colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_speed_or_course_change, colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_course_change_port,
+				   colregs_violation_evaluators[os_do_ps_pair_index].correct_HO_maneuver, offset_sequence(0), RAD2DEG * offset_sequence(1)); */
 
 			//			printf("Thread %d | i = %d | ps = %d | cb index %d | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
 
