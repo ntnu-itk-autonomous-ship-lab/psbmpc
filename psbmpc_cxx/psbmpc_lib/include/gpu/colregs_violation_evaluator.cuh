@@ -214,6 +214,9 @@ namespace PSBMPC_LIB
                 const float U    // In: Own-ship speed at the current predicted time k
             )
             {
+                if (!initialized)
+                    return;
+
                 if (!predicted_ownship_change_in_speed_or_course)
                     predicted_ownship_change_in_speed_or_course = fabs(wrap_angle_to_pmpi(chi - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change || fabs(U - initial_ownship_state(SOG)) > pars.max_acceptable_SO_speed_change;
 

@@ -79,6 +79,15 @@ namespace PSBMPC_LIB
 			void update_guidance_references(
 				double &u_d,
 				double &chi_d,
+				double &cross_track_error,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Eigen::Vector4d &xs,
+				const double dt,
+				const Guidance_Method guidance_method);
+
+			void update_guidance_references(
+				double &u_d,
+				double &chi_d,
 				const double e_m,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::Vector4d &xs,
@@ -93,6 +102,19 @@ namespace PSBMPC_LIB
 
 			void predict_trajectory(
 				Eigen::MatrixXd &trajectory,
+				const Eigen::VectorXd &offset_sequence,
+				const Eigen::VectorXd &maneuver_times,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const double T,
+				const double dt);
+
+			void predict_trajectory(
+				Eigen::MatrixXd &trajectory,
+				double &max_cross_track_error,
 				const Eigen::VectorXd &offset_sequence,
 				const Eigen::VectorXd &maneuver_times,
 				const double u_d,

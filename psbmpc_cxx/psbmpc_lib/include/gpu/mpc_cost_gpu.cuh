@@ -24,6 +24,7 @@
 #include "colregs_violation_evaluator.cuh"
 #include "cb_cost_functor_structures.cuh"
 #include "cuda_obstacle.cuh"
+#include "utilities_gpu.cuh"
 #include "tml/tml.cuh"
 #include <thrust/device_vector.h>
 
@@ -57,26 +58,6 @@ namespace PSBMPC_LIB
 			int n_samples, o_11, o_12, o_1, o_2, o_3, o_4, line_intersect_count;
 
 			TML::Vector3f a, b;
-			//==============================================
-			//==============================================
-
-			__host__ __device__ inline float Delta_u(const float u_1, const float u_2) const { return pars.K_du * fabs(u_1 - u_2); }
-
-			__host__ __device__ inline float Delta_chi(const float chi_1, const float chi_2) const
-			{
-				if (chi_1 > 0)
-					return pars.K_dchi_strb * powf(fabs(chi_1 - chi_2), 2);
-				else
-					return pars.K_dchi_port * powf(fabs(chi_1 - chi_2), 2);
-			}
-
-			__host__ __device__ inline float K_chi(const float chi) const
-			{
-				if (chi > 0)
-					return pars.K_chi_strb * powf(chi, 2);
-				else
-					return pars.K_chi_port * powf(chi, 2);
-			}
 
 		public:
 			__host__ __device__ int find_triplet_orientation(const TML::Vector2d &p, const TML::Vector2d &q, const TML::Vector2d &r);
@@ -106,7 +87,11 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ inline float calculate_collision_cost(const TML::Vector2f &v_1, const TML::Vector2f &v_2) const { return pars.K_coll * (powf(v_1(0) - v_2(0), 2) + powf(v_1(1) - v_2(1), 2)); }
 
-			__host__ __device__ float calculate_control_deviation_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const float u_opt_last, const float chi_opt_last);
+			__host__ __device__ float calculate_control_deviation_cost(
+				const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
+				const float u_opt_last,
+				const float chi_opt_last,
+				const float max_cross_track_error);
 
 			__host__ __device__ float calculate_chattering_cost(const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times);
 
@@ -160,7 +145,7 @@ namespace PSBMPC_LIB
 			// Should discount time when using a prediction scheme where the uncertainty for
 			// each obstacle prediction scenario is bounded by r_ct
 			//cost_do = l_i * cost_coll * P_c_i;
-			cost_do = l_i * cost_coll * P_c_i * exp(-(float)k * pars.dt / pars.T_sgn);
+			cost_do = l_i * cost_coll * P_c_i * exp(-(float)k * pars.dt / pars.T_coll);
 
 			/* printf("k = %d | C = %.4f | P_c_i = %.6f | v_i_p = %.2f, %.2f | psi_0_p = %.2f | v_0_p = %.2f, %.2f | d_0i_p = %.2f | L_0i_p = %.2f, %.2f\n",
 				k, cost_coll, P_c_i, v_i_p(0), v_i_p(1), psi_0_p, v_0_p(0), v_0_p(1), d_0i_p, L_0i_p(0), L_0i_p(1)); */
@@ -177,7 +162,8 @@ namespace PSBMPC_LIB
 		__host__ __device__ float MPC_Cost<Parameters>::calculate_control_deviation_cost(
 			const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, // In: Control behaviour currently followed
 			const float u_opt_last,										 // In: Previous optimal output surge modification
-			const float chi_opt_last									 // In: Previous optimal output course modification
+			const float chi_opt_last,									 // In: Previous optimal output course modification
+			const float max_cross_track_error							 // In: Maximum absolute predicted cross track error when following the current control behaviour
 		)
 		{
 			cost_cd = 0.0f;
@@ -185,19 +171,25 @@ namespace PSBMPC_LIB
 			{
 				if (M == 0)
 				{
-					cost_cd += pars.K_u * (1.0f - offset_sequence[0]) + Delta_u(offset_sequence[0], u_opt_last) +
-							   K_chi(offset_sequence[1]) + Delta_chi(offset_sequence[1], chi_opt_last);
+					cost_cd += pars.K_u * (1.0f - offset_sequence[0]) + pars.K_du * fabs(offset_sequence[0] - u_opt_last) +
+							   pars.K_chi * powf(offset_sequence[1], 2) + pars.K_dchi * powf(wrap_angle_to_pmpi(offset_sequence[1] - chi_opt_last), 2);
 				}
 				else
 				{
-					cost_cd += pars.K_u * (1.0f - offset_sequence[2 * M]) + Delta_u(offset_sequence[2 * M], offset_sequence[2 * M - 2]) +
-							   K_chi(offset_sequence[2 * M + 1]) + Delta_chi(offset_sequence[2 * M + 1], offset_sequence[2 * M - 1]);
+					cost_cd += pars.K_u * (1.0f - offset_sequence[2 * M]) + pars.K_du * fabs(offset_sequence[2 * M] - offset_sequence[2 * M - 2]) +
+							   pars.K_chi * powf(offset_sequence[2 * M + 1], 2) +
+							   pars.K_dchi * powf(wrap_angle_to_pmpi(offset_sequence[2 * M + 1] - offset_sequence[2 * M - 1]), 2);
 				}
 			}
 
 			/* printf("K_u (1 - u_m_0) = %.4f | Delta_u(u_m_0, u_opt_last) = %.4f | K_chi(chi_0) = %.4f | Delta_chi(chi_0, chi_last) = %.4f\n",
 				pars.K_u * (1 - offset_sequence[0]), Delta_u(offset_sequence[0], fdata->u_opt_last), K_chi(offset_sequence[1]), Delta_chi(offset_sequence[1], fdata->chi_opt_last)); */
-			return cost_cd / (float)pars.n_M;
+
+			cost_cd /= (float)pars.n_M;
+
+			cost_cd += pars.K_e * max_cross_track_error;
+
+			return cost_cd;
 		}
 
 		/****************************************************************************************

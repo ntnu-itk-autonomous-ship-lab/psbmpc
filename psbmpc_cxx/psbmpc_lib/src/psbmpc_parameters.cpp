@@ -76,6 +76,8 @@ namespace PSBMPC_LIB
 			return d_so_relevant;
 		case i_dpar_K_coll:
 			return K_coll;
+		case i_dpar_T_coll:
+			return T_coll;
 		case i_dpar_kappa_SO:
 			return kappa_SO;
 		case i_dpar_kappa_GW:
@@ -84,18 +86,12 @@ namespace PSBMPC_LIB
 			return K_u;
 		case i_dpar_K_du:
 			return K_du;
-		case i_dpar_K_chi_strb:
-			return K_chi_strb;
-		case i_dpar_K_dchi_strb:
-			return K_dchi_strb;
-		case i_dpar_K_chi_port:
-			return K_chi_port;
-		case i_dpar_K_dchi_port:
-			return K_dchi_port;
-		case i_dpar_K_sgn:
-			return K_sgn;
-		case i_dpar_T_sgn:
-			return T_sgn;
+		case i_dpar_K_chi:
+			return K_chi;
+		case i_dpar_K_dchi:
+			return K_dchi;
+		case i_dpar_K_e:
+			return K_e;
 		case i_dpar_G_1:
 			return G_1;
 		case i_dpar_G_2:
@@ -205,6 +201,9 @@ namespace PSBMPC_LIB
 			case i_dpar_K_coll:
 				K_coll = value;
 				break;
+			case i_dpar_T_coll:
+				T_coll = value;
+				break;
 			case i_dpar_kappa_SO:
 				kappa_SO = value;
 				break;
@@ -217,23 +216,14 @@ namespace PSBMPC_LIB
 			case i_dpar_K_du:
 				K_du = value;
 				break;
-			case i_dpar_K_chi_strb:
-				K_chi_strb = value;
+			case i_dpar_K_chi:
+				K_chi = value;
 				break;
-			case i_dpar_K_dchi_strb:
-				K_dchi_strb = value;
+			case i_dpar_K_dchi:
+				K_dchi = value;
 				break;
-			case i_dpar_K_chi_port:
-				K_chi_port = value;
-				break;
-			case i_dpar_K_dchi_port:
-				K_dchi_port = value;
-				break;
-			case i_dpar_K_sgn:
-				K_sgn = value;
-				break;
-			case i_dpar_T_sgn:
-				T_sgn = value;
+			case i_dpar_K_e:
+				K_e = value;
 				break;
 			case i_dpar_G_1:
 				G_1 = value;
@@ -337,8 +327,8 @@ namespace PSBMPC_LIB
 		dpar_low[i_dpar_d_safe] = 20.0;
 		dpar_low[i_dpar_d_do_relevant] = d_safe;
 
-		dpar_high[i_dpar_K_dchi_strb] = 3.0;
-		dpar_high[i_dpar_K_dchi_port] = 3.0;
+		dpar_high[i_dpar_K_chi] = 3.0;
+		dpar_high[i_dpar_K_dchi] = 3.0;
 
 		//std::cout << "d_par_low = " << dpar_low.transpose() << std::endl;
 		//std::cout << "d_par_high = " << dpar_high.transpose() << std::endl;
@@ -362,11 +352,11 @@ namespace PSBMPC_LIB
 		{
 			if (M == 0)
 			{
-				u_offsets[M].resize(1);
+				u_offsets[M].resize(3);
 
-				u_offsets[M] << 1.0;
+				//u_offsets[M] << 1.0;
 				//u_offsets[M] << 1.0, 0.5;
-				//u_offsets[M] << 1.0, 0.5, 0.0;
+				u_offsets[M] << 1.0, 0.5, 0.0;
 
 				chi_offsets[M].resize(13);
 				//chi_offsets[M] << 0.0;
@@ -437,16 +427,14 @@ namespace PSBMPC_LIB
 		d_do_relevant = 1000;
 		d_safe = 5;
 		K_coll = 3.0; // 0.2ish for sea traffic, 10.0ish for nidelva
+		T_coll = 4 * t_ts;
 		kappa_SO = 10.0;
 		kappa_GW = 20.0;
 		K_u = 40;
 		K_du = 6;
-		K_chi_strb = 1.3;
-		K_chi_port = 1.6;
-		K_dchi_strb = 0.9;
-		K_dchi_port = 1.2;
-		K_sgn = 8;
-		T_sgn = 4 * t_ts;
+		K_chi = 1.3;
+		K_dchi = 0.9;
+		K_e = 0.01;
 
 		G_1 = 100.0;
 		G_2 = 5.0;
@@ -508,20 +496,16 @@ namespace PSBMPC_LIB
 		d_so_relevant = dpars[i_dpar_d_so_relevant];
 
 		K_coll = dpars[i_dpar_K_coll];
+		T_coll = dpars[i_dpar_T_coll];
 
 		kappa_SO = dpars[i_dpar_kappa_SO];
 		kappa_GW = dpars[i_dpar_kappa_GW];
 
 		K_u = dpars[i_dpar_K_u];
 		K_du = dpars[i_dpar_K_du];
-
-		K_chi_strb = dpars[i_dpar_K_chi_strb];
-		K_dchi_strb = dpars[i_dpar_K_dchi_strb];
-		K_chi_port = dpars[i_dpar_K_chi_port];
-		K_dchi_port = dpars[i_dpar_K_dchi_port];
-
-		K_sgn = dpars[i_dpar_K_sgn];
-		T_sgn = dpars[i_dpar_T_sgn];
+		K_chi = dpars[i_dpar_K_chi];
+		K_dchi = dpars[i_dpar_K_dchi];
+		K_e = dpars[i_dpar_K_e];
 
 		G_1 = dpars[i_dpar_G_1];
 		G_2 = dpars[i_dpar_G_2];

@@ -93,6 +93,15 @@ namespace PSBMPC_LIB
 				const double dt,
 				const Guidance_Method guidance_method);
 
+			void update_guidance_references(
+				double &u_d,
+				double &chi_d,
+				double &cross_track_error,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Eigen::Matrix<double, 6, 1> &xs,
+				const double dt,
+				const Guidance_Method guidance_method);
+
 			inline double get_length() const { return l; }
 
 			inline double get_width() const { return w; }
@@ -154,40 +163,10 @@ namespace PSBMPC_LIB
 				const Guidance_Method guidance_method,
 				const double T,
 				const double dt);
-		};
-
-		// 3DOF milliampere class is NOT finished
-		class MilliAmpere : public Kinetic_Ship_Base_3DOF
-		{
-		private:
-			double l_1, l_2; // distance from CG to front (1) and back (2) thrusters (symmetric here)
-
-			double min_rpm, max_rpm, min_thrust, max_thrust;
-
-			Eigen::Vector2d alpha, omega;
-
-			Eigen::Matrix<double, 5, 1> rpm_to_force_polynomial, force_to_rpm_polynomial;
-
-			void update_alpha();
-
-			void update_omega();
-
-		public:
-			MilliAmpere();
-
-			void update_ctrl_input(const double u_d, const double psi_d, const Eigen::Matrix<double, 6, 1> &xs);
-
-			Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
-
-			Eigen::Matrix<double, 6, 1> predict(
-				const Eigen::Matrix<double, 6, 1> &xs_old,
-				const double u_d,
-				const double chi_d,
-				const double dt,
-				const Prediction_Method prediction_method);
 
 			void predict_trajectory(
 				Eigen::MatrixXd &trajectory,
+				double &max_cross_track_error,
 				const Eigen::VectorXd &offset_sequence,
 				const Eigen::VectorXd &maneuver_times,
 				const double u_d,
@@ -199,11 +178,9 @@ namespace PSBMPC_LIB
 				const double dt);
 		};
 
-// Default ownship type is Kinematic_Ship
+// Default ownship type (0) is Kinematic_Ship
 #if OWNSHIP_TYPE == 1
 		using Ownship = Telemetron;
-#elif OWNSHIP_TYPE == 2
-		using Ownship = MilliAmpere;
 #endif
 	}
 }

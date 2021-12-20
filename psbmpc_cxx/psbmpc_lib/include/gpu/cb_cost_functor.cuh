@@ -9,12 +9,12 @@
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -31,7 +31,8 @@ namespace PSBMPC_LIB
 	{
 		class Cuda_Obstacle;
 		class CPE;
-		template <typename Parameters> class MPC_Cost;
+		template <typename Parameters>
+		class MPC_Cost;
 		class COLREGS_Violation_Evaluator;
 
 		/****************************************************************************************
@@ -43,8 +44,7 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		class CB_Cost_Functor_1
 		{
-		private: 
-
+		private:
 			//==============================================
 			// Members allocated in global device memory
 			//==============================================
@@ -61,40 +61,39 @@ namespace PSBMPC_LIB
 			//==============================================
 			// Pre-allocated temporaries (local to the thread stack)
 			//==============================================
-			float h_path; 
+			float h_path, max_cross_track_error;
 
 			unsigned int cb_index;
 			TML::PDMatrix<float, 2 * MAX_N_M, 1> offset_sequence;
 
-		public: 
-			__host__ CB_Cost_Functor_1() : 
-				pars(nullptr), 
-				fdata(nullptr), 
-				ownship(nullptr), 
-				trajectory(nullptr),
-				mpc_cost(nullptr)
-			{}
+		public:
+			__host__ CB_Cost_Functor_1() : pars(nullptr),
+										   fdata(nullptr),
+										   ownship(nullptr),
+										   trajectory(nullptr),
+										   mpc_cost(nullptr)
+			{
+			}
 
 			__host__ CB_Cost_Functor_1(
-				CB_Functor_Pars *pars, 
-				CB_Functor_Data *fdata, 
+				CB_Functor_Pars *pars,
+				CB_Functor_Data *fdata,
 				Ownship *ownship,
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,
-				MPC_Cost<CB_Functor_Pars> *mpc_cost) :
-				pars(pars), fdata(fdata), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost)
-			{}
+				MPC_Cost<CB_Functor_Pars> *mpc_cost) : pars(pars), fdata(fdata), ownship(ownship), trajectory(trajectory), mpc_cost(mpc_cost)
+			{
+			}
 
-			__host__ __device__ ~CB_Cost_Functor_1() 
-			{ 
-				pars = nullptr; 
-				fdata = nullptr; 
+			__host__ __device__ ~CB_Cost_Functor_1()
+			{
+				pars = nullptr;
+				fdata = nullptr;
 				ownship = nullptr;
-				trajectory = nullptr; 
+				trajectory = nullptr;
 				mpc_cost = nullptr;
 			}
-			
-			__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 
+			__device__ float operator()(const thrust::tuple<const unsigned int, TML::PDMatrix<float, 2 * MAX_N_M, 1>> &cb_tuple);
 		};
 
 		/****************************************************************************************
@@ -106,8 +105,7 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 		class CB_Cost_Functor_2
 		{
-		private: 
-
+		private:
 			//==============================================
 			// Members allocated in global device memory
 			//==============================================
@@ -151,7 +149,7 @@ namespace PSBMPC_LIB
 			// Only keeps n_seg_samples at a time, sliding window. Minimum 2
 			// If cpe_method = MCSKF, then dt_seg must be equal to dt;
 			// If cpe_method = CE, then only the first column in these matrices are used (only the current predicted time is considered)
-			TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_p_seg; 
+			TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_p_seg;
 			TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> xs_i_p_seg;
 			TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> P_i_p_seg;
 
@@ -164,48 +162,48 @@ namespace PSBMPC_LIB
 			float chi_0, U_0, d_0i_0, d_0i, d_cpa;
 			//==============================================
 
-		public: 
-			__host__ CB_Cost_Functor_2() : 
-				pars(nullptr), 
-				fdata(nullptr), 
-				polygons(nullptr),
-				obstacles(nullptr), 
-				cpe(nullptr), 
-				ownship(nullptr), 
-				trajectory(nullptr), 
-				mpc_cost(nullptr),
-				colregs_violation_evaluators(nullptr)
-			{}
+		public:
+			__host__ CB_Cost_Functor_2() : pars(nullptr),
+										   fdata(nullptr),
+										   polygons(nullptr),
+										   obstacles(nullptr),
+										   cpe(nullptr),
+										   ownship(nullptr),
+										   trajectory(nullptr),
+										   mpc_cost(nullptr),
+										   colregs_violation_evaluators(nullptr)
+			{
+			}
 
 			__host__ CB_Cost_Functor_2(
-				CB_Functor_Pars *pars, 
-				CB_Functor_Data *fdata, 
+				CB_Functor_Pars *pars,
+				CB_Functor_Data *fdata,
 				Basic_Polygon *polygons,
-				Cuda_Obstacle *obstacles, 
+				Cuda_Obstacle *obstacles,
 				CPE *cpe,
 				Ownship *ownship,
 				TML::PDMatrix<float, 4, MAX_N_SAMPLES> *trajectory,
 				MPC_Cost<CB_Functor_Pars> *mpc_cost,
-				COLREGS_Violation_Evaluator *colregs_violation_evaluators):
-				pars(pars), fdata(fdata), polygons(polygons), obstacles(obstacles), cpe(cpe), ownship(ownship), 
-				trajectory(trajectory), mpc_cost(mpc_cost), colregs_violation_evaluators(colregs_violation_evaluators)
-				{}
+				COLREGS_Violation_Evaluator *colregs_violation_evaluators) : pars(pars), fdata(fdata), polygons(polygons), obstacles(obstacles), cpe(cpe), ownship(ownship),
+																			 trajectory(trajectory), mpc_cost(mpc_cost), colregs_violation_evaluators(colregs_violation_evaluators)
+			{
+			}
 
-			__host__ __device__ ~CB_Cost_Functor_2() 
-			{ 
-				pars = nullptr; 
-				fdata = nullptr; 
+			__host__ __device__ ~CB_Cost_Functor_2()
+			{
+				pars = nullptr;
+				fdata = nullptr;
 				polygons = nullptr;
-				obstacles = nullptr; 
-				cpe = nullptr; 
+				obstacles = nullptr;
+				cpe = nullptr;
 				ownship = nullptr;
-				trajectory = nullptr; 
+				trajectory = nullptr;
 				mpc_cost = nullptr;
 				colregs_violation_evaluators = nullptr;
 			}
 
 			__device__ thrust::tuple<float, float, float> operator()(
-				const thrust::tuple<const int, TML::PDMatrix<float, 2 * MAX_N_M, 1>, const int, const int, const int, const int, const int>  &input_tuple);
+				const thrust::tuple<const int, TML::PDMatrix<float, 2 * MAX_N_M, 1>, const int, const int, const int, const int, const int> &input_tuple);
 		};
 	}
 }

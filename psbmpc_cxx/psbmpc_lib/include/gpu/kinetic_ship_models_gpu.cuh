@@ -81,7 +81,7 @@ namespace PSBMPC_LIB
 			//===================================
 			// Pre-allocated temporaries
 			int n_samples, n_wps, man_count;
-			float u_m, u_d_p, chi_m, chi_d_p, alpha, e;
+			float u_m, u_d_p, chi_m, chi_d_p, alpha, e, e_k;
 
 			TML::Vector2f d_next_wp, L_wp_segment, v_p;
 			bool segment_passed, inside_wp_R_a;
@@ -93,14 +93,17 @@ namespace PSBMPC_LIB
 			//===================================
 
 			// Calculates the offsets according to the position of the GPS receiver
-			__host__ __device__ inline void calculate_position_offsets() { x_offset = A - B; y_offset = D - C; };
+			__host__ __device__ inline void calculate_position_offsets()
+			{
+				x_offset = A - B;
+				y_offset = D - C;
+			};
 
 			__host__ __device__ void update_Cvv(const TML::Vector3f &nu);
 
 			__host__ __device__ void update_Dvv(const TML::Vector3f &nu);
 
 		public:
-
 			__host__ __device__ Kinetic_Ship_Base_3DOF();
 
 			__host__ void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Matrix<double, 6, 1> &xs);
@@ -110,6 +113,15 @@ namespace PSBMPC_LIB
 			__host__ __device__ void update_guidance_references(
 				float &u_d,
 				float &chi_d,
+				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
+				const TML::Vector6f &xs,
+				const float dt,
+				const Guidance_Method guidance_method);
+
+			__host__ __device__ void update_guidance_references(
+				float &u_d,
+				float &chi_d,
+				float &cross_track_error,
 				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
 				const TML::Vector6f &xs,
 				const float dt,
@@ -129,14 +141,17 @@ namespace PSBMPC_LIB
 
 			__host__ Eigen::Matrix<double, 6, 1> predict(const Eigen::Matrix<double, 6, 1> &xs_old, const double dt, const Prediction_Method prediction_method);
 
-			__host__ __device__ inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; this->wp_c_p = wp_c_0; }
+			__host__ __device__ inline void set_wp_counter(const int wp_c_0)
+			{
+				this->wp_c_0 = wp_c_0;
+				this->wp_c_p = wp_c_0;
+			}
 
 			__host__ __device__ inline int get_wp_counter() const { return wp_c_0; }
 
 			__host__ __device__ inline float get_length() const { return l; }
 
 			__host__ __device__ inline float get_width() const { return w; }
-
 		};
 
 		class Telemetron : public Kinetic_Ship_Base_3DOF
@@ -151,7 +166,7 @@ namespace PSBMPC_LIB
 
 			float r_max;
 
-            //Force limits
+			//Force limits
 			float Fx_min, Fx_max, Fy_min, Fy_max;
 
 		public:
@@ -186,6 +201,20 @@ namespace PSBMPC_LIB
 				const float T,
 				const float dt);
 
+			__host__ __device__ void predict_trajectory(
+				TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
+				float &max_cross_track_error,
+				const TML::PDVector6f &ownship_state,
+				const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
+				const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
+				const float u_d,
+				const float chi_d,
+				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const float T,
+				const float dt);
+
 			__host__ void predict_trajectory(
 				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
@@ -199,9 +228,9 @@ namespace PSBMPC_LIB
 				const double dt);
 		};
 
-		// Default ownship type is Kinematic_Ship
-		#if OWNSHIP_TYPE == 1
-			using Ownship = Telemetron;
-		#endif
+// Default ownship type is Kinematic_Ship
+#if OWNSHIP_TYPE == 1
+		using Ownship = Telemetron;
+#endif
 	}
 }

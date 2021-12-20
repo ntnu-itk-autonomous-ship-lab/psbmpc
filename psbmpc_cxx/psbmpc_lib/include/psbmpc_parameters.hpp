@@ -138,12 +138,11 @@ namespace PSBMPC_LIB
 		double T, dt;
 		double t_ts;
 		double d_safe, d_do_relevant, d_so_relevant;
-		double K_coll;
+		double K_coll, T_coll;
 		double kappa_SO, kappa_GW;
 		double K_u, K_du;
-		double K_chi_strb, K_dchi_strb;
-		double K_chi_port, K_dchi_port;
-		double K_sgn, T_sgn;
+		double K_chi, K_dchi;
+		double K_e;
 		double G_1, G_2, G_3, G_4;
 		double epsilon_rdp;
 

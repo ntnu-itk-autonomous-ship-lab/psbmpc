@@ -104,12 +104,11 @@ namespace PSBMPC_LIB
 
 			float T, dt;
 			float d_safe;
-			float K_coll;
+			float K_coll, T_coll;
 			float kappa_SO, kappa_GW;
 			float K_u, K_du;
-			float K_chi_strb, K_dchi_strb;
-			float K_chi_port, K_dchi_port;
-			float K_sgn, T_sgn;
+			float K_chi, K_dchi;
+			float K_e;
 			float G_1, G_2, G_3, G_4;
 
 			__host__ __device__ CB_Functor_Pars() {}
@@ -133,6 +132,7 @@ namespace PSBMPC_LIB
 				this->d_safe = pars.d_safe;
 
 				this->K_coll = pars.K_coll;
+				this->T_coll = pars.T_coll;
 
 				this->kappa_SO = pars.kappa_SO;
 				this->kappa_GW = pars.kappa_GW;
@@ -140,14 +140,10 @@ namespace PSBMPC_LIB
 				this->K_u = pars.K_u;
 				this->K_du = pars.K_du;
 
-				this->K_chi_strb = pars.K_chi_strb;
-				this->K_dchi_strb = pars.K_dchi_strb;
+				this->K_chi = pars.K_chi;
+				this->K_dchi = pars.K_dchi;
 
-				this->K_chi_port = pars.K_chi_port;
-				this->K_dchi_port = pars.K_dchi_port;
-
-				this->K_sgn = pars.K_sgn;
-				this->T_sgn = pars.T_sgn;
+				this->K_e = pars.K_e;
 
 				this->G_1 = pars.G_1;
 				this->G_2 = pars.G_2;

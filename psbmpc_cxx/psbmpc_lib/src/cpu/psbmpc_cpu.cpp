@@ -160,7 +160,7 @@ namespace PSBMPC_LIB
 					n_ps_max = n_ps[i];
 				}
 			}
-			mxArray *dt_sim, *T_sim, *k_s, *n_ps_mx, *n_do_mx, *n_so_mx, *i_mx, *ps_mx, *d_safe_mx, *n_patches_mx;
+			mxArray *dt_sim, *T_sim, *k_s(nullptr), *n_ps_mx, *n_do_mx, *n_so_mx, *i_mx, *ps_mx, *d_safe_mx, *n_patches_mx;
 			dt_sim = mxCreateDoubleScalar(pars.dt);
 			T_sim = mxCreateDoubleScalar(pars.T);
 			n_ps_mx = mxCreateDoubleScalar(n_ps_max);
@@ -226,7 +226,7 @@ namespace PSBMPC_LIB
 
 			double *p_traj_i = mxGetPr(traj_i);
 			double *p_P_traj_i = mxGetPr(P_traj_i);
-			double *p_P_c_i;
+			double *p_P_c_i = nullptr;
 
 			Eigen::Map<Eigen::MatrixXd> map_traj_i(p_traj_i, 4, n_samples);
 			Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
@@ -316,7 +316,7 @@ namespace PSBMPC_LIB
 			}
 #endif
 
-			double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0);
+			double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0), max_cross_track_error(0.0);
 			Eigen::VectorXd h_do_i_ps, h_so_j;
 			Eigen::VectorXd cost_do(n_do);
 			Eigen::MatrixXd P_c_i;
@@ -343,6 +343,7 @@ namespace PSBMPC_LIB
 
 				ownship.predict_trajectory(
 					trajectory,
+					max_cross_track_error,
 					offset_sequence,
 					maneuver_times,
 					u_d, chi_d,
@@ -405,8 +406,7 @@ namespace PSBMPC_LIB
 				h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
 #endif
 
-				h_path += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
-				h_path += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
+				h_path += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last, max_cross_track_error);
 
 				cost = h_do + h_colregs + h_so + h_path;
 

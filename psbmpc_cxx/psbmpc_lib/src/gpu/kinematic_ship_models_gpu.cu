@@ -219,6 +219,84 @@ namespace PSBMPC_LIB
 			}
 		}
 
+		__host__ __device__ void Kinematic_Ship::update_guidance_references(
+			float &u_d,											 // In/out: Surge reference
+			float &chi_d,										 // In/out: Course reference
+			float &cross_track_error,							 // In/out: Cross track error
+			const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, // In: Waypoints to follow.
+			const TML::Vector4f &xs,							 // In: Ownship state
+			const float dt,										 // In: Time step
+			const Guidance_Method guidance_method				 // In: Type of guidance used
+		)
+		{
+			n_wps = waypoints.get_cols();
+			alpha = 0.0f;
+			e = 0.0f;
+			segment_passed = false;
+			inside_wp_R_a = false;
+
+			if (guidance_method == LOS || guidance_method == WPP)
+			{
+				// Determine if a switch must be made to the next waypoint segment, for LOS and WPP
+				if (wp_c_p == n_wps - 1)
+				{
+					d_next_wp(0) = waypoints(0, wp_c_p) - xs(0);
+					d_next_wp(1) = waypoints(1, wp_c_p) - xs(1);
+					L_wp_segment(0) = waypoints(0, wp_c_p) - waypoints(0, wp_c_p - 1);
+					L_wp_segment(1) = waypoints(1, wp_c_p) - waypoints(1, wp_c_p - 1);
+				}
+				else
+				{
+					d_next_wp(0) = waypoints(0, wp_c_p + 1) - xs(0);
+					d_next_wp(1) = waypoints(1, wp_c_p + 1) - xs(1);
+					L_wp_segment(0) = waypoints(0, wp_c_p + 1) - waypoints(0, wp_c_p);
+					L_wp_segment(1) = waypoints(1, wp_c_p + 1) - waypoints(1, wp_c_p);
+				}
+				L_wp_segment = L_wp_segment.normalized();
+
+				segment_passed = L_wp_segment.dot(d_next_wp.normalized()) < cos(90 * DEG2RAD);
+
+				inside_wp_R_a = d_next_wp.norm() <= R_a;
+
+				if (inside_wp_R_a || segment_passed)
+				{
+					e_int = 0;
+					if (wp_c_p < n_wps - 1)
+					{
+						wp_c_p++;
+					}
+				}
+			}
+
+			// After last waypoint is reached the own-ship stops
+			if (wp_c_p == n_wps - 1 && inside_wp_R_a)
+			{
+				u_d = 0.0;
+			}
+
+			switch (guidance_method)
+			{
+			case LOS:
+				alpha = atan2(L_wp_segment(1), L_wp_segment(0));
+				e = -(xs(0) - waypoints(0, wp_c_p)) * sin(alpha) + (xs(1) - waypoints(1, wp_c_p)) * cos(alpha);
+				e_int += e * dt;
+				if (e_int >= e_int_max)
+					e_int -= e * dt;
+				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
+				break;
+			case WPP:
+				chi_d = atan2(d_next_wp(1), d_next_wp(0));
+				break;
+			case CH:
+				chi_d = xs(2);
+				break;
+			default:
+				// Throw
+				break;
+			}
+			cross_track_error = e;
+		}
+
 		__host__ void Kinematic_Ship::update_guidance_references(
 			double &u_d,								   // In/out: Surge reference
 			double &chi_d,								   // In/out: Course reference
@@ -409,6 +487,72 @@ namespace PSBMPC_LIB
 
 				if (k < n_samples - 1)
 					trajectory.set_col(k + 1, xs_p);
+			}
+		}
+
+		__host__ __device__ void Kinematic_Ship::predict_trajectory(
+			TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,			 // In/out: Ship trajectory
+			float &max_cross_track_error,								 // In/out: Maximum absolute value of predicted cross track error, if LOS guidance is used
+			const TML::PDVector6f &ship_state,							 // In: Initial ship state potentially a 6-dimensional state vector [x, y, psi, u, v, r]^T is used by the caller (CB_Cost_Functor_1)
+			const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, // In: Sequence of offsets in the candidate control behavior
+			const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,		 // In: Time indices for each Obstacle_Model avoidance maneuver
+			const float u_d,											 // In: Surge reference
+			const float chi_d,											 // In: Course reference
+			const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,		 // In: Obstacle waypoints
+			const Prediction_Method prediction_method,					 // In: Type of prediction method to be used, typically an explicit method
+			const Guidance_Method guidance_method,						 // In: Type of guidance to be used
+			const float T,												 // In: Prediction horizon
+			const float dt												 // In: Prediction time step
+		)
+		{
+			n_samples = T / dt;
+
+			trajectory.resize(4, n_samples); // conserves existing values inside 4 x n_samples by default
+
+			wp_c_p = wp_c_0;
+
+			man_count = 0;
+			u_m = 1.0f, u_d_p = u_d;
+			chi_m = 0.0f, chi_d_p = chi_d;
+			e_k = 0.0f;
+			xs_p(0) = ship_state(0);
+			xs_p(1) = ship_state(1);
+
+			if (ship_state.get_rows() == 4)
+			{
+				chi_p = ship_state(2);
+				U_p = ship_state(3);
+			}
+			else
+			{
+				chi_p = ship_state(2);
+				U_p = ship_state.get_block<2, 1>(3, 0, 2, 1).norm();
+			}
+			xs_p(2) = chi_p;
+			xs_p(3) = U_p;
+			trajectory.set_col(0, xs_p);
+
+			for (int k = 0; k < n_samples; k++)
+			{
+				if (k == maneuver_times[man_count])
+				{
+					u_m = offset_sequence[2 * man_count];
+					chi_m += offset_sequence[2 * man_count + 1];
+					if (man_count < (int)maneuver_times.size() - 1)
+						man_count += 1;
+				}
+
+				update_guidance_references(u_d_p, chi_d_p, e_k, waypoints, xs_p, dt, guidance_method);
+
+				xs_p = predict(xs_p, u_m * u_d_p, chi_d_p + chi_m, dt, prediction_method);
+
+				if (k < n_samples - 1)
+					trajectory.set_col(k + 1, xs_p);
+
+				if (max_cross_track_error < fabs(e_k))
+				{
+					max_cross_track_error = fabs(e_k);
+				}
 			}
 		}
 

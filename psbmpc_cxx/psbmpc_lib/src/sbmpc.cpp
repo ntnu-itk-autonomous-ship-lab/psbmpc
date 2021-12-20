@@ -144,8 +144,6 @@ namespace PSBMPC_LIB
 
 			cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
 
-			cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
-
 			if (cost < min_cost)
 			{
 				min_cost = cost;
@@ -261,8 +259,6 @@ namespace PSBMPC_LIB
 			cost += mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
 
 			cost += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last);
-
-			cost += mpc_cost.calculate_chattering_cost(offset_sequence, maneuver_times);
 
 			if (cost < min_cost)
 			{

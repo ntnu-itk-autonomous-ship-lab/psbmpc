@@ -52,7 +52,7 @@ namespace PSBMPC_LIB
 			//===================================
 			// Pre-allocated temporaries
 			int n_samples, n_wps, man_count;
-			float u_m, u_d_p, chi_m, chi_d_p, chi_p, U_p, alpha, e;
+			float u_m, u_d_p, chi_m, chi_d_p, chi_p, U_p, alpha, e, e_k;
 
 			TML::Vector2f d_next_wp, L_wp_segment;
 			bool segment_passed, inside_wp_R_a;
@@ -63,16 +63,19 @@ namespace PSBMPC_LIB
 			//===================================
 
 		public:
-
 			__host__ __device__ Kinematic_Ship();
 
-			__host__ __device__ Kinematic_Ship(const float l, const float w, const float T_U, const float  T_chi, const float R_a, const float LOS_LD, const float LOS_K_i);
+			__host__ __device__ Kinematic_Ship(const float l, const float w, const float T_U, const float T_chi, const float R_a, const float LOS_LD, const float LOS_K_i);
 
 			__host__ __device__ float get_length() const { return l; }
 
 			__host__ __device__ float get_width() const { return w; }
 
-			__host__ __device__ inline void set_wp_counter(const int wp_c_0) { this->wp_c_0 = wp_c_0; this->wp_c_p = wp_c_0; }
+			__host__ __device__ inline void set_wp_counter(const int wp_c_0)
+			{
+				this->wp_c_0 = wp_c_0;
+				this->wp_c_p = wp_c_0;
+			}
 
 			__host__ __device__ inline int get_wp_counter() const { return wp_c_0; }
 
@@ -85,6 +88,15 @@ namespace PSBMPC_LIB
 			__host__ __device__ void update_guidance_references(
 				float &u_d,
 				float &chi_d,
+				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
+				const TML::Vector4f &xs,
+				const float dt,
+				const Guidance_Method guidance_method);
+
+			__host__ __device__ void update_guidance_references(
+				float &u_d,
+				float &chi_d,
+				float &cross_track_error,
 				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
 				const TML::Vector4f &xs,
 				const float dt,
@@ -137,6 +149,20 @@ namespace PSBMPC_LIB
 				const float T,
 				const float dt);
 
+			__host__ __device__ void predict_trajectory(
+				TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,
+				float &max_cross_track_error,
+				const TML::PDVector6f &ship_state,
+				const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence,
+				const TML::PDMatrix<float, MAX_N_M, 1> &maneuver_times,
+				const float u_d,
+				const float chi_d,
+				const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const float T,
+				const float dt);
+
 			__host__ void predict_trajectory(
 				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
@@ -150,10 +176,10 @@ namespace PSBMPC_LIB
 				const double dt);
 		};
 
-		// The default ownship is the simple kinematic_ship class
-		#if OWNSHIP_TYPE == 0
-			using Ownship = Kinematic_Ship;
-		#endif
+// The default ownship is the simple kinematic_ship class
+#if OWNSHIP_TYPE == 0
+		using Ownship = Kinematic_Ship;
+#endif
 
 		// The default obstacle ship is the Kinematic_Ship class
 		using Obstacle_Ship = Kinematic_Ship;

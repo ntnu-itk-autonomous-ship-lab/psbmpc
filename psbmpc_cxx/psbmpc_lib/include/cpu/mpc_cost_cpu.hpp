@@ -66,6 +66,7 @@ namespace PSBMPC_LIB
 
 			inline double Delta_u(const double u_1, const double u_2) const { return pars.K_du * fabs(u_1 - u_2); }
 
+			// SBMPC delta chi funcs in path deviation cost
 			inline double K_chi(const double chi) const
 			{
 				if (chi > 0)
@@ -77,10 +78,11 @@ namespace PSBMPC_LIB
 			inline double Delta_chi(const double chi_1, const double chi_2) const
 			{
 				if (chi_1 > 0)
-					return pars.K_dchi_strb * pow(fabs(chi_1 - chi_2), 2);
+					return pars.K_dchi_strb * pow(wrap_angle_to_pmpi(chi_1 - chi_2), 2);
 				else
-					return pars.K_dchi_port * pow(fabs(chi_1 - chi_2), 2);
+					return pars.K_dchi_port * pow(wrap_angle_to_pmpi(chi_1 - chi_2), 2);
 			}
+			//
 
 			int find_triplet_orientation(const Eigen::Vector2d &p, const Eigen::Vector2d &q, const Eigen::Vector2d &r) const;
 
@@ -163,9 +165,16 @@ namespace PSBMPC_LIB
 
 			double calculate_ad_hoc_collision_risk(const double d_AB, const double t) const;
 
-			double calculate_control_deviation_cost(const Eigen::VectorXd &offset_sequence, const double u_m_last, const double chi_m_last) const;
+			double calculate_control_deviation_cost(
+				const Eigen::VectorXd &offset_sequence,
+				const double u_m_last,
+				const double chi_m_last) const;
 
-			double calculate_chattering_cost(const Eigen::VectorXd &offset_sequence, const Eigen::VectorXd &maneuver_times) const;
+			double calculate_control_deviation_cost(
+				const Eigen::VectorXd &offset_sequence,
+				const double u_m_last,
+				const double chi_m_last,
+				const double max_cross_track_error) const;
 
 			double calculate_grounding_cost(const Eigen::MatrixXd &trajectory, const Eigen::Matrix<double, 4, -1> &static_obstacles, const double ownship_length) const;
 			double calculate_grounding_cost(
@@ -473,7 +482,7 @@ namespace PSBMPC_LIB
 
 					// Should discount time when using a prediction scheme where the uncertainty for
 					// each obstacle prediction scenario is bounded by r_ct
-					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(-(float)k * pars.dt / pars.T_sgn);
+					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(-(double)k * pars.dt / pars.T_coll);
 
 					// Maximize wrt time
 					if (cost_ps > h_do_i_ps(ps))
@@ -568,7 +577,7 @@ namespace PSBMPC_LIB
 
 					// Should discount time when using a prediction scheme where the uncertainty for
 					// each obstacle prediction scenario is bounded by r_ct
-					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(-(float)k * pars.dt / pars.T_sgn);
+					cost_ps = l_i * cost_coll * P_c_i(ps, k) * exp(-(double)k * pars.dt / pars.T_coll);
 
 					// Maximize wrt time
 					if (cost_ps > h_do_i_ps(ps))
@@ -744,43 +753,42 @@ namespace PSBMPC_LIB
 			/* printf("K_u (1 - u_m_0) = %.4f | Delta_u(u_m_0, u_m_last) = %.4f | K_chi(chi_0) = %.4f | Delta_chi(chi_0, chi_last) = %.4f\n",
 				pars.K_u * (1 - offset_sequence[0]), Delta_u(offset_sequence[0], u_m_last), K_chi(offset_sequence[1]), Delta_chi(offset_sequence[1], chi_m_last)); */
 
-			return cost / (double)pars.n_M;
+			cost /= (double)pars.n_M;
+			return cost;
 		}
 
-		/****************************************************************************************
-		 *  Name     : calculate_chattering_cost
-		 *  Function : Determines penalty due to using wobbly (changing between positive and negative)
-		 * 			  course modifications
-		 *  Author   : Trym Tengesdal
-		 *  Modified :
-		 *****************************************************************************************/
 		template <typename Parameters>
-		double MPC_Cost<Parameters>::calculate_chattering_cost(
-			const Eigen::VectorXd &offset_sequence, // In: Offset sequence currently followed by the own-ship
-			const Eigen::VectorXd &maneuver_times	// In: Time of each maneuver in the offset sequence
+		double MPC_Cost<Parameters>::calculate_control_deviation_cost(
+			const Eigen::VectorXd &offset_sequence, // In: Offset_sequence currently followed by the own-ship
+			const double u_m_last,					// In: Previous optimal output surge modification
+			const double chi_m_last,				// In: Previous optimal output course modification
+			const double max_cross_track_error		// In: Maximum absolute predicted cross track error
 		) const
 		{
 			double cost = 0.0;
-
-			if (pars.n_M == 1)
+			for (int i = 0; i < pars.n_M; i++)
 			{
-				return cost;
-			}
-
-			double delta_t = 0.0;
-			for (int M = 0; M < pars.n_M; M++)
-			{
-				if (M < pars.n_M - 1)
+				if (i == 0)
 				{
-					if ((offset_sequence(2 * M + 1) > 0 && offset_sequence(2 * M + 3) < 0) ||
-						(offset_sequence(2 * M + 1) < 0 && offset_sequence(2 * M + 3) > 0))
-					{
-						delta_t = maneuver_times(M + 1) - maneuver_times(M);
-						cost += pars.K_sgn * exp(-delta_t / pars.T_sgn);
-					}
+					cost += pars.K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_m_last) +
+							pars.K_chi * pow(offset_sequence[1], 2) +
+							pars.K_dchi * pow(wrap_angle_to_pmpi(offset_sequence[1] - chi_m_last), 2);
+				}
+				else
+				{
+					cost += pars.K_u * (1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
+							pars.K_chi * pow(offset_sequence[2 * i + 1], 2) +
+							pars.K_dchi * pow(wrap_angle_to_pmpi(offset_sequence[2 * i + 1] - offset_sequence[2 * i - 1]), 2);
 				}
 			}
-			return cost / (double)(pars.n_M - 1);
+			/* printf("K_u (1 - u_m_0) = %.4f | Delta_u(u_m_0, u_m_last) = %.4f | K_chi(chi_0) = %.4f | Delta_chi(chi_0, chi_last) = %.4f\n",
+				pars.K_u * (1 - offset_sequence[0]), Delta_u(offset_sequence[0], u_m_last), K_chi(offset_sequence[1]), Delta_chi(offset_sequence[1], chi_m_last)); */
+
+			cost /= (double)pars.n_M;
+
+			cost += pars.K_e * max_cross_track_error;
+
+			return cost;
 		}
 
 		/****************************************************************************************

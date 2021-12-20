@@ -22,7 +22,7 @@
 
 #define N_BPAR 0  // Number of boolean tyoe parameters in PSBMPC
 #define N_IPAR 5  // Number of integer type parameters in PSBMPC
-#define N_DPAR 22 // Number of double type parameters in PSBMPC
+#define N_DPAR 20 // Number of double type parameters in PSBMPC
 #define N_OPAR 2  // Number of offset/control behavior related parameters in PSBMPC
 
 // Indices for parameters of type bool
@@ -45,27 +45,23 @@
 #define i_dpar_d_so_relevant 5 // Range for considering static ostacles in the MPC
 
 #define i_dpar_K_coll 6 // Collision cost parameter
+#define i_dpar_T_coll 7 // Time discounting factor for the chattering cost
 
-#define i_dpar_kappa_SO 7 // COLREGS stand-on penalty parameter
-#define i_dpar_kappa_GW 8 // COLREGS giwe-way penalty parameter
+#define i_dpar_kappa_SO 8 // COLREGS stand-on penalty parameter
+#define i_dpar_kappa_GW 9 // COLREGS giwe-way penalty parameter
 
-#define i_dpar_K_u 9   // Speed change penalty parameter from the current speed reference
-#define i_dpar_K_du 10 // Penalty parameter for speed change between current and previous speed modification
+#define i_dpar_K_u 10    // Speed change penalty parameter from the current speed reference
+#define i_dpar_K_du 11   // Penalty parameter for speed change between current and previous speed modification
+#define i_dpar_K_chi 12  // Course modification penalty parameter
+#define i_dpar_K_dchi 13 // Penalty parameter for course change between current and previous course modification
+#define i_dpar_K_e 14    // Penalty parameter for large predicted cross track error
 
-#define i_dpar_K_chi_strb 11  // Course modification penalty parameter to starboard
-#define i_dpar_K_dchi_strb 12 // Penalty parameter for course change between current (starboard) and previous course modification
-#define i_dpar_K_chi_port 13  // Course modification penalty parameter to port
-#define i_dpar_K_dchi_port 14 // Penalty parameter for course change between current (port) and previous course modification
+#define i_dpar_G_1 15 // Grounding cost penalty parameter
+#define i_dpar_G_2 16 // Grounding cost penalty parameter connected to non-zero wind speed
+#define i_dpar_G_3 17 // Grounding cost distance discount parameter
+#define i_dpar_G_4 18 // Grounding cost time discount parameter
 
-#define i_dpar_K_sgn 15 // Penalty parameter in the MPC chattering cost for change in sign of course modification between sequential avoidance maneuvers in a predicted own-ship trajectory
-#define i_dpar_T_sgn 16 // Time discounting factor for the chattering cost
-
-#define i_dpar_G_1 17 // Grounding cost penalty parameter
-#define i_dpar_G_2 18 // Grounding cost penalty parameter connected to non-zero wind speed
-#define i_dpar_G_3 19 // Grounding cost distance discount parameter
-#define i_dpar_G_4 20 // Grounding cost time discount parameter
-
-#define i_dpar_epsilon_rdp 21 // Ramer-Douglas-Peucker distance threshold parameter
+#define i_dpar_epsilon_rdp 19 // Ramer-Douglas-Peucker distance threshold parameter
 
 // Indices for offset/control behaviour parameters of type std::vector/Eigen::MatrixXd
 #define i_opar_u_offsets 0

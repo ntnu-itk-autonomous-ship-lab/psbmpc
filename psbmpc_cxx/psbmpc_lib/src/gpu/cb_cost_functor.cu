@@ -49,12 +49,14 @@ namespace PSBMPC_LIB
 		)
 		{
 			h_path = 0.0f;
+			max_cross_track_error = 0.0f;
 			cb_index = thrust::get<0>(cb_tuple);
 			offset_sequence = thrust::get<1>(cb_tuple);
 
 			ownship[cb_index].set_wp_counter(fdata->wp_c_0);
 			ownship[cb_index].predict_trajectory(
 				trajectory[cb_index],
+				max_cross_track_error,
 				fdata->ownship_state,
 				offset_sequence,
 				fdata->maneuver_times,
@@ -64,8 +66,11 @@ namespace PSBMPC_LIB
 				pars->guidance_method,
 				pars->T, pars->dt);
 
-			h_path += mpc_cost[cb_index].calculate_control_deviation_cost(offset_sequence, fdata->u_opt_last, fdata->chi_opt_last);
-			h_path += mpc_cost[cb_index].calculate_chattering_cost(offset_sequence, fdata->maneuver_times);
+			h_path += mpc_cost[cb_index].calculate_control_deviation_cost(
+				offset_sequence,
+				fdata->u_opt_last,
+				fdata->chi_opt_last,
+				max_cross_track_error);
 
 			return h_path;
 		}
@@ -168,9 +173,9 @@ namespace PSBMPC_LIB
 					colregs_violation_evaluators[os_do_ps_pair_index].update(xs_cpa, xs_i_cpa); //
 				}
 
-				/* printf("k = %d | xs_p = %.1f, %.1f, %.1f, %.1f, %.1f, %.1f\n", k, xs_p_seg(0, n_seg_samples - 1), xs_p_seg(1, n_seg_samples - 1), xs_p_seg(2, n_seg_samples - 1), xs_p_seg(3, n_seg_samples - 1), xs_p_seg(4, n_seg_samples - 1), xs_p_seg(5, n_seg_samples - 1));
-		printf("k = %d | xs_i_p = %.1f, %.1f, %.1f, %.1f\n", k, xs_i_p_seg(0, n_seg_samples - 1), xs_i_p_seg(1, n_seg_samples - 1), xs_i_p_seg(2, n_seg_samples - 1), xs_i_p_seg(3, n_seg_samples - 1));
-		*/
+				/* printf("k = %d | xs_p = %.1f, %.1f, %.1f, %.1f\n", k, xs_p_seg(0, n_seg_samples - 1), xs_p_seg(1, n_seg_samples - 1), xs_p_seg(2, n_seg_samples - 1), xs_p_seg(3, n_seg_samples - 1));
+				printf("k = %d | xs_i_p = %.1f, %.1f, %.1f, %.1f\n", k, xs_i_p_seg(0, n_seg_samples - 1), xs_i_p_seg(1, n_seg_samples - 1), xs_i_p_seg(2, n_seg_samples - 1), xs_i_p_seg(3, n_seg_samples - 1));
+ */
 				/* printf("P_i_p = %.1f, %.1f, %.1f, %.1f\n", P_i_p(0, n_seg_samples - 1), P_i_p(1, n_seg_samples - 1), P_i_p(2, n_seg_samples - 1), P_i_p(3, n_seg_samples - 1));
 		printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(4, n_seg_samples - 1), P_i_p(5, n_seg_samples - 1), P_i_p(6, n_seg_samples - 1), P_i_p(7, n_seg_samples - 1));
 		printf("        %.1f, %.1f, %.1f, %.1f\n", P_i_p(8, n_seg_samples - 1), P_i_p(9, n_seg_samples - 1), P_i_p(10, n_seg_samples - 1), P_i_p(11, n_seg_samples - 1));
