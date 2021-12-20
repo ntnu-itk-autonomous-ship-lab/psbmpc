@@ -180,17 +180,17 @@ namespace PSBMPC_LIB
 			const float chi_opt_last									 // In: Previous optimal output course modification
 		)
 		{
-			cost_cd = 0;
+			cost_cd = 0.0f;
 			for (int M = 0; M < pars.n_M; M++)
 			{
 				if (M == 0)
 				{
-					cost_cd += pars.K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_opt_last) +
+					cost_cd += pars.K_u * (1.0f - offset_sequence[0]) + Delta_u(offset_sequence[0], u_opt_last) +
 							   K_chi(offset_sequence[1]) + Delta_chi(offset_sequence[1], chi_opt_last);
 				}
 				else
 				{
-					cost_cd += pars.K_u * (1 - offset_sequence[2 * M]) + Delta_u(offset_sequence[2 * M], offset_sequence[2 * M - 2]) +
+					cost_cd += pars.K_u * (1.0f - offset_sequence[2 * M]) + Delta_u(offset_sequence[2 * M], offset_sequence[2 * M - 2]) +
 							   K_chi(offset_sequence[2 * M + 1]) + Delta_chi(offset_sequence[2 * M + 1], offset_sequence[2 * M - 1]);
 				}
 			}
@@ -219,7 +219,7 @@ namespace PSBMPC_LIB
 				return cost_ch;
 			}
 
-			delta_t = 0;
+			delta_t = 0.0f;
 			for (int M = 0; M < pars.n_M - 1; M++)
 			{
 				if ((offset_sequence(2 * M + 1) > 0 && offset_sequence(2 * M + 3) < 0) ||
