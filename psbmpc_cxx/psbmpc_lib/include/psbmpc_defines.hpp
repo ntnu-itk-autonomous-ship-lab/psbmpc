@@ -45,7 +45,7 @@
 
 #define MAX_N_M 3 // Max number of avoidance maneuvers allowable for the PSBMPC
 
-#define MAX_N_SAMPLES 400 // Max number of samples for trajectories and such allowable on the device
+#define MAX_N_SAMPLES 500 // Max number of samples for trajectories and such allowable on the device
 
 #define MAX_N_WPS 8 // Max number of waypoints for the waypoint matrix allowable on the device
 
