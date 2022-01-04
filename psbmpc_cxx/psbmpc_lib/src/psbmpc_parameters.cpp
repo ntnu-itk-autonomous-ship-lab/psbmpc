@@ -410,7 +410,7 @@ namespace PSBMPC_LIB
 		prediction_method = ERK1;
 		guidance_method = LOS;
 
-		T = 50.0;
+		T = 200.0;
 		dt = 5.0;
 
 		p_step_opt = 1;

@@ -143,7 +143,7 @@ namespace PSBMPC_LIB
             *****************************************************************************************/
             __host__ COLREGS_Violation_Evaluator()
             {
-                pars.d_init_colregs_situation = 500.0;
+                pars.d_init_colregs_situation = 10000.0;
                 pars.head_on_width = 30.0 * DEG2RAD;
                 pars.overtaking_angle = (90.0 + 22.5) * DEG2RAD;
                 pars.max_acceptable_SO_speed_change = 2.0;
