@@ -191,8 +191,7 @@ namespace PSBMPC_LIB
 
 		if (duration_lost == 0.0)
 		{
-
-			Eigen::Matrix<double, 4, 4> K;
+			Eigen::Matrix4d K;
 			K = P_p * C.transpose() * (C * P_p * C.transpose() + R).inverse();
 
 			xs_upd = xs_p + K * (y_m - C * xs_p);
@@ -201,7 +200,6 @@ namespace PSBMPC_LIB
 		}
 		else
 		{
-
 			xs_upd = xs_p;
 
 			P_upd = P_p;
