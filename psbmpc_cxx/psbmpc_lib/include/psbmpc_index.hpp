@@ -48,7 +48,7 @@
 #define i_dpar_T_coll 7 // Time discounting factor for the chattering cost
 
 #define i_dpar_kappa_SO 8 // COLREGS stand-on penalty parameter
-#define i_dpar_kappa_GW 9 // COLREGS giwe-way penalty parameter
+#define i_dpar_kappa_GW 9 // COLREGS give-way penalty parameter
 
 #define i_dpar_K_u 10    // Speed change penalty parameter from the current speed reference
 #define i_dpar_K_du 11   // Penalty parameter for speed change between current and previous speed modification

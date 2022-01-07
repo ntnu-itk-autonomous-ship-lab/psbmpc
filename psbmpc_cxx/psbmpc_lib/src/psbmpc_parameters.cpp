@@ -343,7 +343,7 @@ namespace PSBMPC_LIB
 	void PSBMPC_Parameters::initialize_pars()
 	{
 		n_cbs = 1;
-		n_M = 1;
+		n_M = 2;
 		n_do_ps = 5;
 
 		chi_offsets.resize(n_M);
@@ -374,14 +374,14 @@ namespace PSBMPC_LIB
 				u_offsets[M] << 1.0, 0.5;
 				//u_offsets[M] << 1.0, 0.5, 0.0;
 
-				chi_offsets[M].resize(7);
+				chi_offsets[M].resize(13);
 				//chi_offsets[M] << 0.0;
 				//chi_offsets[M] << -30.0, 0.0, 30.0;
 				//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
 				//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-				chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
+				//chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
 				//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
-				//chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+				chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
 				//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 				chi_offsets[M] *= DEG2RAD;
 			}
@@ -418,28 +418,28 @@ namespace PSBMPC_LIB
 		p_step_grounding = 2;
 		if (prediction_method == ERK1)
 		{
-			dt = 0.5;
+			dt = 1.0;
 			p_step_opt = 10;
 		}
-		t_ts = 10;
+		t_ts = 20;
 
 		d_so_relevant = 500;
 		d_do_relevant = 1000;
 		d_safe = 5;
-		K_coll = 3.0; // 0.2ish for sea traffic, 10.0ish for nidelva
-		T_coll = 4 * t_ts;
+		K_coll = 8.0;
+		T_coll = 50;
 		kappa_SO = 10.0;
 		kappa_GW = 20.0;
-		K_u = 40;
-		K_du = 6;
-		K_chi = 1.3;
-		K_dchi = 0.9;
-		K_e = 0.01;
+		K_u = 5.0;
+		K_du = 2.5;
+		K_chi = 1.0;
+		K_dchi = 0.5;
+		K_e = 0.0005;
 
 		G_1 = 100.0;
 		G_2 = 5.0;
-		G_3 = 0.25;
-		G_4 = 0.01;
+		G_3 = 1.4;
+		G_4 = 0.06;
 
 		epsilon_rdp = 2.0;
 	}
