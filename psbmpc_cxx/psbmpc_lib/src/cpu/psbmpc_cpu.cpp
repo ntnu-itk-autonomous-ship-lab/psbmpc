@@ -398,7 +398,7 @@ namespace PSBMPC_LIB
 					h_do = cost_do.sum();
 				}
 
-				h_colregs = mpc_cost.calculate_colregs_violation_cost(trajectory, obstacles);
+				h_colregs = mpc_cost.calculate_colregs_violation_cost(trajectory, obstacles, offset_sequence);
 
 #if ENABLE_PSBMPC_DEBUGGING
 				h_so = mpc_cost.calculate_grounding_cost(h_so_j, trajectory, polygons, V_w, wind_direction);

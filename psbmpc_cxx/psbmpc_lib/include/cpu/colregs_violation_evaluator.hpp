@@ -258,11 +258,28 @@ namespace PSBMPC_LIB
             }
 
             /****************************************************************************************
-            *  Name     : reset
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : evaluate_readily_apparent_violation
+             *  Function : According to COLREGS rule 8 a course or speed change should be large enough
+             *             to be readily apparent to another vessel observing visually or by radar.
+             *             This is enforced by penalizing small courseor speed changes.
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            bool evaluate_readily_apparent_violation(
+                const float course_offset, // In: Predicted course offset
+                const float speed_offset   // In: Predicted speed offset
+            )
+            {
+                return (fabs(course_offset) > 0.001 && fabs(course_offset) < pars.min_acceptable_GW_course_change) ||
+                       (fabs(speed_offset) > 0.001 && fabs(speed_offset) < pars.min_acceptable_GW_speed_change);
+            }
+
+            /****************************************************************************************
+             *  Name     : reset
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             inline void reset()
             {
                 predicted_ownship_change_in_course_to_port = false;

@@ -261,10 +261,28 @@ namespace PSBMPC_LIB
                 correct_CR_SS_maneuver = evaluate_crossing_aft(ownship_CPA_state, vx_vy_to_heading_speed_state(obstacle_CPA_state_vx_vy)) && d_cpa >= pars.GW_safety_margin;
                 correct_OT_ing_maneuver = d_cpa >= pars.GW_safety_margin;
                 correct_CR_PS_maneuver = !(actual_ownship_course_change_port || predicted_ownship_change_in_course_to_port);
+
                 return ((colregs_situation == HO && !correct_HO_maneuver) ||
                         (colregs_situation == CR_SS && !correct_CR_SS_maneuver) ||
                         (colregs_situation == CR_PS && !correct_CR_PS_maneuver) ||
                         (colregs_situation == OT_ing && !correct_OT_ing_maneuver));
+            }
+
+            /****************************************************************************************
+             *  Name     : evaluate_readily_apparent_violation
+             *  Function : According to COLREGS rule 8 a course or speed change should be large enough
+             *             to be readily apparent to another vessel observing visually or by radar.
+             *             This is enforced by penalizing small courseor speed changes.
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
+            bool evaluate_readily_apparent_violation(
+                const float course_offset, // In: Predicted course offset
+                const float speed_offset   // In: Predicted speed offset
+            )
+            {
+                return (fabs(course_offset) > 0.001 && fabs(course_offset) < pars.min_acceptable_GW_course_change) ||
+                       (fabs(speed_offset) > 0.001 && fabs(speed_offset) < pars.min_acceptable_GW_speed_change);
             }
 
             /****************************************************************************************
