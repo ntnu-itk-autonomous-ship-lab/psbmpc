@@ -283,6 +283,9 @@ namespace PSBMPC_LIB
                 const float speed_offset   // In: First speed offset in current own-ship control behaviour considered
             )
             {
+                if (!initialized || has_passed)
+                    return false;
+
                 return (fabs(course_offset) > 0.001 && fabs(course_offset) < pars.min_acceptable_GW_course_change) ||
                        (fabs(speed_offset) > 0.001 && fabs(speed_offset) < pars.min_acceptable_GW_speed_change);
             }

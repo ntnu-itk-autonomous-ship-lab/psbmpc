@@ -45,11 +45,11 @@ namespace PSBMPC_LIB
 	{
 
 		/****************************************************************************************
-*  Name     : PSBMPC
-*  Function : Class constructor, initializes parameters and variables
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : PSBMPC
+		*  Function : Class constructor, initializes parameters and variables
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		PSBMPC::PSBMPC()
 			: u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), ownship(Ownship()), pars(PSBMPC_Parameters()), mpc_cost(pars),
 			  trajectory_device_ptr(nullptr), pars_device_ptr(nullptr), fdata_device_ptr(nullptr), obstacles_device_ptr(nullptr),
@@ -93,11 +93,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : operator=
-*  Function : Assignment operator
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : operator=
+		*  Function : Assignment operator
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		PSBMPC &PSBMPC::operator=(const PSBMPC &other)
 		{
 			if (this != &other)
@@ -112,22 +112,22 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : ~PSBMPC
-*  Function : Class destructor
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : ~PSBMPC
+		*  Function : Class destructor
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		PSBMPC::~PSBMPC()
 		{
 			free();
 		};
 
 		/****************************************************************************************
-*  Name     : calculate_optimal_offsets
-*  Function : Calculate optimal surge and course offsets for PSB-MPC
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : calculate_optimal_offsets
+		*  Function : Calculate optimal surge and course offsets for PSB-MPC
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::calculate_optimal_offsets(
 			double &u_opt,								   // In/out: Optimal surge offset
 			double &chi_opt,							   // In/out: Optimal course offset
@@ -423,20 +423,28 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-	Private functions
-****************************************************************************************/
+			Private functions
+		****************************************************************************************/
+
+		/****************************************************************************************
+		*  Name     : preallocate_device_data
+		*  Function : Preallocates data used on the GPU at construction time, to minimize
+		*			  memory allocation related latency.
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::preallocate_device_data()
 		{
 			/* std::cout << "CB_Functor_Pars size: " << sizeof(CB_Functor_Pars) << std::endl;
-	std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
-	std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
-	std::cout << "Ownship trajectory size: " << sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>) << std::endl;
-	std::cout << "CPE size: " << sizeof(CPE) << std::endl;
-	std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl;
-	std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
-	std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
-	std::cout << "COLREGS Violation Evaluator size: " << sizeof(COLREGS_Violation_Evaluator) << std::endl;
-	std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl; */
+			std::cout << "CB_Functor_Data size: " << sizeof(CB_Functor_Data) << std::endl;
+			std::cout << "Ownship size: " << sizeof(Ownship) << std::endl;
+			std::cout << "Ownship trajectory size: " << sizeof(TML::PDMatrix<float, 4, MAX_N_SAMPLES>) << std::endl;
+			std::cout << "CPE size: " << sizeof(CPE) << std::endl;
+			std::cout << "Cuda Obstacle size: " << sizeof(Cuda_Obstacle) << std::endl;
+			std::cout << "Obstacle Ship size: " << sizeof(Obstacle_Ship) << std::endl;
+			std::cout << "Basic polygon size: " << sizeof(Basic_Polygon) << std::endl;
+			std::cout << "COLREGS Violation Evaluator size: " << sizeof(COLREGS_Violation_Evaluator) << std::endl;
+			std::cout << "MPC_Cost<CB_Functor_Pars> size: " << sizeof(MPC_Cost<CB_Functor_Pars>) << std::endl; */
 
 			//================================================================================
 			// Cuda device memory allocation, preallocated to save computation time
@@ -506,12 +514,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : determine_colav_active
-*  Function : Uses the dynamic obstacle vector and the number of static
-*			  obstacles to determine whether it is necessary to run the PSBMPC
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : determine_colav_active
+		*  Function : Uses the dynamic obstacle vector and the number of static
+		*			  obstacles to determine whether it is necessary to run the PSBMPC
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		bool PSBMPC::determine_colav_active(
 			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
 			const int n_so,						// In: Number of static obstacles
@@ -549,12 +557,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : map_offset_sequences
-*  Function : Maps the currently set surge and course modifications into a matrix of
-*			  offset sequences or control behaviours
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : map_offset_sequences
+		*  Function : Maps the currently set surge and course modifications into a matrix of
+		*			  offset sequences or control behaviours
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::map_offset_sequences()
 		{
 			Eigen::VectorXd offset_sequence(2 * pars.n_M);
@@ -576,12 +584,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : reset_control_behavior
-*  Function : Sets the offset sequence back to the initial starting point, i.e. the
-*			  leftmost branch of the control behavior tree
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : reset_control_behavior
+		*  Function : Sets the offset sequence back to the initial starting point, i.e. the
+		*			  leftmost branch of the control behavior tree
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::reset_control_behaviour(
 			Eigen::VectorXi &offset_sequence_counter, // In/out: Counter to keep track of current offset sequence
 			Eigen::VectorXd &offset_sequence		  // In/out: Control behaviour to increment
@@ -596,12 +604,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : increment_control_behavior
-*  Function : Increments the control behavior counter and changes the offset sequence
-*			  accordingly. Backpropagation is used for the incrementation
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : increment_control_behavior
+		*  Function : Increments the control behavior counter and changes the offset sequence
+		*			  accordingly. Backpropagation is used for the incrementation
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::increment_control_behaviour(
 			Eigen::VectorXi &offset_sequence_counter, // In/out: Counter to keep track of current offset sequence
 			Eigen::VectorXd &offset_sequence		  // In/out: Control behaviour to increment
@@ -642,15 +650,15 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : map_thrust_input_dvecs
-*  Function : Fills the device vectors in/out of the thrust calls with the proper
-*			  flattened values. Number of threads will be
-*			  n_threads_1 = n_cbs * n_so for the second kernel, and
-*			  n_threads_2 = n_cbs * (n_ps^1 + ... + n_ps^n_do) for the third kernel
-*
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : map_thrust_input_dvecs
+		*  Function : Fills the device vectors in/out of the thrust calls with the proper
+		*			  flattened values. Number of threads will be
+		*			  n_threads_1 = n_cbs * n_so for the second kernel, and
+		*			  n_threads_2 = n_cbs * (n_ps^1 + ... + n_ps^n_do) for the third kernel
+		*
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::map_thrust_dvecs(
 			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
 			const Static_Obstacles &polygons	// In: Static obstacle information
@@ -774,7 +782,7 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-			Engine *ep = engOpen(NULL);
+			/* Engine *ep = engOpen(NULL);
 			if (ep == NULL)
 			{
 				std::cout << "engine start failed!" << std::endl;
@@ -846,7 +854,7 @@ namespace PSBMPC_LIB
 			}
 			Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
 			Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
-			Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs);
+			Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs); */
 #endif
 			//=============================================================================================================
 
@@ -863,14 +871,14 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-				for (int M = 0; M < pars.n_M; M++)
+				/* for (int M = 0; M < pars.n_M; M++)
 				{
 					cb_matrix(2 * M, cb) = offset_sequence(2 * M);
 					cb_matrix(2 * M + 1, cb) = RAD2DEG * offset_sequence(2 * M + 1);
 				}
 				curr_ps_index = 0;
 				//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
-				//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
+				//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl; */
 #endif
 				//===================================================================
 
@@ -910,8 +918,8 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-					h_do_i_ps_matrix.block(curr_ps_index, cb, n_ps, 1) = h_do_i_ps;
-					curr_ps_index += n_ps;
+					/* h_do_i_ps_matrix.block(curr_ps_index, cb, n_ps, 1) = h_do_i_ps;
+					curr_ps_index += n_ps; */
 #endif
 					//==================================================================
 				}
@@ -930,7 +938,7 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-				if (n_so > 0)
+				/* if (n_so > 0)
 				{
 					h_so_j_matrix.block(0, cb, n_so, 1) = h_so_j;
 				}
@@ -945,7 +953,7 @@ namespace PSBMPC_LIB
 				if (cost < min_cost)
 				{
 					min_index = cb;
-				}
+				} */
 #endif
 				//===================================================================
 
@@ -961,7 +969,7 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-			opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+			/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 			map_total_cost = total_cost_matrix;
 			if (n_so > 0)
 			{
@@ -1007,19 +1015,19 @@ namespace PSBMPC_LIB
 			mxDestroyArray(n_so_mx);
 			mxDestroyArray(opt_cb_index_mx);
 
-			engClose(ep);
+			engClose(ep); */
 #endif
 			//==================================================================
 		}
 
 		/****************************************************************************************
-*  Name     : setup_prediction
-*  Function : Sets up the own-ship maneuvering times and number of prediction scenarios
-*			  for each obstacle based on the current situation, and predicts
-*			  independent obstacle trajectories using the predictor class.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : setup_prediction
+		*  Function : Sets up the own-ship maneuvering times and number of prediction scenarios
+		*			  for each obstacle based on the current situation, and predicts
+		*			  independent obstacle trajectories using the predictor class.
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::setup_prediction(
 			const Dynamic_Obstacles &obstacles // In: Dynamic obstacle information
 		)
@@ -1079,28 +1087,28 @@ namespace PSBMPC_LIB
 				}
 
 				/* if (index_closest != -1)
-		{
-			d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[index_closest].get_width());
-			// If no predicted collision,  avoidance maneuver M with the closest
-			// obstacle (that is not passed) is taken at t_cpa_min
-			if (d_cpa(index_closest) > d_safe_i)
-			{
-				//std::cout << "OS maneuver M = " << M << " at t = " << t_cpa(index_closest) << " wrt obstacle " << index_closest << std::endl;
-				maneuvered_by[index_closest] = true;
-				maneuver_times(M) = std::round(t_cpa(index_closest) / pars.dt);
-			}
-		} */
+				{
+					d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[index_closest].get_width());
+					// If no predicted collision,  avoidance maneuver M with the closest
+					// obstacle (that is not passed) is taken at t_cpa_min
+					if (d_cpa(index_closest) > d_safe_i)
+					{
+						//std::cout << "OS maneuver M = " << M << " at t = " << t_cpa(index_closest) << " wrt obstacle " << index_closest << std::endl;
+						maneuvered_by[index_closest] = true;
+						maneuver_times(M) = std::round(t_cpa(index_closest) / pars.dt);
+					}
+				} */
 			}
 
 			//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 		}
 
 		/****************************************************************************************
-*  Name     : assign_optimal_trajectory
-*  Function : Set the optimal trajectory to the current predicted trajectory
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : assign_optimal_trajectory
+		*  Function : Set the optimal trajectory to the current predicted trajectory
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::assign_optimal_trajectory(
 			Eigen::MatrixXd &optimal_trajectory // In/out: Optimal PSB-MPC trajectory
 		)
@@ -1126,12 +1134,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : set_up_cuda_memory_transfer
-*  Function : Allocates device memory for data that is required on the GPU for the
-*			  PSB-MPC calculations.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : set_up_cuda_memory_transfer
+		*  Function : Allocates device memory for data that is required on the GPU for the
+		*			  PSB-MPC calculations.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::set_up_temporary_device_memory(
 			const double u_d,							   // In: Own-ship surge reference
 			const double chi_d,							   // In: Own-ship course reference
@@ -1193,11 +1201,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : assign_data
-*  Function :
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : assign_data
+		*  Function :
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::assign_data(const PSBMPC &other)
 		{
 			opt_offset_sequence = other.opt_offset_sequence;
@@ -1220,11 +1228,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : free
-*  Function : Frees device memory
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : free
+		*  Function : Frees device memory
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::free()
 		{
 			cudaFree(trajectory_device_ptr);

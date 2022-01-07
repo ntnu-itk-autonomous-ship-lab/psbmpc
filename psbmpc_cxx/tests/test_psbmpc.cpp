@@ -173,17 +173,17 @@ int main()
 		}
 		else
 		{
-			xs_i_0[i] << 300, 0, 180 * DEG2RAD, 1.5, 0, 0;
+			/* xs_i_0[i] << 300, 0, 180 * DEG2RAD, 1.5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 0,
-				xs_i_0[i](1), 0;
+				xs_i_0[i](1), 0; */
 
 			/* xs_i_0[i] << 100, -100, 90 * DEG2RAD, 1.5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 100,
 				xs_i_0[i](1), 100; */
 
-			/* xs_i_0[i] << 100, 100, -90 * DEG2RAD, 1.5, 0, 0;
+			xs_i_0[i] << 100, 100, -90 * DEG2RAD, 1.5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 100,
-				xs_i_0[i](1), -100; */
+				xs_i_0[i](1), -100;
 			u_d_i[i] = 1.5;
 			chi_d_i[i] = 180 * DEG2RAD;
 		}
