@@ -245,7 +245,8 @@ namespace PSBMPC_LIB
 			}
 
 			h_colregs_i_ps = pars->kappa_GW * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_GW_violation(xs_cpa, xs_i_cpa, d_cpa) +
-							 pars->kappa_SO * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_SO_violation(d_0i_0);
+							 pars->kappa_SO * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_SO_violation(d_0i_0) + 
+							 pars->kappa_readily_apparent * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_readily_apparent_violation(offset_sequence(1), offset_sequence(0));
 
 			//==================================================================================================
 			/* printf("i = %d | ps = %d | h_do_i_ps : %.2f| h_colregs_i_ps = %.0f | p_UCHI_chngd = %d | p_CHI_chng_port = %d | act_UCHI_chngd = %d | act_UCHI_chng_port = %d | crct_HO_man = %d | COLREGS_Sit = %d |  cb : %.1f, %.1f\n", i, ps, h_do_i_ps, h_colregs_i_ps,

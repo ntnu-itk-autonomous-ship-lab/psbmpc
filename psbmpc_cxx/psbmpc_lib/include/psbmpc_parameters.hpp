@@ -139,7 +139,7 @@ namespace PSBMPC_LIB
 		double t_ts;
 		double d_safe, d_do_relevant, d_so_relevant;
 		double K_coll, T_coll;
-		double kappa_SO, kappa_GW;
+		double kappa_SO, kappa_GW, kappa_readily_apparent;
 		double K_u, K_du;
 		double K_chi, K_dchi;
 		double K_e;
