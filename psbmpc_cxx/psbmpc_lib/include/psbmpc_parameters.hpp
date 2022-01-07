@@ -55,10 +55,12 @@ namespace PSBMPC_LIB
 		T d_init_colregs_situation;		   // Threshold for initializing the COLREGS violation evaluator
 		T head_on_width;				   // Width of zone where vessels are considered head-on wrt own-ship
 		T overtaking_angle;				   // Bearing angle wrt own-ship/obstacle where vessels are considered to overtake
+		T critical_distance_to_ignore_SO;  // Distance where the own-ship SO role should be aborted to make a safety maneuver
 		T max_acceptable_SO_speed_change;  // Max allowable stand-on speed change before considered violating COLREGS
 		T max_acceptable_SO_course_change; // Max allowable stand-on course change before considered violating COLREGS
-		T critical_distance_to_ignore_SO;  // Distance where the own-ship SO role should be aborted to make a safety maneuver
-		T GW_safety_margin;				   // Minimum distance to keep to other vessel for a COLREGS compliant maneuver to be correct
+		T min_acceptable_GW_speed_change;  // Min allowable give-way speed change before considered violating COLREGS
+		T min_acceptable_GW_course_change; // Min allowable give-way course change before considered violating COLREGS
+		T GW_safety_margin;				   // Min distance to keep to other vessel for a COLREGS compliant maneuver to be correct
 	};
 
 	enum COLREGS_Situation
@@ -139,7 +141,7 @@ namespace PSBMPC_LIB
 		double t_ts;
 		double d_safe, d_do_relevant, d_so_relevant;
 		double K_coll, T_coll;
-		double kappa_SO, kappa_GW, kappa_readily_apparent;
+		double kappa_SO, kappa_GW, kappa_RA;
 		double K_u, K_du;
 		double K_chi, K_dchi;
 		double K_e;

@@ -144,10 +144,12 @@ namespace PSBMPC_LIB
                 pars.d_init_colregs_situation = 10000.0;
                 pars.head_on_width = 30.0 * DEG2RAD;
                 pars.overtaking_angle = (90.0 + 22.5) * DEG2RAD;
-                pars.max_acceptable_SO_speed_change = 2.0;
-                pars.max_acceptable_SO_course_change = 2.5 * DEG2RAD;
-                pars.critical_distance_to_ignore_SO = 30.0;
-                pars.GW_safety_margin = 10.0;
+                pars.critical_distance_to_ignore_SO = 40.0;
+                pars.max_acceptable_SO_speed_change = 1.0;
+                pars.max_acceptable_SO_course_change = 15.0 * DEG2RAD;
+                pars.min_acceptable_GW_speed_change = 0.5;
+                pars.min_acceptable_GW_course_change = 30.0 * DEG2RAD;
+                pars.GW_safety_margin = 15.0;
             }
 
             /****************************************************************************************

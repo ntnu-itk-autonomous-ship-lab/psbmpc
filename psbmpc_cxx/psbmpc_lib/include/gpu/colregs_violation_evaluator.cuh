@@ -146,10 +146,12 @@ namespace PSBMPC_LIB
                 pars.d_init_colregs_situation = 10000.0;
                 pars.head_on_width = 30.0 * DEG2RAD;
                 pars.overtaking_angle = (90.0 + 22.5) * DEG2RAD;
-                pars.max_acceptable_SO_speed_change = 2.0;
-                pars.max_acceptable_SO_course_change = 2.5 * DEG2RAD;
-                pars.critical_distance_to_ignore_SO = 30.0;
-                pars.GW_safety_margin = 10.0;
+                pars.critical_distance_to_ignore_SO = 40.0;
+                pars.max_acceptable_SO_speed_change = 1.0;
+                pars.max_acceptable_SO_course_change = 15.0 * DEG2RAD;
+                pars.min_acceptable_GW_speed_change = 0.5;
+                pars.min_acceptable_GW_course_change = 30.0 * DEG2RAD;
+                pars.GW_safety_margin = 15.0;
             }
 
             __host__ COLREGS_Violation_Evaluator(const CVE_Pars<float> &pars) : pars(pars) {}
@@ -272,13 +274,13 @@ namespace PSBMPC_LIB
              *  Name     : evaluate_readily_apparent_violation
              *  Function : According to COLREGS rule 8 a course or speed change should be large enough
              *             to be readily apparent to another vessel observing visually or by radar.
-             *             This is enforced by penalizing small courseor speed changes.
+             *             This is enforced by penalizing small course or speed changes.
              *  Author   :
              *  Modified :
              *****************************************************************************************/
-            bool evaluate_readily_apparent_violation(
-                const float course_offset, // In: Predicted course offset
-                const float speed_offset   // In: Predicted speed offset
+            __device__ bool evaluate_readily_apparent_violation(
+                const float course_offset, // In: First course offset in current own-ship control behaviour considered
+                const float speed_offset   // In: First speed offset in current own-ship control behaviour considered
             )
             {
                 return (fabs(course_offset) > 0.001 && fabs(course_offset) < pars.min_acceptable_GW_course_change) ||

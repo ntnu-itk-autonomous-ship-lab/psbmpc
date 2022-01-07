@@ -105,7 +105,7 @@ namespace PSBMPC_LIB
 			float T, dt;
 			float d_safe;
 			float K_coll, T_coll;
-			float kappa_SO, kappa_GW;
+			float kappa_SO, kappa_GW, kappa_RA;
 			float K_u, K_du;
 			float K_chi, K_dchi;
 			float K_e;
@@ -136,6 +136,7 @@ namespace PSBMPC_LIB
 
 				this->kappa_SO = pars.kappa_SO;
 				this->kappa_GW = pars.kappa_GW;
+				this->kappa_RA = pars.kappa_RA;
 
 				this->K_u = pars.K_u;
 				this->K_du = pars.K_du;

@@ -82,6 +82,8 @@ namespace PSBMPC_LIB
 			return kappa_SO;
 		case i_dpar_kappa_GW:
 			return kappa_GW;
+		case i_dpar_kappa_RA:
+			return kappa_RA;
 		case i_dpar_K_u:
 			return K_u;
 		case i_dpar_K_du:
@@ -209,6 +211,9 @@ namespace PSBMPC_LIB
 				break;
 			case i_dpar_kappa_GW:
 				kappa_GW = value;
+				break;
+			case i_dpar_kappa_RA:
+				kappa_RA = value;
 				break;
 			case i_dpar_K_u:
 				K_u = value;
@@ -430,6 +435,7 @@ namespace PSBMPC_LIB
 		T_coll = 50;
 		kappa_SO = 10.0;
 		kappa_GW = 20.0;
+		kappa_RA = 5.0;
 		K_u = 5.0;
 		K_du = 2.5;
 		K_chi = 1.0;
@@ -500,6 +506,7 @@ namespace PSBMPC_LIB
 
 		kappa_SO = dpars[i_dpar_kappa_SO];
 		kappa_GW = dpars[i_dpar_kappa_GW];
+		kappa_RA = dpars[i_dpar_kappa_RA];
 
 		K_u = dpars[i_dpar_K_u];
 		K_du = dpars[i_dpar_K_du];
