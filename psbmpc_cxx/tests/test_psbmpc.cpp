@@ -44,8 +44,10 @@ int main()
 	// Own-ship sim setup
 	//*****************************************************************************************************************
 	Eigen::Matrix<double, 6, 1> xs_os_0;
-	xs_os_0 << 0, 0, 0, 1.5, 0, 0;
-	double u_d(1.5), chi_d(0.0), u_c(0.0), chi_c(0.0);
+	double offset = 300.0;
+	//xs_os_0 << 0, 0, 0, 2.0, 0, 0;
+	xs_os_0 << -248.0 + offset, -380.0 + offset, 0, 2.0, 0, 0;
+	double u_d(2.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 
 	double ownship_length(5.0);
 	double w(3.0), T_chi(5), T_U(5), R_a(5.0), LOS_LD(66.0), LOS_K_i(0.0);
@@ -62,17 +64,20 @@ int main()
 	trajectory.col(0) = xs_os_0;
 #endif
 
-	int n_wps_os = 2;
+	int n_wps_os = 3;
 	waypoints.resize(2, n_wps_os);
 	/* waypoints << 0, 200, 200, 400, 600,  300, 500,
 				 0, 0,   200, 200,  0,  0, -200; */
-	waypoints << 0, 1000,
-		0, 0;
+	/* waypoints << 0, 1000,
+		0, 0; */
+
+	waypoints << -248 + offset, -80 + offset, -36 + offset,
+		-380 + offset, -180 + offset, -138 + offset;
 
 	//*****************************************************************************************************************
 	// Obstacle sim setup
 	//*****************************************************************************************************************
-	int n_do = 1;
+	int n_do = 2;
 	std::vector<int> ID(n_do);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_do);
@@ -151,20 +156,27 @@ int main()
 
 		Pr_CC[i] = 1;
 
-		n_wps_i = 2;
-		waypoints_i[i].resize(2, n_wps_i);
 		xs_i_0[i].resize(6);
 		if (i == 1)
 		{
+			n_wps_i = 5;
+			waypoints_i[i].resize(2, n_wps_i);
 			//xs_i_0[i] << 5000, 0, 180 * DEG2RAD, 6, 0, 0;
-			xs_i_0[i] << 300, 150, -90 * DEG2RAD, 5, 0, 0;
+			/* xs_i_0[i] << 300, 150, -90 * DEG2RAD, 5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 500,
 				xs_i_0[i](1), -300;
-			u_d_i[i] = 5.0;
+			u_d_i[i] = 5.0; */
 			chi_d_i[i] = -90 * DEG2RAD;
+
+			xs_i_0[i] << -224 + offset, -346 + offset, 0.978, 1.0, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), -191 + offset, -180 + offset, -149 + offset, -62 + offset,
+				xs_i_0[i](1), -297 + offset, -235 + offset, -218 + offset, -140 + offset;
+			u_d_i[i] = 1.0;
 		}
 		else if (i == 2)
 		{
+			n_wps_i = 2;
+			waypoints_i[i].resize(2, n_wps_i);
 			xs_i_0[i] << 500, -300, 90 * DEG2RAD, 5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 500,
 				xs_i_0[i](1), 300;
@@ -173,6 +185,8 @@ int main()
 		}
 		else
 		{
+			n_wps_i = 2;
+			waypoints_i[i].resize(2, n_wps_i);
 			/* xs_i_0[i] << 300, 0, 180 * DEG2RAD, 1.5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 0,
 				xs_i_0[i](1), 0; */
@@ -181,10 +195,10 @@ int main()
 			waypoints_i[i] << xs_i_0[i](0), 100,
 				xs_i_0[i](1), 100; */
 
-			xs_i_0[i] << 100, 100, -90 * DEG2RAD, 1.5, 0, 0;
-			waypoints_i[i] << xs_i_0[i](0), 100,
-				xs_i_0[i](1), -100;
-			u_d_i[i] = 1.5;
+			xs_i_0[i] << -251 + offset, -248 + offset, -0.2083, 1.0, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), -128 + offset,
+				xs_i_0[i](1), -274 + offset;
+			u_d_i[i] = 1.0;
 			chi_d_i[i] = 180 * DEG2RAD;
 		}
 
@@ -219,7 +233,7 @@ int main()
 	PSBMPC_LIB::CPU::PSBMPC psbmpc;
 #endif
 
-	double r_ct(40.0), sigma_x(0.06), sigma_xy(0.0), sigma_y(0.06), gamma_x(0.1), gamma_y(0.1);
+	double r_ct(40.0), sigma_x(0.07), sigma_xy(0.0), sigma_y(0.07), gamma_x(0.1), gamma_y(0.1);
 	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor(
 		r_ct,
 		sigma_x,

@@ -415,7 +415,7 @@ namespace PSBMPC_LIB
 		prediction_method = ERK1;
 		guidance_method = LOS;
 
-		T = 200.0;
+		T = 220.0;
 		dt = 5.0;
 
 		p_step_opt = 1;
@@ -426,21 +426,21 @@ namespace PSBMPC_LIB
 			dt = 1.0;
 			p_step_opt = 10;
 		}
-		t_ts = 20;
+		t_ts = 25;
 
-		d_so_relevant = 500;
-		d_do_relevant = 1000;
-		d_safe = 5;
-		K_coll = 8.0;
-		T_coll = 50;
-		kappa_SO = 10.0;
-		kappa_GW = 20.0;
-		kappa_RA = 5.0;
-		K_u = 5.0;
-		K_du = 2.5;
-		K_chi = 1.0;
-		K_dchi = 0.5;
-		K_e = 0.0005;
+		d_so_relevant = 150;
+		d_do_relevant = 500;
+		d_safe = 5.0;
+		K_coll = 30.0;
+		T_coll = 105;
+		kappa_SO = 12.0;
+		kappa_GW = 35.0;
+		kappa_RA = 4.0;
+		K_u = 3.25;
+		K_du = 1.1;
+		K_chi = 1.5;
+		K_dchi = 1.0;
+		K_e = 0.005;
 
 		G_1 = 100.0;
 		G_2 = 5.0;
