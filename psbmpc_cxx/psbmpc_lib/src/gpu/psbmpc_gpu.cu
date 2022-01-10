@@ -542,14 +542,14 @@ namespace PSBMPC_LIB
 
 				// If all obstacles are passed, even though inside colav range,
 				// then no need for colav
-				if (CPU::ship_is_passed_by(xs, obstacles[i].kf.get_state(), pars.d_safe))
+				/* if (CPU::ship_is_passed_by(xs, obstacles[i].kf.get_state(), pars.d_safe))
 				{
 					colav_active = false;
 				}
 				else
 				{
 					colav_active = true;
-				}
+				} */
 			}
 			colav_active = colav_active || n_so > 0;
 
