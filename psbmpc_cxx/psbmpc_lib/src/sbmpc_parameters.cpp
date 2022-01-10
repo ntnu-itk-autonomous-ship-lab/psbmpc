@@ -398,15 +398,15 @@ namespace PSBMPC_LIB
 		K_sgn = dpars[i_dpar_K_sgn_SBMPC];
 		T_sgn = dpars[i_dpar_T_sgn_SBMPC];
 
-		G_1 = dpars[i_dpar_G_1_SBMPC];
-		G_2 = dpars[i_dpar_G_2_SBMPC];
-		G_2 = dpars[i_dpar_G_3_SBMPC];
-		G_2 = dpars[i_dpar_G_4_SBMPC];
-
-		epsilon_rdp = dpars[i_dpar_epsilon_rdp_SBMPC];
-
 		q = dpars[i_dpar_q_SBMPC];
 		p = dpars[i_dpar_p_SBMPC];
+
+		G_1 = dpars[i_dpar_G_1_SBMPC];
+		G_2 = dpars[i_dpar_G_2_SBMPC];
+		G_3 = dpars[i_dpar_G_3_SBMPC];
+		G_4 = dpars[i_dpar_G_4_SBMPC];
+
+		epsilon_rdp = dpars[i_dpar_epsilon_rdp_SBMPC];
 	}
 
 }

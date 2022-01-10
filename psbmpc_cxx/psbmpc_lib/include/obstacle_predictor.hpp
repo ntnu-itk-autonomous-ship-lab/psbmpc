@@ -188,7 +188,8 @@ namespace PSBMPC_LIB
 			// Either an irrelevant obstacle or too far away to consider
 			double d_0i = (xs_i_0.block<2, 1>(0, 0) - ownship_state.block<2, 1>(0, 0)).norm();
 			bool is_passed = CPU::ship_is_passed_by(ownship_state, xs_i_0, mpc_pars.d_safe);
-			if (is_passed || d_0i > mpc_pars.d_do_relevant)
+			//if (is_passed || d_0i > mpc_pars.d_do_relevant)
+			if (d_0i > mpc_pars.d_do_relevant)
 			{
 				ct_offsets.resize(1);
 				ct_offsets(0) = 0.0;
