@@ -529,5 +529,63 @@ namespace PSBMPC_LIB
 				obstacles[i].set_scenario_probabilities(Pr_s_i);
 			}
 		}
+
+		template <class MPC_Parameters>
+		void operator()(
+			Dynamic_Obstacles &obstacles,		  // In/Out: Dynamic obstacle information
+			const Eigen::VectorXd &ownship_state, // In: Own-ship state at the current time
+			const MPC_Parameters &mpc_pars,		  // In: Calling MPC (either PSB-MPC or SB-MPC)
+			const bool is_sbmpc					  // In: SBMPC calling (True) or PSBMPC (False)
+		)
+		{
+			int n_do = obstacles.size();
+			n_ps.resize(n_do);
+			Eigen::MatrixXd waypoints_i;
+			for (int i = 0; i < n_do; i++)
+			{
+				// Store the obstacle`s predicted waypoints if not done already
+				// (as straight line path if no other info is available)
+				if (obstacles[i].get_waypoints().cols() < 2)
+				{
+					waypoints_i.resize(2, 2);
+					waypoints_i.col(0) = obstacles[i].kf.get_state().block<2, 1>(0, 0);
+					waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacles[i].kf.get_state().block<2, 1>(2, 0);
+					obstacles[i].set_waypoints(waypoints_i);
+				}
+
+				if (is_sbmpc) // Reset waypoints to straight line path at each iteration
+				{
+					waypoints_i.resize(2, 2);
+					waypoints_i.col(0) = obstacles[i].kf.get_state().block<2, 1>(0, 0);
+					waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacles[i].kf.get_state().block<2, 1>(2, 0);
+					obstacles[i].set_waypoints(waypoints_i);
+				}
+
+				initialize_independent_prediction_v2(obstacles, i, ownship_state, mpc_pars);
+
+				predict_independent_trajectories_v2(obstacles, i, mpc_pars);
+
+				// Transfer obstacles to the tracked obstacle
+				obstacles[i].set_trajectories(xs_i_p);
+				obstacles[i].set_mean_velocity_trajectories(v_ou_p_i);
+				obstacles[i].set_trajectory_covariance(P_i_p);
+
+				// Calculate scenario probabilities using intention model,
+				// or just set to be uniform
+				Eigen::VectorXd Pr_s_i(n_ps[i]);
+
+				// Uniform
+				for (int ps = 0; ps < n_ps[i]; ps++)
+				{
+					Pr_s_i(ps) = 0;
+				}
+				Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
+				//Pr_s_i(n_ps[i] - 1) = 1;
+				Pr_s_i = Pr_s_i / Pr_s_i.sum();
+
+				//std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
+				obstacles[i].set_scenario_probabilities(Pr_s_i);
+			}
+		}
 	};
 }
