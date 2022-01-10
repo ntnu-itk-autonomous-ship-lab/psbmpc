@@ -1,8 +1,8 @@
 fig = figure; axis equal
 hold on; grid on;
-ax1 = gca; 
+ax1 = gca;
 set(ax1, 'Position',[0.1 0.1 0.6 0.8]);
-origin = [270250, 7042250]; % nidelva north of ravnkloa
+origin = [map_origin(2), map_origin(1)]; % brattorabassenget
 ylimits_ne = [origin(2) - 1000, origin(2) + 2000];
 xlimits_ne = [origin(1) - 1500, origin(1) + 1500];
 xlim(ax1, xlimits_ne);
@@ -14,11 +14,11 @@ tlim = [0 T_sim / dt_sim];
 
 % L_os = 0.04*ylimits(2);
 % w_os = 0.006*(xlimits(2) - xlimits(1));
-% 
+%
 % L_i = 0.04*ylimits(2);
 % w_i = 0.006*(xlimits(2) - xlimits(1));
 % % drawn boat dimensions
-L_os = 5; L_i = 5;
+L_os = 10; L_i = 10;
 w_os = 3; w_i = 3;
 boat_dim = [L_os/2 .7*L_os/2 -L_os/2 -L_os/2 .7*L_os/2 L_os/2; 0 2*w_os 2*w_os  -2*w_os -2*w_os 0];
 
@@ -48,7 +48,7 @@ simplified_polygon = polyshape(P_simplified);
 
 plot(ax1, polygon); plot(ax1, simplified_polygon);
 
-ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]'); 
+ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]');
 ylabel(ax2,'Distance [m]');  xlabel(ax2,'Time [s]');
 
 th = 0 : 0.01 : 2.01 * pi;

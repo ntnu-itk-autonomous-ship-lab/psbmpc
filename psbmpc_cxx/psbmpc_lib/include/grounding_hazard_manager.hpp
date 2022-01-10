@@ -380,8 +380,7 @@ namespace PSBMPC_LIB
 			const bool northp,					   // In: Boolean determining if it is the northern or southern hemisphere
 			const Eigen::Vector2d &map_origin_lla, // In: Origin of map (from shapefile) in latitude, longitude format
 			const std::string frame_name,		   // In: Name of resulting local NED frame
-			const MPC_Parameters &mpc_pars,		   // In: Parameters of calling MPC (Either SB-MPC or PSB-MPC)
-			const bool read_file				   // In: Read input file <filename> or not
+			const MPC_Parameters &mpc_pars		   // In: Parameters of calling MPC (Either SB-MPC or PSB-MPC)
 			)
 			: d_so_relevant(mpc_pars.d_so_relevant),
 			  epsilon(mpc_pars.epsilon_rdp),
@@ -395,38 +394,14 @@ namespace PSBMPC_LIB
 			polygons_lla.clear();
 			simplified_polygons_ned.clear();
 			simplified_polygons_lla.clear();
-			if (read_file)
+
+			if (filename != "")
 			{
 				read_shapefile(filename, polygons_ned);
 				create_lla_referenced_polygons();
 				simplified_polygons_ned = create_simplified_polygons(polygons_ned);
 				simplified_polygons_lla = create_simplified_polygons(polygons_lla);
 			}
-		}
-
-		template <class MPC_Parameters>
-		Grounding_Hazard_Manager(
-			const std::string &filename,		   // In: Filename of shapefile to process
-			const double equatorial_radius,		   // In: Radius  of ellipsoid parametrization for lla <-> UTM conversions
-			const double flattening_factor,		   // In: Flattening factor of ellipsoid parametrization for lla <-> UTM conversions
-			const int utm_zone,					   // In: UTM Zone to consider (NOTE: Must match the one used when generating the shapefiles)
-			const bool northp,					   // In: Boolean determining if it is the northern or southern hemisphere
-			const Eigen::Vector2d &map_origin_lla, // In: Origin of map (from shapefile) in latitude, longitude format
-			const std::string frame_name,		   // In: Name of resulting local NED frame
-			const MPC_Parameters &mpc_pars		   // In: Parameters of calling MPC (Either SB-MPC or PSB-MPC)
-			)
-			: d_so_relevant(mpc_pars.d_so_relevant),
-			  epsilon(mpc_pars.epsilon_rdp),
-			  frame_name(frame_name),
-			  utm_p(equatorial_radius, flattening_factor, utm_zone, northp)
-		{
-			assert(map_origin_ned.size() == 2);
-			utm_p.forward(this->map_origin_ned(1), this->map_origin_ned(0), map_origin_lla(0), map_origin_lla(1));
-
-			read_shapefile(filename, polygons_ned);
-			create_lla_referenced_polygons();
-			simplified_polygons_ned = create_simplified_polygons(polygons_ned);
-			simplified_polygons_lla = create_simplified_polygons(polygons_lla);
 		}
 
 		void clear_all_polygons()

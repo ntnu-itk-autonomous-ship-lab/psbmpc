@@ -46,7 +46,7 @@ int main()
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	double offset = 300.0;
 	//xs_os_0 << 0, 0, 0, 2.0, 0, 0;
-	xs_os_0 << -248.0 + offset, -380.0 + offset, 0, 2.0, 0, 0;
+	xs_os_0 << -248.0 + offset, -380.0 + offset, 48 * DEG2RAD, 2.0, 0, 0;
 	double u_d(2.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 
 	double ownship_length(5.0);
@@ -109,6 +109,7 @@ int main()
 	std::vector<Eigen::MatrixXd> trajectory_i(n_do);
 	std::vector<Eigen::Matrix<double, 16, -1>> trajectory_covariances_i(n_do);
 	std::vector<Eigen::Matrix<double, 2, -1>> waypoints_i(n_do);
+	std::vector<int> n_wps_i(n_do);
 
 	//=====================================================================
 	// Matlab engine setup and array setup for the ownship and obstacle, ++
@@ -139,8 +140,6 @@ int main()
 	double *p_wps_i;
 
 	//=====================================================================
-	int n_wps_i(0);
-
 	for (int i = 0; i < n_do; i++)
 	{
 		ID[i] = i;
@@ -157,10 +156,11 @@ int main()
 		Pr_CC[i] = 1;
 
 		xs_i_0[i].resize(6);
+
 		if (i == 1)
 		{
-			n_wps_i = 5;
-			waypoints_i[i].resize(2, n_wps_i);
+			n_wps_i[i] = 5;
+			waypoints_i[i].resize(2, n_wps_i[i]);
 			//xs_i_0[i] << 5000, 0, 180 * DEG2RAD, 6, 0, 0;
 			/* xs_i_0[i] << 300, 150, -90 * DEG2RAD, 5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 500,
@@ -175,8 +175,8 @@ int main()
 		}
 		else if (i == 2)
 		{
-			n_wps_i = 2;
-			waypoints_i[i].resize(2, n_wps_i);
+			n_wps_i[i] = 2;
+			waypoints_i[i].resize(2, n_wps_i[i]);
 			xs_i_0[i] << 500, -300, 90 * DEG2RAD, 5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 500,
 				xs_i_0[i](1), 300;
@@ -185,8 +185,8 @@ int main()
 		}
 		else
 		{
-			n_wps_i = 2;
-			waypoints_i[i].resize(2, n_wps_i);
+			n_wps_i[i] = 2;
+			waypoints_i[i].resize(2, n_wps_i[i]);
 			/* xs_i_0[i] << 300, 0, 180 * DEG2RAD, 1.5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 0,
 				xs_i_0[i](1), 0; */
@@ -270,7 +270,7 @@ int main()
 
 	for (int i = 0; i < n_do; i++)
 	{
-		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i, mxREAL);
+		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i[i], mxREAL);
 		traj_i_mx[i] = mxCreateDoubleMatrix(trajectory_i[i].rows(), N, mxREAL);
 		P_traj_i_mx[i] = mxCreateDoubleMatrix(16, 1, mxREAL);
 	}
@@ -298,7 +298,7 @@ int main()
 	{
 		p_wps_i = mxGetPr(wps_i_mx[i]);
 
-		Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_i, 2, n_wps_i);
+		Eigen::Map<Eigen::MatrixXd> map_wps_i(p_wps_i, 2, n_wps_i[i]);
 		map_wps_i = waypoints_i[i];
 
 		engPutVariable(ep, "WPs_i", wps_i_mx[i]);
