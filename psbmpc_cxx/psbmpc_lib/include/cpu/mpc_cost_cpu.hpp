@@ -624,7 +624,7 @@ namespace PSBMPC_LIB
 
 			Eigen::Vector2d v_0_p, v_i_p, L_0i_p;
 			double psi_0_p(0.0), psi_i_p(0.0), d_0i_p(0.0), chi_m(0.0); // R(0.0);
-			bool mu(false), trans(false);
+			bool COLREGS_violation_indicator(false), TC_indicator(false);
 			for (int k = 0; k < n_samples; k++)
 			{
 				if (trajectory.rows() == 4)
@@ -676,10 +676,10 @@ namespace PSBMPC_LIB
 
 				if (k > 0)
 				{
-					mu = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
+					COLREGS_violation_indicator = determine_COLREGS_violation(v_0_p, psi_0_p, v_i_p, L_0i_p, d_0i_p);
 				}
 
-				trans = determine_transitional_cost_indicator(tv, psi_0_p, psi_i_p, L_0i_p, chi_m, i);
+				TC_indicator = determine_transitional_cost_indicator(tv, psi_0_p, psi_i_p, L_0i_p, chi_m, i);
 
 				R = calculate_ad_hoc_collision_risk(d_0i_p, (k + 1) * pars.dt);
 
@@ -694,7 +694,7 @@ namespace PSBMPC_LIB
 				}
 
 				// SB-MPC formulation with ad-hoc collision risk
-				cost = l_i * C * R + pars.kappa * mu + pars.kappa_TC * trans;
+				cost = l_i * C * R + pars.kappa * COLREGS_violation_indicator + pars.kappa_TC * TC_indicator;
 
 				if (cost > max_cost)
 				{
@@ -744,12 +744,12 @@ namespace PSBMPC_LIB
 			{
 				if (i == 0)
 				{
-					cost += pars.K_u * (1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_m_last) +
+					cost += pars.K_u * fabs(1 - offset_sequence[0]) + Delta_u(offset_sequence[0], u_m_last) +
 							K_chi(offset_sequence[1]) + Delta_chi(offset_sequence[1], chi_m_last);
 				}
 				else
 				{
-					cost += pars.K_u * (1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
+					cost += pars.K_u * fabs(1 - offset_sequence[2 * i]) + Delta_u(offset_sequence[2 * i], offset_sequence[2 * i - 2]) +
 							K_chi(offset_sequence[2 * i + 1]) + Delta_chi(offset_sequence[2 * i + 1], offset_sequence[2 * i - 1]);
 				}
 			}
