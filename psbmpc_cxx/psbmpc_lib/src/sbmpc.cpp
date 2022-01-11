@@ -419,17 +419,17 @@ namespace PSBMPC_LIB
 
 			tv.AH_0[i] = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
 
-			std::cout << "Obst i = " << i << " ahead at t0 ? " << tv.AH_0[i] << std::endl;
+			//std::cout << "Obst i = " << i << " ahead at t0 ? " << tv.AH_0[i] << std::endl;
 
 			// Obstacle on starboard side
 			tv.S_TC_0[i] = CPU::angle_difference_pmpi(atan2(L_AB(1), L_AB(0)), psi_A) > 0;
 
-			std::cout << "Obst i = " << i << " on starboard side at t0 ? " << tv.S_TC_0[i] << std::endl;
+			//std::cout << "Obst i = " << i << " on starboard side at t0 ? " << tv.S_TC_0[i] << std::endl;
 
 			// Ownship on starboard side of obstacle
 			tv.S_i_TC_0[i] = atan2(-L_AB(1), -L_AB(0)) > psi_B;
 
-			std::cout << "Own-ship on starboard side of obst i = " << i << " at t0 ? " << tv.S_i_TC_0[i] << std::endl;
+			//std::cout << "Own-ship on starboard side of obst i = " << i << " at t0 ? " << tv.S_i_TC_0[i] << std::endl;
 
 			// Ownship overtaking the obstacle
 			tv.O_TC_0[i] = v_B.dot(v_A) > cos(pars.phi_OT) * v_B.norm() * v_A.norm() &&
@@ -438,7 +438,7 @@ namespace PSBMPC_LIB
 						   is_close &&
 						   tv.AH_0[i];
 
-			std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << tv.O_TC_0[i] << std::endl;
+			//std::cout << "Own-ship overtaking obst i = " << i << " at t0 ? " << tv.O_TC_0[i] << std::endl;
 
 			// Obstacle overtaking the ownship
 			tv.Q_TC_0[i] = v_A.dot(v_B) > cos(pars.phi_OT) * v_A.norm() * v_B.norm() &&
@@ -447,7 +447,7 @@ namespace PSBMPC_LIB
 						   is_close &&
 						   !tv.AH_0[i];
 
-			std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << tv.Q_TC_0[i] << std::endl;
+			//std::cout << "Obst i = " << i << " overtaking the ownship at t0 ? " << tv.Q_TC_0[i] << std::endl;
 
 			// Determine if the obstacle is passed by
 			tv.IP_0[i] = ((v_A.dot(L_AB) < cos(112.5 * DEG2RAD) * v_A.norm() && // Ownship's perspective
@@ -456,7 +456,7 @@ namespace PSBMPC_LIB
 						   !tv.O_TC_0[i])) &&
 						 d_AB > pars.d_safe;
 
-			std::cout << "Obst i = " << i << " passed by at t0 ? " << tv.IP_0[i] << std::endl;
+			//std::cout << "Obst i = " << i << " passed by at t0 ? " << tv.IP_0[i] << std::endl;
 
 			// This is not mentioned in article, but also implemented here..
 			tv.H_TC_0[i] = v_A.dot(v_B) < -cos(pars.phi_HO) * v_A.norm() * v_B.norm() &&
@@ -464,7 +464,7 @@ namespace PSBMPC_LIB
 						   v_B.norm() > 0.25 &&
 						   tv.AH_0[i];
 
-			std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << tv.H_TC_0[i] << std::endl;
+			//std::cout << "Head-on at t0 wrt obst i = " << i << " ? " << tv.H_TC_0[i] << std::endl;
 
 			// Crossing situation, a bit redundant with the !is_passed condition also,
 			// but better safe than sorry (could be replaced with B_is_ahead also)
@@ -474,7 +474,7 @@ namespace PSBMPC_LIB
 						   v_A.norm() > 0.25 &&
 						   v_B.norm() > 0.25;
 
-			std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << tv.X_TC_0[i] << std::endl;
+			//std::cout << "Crossing at t0 wrt obst i = " << i << " ? " << tv.X_TC_0[i] << std::endl;
 		}
 	}
 
