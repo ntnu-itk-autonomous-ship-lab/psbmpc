@@ -171,12 +171,12 @@ namespace PSBMPC_LIB
 			{
 				if (M == 0)
 				{
-					cost_cd += pars.K_u * (1.0f - offset_sequence[0]) + pars.K_du * fabs(offset_sequence[0] - u_opt_last) +
+					cost_cd += pars.K_u * fabs(1.0f - offset_sequence[0]) + pars.K_du * fabs(offset_sequence[0] - u_opt_last) +
 							   pars.K_chi * powf(offset_sequence[1], 2) + pars.K_dchi * powf(wrap_angle_to_pmpi(offset_sequence[1] - chi_opt_last), 2);
 				}
 				else
 				{
-					cost_cd += pars.K_u * (1.0f - offset_sequence[2 * M]) + pars.K_du * fabs(offset_sequence[2 * M] - offset_sequence[2 * M - 2]) +
+					cost_cd += pars.K_u * fabs(1.0f - offset_sequence[2 * M]) + pars.K_du * fabs(offset_sequence[2 * M] - offset_sequence[2 * M - 2]) +
 							   pars.K_chi * powf(offset_sequence[2 * M + 1], 2) +
 							   pars.K_dchi * powf(wrap_angle_to_pmpi(offset_sequence[2 * M + 1] - offset_sequence[2 * M - 1]), 2);
 				}
