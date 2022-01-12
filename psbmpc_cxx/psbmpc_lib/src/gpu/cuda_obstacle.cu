@@ -137,6 +137,9 @@ namespace PSBMPC_LIB
 			TML::assign_eigen_object(this->xs_0, to.xs_0);
 			TML::assign_eigen_object(this->P_0, to.P_0);
 
+			this->Pr_WGW = to.Pr_WGW;
+			this->Pr_CCEM = to.Pr_CCEM;
+
 			this->duration_tracked = to.duration_tracked;
 			this->duration_lost = to.duration_lost;
 

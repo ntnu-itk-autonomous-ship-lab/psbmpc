@@ -244,8 +244,10 @@ namespace PSBMPC_LIB
 				//==============================================================================================
 			}
 
-			h_colregs_i_ps = pars->kappa_GW * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_GW_violation(xs_cpa, xs_i_cpa, d_cpa) +
-							 pars->kappa_SO * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_SO_violation(d_0i_0) +
+			Pr_WGW = obstacles[i].get_Pr_WGW();
+			Pr_CCEM = obstacles[i].get_Pr_CCEM();
+			h_colregs_i_ps = Pr_CCEM * pars->kappa_GW * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_GW_violation(xs_cpa, xs_i_cpa, d_cpa) +
+							 Pr_WGW * pars->kappa_SO * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_SO_violation(d_0i_0) +
 							 pars->kappa_RA * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_readily_apparent_violation(offset_sequence(1), offset_sequence(0));
 
 			//==================================================================================================
@@ -254,7 +256,7 @@ namespace PSBMPC_LIB
 				   colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_speed_or_course_change, colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_course_change_port,
 				   colregs_violation_evaluators[os_do_ps_pair_index].correct_HO_maneuver, offset_sequence(0), RAD2DEG * offset_sequence(1));
  */
-			//			printf("Thread %d | i = %d | ps = %d | cb index %d | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, offset_sequence(0), RAD2DEG * offset_sequence(1));
+			printf("Thread %d | i = %d | ps = %d | cb index %d | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | Pr_WGW = %.4f | Pr_CCEM = %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, Pr_WGW, Pr_CCEM, offset_sequence(0), RAD2DEG * offset_sequence(1));
 
 			//==================================================================================================
 
