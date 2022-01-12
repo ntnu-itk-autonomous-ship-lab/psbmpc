@@ -143,7 +143,6 @@ namespace PSBMPC_LIB
 			const bool disable							   // In: Disable the COLAV functionality or not
 		)
 		{
-			std::cout << "TO i = " << 0 << ": Pr_WGW = " << obstacles[0].get_Pr_WGW() << " | Pr_CCEM = " << obstacles[0].get_Pr_CCEM() << std::endl;
 			int n_samples = std::round(pars.T / pars.dt);
 
 			trajectory.resize(ownship_state.size(), n_samples);
@@ -1186,7 +1185,6 @@ namespace PSBMPC_LIB
 			{
 
 				temp_transfer_cobstacle = obstacles[i];
-				std::cout << "CO: Pr_WGW = " << temp_transfer_cobstacle.get_Pr_WGW() << " | Pr_CCEM = " << temp_transfer_cobstacle.get_Pr_CCEM() << std::endl;
 
 				cudaMemcpy(&obstacles_device_ptr[i], &temp_transfer_cobstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
 				cuda_check_errors("CudaMemCpy of Cuda Obstacle i failed.");

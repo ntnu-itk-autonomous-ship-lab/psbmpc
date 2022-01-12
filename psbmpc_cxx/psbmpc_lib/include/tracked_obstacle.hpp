@@ -120,30 +120,30 @@ namespace PSBMPC_LIB
 
 		Tracked_Obstacle &operator=(const Tracked_Obstacle &rhs);
 
-		inline int get_ID() const { return ID; };
+		inline int get_ID() const { return this->ID; };
 
-		inline double get_length() const { return l; };
+		inline double get_length() const { return this->l; };
 
-		inline double get_width() const { return w; };
+		inline double get_width() const { return this->w; };
 
-		inline Eigen::VectorXd get_scenario_probabilities() const { return Pr_s; }
+		inline Eigen::VectorXd get_scenario_probabilities() const { return this->Pr_s; }
 
 		inline void set_scenario_probabilities(const Eigen::VectorXd &Pr_s) { this->Pr_s = Pr_s; }
 
-		inline double get_Pr_WGW() const { return Pr_WGW; }
+		inline double get_Pr_WGW() const { return this->Pr_WGW; }
 
-		inline double get_Pr_CCEM() const { return Pr_CCEM; }
+		inline double get_Pr_CCEM() const { return this->Pr_CCEM; }
 
 		// KF related methods
 		inline void set_duration_tracked(const double duration_tracked) { this->duration_tracked = duration_tracked; }
 
-		inline double get_duration_tracked() const { return duration_tracked; }
+		inline double get_duration_tracked() const { return this->duration_tracked; }
 
 		inline void reset_duration_tracked() { duration_tracked = 0.0; }
 
 		inline void set_duration_lost(const double duration_lost) { this->duration_lost = duration_lost; }
 
-		inline double get_duration_lost() const { return duration_lost; }
+		inline double get_duration_lost() const { return this->duration_lost; }
 
 		inline void reset_duration_lost() { duration_lost = 0.0; }
 
@@ -151,13 +151,13 @@ namespace PSBMPC_LIB
 
 		inline void increment_duration_lost(const double dt) { duration_lost += dt; }
 
-		inline std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; }
+		inline std::vector<Eigen::MatrixXd> get_trajectories() const { return this->xs_p; }
 
-		inline std::vector<Eigen::MatrixXd> get_mean_velocity_trajectories() const { return v_ou_p; }
+		inline std::vector<Eigen::MatrixXd> get_mean_velocity_trajectories() const { return this->v_ou_p; }
 
-		inline Eigen::MatrixXd get_trajectory_covariance() const { return P_p; }
+		inline Eigen::MatrixXd get_trajectory_covariance() const { return this->P_p; }
 
-		inline Eigen::MatrixXd get_waypoints() const { return waypoints; }
+		inline Eigen::MatrixXd get_waypoints() const { return this->waypoints; }
 
 		inline void set_trajectories(const std::vector<Eigen::MatrixXd> &xs_p) { this->xs_p = xs_p; }
 

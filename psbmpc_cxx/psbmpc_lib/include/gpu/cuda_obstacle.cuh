@@ -78,27 +78,27 @@ namespace PSBMPC_LIB
 
 			__host__ Cuda_Obstacle &operator=(const Tracked_Obstacle &rhs);
 
-			__host__ __device__ inline int get_ID() const { return ID; };
+			__host__ __device__ inline int get_ID() const { return this->ID; };
 
-			__host__ __device__ inline float get_length() const { return l; };
+			__host__ __device__ inline float get_length() const { return this->l; };
 
-			__host__ __device__ inline float get_width() const { return w; };
+			__host__ __device__ inline float get_width() const { return this->w; };
 
-			__host__ __device__ inline float get_Pr_WGW() const { return Pr_WGW; }
+			__host__ __device__ inline float get_Pr_WGW() const { return this->Pr_WGW; }
 
-			__host__ __device__ inline float get_Pr_CCEM() const { return Pr_CCEM; }
+			__host__ __device__ inline float get_Pr_CCEM() const { return this->Pr_CCEM; }
 
-			__host__ __device__ inline float get_duration_lost() const { return duration_lost; }
+			__host__ __device__ inline float get_duration_lost() const { return this->duration_lost; }
 
-			__host__ __device__ inline float get_duration_tracked() const { return duration_tracked; }
+			__host__ __device__ inline float get_duration_tracked() const { return this->duration_tracked; }
 
-			__host__ __device__ inline int get_n_trajectory_samples() const { return P_p.get_cols(); }
+			__host__ __device__ inline int get_n_trajectory_samples() const { return this->P_p.get_cols(); }
 
-			__host__ __device__ inline int get_n_prediction_scenarios() const { return xs_p.get_rows() / 4; }
+			__host__ __device__ inline int get_n_prediction_scenarios() const { return this->xs_p.get_rows() / 4; }
 
-			__device__ inline TML::PDVector16f get_trajectory_covariance_sample(const int k) { return P_p.get_col(k); }
+			__device__ inline TML::PDVector16f get_trajectory_covariance_sample(const int k) { return this->P_p.get_col(k); }
 
-			__device__ inline TML::PDVector4f get_trajectory_sample(const int ps, const int k) { return xs_p.get_block<4, 1>(4 * ps, k, 4, 1); }
+			__device__ inline TML::PDVector4f get_trajectory_sample(const int ps, const int k) { return this->xs_p.get_block<4, 1>(4 * ps, k, 4, 1); }
 		};
 	}
 }

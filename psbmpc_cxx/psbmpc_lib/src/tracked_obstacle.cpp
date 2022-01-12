@@ -156,7 +156,6 @@ namespace PSBMPC_LIB
 			duration_tracked(duration_tracked), duration_lost(duration_lost),
 			P_p(P_p), xs_p(xs_p)
 	{
-		std::cout << "Pr_WGW = " << Pr_WGW << " | Pr_CCEM = " << Pr_CCEM << std::endl;
 		this->kf = KF(xs_0, P_0, 0.0, true);
 	}
 
@@ -187,11 +186,11 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : update
-*  Function :
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : update
+	*  Function :
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	void Tracked_Obstacle::update(
 		const Eigen::VectorXd &xs_aug, // In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 		const Eigen::VectorXd &P,	   // In: Obstacle covariance
@@ -288,14 +287,14 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Private functions
-*****************************************************************************************/
+	*  Private functions
+	*****************************************************************************************/
 	/****************************************************************************************
-*  Name     : assign_data
-*  Function :
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : assign_data
+	*  Function :
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	void Tracked_Obstacle::assign_data(
 		const Tracked_Obstacle &other // In: Tracked Obstacle to assign data from
 	)
@@ -316,6 +315,9 @@ namespace PSBMPC_LIB
 		this->P_0 = other.P_0;
 
 		this->Pr_s = other.Pr_s;
+
+		this->Pr_WGW = other.Pr_WGW;
+		this->Pr_CCEM = other.Pr_CCEM;
 
 		this->duration_tracked = other.duration_tracked;
 		this->duration_lost = other.duration_lost;
