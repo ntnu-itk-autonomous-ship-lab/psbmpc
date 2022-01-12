@@ -156,6 +156,7 @@ namespace PSBMPC_LIB
 			duration_tracked(duration_tracked), duration_lost(duration_lost),
 			P_p(P_p), xs_p(xs_p)
 	{
+		std::cout << "Pr_WGW = " << Pr_WGW << " | Pr_CCEM = " << Pr_CCEM << std::endl;
 		this->kf = KF(xs_0, P_0, 0.0, true);
 	}
 

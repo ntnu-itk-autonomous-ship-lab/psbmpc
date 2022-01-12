@@ -84,17 +84,17 @@ namespace PSBMPC_LIB
 
 			__host__ __device__ inline float get_width() const { return w; };
 
-			__device__ inline float get_Pr_WGW() const { return Pr_WGW; }
+			__host__ __device__ inline float get_Pr_WGW() const { return Pr_WGW; }
 
-			__device__ inline float get_Pr_CCEM() const { return Pr_CCEM; }
+			__host__ __device__ inline float get_Pr_CCEM() const { return Pr_CCEM; }
 
-			__device__ inline float get_duration_lost() const { return duration_lost; }
+			__host__ __device__ inline float get_duration_lost() const { return duration_lost; }
 
-			__device__ inline float get_duration_tracked() const { return duration_tracked; }
+			__host__ __device__ inline float get_duration_tracked() const { return duration_tracked; }
 
-			__device__ inline int get_n_trajectory_samples() const { return P_p.get_cols(); }
+			__host__ __device__ inline int get_n_trajectory_samples() const { return P_p.get_cols(); }
 
-			__device__ inline int get_n_prediction_scenarios() const { return xs_p.get_rows() / 4; }
+			__host__ __device__ inline int get_n_prediction_scenarios() const { return xs_p.get_rows() / 4; }
 
 			__device__ inline TML::PDVector16f get_trajectory_covariance_sample(const int k) { return P_p.get_col(k); }
 
