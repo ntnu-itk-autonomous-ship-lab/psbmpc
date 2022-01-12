@@ -45,6 +45,12 @@ namespace PSBMPC_LIB
 			TML::Vector4f xs_0;
 			TML::Matrix4f P_0;
 
+			// Probability that the obstacle will give-way for the own-ship when specified by COLREGS
+			float Pr_WGW;
+
+			// Probability that the obstacle will perform a COLREGS compliant evasive maneuver when supposed to
+			float Pr_CCEM;
+
 			// If the tracker-based KF is on, the obstacle is tracked until it dies
 			// while the duration lost may be reset if new measurements are aquired
 			float duration_tracked, duration_lost;
@@ -77,6 +83,10 @@ namespace PSBMPC_LIB
 			__host__ __device__ inline float get_length() const { return l; };
 
 			__host__ __device__ inline float get_width() const { return w; };
+
+			__device__ inline float get_Pr_WGW() const { return Pr_WGW; }
+
+			__device__ inline float get_Pr_CCEM() const { return Pr_CCEM; }
 
 			__device__ inline float get_duration_lost() const { return duration_lost; }
 

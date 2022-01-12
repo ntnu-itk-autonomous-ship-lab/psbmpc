@@ -3,19 +3,19 @@
 *  File name : tracked_obstacle.hpp
 *
 *  Function  : Header file for the tracked obstacle class used by the PSB-MPC.
-*			   Contains dynamic obstacle information from the tracking system, intention 
+*			   Contains dynamic obstacle information from the tracking system, intention
 *			   inference modules etc., managed by the Obstacle_Manager.
-*  
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -37,7 +37,6 @@ namespace PSBMPC_LIB
 	class Tracked_Obstacle
 	{
 	private:
-
 		friend class GPU::Cuda_Obstacle;
 
 		int ID;
@@ -51,6 +50,12 @@ namespace PSBMPC_LIB
 		Eigen::Vector4d xs_0;
 		Eigen::Matrix4d P_0;
 
+		// Probability that the obstacle will give-way for the own-ship when specified by COLREGS
+		double Pr_WGW;
+
+		// Probability that the obstacle will perform a COLREGS compliant evasive maneuver when supposed to
+		double Pr_CCEM;
+
 		// Vector of scenario probabilities at the current time or last time of update
 		Eigen::VectorXd Pr_s;
 
@@ -60,7 +65,7 @@ namespace PSBMPC_LIB
 
 		// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step.
 		// This is equal for all prediction scenarios including those with active COLAV (using MROU)
-		Eigen::MatrixXd P_p;  
+		Eigen::MatrixXd P_p;
 
 		// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
 		std::vector<Eigen::MatrixXd> xs_p, v_ou_p;
@@ -78,23 +83,34 @@ namespace PSBMPC_LIB
 
 		Tracked_Obstacle() {}
 
-		Tracked_Obstacle(const Eigen::VectorXd &xs_aug, 
-			const Eigen::VectorXd &P, 
-			const Eigen::VectorXd &Pr_s, 
-			const bool filter_on, 
-			const double T, 
-			const double dt);
-		
-		Tracked_Obstacle(const Eigen::VectorXd &xs_aug, 
-			const Eigen::VectorXd &P, 
-			const bool filter_on, 
-			const double T, 
-			const double dt);
+		Tracked_Obstacle(const Eigen::VectorXd &xs_aug,
+						 const Eigen::VectorXd &P,
+						 const Eigen::VectorXd &Pr_s,
+						 const bool filter_on,
+						 const double T,
+						 const double dt);
+
+		Tracked_Obstacle(const Eigen::VectorXd &xs_aug,
+						 const Eigen::VectorXd &P,
+						 const bool filter_on,
+						 const double T,
+						 const double dt);
 
 		Tracked_Obstacle(
-			const std::vector<Eigen::MatrixXd> &xs_p, 
-			const Eigen::MatrixXd &P_p, 
+			const std::vector<Eigen::MatrixXd> &xs_p,
+			const Eigen::MatrixXd &P_p,
 			const Eigen::VectorXd &Pr_s,
+			const Eigen::Vector4d &dims,
+			const double duration_tracked,
+			const double duration_lost,
+			const int ID);
+
+		Tracked_Obstacle(
+			const std::vector<Eigen::MatrixXd> &xs_p,
+			const Eigen::MatrixXd &P_p,
+			const Eigen::VectorXd &Pr_s,
+			const double Pr_WGW,
+			const double Pr_CCEM,
 			const Eigen::Vector4d &dims,
 			const double duration_tracked,
 			const double duration_lost,
@@ -102,7 +118,7 @@ namespace PSBMPC_LIB
 
 		Tracked_Obstacle(const Tracked_Obstacle &other);
 
-		Tracked_Obstacle& operator=(const Tracked_Obstacle &rhs);
+		Tracked_Obstacle &operator=(const Tracked_Obstacle &rhs);
 
 		inline int get_ID() const { return ID; };
 
@@ -113,7 +129,11 @@ namespace PSBMPC_LIB
 		inline Eigen::VectorXd get_scenario_probabilities() const { return Pr_s; }
 
 		inline void set_scenario_probabilities(const Eigen::VectorXd &Pr_s) { this->Pr_s = Pr_s; }
-		
+
+		inline double get_Pr_WGW() const { return Pr_WGW; }
+
+		inline double get_Pr_CCEM() const { return Pr_CCEM; }
+
 		// KF related methods
 		inline void set_duration_tracked(const double duration_tracked) { this->duration_tracked = duration_tracked; }
 
@@ -132,7 +152,7 @@ namespace PSBMPC_LIB
 		inline void increment_duration_lost(const double dt) { duration_lost += dt; }
 
 		inline std::vector<Eigen::MatrixXd> get_trajectories() const { return xs_p; }
-		
+
 		inline std::vector<Eigen::MatrixXd> get_mean_velocity_trajectories() const { return v_ou_p; }
 
 		inline Eigen::MatrixXd get_trajectory_covariance() const { return P_p; }
@@ -148,15 +168,15 @@ namespace PSBMPC_LIB
 		inline void set_waypoints(const Eigen::MatrixXd &waypoints) { this->waypoints = waypoints; }
 
 		void update(
-			const Eigen::VectorXd &xs_aug, 
-			const Eigen::VectorXd &P, 
-			const Eigen::VectorXd &Pr_s, 
+			const Eigen::VectorXd &xs_aug,
+			const Eigen::VectorXd &P,
+			const Eigen::VectorXd &Pr_s,
 			const bool filter_on,
 			const double dt);
 
 		void update(
-			const Eigen::VectorXd &xs_aug, 
-			const Eigen::VectorXd &P, 
+			const Eigen::VectorXd &xs_aug,
+			const Eigen::VectorXd &P,
 			const bool filter_on,
 			const double dt);
 

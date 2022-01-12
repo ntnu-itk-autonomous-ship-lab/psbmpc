@@ -525,15 +525,15 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-	Private functions
-****************************************************************************************/
+			Private functions
+		****************************************************************************************/
 		/****************************************************************************************
-*  Name     : determine_colav_active
-*  Function : Uses the freshly updated obstacles vector and the number of static
-*			  obstacles to determine whether it is necessary to run the PSBMPC
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : determine_colav_active
+		*  Function : Uses the freshly updated obstacles vector and the number of static
+		*			  obstacles to determine whether it is necessary to run the PSBMPC
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		bool PSBMPC::determine_colav_active(
 			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
 			const int n_so,						// In: Number of static obstacles
@@ -571,12 +571,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : reset_control_behavior
-*  Function : Sets the offset sequence back to the initial starting point, i.e. the
-*			  leftmost branch of the control behavior tree
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : reset_control_behavior
+		*  Function : Sets the offset sequence back to the initial starting point, i.e. the
+		*			  leftmost branch of the control behavior tree
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::reset_control_behaviour()
 		{
 			offset_sequence_counter.setZero();
@@ -588,12 +588,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : increment_control_behavior
-*  Function : Increments the control behavior counter and changes the offset sequence
-*			  accordingly. Backpropagation is used for the incrementation
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : increment_control_behavior
+		*  Function : Increments the control behavior counter and changes the offset sequence
+		*			  accordingly. Backpropagation is used for the incrementation
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::increment_control_behaviour()
 		{
 			for (int M = pars.n_M - 1; M > -1; M--)
