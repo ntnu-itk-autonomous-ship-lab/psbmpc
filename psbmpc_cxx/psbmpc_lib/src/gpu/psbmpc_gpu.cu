@@ -1183,7 +1183,6 @@ namespace PSBMPC_LIB
 			Cuda_Obstacle temp_transfer_cobstacle;
 			for (int i = 0; i < n_do; i++)
 			{
-
 				temp_transfer_cobstacle = obstacles[i];
 
 				cudaMemcpy(&obstacles_device_ptr[i], &temp_transfer_cobstacle, sizeof(Cuda_Obstacle), cudaMemcpyHostToDevice);
