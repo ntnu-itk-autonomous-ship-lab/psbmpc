@@ -1,15 +1,15 @@
 #======================================================================
-# This CMakeLists.txt creates and installs the PSB-MPC library target. 
+# This CMakeLists.txt creates and installs the PSB-MPC library target.
 # ---------------------------------------------------------------------
 
 # Version 1.0
 
-# Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim. 
+# Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
 # All rights reserved.
 
 # Author 	: Trym Tengesdal
 
-# Modified 	: 
+# Modified 	:
 #======================================================================
 cmake_minimum_required(VERSION 3.17.3)
 
@@ -35,21 +35,21 @@ if(USE_GPU_PSBMPC)
 		src/cpu/psbmpc_cpu.cpp
 		src/cpu/cpe_cpu.cpp
 		src/cpu/kinetic_ship_models_cpu.cpp
-		src/cpu/kinematic_ship_models_cpu.cpp 
+		src/cpu/kinematic_ship_models_cpu.cpp
 
-		src/gpu/psbmpc_gpu.cu 
-		src/gpu/cpe_gpu.cu 
+		src/gpu/psbmpc_gpu.cu
+		src/gpu/cpe_gpu.cu
 		src/gpu/kinetic_ship_models_gpu.cu
 		src/gpu/kinematic_ship_models_gpu.cu
 		src/gpu/cuda_obstacle.cu
-		src/gpu/cb_cost_functor.cu 
-		
+		src/gpu/cb_cost_functor.cu
+
 		src/psbmpc_parameters.cpp
-		src/sbmpc_parameters.cpp 
-		src/sbmpc.cpp 
+		src/sbmpc_parameters.cpp
+		src/sbmpc.cpp
 		src/tracked_obstacle.cpp
-		src/kf.cpp  
-		src/mrou.cpp 
+		src/kf.cpp
+		src/mrou.cpp
 		src/shapefile_related/safileio.cpp
 		src/shapefile_related/shpopen.cpp
 	)
@@ -58,14 +58,14 @@ else()
 		src/cpu/psbmpc_cpu.cpp
 		src/cpu/cpe_cpu.cpp
 		src/cpu/kinetic_ship_models_cpu.cpp
-		src/cpu/kinematic_ship_models_cpu.cpp 
+		src/cpu/kinematic_ship_models_cpu.cpp
 
 		src/psbmpc_parameters.cpp
-		src/sbmpc_parameters.cpp 
-		src/sbmpc.cpp 
+		src/sbmpc_parameters.cpp
+		src/sbmpc.cpp
 		src/tracked_obstacle.cpp
-		src/kf.cpp  
-		src/mrou.cpp 
+		src/kf.cpp
+		src/mrou.cpp
 		src/shapefile_related/safileio.cpp
 		src/shapefile_related/shpopen.cpp
 	)
@@ -84,9 +84,9 @@ if(ENABLE_PSBMPC_DEBUGGING)
 	target_link_libraries(${LIBRARY_TARGET_NAME} PUBLIC ${Matlab_LIBRARIES})
 endif(ENABLE_PSBMPC_DEBUGGING)
 
-target_include_directories(${LIBRARY_TARGET_NAME} 
+target_include_directories(${LIBRARY_TARGET_NAME}
 	PRIVATE include
-	PUBLIC 
+	PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/psbmpc${PSBMPC_LIB_MAJOR_VERSION}>)
 
@@ -98,16 +98,14 @@ target_compile_options(${LIBRARY_TARGET_NAME}
 )
 
 if(CMAKE_BUILD_TYPE EQUAL release)
-	target_compile_options(${LIBRARY_TARGET_NAME} 
+	target_compile_options(${LIBRARY_TARGET_NAME}
 		PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -j$(nproc) -O3>
 		PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -j$(nproc) -Xptxas -O3>)
 else()
-	# Host and device debug compilation and profiling, comment out if you want to compile with debugging symbols etc.
-	#set(CMAKE_VERBOSE_MAKEFILE ON)
-	#target_compile_options(${LIBRARY_TARGET_NAME} 
-	#	PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fno-omit-frame-pointer -g>
-	#	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:  -Xcompiler -g -G -Wall -Wno-pedantic>
-	#)
+	target_compile_options(${LIBRARY_TARGET_NAME}
+		PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fno-omit-frame-pointer -g>
+		PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:  -Xcompiler -g -G -Wall -Wno-pedantic>
+	)
 endif()
 
 # INSTALL LIBRARY
@@ -115,7 +113,7 @@ include(CMakePackageConfigHelpers)
 install(DIRECTORY include/ DESTINATION ${PSBMPC_INCLUDE_DIR} COMPONENT Devel)
 
 install(
-	TARGETS ${LIBRARY_TARGET_NAME} 
+	TARGETS ${LIBRARY_TARGET_NAME}
 	EXPORT ${PROJECT_NAME}Targets
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/psbmpc${PSBMPC_LIB_MAJOR_VERSION}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/psbmpc${PSBMPC_LIB_MAJOR_VERSION}
