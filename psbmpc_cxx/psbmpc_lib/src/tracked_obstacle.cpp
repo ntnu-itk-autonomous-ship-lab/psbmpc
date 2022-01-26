@@ -25,11 +25,11 @@ namespace PSBMPC_LIB
 {
 
 	/****************************************************************************************
-*  Name     : Tracked_Obstacle
-*  Function : Class constructor, initializes parameters, variables and objects
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+	*  Name     : Tracked_Obstacle
+	*  Function : Class constructor, initializes parameters, variables and objects
+	*  Author   :
+	*  Modified :
+	*****************************************************************************************/
 	Tracked_Obstacle::Tracked_Obstacle(
 		const Eigen::VectorXd &xs_aug, // In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 		const Eigen::VectorXd &P,	   // In: Obstacle covariance
@@ -141,11 +141,11 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : operator=
-*  Function :
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+	*  Name     : operator=
+	*  Function :
+	*  Author   :
+	*  Modified :
+	*****************************************************************************************/
 	Tracked_Obstacle &Tracked_Obstacle::operator=(
 		const Tracked_Obstacle &rhs)
 	{
@@ -160,11 +160,11 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : update
-*  Function :
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : update
+	*  Function :
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	void Tracked_Obstacle::update(
 		const Eigen::VectorXd &xs_aug, // In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 		const Eigen::VectorXd &P,	   // In: Obstacle covariance
@@ -261,14 +261,14 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Private functions
-*****************************************************************************************/
+	*  Private functions
+	*****************************************************************************************/
 	/****************************************************************************************
-*  Name     : assign_data
-*  Function :
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : assign_data
+	*  Function :
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	void Tracked_Obstacle::assign_data(
 		const Tracked_Obstacle &other // In: Tracked Obstacle to assign data from
 	)

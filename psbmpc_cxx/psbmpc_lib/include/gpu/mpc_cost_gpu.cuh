@@ -77,7 +77,6 @@ namespace PSBMPC_LIB
 			__host__ __device__ MPC_Cost(const Parameters &pars) : pars(pars) {}
 
 			__device__ inline float calculate_dynamic_obstacle_cost(
-				const CB_Functor_Data *fdata,
 				const Cuda_Obstacle *obstacles,
 				const float P_c_i,
 				const TML::PDVector4f &xs_p,
@@ -110,7 +109,6 @@ namespace PSBMPC_LIB
 		//=======================================================================================
 		template <typename Parameters>
 		__device__ inline float MPC_Cost<Parameters>::calculate_dynamic_obstacle_cost(
-			const CB_Functor_Data *fdata,	// In: Pointer to control behaviour functor data
 			const Cuda_Obstacle *obstacles, // In: Pointer to Cuda_Obstacle array
 			const float P_c_i,				// In: Predicted obstacle collision probabilities for obstacle in prediction scenario ps
 			const TML::PDVector4f &xs_p,	// In: Predicted own-ship state at time step k

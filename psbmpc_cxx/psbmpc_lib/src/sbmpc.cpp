@@ -24,11 +24,11 @@
 namespace PSBMPC_LIB
 {
 	/****************************************************************************************
-*  Name     : SBMPC
-*  Function : Class constructor, initializes parameters and variables
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+	*  Name     : SBMPC
+	*  Function : Class constructor, initializes parameters and variables
+	*  Author   :
+	*  Modified :
+	*****************************************************************************************/
 	SBMPC::SBMPC()
 		: pars(false)
 	{
@@ -57,11 +57,11 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : calculate_optimal_offsets
-*  Function :
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : calculate_optimal_offsets
+	*  Function :
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	void SBMPC::calculate_optimal_offsets(
 		double &u_opt,										  // In/out: Optimal surge offset
 		double &chi_opt,									  // In/out: Optimal course offset
@@ -295,15 +295,15 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-	Private functions
-****************************************************************************************/
+		Private functions
+	****************************************************************************************/
 	/****************************************************************************************
-*  Name     : reset_control_behavior
-*  Function : Sets the offset sequence back to the initial starting point, i.e. the
-*			  leftmost branch of the control behavior tree
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : reset_control_behavior
+	*  Function : Sets the offset sequence back to the initial starting point, i.e. the
+	*			  leftmost branch of the control behavior tree
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	void SBMPC::reset_control_behaviour()
 	{
 		offset_sequence_counter.setZero();
@@ -315,12 +315,12 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : increment_control_behavior
-*  Function : Increments the control behavior counter and changes the offset sequence
-*			  accordingly. Backpropagation is used for the incrementation
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : increment_control_behavior
+	*  Function : Increments the control behavior counter and changes the offset sequence
+	*			  accordingly. Backpropagation is used for the incrementation
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	void SBMPC::increment_control_behaviour()
 	{
 		for (int M = pars.n_M - 1; M > -1; M--)
@@ -356,12 +356,12 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : update_transitional_variables
-*  Function : Updates the transitional cost indicators O, Q, X, S
-*			  at the current time t0 wrt all obstacles.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : update_transitional_variables
+	*  Function : Updates the transitional cost indicators O, Q, X, S
+	*			  at the current time t0 wrt all obstacles.
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	void SBMPC::update_transitional_variables(
 		const Eigen::VectorXd &ownship_state, // In: Current time own-ship state
 		const Dynamic_Obstacles &obstacles	  // In: Dynamic obstacle information
@@ -413,8 +413,8 @@ namespace PSBMPC_LIB
 			L_AB = L_AB.normalized();
 
 			/*********************************************************************
-		* Transitional variable update
-		*********************************************************************/
+			* Transitional variable update
+			*********************************************************************/
 			is_close = d_AB <= pars.d_close;
 
 			tv.AH_0[i] = v_A.dot(L_AB) > cos(pars.phi_AH) * v_A.norm();
@@ -479,11 +479,11 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : setup_prediction
-*  Function : Sets up the own-ship maneuvering times.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : setup_prediction
+	*  Function : Sets up the own-ship maneuvering times.
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	void SBMPC::setup_prediction(
 		const Dynamic_Obstacles &obstacles // In: Dynamic obstacle information
 	)
@@ -564,12 +564,12 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : determine_colav_active
-*  Function : Uses the freshly updated obstacles vector and the number of static
-*			  obstacles to determine whether it is necessary to run the PSBMPC
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : determine_colav_active
+	*  Function : Uses the freshly updated obstacles vector and the number of static
+	*			  obstacles to determine whether it is necessary to run the PSBMPC
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	bool SBMPC::determine_colav_active(
 		const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
 		const int n_so,						// In: Number of static obstacles
@@ -607,11 +607,11 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : assign_optimal_trajectory
-*  Function : Set the optimal trajectory to the current predicted trajectory
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+	*  Name     : assign_optimal_trajectory
+	*  Function : Set the optimal trajectory to the current predicted trajectory
+	*  Author   :
+	*  Modified :
+	*****************************************************************************************/
 	void SBMPC::assign_optimal_trajectory(
 		Eigen::MatrixXd &optimal_trajectory // In/out: Optimal PSB-MPC trajectory
 	)

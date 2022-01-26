@@ -53,7 +53,6 @@ namespace PSBMPC_LIB
             float heading_diff;
             float bearing_to_obstacle_relative_to_ownship;
             float bearing_to_ownship_relative_to_obstacle;
-            float bearing_to_intersection_point;
             float ownship_crossing_arrival_time;
             float obstacle_crossing_arrival_time;
 

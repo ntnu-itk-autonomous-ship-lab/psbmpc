@@ -35,11 +35,11 @@ namespace PSBMPC_LIB
 	{
 
 		/****************************************************************************************
-*  Name     : PSBMPC
-*  Function : Class constructor, initializes parameters and variables
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : PSBMPC
+		*  Function : Class constructor, initializes parameters and variables
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		PSBMPC::PSBMPC()
 			: u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12)
 		{
@@ -64,11 +64,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : calculate_optimal_offsets
-*  Function : W/static obstacles parametrized as polygons
-*  Author   : Trym Tengesdal & Tom Daniel Grande
-*  Modified :
-*****************************************************************************************/
+		*  Name     : calculate_optimal_offsets
+		*  Function : W/static obstacles parametrized as polygons
+		*  Author   : Trym Tengesdal & Tom Daniel Grande
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::calculate_optimal_offsets(
 			double &u_opt,								   // In/out: Optimal surge offset
 			double &chi_opt,							   // In/out: Optimal course offset
@@ -127,6 +127,8 @@ namespace PSBMPC_LIB
 
 			setup_prediction(obstacles);
 
+			Eigen::MatrixXd P_c_i;
+			P_c_i.setZero();
 //==================================================================
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
@@ -179,6 +181,12 @@ namespace PSBMPC_LIB
 			engPutVariable(ep, "d_safe", d_safe_mx);
 			engPutVariable(ep, "n_patches", n_patches_mx);
 			engEvalString(ep, "inside_psbmpc_init_plot");
+
+			Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), trajectory.cols());
+			map_traj = trajectory;
+
+			k_s = mxCreateDoubleScalar(trajectory.cols());
+			engPutVariable(ep, "k", k_s);
 
 			Eigen::Matrix<double, 2, -1> polygon_matrix;
 			int n_total_vertices = 0;
@@ -235,7 +243,12 @@ namespace PSBMPC_LIB
 
 			for (int i = 0; i < n_do; i++)
 			{
-				P_c_i_mx[i] = mxCreateDoubleMatrix(n_ps[i], n_samples, mxREAL);
+				P_c_i.resize(n_ps[i], n_samples);
+				P_c_i_mx[i] = mxCreateDoubleMatrix(P_c_i.rows(), P_c_i.cols(), mxREAL);
+				p_P_c_i = mxGetPr(P_c_i_mx[i]);
+				Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, P_c_i.rows(), P_c_i.cols());
+				map_P_c = P_c_i;
+				engPutVariable(ep, "P_c_i", P_c_i_mx[i]);
 
 				Eigen::MatrixXd P_i_p = obstacles[i].get_trajectory_covariance();
 				std::vector<Eigen::MatrixXd> xs_i_p = obstacles[i].get_trajectories();
@@ -307,7 +320,7 @@ namespace PSBMPC_LIB
 
 			int curr_ps_index(0);
 			int min_index = 0;
-			int thread_count = 1;
+			//int thread_count = 1;
 
 			if (n_so == 0)
 			{
@@ -319,7 +332,6 @@ namespace PSBMPC_LIB
 			double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0), max_cross_track_error(0.0);
 			Eigen::VectorXd h_do_i_ps, h_so_j;
 			Eigen::VectorXd cost_do(n_do);
-			Eigen::MatrixXd P_c_i;
 			min_cost = 1e12;
 			reset_control_behaviour();
 			for (int cb = 0; cb < pars.n_cbs; cb++)
@@ -366,7 +378,7 @@ namespace PSBMPC_LIB
 					for (int ps = 0; ps < n_ps[i]; ps++)
 					{
 						//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f \n", thread_count, i, ps, cb, h_do_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
-						thread_count += 1;
+						//thread_count += 1;
 					}
 #else
 					cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, P_c_i, obstacles, i, ownship.get_length());
@@ -376,20 +388,20 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING
 //===============================================================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-					/* p_P_c_i = mxGetPr(P_c_i_mx[i]);
-				Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, n_ps[i], n_samples);
-				map_P_c = P_c_i;
+					p_P_c_i = mxGetPr(P_c_i_mx[i]);
+					Eigen::Map<Eigen::MatrixXd> map_P_c_1(p_P_c_i, n_ps[i], P_c_i.cols());
+					map_P_c_1 = P_c_i;
 
-				i_mx = mxCreateDoubleScalar(i + 1);
-				engPutVariable(ep, "i", i_mx);
+					i_mx = mxCreateDoubleScalar(i + 1);
+					engPutVariable(ep, "i", i_mx);
 
-				engPutVariable(ep, "P_c_i", P_c_i_mx[i]);
-				for(int ps = 0; ps < n_ps[i]; ps++)
-				{
-					ps_mx = mxCreateDoubleScalar(ps + 1);
-					engPutVariable(ep, "ps", ps_mx);
-					engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
-				} */
+					engPutVariable(ep, "P_c_i", P_c_i_mx[i]);
+					for (int ps = 0; ps < n_ps[i]; ps++)
+					{
+						ps_mx = mxCreateDoubleScalar(ps + 1);
+						engPutVariable(ep, "ps", ps_mx);
+						engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
+					}
 #endif
 					//===============================================================================================================
 				}
@@ -442,14 +454,14 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING
 //===============================================================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-				/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
-			map_traj = trajectory;
+				Eigen::Map<Eigen::MatrixXd> map_traj_1(p_traj_os, trajectory.rows(), trajectory.cols());
+				map_traj_1 = trajectory;
 
-			k_s = mxCreateDoubleScalar(n_samples);
-			engPutVariable(ep, "k", k_s);
+				k_s = mxCreateDoubleScalar(n_samples);
+				engPutVariable(ep, "k", k_s);
 
-			engPutVariable(ep, "X", traj_os_mx);
-			engEvalString(ep, "inside_psbmpc_upd_ownship_plot"); */
+				engPutVariable(ep, "X", traj_os_mx);
+				engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
 #endif
 				//===============================================================================================================
 			}
@@ -525,15 +537,15 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-	Private functions
-****************************************************************************************/
+			Private functions
+		****************************************************************************************/
 		/****************************************************************************************
-*  Name     : determine_colav_active
-*  Function : Uses the freshly updated obstacles vector and the number of static
-*			  obstacles to determine whether it is necessary to run the PSBMPC
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : determine_colav_active
+		*  Function : Uses the freshly updated obstacles vector and the number of static
+		*			  obstacles to determine whether it is necessary to run the PSBMPC
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		bool PSBMPC::determine_colav_active(
 			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
 			const int n_so,						// In: Number of static obstacles
@@ -571,12 +583,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : reset_control_behavior
-*  Function : Sets the offset sequence back to the initial starting point, i.e. the
-*			  leftmost branch of the control behavior tree
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : reset_control_behavior
+		*  Function : Sets the offset sequence back to the initial starting point, i.e. the
+		*			  leftmost branch of the control behavior tree
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::reset_control_behaviour()
 		{
 			offset_sequence_counter.setZero();
@@ -588,12 +600,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : increment_control_behavior
-*  Function : Increments the control behavior counter and changes the offset sequence
-*			  accordingly. Backpropagation is used for the incrementation
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : increment_control_behavior
+		*  Function : Increments the control behavior counter and changes the offset sequence
+		*			  accordingly. Backpropagation is used for the incrementation
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::increment_control_behaviour()
 		{
 			for (int M = pars.n_M - 1; M > -1; M--)
@@ -629,13 +641,13 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : setup_prediction
-*  Function : Sets up the own-ship maneuvering times and number of prediction scenarios
-*			  for each obstacle based on the current situation, and predicts
-*			  independent obstacle trajectories using the predictor class.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : setup_prediction
+		*  Function : Sets up the own-ship maneuvering times and number of prediction scenarios
+		*			  for each obstacle based on the current situation, and predicts
+		*			  independent obstacle trajectories using the predictor class.
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::setup_prediction(
 			const Dynamic_Obstacles &obstacles // In: Dynamic obstacle information
 		)
@@ -717,13 +729,13 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : calculate_collision_probabilities
-*  Function : Estimates collision probabilities for the own-ship and an obstacle i in
-*			  consideration. Can use a larger sample time than used in predicting
-*			  the vessel trajectories.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : calculate_collision_probabilities
+		*  Function : Estimates collision probabilities for the own-ship and an obstacle i in
+		*			  consideration. Can use a larger sample time than used in predicting
+		*			  the vessel trajectories.
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::calculate_collision_probabilities(
 			Eigen::MatrixXd &P_c_i,				// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
@@ -750,11 +762,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : assign_optimal_trajectory
-*  Function : Set the optimal trajectory to the current predicted trajectory
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : assign_optimal_trajectory
+		*  Function : Set the optimal trajectory to the current predicted trajectory
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void PSBMPC::assign_optimal_trajectory(
 			Eigen::MatrixXd &optimal_trajectory // In/out: Optimal PSB-MPC trajectory
 		)

@@ -32,11 +32,11 @@ namespace PSBMPC_LIB
 	{
 
 		/****************************************************************************************
-*  Name     : Kinetic_Ship_Base_3DOF
-*  Function : Class constructors
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : Kinetic_Ship_Base_3DOF
+		*  Function : Class constructors
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ __device__ Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
 		{
 			tau.set_zero();
@@ -57,11 +57,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : determine_active_waypoint_segment
-*  Function : Two overloads depending on matrix library used.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : determine_active_waypoint_segment
+		*  Function : Two overloads depending on matrix library used.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ __device__ void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segment(
 			const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, // In: Waypoints to follow
 			const TML::Vector6f &xs								 // In: Ship state
@@ -114,11 +114,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : update_guidance_references
-*  Function :
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : update_guidance_references
+		*  Function :
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ __device__ void Kinetic_Ship_Base_3DOF::update_guidance_references(
 			float &u_d,											 // In/out: Surge reference
 			float &chi_d,										 // In/out: Course reference
@@ -294,12 +294,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : predict
-*  Function : Predicts the ship state xs a number of dt units forward in time with the
-*			  chosen prediction method
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : predict
+		*  Function : Predicts the ship state xs a number of dt units forward in time with the
+		*			  chosen prediction method
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ __device__ TML::Vector6f Kinetic_Ship_Base_3DOF::predict(
 			const TML::Vector6f &xs_old,			  // In: State to predict forward
 			const float dt,							  // In: Time step
@@ -355,16 +355,16 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		Private functions
-*****************************************************************************************/
+				Private functions
+		*****************************************************************************************/
 
 		/****************************************************************************************
-*  Name     : Cvv
-*  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on
-*			  Fossen 2011.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : Cvv
+		*  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on
+		*			  Fossen 2011.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::update_Cvv(
 			const TML::Vector3f &nu // In: BODY velocity vector nu = [u, v, r]^T
 		)
@@ -396,12 +396,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : Dvv
-*  Function : Calculates the "damping vector" for the 3DOF surface vessel based on
-*			  Fossen 2011
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : Dvv
+		*  Function : Calculates the "damping vector" for the 3DOF surface vessel based on
+		*			  Fossen 2011
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::update_Dvv(
 			const TML::Vector3f &nu // In: BODY velocity vector nu = [u, v, r]^T
 		)
@@ -417,11 +417,11 @@ namespace PSBMPC_LIB
 		// Telemetron class methods
 		//=======================================================================================
 		/****************************************************************************************
-*  Name     : Telemetron
-*  Function : Class constructor
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : Telemetron
+		*  Function : Class constructor
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		Telemetron::Telemetron()
 		{
 			tau.set_zero();
@@ -496,11 +496,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : update_ctrl_input
-*  Function :
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : update_ctrl_input
+		*  Function :
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ void Telemetron::update_ctrl_input(
 			const float u_d,		// In: Surge reference
 			const float psi_d,		// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
@@ -544,12 +544,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : predict_trajectory
-*  Function : Predicts the ship trajectory for a sequence of avoidance maneuvers in the
-*			  offset sequence. Two overloads depending on matrix library used.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : predict_trajectory
+		*  Function : Predicts the ship trajectory for a sequence of avoidance maneuvers in the
+		*			  offset sequence. Two overloads depending on matrix library used.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ __device__ void Telemetron::predict_trajectory(
 			TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory,			 // In/out: Ship trajectory
 			const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, // In: Sequence of offsets in the candidate control behavior

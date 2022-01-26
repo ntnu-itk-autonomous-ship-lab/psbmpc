@@ -79,13 +79,13 @@ namespace PSBMPC_LIB
 		//  CB COST FUNCTOR 2 METHODS
 		//=======================================================================================
 		/****************************************************************************************
-*  Name     : operator()
-*  Function : Evaluates partial static and dynamic obstacle cost terms when following
-*			  the control behaviour given by the input tuple, in addition to determining
-*			  the COLREGS violation indicator in a certain scenario.
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+		*  Name     : operator()
+		*  Function : Evaluates partial static and dynamic obstacle cost terms when following
+		*			  the control behaviour given by the input tuple, in addition to determining
+		*			  the COLREGS violation indicator in a certain scenario.
+		*  Author   : Trym Tengesdal
+		*  Modified :
+		*****************************************************************************************/
 		__device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(
 			const thrust::tuple<
 				const int,							  // Thread index
@@ -209,7 +209,6 @@ namespace PSBMPC_LIB
 				}
 
 				h_do_i_ps_k = mpc_cost[thread_index].calculate_dynamic_obstacle_cost(
-					fdata,
 					obstacles,
 					P_c_i,
 					xs_p_seg.get_col(n_seg_samples - 1),

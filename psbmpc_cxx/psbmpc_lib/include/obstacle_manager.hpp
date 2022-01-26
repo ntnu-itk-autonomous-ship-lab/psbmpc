@@ -6,17 +6,17 @@
 *			   keeping information on dynamic obstacles. As of now only
 *			   used for dynamic obstacle management.
 *
-*  
+*
 *	           ---------------------
 *
 *  Version 1.0
 *
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 *  All rights reserved.
 *
 *  Author    : Trym Tengesdal
 *
-*  Modified  : 
+*  Modified  :
 *
 *****************************************************************************************/
 
@@ -35,7 +35,6 @@ namespace PSBMPC_LIB
 	class Obstacle_Manager
 	{
 	private:
-
 		double T_lost_limit, T_tracked_limit;
 
 		bool obstacle_filter_on;
@@ -45,18 +44,18 @@ namespace PSBMPC_LIB
 
 		/****************************************************************************************
 		*  Name     : update_obstacles
-		*  Function : Takes in new obstacle information and updates the single obstacle data 
+		*  Function : Takes in new obstacle information and updates the single obstacle data
 		*			  structures.
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
 		template <class MPC_Parameters>
 		void update_obstacles(
-			const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
-			const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
-			const MPC_Parameters &mpc_pars,														// In: Parameters of calling MPC (either PSB-MPC or SB-MPC)
-			const double dt_prev_upd															// In: Time difference between now and last obstacle update
-			) 			
+			const Eigen::Matrix<double, 9, -1> &obstacle_states,	   // In: Dynamic obstacle states
+			const Eigen::Matrix<double, 16, -1> &obstacle_covariances, // In: Dynamic obstacle covariances
+			const MPC_Parameters &mpc_pars,							   // In: Parameters of calling MPC (either PSB-MPC or SB-MPC)
+			const double dt_prev_upd								   // In: Time difference between now and last obstacle update
+		)
 		{
 			int n_do_old = obstacles.size();
 			int n_do_new = obstacle_states.cols();
@@ -72,8 +71,8 @@ namespace PSBMPC_LIB
 						obstacles[j].reset_duration_lost();
 
 						obstacles[j].update(
-							obstacle_states.col(i), 
-							obstacle_covariances.col(i), 
+							obstacle_states.col(i),
+							obstacle_covariances.col(i),
 							obstacle_filter_on,
 							dt_prev_upd);
 
@@ -86,12 +85,12 @@ namespace PSBMPC_LIB
 				}
 				if (!obstacle_exist)
 				{
-					new_obstacles.push_back(std::move(Tracked_Obstacle(
-						obstacle_states.col(i), 
+					new_obstacles.push_back(Tracked_Obstacle(
+						obstacle_states.col(i),
 						obstacle_covariances.col(i),
-						obstacle_filter_on,  
-						mpc_pars.T, 
-						mpc_pars.dt)));
+						obstacle_filter_on,
+						mpc_pars.T,
+						mpc_pars.dt));
 				}
 			}
 			// Keep terminated obstacles that may still be relevant, and compute duration lost as input to the cost of collision risk
@@ -104,8 +103,8 @@ namespace PSBMPC_LIB
 				{
 					obstacles[j].increment_duration_lost(dt_prev_upd);
 
-					if (obstacles[j].get_duration_tracked() >= T_tracked_limit 	&&
-						(obstacles[j].get_duration_lost() < T_lost_limit || obstacles[j].kf.get_covariance()(0,0) <= 5.0))
+					if (obstacles[j].get_duration_tracked() >= T_tracked_limit &&
+						(obstacles[j].get_duration_lost() < T_lost_limit || obstacles[j].kf.get_covariance()(0, 0) <= 5.0))
 					{
 						obstacles[j].update(obstacle_filter_on, dt_prev_upd);
 
@@ -115,7 +114,7 @@ namespace PSBMPC_LIB
 			}
 			// Then, after having all relevant obstacles (includes transferred ones from the old vector, and newly detected ones)
 			// in "new_obstacles", transfer all of these to the "obstacle" vector to be used by other classes.
-			obstacles = std::move(new_obstacles);	
+			obstacles = std::move(new_obstacles);
 		}
 
 	public:
@@ -126,22 +125,22 @@ namespace PSBMPC_LIB
 		Obstacle_Manager(const double T_lost_limit, const double T_tracked_limit, const bool obstacle_filter_on)
 			: T_lost_limit(T_lost_limit), T_tracked_limit(T_tracked_limit), obstacle_filter_on(obstacle_filter_on) {}
 
-		Dynamic_Obstacles& get_data() { return obstacles; }
+		Dynamic_Obstacles &get_data() { return obstacles; }
 
 		/****************************************************************************************
 		*  Name     : operator()
 		*  Function : Manages new obstacle information, updates data structures and situation
-		*			  information accordingly 
+		*			  information accordingly
 		*  Author   : Trym Tengesdal
 		*  Modified :
 		*****************************************************************************************/
 		template <class MPC_Parameters>
 		void operator()(
-			const Eigen::Matrix<double, 9, -1> &obstacle_states, 								// In: Dynamic obstacle states 
-			const Eigen::Matrix<double, 16, -1> &obstacle_covariances, 							// In: Dynamic obstacle covariances
-			const MPC_Parameters &mpc_pars,														// In: Parameters of calling MPC (either PSB-MPC or SB-MPC)
-			const double dt_prev_upd															// In: Time difference between now and last obstacle update
-			) 			
+			const Eigen::Matrix<double, 9, -1> &obstacle_states,	   // In: Dynamic obstacle states
+			const Eigen::Matrix<double, 16, -1> &obstacle_covariances, // In: Dynamic obstacle covariances
+			const MPC_Parameters &mpc_pars,							   // In: Parameters of calling MPC (either PSB-MPC or SB-MPC)
+			const double dt_prev_upd								   // In: Time difference between now and last obstacle update
+		)
 		{
 			update_obstacles(obstacle_states, obstacle_covariances, mpc_pars, dt_prev_upd);
 		}

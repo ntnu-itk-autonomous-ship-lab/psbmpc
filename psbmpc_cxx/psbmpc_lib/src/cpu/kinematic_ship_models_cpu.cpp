@@ -28,11 +28,11 @@ namespace PSBMPC_LIB
 	namespace CPU
 	{
 		/****************************************************************************************
-*  Name     : Kinematic_Ship
-*  Function : Class constructor
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : Kinematic_Ship
+		*  Function : Class constructor
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		Kinematic_Ship::Kinematic_Ship()
 		{
 			l = 5.0; // milliAmpere dims
@@ -42,10 +42,10 @@ namespace PSBMPC_LIB
 			T_chi = 0.92; // Ad hoc identified time constants for milliAmpere
 
 			/* l = 10.0;
-	w = 4.0;
+			w = 4.0;
 
-	T_U = 10.0;
-	T_chi = 8.0; 		// Ad hoc time constants for a 10m long ship */
+			T_U = 10.0;
+			T_chi = 8.0; 		// Ad hoc time constants for a 10m long ship */
 
 			// Guidance parameters
 			e_int = 0.0;
@@ -70,7 +70,7 @@ namespace PSBMPC_LIB
 		{
 
 			/* l = 10.0;
-	w = 4.0;*/
+	        w = 4.0;*/
 
 			// Guidance parameters
 			e_int = 0;
@@ -81,11 +81,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : determine_active_waypoint_segment
-*  Function :
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : determine_active_waypoint_segment
+		*  Function :
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Kinematic_Ship::determine_active_waypoint_segment(
 			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Waypoints to follow
 			const Eigen::Vector4d &xs					   // In: Ownship state
@@ -127,12 +127,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : update_guidance_references
-*  Function : Two overloads, one general purpose function, and one specialized for LOS
-*			  where an artificial cross-track error is applied.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : update_guidance_references
+		*  Function : Two overloads, one general purpose function, and one specialized for LOS
+		*			  where an artificial cross-track error is applied.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Kinematic_Ship::update_guidance_references(
 			double &u_d,								   // In/out: Surge reference
 			double &chi_d,								   // In/out: Course reference
@@ -143,7 +143,7 @@ namespace PSBMPC_LIB
 		)
 		{
 			// Nominally no surge modification
-			u_d = u_d;
+			u_d = 1.0 * u_d;
 
 			int n_wps = waypoints.cols();
 			double alpha(0.0), e(0.0);
@@ -222,7 +222,7 @@ namespace PSBMPC_LIB
 		)
 		{
 			// Nominally no surge modification
-			u_d = u_d;
+			u_d = 1.0 * u_d;
 
 			int n_wps = waypoints.cols();
 			double alpha(0.0), e(0.0);
@@ -301,7 +301,7 @@ namespace PSBMPC_LIB
 		)
 		{
 			// Nominally no surge modification
-			u_d = u_d;
+			u_d = 1.0 * u_d;
 
 			int n_wps = waypoints.cols();
 			double alpha(0.0), e(0.0);
@@ -354,12 +354,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : predict
-*  Function : Predicts obstacle state xs a number of dt units forward in time with the
-*			  chosen prediction method
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : predict
+		*  Function : Predicts obstacle state xs a number of dt units forward in time with the
+		*			  chosen prediction method
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		Eigen::Vector4d Kinematic_Ship::predict(
 			const Eigen::Vector4d &xs_old,			  // In: State [x, y, chi, U] to predict forward
 			const double U_d,						  // In: Speed over ground (SOG) reference
@@ -398,12 +398,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : predict_trajectory
-*  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
-*			  in the offset sequence, or for a cross track modifier to the original path.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : predict_trajectory
+		*  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
+		*			  in the offset sequence, or for a cross track modifier to the original path.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Kinematic_Ship::predict_trajectory(
 			Eigen::MatrixXd &trajectory,				   // In/out: Obstacle ship trajectory
 			const Eigen::VectorXd &offset_sequence,		   // In: Sequence of offsets in the candidate control behavior
@@ -533,7 +533,7 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		Private functions
-*****************************************************************************************/
+				Private functions
+		*****************************************************************************************/
 	}
 }

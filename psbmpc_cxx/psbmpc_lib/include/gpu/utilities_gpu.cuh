@@ -98,9 +98,9 @@ namespace PSBMPC_LIB
 			}
 
 			//indata >> n_rows >> n_cols;
-			for (int i = 0; i < n_rows; i++)
+			for (size_t i = 0; i < n_rows; i++)
 			{
-				for (int j = 0; j < n_cols; j++)
+				for (size_t j = 0; j < n_cols; j++)
 				{
 					indata >> out(i, j);
 				}

@@ -23,9 +23,9 @@
 #include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
 #if OWNSHIP_TYPE == 0
-	#include "gpu/kinematic_ship_models_gpu.cuh"
+#include "gpu/kinematic_ship_models_gpu.cuh"
 #else
-	#include "gpu/kinetic_ship_models_gpu.cuh"
+#include "gpu/kinetic_ship_models_gpu.cuh"
 #endif
 #include "gpu/cpe_gpu.cuh"
 #include "cpu/mpc_cost_cpu.hpp"
@@ -42,30 +42,32 @@ namespace PSBMPC_LIB
 {
 	namespace GPU
 	{
-		// Host only due to stderr usage
-		#define cuda_check_errors(msg) \
-			do { \
-				cudaError_t __err = cudaGetLastError(); \
-				if (__err != cudaSuccess) { \
-					fprintf(stderr, "Fatal error: %s (%s at %s:%d)\n", \
-						msg, cudaGetErrorString(__err), \
-						__FILE__, __LINE__); \
-					fprintf(stderr, "*** FAILED - ABORTING\n"); \
-					exit(1); \
-				} \
-			} while (0)
+// Host only due to stderr usage
+#define cuda_check_errors(msg)                                 \
+	do                                                         \
+	{                                                          \
+		cudaError_t __err = cudaGetLastError();                \
+		if (__err != cudaSuccess)                              \
+		{                                                      \
+			fprintf(stderr, "Fatal error: %s (%s at %s:%d)\n", \
+					msg, cudaGetErrorString(__err),            \
+					__FILE__, __LINE__);                       \
+			fprintf(stderr, "*** FAILED - ABORTING\n");        \
+			exit(1);                                           \
+		}                                                      \
+	} while (0)
 
 		class CB_Cost_Functor_1;
 		class CB_Cost_Functor_2;
-		class CB_Functor_Pars;
+		struct CB_Functor_Pars;
 		class CB_Functor_Data;
 		class Cuda_Obstacle;
-		template <typename Parameters> class MPC_Cost;
+		template <typename Parameters>
+		class MPC_Cost;
 
 		class PSBMPC
 		{
 		private:
-
 			Eigen::VectorXd opt_offset_sequence, maneuver_times;
 
 			double u_opt_last;
@@ -110,7 +112,7 @@ namespace PSBMPC_LIB
 
 			CB_Functor_Pars *pars_device_ptr;
 
-			friend struct CB_Functor_Data;
+			friend class CB_Functor_Data;
 			CB_Functor_Data *fdata_device_ptr;
 
 			Cuda_Obstacle *obstacles_device_ptr;
@@ -158,7 +160,6 @@ namespace PSBMPC_LIB
 			void free();
 
 		public:
-
 			PSBMPC_Parameters pars;
 
 			CPU::MPC_Cost<PSBMPC_Parameters> mpc_cost;
@@ -169,10 +170,15 @@ namespace PSBMPC_LIB
 
 			~PSBMPC();
 
-			PSBMPC& operator=(const PSBMPC &other);
+			PSBMPC &operator=(const PSBMPC &other);
 
 			// Resets previous optimal offsets and predicted own-ship waypoint following
-			void reset() { u_opt_last = 1.0; chi_opt_last = 0.0; ownship.set_wp_counter(0);}
+			void reset()
+			{
+				u_opt_last = 1.0;
+				chi_opt_last = 0.0;
+				ownship.set_wp_counter(0);
+			}
 
 			void calculate_optimal_offsets(
 				double &u_opt,
@@ -187,7 +193,6 @@ namespace PSBMPC_LIB
 				const Static_Obstacles &polygons,
 				const Dynamic_Obstacles &obstacles,
 				const bool disable);
-
 		};
 	}
 }

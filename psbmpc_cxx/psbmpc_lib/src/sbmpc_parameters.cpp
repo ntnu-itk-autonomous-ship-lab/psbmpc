@@ -28,14 +28,14 @@ namespace PSBMPC_LIB
 {
 
 	/****************************************************************************************
-	Public functions
-****************************************************************************************/
+		Public functions
+	****************************************************************************************/
 	/****************************************************************************************
-*  Name     : get_<type>par
-*  Function : Returns parameter with index <index>, "overloaded" for different data types
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : get_<type>par
+	*  Function : Returns parameter with index <index>, "overloaded" for different data types
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	int SBMPC_Parameters::get_ipar(
 		const int index // In: Index of parameter to return (Must be of int type)
 	) const
@@ -146,14 +146,14 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-	Private functions
-****************************************************************************************/
+		Private functions
+	****************************************************************************************/
 	/****************************************************************************************
-*  Name     : initialize_pars
-*  Function : Sets initial values for PSBMPC tuning parameters, two overloads.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+	*  Name     : initialize_pars
+	*  Function : Sets initial values for PSBMPC tuning parameters, two overloads.
+	*  Author   :
+	*  Modified :
+	*****************************************************************************************/
 	void SBMPC_Parameters::initialize_pars(
 		const bool is_obstacle_sbmpc // In: Boolean flag to determine MPC tuning
 	)

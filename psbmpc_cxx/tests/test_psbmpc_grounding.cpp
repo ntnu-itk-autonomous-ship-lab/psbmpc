@@ -278,10 +278,10 @@ int main()
 		"local_NED",
 		psbmpc.pars);
 
-	std::string other_polygons_filename = "/tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv";
+	std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv";
 	if (other_polygons_filename != "")
 	{
-		grounding_hazard_manager.read_other_polygons(relative_path + other_polygons_filename, true, false);
+		grounding_hazard_manager.read_other_polygons(other_polygons_filename, true, false);
 	}
 	/* grounding_hazard_manager.switch_local_ned_frame(
 		equatorial_radius,

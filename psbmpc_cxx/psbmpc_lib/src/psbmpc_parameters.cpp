@@ -26,14 +26,14 @@ namespace PSBMPC_LIB
 {
 
 	/****************************************************************************************
-	Public functions
-****************************************************************************************/
+		Public functions
+	****************************************************************************************/
 	/****************************************************************************************
-*  Name     : get_<type>par
-*  Function : Returns parameter with index <index>, "overloaded" for different data types
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : get_<type>par
+	*  Function : Returns parameter with index <index>, "overloaded" for different data types
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	int PSBMPC_Parameters::get_ipar(
 		const int index // In: Index of parameter to return (Must be of int type)
 	) const
@@ -130,12 +130,12 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : set_par
-*  Function : Sets parameter with index <index> to value <value>, given that it is inside
-*			  valid limits. Overloaded for different data types
-*  Author   : Trym Tengesdal
-*  Modified :
-*****************************************************************************************/
+	*  Name     : set_par
+	*  Function : Sets parameter with index <index> to value <value>, given that it is inside
+	*			  valid limits. Overloaded for different data types
+	*  Author   : Trym Tengesdal
+	*  Modified :
+	*****************************************************************************************/
 	void PSBMPC_Parameters::set_par(
 		const int index, // In: Index of parameter to set
 		const int value	 // In: Value to set for parameter
@@ -294,14 +294,14 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-	Private functions
-****************************************************************************************/
+		Private functions
+	****************************************************************************************/
 	/****************************************************************************************
-*  Name     : initialize_par_limits
-*  Function : Sets initial low and high limits on tuning parameters
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+	*  Name     : initialize_par_limits
+	*  Function : Sets initial low and high limits on tuning parameters
+	*  Author   :
+	*  Modified :
+	*****************************************************************************************/
 	void PSBMPC_Parameters::initialize_par_limits()
 	{
 		ipar_low.resize(N_IPAR);
@@ -340,15 +340,15 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-*  Name     : initialize_pars
-*  Function : Sets initial values for PSBMPC tuning parameters, two overloads.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+	*  Name     : initialize_pars
+	*  Function : Sets initial values for PSBMPC tuning parameters, two overloads.
+	*  Author   :
+	*  Modified :
+	*****************************************************************************************/
 	void PSBMPC_Parameters::initialize_pars()
 	{
 		n_cbs = 1;
-		n_M = 2;
+		n_M = 1;
 		n_do_ps = 5;
 
 		chi_offsets.resize(n_M);
@@ -419,7 +419,7 @@ namespace PSBMPC_LIB
 		dt = 5.0;
 
 		p_step_opt = 1;
-		p_step_do = 2;
+		p_step_do = 1;
 		p_step_grounding = 2;
 		if (prediction_method == ERK1)
 		{

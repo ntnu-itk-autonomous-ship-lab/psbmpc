@@ -28,11 +28,11 @@ namespace PSBMPC_LIB
 	namespace GPU
 	{
 		/****************************************************************************************
-*  Name     : Kinematic_Ship
-*  Function : Class constructor
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : Kinematic_Ship
+		*  Function : Class constructor
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ __device__ Kinematic_Ship::Kinematic_Ship()
 		{
 			l = 5.0f; // milliAmpere dims
@@ -81,11 +81,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : determine_active_waypoint_segment
-*  Function : Two overloads depending on matrix library used.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : determine_active_waypoint_segment
+		*  Function : Two overloads depending on matrix library used.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ __device__ void Kinematic_Ship::determine_active_waypoint_segment(
 			const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, // In: Waypoints to follow
 			const TML::Vector4f &xs								 // In: Ownship state
@@ -138,11 +138,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : update_guidance_references
-*  Function : Two overloads depending on matrix library used.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : update_guidance_references
+		*  Function : Two overloads depending on matrix library used.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ __device__ void Kinematic_Ship::update_guidance_references(
 			float &u_d,											 // In/out: Surge reference
 			float &chi_d,										 // In/out: Course reference
@@ -318,12 +318,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : predict
-*  Function : Predicts obstacle state xs a number of dt units forward in time with the
-*			  chosen prediction method. Two overloads depending on matrix library used.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : predict
+		*  Function : Predicts obstacle state xs a number of dt units forward in time with the
+		*			  chosen prediction method. Two overloads depending on matrix library used.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ __device__ TML::Vector4f Kinematic_Ship::predict(
 			const TML::Vector4f &xs_old,			  // In: State [x, y, chi, U] to predict forward
 			const float U_d,						  // In: Speed over ground (SOG) reference
@@ -380,12 +380,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : predict_trajectory
-*  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
-*			  in the offset sequence. Three overloads
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : predict_trajectory
+		*  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
+		*			  in the offset sequence. Three overloads
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		__host__ __device__ void Kinematic_Ship::predict_trajectory(
 			TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,			 // In/out: Obstacle ship trajectory
 			const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, // In: Sequence of offsets in the candidate control behavior
@@ -588,7 +588,7 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		Private functions
-*****************************************************************************************/
+				Private functions
+		*****************************************************************************************/
 	}
 }

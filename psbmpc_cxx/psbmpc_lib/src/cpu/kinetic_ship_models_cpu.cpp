@@ -29,11 +29,11 @@ namespace PSBMPC_LIB
 	namespace CPU
 	{
 		/****************************************************************************************
-*  Name     : Ship_Base_3DOF
-*  Function : Class constructor
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : Ship_Base_3DOF
+		*  Function : Class constructor
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
 		{
 			tau = Eigen::Vector3d::Zero();
@@ -54,11 +54,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : determine_active_waypoint_segment
-*  Function :
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : determine_active_waypoint_segment
+		*  Function :
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segment(
 			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Waypoints to follow
 			const Eigen::Matrix<double, 6, 1> &xs		   // In: Ownship state
@@ -100,11 +100,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : update_guidance_references
-*  Function :
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : update_guidance_references
+		*  Function :
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::update_guidance_references(
 			double &u_d,								   // In/out: Surge reference
 			double &chi_d,								   // In/out: Course reference
@@ -115,7 +115,7 @@ namespace PSBMPC_LIB
 		)
 		{
 			// Nominally no surge modification
-			u_d = u_d;
+			u_d = 1.0 * u_d;
 
 			int n_wps = waypoints.cols();
 			double alpha(0.0), e(0.0);
@@ -194,7 +194,7 @@ namespace PSBMPC_LIB
 		)
 		{
 			// Nominally no surge modification
-			u_d = u_d;
+			u_d = 1.0 * u_d;
 
 			int n_wps = waypoints.cols();
 			double alpha(0.0), e(0.0);
@@ -264,16 +264,16 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		Private functions
-*****************************************************************************************/
+				Private functions
+		*****************************************************************************************/
 
 		/****************************************************************************************
-*  Name     : Cvv
-*  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on
-*			  Fossen 2011. Use the equations for C_RB and C_A in Section 7.1
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : Cvv
+		*  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on
+		*			  Fossen 2011. Use the equations for C_RB and C_A in Section 7.1
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::update_Cvv(
 			const Eigen::Vector3d &nu // In: BODY velocity vector nu = [u, v, r]^T
 		)
@@ -281,19 +281,19 @@ namespace PSBMPC_LIB
 			/* C(nu) = [ 0 		0 		c13(nu)]
 			   [ 0 		0 		c23(nu)]
 			   [c31(nu) c32(nu) 	0]
-	with
-	c13(nu) = -m21 * u - m22 * v - m23 * r,
-	c23(nu) = 	m11 * u + m12 * v + m13 * r
-	c31(nu) = -c13(nu), c32(nu) = -c23(nu)
-	Written out (without temporaries c13 and c23 introduced):
-	Cvv(0) = - (M(1, 0) * nu(0) + M(1, 1) * nu(1) + M(1, 2) * nu(2)) * nu(2);
-	Cvv(1) = (M(0, 0) * nu(0) + M(0, 1) * nu(1) + M(0, 2) * nu(2)) * nu(2);
-	Cvv(2) = M(1, 0) * nu(0) * nu(0) 			+
-			(M(1, 1) - M(0, 0)) * nu(0) * nu(1) -
-			M(0, 1) * nu(1) * nu(1) 			+
-			M(1, 2) * nu(0) * nu(2) 			-
-			M(0, 2) * nu(1) * nu(2);
-	*/
+			with
+			c13(nu) = -m21 * u - m22 * v - m23 * r,
+			c23(nu) = 	m11 * u + m12 * v + m13 * r
+			c31(nu) = -c13(nu), c32(nu) = -c23(nu)
+			Written out (without temporaries c13 and c23 introduced):
+			Cvv(0) = - (M(1, 0) * nu(0) + M(1, 1) * nu(1) + M(1, 2) * nu(2)) * nu(2);
+			Cvv(1) = (M(0, 0) * nu(0) + M(0, 1) * nu(1) + M(0, 2) * nu(2)) * nu(2);
+			Cvv(2) = M(1, 0) * nu(0) * nu(0) 			+
+					(M(1, 1) - M(0, 0)) * nu(0) * nu(1) -
+					M(0, 1) * nu(1) * nu(1) 			+
+					M(1, 2) * nu(0) * nu(2) 			-
+					M(0, 2) * nu(1) * nu(2);
+			*/
 			double c13 = -(M(1, 0) * nu(0) + M(1, 1) * nu(1) + M(1, 2) * nu(2));
 			double c23 = (M(0, 0) * nu(0) + M(0, 1) * nu(1) + M(0, 2) * nu(2));
 			Cvv(0) = c13 * nu(2);
@@ -302,12 +302,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : Dvv
-*  Function : Calculates the "damping vector" for the 3DOF surface vessel based on
-*			  Fossen 2011
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : Dvv
+		*  Function : Calculates the "damping vector" for the 3DOF surface vessel based on
+		*			  Fossen 2011
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::update_Dvv(
 			const Eigen::Vector3d &nu // In: BODY velocity vector nu = [u, v, r]^T
 		)
@@ -323,11 +323,11 @@ namespace PSBMPC_LIB
 		// Telemetron class methods
 		//=======================================================================================
 		/****************************************************************************************
-*  Name     : Telemetron
-*  Function : Class constructor
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : Telemetron
+		*  Function : Class constructor
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		Telemetron::Telemetron()
 		{
 			// Model parameters
@@ -382,12 +382,13 @@ namespace PSBMPC_LIB
 			//Motion limits
 			r_max = 0.34 * DEG2RAD; // [rad/s] default max yaw rate
 		}
+
 		/****************************************************************************************
-*  Name     : update_ctrl_input
-*  Function :
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : update_ctrl_input
+		*  Function :
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Telemetron::update_ctrl_input(
 			const double u_d,					  // In: Surge reference
 			const double psi_d,					  // In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
@@ -419,13 +420,13 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : predict
-*  Function : Predicts ownship state xs a number of dt units forward in time with the
-*			  chosen prediction method. Overloaded depending on if the input vector
-*			  is updated or not.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : predict
+		*  Function : Predicts ownship state xs a number of dt units forward in time with the
+		*			  chosen prediction method. Overloaded depending on if the input vector
+		*			  is updated or not.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		Eigen::Matrix<double, 6, 1> Telemetron::predict(
 			const Eigen::Matrix<double, 6, 1> &xs_old, // In: State to predict forward
 			const double dt,						   // In: Time step
@@ -480,12 +481,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-*  Name     : predict_trajectory
-*  Function : Predicts the ownship trajectory for a sequence of avoidance maneuvers in the
-*			  offset sequence.
-*  Author   :
-*  Modified :
-*****************************************************************************************/
+		*  Name     : predict_trajectory
+		*  Function : Predicts the ownship trajectory for a sequence of avoidance maneuvers in the
+		*			  offset sequence.
+		*  Author   :
+		*  Modified :
+		*****************************************************************************************/
 		void Telemetron::predict_trajectory(
 			Eigen::MatrixXd &trajectory,				   // In/out: Own-ship trajectory
 			const Eigen::VectorXd &offset_sequence,		   // In: Sequence of offsets in the candidate control behavior
