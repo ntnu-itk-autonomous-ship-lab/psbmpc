@@ -139,7 +139,7 @@ namespace PSBMPC_LIB
 
 			float h_so_j, h_do_i_ps, h_do_i_ps_k, h_colregs_i_ps, P_c_i;
 
-			float d_safe_i;
+			float d_safe_i, Pr_WGW, Pr_CCEM;
 
 			thrust::tuple<float, bool> tup;
 

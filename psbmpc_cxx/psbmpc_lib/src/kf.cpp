@@ -250,7 +250,7 @@ namespace PSBMPC_LIB
 		if (!dead_reckon)
 		{
 			Eigen::Matrix4d K;
-			K = P_p * C.transpose() * (C * P_p * C.transpose() + R.block<2, 2>(0, 0)).inverse();
+			K = P_p * C.transpose() * (C * P_p * C.transpose() + R).inverse();
 
 			xs_upd = xs_p + K * (y_m - C * xs_p);
 

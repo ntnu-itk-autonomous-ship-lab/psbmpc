@@ -41,6 +41,8 @@ namespace PSBMPC_LIB
 			A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
 			l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)),
 			x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
+			Pr_WGW(0.5), Pr_CCEM(0.5),
+			Pr_s(Pr_s),
 			duration_tracked(0.0), duration_lost(0.0)
 	{
 		double psi = atan2(xs_aug(3), xs_aug(2));
@@ -52,8 +54,6 @@ namespace PSBMPC_LIB
 		P_0 = CPU::reshape(P, 4, 4);
 
 		this->kf = KF(xs_0, P_0, 0.0, true);
-
-		this->Pr_s = Pr_s / Pr_s.sum();
 
 		int n_samples = std::round(T / dt);
 
@@ -83,6 +83,7 @@ namespace PSBMPC_LIB
 			A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
 			l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)),
 			x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
+			Pr_WGW(0.5), Pr_CCEM(0.5),
 			duration_tracked(0.0), duration_lost(0.0)
 	{
 		double psi = atan2(xs_aug(3), xs_aug(2));
@@ -105,6 +106,9 @@ namespace PSBMPC_LIB
 		this->P_p.resize(16, n_samples);
 		this->P_p.col(0) = P;
 
+		this->Pr_s.resize(1);
+		Pr_s.setOnes();
+
 		if (filter_on)
 		{
 			this->kf.update(xs_0, duration_lost, dt);
@@ -126,6 +130,30 @@ namespace PSBMPC_LIB
 			l(dims(0) + dims(1)), w(dims(2) + dims(3)),
 			x_offset(dims(0) - dims(1)), y_offset(dims(3) - dims(2)),
 			xs_0(xs_p[0].col(0)), P_0(CPU::reshape(P_p.col(0), 4, 4)),
+			Pr_WGW(0.5), Pr_CCEM(0.5),
+			Pr_s(Pr_s),
+			duration_tracked(duration_tracked), duration_lost(duration_lost),
+			P_p(P_p), xs_p(xs_p)
+	{
+		this->kf = KF(xs_0, P_0, 0.0, true);
+	}
+
+	Tracked_Obstacle::Tracked_Obstacle(
+		const std::vector<Eigen::MatrixXd> &xs_p, // In: Predicted trajectories for the obstacle
+		const Eigen::MatrixXd &P_p,				  // In: Predicted covariance trajectory (same for all pred. scenarios) for the obstacle
+		const Eigen::VectorXd &Pr_s,			  // In: Obstacle scenario probability vector
+		const double Pr_WGW,					  // In: Probability that the obstacle will give-way for the own-ship when specified by COLREGS
+		const double Pr_CCEM,					  // In: Probability that the obstacle will perform a COLREGS compliant evasive maneuver when supposed to
+		const Eigen::Vector4d &dims,			  // In: Dimensions A, B, C, D for the obstacle
+		const double duration_tracked,			  // In: Duration in seconds that the obstacle has been tracked
+		const double duration_lost,				  // In: Duration in seconds that the obstacle has been lost
+		const int ID							  // In: Obstacle ID
+		) : ID(ID),
+			A(dims(0)), B(dims(1)), C(dims(2)), D(dims(3)),
+			l(dims(0) + dims(1)), w(dims(2) + dims(3)),
+			x_offset(dims(0) - dims(1)), y_offset(dims(3) - dims(2)),
+			xs_0(xs_p[0].col(0)), P_0(CPU::reshape(P_p.col(0), 4, 4)),
+			Pr_WGW(Pr_WGW), Pr_CCEM(Pr_CCEM),
 			Pr_s(Pr_s),
 			duration_tracked(duration_tracked), duration_lost(duration_lost),
 			P_p(P_p), xs_p(xs_p)
@@ -289,6 +317,9 @@ namespace PSBMPC_LIB
 		this->P_0 = other.P_0;
 
 		this->Pr_s = other.Pr_s;
+
+		this->Pr_WGW = other.Pr_WGW;
+		this->Pr_CCEM = other.Pr_CCEM;
 
 		this->duration_tracked = other.duration_tracked;
 		this->duration_lost = other.duration_lost;

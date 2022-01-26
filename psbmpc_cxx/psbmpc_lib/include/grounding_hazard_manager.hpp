@@ -460,6 +460,11 @@ namespace PSBMPC_LIB
 		{
 			try
 			{
+				if (filename == "")
+				{
+					return;
+				}
+
 				if (clear_old_polygons)
 				{
 					clear_all_polygons();
