@@ -1,6 +1,6 @@
 #======================================================================
 # This CMakeLists.txt sets up CMake build-file generation for the
-# usage of the psb-mpc library. 
+# usage of the psb-mpc library.
 
 # It connects the PSBMPC library target, and the test file
 # target (both objects in CMake sense).
@@ -9,15 +9,25 @@
 
 # Version 1.0
 
-# Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
+# Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
 # All rights reserved.
 
 # Author 	: Trym Tengesdal
 
-# Modified 	: 
+# Modified 	:
 #======================================================================
 
 cmake_minimum_required(VERSION 3.17.3)
+
+if(APPLE)
+	set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH} /opt/homebrew/Cellar")
+	message(STATUS "Operating system is Apple OS X")
+elseif(LINUX)
+	message(STATUS "Operating system is Linuxs")
+else()
+	message(STATUS "Operating system is Windows")
+endif()
+message(STATUS "CMAKE_MODULE_PATH =${CMAKE_MODULE_PATH}")
 
 # Set default values to PSBMPC flags if they are not set
 if(NOT DEFINED USE_GPU_PSBMPC)
@@ -27,8 +37,8 @@ message(STATUS "USE_GPU_PSBMPC set to ${USE_GPU_PSBMPC}")
 
 if(USE_GPU_PSBMPC AND NOT DEFINED ${CMAKE_CUDA_ARCHITECTURES})
     set(CMAKE_CUDA_ARCHITECTURES 61 86)
+	message(STATUS "CUDA architectures set to ${CMAKE_CUDA_ARCHITECTURES}")
 endif()
-message(STATUS "CUDA architectures set to ${CMAKE_CUDA_ARCHITECTURES}")
 
 if(NOT DEFINED OWNSHIP_TYPE)
 	set(OWNSHIP_TYPE 0 CACHE BOOL "Sets MPC own-ship model to use with the library.")
