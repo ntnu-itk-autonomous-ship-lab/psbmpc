@@ -124,9 +124,9 @@ namespace PSBMPC_LIB
 		 *  Modified :
 		 *****************************************************************************************/
 		template <class Eigen_Type>
-		inline void save_matrix_to_file(const Eigen_Type &in)
+		inline void save_matrix_to_file(const std::string &filename, const Eigen_Type &in)
 		{
-			std::ofstream outdata("/home/admin/Desktop/thecolavrepo/psbmpc_cxx/src/matlab_scripts/matrix.csv", std::ios::out | std::ios::trunc);
+			std::ofstream outdata(filename, std::ios::out | std::ios::trunc);
 			int n_rows = in.rows();
 			int n_cols = in.cols();
 
@@ -135,7 +135,7 @@ namespace PSBMPC_LIB
 				std::cerr << "Error: file could not be opened" << std::endl;
 				exit(1);
 			}
-			// outdata << n_rows << " " << n_cols << std::endl;
+			outdata << n_rows << "," << n_cols << std::endl;
 			for (int i = 0; i < n_rows; i++)
 			{
 				for (int j = 0; j < n_cols; j++)

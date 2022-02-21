@@ -69,6 +69,4 @@ endif()
 
 add_subdirectory(psbmpc_lib)
 
-if(ENABLE_PSBMPC_DEBUGGING)
-  add_subdirectory(tests)
-endif()
+add_subdirectory(tests)
