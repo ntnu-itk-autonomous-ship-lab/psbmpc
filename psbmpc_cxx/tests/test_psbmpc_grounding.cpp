@@ -90,7 +90,7 @@ int main()
 	//*****************************************************************************************************************
 	// Obstacle sim setup
 	//*****************************************************************************************************************
-	int n_do = 2;
+	int n_do = 1;
 	std::vector<int> ID(n_do);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_do);
@@ -268,11 +268,13 @@ int main()
 	// Input the path to the land data
 	// std::string filename = "/tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
 	double equatorial_radius(6378137.0), flattening_factor(0.003352810664747);
-	int utm_zone(33);
+	int utm_zone(32);
 	Eigen::Vector2d lla_origin;
-	lla_origin << 63.4389029083, 10.39908278;
+	lla_origin << 63.4389029083, 10.39908278; // piren
 	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(
-		relative_path + "/../tests/grounding_hazard_data/charts/land/land.shp",
+		// relative_path + "/../tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp", // IF RELEASE
+		// relative_path + "/tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp", // IF DEBUG
+		"",
 		equatorial_radius,
 		flattening_factor,
 		utm_zone,
@@ -281,11 +283,11 @@ int main()
 		"local_NED",
 		psbmpc.pars);
 
-	// std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv";
-	// if (other_polygons_filename != "")
-	// {
-	// 	grounding_hazard_manager.read_other_polygons(other_polygons_filename, true, false);
-	// }
+	std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv";
+	if (other_polygons_filename != "")
+	{
+		grounding_hazard_manager.read_other_polygons(other_polygons_filename, true, false);
+	}
 
 	Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin_ned();
 	PSBMPC_LIB::Static_Obstacles polygons_lla = grounding_hazard_manager.get_polygons_lla();
@@ -382,7 +384,7 @@ int main()
 		pcount += 1;
 	}
 
-	PSBMPC_LIB::CPU::save_matrix_to_file("polygons_lla.csv", polygon_matrix_lla.transpose());
+	// PSBMPC_LIB::CPU::save_matrix_to_file("polygons_lla.csv", polygon_matrix_lla.transpose());
 
 #if ENABLE_PSBMPC_DEBUGGING
 	mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
@@ -489,7 +491,7 @@ int main()
 		engEvalString(ep, "init_obstacle_plot_grounding");
 	}
 	//=========================================================
-	engEvalString(ep, "save('/home/trymte/Desktop/polygons', 'P', 'P_lla', 'P_simplified', 'map_origin')");
+	// engEvalString(ep, "save('/home/trymte/Desktop/polygons', 'P', 'P_lla', 'P_simplified', 'map_origin')");
 #endif
 	Eigen::Vector4d xs_i_k;
 	Eigen::VectorXd xs_aug(9);

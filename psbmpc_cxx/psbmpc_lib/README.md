@@ -37,15 +37,14 @@ The main function to use is the **calculate_optimal_offsets(..)** function, whic
 - The current time own-ship state (3DOF) <img src="https://render.githubusercontent.com/render/math?math={[x, y, \psi, u, v, r]}^T">
 - Absolute wind speed and its direction (used with the anti-grounding part)
 - Nearby static obstacles, parameterized as polygons or no-go lines.
-- A data structure Obstacle Data containing dynamic obstacle information.
+- Nearby dynamic Obstacles, contained in a data structure with all necessary information such as state, predicted trajectories, ID, etc.
 
 and has the following **outputs**:
 
 - Optimal surge and course modification to the planned guidance references
 - A predicted trajectory for the own-ship when implementing the optimal avoidance maneuver(s).
-- Obstacle Data: Some parts of the Obstacle Data can be modified by the PSB-MPC (predicted relative hazard levels for each obstacle)
 
-You should use the Obstacle Manager class for creating and updating the Obstacle Data structure, and can also use the Grounding Hazard Manager to create and update relevant polygons for the anti-grounding part. The Obstacle Predictor class is used to predict all nearby dynamic obstacle trajectories (can be multiple trajectories for each obstacle), using the Obstacle Data from the Obstacle Manager as input.
+You should use the Obstacle Manager class for creating and updating the Dynamic Obstacle structure, and can also use the Grounding Hazard Manager to create and update relevant Static Obstacle polygons for the anti-grounding part. The Obstacle Predictor class is used to predict all nearby dynamic obstacle trajectories (can be multiple trajectories for each obstacle), using the Dynamic Obstacle from the Obstacle Manager as input.
 
 ### PSBMPC Parameters
 

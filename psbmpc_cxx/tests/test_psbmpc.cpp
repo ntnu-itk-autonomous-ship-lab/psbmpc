@@ -1,22 +1,22 @@
 /****************************************************************************************
-*
-*  File name : test_psbmpc.cpp
-*
-*  Function  : Test file for the Probabilistic Scenario-based Model Predictive Control
-*			   using Matlab for visualization
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : test_psbmpc.cpp
+ *
+ *  Function  : Test file for the Probabilistic Scenario-based Model Predictive Control
+ *			   using Matlab for visualization
+ *
+ *	           ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Trym Tengesdal
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 
 #include "cpu/psbmpc_cpu.hpp"
 #if USE_GPU_PSBMPC
@@ -45,7 +45,7 @@ int main()
 	//*****************************************************************************************************************
 	Eigen::Matrix<double, 6, 1> xs_os_0;
 	double offset = 300.0;
-	//xs_os_0 << 0, 0, 0, 2.0, 0, 0;
+	// xs_os_0 << 0, 0, 0, 2.0, 0, 0;
 	xs_os_0 << -248.0 + offset, -380.0 + offset, 48 * DEG2RAD, 2.0, 0, 0;
 	double u_d(2.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 
@@ -77,7 +77,7 @@ int main()
 	//*****************************************************************************************************************
 	// Obstacle sim setup
 	//*****************************************************************************************************************
-	int n_do = 2;
+	int n_do = 1;
 	std::vector<int> ID(n_do);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_do);
@@ -161,7 +161,7 @@ int main()
 		{
 			n_wps_i[i] = 5;
 			waypoints_i[i].resize(2, n_wps_i[i]);
-			//xs_i_0[i] << 5000, 0, 180 * DEG2RAD, 6, 0, 0;
+			// xs_i_0[i] << 5000, 0, 180 * DEG2RAD, 6, 0, 0;
 			/* xs_i_0[i] << 300, 150, -90 * DEG2RAD, 5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 500,
 				xs_i_0[i](1), -300;
@@ -367,7 +367,7 @@ int main()
 
 			std::cout << "PSBMPC time usage : " << mean_t << " milliseconds" << std::endl;
 
-			//std::cout << "u_d = " << u_d << " | chi_d = " << chi_d << std::endl;
+			// std::cout << "u_d = " << u_d << " | chi_d = " << chi_d << std::endl;
 		}
 		u_c = u_d * u_opt;
 		chi_c = chi_d + chi_opt;
@@ -376,7 +376,7 @@ int main()
 		{
 			trajectory.col(k + 1) = ownship.predict(trajectory.col(k), u_c, chi_c, dt, PSBMPC_LIB::ERK1);
 		}
-		//std::cout << trajectory.col(k).transpose() << std::endl;
+		// std::cout << trajectory.col(k).transpose() << std::endl;
 
 		//===========================================
 		// Send trajectory data to matlab
