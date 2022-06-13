@@ -90,7 +90,7 @@ int main()
 	//*****************************************************************************************************************
 	// Obstacle sim setup
 	//*****************************************************************************************************************
-	int n_do = 1;
+	int n_do = 2;
 	std::vector<int> ID(n_do);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_do);
@@ -283,7 +283,8 @@ int main()
 		"local_NED",
 		psbmpc.pars);
 
-	std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv";
+	std::string other_polygons_filename = "../tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF RELEASE
+	// std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF DEBUG
 	if (other_polygons_filename != "")
 	{
 		grounding_hazard_manager.read_other_polygons(other_polygons_filename, true, false);

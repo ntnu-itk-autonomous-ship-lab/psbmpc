@@ -100,10 +100,11 @@ target_compile_options(${LIBRARY_TARGET_NAME}
 	PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:  --disable-warnings -Xcompiler -dc --expt-relaxed-constexpr -DUSE_GPU_PSBMPC=${USE_GPU_PSBMPC} -DOWNSHIP_TYPE=${OWNSHIP_TYPE} -DENABLE_PSBMPC_DEBUGGING=${ENABLE_PSBMPC_DEBUGGING} -DEIGEN_MAX_STATIC_ALIGN_BYTES=16  -Xlinker -dlink>
 )
 
-if(CMAKE_BUILD_TYPE EQUAL release)
+message(STATUS "CMAKE BUILD TYPE: ${CMAKE_BUILD_TYPE}")
+if(CMAKE_BUILD_TYPE STREQUAL "release")
 	target_compile_options(${LIBRARY_TARGET_NAME}
-		PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -j$(nproc) -O3>
-		PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -j$(nproc) -Xptxas -O3>)
+		PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -O3>
+		PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xptxas -O3>)
 else()
 	target_compile_options(${LIBRARY_TARGET_NAME}
 		PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fno-omit-frame-pointer -g>

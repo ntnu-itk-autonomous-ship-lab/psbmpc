@@ -40,6 +40,10 @@ add_executable(tester test_psbmpc_grounding.cpp)
 
 target_link_libraries(tester PRIVATE PSBMPC)
 
+target_compile_options(tester
+ 	PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -O3>
+	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xptxas -O3>)
+
 if (USE_GPU_PSBMPC)
 	set_target_properties(tester PROPERTIES
 		CUDA_SEPARABLE_COMPILATION ON
