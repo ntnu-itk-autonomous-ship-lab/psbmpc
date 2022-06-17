@@ -61,8 +61,8 @@ int main()
 	/* xs_os_0 << 7042220, 270175, 60 * DEG2RAD, 1.5, 0, 0; // rett nordvest for ravnkloa
 	double u_d = 1.5, chi_d, u_c, chi_c; */
 
-	xs_os_0 << -248.0 + offset, -380.0 + offset, 48 * DEG2RAD, 2.0, 0, 0;
-	double u_d(2.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
+	xs_os_0 << 280.13 + offset, 960.02 + offset, 23 * DEG2RAD, 1.0, 0, 0;
+	double u_d(1.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 
 	PSBMPC_LIB::CPU::Ownship ownship;
 
@@ -77,20 +77,23 @@ int main()
 	trajectory.col(0) = xs_os_0;
 #endif
 
-	int n_wps_os = 3;
+	int n_wps_os = 2;
 	waypoints.resize(2, n_wps_os);
 	/* waypoints << 0, 200, 200, 400, 600,  300, 500,
 				 0, 0,   200, 200,  0,  0, -200; */
 	/* waypoints << xs_os_0(0), 7042350,
 		xs_os_0(1), 270575; */
 
-	waypoints << -248 + offset, -80 + offset, -36 + offset,
-		-380 + offset, -180 + offset, -138 + offset;
+	waypoints << 280.13 + offset, 477.50 + offset,
+		960.02 + offset, 1032.11 + offset;
+
+	/* waypoints << 280.13 + offset, 477.50 + offset,
+		960.02 + offset, 1032.11 + offset; */
 
 	//*****************************************************************************************************************
 	// Obstacle sim setup
 	//*****************************************************************************************************************
-	int n_do = 2;
+	int n_do = 1;
 	std::vector<int> ID(n_do);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_do);
@@ -184,7 +187,7 @@ int main()
 		}
 		else
 		{
-			n_wps_i[i] = 2;
+			n_wps_i[i] = 4;
 			waypoints_i[i].resize(2, n_wps_i[i]);
 			/* xs_i_0[i] << 300, 0, 180 * DEG2RAD, 1.5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 0,
@@ -194,9 +197,9 @@ int main()
 			waypoints_i[i] << xs_i_0[i](0), 100,
 				xs_i_0[i](1), 100; */
 
-			xs_i_0[i] << -251 + offset, -248 + offset, -0.2083, 1.0, 0, 0;
-			waypoints_i[i] << xs_i_0[i](0), -128 + offset,
-				xs_i_0[i](1), -274 + offset;
+			xs_i_0[i] << 477.02 + offset, 1032.36 + offset, -2.87973, 1.0, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), 399.16 + offset, 340.55 + offset, 280.13 + offset,
+				xs_i_0[i](1), 1040.24 + offset, 1024.49 + offset, 960.02 + offset;
 			u_d_i[i] = 1.0;
 			chi_d_i[i] = 180 * DEG2RAD;
 		}
@@ -283,8 +286,8 @@ int main()
 		"local_NED",
 		psbmpc.pars);
 
-	std::string other_polygons_filename = "../tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF RELEASE
-	// std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF DEBUG
+	// std::string other_polygons_filename = "../tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF RELEASE
+	std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF DEBUG
 	if (other_polygons_filename != "")
 	{
 		grounding_hazard_manager.read_other_polygons(other_polygons_filename, true, false);

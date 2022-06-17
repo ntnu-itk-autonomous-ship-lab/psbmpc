@@ -105,10 +105,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "release")
 	target_compile_options(${LIBRARY_TARGET_NAME}
 		PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -O3>
 		PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xptxas -O3>)
-else()
+elseif(CMAKE_BUILD_TYPE STREQUAL "debug")
 	target_compile_options(${LIBRARY_TARGET_NAME}
 		PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fno-omit-frame-pointer -g>
-		PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:  -Xcompiler -g -G -Wall -Wno-pedantic>
+		#PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:  -Xcompiler -g -G -Wall -Wno-pedantic>
 	)
 endif()
 

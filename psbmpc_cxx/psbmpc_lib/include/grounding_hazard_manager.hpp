@@ -1,23 +1,23 @@
 /****************************************************************************************
-*
-*  File name : grounding_hazard_manager.hpp
-*
-*  Function  : Header file for the static obstacle interface and data structure for
-*			   keeping information on static obstacles/grounding hazards.
-*
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : grounding_hazard_manager.hpp
+ *
+ *  Function  : Header file for the static obstacle interface and data structure for
+ *			   keeping information on static obstacles/grounding hazards.
+ *
+ *
+ *	           ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Trym Tengesdal
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 
 #pragma once
 
@@ -58,12 +58,12 @@ namespace PSBMPC_LIB
 		Eigen::Vector2d map_origin_ned;
 
 		/****************************************************************************************
-		*  Name     : read_shapefile
-		*  Function : Reads a shapefile into the input vector of polygons, using the convert
-		*		      function to convert SHPObjects to Polygons.
-		*  Author   : Tom Daniel Grande & Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : read_shapefile
+		 *  Function : Reads a shapefile into the input vector of polygons, using the convert
+		 *		      function to convert SHPObjects to Polygons.
+		 *  Author   : Tom Daniel Grande & Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <typename T>
 		void read_shapefile(const std::string &filename, std::vector<T> &polygons)
 		{
@@ -105,11 +105,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : convert
-		*  Function : Converts a SHPObject to a polygon.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : convert
+		 *  Function : Converts a SHPObject to a polygon.
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		void convert(SHPObject *ps_shape, polygon_2D &polygon)
 		{
 			double *x = ps_shape->padfX; // easting
@@ -126,7 +126,7 @@ namespace PSBMPC_LIB
 			{
 				outer_part_end = ps_shape->panPartStart[1];
 			}
-			//printf("n_parts = %d | n_vertices = %d | Outer part start, end = (%d, %d)\n", ps_shape->nParts, ps_shape->nVertices, outer_part_start, outer_part_end);
+			// printf("n_parts = %d | n_vertices = %d | Outer part start, end = (%d, %d)\n", ps_shape->nParts, ps_shape->nVertices, outer_part_start, outer_part_end);
 
 			for (int v = outer_part_start; v < outer_part_end; v++)
 			{
@@ -138,12 +138,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : create_lla_referenced_polygons
-		*  Function : Transforms polygons referenced to map origin in NED, to latitude longitude
-		*			  coordinates
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : create_lla_referenced_polygons
+		 *  Function : Transforms polygons referenced to map origin in NED, to latitude longitude
+		 *			  coordinates
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		void create_lla_referenced_polygons()
 		{
 			polygons_lla.clear();
@@ -169,12 +169,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : create_ned_referenced_polygons
-		*  Function : Transforms polygons referenced in lla, to NED
-		*			  coordinates.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : create_ned_referenced_polygons
+		 *  Function : Transforms polygons referenced in lla, to NED
+		 *			  coordinates.
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		void create_ned_referenced_polygons()
 		{
 			polygons_ned.clear();
@@ -200,11 +200,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : create_simplified_polygons
-		*  Function : Uses the RDP algorithm to simplify the input polygons.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : create_simplified_polygons
+		 *  Function : Uses the RDP algorithm to simplify the input polygons.
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		Static_Obstacles create_simplified_polygons(const Static_Obstacles &polygons_in)
 		{
 			Static_Obstacles polygons_out;
@@ -228,18 +228,18 @@ namespace PSBMPC_LIB
 				}
 				boost::geometry::append(poly, vertices_out[0]);
 				polygons_out.push_back(poly);
-				//printf("Polygon: %d | Vertices before: %ld | Vertices after: %ld\n", j + 1, vertices_in.size(), vertices_out.size());
+				printf("Polygon: %d | Vertices before: %ld | Vertices after: %ld\n", j + 1, vertices_in.size(), vertices_out.size());
 			}
 			return polygons_out;
 		}
 
 		/****************************************************************************************
-		*  Name     : ramer_douglas_peucker
-		*  Function : Uses the Ramer Douglas Peucker algorithm to reduce vertices in a polygon,
-		*			  conserving shape as best as possible.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : ramer_douglas_peucker
+		 *  Function : Uses the Ramer Douglas Peucker algorithm to reduce vertices in a polygon,
+		 *			  conserving shape as best as possible.
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		void ramer_douglas_peucker(
 			std::vector<point_2D> &vertices_out,	 // In/Out: Vertices of simplified polygon
 			const std::vector<point_2D> &vertices_in // In: Vertices of polygon to simplify
@@ -292,11 +292,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : distance_to_line_segment
-		*  Function : Calculate distance from p to line segment {v_1, v_2}
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : distance_to_line_segment
+		 *  Function : Calculate distance from p to line segment {v_1, v_2}
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		double distance_to_line_segment(
 			const point_2D &p,
 			const point_2D &q_1,
@@ -329,11 +329,11 @@ namespace PSBMPC_LIB
 		UTM_Projection utm_p;
 
 		/****************************************************************************************
-		*  Name     : Grounding_Hazard_Manager
-		*  Function : Class constructor, initializes variables, objects, parameters
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : Grounding_Hazard_Manager
+		 *  Function : Class constructor, initializes variables, objects, parameters
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		Grounding_Hazard_Manager() {}
 
 		Grounding_Hazard_Manager(const std::string &filename)
@@ -420,11 +420,11 @@ namespace PSBMPC_LIB
 		Static_Obstacles get_simplified_polygons_lla() const { return simplified_polygons_lla; }
 
 		/****************************************************************************************
-		*  Name     : switch_local_ned_frame
-		*  Function : Changes the local ned frame to another UTM zone and map origin
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : switch_local_ned_frame
+		 *  Function : Changes the local ned frame to another UTM zone and map origin
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		void switch_local_ned_frame(
 			const double equatorial_radius,		   // In: Radius  of ellipsoid parametrization for lla <-> UTM conversions
 			const double flattening_factor,		   // In: Flattening factor of ellipsoid parametrization for lla <-> UTM conversions
@@ -445,13 +445,13 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : read_other_polygons
-		*  Function : Reads other polygons from a file consisting of a matrix (2 x N) of polygon
-		*			  vertices, separated by columns of -1 (tested for .csv type).
-		*		      Either in (easting, northing) or (longitude, latitude format).
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : read_other_polygons
+		 *  Function : Reads other polygons from a file consisting of a matrix (2 x N) of polygon
+		 *			  vertices, separated by columns of -1 (tested for .csv type).
+		 *		      Either in (easting, northing) or (longitude, latitude format).
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		void read_other_polygons(
 			const std::string &filename,  // In: Name of .csv file to process
 			const bool is_ned_frame,	  // In: Boolean determining type of coordinates in file
@@ -538,13 +538,13 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : operator()
-		*  Function : Returns a vector of relevant static obstacles for use by the PSB/SB-MPC,
-		*		 	  given the current own-ship position. Two overloads, latter one with
-		*			  input parameter determining radius for relevant obstacles.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : operator()
+		 *  Function : Returns a vector of relevant static obstacles for use by the PSB/SB-MPC,
+		 *		 	  given the current own-ship position. Two overloads, latter one with
+		 *			  input parameter determining radius for relevant obstacles.
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		Static_Obstacles operator()(
 			const Eigen::VectorXd &ownship_state // State of the own-ship, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
 		)
