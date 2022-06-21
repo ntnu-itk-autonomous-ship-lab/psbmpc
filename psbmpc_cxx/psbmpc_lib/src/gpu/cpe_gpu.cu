@@ -665,7 +665,7 @@ namespace PSBMPC_LIB
         }
 
         /****************************************************************************************
-         *  Name     : CE_estimation
+         *  Name     : CE_estimate
          *  Function : Collision probability estimation using the Cross-Entropy method
          *  Author   : Trym Tengesdal
          *  Modified :

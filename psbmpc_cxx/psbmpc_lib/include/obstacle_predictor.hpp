@@ -1,23 +1,23 @@
 /****************************************************************************************
-*
-*  File name : obstacle_predictor.hpp
-*
-*  Function  : Header file for the obstacle predictor class used by the PSB-MPC.
-*			   Predicts dynamic obstacle trajectories using current time information.
-*			   Transfers the trajectory data to (tracked) Tracked Obstacle data structures.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : obstacle_predictor.hpp
+ *
+ *  Function  : Header file for the obstacle predictor class used by the PSB-MPC.
+ *			   Predicts dynamic obstacle trajectories using current time information.
+ *			   Transfers the trajectory data to (tracked) Tracked Obstacle data structures.
+ *
+ *	           ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Trym Tengesdal
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 
 #pragma once
 
@@ -60,11 +60,11 @@ namespace PSBMPC_LIB
 		Eigen::MatrixXd P_i_p;
 
 		/****************************************************************************************
-		*  Name     : setup_mrou_obstacle_prediction_variables
-		*  Function :
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : setup_mrou_obstacle_prediction_variables
+		 *  Function :
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		template <class MPC_Parameters>
 		void setup_mrou_prediction(
 			const int i,				   // In: Index of obstacle in consideration
@@ -76,7 +76,7 @@ namespace PSBMPC_LIB
 
 			n_ps[i] = n_ps_MROU;
 
-			//std::cout << "obst i = " << i << " | t_cpa = " << t_cpa_i << "n_turns = " << n_turns << std::endl;
+			// std::cout << "obst i = " << i << " | t_cpa = " << t_cpa_i << "n_turns = " << n_turns << std::endl;
 
 			ps_maneuver_times_i.resize(n_cc, n_ps[i]);
 			ps_course_changes_i.resize(n_cc, n_ps[i]);
@@ -117,11 +117,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : initialize_independent_prediction (v1 and v2)
-		*  Function : Sets up independent obstacle prediction.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : initialize_independent_prediction (v1 and v2)
+		 *  Function : Sets up independent obstacle prediction.
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <class MPC_Parameters>
 		void initialize_independent_prediction_v1(
 			const Dynamic_Obstacles &obstacles,	  // In/Out: Dynamic obstacle information
@@ -152,7 +152,7 @@ namespace PSBMPC_LIB
 			xs_i_0 = obstacles[i].kf.get_state();
 			/* std::cout << "xs_i_0 = " << xs_i_0.transpose() << std::endl;
 			std::cout << "xs_0 = " << xs_0.transpose() << std::endl; */
-			//CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
+			// CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
 			/* std::cout << "p_cpa = " << p_cpa.transpose() << std::endl;
 			std::cout << "t_cpa(i) = " << t_cpa(i) << std::endl;
 			std::cout << "d_cpa(i) = " << d_cpa(i)<< std::endl; */
@@ -187,8 +187,8 @@ namespace PSBMPC_LIB
 
 			// Either an irrelevant obstacle or too far away to consider
 			double d_0i = (xs_i_0.block<2, 1>(0, 0) - ownship_state.block<2, 1>(0, 0)).norm();
-			//bool is_passed = CPU::ship_is_passed_by(ownship_state, xs_i_0, mpc_pars.d_safe);
-			//if (is_passed || d_0i > mpc_pars.d_do_relevant)
+			// bool is_passed = CPU::ship_is_passed_by(ownship_state, xs_i_0, mpc_pars.d_safe);
+			// if (is_passed || d_0i > mpc_pars.d_do_relevant)
 			if (d_0i > mpc_pars.d_do_relevant)
 			{
 				ct_offsets.resize(1);
@@ -221,12 +221,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : predict_independent_trajectories_v1
-		*  Function : More refined obstacle prediction with avoidance-like trajectories,
-		*			  including the straight-line trajectory
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : predict_independent_trajectories_v1
+		 *  Function : More refined obstacle prediction with avoidance-like trajectories,
+		 *			  including the straight-line trajectory
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <class MPC_Parameters>
 		void predict_independent_trajectories_v1(
 			Dynamic_Obstacles &obstacles,  // In/Out: Dynamic obstacle information
@@ -291,9 +291,9 @@ namespace PSBMPC_LIB
 
 							if (3 * sqrt(P_rot_2D(1, 1)) > r_ct)
 							{
-								//std::cout << P_rot_2D << std::endl;
+								// std::cout << P_rot_2D << std::endl;
 								P_rot_2D(1, 1) = pow(r_ct, 2) / 3.0;
-								//P_i_p.col(k + 1) =
+								// P_i_p.col(k + 1) =
 							}
 						}
 					}
@@ -302,13 +302,13 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : predict_independent_trajectories_v2
-		*  Function : More refined obstacle prediction with avoidance-like trajectories,
-		*			  including the straight-line trajectory. Version two, using LOS and the
-		*			  kinematic ship model
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : predict_independent_trajectories_v2
+		 *  Function : More refined obstacle prediction with avoidance-like trajectories,
+		 *			  including the straight-line trajectory. Version two, using LOS and the
+		 *			  kinematic ship model
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <class MPC_Parameters>
 		void predict_independent_trajectories_v2(
 			Dynamic_Obstacles &obstacles,  // In/Out: Dynamic obstacle information
@@ -476,11 +476,11 @@ namespace PSBMPC_LIB
 		void set_n_ps_LOS(const int n_ps_LOS) { this->n_ps_LOS = n_ps_LOS; }
 
 		/****************************************************************************************
-		*  Name     : operator()
-		*  Function : Initializes and predicts obstacle trajectories
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : operator()
+		 *  Function : Initializes and predicts obstacle trajectories
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		template <class MPC_Parameters>
 		void operator()(
 			Dynamic_Obstacles &obstacles,		  // In/Out: Dynamic obstacle information
@@ -522,10 +522,10 @@ namespace PSBMPC_LIB
 					Pr_s_i(ps) = 0;
 				}
 				Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
-				//Pr_s_i(n_ps[i] - 1) = 1;
+				// Pr_s_i(n_ps[i] - 1) = 1;
 				Pr_s_i = Pr_s_i / Pr_s_i.sum();
 
-				//std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
+				// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
 				obstacles[i].set_scenario_probabilities(Pr_s_i);
 			}
 		}
@@ -580,10 +580,10 @@ namespace PSBMPC_LIB
 					Pr_s_i(ps) = 0;
 				}
 				Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
-				//Pr_s_i(n_ps[i] - 1) = 1;
+				// Pr_s_i(n_ps[i] - 1) = 1;
 				Pr_s_i = Pr_s_i / Pr_s_i.sum();
 
-				//std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
+				// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
 				obstacles[i].set_scenario_probabilities(Pr_s_i);
 			}
 		}
