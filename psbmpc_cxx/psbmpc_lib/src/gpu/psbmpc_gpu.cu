@@ -782,7 +782,7 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-			/* Engine *ep = engOpen(NULL);
+			Engine *ep = engOpen(NULL);
 			if (ep == NULL)
 			{
 				std::cout << "engine start failed!" << std::endl;
@@ -854,7 +854,7 @@ namespace PSBMPC_LIB
 			}
 			Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
 			Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
-			Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs); */
+			Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs);
 #endif
 			//=============================================================================================================
 
@@ -871,14 +871,14 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-				/* for (int M = 0; M < pars.n_M; M++)
+				for (int M = 0; M < pars.n_M; M++)
 				{
 					cb_matrix(2 * M, cb) = offset_sequence(2 * M);
 					cb_matrix(2 * M + 1, cb) = RAD2DEG * offset_sequence(2 * M + 1);
 				}
 				curr_ps_index = 0;
-				//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
-				//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl; */
+				// std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
+				// std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 #endif
 				//===================================================================
 
@@ -918,8 +918,8 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-					/* h_do_i_ps_matrix.block(curr_ps_index, cb, n_ps, 1) = h_do_i_ps;
-					curr_ps_index += n_ps; */
+					h_do_i_ps_matrix.block(curr_ps_index, cb, n_ps, 1) = h_do_i_ps;
+					curr_ps_index += n_ps;
 #endif
 					//==================================================================
 				}
@@ -938,7 +938,7 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-				/* if (n_so > 0)
+				if (n_so > 0)
 				{
 					h_so_j_matrix.block(0, cb, n_so, 1) = h_so_j;
 				}
@@ -953,7 +953,7 @@ namespace PSBMPC_LIB
 				if (cost < min_cost)
 				{
 					min_index = cb;
-				} */
+				}
 #endif
 				//===================================================================
 
@@ -969,7 +969,7 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-			/* opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+			opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
 			map_total_cost = total_cost_matrix;
 			if (n_so > 0)
 			{
@@ -1015,7 +1015,7 @@ namespace PSBMPC_LIB
 			mxDestroyArray(n_so_mx);
 			mxDestroyArray(opt_cb_index_mx);
 
-			engClose(ep); */
+			engClose(ep);
 #endif
 			//==================================================================
 		}
