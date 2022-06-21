@@ -348,7 +348,7 @@ namespace PSBMPC_LIB
 	void PSBMPC_Parameters::initialize_pars()
 	{
 		n_cbs = 1;
-		n_M = 1;
+		n_M = 2;
 		n_do_ps = 5;
 
 		chi_offsets.resize(n_M);
@@ -415,12 +415,12 @@ namespace PSBMPC_LIB
 		prediction_method = ERK1;
 		guidance_method = LOS;
 
-		T = 220.0; // 220.0
+		T = 200.0; // 220.0
 		dt = 5.0;
 
 		p_step_opt = 1;
 		p_step_do = 1;
-		p_step_grounding = 2;
+		p_step_grounding = 4;
 		if (prediction_method == ERK1)
 		{
 			dt = 1.0;
@@ -431,8 +431,8 @@ namespace PSBMPC_LIB
 		d_so_relevant = 150;
 		d_do_relevant = 500;
 		d_safe = 10.0;
-		K_coll = 30.0;
-		T_coll = 110;
+		K_coll = 20.0;
+		T_coll = 100;
 		kappa_SO = 20.0;
 		kappa_GW = 25.0;
 		kappa_RA = 5.0;
@@ -445,7 +445,7 @@ namespace PSBMPC_LIB
 		G_1 = 100.0;
 		G_2 = 5.0;
 		G_3 = 1.4;
-		G_4 = 0.5;
+		G_4 = 0.05;
 
 		epsilon_rdp = 2.5;
 	}

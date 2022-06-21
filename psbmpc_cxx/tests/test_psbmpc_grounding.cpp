@@ -61,7 +61,8 @@ int main()
 	/* xs_os_0 << 7042220, 270175, 60 * DEG2RAD, 1.5, 0, 0; // rett nordvest for ravnkloa
 	double u_d = 1.5, chi_d, u_c, chi_c; */
 
-	xs_os_0 << 280.13 + offset, 960.02 + offset, 23 * DEG2RAD, 1.0, 0, 0;
+	/* xs_os_0 << 280.13 + offset, 960.02 + offset, 23 * DEG2RAD, 1.0, 0, 0; */
+	xs_os_0 << 336.33, 989.52, 20 * DEG2RAD, 1.0, 0, 0;
 	double u_d(1.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 
 	PSBMPC_LIB::CPU::Ownship ownship;
@@ -81,11 +82,12 @@ int main()
 	waypoints.resize(2, n_wps_os);
 	/* waypoints << 0, 200, 200, 400, 600,  300, 500,
 				 0, 0,   200, 200,  0,  0, -200; */
-	/* waypoints << xs_os_0(0), 7042350,
-		xs_os_0(1), 270575; */
 
-	waypoints << 280.13 + offset, 477.50 + offset,
-		960.02 + offset, 1032.11 + offset;
+	waypoints << xs_os_0(0), 989.52,
+		xs_os_0(1), 1031.25;
+
+	/* waypoints << 280.13 + offset, 477.50 + offset,
+		960.02 + offset, 1032.11 + offset; */
 
 	/* waypoints << 280.13 + offset, 477.50 + offset,
 		960.02 + offset, 1032.11 + offset; */
@@ -93,7 +95,7 @@ int main()
 	//*****************************************************************************************************************
 	// Obstacle sim setup
 	//*****************************************************************************************************************
-	int n_do = 1;
+	int n_do = 2;
 	std::vector<int> ID(n_do);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_do);
@@ -161,18 +163,19 @@ int main()
 		xs_i_0[i].resize(6);
 		if (i == 1)
 		{
-			n_wps_i[i] = 5;
+			n_wps_i[i] = 3;
 			waypoints_i[i].resize(2, n_wps_i[i]);
 			// xs_i_0[i] << 5000, 0, 180 * DEG2RAD, 6, 0, 0;
-			/* xs_i_0[i] << 300, 150, -90 * DEG2RAD, 5, 0, 0;
-			waypoints_i[i] << xs_i_0[i](0), 500,
-				xs_i_0[i](1), -300;
-			u_d_i[i] = 5.0; */
-			chi_d_i[i] = -90 * DEG2RAD;
 
-			xs_i_0[i] << -224 + offset, -346 + offset, 0.978, 1.0, 0, 0;
+			xs_i_0[i] << 281.06, 979.00, 23 * DEG2RAD, 2.0, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), 377.99, 528.69,
+				xs_i_0[i](1), 969.08, 1031.90;
+
+			/* xs_i_0[i] << -224 + offset, -346 + offset, 0.978, 1.0, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), -191 + offset, -180 + offset, -149 + offset, -62 + offset,
-				xs_i_0[i](1), -297 + offset, -235 + offset, -218 + offset, -140 + offset;
+				xs_i_0[i](1), -297 + offset, -235 + offset, -218 + offset, -140 + offset; */
+
+			chi_d_i[i] = -90 * DEG2RAD;
 			u_d_i[i] = 1.0;
 		}
 		else if (i == 2)
@@ -193,13 +196,13 @@ int main()
 			waypoints_i[i] << xs_i_0[i](0), 0,
 				xs_i_0[i](1), 0; */
 
-			/* xs_i_0[i] << 100, -100, 90 * DEG2RAD, 1.5, 0, 0;
-			waypoints_i[i] << xs_i_0[i](0), 100,
-				xs_i_0[i](1), 100; */
+			xs_i_0[i] << 493.48, 1031.90, -165 * DEG2RAD, 1.0, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), 437.65, 347.55, 293.31,
+				xs_i_0[i](1), 1040.24, 1028.86, 973.75;
 
-			xs_i_0[i] << 477.02 + offset, 1032.36 + offset, -2.87973, 1.0, 0, 0;
+			/* xs_i_0[i] << 477.02 + offset, 1032.36 + offset, -2.87973, 1.0, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 399.16 + offset, 340.55 + offset, 280.13 + offset,
-				xs_i_0[i](1), 1040.24 + offset, 1024.49 + offset, 960.02 + offset;
+				xs_i_0[i](1), 1040.24 + offset, 1024.49 + offset, 960.02 + offset; */
 			u_d_i[i] = 1.0;
 			chi_d_i[i] = 180 * DEG2RAD;
 		}
