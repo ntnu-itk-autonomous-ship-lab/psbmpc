@@ -228,7 +228,7 @@ namespace PSBMPC_LIB
 				}
 				boost::geometry::append(poly, vertices_out[0]);
 				polygons_out.push_back(poly);
-				printf("Polygon: %d | Vertices before: %ld | Vertices after: %ld\n", j + 1, vertices_in.size(), vertices_out.size());
+				// printf("Polygon: %d | Vertices before: %ld | Vertices after: %ld\n", j + 1, vertices_in.size(), vertices_out.size());
 			}
 			return polygons_out;
 		}
