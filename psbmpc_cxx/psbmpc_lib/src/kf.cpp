@@ -1,24 +1,24 @@
 /****************************************************************************************
-*
-*  File name : kf.cpp
-*
-*  Function  : Class functions for a "hardcoded" Kalman Filter (KF). Alternative version
-*			   of the one created by Giorgio D. Kwame Minde Kufoalor through the Autosea
-*		       project, modified with .cu for this GPU-implementation.
-*
-*
-*            ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : kf.cpp
+ *
+ *  Function  : Class functions for a "hardcoded" Kalman Filter (KF). Alternative version
+ *			   of the one created by Giorgio D. Kwame Minde Kufoalor through the Autosea
+ *		       project, modified with .cu for this GPU-implementation.
+ *
+ *
+ *            ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Trym Tengesdal
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 
 #include "kf.hpp"
 #include <stdexcept>
@@ -27,12 +27,12 @@
 namespace PSBMPC_LIB
 {
 	/****************************************************************************************
-	*  Name     : KF
-	*  Function : Class constructors, initializes parameters and variables. Default constructor
-	*			  is used for the Autosea KF tracker stuff.
-	*  Author   :
-	*  Modified :
-	*****************************************************************************************/
+	 *  Name     : KF
+	 *  Function : Class constructors, initializes parameters and variables. Default constructor
+	 *			  is used for the Autosea KF tracker stuff.
+	 *  Author   :
+	 *  Modified :
+	 *****************************************************************************************/
 	KF::KF() : t_0(0.0), t(0.0), initialized(false)
 	{
 		xs_p.setZero();
@@ -122,11 +122,11 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-	*  Name     : reset
-	*  Function : Resets filter to specified time and state, and covariance to P_0
-	*  Author   :
-	*  Modified :
-	*****************************************************************************************/
+	 *  Name     : reset
+	 *  Function : Resets filter to specified time and state, and covariance to P_0
+	 *  Author   :
+	 *  Modified :
+	 *****************************************************************************************/
 	void KF::reset(
 		const Eigen::Vector4d &xs_0, // In: Initial filter state
 		const Eigen::Matrix4d &P_0,	 // In: Initial filter covariance
@@ -148,11 +148,11 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-	*  Name     : predict
-	*  Function : Predicts the estimate dt seconds forward in time using the system model
-	*  Author   :
-	*  Modified :
-	*****************************************************************************************/
+	 *  Name     : predict
+	 *  Function : Predicts the estimate dt seconds forward in time using the system model
+	 *  Author   :
+	 *  Modified :
+	 *****************************************************************************************/
 	void KF::predict(
 		const double dt // In: Sampling interval
 	)
@@ -174,12 +174,12 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-	*  Name     : update
-	*  Function : Updates the KF prediction with the measurement, and
-	*			  propagates the prediction
-	*  Author   :
-	*  Modified :
-	*****************************************************************************************/
+	 *  Name     : update
+	 *  Function : Updates the KF prediction with the measurement, and
+	 *			  propagates the prediction
+	 *  Author   :
+	 *  Modified :
+	 *****************************************************************************************/
 	void KF::update(
 		const Eigen::Vector4d &y_m, // In: Measurement of cartesian position and velocity
 		const double duration_lost, // In: How long a track on an obstacle has been lost
@@ -194,7 +194,7 @@ namespace PSBMPC_LIB
 			Eigen::Matrix4d K;
 			K = P_p * C.transpose() * (C * P_p * C.transpose() + R).inverse();
 
-			xs_upd = xs_p + K * (y_m - C * xs_p);
+			xs_upd = xs_p + K * (y_m - C * xs_upd);
 
 			P_upd = (I - K * C) * P_p;
 		}
@@ -217,7 +217,7 @@ namespace PSBMPC_LIB
 		if (!initialized)
 			throw std::runtime_error("Filter is not initialized!");
 
-		assert(C.rows() == 2);
+		set_measurement_matrix(false);
 		if (!dead_reckon)
 		{
 			Eigen::Matrix<double, 4, 2> K;
@@ -246,7 +246,7 @@ namespace PSBMPC_LIB
 		if (!initialized)
 			throw std::runtime_error("Filter is not initialized!");
 
-		assert(C.rows() == 4);
+		set_measurement_matrix(true);
 		if (!dead_reckon)
 		{
 			Eigen::Matrix4d K;
@@ -267,15 +267,15 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-	*  PRIVATE FUNCTIONS
-	*****************************************************************************************/
+	 *  PRIVATE FUNCTIONS
+	 *****************************************************************************************/
 
 	/****************************************************************************************
-	*  Name     : set_measurement_matrix
-	*  Function :
-	*  Author   :
-	*  Modified :
-	*****************************************************************************************/
+	 *  Name     : set_measurement_matrix
+	 *  Function :
+	 *  Author   :
+	 *  Modified :
+	 *****************************************************************************************/
 	void KF::set_measurement_matrix(
 		const bool use_velocity_measurements // In: Determins whether or not the KF processes a 2d or 4d measurement vector
 	)

@@ -205,13 +205,13 @@ namespace PSBMPC_LIB
 				e_int += e * dt;
 				if (e_int >= e_int_max)
 					e_int -= e * dt;
-				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
+				chi_d = GPU::wrap_angle_to_pmpi(alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD));
 				break;
 			case WPP:
-				chi_d = atan2(d_next_wp(1), d_next_wp(0));
+				chi_d = GPU::wrap_angle_to_pmpi(atan2(d_next_wp(1), d_next_wp(0)));
 				break;
 			case CH:
-				chi_d = xs(2);
+				chi_d = GPU::wrap_angle_to_pmpi(xs(2));
 				break;
 			default:
 				// Throw
@@ -282,13 +282,13 @@ namespace PSBMPC_LIB
 				e_int += e * dt;
 				if (e_int >= e_int_max)
 					e_int -= e * dt;
-				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
+				chi_d = GPU::wrap_angle_to_pmpi(alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD));
 				break;
 			case WPP:
-				chi_d = atan2(d_next_wp(1), d_next_wp(0));
+				chi_d = GPU::wrap_angle_to_pmpi(atan2(d_next_wp(1), d_next_wp(0)));
 				break;
 			case CH:
-				chi_d = xs(2);
+				chi_d = GPU::wrap_angle_to_pmpi(xs(2));
 				break;
 			default:
 				// Throw
@@ -431,7 +431,7 @@ namespace PSBMPC_LIB
 
 				update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
 
-				xs_p = predict(xs_p, u_m * u_d_p, chi_d_p + chi_m, dt, prediction_method);
+				xs_p = predict(xs_p, u_m * u_d_p, GPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
 
 				if (k < n_samples - 1)
 					trajectory.set_col(k + 1, xs_p);
@@ -497,7 +497,7 @@ namespace PSBMPC_LIB
 
 				update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
 
-				xs_p = predict(xs_p, u_m * u_d_p, chi_d_p + chi_m, dt, prediction_method);
+				xs_p = predict(xs_p, u_m * u_d_p, GPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
 
 				if (k < n_samples - 1)
 					trajectory.set_col(k + 1, xs_p);
@@ -565,7 +565,7 @@ namespace PSBMPC_LIB
 
 				update_guidance_references(u_d_p, chi_d_p, e_k, waypoints, xs_p, dt, guidance_method);
 
-				xs_p = predict(xs_p, u_m * u_d_p, chi_d_p + chi_m, dt, prediction_method);
+				xs_p = predict(xs_p, u_m * u_d_p, GPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
 
 				if (k < n_samples - 1)
 					trajectory.set_col(k + 1, xs_p);
