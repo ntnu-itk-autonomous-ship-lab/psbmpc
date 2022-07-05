@@ -182,7 +182,7 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-			/* Engine *ep = engOpen(NULL);
+			Engine *ep = engOpen(NULL);
 			if (ep == NULL)
 			{
 				std::cout << "engine start failed!" << std::endl;
@@ -308,7 +308,7 @@ namespace PSBMPC_LIB
 					engPutVariable(ep, "X_i", traj_i);
 					engEvalString(ep, "inside_psbmpc_obstacle_plot");
 				}
-			} */
+			}
 #endif
 			//===============================================================================================================
 
@@ -390,7 +390,7 @@ namespace PSBMPC_LIB
 // MATLAB PLOTTING FOR DEBUGGING AND TUNING
 //==================================================================
 #if ENABLE_PSBMPC_DEBUGGING
-			/* Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
+			Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), n_samples);
 			map_traj = trajectory;
 
 			k_s = mxCreateDoubleScalar(n_samples);
@@ -401,7 +401,7 @@ namespace PSBMPC_LIB
 
 			printf("%s", buffer);
 
-			engClose(ep); */
+			engClose(ep);
 #endif
 			//====================================================================
 

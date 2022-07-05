@@ -1,0 +1,26 @@
+
+do_data_topic_name: "/psbmpc/dom/do_data"
+#do_estimate_topic_name: "/moving_obs_sim/obstacle_estimate"
+do_estimate_topic_name: "/kf_tracking/do_estimate"
+polygons_topic_name: "/psbmpc/ghm/polygons"
+#ownship_pose_topic_name: "/milliampere/pose"
+#ownship_velocity_topic_name: "/milliampere/twist_body"
+ownship_pose_topic_name: "/navigation/pose"
+ownship_velocity_topic_name: "/navigation/twist_body"
+psbmpc_mode_topic_name: "/psbmpc/psbmpc_mode"
+get_polygons_service_name: "/psbmpc/ghm/get_polygons"
+
+do_data_publish_rate: 50
+
+manager:
+  T_lost_limit: 15.0
+  T_tracked_limit: 15.0
+  obstacle_filter_on: false
+
+predictor:
+  r_ct: 35.0 #bredde mellom trajs
+  sigma_x: 0.05
+  sigma_xy: 0.0
+  sigma_y: 0.05
+  gamma_x: 0.1
+  gamma_y: 0.1

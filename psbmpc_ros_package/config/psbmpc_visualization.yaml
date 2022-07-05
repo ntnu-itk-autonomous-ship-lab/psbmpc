@@ -1,0 +1,41 @@
+node_name: 'psbmpc_visualization_node'
+
+trajectory_reference_vis_topic_name: "/psbmpc/psbmpc_vis/trajectory_reference"
+trajectory_vis_topic_name: "/psbmpc/psbmpc_vis/trajectory"
+pose_vis_topic_name: "/psbmpc/psbmpc_vis/pose"
+polygons_vis_topic_name: "/psbmpc/psbmpc_vis/polygons"
+do_trajectories_vis_topic_name: "/psbmpc/psbmpc_vis/do_trajectories"
+trajectory_reference_topic_name: "/psbmpc/trajectory_reference"
+ownship_pose_topic_name: "/milliampere/pose"
+ownship_velocity_topic_name: "/milliampere/twist_body"
+#ownship_pose_topic_name: "/navigation/pose"
+#ownship_velocity_topic_name: "/navigation/twist_body"
+polygons_topic_name: "/psbmpc/ghm/polygons"
+waypoint_topic_name: "/bridge/waypoint"
+do_data_topic_name: "/intent_inference/do_data_with_prob"
+get_polygons_service_name: "/psbmpc/ghm/get_polygons"
+
+trajectory_reference_vis_publish_rate: 100
+polygons_vis_publish_rate: 0.05
+
+d_so_relevant_viz: 800
+
+# Last element of color is a (equal to zero means transparent/invisible marker)
+trajectory_reference:
+  scale_x: 1.0
+  color: [0.1, 0.6, 0.3, 1.0]
+trajectory:
+  update_threshold: 1.0
+  scale_x: 1.1
+  color: [0.4, 0.2, 0.4, 1.0]
+pose:
+  color: [1.0, 0.0, 0.0, 1.0]
+  scale: [15.0, 3.0, 3.0, 1.0]
+safety_zone:
+  color: [0.75, 0.2, 0.05, 1.0]
+wps:
+  color: [0.0, 0.5, 0.5, 1.0]
+  scale: [2.0, 2.0, 2.0, 1.0]
+polygon:
+  scale_x: 0.5
+  color: [0.0, 1.0, 0.0, 1.0]

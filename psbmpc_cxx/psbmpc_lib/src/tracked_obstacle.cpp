@@ -41,7 +41,7 @@ namespace PSBMPC_LIB
 			A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
 			l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)),
 			x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
-			Pr_WGW(0.5), Pr_CCEM(0.5),
+			Pr_WGW(0.9), Pr_CCEM(0.9),
 			Pr_s(Pr_s),
 			duration_tracked(0.0), duration_lost(0.0)
 	{
@@ -83,7 +83,7 @@ namespace PSBMPC_LIB
 			A(xs_aug(4)), B(xs_aug(5)), C(xs_aug(6)), D(xs_aug(7)),
 			l(xs_aug(4) + xs_aug(5)), w(xs_aug(6) + xs_aug(7)),
 			x_offset(xs_aug(4) - xs_aug(5)), y_offset(xs_aug(7) - xs_aug(6)),
-			Pr_WGW(0.5), Pr_CCEM(0.5),
+			Pr_WGW(0.9), Pr_CCEM(0.9),
 			duration_tracked(0.0), duration_lost(0.0)
 	{
 		double psi = atan2(xs_aug(3), xs_aug(2));
@@ -130,7 +130,7 @@ namespace PSBMPC_LIB
 			l(dims(0) + dims(1)), w(dims(2) + dims(3)),
 			x_offset(dims(0) - dims(1)), y_offset(dims(3) - dims(2)),
 			xs_0(xs_p[0].col(0)), P_0(CPU::reshape(P_p.col(0), 4, 4)),
-			Pr_WGW(0.5), Pr_CCEM(0.5),
+			Pr_WGW(0.9), Pr_CCEM(0.9),
 			Pr_s(Pr_s),
 			duration_tracked(duration_tracked), duration_lost(duration_lost),
 			P_p(P_p), xs_p(xs_p)

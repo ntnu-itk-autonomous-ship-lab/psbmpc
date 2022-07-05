@@ -62,7 +62,9 @@ int main()
 	double u_d = 1.5, chi_d, u_c, chi_c; */
 
 	/* xs_os_0 << 280.13 + offset, 960.02 + offset, 23 * DEG2RAD, 1.0, 0, 0; */
-	xs_os_0 << 336.33, 989.52, 20 * DEG2RAD, 1.0, 0, 0;
+	/* xs_os_0 << 456.33, 1295.52, -105.0 * DEG2RAD, 0.0, 0, 0; */
+	/* xs_os_0 << 354.0, 1176.0, 0.862, 0.0, 0, 0; */
+	xs_os_0 << 250.0, 1190.0, 0.306, 0.0, 0, 0;
 	double u_d(1.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 
 	PSBMPC_LIB::CPU::Ownship ownship;
@@ -83,8 +85,8 @@ int main()
 	/* waypoints << 0, 200, 200, 400, 600,  300, 500,
 				 0, 0,   200, 200,  0,  0, -200; */
 
-	waypoints << xs_os_0(0), 989.52,
-		xs_os_0(1), 1031.25;
+	waypoints << xs_os_0(0), 462.0,
+		xs_os_0(1), 1257.0;
 
 	/* waypoints << 280.13 + offset, 477.50 + offset,
 		960.02 + offset, 1032.11 + offset; */
@@ -95,15 +97,15 @@ int main()
 	//*****************************************************************************************************************
 	// Obstacle sim setup
 	//*****************************************************************************************************************
-	int n_do = 2;
+	int n_do = 1;
 	std::vector<int> ID(n_do);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_do);
 
 	// Use constant obstacle uncertainty throughout the simulation, for simplicity
 	Eigen::MatrixXd P_0(4, 4);
-	P_0 << 25, 0, 0, 0,
-		0, 25, 0, 0,
+	P_0 << 1.0, 0, 0, 0,
+		0, 1.0, 0, 0,
 		0, 0, 0.025, 0,
 		0, 0, 0, 0.025;
 
@@ -190,15 +192,23 @@ int main()
 		}
 		else
 		{
-			n_wps_i[i] = 4;
+			n_wps_i[i] = 2;
 			waypoints_i[i].resize(2, n_wps_i[i]);
 			/* xs_i_0[i] << 300, 0, 180 * DEG2RAD, 1.5, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 0,
 				xs_i_0[i](1), 0; */
 
-			xs_i_0[i] << 493.48, 1031.90, -165 * DEG2RAD, 1.0, 0, 0;
+			/* xs_i_0[i] << 493.48, 1031.90, -165 * DEG2RAD, 1.0, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 437.65, 347.55, 293.31,
-				xs_i_0[i](1), 1040.24, 1028.86, 973.75;
+				xs_i_0[i](1), 1040.24, 1028.86, 973.75; */
+
+			/* xs_i_0[i] << 515.0, 1100.0, 134.0 * DEG2RAD, 1.5, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), 300.0,
+				xs_i_0[i](1), 1287.0; */
+
+			xs_i_0[i] << 462.0, 1257.0, 3.4471, 1.0, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), 250.0,
+				xs_i_0[i](1), 1190.0;
 
 			/* xs_i_0[i] << 477.02 + offset, 1032.36 + offset, -2.87973, 1.0, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), 399.16 + offset, 340.55 + offset, 280.13 + offset,
@@ -235,13 +245,13 @@ int main()
 	//*****************************************************************************************************************
 	// PSB-MPC setup
 	//*****************************************************************************************************************
-	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
-	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
 #if (USE_GPU_PSBMPC == 1)
 	PSBMPC_LIB::GPU::PSBMPC psbmpc;
 #else
 	PSBMPC_LIB::CPU::PSBMPC psbmpc;
 #endif
+	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
+	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor(psbmpc.pars);
 
 	double u_opt(u_d), chi_opt(0.0);
 

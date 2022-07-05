@@ -1,0 +1,22 @@
+
+polygons_topic_name: "/psbmpc/ghm/polygons"
+#ownship_pose_topic_name: "/milliampere/pose"
+#ownship_velocity_topic_name: "/milliampere/twist_body"
+ownship_pose_topic_name: "/navigation/pose"
+ownship_velocity_topic_name: "/navigation/twist_body"
+psbmpc_mode_topic_name: "/psbmpc/psbmpc_mode"
+get_polygons_service_name: "/psbmpc/ghm/get_polygons"
+
+polygons_publish_rate: 10
+
+map_data_filename: "grounding_hazard_data/charts/land/land.shp"
+extra_map_data_filename: "grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"
+
+coordinate_frame_parameters:
+  equatorial_radius: 6378137.0 # WGS84 ellipsoid radius
+  flattening_factor: 0.003352810664747 # WGS84 ellipsoid flattening factor
+  utm_zone: 32
+  northp: false # Northern hemisphere or not
+  reference_frame:
+    name: "/frames/piren/name"
+    lla: "/frames/piren/lla"
