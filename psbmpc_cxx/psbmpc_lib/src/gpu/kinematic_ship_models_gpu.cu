@@ -28,11 +28,11 @@ namespace PSBMPC_LIB
 	namespace GPU
 	{
 		/****************************************************************************************
-		*  Name     : Kinematic_Ship
-		*  Function : Class constructor
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : Kinematic_Ship
+		 *  Function : Class constructor
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ __device__ Kinematic_Ship::Kinematic_Ship()
 		{
 			l = 5.0f; // milliAmpere dims
@@ -81,11 +81,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : determine_active_waypoint_segment
-		*  Function : Two overloads depending on matrix library used.
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : determine_active_waypoint_segment
+		 *  Function : Two overloads depending on matrix library used.
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ __device__ void Kinematic_Ship::determine_active_waypoint_segment(
 			const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, // In: Waypoints to follow
 			const TML::Vector4f &xs								 // In: Ownship state
@@ -138,11 +138,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : update_guidance_references
-		*  Function : Two overloads depending on matrix library used.
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : update_guidance_references
+		 *  Function : Two overloads depending on matrix library used.
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ __device__ void Kinematic_Ship::update_guidance_references(
 			float &u_d,											 // In/out: Surge reference
 			float &chi_d,										 // In/out: Course reference
@@ -205,13 +205,13 @@ namespace PSBMPC_LIB
 				e_int += e * dt;
 				if (e_int >= e_int_max)
 					e_int -= e * dt;
-				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
+				chi_d = GPU::wrap_angle_to_pmpi(alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD));
 				break;
 			case WPP:
-				chi_d = atan2(d_next_wp(1), d_next_wp(0));
+				chi_d = GPU::wrap_angle_to_pmpi(atan2(d_next_wp(1), d_next_wp(0)));
 				break;
 			case CH:
-				chi_d = xs(2);
+				chi_d = GPU::wrap_angle_to_pmpi(xs(2));
 				break;
 			default:
 				// Throw
@@ -282,13 +282,13 @@ namespace PSBMPC_LIB
 				e_int += e * dt;
 				if (e_int >= e_int_max)
 					e_int -= e * dt;
-				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
+				chi_d = GPU::wrap_angle_to_pmpi(alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD));
 				break;
 			case WPP:
-				chi_d = atan2(d_next_wp(1), d_next_wp(0));
+				chi_d = GPU::wrap_angle_to_pmpi(atan2(d_next_wp(1), d_next_wp(0)));
 				break;
 			case CH:
-				chi_d = xs(2);
+				chi_d = GPU::wrap_angle_to_pmpi(xs(2));
 				break;
 			default:
 				// Throw
@@ -318,12 +318,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : predict
-		*  Function : Predicts obstacle state xs a number of dt units forward in time with the
-		*			  chosen prediction method. Two overloads depending on matrix library used.
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : predict
+		 *  Function : Predicts obstacle state xs a number of dt units forward in time with the
+		 *			  chosen prediction method. Two overloads depending on matrix library used.
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ __device__ TML::Vector4f Kinematic_Ship::predict(
 			const TML::Vector4f &xs_old,			  // In: State [x, y, chi, U] to predict forward
 			const float U_d,						  // In: Speed over ground (SOG) reference
@@ -380,12 +380,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : predict_trajectory
-		*  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
-		*			  in the offset sequence. Three overloads
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : predict_trajectory
+		 *  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
+		 *			  in the offset sequence. Three overloads
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ __device__ void Kinematic_Ship::predict_trajectory(
 			TML::PDMatrix<float, 4, MAX_N_SAMPLES> &trajectory,			 // In/out: Obstacle ship trajectory
 			const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, // In: Sequence of offsets in the candidate control behavior
@@ -399,7 +399,7 @@ namespace PSBMPC_LIB
 			const float dt												 // In: Prediction time step
 		)
 		{
-			//printf("l = %.2f | w = %.2f | T_U = %.2f | T_chi = %.2f | R_a = %.2f | LOS_LD = %.2f\n", l, w, T_U, T_chi, R_a, LOS_LD);
+			// printf("l = %.2f | w = %.2f | T_U = %.2f | T_chi = %.2f | R_a = %.2f | LOS_LD = %.2f\n", l, w, T_U, T_chi, R_a, LOS_LD);
 
 			n_samples = T / dt;
 
@@ -417,14 +417,21 @@ namespace PSBMPC_LIB
 				if (k == maneuver_times[man_count])
 				{
 					u_m = offset_sequence[2 * man_count];
-					chi_m += offset_sequence[2 * man_count + 1];
+					if (u_m < 0.1)
+					{
+						chi_m = 0.0;
+					}
+					else
+					{
+						chi_m += offset_sequence[2 * man_count + 1];
+					}
 					if (man_count < (int)maneuver_times.size() - 1)
 						man_count += 1;
 				}
 
 				update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
 
-				xs_p = predict(xs_p, u_m * u_d_p, chi_d_p + chi_m, dt, prediction_method);
+				xs_p = predict(xs_p, u_m * u_d_p, GPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
 
 				if (k < n_samples - 1)
 					trajectory.set_col(k + 1, xs_p);
@@ -476,14 +483,21 @@ namespace PSBMPC_LIB
 				if (k == maneuver_times[man_count])
 				{
 					u_m = offset_sequence[2 * man_count];
-					chi_m += offset_sequence[2 * man_count + 1];
+					if (u_m < 0.1)
+					{
+						chi_m = 0.0;
+					}
+					else
+					{
+						chi_m += offset_sequence[2 * man_count + 1];
+					}
 					if (man_count < (int)maneuver_times.size() - 1)
 						man_count += 1;
 				}
 
 				update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
 
-				xs_p = predict(xs_p, u_m * u_d_p, chi_d_p + chi_m, dt, prediction_method);
+				xs_p = predict(xs_p, u_m * u_d_p, GPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
 
 				if (k < n_samples - 1)
 					trajectory.set_col(k + 1, xs_p);
@@ -537,14 +551,21 @@ namespace PSBMPC_LIB
 				if (k == maneuver_times[man_count])
 				{
 					u_m = offset_sequence[2 * man_count];
-					chi_m += offset_sequence[2 * man_count + 1];
+					if (u_m < 0.1)
+					{
+						chi_m = 0.0;
+					}
+					else
+					{
+						chi_m += offset_sequence[2 * man_count + 1];
+					}
 					if (man_count < (int)maneuver_times.size() - 1)
 						man_count += 1;
 				}
 
 				update_guidance_references(u_d_p, chi_d_p, e_k, waypoints, xs_p, dt, guidance_method);
 
-				xs_p = predict(xs_p, u_m * u_d_p, chi_d_p + chi_m, dt, prediction_method);
+				xs_p = predict(xs_p, u_m * u_d_p, GPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
 
 				if (k < n_samples - 1)
 					trajectory.set_col(k + 1, xs_p);

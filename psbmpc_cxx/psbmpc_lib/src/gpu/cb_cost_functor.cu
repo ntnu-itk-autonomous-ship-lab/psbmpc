@@ -250,13 +250,17 @@ namespace PSBMPC_LIB
 							 pars->kappa_RA * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_readily_apparent_violation(offset_sequence(1), offset_sequence(0));
 
 			//==================================================================================================
-			/* printf("i = %d | ps = %d | h_do_i_ps : %.2f| h_colregs_i_ps = %.0f | p_UCHI_chngd = %d | p_CHI_chng_port = %d | act_UCHI_chngd = %d | act_UCHI_chng_port = %d | crct_HO_man = %d | COLREGS_Sit = %d |  cb : %.1f, %.1f\n", i, ps, h_do_i_ps, h_colregs_i_ps,
-				   colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_speed_or_course, colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_course_to_port,
-				   colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_speed_or_course_change, colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_course_change_port,
-				   colregs_violation_evaluators[os_do_ps_pair_index].correct_HO_maneuver, offset_sequence(0), RAD2DEG * offset_sequence(1));
- */
-			// printf("Thread %d | i = %d | ps = %d | cb index %d | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | Pr_WGW = %.4f | Pr_CCEM = %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, Pr_WGW, Pr_CCEM, offset_sequence(0), RAD2DEG * offset_sequence(1));
 
+			/* if (offset_sequence(0) == 1.0 && offset_sequence(1) == 0.0 && offset_sequence(2) == 1.0 && offset_sequence(3) == 0.0)
+			{
+				printf("i = %d | ps = %d | h_do_i_ps : %.2f| h_colregs_i_ps = %.0f | colregs sit = %d | p_CHI_chng_port = %d | p_UCHI_chng = %d | act_UCHI_chngd = %d | act_UCHI_chng_port = %d | crct_HO_man = %d | cb : %.1f, %.1f, %.1f, %.1f\n", i, ps, h_do_i_ps, h_colregs_i_ps,
+					   colregs_violation_evaluators[os_do_ps_pair_index].colregs_situation, colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_course_to_port,
+					   colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_speed_or_course,
+					   colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_speed_or_course_change, colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_course_change_port,
+					   colregs_violation_evaluators[os_do_ps_pair_index].correct_HO_maneuver, offset_sequence(0), RAD2DEG * offset_sequence(1), offset_sequence(2), RAD2DEG * offset_sequence(3));
+
+				// printf("Thread %d | i = %d | ps = %d | cb index %d | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | Pr_WGW = %.4f | Pr_CCEM = %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, Pr_WGW, Pr_CCEM, offset_sequence(0), RAD2DEG * offset_sequence(1));
+			} */
 			//==================================================================================================
 
 			// The first element (grounding cost element) is dont care for threads that only

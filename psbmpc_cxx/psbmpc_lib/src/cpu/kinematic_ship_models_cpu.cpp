@@ -1,22 +1,22 @@
 /****************************************************************************************
-*
-*  File name : kinematic_ship_models_cpu.cpp
-*
-*  Function  : Class functions for the CPU based kinematic ship model used in the obstacle
-*			   collision avoidance system predictions.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : kinematic_ship_models_cpu.cpp
+ *
+ *  Function  : Class functions for the CPU based kinematic ship model used in the obstacle
+ *			   collision avoidance system predictions.
+ *
+ *	           ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Trym Tengesdal
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 
 #include "cpu/utilities_cpu.hpp"
 #include "cpu/kinematic_ship_models_cpu.hpp"
@@ -28,11 +28,11 @@ namespace PSBMPC_LIB
 	namespace CPU
 	{
 		/****************************************************************************************
-		*  Name     : Kinematic_Ship
-		*  Function : Class constructor
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : Kinematic_Ship
+		 *  Function : Class constructor
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		Kinematic_Ship::Kinematic_Ship()
 		{
 			l = 5.0; // milliAmpere dims
@@ -70,7 +70,7 @@ namespace PSBMPC_LIB
 		{
 
 			/* l = 10.0;
-	        w = 4.0;*/
+			w = 4.0;*/
 
 			// Guidance parameters
 			e_int = 0;
@@ -81,11 +81,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : determine_active_waypoint_segment
-		*  Function :
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : determine_active_waypoint_segment
+		 *  Function :
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		void Kinematic_Ship::determine_active_waypoint_segment(
 			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Waypoints to follow
 			const Eigen::Vector4d &xs					   // In: Ownship state
@@ -127,12 +127,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : update_guidance_references
-		*  Function : Two overloads, one general purpose function, and one specialized for LOS
-		*			  where an artificial cross-track error is applied.
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : update_guidance_references
+		 *  Function : Two overloads, one general purpose function, and one specialized for LOS
+		 *			  where an artificial cross-track error is applied.
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		void Kinematic_Ship::update_guidance_references(
 			double &u_d,								   // In/out: Surge reference
 			double &chi_d,								   // In/out: Course reference
@@ -197,13 +197,13 @@ namespace PSBMPC_LIB
 				e_int += e * dt;
 				if (e_int >= e_int_max)
 					e_int -= e * dt;
-				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
+				chi_d = CPU::wrap_angle_to_pmpi(alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD));
 				break;
 			case WPP:
-				chi_d = atan2(d_next_wp(1), d_next_wp(0));
+				chi_d = CPU::wrap_angle_to_pmpi(atan2(d_next_wp(1), d_next_wp(0)));
 				break;
 			case CH:
-				chi_d = xs(2);
+				chi_d = CPU::wrap_angle_to_pmpi(xs(2));
 				break;
 			default:
 				// Throw
@@ -276,13 +276,13 @@ namespace PSBMPC_LIB
 				e_int += e * dt;
 				if (e_int >= e_int_max)
 					e_int -= e * dt;
-				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
+				chi_d = CPU::wrap_angle_to_pmpi(alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD));
 				break;
 			case WPP:
-				chi_d = atan2(d_next_wp(1), d_next_wp(0));
+				chi_d = CPU::wrap_angle_to_pmpi(atan2(d_next_wp(1), d_next_wp(0)));
 				break;
 			case CH:
-				chi_d = xs(2);
+				chi_d = CPU::wrap_angle_to_pmpi(xs(2));
 				break;
 			default:
 				// Throw
@@ -350,16 +350,16 @@ namespace PSBMPC_LIB
 			e_int += e * dt;
 			if (e_int >= e_int_max)
 				e_int -= e * dt;
-			chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
+			chi_d = CPU::wrap_angle_to_pmpi(alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD));
 		}
 
 		/****************************************************************************************
-		*  Name     : predict
-		*  Function : Predicts obstacle state xs a number of dt units forward in time with the
-		*			  chosen prediction method
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : predict
+		 *  Function : Predicts obstacle state xs a number of dt units forward in time with the
+		 *			  chosen prediction method
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		Eigen::Vector4d Kinematic_Ship::predict(
 			const Eigen::Vector4d &xs_old,			  // In: State [x, y, chi, U] to predict forward
 			const double U_d,						  // In: Speed over ground (SOG) reference
@@ -398,12 +398,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : predict_trajectory
-		*  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
-		*			  in the offset sequence, or for a cross track modifier to the original path.
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : predict_trajectory
+		 *  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
+		 *			  in the offset sequence, or for a cross track modifier to the original path.
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		void Kinematic_Ship::predict_trajectory(
 			Eigen::MatrixXd &trajectory,				   // In/out: Obstacle ship trajectory
 			const Eigen::VectorXd &offset_sequence,		   // In: Sequence of offsets in the candidate control behavior
@@ -434,14 +434,21 @@ namespace PSBMPC_LIB
 				if (k == maneuver_times[man_count])
 				{
 					u_m = offset_sequence[2 * man_count];
-					chi_m += offset_sequence[2 * man_count + 1];
-					if (man_count < maneuver_times.size() - 1)
+					if (u_m < 0.1)
+					{
+						chi_m = 0.0;
+					}
+					else
+					{
+						chi_m += offset_sequence[2 * man_count + 1];
+					}
+					if (man_count < (int)maneuver_times.size() - 1)
 						man_count += 1;
 				}
 
 				update_guidance_references(u_d_p, chi_d_p, waypoints, xs, dt, guidance_method);
 
-				xs = predict(xs, u_m * u_d_p, chi_d_p + chi_m, dt, prediction_method);
+				xs = predict(xs, u_m * u_d_p, CPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
 
 				if (k < n_samples - 1)
 					trajectory.col(k + 1) = xs;
@@ -480,14 +487,21 @@ namespace PSBMPC_LIB
 				if (k == maneuver_times[man_count])
 				{
 					u_m = offset_sequence[2 * man_count];
-					chi_m += offset_sequence[2 * man_count + 1];
-					if (man_count < maneuver_times.size() - 1)
+					if (u_m < 0.1)
+					{
+						chi_m = 0.0;
+					}
+					else
+					{
+						chi_m += offset_sequence[2 * man_count + 1];
+					}
+					if (man_count < (int)maneuver_times.size() - 1)
 						man_count += 1;
 				}
 
 				update_guidance_references(u_d_p, chi_d_p, e_k, waypoints, xs, dt, guidance_method);
 
-				xs = predict(xs, u_m * u_d_p, chi_d_p + chi_m, dt, prediction_method);
+				xs = predict(xs, u_m * u_d_p, CPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
 
 				if (k < n_samples - 1)
 					trajectory.col(k + 1) = xs;

@@ -1,22 +1,22 @@
 /****************************************************************************************
-*
-*  File name : colregs_violation_evaluator.cuh
-*
-*  Function  : Header file for the COLREGS Violation Evaluator class, which keeps
-*              track of and calculates the COLREGS violation cost.
-*
-*            ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Sverre Velten Rothmund, Trym Tengesdal NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Sverre Velten Rothmund
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : colregs_violation_evaluator.cuh
+ *
+ *  Function  : Header file for the COLREGS Violation Evaluator class, which keeps
+ *              track of and calculates the COLREGS violation cost.
+ *
+ *            ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Sverre Velten Rothmund, Trym Tengesdal NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Sverre Velten Rothmund
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 #pragma once
 
 #include "psbmpc_parameters.hpp"
@@ -28,7 +28,7 @@
 
 namespace PSBMPC_LIB
 {
-    //NOTE! Ownship has states [X, Y, CHI, U], while obstacle ship has [X, Y, VX, VY]
+    // NOTE! Ownship has states [X, Y, CHI, U], while obstacle ship has [X, Y, VX, VY]
     namespace GPU
     {
         class COLREGS_Violation_Evaluator
@@ -37,11 +37,11 @@ namespace PSBMPC_LIB
             //=================================
 
             /****************************************************************************************
-            *  Name     : evaluate_situation_started
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : evaluate_situation_started
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __host__ __device__ bool evaluate_situation_started(
                 const TML::PDVector4f &ownship_state,
                 const TML::PDVector4f &obstacle_state)
@@ -50,11 +50,11 @@ namespace PSBMPC_LIB
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_colregs_situation
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : evaluate_colregs_situation
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __host__ __device__ COLREGS_Situation evaluate_colregs_situation(
                 const TML::PDVector4f &ownship_state,
                 const TML::PDVector4f &obstacle_state)
@@ -78,11 +78,11 @@ namespace PSBMPC_LIB
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_crossing_port_to_port
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : evaluate_crossing_port_to_port
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __host__ __device__ bool evaluate_crossing_port_to_port(
                 const TML::PDVector4f &ownshipCPA,
                 const TML::PDVector4f &obstacleCPA)
@@ -91,11 +91,11 @@ namespace PSBMPC_LIB
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_crossing_aft
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : evaluate_crossing_aft
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __host__ __device__ bool evaluate_crossing_aft(
                 const TML::PDVector4f &ownshipCPA,
                 const TML::PDVector4f &obstacleCPA)
@@ -113,7 +113,7 @@ namespace PSBMPC_LIB
             bool predicted_ownship_change_in_speed_or_course = false;
             bool actual_ownship_speed_or_course_change = false;
             bool actual_ownship_course_change_port = false;
-            bool has_passed = false; //If the ships have passed each other, then dont give any penalty
+            bool has_passed = false; // If the ships have passed each other, then dont give any penalty
 
             COLREGS_Situation colregs_situation;
             TML::PDVector4f initial_ownship_state;
@@ -136,11 +136,11 @@ namespace PSBMPC_LIB
             TML::Vector2f ipoint;
 
             /****************************************************************************************
-            *  Name     : COLREGS_Violation_Evaluator
-            *  Function : Class constructor
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : COLREGS_Violation_Evaluator
+             *  Function : Class constructor
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __host__ COLREGS_Violation_Evaluator()
             {
                 pars.d_init_colregs_situation = 10000.0;
@@ -157,21 +157,23 @@ namespace PSBMPC_LIB
             __host__ COLREGS_Violation_Evaluator(const CVE_Pars<float> &pars) : pars(pars) {}
 
             /****************************************************************************************
-            *  Name     : update
-            *  Function : Determines if the COLREGS situation has started, sets initial states if
-            *             that is the case
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : update
+             *  Function : Determines if the COLREGS situation has started, sets initial states if
+             *             that is the case
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __device__ void update(const TML::PDVector4f &ownship_state, const TML::PDVector4f &obstacle_state_vx_vy)
             {
                 obstacle_state = vx_vy_to_heading_speed_state(obstacle_state_vx_vy);
                 if (!initialized && evaluate_situation_started(ownship_state, obstacle_state))
                 {
+                    // printf("CVE situation Initialized\n");
                     initialized = true;
                     colregs_situation = evaluate_colregs_situation(ownship_state, obstacle_state);
                     initial_ownship_state = ownship_state;
                     initial_obstacle_state = obstacle_state;
+                    // printf("Initial OS Course = %.4f | Initial OS Speed = %.4f\n", RAD2DEG * ownship_state(COG), ownship_state(SOG));
                 }
                 else if (initialized)
                 {
@@ -188,11 +190,11 @@ namespace PSBMPC_LIB
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_actual_maneuver_changes
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : evaluate_actual_maneuver_changes
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __device__ void evaluate_actual_maneuver_changes(
                 const float chi_0, // In: Own-ship course at the current time t_0
                 const float U_0    // In: Own-ship speed at the current time t_0
@@ -206,11 +208,11 @@ namespace PSBMPC_LIB
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_predicted_maneuver_changes
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : evaluate_predicted_maneuver_changes
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __device__ void evaluate_predicted_maneuver_changes(
                 const float chi, // In: Own-ship course at the current predicted time k
                 const float U    // In: Own-ship speed at the current predicted time k
@@ -220,18 +222,18 @@ namespace PSBMPC_LIB
                     return;
 
                 if (!predicted_ownship_change_in_speed_or_course)
-                    predicted_ownship_change_in_speed_or_course = fabs(wrap_angle_to_pmpi(chi - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change || fabs(U - initial_ownship_state(SOG)) > pars.max_acceptable_SO_speed_change;
+                    predicted_ownship_change_in_speed_or_course = (fabs(wrap_angle_to_pmpi(chi - initial_ownship_state(COG))) > pars.max_acceptable_SO_course_change) + 2 * (fabs(U - initial_ownship_state(SOG)) > pars.max_acceptable_SO_speed_change);
 
                 if (!predicted_ownship_change_in_course_to_port)
                     predicted_ownship_change_in_course_to_port = wrap_angle_to_pmpi(chi - initial_ownship_state(COG)) < -pars.max_acceptable_SO_course_change;
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_SO_violation
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : evaluate_SO_violation
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __device__ bool evaluate_SO_violation(
                 const float d_0i_0 // In: Distance at the current time t_0 between ownship and obstacle i
             )
@@ -245,11 +247,11 @@ namespace PSBMPC_LIB
             }
 
             /****************************************************************************************
-            *  Name     : evaluate_GW_violation
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : evaluate_GW_violation
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __device__ bool evaluate_GW_violation(
                 const TML::PDVector4f &ownship_CPA_state,        // In: Ownship state at CPA
                 const TML::PDVector4f &obstacle_CPA_state_vx_vy, // In: Obstacle i state at CPA
@@ -291,11 +293,11 @@ namespace PSBMPC_LIB
             }
 
             /****************************************************************************************
-            *  Name     : reset
-            *  Function :
-            *  Author   :
-            *  Modified :
-            *****************************************************************************************/
+             *  Name     : reset
+             *  Function :
+             *  Author   :
+             *  Modified :
+             *****************************************************************************************/
             __device__ inline void reset()
             {
                 predicted_ownship_change_in_course_to_port = false;
