@@ -168,12 +168,10 @@ namespace PSBMPC_LIB
                 obstacle_state = vx_vy_to_heading_speed_state(obstacle_state_vx_vy);
                 if (!initialized && evaluate_situation_started(ownship_state, obstacle_state))
                 {
-                    // printf("CVE situation Initialized\n");
                     initialized = true;
                     colregs_situation = evaluate_colregs_situation(ownship_state, obstacle_state);
                     initial_ownship_state = ownship_state;
                     initial_obstacle_state = obstacle_state;
-                    // printf("Initial OS Course = %.4f | Initial OS Speed = %.4f\n", RAD2DEG * ownship_state(COG), ownship_state(SOG));
                 }
                 else if (initialized)
                 {
