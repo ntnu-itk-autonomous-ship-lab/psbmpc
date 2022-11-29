@@ -26,7 +26,7 @@
 #include "grounding_hazard_manager.hpp"
 
 #include <Eigen/Dense>
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 #include <engine.h>
 #endif
 #include <iostream>
@@ -135,7 +135,7 @@ int main()
 	// Matlab array setup for the ownship and obstacle, ++
 	//=====================================================================
 
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 	// Matlab engine setup
 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
@@ -155,6 +155,7 @@ int main()
 	double *p_P_traj_i;
 	double *p_wps_i;
 #endif
+
 	for (int i = 0; i < n_do; i++)
 	{
 		ID[i] = i;
@@ -299,8 +300,8 @@ int main()
 		"local_NED",
 		psbmpc.pars);
 
-	// std::string other_polygons_filename = "../tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF RELEASE
-	std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF DEBUG
+	std::string other_polygons_filename = "../tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF RELEASE
+	// std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF DEBUG
 	if (other_polygons_filename != "")
 	{
 		grounding_hazard_manager.read_other_polygons(other_polygons_filename, true, false);
@@ -403,7 +404,7 @@ int main()
 
 	// PSBMPC_LIB::CPU::save_matrix_to_file("polygons_lla.csv", polygon_matrix_lla.transpose());
 
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 	mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
 	mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
 	mxArray *polygon_matrix_lla_mx = mxCreateDoubleMatrix(n_total_vertices_lla, 2, mxREAL);
@@ -461,7 +462,7 @@ int main()
 	//=========================================================
 	// Matlab plot setup
 	//=========================================================
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 	for (int i = 0; i < n_do; i++)
 	{
 		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i[i], mxREAL);
@@ -581,7 +582,7 @@ int main()
 //===========================================
 // Send trajectory data to matlab
 //===========================================
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 		buffer[BUFSIZE] = '\0';
 		engOutputBuffer(ep, buffer, BUFSIZE);
 
@@ -625,7 +626,7 @@ int main()
 		//======================================================
 	}
 
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 	mxDestroyArray(map_origin_mx);
 	mxDestroyArray(d_safe_mx);
 	mxDestroyArray(polygon_matrix_mx);

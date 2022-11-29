@@ -348,8 +348,8 @@ namespace PSBMPC_LIB
 	void PSBMPC_Parameters::initialize_pars()
 	{
 		n_cbs = 1;
-		n_M = 2;
-		n_do_ps = 1;
+		n_M = 1;
+		n_do_ps = 5;
 
 		chi_offsets.resize(n_M);
 		u_offsets.resize(n_M);
@@ -415,7 +415,7 @@ namespace PSBMPC_LIB
 		prediction_method = ERK1;
 		guidance_method = LOS;
 
-		T = 200.0; // 220.0
+		T = 120.0; // 220.0
 		dt = 5.0;
 
 		p_step_opt = 1;
