@@ -23,20 +23,22 @@ The library heavily relies on cmake, which you can learn more about e.g. here: <
 
 ## Building the library
 
+The library has mostly been used on a Linux platform.
 Before you build and install the library locally in your computer, decide on the following:
 
 - If you want to build a debug (set compile time flag `CMAKE_BUILD_TYPE=debug`) or release (set flag to `CMAKE_BUILD_TYPE=release`) version.
 - If you want to use the GPU-functionality (set `USE_GPU_PSBMPC=1`, the default is 0).
-- If you want to enable Matlab and Debugging functionality (set `ENABLE_PSBMPC_DEBUGGING=1`, the default is 0).
+- If you want to enable Matlab and Debugging functionality inside the PSB-MPC (set `ENABLE_PSBMPC_DEBUGGING=1`, the default is 0).
+- If you want to enable Matlab functionality for plotting in the PSB-MPC test files (set `ENABLE_TEST_FILE_PLOTTING=1`, the default is 0).
 - What own-ship type you want to use as model in the MPC (set `OWNSHIP_TYPE=0` : Kinematic model, `OWNSHIP_TYPE=1` : Kinetic model). More details about this variable under **psbmpc_lib**
 
 Then, after figuring out this, you build and install the library with the following commands (assuming you are in the root directory **psbmpc_cxx/**:
 
 - 1: `mkdir build_type && cd build_type`
-- 2: `cmake -DCMAKE_BUILD_TYPE=build_type -DUSE_GPU_PSBMPC=use_gpu_psbmpc -DENABLE_PSBMPC_DEBUGGING=enable_psbmpc_debugging -DOWNSHIP_TYPE=ownship_type ..`
+- 2: `cmake -DCMAKE_BUILD_TYPE=build_type -DUSE_GPU_PSBMPC=use_gpu_psbmpc -DENABLE_PSBMPC_DEBUGGING=enable_psbmpc_debugging -DENABLE_TEST_FILE_PLOTTING=enable_test_file_plotting -DOWNSHIP_TYPE=ownship_type ..`
 - 3: `sudo make install -j4`
 
-where `build_type`, `use_gpu_psbmpc`, `enable_psbmpc_debugging` and `ownship_type` are chosen by you. The library is now installed with headers to `usr/local/include/`, static library file to `usr/local/lib/` and cmake config files to `usr/local/share/`.
+where `build_type`, `use_gpu_psbmpc`, `enable_psbmpc_debugging`, `enable_test_file_plotting` and `ownship_type` are chosen by you. The library is now installed with headers to `usr/local/include/`, static library file to `usr/local/lib/` and cmake config files to `usr/local/share/`.
 
 You can now use the library in your project with `find_package(PSBMPC1 REQUIRED)`, and link to the PSBMPC-target using `target_link_libraries(your_executable_target PSBMPC1::PSBMPC)`.
 
@@ -45,7 +47,7 @@ You can now use the library in your project with `find_package(PSBMPC1 REQUIRED)
 Several test functions exist under tests for testing that the different library modules work as intented, and can be used for debugging or to make yourself familiar with the library. By opening the CMakeLists.txt files one can specify the module one wish to test, by using the `add_executable(..)` command. To use the library with one of the test files under tests, for cmake, specify your chosen compile time flags, go into the chosen directory and build using
 
 - 1: `mkdir build_type && cd build_type`
-- 2: `cmake -DCMAKE_BUILD_TYPE=build_type -DUSE_GPU_PSBMPC=use_gpu_psbmpc -DENABLE_PSBMPC_DEBUGGING=enable_psbmpc_debugging -DOWNSHIP_TYPE=ownship_type ..`
+- 2: `cmake -DCMAKE_BUILD_TYPE=build_type -DUSE_GPU_PSBMPC=use_gpu_psbmpc -DENABLE_PSBMPC_DEBUGGING=enable_psbmpc_debugging -DENABLE_TEST_FILE_PLOTTING=enable_test_file_plotting -DOWNSHIP_TYPE=ownship_type ..`
 - 3: `make`
 
 The generated executable file is then located in the build folder, which you can run using `./tester` in the terminal.
@@ -53,7 +55,7 @@ The generated executable file is then located in the build folder, which you can
 ## Common Pitfalls
 
 - Include error of some kind during compilation or when using your IDE: Re-check that you have the required dependencies (especially for Matlab, Eigen3 and Boost) and that they are included properly.
-- Matlab engine start failed when attempting to run one of the test files. The most common error is that you did not add the MATLAB path to the environmental variables properly, as e.g. <https://se.mathworks.com/help/matlab/matlab_external/set-run-time-library-path-on-linux-systems.html> for Linux.
+- Matlab engine start failed when attempting to run one of the test files. The most common error is that you did not add the MATLAB path to the environmental variables properly, as e.g. <https://se.mathworks.com/help/matlab/matlab_external/set-run-time-library-path-on-linux-systems.html> for Linux. Also make sure `csh` is installed on Linux.
 - Wrong configuration of the cmake flags (`USE_GPU_PSBMPC` etc..)
 
 ## References
@@ -65,6 +67,6 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 <a id="3">[3]</a> Kufoalor, D. K. M., Wilthil, E., Hagen, I. B., Brekke E. F. and Johansen, T. A. (2019). "Autonomous COLREGSs-Compliant Decision Making using Maritime Radar Tracking and Model Predictive Control" 2019 18th European Control Conference (ECC).
 
-<a id="4">[4]</a>  Tengesdal, T., Johansen, T. A., and Brekke, E. (2021). "Ship Collision Avoidance Utilizing the Cross-Entropy Method for Collision Risk Assessment." IEEE Transactions on Intelligent Transportation Systems, p. 1-14.
+<a id="4">[4]</a>  Tengesdal, T., Johansen, T. A., and Brekke, E. (2022). "Ship Collision Avoidance Utilizing the Cross-Entropy Method for Collision Risk Assessment." IEEE Transactions on Intelligent Transportation Systems, Vol. 23, pp. 11148-11161, DOI: <https://doi.org/10.1109/TITS.2021.3101007>
 
-Trym Tengesdal, June 3rd 2022.
+Trym Tengesdal, November 29, 2022.
