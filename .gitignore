@@ -46,6 +46,8 @@
 *.dmg
 *.jar
 
+*.DS_Store
+
 psbmpc_cxx/libs/third_party_libs/SMILE/smile_license.h
 intention_model_catkin_ws/
 # Folders
@@ -57,7 +59,6 @@ psbmpc_cxx/build/*
 psbmpc_cxx/debug/*
 psbmpc_cxx/release/*
 psbmpc_cxx/tests/grounding_hazard_data/*
-psbmpc_cxx/.vscode/*
 bridge_ws/build/*
 bridge_ws/install/*
 bridge_ws/log/*

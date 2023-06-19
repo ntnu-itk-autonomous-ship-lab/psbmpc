@@ -1,21 +1,21 @@
 /****************************************************************************************
-*
-*  File name : psbmpc_parameters.cpp
-*
-*  Function  : Class function file for the PSB-MPC parameter class.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : psbmpc_parameters.cpp
+ *
+ *  Function  : Class function file for the PSB-MPC parameter class.
+ *
+ *	           ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Trym Tengesdal
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 
 #include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
@@ -29,11 +29,11 @@ namespace PSBMPC_LIB
 		Public functions
 	****************************************************************************************/
 	/****************************************************************************************
-	*  Name     : get_<type>par
-	*  Function : Returns parameter with index <index>, "overloaded" for different data types
-	*  Author   : Trym Tengesdal
-	*  Modified :
-	*****************************************************************************************/
+	 *  Name     : get_<type>par
+	 *  Function : Returns parameter with index <index>, "overloaded" for different data types
+	 *  Author   : Trym Tengesdal
+	 *  Modified :
+	 *****************************************************************************************/
 	int PSBMPC_Parameters::get_ipar(
 		const int index // In: Index of parameter to return (Must be of int type)
 	) const
@@ -130,12 +130,12 @@ namespace PSBMPC_LIB
 	}
 
 	/****************************************************************************************
-	*  Name     : set_par
-	*  Function : Sets parameter with index <index> to value <value>, given that it is inside
-	*			  valid limits. Overloaded for different data types
-	*  Author   : Trym Tengesdal
-	*  Modified :
-	*****************************************************************************************/
+	 *  Name     : set_par
+	 *  Function : Sets parameter with index <index> to value <value>, given that it is inside
+	 *			  valid limits. Overloaded for different data types
+	 *  Author   : Trym Tengesdal
+	 *  Modified :
+	 *****************************************************************************************/
 	void PSBMPC_Parameters::set_par(
 		const int index, // In: Index of parameter to set
 		const int value	 // In: Value to set for parameter
@@ -297,11 +297,11 @@ namespace PSBMPC_LIB
 		Private functions
 	****************************************************************************************/
 	/****************************************************************************************
-	*  Name     : initialize_par_limits
-	*  Function : Sets initial low and high limits on tuning parameters
-	*  Author   :
-	*  Modified :
-	*****************************************************************************************/
+	 *  Name     : initialize_par_limits
+	 *  Function : Sets initial low and high limits on tuning parameters
+	 *  Author   :
+	 *  Modified :
+	 *****************************************************************************************/
 	void PSBMPC_Parameters::initialize_par_limits()
 	{
 		ipar_low.resize(N_IPAR);
@@ -316,8 +316,8 @@ namespace PSBMPC_LIB
 		ipar_low[i_ipar_n_do_ps] = 1;
 		ipar_high[i_ipar_n_do_ps] = MAX_N_PS;
 
-		//std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
-		//std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
+		// std::cout << "i_par_low = " << ipar_low.transpose() << std::endl;
+		// std::cout << "i_par_high = " << ipar_high.transpose() << std::endl;
 
 		dpar_low.resize(N_DPAR);
 		dpar_high.resize(N_DPAR);
@@ -335,16 +335,16 @@ namespace PSBMPC_LIB
 		dpar_high[i_dpar_K_chi] = 3.0;
 		dpar_high[i_dpar_K_dchi] = 3.0;
 
-		//std::cout << "d_par_low = " << dpar_low.transpose() << std::endl;
-		//std::cout << "d_par_high = " << dpar_high.transpose() << std::endl;
+		// std::cout << "d_par_low = " << dpar_low.transpose() << std::endl;
+		// std::cout << "d_par_high = " << dpar_high.transpose() << std::endl;
 	}
 
 	/****************************************************************************************
-	*  Name     : initialize_pars
-	*  Function : Sets initial values for PSBMPC tuning parameters, two overloads.
-	*  Author   :
-	*  Modified :
-	*****************************************************************************************/
+	 *  Name     : initialize_pars
+	 *  Function : Sets initial values for PSBMPC tuning parameters, two overloads.
+	 *  Author   :
+	 *  Modified :
+	 *****************************************************************************************/
 	void PSBMPC_Parameters::initialize_pars()
 	{
 		n_cbs = 1;
@@ -359,53 +359,53 @@ namespace PSBMPC_LIB
 			{
 				u_offsets[M].resize(3);
 
-				//u_offsets[M] << 1.0;
-				//u_offsets[M] << 1.0, 0.5;
+				// u_offsets[M] << 1.0;
+				// u_offsets[M] << 1.0, 0.5;
 				u_offsets[M] << 1.0, 0.5, 0.0;
 
 				chi_offsets[M].resize(13);
-				//chi_offsets[M] << 0.0;
-				//chi_offsets[M] << -30.0, 0.0, 30.0;
-				//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				// chi_offsets[M] << 0.0;
+				// chi_offsets[M] << -30.0, 0.0, 30.0;
+				// chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 				chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
-				//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
-				//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, -5.0, 0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
+				// chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				// chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, -5.0, 0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 				chi_offsets[M] *= DEG2RAD;
 			}
 			else if (M == 1)
 			{
 				u_offsets[M].resize(2);
-				//u_offsets[M] << 1.0;
+				// u_offsets[M] << 1.0;
 				u_offsets[M] << 1.0, 0.5;
-				//u_offsets[M] << 1.0, 0.5, 0.0;
+				// u_offsets[M] << 1.0, 0.5, 0.0;
 
 				chi_offsets[M].resize(13);
-				//chi_offsets[M] << 0.0;
-				//chi_offsets[M] << -30.0, 0.0, 30.0;
-				//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
-				//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
-				//chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
-				//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				// chi_offsets[M] << 0.0;
+				// chi_offsets[M] << -30.0, 0.0, 30.0;
+				// chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+				// chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				// chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
+				// chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 				chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
-				//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
+				// chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 				chi_offsets[M] *= DEG2RAD;
 			}
 			else
 			{
 				u_offsets[M].resize(1);
 				u_offsets[M] << 1.0;
-				//u_offsets[M] << 1.0, 0.5;
-				//u_offsets[M] << 1.0, 0.5, 0.0;
+				// u_offsets[M] << 1.0, 0.5;
+				// u_offsets[M] << 1.0, 0.5, 0.0;
 
 				chi_offsets[M].resize(7);
-				//chi_offsets[M] << 0.0;
-				//chi_offsets[M] << -30.0, 0.0, 30.0;
-				//chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
-				//chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+				// chi_offsets[M] << 0.0;
+				// chi_offsets[M] << -30.0, 0.0, 30.0;
+				// chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
+				// chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 				chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
-				//chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
-				//chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
-				//chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
+				// chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+				// chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+				// chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 				chi_offsets[M] *= DEG2RAD;
 			}
 			n_cbs *= u_offsets[M].size() * chi_offsets[M].size();

@@ -291,6 +291,7 @@ int main()
 	PSBMPC_LIB::Static_Obstacles polygons_lla = grounding_hazard_manager.get_polygons_lla();
 	PSBMPC_LIB::Static_Obstacles polygons = grounding_hazard_manager.get_polygons_ned();
 	PSBMPC_LIB::Static_Obstacles simplified_polygons = grounding_hazard_manager.get_simplified_polygons_ned();
+	PSBMPC_LIB::Static_Obstacles simplified_polygons_lla = grounding_hazard_manager.get_simplified_polygons_lla();
 
 	// Make matlab polygons type friendly array:
 	Eigen::Matrix<double, -1, 2> polygon_matrix_lla, polygon_matrix, simplified_polygon_matrix;
@@ -326,7 +327,7 @@ int main()
 
 	// LLA POLYGONS
 	int n_total_vertices_lla = 0;
-	BOOST_FOREACH (polygon_2D const &poly, polygons_lla)
+	BOOST_FOREACH (polygon_2D const &poly, simplified_polygons_lla)
 	{
 		for (auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
 		{
@@ -338,7 +339,7 @@ int main()
 
 	/*format polygon_matrix array for matlab plotting*/
 	pcount = 0;
-	BOOST_FOREACH (polygon_2D const &poly, polygons_lla)
+	BOOST_FOREACH (polygon_2D const &poly, simplified_polygons_lla)
 	{
 		for (auto it = boost::begin(boost::geometry::exterior_ring(poly)); it != boost::end(boost::geometry::exterior_ring(poly)); ++it)
 		{
@@ -382,7 +383,7 @@ int main()
 		pcount += 1;
 	}
 
-	PSBMPC_LIB::CPU::save_matrix_to_file("polygons_lla.csv", polygon_matrix_lla.transpose());
+	PSBMPC_LIB::CPU::save_matrix_to_file("simplified_polygons_lla.csv", polygon_matrix_lla.transpose());
 
 #if ENABLE_PSBMPC_DEBUGGING
 	mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
