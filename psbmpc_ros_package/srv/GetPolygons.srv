@@ -1,0 +1,4 @@
+float64 d_so_relevant # radius of relevance around current own-ship state, for pruning far away polygons
+---
+bool success
+custom_msgs/Polygons polygons

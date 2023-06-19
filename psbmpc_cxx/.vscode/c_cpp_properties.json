@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/local/include/eigen3/",
+                "/usr/local/include/GeographicLib/",
+                "/usr/local/MATLAB/R2022a/extern/include/"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/clang-15",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}

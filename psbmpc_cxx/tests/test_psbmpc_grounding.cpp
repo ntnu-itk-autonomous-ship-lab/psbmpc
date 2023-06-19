@@ -26,7 +26,7 @@
 #include "grounding_hazard_manager.hpp"
 
 #include <Eigen/Dense>
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 #include <engine.h>
 #endif
 #include <iostream>
@@ -61,8 +61,11 @@ int main()
 	/* xs_os_0 << 7042220, 270175, 60 * DEG2RAD, 1.5, 0, 0; // rett nordvest for ravnkloa
 	double u_d = 1.5, chi_d, u_c, chi_c; */
 
-	xs_os_0 << -248.0 + offset, -380.0 + offset, 48 * DEG2RAD, 2.0, 0, 0;
-	double u_d(2.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
+	/* xs_os_0 << 280.13 + offset, 960.02 + offset, 23 * DEG2RAD, 1.0, 0, 0; */
+	/* xs_os_0 << 456.33, 1295.52, -105.0 * DEG2RAD, 0.0, 0, 0; */
+	/* xs_os_0 << 354.0, 1176.0, 0.862, 0.0, 0, 0; */
+	xs_os_0 << 250.0, 1190.0, 0.306, 0.0, 0, 0;
+	double u_d(1.0), chi_d(0.0), u_c(0.0), chi_c(0.0);
 
 	PSBMPC_LIB::CPU::Ownship ownship;
 
@@ -77,28 +80,32 @@ int main()
 	trajectory.col(0) = xs_os_0;
 #endif
 
-	int n_wps_os = 3;
+	int n_wps_os = 2;
 	waypoints.resize(2, n_wps_os);
 	/* waypoints << 0, 200, 200, 400, 600,  300, 500,
 				 0, 0,   200, 200,  0,  0, -200; */
-	/* waypoints << xs_os_0(0), 7042350,
-		xs_os_0(1), 270575; */
 
-	waypoints << -248 + offset, -80 + offset, -36 + offset,
-		-380 + offset, -180 + offset, -138 + offset;
+	waypoints << xs_os_0(0), 462.0,
+		xs_os_0(1), 1257.0;
+
+	/* waypoints << 280.13 + offset, 477.50 + offset,
+		960.02 + offset, 1032.11 + offset; */
+
+	/* waypoints << 280.13 + offset, 477.50 + offset,
+		960.02 + offset, 1032.11 + offset; */
 
 	//*****************************************************************************************************************
 	// Obstacle sim setup
 	//*****************************************************************************************************************
-	int n_do = 2;
+	int n_do = 1;
 	std::vector<int> ID(n_do);
 
 	std::vector<Eigen::VectorXd> xs_i_0(n_do);
 
 	// Use constant obstacle uncertainty throughout the simulation, for simplicity
 	Eigen::MatrixXd P_0(4, 4);
-	P_0 << 25, 0, 0, 0,
-		0, 25, 0, 0,
+	P_0 << 1.0, 0, 0, 0,
+		0, 1.0, 0, 0,
 		0, 0, 0.025, 0,
 		0, 0, 0, 0.025;
 
@@ -128,7 +135,7 @@ int main()
 	// Matlab array setup for the ownship and obstacle, ++
 	//=====================================================================
 
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 	// Matlab engine setup
 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
@@ -148,6 +155,7 @@ int main()
 	double *p_P_traj_i;
 	double *p_wps_i;
 #endif
+
 	for (int i = 0; i < n_do; i++)
 	{
 		ID[i] = i;
@@ -158,18 +166,19 @@ int main()
 		xs_i_0[i].resize(6);
 		if (i == 1)
 		{
-			n_wps_i[i] = 5;
+			n_wps_i[i] = 3;
 			waypoints_i[i].resize(2, n_wps_i[i]);
 			// xs_i_0[i] << 5000, 0, 180 * DEG2RAD, 6, 0, 0;
-			/* xs_i_0[i] << 300, 150, -90 * DEG2RAD, 5, 0, 0;
-			waypoints_i[i] << xs_i_0[i](0), 500,
-				xs_i_0[i](1), -300;
-			u_d_i[i] = 5.0; */
-			chi_d_i[i] = -90 * DEG2RAD;
 
-			xs_i_0[i] << -224 + offset, -346 + offset, 0.978, 1.0, 0, 0;
+			xs_i_0[i] << 281.06, 979.00, 23 * DEG2RAD, 2.0, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), 377.99, 528.69,
+				xs_i_0[i](1), 969.08, 1031.90;
+
+			/* xs_i_0[i] << -224 + offset, -346 + offset, 0.978, 1.0, 0, 0;
 			waypoints_i[i] << xs_i_0[i](0), -191 + offset, -180 + offset, -149 + offset, -62 + offset,
-				xs_i_0[i](1), -297 + offset, -235 + offset, -218 + offset, -140 + offset;
+				xs_i_0[i](1), -297 + offset, -235 + offset, -218 + offset, -140 + offset; */
+
+			chi_d_i[i] = -90 * DEG2RAD;
 			u_d_i[i] = 1.0;
 		}
 		else if (i == 2)
@@ -190,13 +199,21 @@ int main()
 			waypoints_i[i] << xs_i_0[i](0), 0,
 				xs_i_0[i](1), 0; */
 
-			/* xs_i_0[i] << 100, -100, 90 * DEG2RAD, 1.5, 0, 0;
-			waypoints_i[i] << xs_i_0[i](0), 100,
-				xs_i_0[i](1), 100; */
+			/* xs_i_0[i] << 493.48, 1031.90, -165 * DEG2RAD, 1.0, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), 437.65, 347.55, 293.31,
+				xs_i_0[i](1), 1040.24, 1028.86, 973.75; */
 
-			xs_i_0[i] << -251 + offset, -248 + offset, -0.2083, 1.0, 0, 0;
-			waypoints_i[i] << xs_i_0[i](0), -128 + offset,
-				xs_i_0[i](1), -274 + offset;
+			/* xs_i_0[i] << 515.0, 1100.0, 134.0 * DEG2RAD, 1.5, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), 300.0,
+				xs_i_0[i](1), 1287.0; */
+
+			xs_i_0[i] << 462.0, 1257.0, 3.4471, 1.0, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), 250.0,
+				xs_i_0[i](1), 1190.0;
+
+			/* xs_i_0[i] << 477.02 + offset, 1032.36 + offset, -2.87973, 1.0, 0, 0;
+			waypoints_i[i] << xs_i_0[i](0), 399.16 + offset, 340.55 + offset, 280.13 + offset,
+				xs_i_0[i](1), 1040.24 + offset, 1024.49 + offset, 960.02 + offset; */
 			u_d_i[i] = 1.0;
 			chi_d_i[i] = 180 * DEG2RAD;
 		}
@@ -229,13 +246,13 @@ int main()
 	//*****************************************************************************************************************
 	// PSB-MPC setup
 	//*****************************************************************************************************************
-	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
-	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor;
 #if (USE_GPU_PSBMPC == 1)
 	PSBMPC_LIB::GPU::PSBMPC psbmpc;
 #else
 	PSBMPC_LIB::CPU::PSBMPC psbmpc;
 #endif
+	PSBMPC_LIB::Obstacle_Manager obstacle_manager;
+	PSBMPC_LIB::Obstacle_Predictor obstacle_predictor(psbmpc.pars);
 
 	double u_opt(u_d), chi_opt(0.0);
 
@@ -268,11 +285,13 @@ int main()
 	// Input the path to the land data
 	// std::string filename = "/tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp";
 	double equatorial_radius(6378137.0), flattening_factor(0.003352810664747);
-	int utm_zone(33);
+	int utm_zone(32);
 	Eigen::Vector2d lla_origin;
-	lla_origin << 63.4389029083, 10.39908278;
+	lla_origin << 63.4389029083, 10.39908278; // piren
 	PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(
-		relative_path + "/../tests/grounding_hazard_data/charts/land/land.shp",
+		// relative_path + "/../tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp", // IF RELEASE
+		// relative_path + "/tests/grounding_hazard_data/trondheim/old version data/charts/land/land.shp", // IF DEBUG
+		"",
 		equatorial_radius,
 		flattening_factor,
 		utm_zone,
@@ -281,11 +300,12 @@ int main()
 		"local_NED",
 		psbmpc.pars);
 
-	// std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv";
-	// if (other_polygons_filename != "")
-	// {
-	// 	grounding_hazard_manager.read_other_polygons(other_polygons_filename, true, false);
-	// }
+	std::string other_polygons_filename = "../tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF RELEASE
+	// std::string other_polygons_filename = "tests/grounding_hazard_data/piren_frame_psbmpc_polygons_trd.csv"; // IF DEBUG
+	if (other_polygons_filename != "")
+	{
+		grounding_hazard_manager.read_other_polygons(other_polygons_filename, true, false);
+	}
 
 	Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin_ned();
 	PSBMPC_LIB::Static_Obstacles polygons_lla = grounding_hazard_manager.get_polygons_lla();
@@ -385,7 +405,7 @@ int main()
 
 	PSBMPC_LIB::CPU::save_matrix_to_file("simplified_polygons_lla.csv", polygon_matrix_lla.transpose());
 
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 	mxArray *map_origin_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
 	mxArray *polygon_matrix_mx = mxCreateDoubleMatrix(n_total_vertices, 2, mxREAL);
 	mxArray *polygon_matrix_lla_mx = mxCreateDoubleMatrix(n_total_vertices_lla, 2, mxREAL);
@@ -443,7 +463,7 @@ int main()
 	//=========================================================
 	// Matlab plot setup
 	//=========================================================
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 	for (int i = 0; i < n_do; i++)
 	{
 		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i[i], mxREAL);
@@ -490,7 +510,7 @@ int main()
 		engEvalString(ep, "init_obstacle_plot_grounding");
 	}
 	//=========================================================
-	engEvalString(ep, "save('/home/trymte/Desktop/polygons', 'P', 'P_lla', 'P_simplified', 'map_origin')");
+	// engEvalString(ep, "save('/home/trymte/Desktop/polygons', 'P', 'P_lla', 'P_simplified', 'map_origin')");
 #endif
 	Eigen::Vector4d xs_i_k;
 	Eigen::VectorXd xs_aug(9);
@@ -563,7 +583,7 @@ int main()
 //===========================================
 // Send trajectory data to matlab
 //===========================================
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 		buffer[BUFSIZE] = '\0';
 		engOutputBuffer(ep, buffer, BUFSIZE);
 
@@ -607,7 +627,7 @@ int main()
 		//======================================================
 	}
 
-#if ENABLE_PSBMPC_DEBUGGING
+#if ENABLE_TEST_FILE_PLOTTING
 	mxDestroyArray(map_origin_mx);
 	mxDestroyArray(d_safe_mx);
 	mxDestroyArray(polygon_matrix_mx);

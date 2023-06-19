@@ -1,21 +1,21 @@
 /****************************************************************************************
-*
-*  File name : psbmpc_cpu.cpp
-*
-*  Function  : Class functions for Probabilistic Scenario-based Model Predictive Control
-*			   on the CPU
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : psbmpc_cpu.cpp
+ *
+ *  Function  : Class functions for Probabilistic Scenario-based Model Predictive Control
+ *			   on the CPU
+ *	           ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Trym Tengesdal
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 
 #include "cpu/utilities_cpu.hpp"
 #include "cpu/psbmpc_cpu.hpp"
@@ -35,11 +35,11 @@ namespace PSBMPC_LIB
 	{
 
 		/****************************************************************************************
-		*  Name     : PSBMPC
-		*  Function : Class constructor, initializes parameters and variables
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : PSBMPC
+		 *  Function : Class constructor, initializes parameters and variables
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		PSBMPC::PSBMPC()
 			: u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12)
 		{
@@ -64,11 +64,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : calculate_optimal_offsets
-		*  Function : W/static obstacles parametrized as polygons
-		*  Author   : Trym Tengesdal & Tom Daniel Grande
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : calculate_optimal_offsets
+		 *  Function : W/static obstacles parametrized as polygons
+		 *  Author   : Trym Tengesdal & Tom Daniel Grande
+		 *  Modified :
+		 *****************************************************************************************/
 		void PSBMPC::calculate_optimal_offsets(
 			double &u_opt,								   // In/out: Optimal surge offset
 			double &chi_opt,							   // In/out: Optimal course offset
@@ -320,7 +320,7 @@ namespace PSBMPC_LIB
 
 			int curr_ps_index(0);
 			int min_index = 0;
-			//int thread_count = 1;
+			// int thread_count = 1;
 
 			if (n_so == 0)
 			{
@@ -349,8 +349,8 @@ namespace PSBMPC_LIB
 					cb_matrix(2 * M + 1, cb) = RAD2DEG * offset_sequence(2 * M + 1);
 				}
 				curr_ps_index = 0;
-				//std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
-				//std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
+				// std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
+				// std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
 #endif
 
 				ownship.predict_trajectory(
@@ -368,7 +368,7 @@ namespace PSBMPC_LIB
 				for (int i = 0; i < n_do; i++)
 				{
 
-					P_c_i.resize(n_ps[i], n_samples); //P_c_i.setZero();
+					P_c_i.resize(n_ps[i], n_samples); // P_c_i.setZero();
 					calculate_collision_probabilities(P_c_i, obstacles, i, pars.p_step_do * pars.dt, pars.p_step_do);
 
 #if ENABLE_PSBMPC_DEBUGGING
@@ -377,8 +377,8 @@ namespace PSBMPC_LIB
 					curr_ps_index += n_ps[i];
 					for (int ps = 0; ps < n_ps[i]; ps++)
 					{
-						//printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f \n", thread_count, i, ps, cb, h_do_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
-						//thread_count += 1;
+						// printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f \n", thread_count, i, ps, cb, h_do_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
+						// thread_count += 1;
 					}
 #else
 					cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, P_c_i, obstacles, i, ownship.get_length());
@@ -540,12 +540,12 @@ namespace PSBMPC_LIB
 			Private functions
 		****************************************************************************************/
 		/****************************************************************************************
-		*  Name     : determine_colav_active
-		*  Function : Uses the freshly updated obstacles vector and the number of static
-		*			  obstacles to determine whether it is necessary to run the PSBMPC
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : determine_colav_active
+		 *  Function : Uses the freshly updated obstacles vector and the number of static
+		 *			  obstacles to determine whether it is necessary to run the PSBMPC
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		bool PSBMPC::determine_colav_active(
 			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
 			const int n_so,						// In: Number of static obstacles
@@ -583,12 +583,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : reset_control_behavior
-		*  Function : Sets the offset sequence back to the initial starting point, i.e. the
-		*			  leftmost branch of the control behavior tree
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : reset_control_behavior
+		 *  Function : Sets the offset sequence back to the initial starting point, i.e. the
+		 *			  leftmost branch of the control behavior tree
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		void PSBMPC::reset_control_behaviour()
 		{
 			offset_sequence_counter.setZero();
@@ -600,12 +600,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : increment_control_behavior
-		*  Function : Increments the control behavior counter and changes the offset sequence
-		*			  accordingly. Backpropagation is used for the incrementation
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : increment_control_behavior
+		 *  Function : Increments the control behavior counter and changes the offset sequence
+		 *			  accordingly. Backpropagation is used for the incrementation
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		void PSBMPC::increment_control_behaviour()
 		{
 			for (int M = pars.n_M - 1; M > -1; M--)
@@ -641,13 +641,13 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : setup_prediction
-		*  Function : Sets up the own-ship maneuvering times and number of prediction scenarios
-		*			  for each obstacle based on the current situation, and predicts
-		*			  independent obstacle trajectories using the predictor class.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : setup_prediction
+		 *  Function : Sets up the own-ship maneuvering times and number of prediction scenarios
+		 *			  for each obstacle based on the current situation, and predicts
+		 *			  independent obstacle trajectories using the predictor class.
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		void PSBMPC::setup_prediction(
 			const Dynamic_Obstacles &obstacles // In: Dynamic obstacle information
 		)
@@ -718,7 +718,7 @@ namespace PSBMPC_LIB
 					// obstacle (that is not passed) is taken at t_cpa_min
 					if (d_cpa(index_closest) > d_safe_i)
 					{
-						//std::cout << "OS maneuver M = " << M << " at t = " << t_cpa(index_closest) << " wrt obstacle " << index_closest << std::endl;
+						// std::cout << "OS maneuver M = " << M << " at t = " << t_cpa(index_closest) << " wrt obstacle " << index_closest << std::endl;
 						maneuvered_by[index_closest] = true;
 						maneuver_times(M) = std::round(t_cpa(index_closest) / pars.dt);
 					}
@@ -729,13 +729,13 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : calculate_collision_probabilities
-		*  Function : Estimates collision probabilities for the own-ship and an obstacle i in
-		*			  consideration. Can use a larger sample time than used in predicting
-		*			  the vessel trajectories.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : calculate_collision_probabilities
+		 *  Function : Estimates collision probabilities for the own-ship and an obstacle i in
+		 *			  consideration. Can use a larger sample time than used in predicting
+		 *			  the vessel trajectories.
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		void PSBMPC::calculate_collision_probabilities(
 			Eigen::MatrixXd &P_c_i,				// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
@@ -762,11 +762,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : assign_optimal_trajectory
-		*  Function : Set the optimal trajectory to the current predicted trajectory
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : assign_optimal_trajectory
+		 *  Function : Set the optimal trajectory to the current predicted trajectory
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		void PSBMPC::assign_optimal_trajectory(
 			Eigen::MatrixXd &optimal_trajectory // In/out: Optimal PSB-MPC trajectory
 		)

@@ -1,0 +1,55 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake release psbmpc lib",
+            "type": "shell",
+            "command": "cmake -DCMAKE_BUILD_TYPE=Release -DUSE_GPU_PSBMPC=0 -DENABLE_PSBMPC_DEBUGGING=0 -DENABLE_TEST_FILE_PLOTTING=1 .. ",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/release"
+            },
+        },
+        {
+            "label": "cmake debug psbmpc lib",
+            "type": "shell",
+            "command": "cmake -DCMAKE_BUILD_TYPE=Debug -DUSE_GPU_PSBMPC=0 -DENABLE_PSBMPC_DEBUGGING=1 -DENABLE_TEST_FILE_PLOTTING=1 .. ",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/debug"
+            },
+        },
+        {
+            "label": "make debug psbmpc lib",
+            "type": "shell",
+            "command": "make -j`nproc`",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/debug"
+            },
+        },
+        {
+            "label": "make release psbmpc lib",
+            "type": "shell",
+            "command": "make -j`nproc`",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/release"
+            },
+        }
+    ]
+}

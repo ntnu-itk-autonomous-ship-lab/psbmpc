@@ -1,0 +1,10 @@
+<launch>
+	<arg name="psbmpc_config" default="psbmpc.yaml"/>
+
+	<!-- Launch PSBMPC Grounding Hazard (Static Obstacle) Manager -->
+	<node name="ghm" pkg="psbmpc" type="ghm_node" ns="psbmpc" respawn="false" output="screen" launch-prefix="" >
+		<rosparam file = "$(find psbmpc)/config/$(arg psbmpc_config)" command = "load" />
+		<rosparam file = "$(find psbmpc)/config/ghm.yaml" command = "load" />
+	</node>
+
+</launch>

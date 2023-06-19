@@ -360,49 +360,83 @@ namespace PSBMPC_LIB
 				u_offsets[M].resize(3);
 
 				// u_offsets[M] << 1.0;
+<<<<<<< HEAD
 				// u_offsets[M] << 1.0, 0.5;
+=======
+				//  u_offsets[M] << 1.0, 0.5;
+>>>>>>> 5a64ce367f653cbfab94d1eefa38a1e094431223
 				u_offsets[M] << 1.0, 0.5, 0.0;
 
 				chi_offsets[M].resize(13);
 				// chi_offsets[M] << 0.0;
 				// chi_offsets[M] << -30.0, 0.0, 30.0;
 				// chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+<<<<<<< HEAD
 				chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+=======
+				chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+>>>>>>> 5a64ce367f653cbfab94d1eefa38a1e094431223
 				// chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 				// chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, -5.0, 0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 				chi_offsets[M] *= DEG2RAD;
 			}
 			else if (M == 1)
 			{
+<<<<<<< HEAD
 				u_offsets[M].resize(2);
 				// u_offsets[M] << 1.0;
 				u_offsets[M] << 1.0, 0.5;
 				// u_offsets[M] << 1.0, 0.5, 0.0;
 
 				chi_offsets[M].resize(13);
+=======
+				u_offsets[M].resize(3);
+				// u_offsets[M] << 0.0;
+				// u_offsets[M] << 1.0, 0.0;
+				u_offsets[M] << 1.0, 0.5, 0.0;
+
+				chi_offsets[M].resize(9);
+>>>>>>> 5a64ce367f653cbfab94d1eefa38a1e094431223
 				// chi_offsets[M] << 0.0;
 				// chi_offsets[M] << -30.0, 0.0, 30.0;
 				// chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
 				// chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
 				// chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
 				// chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
+<<<<<<< HEAD
 				chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
+=======
+				chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0;
+>>>>>>> 5a64ce367f653cbfab94d1eefa38a1e094431223
 				// chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
 				chi_offsets[M] *= DEG2RAD;
 			}
 			else
 			{
+<<<<<<< HEAD
 				u_offsets[M].resize(1);
 				u_offsets[M] << 1.0;
 				// u_offsets[M] << 1.0, 0.5;
 				// u_offsets[M] << 1.0, 0.5, 0.0;
 
 				chi_offsets[M].resize(7);
+=======
+				u_offsets[M].resize(3);
+				// u_offsets[M] << 1.0;
+				// u_offsets[M] << 1.0, 0.5;
+				u_offsets[M] << 1.0, 0.5, 0.0;
+
+				chi_offsets[M].resize(9);
+>>>>>>> 5a64ce367f653cbfab94d1eefa38a1e094431223
 				// chi_offsets[M] << 0.0;
 				// chi_offsets[M] << -30.0, 0.0, 30.0;
 				// chi_offsets[M] << -90.0, -45.0, 0.0, 45.0, 90.0;
 				// chi_offsets[M] << -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0;
+<<<<<<< HEAD
 				chi_offsets[M] << -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0;
+=======
+				chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0;
+>>>>>>> 5a64ce367f653cbfab94d1eefa38a1e094431223
 				// chi_offsets[M] << -90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0;
 				// chi_offsets[M] << -60.0, -45.0, -30.0, -15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0;
 				// chi_offsets[M] << -60.0, -50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0;
@@ -415,37 +449,37 @@ namespace PSBMPC_LIB
 		prediction_method = ERK1;
 		guidance_method = LOS;
 
-		T = 220.0;
+		T = 120.0; // 220.0
 		dt = 5.0;
 
 		p_step_opt = 1;
-		p_step_do = 1;
-		p_step_grounding = 2;
+		p_step_do = 2;
+		p_step_grounding = 4;
 		if (prediction_method == ERK1)
 		{
 			dt = 1.0;
 			p_step_opt = 10;
 		}
-		t_ts = 25;
+		t_ts = 60;
 
 		d_so_relevant = 150;
 		d_do_relevant = 500;
-		d_safe = 5.0;
-		K_coll = 30.0;
-		T_coll = 105;
-		kappa_SO = 12.0;
-		kappa_GW = 35.0;
-		kappa_RA = 4.0;
-		K_u = 3.25;
-		K_du = 1.1;
-		K_chi = 1.5;
-		K_dchi = 1.0;
-		K_e = 0.005;
+		d_safe = 4.5;
+		K_coll = 25.0;
+		T_coll = 100;
+		kappa_SO = 20.0;
+		kappa_GW = 25.0;
+		kappa_RA = 15.0;
+		K_u = 6.3;
+		K_du = 3.6;
+		K_chi = 1.8;
+		K_dchi = 1.3;
+		K_e = 0.0005;
 
 		G_1 = 100.0;
 		G_2 = 5.0;
 		G_3 = 1.4;
-		G_4 = 0.06;
+		G_4 = 1.0;
 
 		epsilon_rdp = 2.0;
 	}

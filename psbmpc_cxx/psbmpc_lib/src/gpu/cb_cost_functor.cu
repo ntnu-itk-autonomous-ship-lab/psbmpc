@@ -1,22 +1,22 @@
 /****************************************************************************************
-*
-*  File name : cb_cost_functor.cu
-*
-*  Function  : Class functions for the control behaviour cost evaluation functors. Used in
-*			   the thrust framework for GPU calculations.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : cb_cost_functor.cu
+ *
+ *  Function  : Class functions for the control behaviour cost evaluation functors. Used in
+ *			   the thrust framework for GPU calculations.
+ *
+ *	           ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Trym Tengesdal
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 
 #include "psbmpc_defines.hpp"
 #include "gpu/cb_cost_functor.cuh"
@@ -79,13 +79,13 @@ namespace PSBMPC_LIB
 		//  CB COST FUNCTOR 2 METHODS
 		//=======================================================================================
 		/****************************************************************************************
-		*  Name     : operator()
-		*  Function : Evaluates partial static and dynamic obstacle cost terms when following
-		*			  the control behaviour given by the input tuple, in addition to determining
-		*			  the COLREGS violation indicator in a certain scenario.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : operator()
+		 *  Function : Evaluates partial static and dynamic obstacle cost terms when following
+		 *			  the control behaviour given by the input tuple, in addition to determining
+		 *			  the COLREGS violation indicator in a certain scenario.
+		 *  Author   : Trym Tengesdal
+		 *  Modified :
+		 *****************************************************************************************/
 		__device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(
 			const thrust::tuple<
 				const int,							  // Thread index
@@ -136,7 +136,7 @@ namespace PSBMPC_LIB
 			P_i_p_seg.resize(16, n_seg_samples);
 
 			d_safe_i = pars->d_safe + 0.5 * (fdata->ownship_length + obstacles[i].get_length());
-			//printf("d_safe = %.2f | d_safe_i = %.6f\n", pars->d_safe, d_safe_i);
+			// printf("d_safe = %.2f | d_safe_i = %.6f\n", pars->d_safe, d_safe_i);
 			v_os_prev.set_zero();
 			v_i_prev.set_zero();
 
@@ -250,13 +250,17 @@ namespace PSBMPC_LIB
 							 pars->kappa_RA * colregs_violation_evaluators[os_do_ps_pair_index].evaluate_readily_apparent_violation(offset_sequence(1), offset_sequence(0));
 
 			//==================================================================================================
-			/* printf("i = %d | ps = %d | h_do_i_ps : %.2f| h_colregs_i_ps = %.0f | p_UCHI_chngd = %d | p_CHI_chng_port = %d | act_UCHI_chngd = %d | act_UCHI_chng_port = %d | crct_HO_man = %d | COLREGS_Sit = %d |  cb : %.1f, %.1f\n", i, ps, h_do_i_ps, h_colregs_i_ps,
-				   colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_speed_or_course, colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_course_to_port,
-				   colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_speed_or_course_change, colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_course_change_port,
-				   colregs_violation_evaluators[os_do_ps_pair_index].correct_HO_maneuver, offset_sequence(0), RAD2DEG * offset_sequence(1));
- */
-			//printf("Thread %d | i = %d | ps = %d | cb index %d | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | Pr_WGW = %.4f | Pr_CCEM = %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, Pr_WGW, Pr_CCEM, offset_sequence(0), RAD2DEG * offset_sequence(1));
 
+			/* if (offset_sequence(0) == 1.0 && offset_sequence(1) == 0.0 && offset_sequence(2) == 1.0 && offset_sequence(3) == 0.0)
+			{
+				printf("i = %d | ps = %d | h_do_i_ps : %.2f| h_colregs_i_ps = %.0f | colregs sit = %d | p_CHI_chng_port = %d | p_UCHI_chng = %d | act_UCHI_chngd = %d | act_UCHI_chng_port = %d | crct_HO_man = %d | cb : %.1f, %.1f, %.1f, %.1f\n", i, ps, h_do_i_ps, h_colregs_i_ps,
+					   colregs_violation_evaluators[os_do_ps_pair_index].colregs_situation, colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_course_to_port,
+					   colregs_violation_evaluators[os_do_ps_pair_index].predicted_ownship_change_in_speed_or_course,
+					   colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_speed_or_course_change, colregs_violation_evaluators[os_do_ps_pair_index].actual_ownship_course_change_port,
+					   colregs_violation_evaluators[os_do_ps_pair_index].correct_HO_maneuver, offset_sequence(0), RAD2DEG * offset_sequence(1), offset_sequence(2), RAD2DEG * offset_sequence(3));
+
+				// printf("Thread %d | i = %d | ps = %d | cb index %d | h_do_i_ps : %.4f| h_colregs_i_ps : %.4f | Pr_WGW = %.4f | Pr_CCEM = %.4f | cb : %.1f, %.1f \n", thread_index, i, ps, cb_index, h_do_i_ps, h_colregs_i_ps, Pr_WGW, Pr_CCEM, offset_sequence(0), RAD2DEG * offset_sequence(1));
+			} */
 			//==================================================================================================
 
 			// The first element (grounding cost element) is dont care for threads that only

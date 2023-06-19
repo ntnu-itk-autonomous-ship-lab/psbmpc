@@ -1,0 +1,88 @@
+initial_psbmpc_mode: "psbmpc"
+psbmpc_modes: ["sbmpc", "psbmpc", "wp-tracking"]
+
+polygons_topic_name: "/psbmpc/ghm/polygons"
+do_data_topic_name: "/intent_inference/do_data_with_prob"
+#do_data_topic_name: "/psbmpc/dom/do_data"
+#ownship_pose_topic_name: "/milliampere/pose"
+#ownship_velocity_topic_name: "/milliampere/twist_body"
+ownship_pose_topic_name: "/navigation/pose"
+ownship_velocity_topic_name: "/navigation/twist_body"
+waypoint_topic_name: "/bridge/waypoint"
+wind_topic_name: "/sim/wind_velocity"
+psbmpc_mode_topic_name: "/psbmpc/psbmpc_mode"
+trajectory_reference_topic_name: "/psbmpc/trajectory_reference"
+supervisor_mode_topic_name: "/milliampere/mode"
+
+set_psbmpc_mode_service_name: "/psbmpc/set_psbmpc_mode"
+waypoint_loader_service_name: "/psbmpc/load_waypoints"
+
+psbmpc_mode_publish_rate: 5
+trajectory_publish_rate: 0.2
+trajectory_downsampling_factor: 1
+
+# Kinematic ship model parameters
+ownship:
+  l: 8.5
+  w: 3.5
+  T_U: 8.0 #4.9 #1.44
+  T_chi: 6.0 #2.4 #0.92
+  R_a: 15.0
+  LOS_LD: 15.0
+  LOS_K_i: 0.0
+
+# Collision probability estimator parameters
+cpe:
+  n_CE: 500
+  n_MCSKF: 500
+  alpha_n: 0.9
+  gate: 11.618285980628054
+  rho: 0.9
+  max_it: 6
+  r: 0.001
+  q: 0.0008
+
+# COLREGS violation evaluator parameters
+cve:
+  d_init_colregs_situation: 10000.0
+  head_on_width: 30.0
+  overtaking_angle: 112.5
+  critical_distance_to_ignore_SO: 15.0
+  max_acceptable_SO_speed_change: 1.5
+  max_acceptable_SO_course_change: 15.0
+  min_acceptable_GW_speed_change: 0.5
+  min_acceptable_GW_course_change: 45.0
+  GW_safety_margin: 15.0
+
+sbmpc_parameters:
+  u_offsets: "[[1.0, 0.5, 0.0], [1.0, 0.5, 0.0], [1.0, 0.0]]"
+  # Course offsets in degrees, conversion to radians done in the parameter class
+  chi_offsets: "[[-90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0], [-60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0], [0.0]]"
+  # Linear: 0, ERK1: 1, ERK4: 2
+  prediction_method: 1
+  # LOS: 0, WPP: 1, CH: 2
+  guidance_method: 0
+  # Integer type parameters, see psbmpc_index.hpp file in thecolavrepo to see which parameter to change
+  ipars: [2, 1, 1, 2]
+  # Double type parameters, see psbmpc_index.hpp file in thecolavrepo to see which parameter to change
+  # phi_AH, phi_OT, phi_HO, phi_CR given in degrees, conversion to radians done in the parameter class
+  dpars: [220.0, 1.0, 25.0, 6.5, 250.0, 500.0, 150.0, 12.0, 68.5, 68.5, 22.5, 68.5, 15.0, 0.0, 7.0, 3.5, 1.3, 1.35, 0.9, 0.95, 8.0, 80.0, 4.0, 1.0, 100.0, 5.0, 1.4, 0.3, 2.0]
+
+psbmpc_parameters:
+  u_offsets: "[[1.0, 0.5, 0.2], [1.0, 0.5, 0.2], [1.0, 0.0]]"
+  #u_offsets: "[[1.0], [1.0]]"
+  # Course offsets in degrees, conversion to radians done in the parameter class
+  chi_offsets: "[[-90.0, -75.0, -60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0], [-60.0, -45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0, 60.0], [0.0]]"
+  #chi_offsets: "[[-45.0, -15.0, 0.0, 15.0, 45.0]]"
+  # CE: 0, MCSKF4D: 1
+  cpe_method: 0
+  # Linear: 0, ERK1: 1, ERK4: 2
+  prediction_method: 1
+  # LOS: 0, WPP: 1, CH: 2
+  guidance_method: 0
+  # Integer type parameters, see psbmpc_index.hpp file in thecolavrepo to see which parameter to change
+  ipars: [2, 5, 1, 2, 4]
+  # Double type parameters, see psbmpc_index.hpp file in thecolavrepo to see which parameter to change
+#  dpars: [200.0, 1.0, 25.0, 8.5, 500.0, 150.0, 20.0, 100.0, 20.0, 25.0, 5.0, 3.3, 0.6, 1.8, 2.5, 0.007, 100.0, 5.0, 1.4, 0.05, 2.0]
+#  dpars: [200.0, 1.0, 60.0, 8.5, 500.0, 150.0, 15.0, 100.0, 25.0, 30.0, 5.0, 4.5, 1.5, 1.8, 1.3, 0.0005, 100.0, 5.0, 1.4, 0.3, 2.0]
+  dpars: [200.0, 1.0, 60.0, 8.5, 500.0, 150.0, 25.0, 100.0, 25.0, 30.0, 15.0, 4.5, 1.5, 1.8, 1.3, 0.0005, 100.0, 5.0, 1.4, 0.3, 2.0]

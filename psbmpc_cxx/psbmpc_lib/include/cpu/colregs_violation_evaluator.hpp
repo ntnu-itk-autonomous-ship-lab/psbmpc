@@ -148,7 +148,7 @@ namespace PSBMPC_LIB
                 pars.max_acceptable_SO_course_change = 15.0 * DEG2RAD;
                 pars.min_acceptable_GW_speed_change = 0.5;
                 pars.min_acceptable_GW_course_change = 30.0 * DEG2RAD;
-                pars.GW_safety_margin = 15.0;
+                pars.GW_safety_margin = 2.0;
             }
 
             /****************************************************************************************

@@ -19,7 +19,7 @@ tlim = [0 T_sim / dt_sim];
 % w_i = 0.006*(xlimits(2) - xlimits(1));
 % % drawn boat dimensions
 L_os = 10; L_i = 10;
-w_os = 3; w_i = 3;
+w_os = 1; w_i = 1;
 boat_dim = [L_os/2 .7*L_os/2 -L_os/2 -L_os/2 .7*L_os/2 L_os/2; 0 2*w_os 2*w_os  -2*w_os -2*w_os 0];
 
 

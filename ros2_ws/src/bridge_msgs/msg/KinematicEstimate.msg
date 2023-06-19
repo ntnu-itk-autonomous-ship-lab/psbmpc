@@ -1,5 +1,0 @@
-bridge_msgs/Vector2 pos_est
-bridge_msgs/Vector2 vel_est
-bridge_msgs/Covariance2 pos_cov
-bridge_msgs/Covariance2 vel_cov
-bridge_msgs/CrossCovariance2 pos_vel_corr 

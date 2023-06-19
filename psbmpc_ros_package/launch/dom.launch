@@ -1,0 +1,9 @@
+<launch>
+	<arg name="psbmpc_config" default="psbmpc.yaml"/>
+
+	<!-- Launch PSBMPC Dynamic Obstacle Manager -->
+	<node name="dom" pkg="psbmpc" type="dom_node" ns="psbmpc" respawn="false" output="screen" launch-prefix="" >
+		<rosparam file = "$(find psbmpc)/config/$(arg psbmpc_config)" command = "load" />
+		<rosparam file = "$(find psbmpc)/config/dom.yaml" command = "load" />
+	</node>
+</launch>

@@ -22,8 +22,8 @@ cmake_minimum_required(VERSION 3.17.3)
 if(APPLE)
 	set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH} /opt/homebrew/Cellar")
 	message(STATUS "Operating system is Apple OS X")
-elseif(LINUX)
-	message(STATUS "Operating system is Linuxs")
+elseif(UNIX)
+	message(STATUS "Operating system is UNIX")
 else()
 	message(STATUS "Operating system is Windows")
 endif()
@@ -46,9 +46,15 @@ endif()
 message(STATUS "OWNSHIP_TYPE set to ${OWNSHIP_TYPE}")
 
 if(NOT DEFINED ENABLE_PSBMPC_DEBUGGING)
-	set(ENABLE_PSBMPC_DEBUGGING 1)
+	set(ENABLE_PSBMPC_DEBUGGING 0)
 endif()
 message(STATUS "ENABLE_PSBMPC_DEBUGGING set to ${ENABLE_PSBMPC_DEBUGGING}")
+
+if(NOT DEFINED ENABLE_TEST_FILE_PLOTTING)
+	set(ENABLE_TEST_FILE_PLOTTING 1)
+endif()
+message(STATUS "ENABLE_TEST_FILE_PLOTTING set to ${ENABLE_TEST_FILE_PLOTTING}")
+
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)

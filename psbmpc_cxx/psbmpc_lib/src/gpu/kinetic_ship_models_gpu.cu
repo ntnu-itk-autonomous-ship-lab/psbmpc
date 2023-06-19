@@ -1,21 +1,21 @@
 /****************************************************************************************
-*
-*  File name : kinetic_ship_models_gpu.cu
-*
-*  Function  : Class functions for the GPU used kinetic ship models.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
+ *
+ *  File name : kinetic_ship_models_gpu.cu
+ *
+ *  Function  : Class functions for the GPU used kinetic ship models.
+ *
+ *	           ---------------------
+ *
+ *  Version 1.0
+ *
+ *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
+ *  All rights reserved.
+ *
+ *  Author    : Trym Tengesdal
+ *
+ *  Modified  :
+ *
+ *****************************************************************************************/
 
 #include "gpu/utilities_gpu.cuh"
 #include "gpu/kinetic_ship_models_gpu.cuh"
@@ -32,11 +32,11 @@ namespace PSBMPC_LIB
 	{
 
 		/****************************************************************************************
-		*  Name     : Kinetic_Ship_Base_3DOF
-		*  Function : Class constructors
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : Kinetic_Ship_Base_3DOF
+		 *  Function : Class constructors
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ __device__ Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
 		{
 			tau.set_zero();
@@ -57,11 +57,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : determine_active_waypoint_segment
-		*  Function : Two overloads depending on matrix library used.
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : determine_active_waypoint_segment
+		 *  Function : Two overloads depending on matrix library used.
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ __device__ void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segment(
 			const TML::PDMatrix<float, 2, MAX_N_WPS> &waypoints, // In: Waypoints to follow
 			const TML::Vector6f &xs								 // In: Ship state
@@ -114,11 +114,11 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : update_guidance_references
-		*  Function :
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : update_guidance_references
+		 *  Function :
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ __device__ void Kinetic_Ship_Base_3DOF::update_guidance_references(
 			float &u_d,											 // In/out: Surge reference
 			float &chi_d,										 // In/out: Course reference
@@ -181,13 +181,13 @@ namespace PSBMPC_LIB
 				e_int += e * dt;
 				if (e_int >= e_int_max)
 					e_int -= e * dt;
-				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
+				chi_d = GPU::wrap_angle_to_pmpi(alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD));
 				break;
 			case WPP:
-				chi_d = atan2(d_next_wp(1), d_next_wp(0));
+				chi_d = GPU::wrap_angle_to_pmpi(atan2(d_next_wp(1), d_next_wp(0)));
 				break;
 			case CH:
-				chi_d = xs(2);
+				chi_d = GPU::wrap_angle_to_pmpi(xs(2));
 				break;
 			default:
 				// Throw
@@ -258,13 +258,13 @@ namespace PSBMPC_LIB
 				e_int += e * dt;
 				if (e_int >= e_int_max)
 					e_int -= e * dt;
-				chi_d = alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD);
+				chi_d = GPU::wrap_angle_to_pmpi(alpha + atan2(-(e + LOS_K_i * e_int), LOS_LD));
 				break;
 			case WPP:
-				chi_d = atan2(d_next_wp(1), d_next_wp(0));
+				chi_d = GPU::wrap_angle_to_pmpi(atan2(d_next_wp(1), d_next_wp(0)));
 				break;
 			case CH:
-				chi_d = xs(2);
+				chi_d = GPU::wrap_angle_to_pmpi(xs(2));
 				break;
 			default:
 				// Throw
@@ -294,12 +294,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : predict
-		*  Function : Predicts the ship state xs a number of dt units forward in time with the
-		*			  chosen prediction method
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : predict
+		 *  Function : Predicts the ship state xs a number of dt units forward in time with the
+		 *			  chosen prediction method
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ __device__ TML::Vector6f Kinetic_Ship_Base_3DOF::predict(
 			const TML::Vector6f &xs_old,			  // In: State to predict forward
 			const float dt,							  // In: Time step
@@ -334,7 +334,7 @@ namespace PSBMPC_LIB
 				// Throw
 				xs_new.set_zero();
 			}
-			xs_new(2) = wrap_angle_to_pmpi(xs_new(2));
+			xs_new(2) = GPU::wrap_angle_to_pmpi(xs_new(2));
 			return xs_new;
 		}
 
@@ -359,12 +359,12 @@ namespace PSBMPC_LIB
 		*****************************************************************************************/
 
 		/****************************************************************************************
-		*  Name     : Cvv
-		*  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on
-		*			  Fossen 2011.
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : Cvv
+		 *  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on
+		 *			  Fossen 2011.
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::update_Cvv(
 			const TML::Vector3f &nu // In: BODY velocity vector nu = [u, v, r]^T
 		)
@@ -396,12 +396,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : Dvv
-		*  Function : Calculates the "damping vector" for the 3DOF surface vessel based on
-		*			  Fossen 2011
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : Dvv
+		 *  Function : Calculates the "damping vector" for the 3DOF surface vessel based on
+		 *			  Fossen 2011
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::update_Dvv(
 			const TML::Vector3f &nu // In: BODY velocity vector nu = [u, v, r]^T
 		)
@@ -417,11 +417,11 @@ namespace PSBMPC_LIB
 		// Telemetron class methods
 		//=======================================================================================
 		/****************************************************************************************
-		*  Name     : Telemetron
-		*  Function : Class constructor
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : Telemetron
+		 *  Function : Class constructor
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		Telemetron::Telemetron()
 		{
 			tau.set_zero();
@@ -479,7 +479,7 @@ namespace PSBMPC_LIB
 			Y_vvv = 0.0f;
 			N_rrr = -3224.0f;
 
-			//Force limits
+			// Force limits
 			Fx_min = -6550.0f;
 			Fx_max = 13100.0f;
 			Fy_min = -645.0f;
@@ -491,16 +491,16 @@ namespace PSBMPC_LIB
 			Kd_psi = 1.0f;
 			Kp_r = 8.0f;
 
-			//Motion limits
+			// Motion limits
 			r_max = 0.34f * DEG2RAD; // [rad/s] default max yaw rate
 		}
 
 		/****************************************************************************************
-		*  Name     : update_ctrl_input
-		*  Function :
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : update_ctrl_input
+		 *  Function :
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ void Telemetron::update_ctrl_input(
 			const float u_d,		// In: Surge reference
 			const float psi_d,		// In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
@@ -544,12 +544,12 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		*  Name     : predict_trajectory
-		*  Function : Predicts the ship trajectory for a sequence of avoidance maneuvers in the
-		*			  offset sequence. Two overloads depending on matrix library used.
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
+		 *  Name     : predict_trajectory
+		 *  Function : Predicts the ship trajectory for a sequence of avoidance maneuvers in the
+		 *			  offset sequence. Two overloads depending on matrix library used.
+		 *  Author   :
+		 *  Modified :
+		 *****************************************************************************************/
 		__host__ __device__ void Telemetron::predict_trajectory(
 			TML::PDMatrix<float, 6, MAX_N_SAMPLES> &trajectory,			 // In/out: Ship trajectory
 			const TML::PDMatrix<float, 2 * MAX_N_M, 1> &offset_sequence, // In: Sequence of offsets in the candidate control behavior
@@ -577,18 +577,25 @@ namespace PSBMPC_LIB
 				if (k == maneuver_times[man_count])
 				{
 					u_m = offset_sequence[2 * man_count];
-					chi_m += offset_sequence[2 * man_count + 1];
+					if (u_m < 0.1)
+					{
+						chi_m = 0.0;
+					}
+					else
+					{
+						chi_m += offset_sequence[2 * man_count + 1];
+					}
 					if (man_count < (int)maneuver_times.size() - 1)
 						man_count += 1;
 				}
 
 				update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
 
-				update_ctrl_input(u_m * u_d_p, chi_m + chi_d_p, xs_p);
+				update_ctrl_input(u_m * u_d_p, GPU::wrap_angle_to_pmpi(chi_m + chi_d_p), xs_p);
 
 				xs_p = predict(xs_p, dt, prediction_method);
 
-				//printf("xs = %f %f %f %f %f %f \n", xs(0), xs(1), xs(2), xs(3), xs(4), xs(5));
+				// printf("xs = %f %f %f %f %f %f \n", xs(0), xs(1), xs(2), xs(3), xs(4), xs(5));
 
 				if (k < n_samples - 1)
 				{
@@ -626,14 +633,21 @@ namespace PSBMPC_LIB
 				if (k == maneuver_times[man_count])
 				{
 					u_m = offset_sequence[2 * man_count];
-					chi_m += offset_sequence[2 * man_count + 1];
+					if (u_m < 0.1)
+					{
+						chi_m = 0.0;
+					}
+					else
+					{
+						chi_m += offset_sequence[2 * man_count + 1];
+					}
 					if (man_count < (int)maneuver_times.size() - 1)
 						man_count += 1;
 				}
 
 				update_guidance_references(u_d_p, chi_d_p, waypoints, xs_p, dt, guidance_method);
 
-				update_ctrl_input(u_m * u_d_p, chi_m + chi_d_p, xs_p);
+				update_ctrl_input(u_m * u_d_p, GPU::wrap_angle_to_pmpi(chi_m + chi_d_p), xs_p);
 
 				v_p(0) = xs_p(3);
 				v_p(1) = xs_p(4);
@@ -644,7 +658,7 @@ namespace PSBMPC_LIB
 
 				xs_p = predict(xs_p, dt, prediction_method);
 
-				//printf("xs = %f %f %f %f %f %f \n", xs(0), xs(1), xs(2), xs(3), xs(4), xs(5));
+				// printf("xs = %f %f %f %f %f %f \n", xs(0), xs(1), xs(2), xs(3), xs(4), xs(5));
 			}
 		}
 
@@ -680,14 +694,21 @@ namespace PSBMPC_LIB
 				if (k == maneuver_times[man_count])
 				{
 					u_m = offset_sequence[2 * man_count];
-					chi_m += offset_sequence[2 * man_count + 1];
+					if (u_m < 0.1)
+					{
+						chi_m = 0.0;
+					}
+					else
+					{
+						chi_m += offset_sequence[2 * man_count + 1];
+					}
 					if (man_count < (int)maneuver_times.size() - 1)
 						man_count += 1;
 				}
 
 				update_guidance_references(u_d_p, chi_d_p, e_k, waypoints, xs_p, dt, guidance_method);
 
-				update_ctrl_input(u_m * u_d_p, chi_m + chi_d_p, xs_p);
+				update_ctrl_input(u_m * u_d_p, GPU::wrap_angle_to_pmpi(chi_m + chi_d_p), xs_p);
 
 				v_p(0) = xs_p(3);
 				v_p(1) = xs_p(4);
@@ -698,14 +719,14 @@ namespace PSBMPC_LIB
 
 				xs_p = predict(xs_p, dt, prediction_method);
 
-				//printf("xs = %f %f %f %f %f %f \n", xs(0), xs(1), xs(2), xs(3), xs(4), xs(5));
+				// printf("xs = %f %f %f %f %f %f \n", xs(0), xs(1), xs(2), xs(3), xs(4), xs(5));
 
 				if (max_cross_track_error < fabs(e_k))
 				{
 					max_cross_track_error = fabs(e_k);
 				}
 			}
-			//printf("finished\n");
+			// printf("finished\n");
 		}
 
 		__host__ void Telemetron::predict_trajectory(

@@ -1,0 +1,27 @@
+<launch>
+	<arg name="psbmpc_config" default="psbmpc.yaml"/>
+	<arg name="psbmpc_waypoints" default=""/>
+
+	<!-- Launch PSBMPC COLAV-->
+	<node name="psbmpc" pkg="psbmpc" type="psbmpc_node" respawn="false" output="screen" launch-prefix="" >
+		<rosparam file = "$(find psbmpc)/config/$(arg psbmpc_config)" command = "load" />
+	</node>
+
+	<!-- Launch PSBMPC Grounding Hazard (Static Obstacle) Manager -->
+	<node name="ghm" pkg="psbmpc" type="ghm_node" ns="psbmpc" respawn="false" output="screen" launch-prefix="" >
+		<rosparam file = "$(find psbmpc)/config/ghm.yaml" command = "load" />
+	</node>
+
+	<!-- Launch PSBMPC Dynamic Obstacle Manager -->
+	<!-- <node name="dom" pkg="psbmpc" type="dom_node" ns="psbmpc" respawn="false" output="screen" launch-prefix="" >
+		<rosparam file = "$(find psbmpc)/config/dom.yaml" command = "load" />
+	</node> -->
+
+	<!-- Launch PSBMPC visualization node-->
+	<node name="psbmpc_visualization" pkg="psbmpc" type="psbmpc_visualization_node" ns="psbmpc" respawn="false" output="screen" launch-prefix="" >
+		<rosparam file = "$(find psbmpc)/config/psbmpc_visualization.yaml" command = "load" />
+	</node>
+
+	<node pkg="rosservice" type="rosservice" name="load_initial_waypoints" args="call --wait /psbmpc/load_waypoints $(arg psbmpc_waypoints)" if="$(eval psbmpc_waypoints != '')" />
+
+</launch>
