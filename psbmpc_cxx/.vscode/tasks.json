@@ -6,7 +6,7 @@
         {
             "label": "cmake release psbmpc lib",
             "type": "shell",
-            "command": "cmake -DCMAKE_BUILD_TYPE=Release -DUSE_GPU_PSBMPC=0 -DENABLE_PSBMPC_DEBUGGING=0 -DENABLE_TEST_FILE_PLOTTING=1 .. ",
+            "command": "cmake -DCMAKE_BUILD_TYPE=Release -DUSE_GPU_PSBMPC=0 -DENABLE_PSBMPC_DEBUGGING=0 -DENABLE_TEST_FILE_PLOTTING=0 .. ",
             "group": {
                 "kind": "build",
                 "isDefault": true
