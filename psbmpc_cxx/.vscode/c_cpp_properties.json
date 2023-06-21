@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "/usr/local/include/eigen3/",
                 "/usr/local/include/GeographicLib/",
-                "/usr/local/MATLAB/R2022a/extern/include/"
+                "/usr/local/MATLAB/R2022a/extern/include/",
+                "/opt/homebrew/opt/boost/include/boost",
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang-15",

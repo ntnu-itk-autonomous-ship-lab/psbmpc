@@ -48,7 +48,7 @@ Several test functions exist under tests for testing that the different library 
 - 2: `cmake -DCMAKE_BUILD_TYPE=build_type -DUSE_GPU_PSBMPC=use_gpu_psbmpc -DENABLE_PSBMPC_DEBUGGING=enable_psbmpc_debugging -DENABLE_TEST_FILE_PLOTTING=enable_test_file_plotting -DOWNSHIP_TYPE=ownship_type ..`
 - 3: `make`
 
-The generated executable file is then located in the build folder, which you can run using `./tester` in the terminal. `NOTE` that most of the test files require the Matlab C API to function in the current version.
+The generated executable file is then located in the build folder, which you can run using `./tester` in the terminal. `Note` that most of the test files require the Matlab C API to function with visualizations in the current version.
 
 ## Common Pitfalls
 

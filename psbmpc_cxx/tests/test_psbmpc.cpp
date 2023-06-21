@@ -28,7 +28,9 @@
 #include <chrono>
 #include <memory>
 #include <Eigen/Dense>
+#if ENABLE_TEST_FILE_PLOTTING
 #include <engine.h>
+#endif
 
 #define BUFSIZE 1000000
 
@@ -111,9 +113,10 @@ int main()
 	std::vector<Eigen::Matrix<double, 2, -1>> waypoints_i(n_do);
 	std::vector<int> n_wps_i(n_do);
 
-	//=====================================================================
-	// Matlab engine setup and array setup for the ownship and obstacle, ++
-	//=====================================================================
+//=====================================================================
+// Matlab engine setup and array setup for the ownship and obstacle, ++
+//=====================================================================
+#if ENABLE_TEST_FILE_PLOTTING
 	// Matlab engine setup
 	Engine *ep = engOpen(NULL);
 	if (ep == NULL)
@@ -138,6 +141,7 @@ int main()
 	double *ptraj_i;
 	double *p_P_traj_i;
 	double *p_wps_i;
+#endif
 
 	//=====================================================================
 	for (int i = 0; i < n_do; i++)
@@ -264,10 +268,7 @@ int main()
 	auto start = std::chrono::system_clock::now(), end = start;
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-	//=========================================================
-	// Matlab plot setup
-	//=========================================================
-
+#if ENABLE_TEST_FILE_PLOTTING
 	for (int i = 0; i < n_do; i++)
 	{
 		wps_i_mx[i] = mxCreateDoubleMatrix(2, n_wps_i[i], mxREAL);
@@ -308,7 +309,7 @@ int main()
 
 		engEvalString(ep, "init_obstacle_plot");
 	}
-	//=========================================================
+#endif
 
 	Eigen::Vector4d xs_i_k;
 	Eigen::VectorXd xs_aug(9);
@@ -378,9 +379,7 @@ int main()
 		}
 		// std::cout << trajectory.col(k).transpose() << std::endl;
 
-		//===========================================
-		// Send trajectory data to matlab
-		//===========================================
+#if ENABLE_TEST_FILE_PLOTTING
 		buffer[BUFSIZE] = '\0';
 		engOutputBuffer(ep, buffer, BUFSIZE);
 
@@ -423,10 +422,12 @@ int main()
 
 			printf("%s", buffer);
 		}
+#endif
 
 		//======================================================
 	}
 
+#if ENABLE_TEST_FILE_PLOTTING
 	mxDestroyArray(traj_os_mx);
 	mxDestroyArray(wps_os_mx);
 	mxDestroyArray(pred_traj_mx);
@@ -442,6 +443,7 @@ int main()
 		mxDestroyArray(wps_i_mx[i]);
 	}
 	engClose(ep);
+#endif
 
 	return 0;
 }

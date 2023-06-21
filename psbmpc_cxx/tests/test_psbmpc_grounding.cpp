@@ -307,7 +307,6 @@ int main()
 		grounding_hazard_manager.read_other_polygons(other_polygons_filename, true, false);
 	}
 
-	Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin_ned();
 	PSBMPC_LIB::Static_Obstacles polygons_lla = grounding_hazard_manager.get_polygons_lla();
 	PSBMPC_LIB::Static_Obstacles polygons = grounding_hazard_manager.get_polygons_ned();
 	PSBMPC_LIB::Static_Obstacles simplified_polygons = grounding_hazard_manager.get_simplified_polygons_ned();
@@ -435,7 +434,7 @@ int main()
 	//*****************************************************************************************************************
 	// Simulation
 	//*****************************************************************************************************************
-
+	// Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin_ned();
 	// Use positions relative to the map origin
 	// Eigen::Vector2d map_origin = grounding_hazard_manager.get_map_origin();
 
@@ -460,9 +459,6 @@ int main()
 	auto start = std::chrono::system_clock::now(), end = start;
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-	//=========================================================
-	// Matlab plot setup
-	//=========================================================
 #if ENABLE_TEST_FILE_PLOTTING
 	for (int i = 0; i < n_do; i++)
 	{
@@ -509,8 +505,6 @@ int main()
 
 		engEvalString(ep, "init_obstacle_plot_grounding");
 	}
-	//=========================================================
-	// engEvalString(ep, "save('/home/trymte/Desktop/polygons', 'P', 'P_lla', 'P_simplified', 'map_origin')");
 #endif
 	Eigen::Vector4d xs_i_k;
 	Eigen::VectorXd xs_aug(9);
@@ -519,7 +513,6 @@ int main()
 	{
 		t = k * dt;
 
-		// Aquire obstacle information
 		for (int i = 0; i < n_do; i++)
 		{
 			if (trajectory_i[i].rows() == 4)
