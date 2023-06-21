@@ -1,16 +1,14 @@
 # PSB-MPC 1.0 C++
-
 This repository implements a library for the Probabilistic Scenario-based MPC [[2]](#2) in C++ and CUDA, one version for the CPU and another for the GPU (much faster). The algorithm is a new extended and improved version of the original one posed in [[1]](#1), which was implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3). The library is located under **psbmpc_lib**.
 
 The library heavily relies on cmake, which you can learn more about e.g. here: <https://cliutils.gitlab.io/modern-cmake/>
 
+If using VS Code, update the configuration files under `.vscode/` to reflect your environment/preferences.
 ## Hardware dependencies
 
 - For usage of the GPU PSB-MPC, the library is only tested on NVIDIA GPUs with compute-capabilities 6.1 or higher, so you should check your GPU. The compute capability should be atleast 5.2.
 
-
 ## Software dependencies
-
 - C++17
 - CMake > 3.17 for building
 - Matlab C API for the debugging and plotting functionality. (Follow setup instructions at <https://www.mathworks.com/help/matlab/matlab_external/overview.html>)
@@ -50,7 +48,7 @@ Several test functions exist under tests for testing that the different library 
 - 2: `cmake -DCMAKE_BUILD_TYPE=build_type -DUSE_GPU_PSBMPC=use_gpu_psbmpc -DENABLE_PSBMPC_DEBUGGING=enable_psbmpc_debugging -DENABLE_TEST_FILE_PLOTTING=enable_test_file_plotting -DOWNSHIP_TYPE=ownship_type ..`
 - 3: `make`
 
-The generated executable file is then located in the build folder, which you can run using `./tester` in the terminal.
+The generated executable file is then located in the build folder, which you can run using `./tester` in the terminal. `NOTE` that most of the test files require the Matlab C API to function in the current version.
 
 ## Common Pitfalls
 
@@ -69,4 +67,4 @@ Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-34
 
 <a id="4">[4]</a>  Tengesdal, T., Johansen, T. A., and Brekke, E. (2022). "Ship Collision Avoidance Utilizing the Cross-Entropy Method for Collision Risk Assessment." IEEE Transactions on Intelligent Transportation Systems, Vol. 23, pp. 11148-11161, DOI: <https://doi.org/10.1109/TITS.2021.3101007>
 
-Trym Tengesdal, November 29, 2022.
+Trym Tengesdal, June 21, 2023.
