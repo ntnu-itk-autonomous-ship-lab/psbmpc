@@ -329,7 +329,6 @@ namespace PSBMPC_LIB
 		dpar_low[i_dpar_T] = 60.0;
 		dpar_low[i_dpar_dt] = 0.001;
 
-		dpar_low[i_dpar_d_safe] = 20.0;
 		dpar_low[i_dpar_d_do_relevant] = d_safe;
 
 		dpar_high[i_dpar_K_chi] = 3.0;
