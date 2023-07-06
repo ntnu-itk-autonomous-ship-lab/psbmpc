@@ -278,7 +278,7 @@ namespace PSBMPC_LIB
 				{
 					if (value[j].size() > 0)
 					{
-						chi_offsets[j] = value[j];
+						chi_offsets[j] = value[j]*DEG2RAD;
 					}
 				}
 				break;
