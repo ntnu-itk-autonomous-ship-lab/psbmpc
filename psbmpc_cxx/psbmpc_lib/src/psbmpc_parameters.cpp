@@ -114,12 +114,21 @@ namespace PSBMPC_LIB
 		const int index // In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
 	) const
 	{
+		std::vector<Eigen::VectorXd> chi_offsets_deg;
 		switch (index)
 		{
 		case i_opar_u_offsets:
 			return u_offsets;
 		case i_opar_chi_offsets:
-			return chi_offsets;
+			chi_offsets_deg.resize(chi_offsets.size());
+			for (int j = 0; j < n_M; j++)
+					{
+						if (chi_offsets[j].size() > 0)
+						{
+							chi_offsets_deg[j] = chi_offsets[j]*RAD2DEG;
+						}
+					}
+			return chi_offsets_deg;
 		default:
 		{
 			// Throw
