@@ -24,9 +24,6 @@
 #include "psbmpc_parameters.hpp"
 
 #include <Eigen/Dense>
-#include <pybind11/numpy.h>
-
-namespace py = pybind11;
 
 namespace PSBMPC_LIB
 {
@@ -96,26 +93,26 @@ namespace PSBMPC_LIB
 				const Eigen::Vector4d &xs,
 				const double dt);
 
-			void update_guidance_references(
-				py::array_t<double> u_d_from_py,
-				py::array_t<double> chi_d_from_py,
+			Eigen::Vector2d update_guidance_references_py(
+				double &u_d,
+				double &chi_d,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::Vector4d &xs,
 				const double dt,
 				const Guidance_Method guidance_method); 
 
-			void update_guidance_references(
-				py::array_t<double> u_d_from_py,
-				py::array_t<double> chi_d_from_py,
-				py::array_t<double> cross_track_error_from_py,
+			Eigen::Vector3d update_guidance_references_py(
+				double &u_d,
+				double &chi_d,
+				double cross_track_error,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::Vector4d &xs,
 				const double dt,
 				const Guidance_Method guidance_method);
 
-			void update_guidance_references(
-				py::array_t<double> u_d_from_py,
-				py::array_t<double> chi_d_from_py,
+			Eigen::Vector2d update_guidance_references_py(
+				double &u_d,
+				double &chi_d,
 				const double e_m,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Eigen::Vector4d &xs,

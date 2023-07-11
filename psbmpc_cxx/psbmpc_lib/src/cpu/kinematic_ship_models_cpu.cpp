@@ -355,86 +355,50 @@ namespace PSBMPC_LIB
 		}
 
 		// Pybind11 compatibility overloads
-		void Kinematic_Ship::update_guidance_references(
-			py::array_t<double> u_d_from_py,		       // In/out from/to Python: Surge reference
-			py::array_t<double> chi_d_from_py,             // In/out from/to Python: Course reference
+		Eigen::Vector2d Kinematic_Ship::update_guidance_references_py(
+			double &u_d,		                           // In/out from/to Python: Surge reference
+			double &chi_d,                                 // In/out from/to Python: Course reference
 			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Waypoints to follow.
 			const Eigen::Vector4d &xs,					   // In: Ownship state
 			const double dt,							   // In: Time step
 			const Guidance_Method guidance_method		   // In: Type of guidance used
 		)
 		{
-			py::buffer_info buf_u_d = u_d_from_py.request();
-			double* u_d = static_cast<double*>(buf_u_d.ptr);
-			if (buf_u_d.size != 1) {
-    			throw std::runtime_error("Invalid size of u_d. Ex.: numpy.array([1.0], dtype = numpy.float64)");
-			}
-
-			py::buffer_info buf_chi_d = chi_d_from_py.request();
-			double* chi_d = static_cast<double*>(buf_chi_d.ptr);
-			if (buf_chi_d.size != 1) {	
-    			throw std::runtime_error("Invalid size of chi_d. Ex.: numpy.array([0.0], dtype = numpy.float64)");
-			}
-
 			// Coupled to initial overload number 1
-			update_guidance_references(*u_d, *chi_d, waypoints, xs, dt, guidance_method);
+			update_guidance_references(u_d, chi_d, waypoints, xs, dt, guidance_method);
+			Eigen::Vector2d output(u_d, chi_d);
+			return output;
 		}
 
-		void Kinematic_Ship::update_guidance_references(
-			py::array_t<double> u_d_from_py,		       // In/out from/to Python: Surge reference
-			py::array_t<double> chi_d_from_py,             // In/out from/to Python: Course reference
-			py::array_t<double> cross_track_error_from_py, // In/out: Cross track error
+		Eigen::Vector3d Kinematic_Ship::update_guidance_references_py(
+			double &u_d,		                           // In/out from/to Python: Surge reference
+			double &chi_d,                                 // In/out from/to Python: Course reference
+			double cross_track_error,                      // In/out: Cross track error
 			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Waypoints to follow.
 			const Eigen::Vector4d &xs,					   // In: Ownship state
 			const double dt,							   // In: Time step
 			const Guidance_Method guidance_method		   // In: Type of guidance used
 		)
 		{
-			py::buffer_info buf_u_d = u_d_from_py.request();
-			double* u_d = static_cast<double*>(buf_u_d.ptr);
-			if (buf_u_d.size != 1) {
-    			throw std::runtime_error("Invalid size of u_d. Ex.: numpy.array([1.0], dtype = numpy.float64)");
-			}
-
-			py::buffer_info buf_chi_d = chi_d_from_py.request();
-			double* chi_d = static_cast<double*>(buf_chi_d.ptr);
-			if (buf_chi_d.size != 1) {	
-    			throw std::runtime_error("Invalid size of chi_d. Ex.: numpy.array([0.0], dtype = numpy.float64)");
-			}
-
-			py::buffer_info buf_cte = cross_track_error_from_py.request();
-			double* cross_track_error = static_cast<double*>(buf_cte.ptr);
-			if (buf_cte.size != 1) {	
-    			throw std::runtime_error("Invalid size of cross track error. Ex.: numpy.array([1.0], dtype = numpy.float64)");
-			}
-
 			// Coupled to initial overload number 2
-			update_guidance_references(*u_d, *chi_d, *cross_track_error, waypoints, xs, dt, guidance_method);	
+			update_guidance_references(u_d, chi_d, cross_track_error, waypoints, xs, dt, guidance_method);	
+			Eigen::Vector3d output(u_d, chi_d, cross_track_error);
+			return output;
 		}
 
-		void Kinematic_Ship::update_guidance_references(
-			py::array_t<double> u_d_from_py,			   // In/out from/to Python: Surge reference
-			py::array_t<double> chi_d_from_py,			   // In/out from/to Python: Course reference
+		Eigen::Vector2d Kinematic_Ship::update_guidance_references_py(
+			double &u_d,			                       // In/out from/to Python: Surge reference
+			double &chi_d,			                       // In/out from/to Python: Course reference
 			const double e_m,							   // In: Modifier to the LOS-guidance cross track error to cause a different path alignment
 			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Waypoints to follow.
 			const Eigen::Vector4d &xs,					   // In: Ownship state
 			const double dt                                // In: Time step
 		)								   
 		{
-			py::buffer_info buf_u_d = u_d_from_py.request();
-			double* u_d = static_cast<double*>(buf_u_d.ptr);
-			if (buf_u_d.size != 1) {
-    			throw std::runtime_error("Invalid size of u_d. Ex.: numpy.array([1.0], dtype = numpy.float64)");
-			}
-
-			py::buffer_info buf_chi_d = chi_d_from_py.request();
-			double* chi_d = static_cast<double*>(buf_chi_d.ptr);
-			if (buf_chi_d.size != 1) {	
-    			throw std::runtime_error("Invalid size of chi_d. Ex.: numpy.array([0.0], dtype = numpy.float64)");
-			}
-
 			// Coupled to initial overload number 3
-			update_guidance_references(*u_d, *chi_d, e_m, waypoints, xs, dt);
+			update_guidance_references(u_d, chi_d, e_m, waypoints, xs, dt);
+			Eigen::Vector2d output(u_d, chi_d);
+			return output;
 		}
 
 		/****************************************************************************************
