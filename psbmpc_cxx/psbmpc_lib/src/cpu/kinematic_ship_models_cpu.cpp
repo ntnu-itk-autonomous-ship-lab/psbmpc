@@ -630,6 +630,60 @@ namespace PSBMPC_LIB
 			}
 		}
 
+		// Pybind11 compatibility overloads
+		Eigen::MatrixXd Kinematic_Ship::predict_trajectory_py(
+			Eigen::MatrixXd &trajectory,                   // In/out from/to Python: Obstacle ship trajectory
+			const Eigen::VectorXd &offset_sequence,		   // In: Sequence of offsets in the candidate control behavior
+			const Eigen::VectorXd &maneuver_times,		   // In: Time indices for each collision avoidance maneuver
+			const double u_d,							   // In: Surge reference
+			const double chi_d,							   // In: Course reference
+			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Obstacle waypoints
+			const Prediction_Method prediction_method,	   // In: Type of prediction method to be used, typically an explicit method
+			const Guidance_Method guidance_method,		   // In: Type of guidance to be used
+			const double T,								   // In: Prediction horizon
+			const double dt								   // In: Prediction time step
+		)				    
+		{
+			// Coupled to initial overload number 1
+			predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, T, dt);
+			return trajectory;
+		}
+
+		Eigen::MatrixXd Kinematic_Ship::predict_trajectory_py(
+			Eigen::MatrixXd &trajectory,		           // In/out from/to Python: Obstacle ship trajectory
+			double &max_cross_track_error,				   // In: Maximum absolute predicted cross track error
+			const Eigen::VectorXd &offset_sequence,		   // In: Sequence of offsets in the candidate control behavior
+			const Eigen::VectorXd &maneuver_times,		   // In: Time indices for each collision avoidance maneuver
+			const double u_d,							   // In: Surge reference
+			const double chi_d,							   // In: Course reference
+			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Obstacle waypoints
+			const Prediction_Method prediction_method,	   // In: Type of prediction method to be used, typically an explicit method
+			const Guidance_Method guidance_method,		   // In: Type of guidance to be used (equal to LOS here)
+			const double T,								   // In: Prediction horizon
+			const double dt								   // In: Prediction time step
+		)
+		{
+			// Coupled to initial overload number 2
+			predict_trajectory(trajectory, max_cross_track_error, offset_sequence, maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, T, dt);
+			return trajectory;
+		}
+
+		Eigen::MatrixXd Kinematic_Ship::predict_trajectory_py(
+			Eigen::MatrixXd &trajectory,        		   // In/out from/to Python: Obstacle ship trajectory
+			const double e_m,							   // In: Modifier to the LOS-guidance cross track error to cause a different path alignment
+			const double u_d,							   // In: Surge reference
+			const double chi_d,							   // In: Course reference
+			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Obstacle waypoints
+			const Prediction_Method prediction_method,	   // In: Type of prediction method to be used, typically an explicit method
+			const double T,								   // In: Prediction horizon
+			const double dt								   // In: Prediction time step
+		)
+		{
+			// Coupled to initial overload number 3
+			predict_trajectory(trajectory, e_m, u_d, chi_d, waypoints, prediction_method, T, dt);
+			return trajectory;
+		}
+
 		/****************************************************************************************
 				Private functions
 		*****************************************************************************************/

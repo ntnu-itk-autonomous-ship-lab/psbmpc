@@ -162,6 +162,41 @@ namespace PSBMPC_LIB
 				const Prediction_Method prediction_method,
 				const double T,
 				const double dt);
+
+			Eigen::MatrixXd predict_trajectory_py(
+				Eigen::MatrixXd &trajectory,
+				const Eigen::VectorXd &offset_sequence,
+				const Eigen::VectorXd &maneuver_times,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const double T,					   
+				const double dt);
+
+			Eigen::MatrixXd predict_trajectory_py(
+				Eigen::MatrixXd &trajectory,
+				double &max_cross_track_error,
+				const Eigen::VectorXd &offset_sequence,
+				const Eigen::VectorXd &maneuver_times,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const double T,
+				const double dt);
+
+			Eigen::MatrixXd predict_trajectory_py(
+				Eigen::MatrixXd &trajectory,
+				const double e_m,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const double T,
+				const double dt);
 		};
 
 // The default ownship is the Kinematic_Ship class
