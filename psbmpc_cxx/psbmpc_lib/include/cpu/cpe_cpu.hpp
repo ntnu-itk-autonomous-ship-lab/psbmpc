@@ -28,6 +28,7 @@
 
 #include <random>
 #include <Eigen/Dense>
+#include <iostream>
 
 namespace PSBMPC_LIB
 {
@@ -183,7 +184,6 @@ namespace PSBMPC_LIB
 
 		public:
 
-			CPE() {}
 			CPE(const CPE_Method cpe_method,
 				const int n_CE, 
 				const int n_MCSKF, 
@@ -200,6 +200,8 @@ namespace PSBMPC_LIB
 			CPE& operator=(const CPE &rhs);
 
 			void set_method(const CPE_Method cpe_method) { if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
+
+			inline CPE_Method get_method() const { return method; };
 
 			void set_segment_discretization_time(const double dt_seg) { this->dt_seg = dt_seg; };
 
