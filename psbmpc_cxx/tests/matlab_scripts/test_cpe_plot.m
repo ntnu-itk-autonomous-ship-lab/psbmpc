@@ -4,7 +4,7 @@ plot(v(1, :), 'r');
 plot(v(2, :), 'b');
 plot(X_i(3, :), 'g');
 plot(X_i(4, :), 'c');
-legend('$v_{OU,x}$', '$v_{OU,x}$', '$V_x$', '$V_y$', 'Interpreter', 'latex');
+legend('$v_{OU,x}$', '$v_{OU,y}$', '$V_x$', '$V_y$', 'Interpreter', 'latex');
 
 figure;
 th = 0 : 0.01 : 2.01 * pi;

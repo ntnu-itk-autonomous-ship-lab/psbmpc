@@ -257,6 +257,21 @@ namespace PSBMPC_LIB
             }
         }
 
+        // Pybind11 compatibility overload
+        Eigen::Matrix<double, 1, -1> CPE::estimate_over_trajectories_py(
+            Eigen::Matrix<double, 1, -1> &P_c_i,        // In/out from/to Python: Collision probability row vector: 1 x n_samples
+            const Eigen::MatrixXd &xs_p,                // In: Ownship predicted trajectory
+            const Eigen::Matrix<double, 4, -1> &xs_i_p, // In: Obstacle i predicted trajectory
+            const Eigen::Matrix<double, 16, -1> &P_i_p, // In: Obstacle i associated predicted covariances
+            const double d_safe_i,                      // In: Safety zone around own-ship when facing obstacle i,
+            const double dt,                            // In: Prediction time step, can be larger than that used for the trajectory generation
+            const int p_step                            // In: Step between trajectory samples, matches the input prediction time step
+        )
+        {
+			estimate_over_trajectories(P_c_i, xs_p, xs_i_p, P_i_p, d_safe_i, dt, p_step);
+			return P_c_i;
+        }
+
         /****************************************************************************************
             Private functions
         ****************************************************************************************/

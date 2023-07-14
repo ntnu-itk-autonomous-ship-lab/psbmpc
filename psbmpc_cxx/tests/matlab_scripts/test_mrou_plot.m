@@ -14,4 +14,4 @@ plot(v(1, :), 'r');
 plot(v(2, :), 'b');
 plot(X(3, :), 'g');
 plot(X(4, :), 'c');
-legend('$v_{OU,x}$', '$v_{OU,x}$', '$V_x$', '$V_y$', 'Interpreter', 'latex');
+legend('$v_{OU,x}$', '$v_{OU,y}$', '$V_x$', '$V_y$', 'Interpreter', 'latex');

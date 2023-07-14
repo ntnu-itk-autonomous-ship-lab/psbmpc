@@ -220,6 +220,15 @@ namespace PSBMPC_LIB
 				const double d_safe_i,
 				const double dt,
 				const int p_step);
+
+			Eigen::Matrix<double, 1, -1> estimate_over_trajectories_py(
+				Eigen::Matrix<double, 1, -1> &P_c_i,
+				const Eigen::MatrixXd &xs_p,
+				const Eigen::Matrix<double, 4, -1> &xs_i_p,
+				const Eigen::Matrix<double, 16, -1> &P_i_p,
+				const double d_safe_i,
+				const double dt,
+				const int p_step);
 		};
 	}
 }

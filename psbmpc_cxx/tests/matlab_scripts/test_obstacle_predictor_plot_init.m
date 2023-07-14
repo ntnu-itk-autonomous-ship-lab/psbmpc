@@ -28,7 +28,7 @@ colors{13} = rgb('BlueViolet'); colors{14} = rgb('Salmon'); colors{15} = rgb('Mi
 
 legend_strs = strings(1, n_ps + 1);
 for ps = 1: n_ps
-   legend_strs(ps) = ['ps=' num2str(ps - 1)]; 
+    legend_strs(ps) = ['ps=' num2str(ps - 1)]; 
 end
 
 % ax1: NE plot, ax2 & 3: mrou/LOS ne speeds vs mean speeds
