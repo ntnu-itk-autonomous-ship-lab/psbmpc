@@ -31,7 +31,7 @@ namespace PSBMPC_LIB
 	 *  Modified :
 	 *****************************************************************************************/
 	Tracked_Obstacle::Tracked_Obstacle(
-		const Eigen::VectorXd &xs_aug, // In: Augmented bstacle state [x, y, V_x, V_y, A, B, C, D, ID]
+		const Eigen::VectorXd &xs_aug, // In: Augmented obstacle state [x, y, V_x, V_y, A, B, C, D, ID]
 		const Eigen::VectorXd &P,	   // In: Obstacle covariance
 		const Eigen::VectorXd &Pr_s,   // In: Obstacle scenario probability vector
 		const bool filter_on,		   // In: Indicator of whether the KF is active

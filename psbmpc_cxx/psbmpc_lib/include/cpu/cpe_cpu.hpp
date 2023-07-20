@@ -28,7 +28,6 @@
 
 #include <random>
 #include <Eigen/Dense>
-#include <iostream>
 
 namespace PSBMPC_LIB
 {
