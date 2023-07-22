@@ -475,6 +475,10 @@ namespace PSBMPC_LIB
 
 		void set_n_ps_LOS(const int n_ps_LOS) { this->n_ps_LOS = n_ps_LOS; }
 
+		int get_n_ps_MROU() const { return n_ps_MROU; }
+
+		void set_n_ps_MROU(const int n_ps_MROU) { this->n_ps_MROU = n_ps_MROU; }
+		
 		/****************************************************************************************
 		 *  Name     : operator()
 		 *  Function : Initializes and predicts obstacle trajectories
