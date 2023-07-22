@@ -183,5 +183,13 @@ namespace PSBMPC_LIB
 		void update(
 			const bool filter_on,
 			const double dt);
+
+		inline void predict(const double dt) { kf.predict(dt); }
+
+		inline Eigen::Vector4d get_state() { return kf.get_state(); }
+
+		inline Eigen::Matrix4d get_covariance() { return kf.get_covariance(); }
+
+		inline void reset_KF(const Eigen::Vector4d &xs_0, const Eigen::Matrix4d &P_0, const double t_0) { kf.reset(xs_0, P_0, t_0); }
 	};
 }
