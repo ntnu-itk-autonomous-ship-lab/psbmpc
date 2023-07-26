@@ -117,13 +117,13 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		 *  Name     : initialize_independent_prediction (v1 and v2)
+		 *  Name     : initialize_independent_prediction (MROU and LOS)
 		 *  Function : Sets up independent obstacle prediction.
 		 *  Author   : Trym Tengesdal
 		 *  Modified :
 		 *****************************************************************************************/
 		template <class MPC_Parameters>
-		void initialize_independent_prediction_v1(
+		void initialize_independent_mrou_prediction(
 			const Dynamic_Obstacles &obstacles,	  // In/Out: Dynamic obstacle information
 			const int i,						  // In: Index of obstacle whose prediction to initialize
 			const Eigen::VectorXd &ownship_state, // In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
@@ -173,7 +173,7 @@ namespace PSBMPC_LIB
 		}
 
 		template <class MPC_Parameters>
-		void initialize_independent_prediction_v2(
+		void initialize_independent_los_prediction(
 			const Dynamic_Obstacles &obstacles,	  // In/Out: Dynamic obstacle information
 			const int i,						  // In: Index of obstacle whose prediction to initialize
 			const Eigen::VectorXd &ownship_state, // In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
@@ -220,9 +220,9 @@ namespace PSBMPC_LIB
 			}
 		}
 
-		//Pybind11 compatibility overload of initialize_independent_prediction_v2
+		//Pybind11 compatibility overload of initialize_independent_los_prediction
 		template <class PSBMPC_Parameters>
-		void initialize_independent_prediction_v2_py(
+		void initialize_independent_los_prediction_py(
 			const std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/Out: Dynamic obstacle information
 			const int i,						                             // In: Index of obstacle whose prediction to initialize
 			const Eigen::VectorXd &ownship_state,                            // In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
@@ -270,14 +270,14 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		 *  Name     : predict_independent_trajectories_v1
+		 *  Name     : predict_independent_mrou_trajectories
 		 *  Function : More refined obstacle prediction with avoidance-like trajectories,
 		 *			  including the straight-line trajectory
 		 *  Author   : Trym Tengesdal
 		 *  Modified :
 		 *****************************************************************************************/
 		template <class MPC_Parameters>
-		void predict_independent_trajectories_v1(
+		void predict_independent_mrou_trajectories(
 			Dynamic_Obstacles &obstacles,  // In/Out: Dynamic obstacle information
 			const int i,				   // In: Index of obstacle whose trajectories to predict
 			const MPC_Parameters &mpc_pars // In: Calling MPC (either PSB-MPC or SB-MPC)
@@ -351,7 +351,7 @@ namespace PSBMPC_LIB
 		}
 
 		/****************************************************************************************
-		 *  Name     : predict_independent_trajectories_v2
+		 *  Name     : predict_independent_los_trajectories
 		 *  Function : More refined obstacle prediction with avoidance-like trajectories,
 		 *			  including the straight-line trajectory. Version two, using LOS and the
 		 *			  kinematic ship model
@@ -359,7 +359,7 @@ namespace PSBMPC_LIB
 		 *  Modified :
 		 *****************************************************************************************/
 		template <class MPC_Parameters>
-		void predict_independent_trajectories_v2(
+		void predict_independent_los_trajectories(
 			Dynamic_Obstacles &obstacles,  // In/Out: Dynamic obstacle information
 			const int i,				   // In: Index of obstacle whose trajectories to predict
 			const MPC_Parameters &mpc_pars // In: Calling MPC (either PSB-MPC or SB-MPC)
@@ -443,9 +443,9 @@ namespace PSBMPC_LIB
 			}
 		}
 
-		//Pybind11 compatibility overload of predict_independent_trajectories_v2
+		//Pybind11 compatibility overload of predict_independent_los_trajectories
 		template <class PSBMPC_Parameters>
-		void predict_independent_trajectories_v2_py(
+		void predict_independent_los_trajectories_py(
 			const std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/Out: Dynamic obstacle information
 			const int i,				                                     // In: Index of obstacle whose trajectories to predict
 			const PSBMPC_Parameters &mpc_pars		                         // In: Calling PSBMPC parameters
@@ -642,9 +642,9 @@ namespace PSBMPC_LIB
 					obstacles[i].set_waypoints(waypoints_i);
 				}
 
-				initialize_independent_prediction_v2(obstacles, i, ownship_state, mpc_pars);
+				initialize_independent_los_prediction(obstacles, i, ownship_state, mpc_pars);
 
-				predict_independent_trajectories_v2(obstacles, i, mpc_pars);
+				predict_independent_los_trajectories(obstacles, i, mpc_pars);
 
 				// Transfer obstacles to the tracked obstacle
 				obstacles[i].set_trajectories(xs_i_p);
@@ -700,9 +700,9 @@ namespace PSBMPC_LIB
 					obstacles[i].set_waypoints(waypoints_i);
 				}
 
-				initialize_independent_prediction_v2(obstacles, i, ownship_state, mpc_pars);
+				initialize_independent_los_prediction(obstacles, i, ownship_state, mpc_pars);
 
-				predict_independent_trajectories_v2(obstacles, i, mpc_pars);
+				predict_independent_los_trajectories(obstacles, i, mpc_pars);
 
 				// Transfer obstacles to the tracked obstacle
 				obstacles[i].set_trajectories(xs_i_p);
@@ -729,7 +729,7 @@ namespace PSBMPC_LIB
 
 		//Pybind11 compatibility overload of operator() with three input arguments 
 		template <class PSBMPC_Parameters>
-		std::vector<std::shared_ptr<Tracked_Obstacle>> operator_py(
+		std::vector<std::shared_ptr<Tracked_Obstacle>>& operator_py(
 			std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/out from/to Python: Dynamic obstacle information
 			const Eigen::VectorXd &ownship_state,                      // In: Own-ship state at the current time
 			const PSBMPC_Parameters &mpc_pars		                   // In: Calling PSBMPC parameters
@@ -751,8 +751,8 @@ namespace PSBMPC_LIB
 					obstacle->set_waypoints(waypoints_i);
 				}
 
-				initialize_independent_prediction_v2_py(obstacles, i, ownship_state, mpc_pars);
-				predict_independent_trajectories_v2_py(obstacles, i, mpc_pars);
+				initialize_independent_los_prediction_py(obstacles, i, ownship_state, mpc_pars);
+				predict_independent_los_trajectories_py(obstacles, i, mpc_pars);
 
 				// Transfer obstacles to the tracked obstacle
 				obstacle->set_trajectories(xs_i_p);
