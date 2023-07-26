@@ -220,6 +220,55 @@ namespace PSBMPC_LIB
 			}
 		}
 
+		//Pybind11 compatibility overload of initialize_independent_prediction_v2
+		template <class PSBMPC_Parameters>
+		void initialize_independent_prediction_v2_py(
+			const std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/Out: Dynamic obstacle information
+			const int i,						                             // In: Index of obstacle whose prediction to initialize
+			const Eigen::VectorXd &ownship_state,                            // In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
+			const PSBMPC_Parameters &mpc_pars		                         // In: Calling PSBMPC parameters
+		)
+		{
+			n_ps[i] = n_ps_LOS;
+
+			Eigen::MatrixXd waypoints_i = obstacles[i]->get_waypoints();
+			Eigen::Vector4d xs_i_0 = obstacles[i]->kf.get_state();
+
+			// Either an irrelevant obstacle or too far away to consider
+			double d_0i = (xs_i_0.block<2, 1>(0, 0) - ownship_state.block<2, 1>(0, 0)).norm();
+			// bool is_passed = CPU::ship_is_passed_by(ownship_state, xs_i_0, mpc_pars.d_safe);
+			// if (is_passed || d_0i > mpc_pars.d_do_relevant)
+			if (d_0i > mpc_pars.d_do_relevant)
+			{
+				ct_offsets.resize(1);
+				ct_offsets(0) = 0.0;
+				n_ps[i] = 1;
+				return;
+			}
+
+			double alpha(0.0), e(0.0);
+			// The obstacle has entered colregs/prediction range if its waypoint matrix is initialized with 2 columns (straight line)
+			alpha = atan2(waypoints_i(1, 1) - waypoints_i(1, 0), waypoints_i(0, 1) - waypoints_i(0, 0));
+
+			e = -(xs_i_0(0) - waypoints_i(0, 0)) * sin(alpha) + (xs_i_0(1) - waypoints_i(1, 0)) * cos(alpha);
+
+			ct_offsets.resize(n_ps_LOS);
+			int multiplier = (n_ps_LOS - 1) / 2;
+			for (int ps = 0; ps < n_ps_LOS; ps++)
+			{
+				if (ps < (n_ps_LOS - 1) / 2)
+				{
+					ct_offsets(ps) = -multiplier * r_ct - e;
+					multiplier -= 1;
+				}
+				else
+				{
+					ct_offsets(ps) = multiplier * r_ct - e;
+					multiplier += 1;
+				}
+			}
+		}
+
 		/****************************************************************************************
 		 *  Name     : predict_independent_trajectories_v1
 		 *  Function : More refined obstacle prediction with avoidance-like trajectories,
@@ -335,6 +384,92 @@ namespace PSBMPC_LIB
 			{
 				xs_i_p[ps].resize(4, n_samples);
 				xs_i_p[ps].col(0) = obstacles[i].kf.get_state();
+
+				// Transform obstacle state from [x, y, Vx, Vy]^T to [x, y, chi, U]^T
+				xs_i_ps_k.block<2, 1>(0, 0) = xs_i_p[ps].block<2, 1>(0, 0);
+				xs_i_ps_k(2) = atan2(xs_i_p[ps](3, 0), xs_i_p[ps](2, 0));
+				xs_i_ps_k(3) = xs_i_p[ps].block<2, 1>(2, 0).norm();
+
+				trajectory.resize(4, n_samples);
+				trajectory.col(0) = xs_i_ps_k;
+
+				obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), xs_i_ps_k(3), xs_i_ps_k(2), waypoints, ERK1, mpc_pars.T, mpc_pars.dt);
+
+				// Predict covariance using MROU model
+				for (int k = 0; k < n_samples; k++)
+				{
+					t = k * mpc_pars.dt;
+
+					// Transform obstacle state from [x, y, chi, U]^T to [x, y, Vx, Vy]^T
+					xs_i_ps_k.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, k);
+					xs_i_ps_k(2) = trajectory(3, k) * cos(trajectory(2, k));
+					xs_i_ps_k(3) = trajectory(3, k) * sin(trajectory(2, k));
+					xs_i_p[ps].col(k) = xs_i_ps_k;
+
+					if (k < n_samples - 1)
+					{
+						chi_ps = trajectory(2, k);
+						if (ps == (n_ps[i] - 1) / 2)
+						{
+							P = mrou.predict_covariance(P_0, t + mpc_pars.dt);
+							/* std::cout << "P_MROU = " << std::endl;
+							std::cout << P << std::endl; */
+
+							// Add constraint on cross-track variance here
+							P_rot_2D = CPU::rotate_matrix_2D(P.block<2, 2>(0, 0), chi_ps);
+
+							if (3 * sqrt(P_rot_2D(1, 1)) > r_ct)
+							{
+								/* std::cout << P_rot_2D << std::endl; */
+								P_rot_2D(1, 1) = pow(r_ct, 2) / 3.0;
+
+								/* std::cout << "P_rot after" << std::endl;
+								std::cout << P_rot_2D << std::endl; */
+
+								P_rot_2D = CPU::rotate_matrix_2D(P_rot_2D, -chi_ps);
+
+								P.block<2, 2>(0, 0) = P_rot_2D;
+
+								/* std::cout << "P_rot after back rotation" << std::endl;
+								std::cout << P_rot_2D << std::endl;
+								std::cout << "P_MROU after constraining = " << std::endl;
+								std::cout << P << std::endl; */
+							}
+
+							P_i_p.col(k + 1) = CPU::flatten(P);
+						}
+					}
+				}
+			}
+		}
+
+		//Pybind11 compatibility overload of predict_independent_trajectories_v2
+		template <class PSBMPC_Parameters>
+		void predict_independent_trajectories_v2_py(
+			const std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/Out: Dynamic obstacle information
+			const int i,				                                     // In: Index of obstacle whose trajectories to predict
+			const PSBMPC_Parameters &mpc_pars		                         // In: Calling PSBMPC parameters
+		)
+		{
+			int n_samples = std::round(mpc_pars.T / mpc_pars.dt);
+
+			Eigen::MatrixXd trajectory, waypoints = obstacles[i]->get_waypoints();
+			Eigen::Vector4d xs_i_ps_k;
+			Eigen::Matrix4d P_0, P;
+			Eigen::Matrix2d P_rot_2D;
+			P_i_p.resize(16, n_samples);
+			P_0 = obstacles[i]->kf.get_covariance();
+			P_i_p.col(0) = CPU::flatten(P_0);
+
+			xs_i_p.resize(n_ps[i]);
+
+			CPU::Obstacle_Ship obstacle_ship;
+
+			double chi_ps(0.0), t(0.0);
+			for (int ps = 0; ps < n_ps[i]; ps++)
+			{
+				xs_i_p[ps].resize(4, n_samples);
+				xs_i_p[ps].col(0) = obstacles[i]->kf.get_state();
 
 				// Transform obstacle state from [x, y, Vx, Vy]^T to [x, y, chi, U]^T
 				xs_i_ps_k.block<2, 1>(0, 0) = xs_i_p[ps].block<2, 1>(0, 0);
@@ -590,6 +725,58 @@ namespace PSBMPC_LIB
 				// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
 				obstacles[i].set_scenario_probabilities(Pr_s_i);
 			}
+		}
+
+		//Pybind11 compatibility overload of operator() with three input arguments 
+		template <class PSBMPC_Parameters>
+		std::vector<std::shared_ptr<Tracked_Obstacle>> operator_py(
+			std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/out from/to Python: Dynamic obstacle information
+			const Eigen::VectorXd &ownship_state,                      // In: Own-ship state at the current time
+			const PSBMPC_Parameters &mpc_pars		                   // In: Calling PSBMPC parameters
+		)
+		{
+			int i(0);
+			Eigen::MatrixXd waypoints_i;
+			int n_do = obstacles.size();
+			n_ps.resize(n_do);
+			for (auto& obstacle : obstacles)
+			{
+				// Store the obstacle`s predicted waypoints if not done already
+				// (as straight line path if no other info is available)
+				if (obstacle->get_waypoints().cols() < 2)
+				{
+					waypoints_i.resize(2, 2);
+					waypoints_i.col(0) = obstacle->kf.get_state().block<2, 1>(0, 0);
+					waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacle->kf.get_state().block<2, 1>(2, 0);
+					obstacle->set_waypoints(waypoints_i);
+				}
+
+				initialize_independent_prediction_v2_py(obstacles, i, ownship_state, mpc_pars);
+				predict_independent_trajectories_v2_py(obstacles, i, mpc_pars);
+
+				// Transfer obstacles to the tracked obstacle
+				obstacle->set_trajectories(xs_i_p);
+				obstacle->set_mean_velocity_trajectories(v_ou_p_i);
+				obstacle->set_trajectory_covariance(P_i_p);
+
+				// Calculate scenario probabilities using intention model,
+				// or just set to be uniform
+				Eigen::VectorXd Pr_s_i(n_ps[i]);
+
+				// Uniform
+				for (int ps = 0; ps < n_ps[i]; ps++)
+				{
+					Pr_s_i(ps) = 0;
+				}
+				Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
+				// Pr_s_i(n_ps[i] - 1) = 1;
+				Pr_s_i = Pr_s_i / Pr_s_i.sum();
+
+				// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
+				obstacle->set_scenario_probabilities(Pr_s_i);
+				i = i + 1;
+			};
+			return obstacles;
 		}
 	};
 }
