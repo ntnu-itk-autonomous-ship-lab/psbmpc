@@ -1,6 +1,5 @@
 delete(h_X_i_ps{ps}); delete(h_X_i_ps_ptch{ps});
 
-
 psi_i_ps_k = atan2(X_i_ps(4, k_p), X_i_ps(3, k_p));
 boat_dim_i_ps_k = rotMatrx2D(psi_i_ps_k) * boat_dim;
 
@@ -8,8 +7,8 @@ boat_dim_i_ps_k = rotMatrx2D(psi_i_ps_k) * boat_dim;
 h_X_i_ps{ps} = plot(ax1, X_i_ps(2, 1:k_p), X_i_ps(1, 1:k_p), '--g', 'Linewidth', 1.6);
 
 % Patch obstacle
-h_X_i_ps_ptch{ps} = patch(ax1, X_i_ps(2, k_p)+boat_dim_i_ps_k(2,:),...
-    X_i_ps(1, k_p)+boat_dim_i_ps_k(1,:), '--g', 'LineWidth', 1.6);
+h_X_i_ps_ptch{ps} = patch(ax1, X_i_ps(2, k_p) + boat_dim_i_ps_k(2,:), ...
+    X_i_ps(1, k_p) + boat_dim_i_ps_k(1,:), '--g', 'LineWidth', 1.6);
 
 % Plot 3sigma probability ellipse
 r_ellipse = create_probability_contour(reshape(P_i_ps(:, k_p), 4, 4));

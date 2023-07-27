@@ -1,5 +1,5 @@
 fig = figure;
-ax1 = axes(fig, 'Position',[0.1 0.12 0.7 0.8]);
+ax1 = axes(fig, 'Position', [0.1 0.12 0.7 0.8]);
 axis equal
 
 ylimits_ne = [-100 1200];
@@ -15,12 +15,13 @@ n_samples = T_sim / dt_sim;
 
 t_vec = dt_sim * (0 : (n_samples - 1));
 
-Lx = 0.02*ylimits_ne(2);
-Ly = 0.002*(xlimits_ne(2) - xlimits_ne(1));
+Lx = 0.02 * ylimits_ne(2);
+Ly = 0.002 * (xlimits_ne(2) - xlimits_ne(1));
+
 % drawn boat dimensions
 boat_dim = [Lx/2 .7*Lx/2 -Lx/2 -Lx/2 .7*Lx/2 Lx/2; 0 2*Ly 2*Ly  -2*Ly -2*Ly 0];
 
-colors = cell(1,20);
+colors = cell(1, 20);
 colors{1} = rgb('Green'); colors{2} = rgb('Orange'); colors{3} = rgb('Purple'); colors{4} = rgb('Yellow');
 colors{5} = rgb('Brown'); colors{6} = rgb('DarkSlateGrey'); colors{7} = rgb('Gray'); colors{8} = rgb('MidnightBlue');
 colors{9} = rgb('DarkRed'); colors{10} = rgb('DeepPink'); colors{11} = rgb('Chocolate'); colors{12} = rgb('Olive');
@@ -32,8 +33,8 @@ for ps = 1: n_ps
 end
 
 % ax1: NE plot, ax2 & 3: mrou/LOS ne speeds vs mean speeds
-ax2 = axes(fig, 'Position',[0.71 0.6 0.29 0.30]);
-ax3 = axes(fig, 'Position',[0.71 0.2 0.29 0.30]);
+ax2 = axes(fig, 'Position', [0.71 0.6 0.29 0.30]);
+ax3 = axes(fig, 'Position', [0.71 0.2 0.29 0.30]);
 
 xlim(ax2, tlim);
 xlim(ax3, tlim);
@@ -41,9 +42,9 @@ xlim(ax3, tlim);
 hold(ax1, 'on'); hold(ax2, 'on'); hold(ax3, 'on');
 grid(ax1, 'on'); grid(ax2, 'on'); grid(ax3, 'on'); 
 
-ylabel(ax1,'North [m]');  xlabel(ax1,'East [m]'); 
-ylabel(ax2,'Speed [m/s]');  xlabel(ax2,'Time [s]');
-ylabel(ax3,'Speed [m/s]');  xlabel(ax3,'Time [s]');
+ylabel(ax1, 'North [m]');  xlabel(ax1, 'East [m]'); 
+ylabel(ax2, 'Speed [m/s]');  xlabel(ax2, 'Time [s]');
+ylabel(ax3, 'Speed [m/s]');  xlabel(ax3, 'Time [s]');
 
 h_X_i = []; h_X_i_ptch = [];
 h_wps_i = plot(ax1, wps_i(2, :), wps_i(1, :), '--rx');
