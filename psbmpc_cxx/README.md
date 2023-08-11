@@ -1,9 +1,8 @@
 # PSB-MPC 1.0 C++
-This repository implements a library for the Probabilistic Scenario-based MPC [[2]](#2) in C++ and CUDA, one version for the CPU and another for the GPU (much faster). The algorithm is a new extended and improved version of the original one posed in [[1]](#1), which was implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3). The library is located under **psbmpc_lib**.
+This repository implements a library for the Probabilistic Scenario-based MPC [[2]](#2) in C++ and CUDA, one version for the CPU and another for the GPU (much faster). The algorithm is a new extended and improved version of the original one posed in [[1]](#1), which was implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3)). The library is located under **psbmpc_lib**.
 
 The library heavily relies on cmake, which you can learn more about e.g. here: <https://cliutils.gitlab.io/modern-cmake/>
 
-If using VS Code, update the configuration files under `.vscode/` to reflect your environment/preferences.
 ## Hardware dependencies
 
 - For usage of the GPU PSB-MPC, the library is only tested on NVIDIA GPUs with compute-capabilities 6.1 or higher, so you should check your GPU. The compute capability should be atleast 5.2.
