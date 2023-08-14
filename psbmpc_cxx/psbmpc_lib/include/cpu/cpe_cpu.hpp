@@ -183,6 +183,8 @@ namespace PSBMPC_LIB
 
 		public:
 
+			CPE();
+
 			CPE(const CPE_Method cpe_method,
 				const int n_CE, 
 				const int n_MCSKF, 
@@ -192,6 +194,7 @@ namespace PSBMPC_LIB
 				const double max_it,
 				const double q,
 				const double r);
+				
 			CPE(const CPE_Method cpe_method);
 
 			CPE(const CPE &other);
