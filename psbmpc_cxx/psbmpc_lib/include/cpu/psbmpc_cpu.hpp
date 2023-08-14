@@ -86,6 +86,7 @@ namespace PSBMPC_LIB
 			MPC_Cost<PSBMPC_Parameters> mpc_cost;
 
 			PSBMPC();
+			
 			PSBMPC(const Ownship &ownship, const CPE &cpe, const PSBMPC_Parameters &psbmpc_pars);
 
 			// Resets previous optimal offsets and predicted own-ship waypoint following
