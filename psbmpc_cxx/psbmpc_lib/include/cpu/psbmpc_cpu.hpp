@@ -39,6 +39,16 @@ namespace PSBMPC_LIB
 {
 	namespace CPU
 	{
+		// Pybind11 compatability struct
+		// Struct used to return u_opt, chi_opt and predicted trajectory to Python
+		// Used as the return type of the calculate_optimal_offsets_py method
+		struct optimal_offsets_results_py
+		{
+			double u_opt_py;
+			double chi_opt_py;
+			Eigen::MatrixXd predicted_trajectory_py;
+		};
+		
 		class PSBMPC
 		{
 		private:
@@ -58,6 +68,10 @@ namespace PSBMPC_LIB
 
 			// Own-ship predicted trajectory
 			Eigen::MatrixXd trajectory;
+
+			// Pybind11 compatability shared_ptr
+			// Shared_ptr used to make the Python KinematicShip object reflect the C++ Kinematic_Ship object (and vice versa)
+			std::shared_ptr<CPU::Kinematic_Ship> ownship_ptr;
 
 			Ownship ownship;
 
@@ -89,6 +103,9 @@ namespace PSBMPC_LIB
 			
 			PSBMPC(const Ownship &ownship, const CPE &cpe, const PSBMPC_Parameters &psbmpc_pars);
 
+			// Pybind11 compatibility overload with shared_ptr
+			PSBMPC(const std::shared_ptr<CPU::Kinematic_Ship> &ownship_ptr, const CPE &cpe, const PSBMPC_Parameters &psbmpc_pars);
+
 			// Resets previous optimal offsets and predicted own-ship waypoint following
 			void reset()
 			{
@@ -97,7 +114,30 @@ namespace PSBMPC_LIB
 				ownship.set_wp_counter(0);
 			}
 
+			// Pybind11 compatability overload which works with shard_ptrs
+			void reset_py()
+			{
+				u_opt_last = 1.0;
+				chi_opt_last = 0.0;
+				ownship_ptr->set_wp_counter(0);
+			}
+
 			void calculate_optimal_offsets(
+				double &u_opt,
+				double &chi_opt,
+				Eigen::MatrixXd &predicted_trajectory,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Eigen::VectorXd &ownship_state,
+				const double V_w,
+				const Eigen::Vector2d &wind_direction,
+				const Static_Obstacles &polygons,
+				const Dynamic_Obstacles &obstacles,
+				const bool disable);
+
+			// Pybind11 compatability overload to return optimal_offsets_results_py
+			optimal_offsets_results_py calculate_optimal_offsets_py(
 				double &u_opt,
 				double &chi_opt,
 				Eigen::MatrixXd &predicted_trajectory,

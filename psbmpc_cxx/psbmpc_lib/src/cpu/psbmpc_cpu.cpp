@@ -63,6 +63,18 @@ namespace PSBMPC_LIB
 			maneuver_times.resize(pars.n_M);
 		}
 
+		// Pybind11 compatibility overload
+		PSBMPC::PSBMPC(
+			const std::shared_ptr<CPU::Kinematic_Ship> &ownship_ptr, // In/out from/to Python: Own-ship with specific parameter set
+			const CPE &cpe,						                     // In: CPE with specific parameter set
+			const PSBMPC_Parameters &psbmpc_pars                     // In: Parameter object to initialize the PSB-MPC
+			) : u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12), cpe(cpe), pars(psbmpc_pars), mpc_cost(psbmpc_pars)
+		{
+			this->ownship_ptr = ownship_ptr;
+			offset_sequence_counter.resize(2 * pars.n_M);
+			offset_sequence.resize(2 * pars.n_M);
+			maneuver_times.resize(pars.n_M);
+		}
 		/****************************************************************************************
 		 *  Name     : calculate_optimal_offsets
 		 *  Function : W/static obstacles parametrized as polygons
@@ -536,6 +548,487 @@ namespace PSBMPC_LIB
 			std::cout << "Cost at optimum : " << min_cost << std::endl;
 		}
 
+		//Pybind11 compatibility overload
+		optimal_offsets_results_py PSBMPC::calculate_optimal_offsets_py(
+			double &u_opt,                                 // In/out from/to Python: Optimal surge offset
+			double &chi_opt,                               // In/out from/to Python: Optimal course offset
+			Eigen::MatrixXd &predicted_trajectory,         // In/out from/to Python: Predicted optimal ownship trajectory
+			const double u_d,                              // In: Surge reference
+			const double chi_d,                            // In: Course reference
+			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Next waypoints
+			const Eigen::VectorXd &ownship_state,          // In: Current ship state
+			const double V_w,                              // In: Estimated wind speed
+			const Eigen::Vector2d &wind_direction,         // In: Unit vector in NE describing the estimated wind direction
+			const Static_Obstacles &polygons,              // In: Static obstacles parametrized as polygons
+			const Dynamic_Obstacles &obstacles,            // In: Dynamic obstacle information
+			const bool disable                             // In: Disable the COLAV functionality or not
+		)
+		{
+			optimal_offsets_results_py result_py;
+			int n_samples = std::round(pars.T / pars.dt);
+
+			trajectory.resize(ownship_state.size(), n_samples);
+			trajectory.col(0) = ownship_state;
+
+			ownship_ptr->determine_active_waypoint_segment(waypoints, ownship_state);
+
+			int n_do = obstacles.size();
+			int n_so = polygons.size();
+
+			Eigen::VectorXd opt_offset_sequence(2 * pars.n_M);
+
+			// Predict nominal trajectory first, assign as optimal if no need for
+			// COLAV, or use in the prediction initialization
+			for (int M = 0; M < pars.n_M; M++)
+			{
+				offset_sequence(2 * M) = 1.0;
+				offset_sequence(2 * M + 1) = 0.0;
+			}
+			maneuver_times.setZero();
+			ownship_ptr->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, pars.prediction_method, pars.guidance_method, pars.T, pars.dt);
+
+			bool colav_active = determine_colav_active(obstacles, n_so, disable);
+			if (!colav_active)
+			{
+				u_opt = 1.0;
+				u_opt_last = u_opt;
+				chi_opt = 0.0;
+				chi_opt_last = chi_opt;
+
+				assign_optimal_trajectory(predicted_trajectory);
+
+				// Pybind11 compatability return
+				result_py.u_opt_py = u_opt;
+				result_py.chi_opt_py = chi_opt;
+				result_py.predicted_trajectory_py = predicted_trajectory;
+
+				return result_py;
+			}
+
+			for (int i = 0; i < n_do; i++)
+			{
+				mpc_cost.update_colregs_violation_node(ownship_state, obstacles[i].kf.get_state(), i);
+			}
+
+			setup_prediction(obstacles);
+
+			Eigen::MatrixXd P_c_i;
+			P_c_i.setZero();
+//==================================================================
+// MATLAB PLOTTING FOR DEBUGGING AND TUNING
+//==================================================================
+#if ENABLE_PSBMPC_DEBUGGING
+			Engine *ep = engOpen(NULL);
+			if (ep == NULL)
+			{
+				std::cout << "engine start failed!" << std::endl;
+			}
+
+			mxArray *init_state_os_mx = mxCreateDoubleMatrix(ownship_state.size(), 1, mxREAL);
+			mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
+			mxArray *wps_os = mxCreateDoubleMatrix(2, waypoints.cols(), mxREAL);
+
+			double *p_init_state_os = mxGetPr(init_state_os_mx);
+			double *p_traj_os = mxGetPr(traj_os_mx);
+			double *p_wps_os = mxGetPr(wps_os);
+
+			Eigen::Map<Eigen::VectorXd> map_init_state_os(p_init_state_os, ownship_state.size(), 1);
+			Eigen::Map<Eigen::MatrixXd> map_wps(p_wps_os, 2, waypoints.cols());
+			map_init_state_os = ownship_state;
+			map_wps = waypoints;
+
+			Eigen::MatrixXd n_ps_matrix(1, n_do);
+			int n_ps_max(0);
+			for (int i = 0; i < n_do; i++)
+			{
+				n_ps_matrix(0, i) = n_ps[i];
+				if (n_ps_max < n_ps[i])
+				{
+					n_ps_max = n_ps[i];
+				}
+			}
+			mxArray *dt_sim, *T_sim, *k_s(nullptr), *n_ps_mx, *n_do_mx, *n_so_mx, *i_mx, *ps_mx, *d_safe_mx, *n_patches_mx;
+			dt_sim = mxCreateDoubleScalar(pars.dt);
+			T_sim = mxCreateDoubleScalar(pars.T);
+			n_ps_mx = mxCreateDoubleScalar(n_ps_max);
+			n_do_mx = mxCreateDoubleScalar(n_do);
+			d_safe_mx = mxCreateDoubleScalar(pars.d_safe);
+			n_so_mx = mxCreateDoubleScalar(n_so);
+			n_patches_mx = mxCreateDoubleScalar(5);
+
+			engPutVariable(ep, "ownship_state", init_state_os_mx);
+			engPutVariable(ep, "n_ps", n_ps_mx);
+			engPutVariable(ep, "n_do", n_do_mx);
+			engPutVariable(ep, "n_so", n_so_mx);
+			engPutVariable(ep, "dt_sim", dt_sim);
+			engPutVariable(ep, "T_sim", T_sim);
+			engPutVariable(ep, "WPs", wps_os);
+			engPutVariable(ep, "d_safe", d_safe_mx);
+			engPutVariable(ep, "n_patches", n_patches_mx);
+			engEvalString(ep, "inside_psbmpc_init_plot");
+
+			Eigen::Map<Eigen::MatrixXd> map_traj(p_traj_os, trajectory.rows(), trajectory.cols());
+			map_traj = trajectory;
+
+			k_s = mxCreateDoubleScalar(trajectory.cols());
+			engPutVariable(ep, "k", k_s);
+
+			Eigen::Matrix<double, 2, -1> polygon_matrix;
+			int n_total_vertices = 0;
+			mxArray *polygon_matrix_mx(nullptr);
+			mxArray *d_0j_mx = mxCreateDoubleMatrix(2, 1, mxREAL);
+			mxArray *j_mx(nullptr);
+			double *p_polygon_matrix(nullptr);
+			double *p_d_0j = mxGetPr(d_0j_mx);
+
+			Eigen::Map<Eigen::Vector2d> map_d_0j(p_d_0j, 2, 1);
+			int pcount;
+			Eigen::Vector2d d_0j;
+			for (int j = 0; j < n_so; j++)
+			{
+				j_mx = mxCreateDoubleScalar(j + 1);
+				n_total_vertices = 0;
+				for (auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; ++it)
+				{
+					n_total_vertices += 1;
+				}
+				polygon_matrix.resize(2, n_total_vertices);
+				pcount = 0;
+				for (auto it = boost::begin(boost::geometry::exterior_ring(polygons[j])); it != boost::end(boost::geometry::exterior_ring(polygons[j])) - 1; ++it)
+				{
+					polygon_matrix(0, pcount) = boost::geometry::get<0>(*it);
+					polygon_matrix(1, pcount) = boost::geometry::get<1>(*it);
+
+					pcount += 1;
+				}
+				d_0j = mpc_cost.distance_to_polygon(ownship_state.block<2, 1>(0, 0), polygons[j]);
+				map_d_0j = d_0j;
+
+				polygon_matrix_mx = mxCreateDoubleMatrix(2, n_total_vertices, mxREAL);
+				p_polygon_matrix = mxGetPr(polygon_matrix_mx);
+				Eigen::Map<Eigen::MatrixXd> map_polygon_matrix(p_polygon_matrix, 2, n_total_vertices);
+				map_polygon_matrix = polygon_matrix;
+				engPutVariable(ep, "j", j_mx);
+				engPutVariable(ep, "d_0j", d_0j_mx);
+				engPutVariable(ep, "polygon_matrix_j", polygon_matrix_mx);
+				engEvalString(ep, "inside_psbmpc_static_obstacle_plot");
+			}
+
+			mxArray *traj_i = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+			mxArray *P_traj_i = mxCreateDoubleMatrix(16, n_samples, mxREAL);
+
+			double *p_traj_i = mxGetPr(traj_i);
+			double *p_P_traj_i = mxGetPr(P_traj_i);
+			double *p_P_c_i = nullptr;
+
+			Eigen::Map<Eigen::MatrixXd> map_traj_i(p_traj_i, 4, n_samples);
+			Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
+
+			std::vector<mxArray *> P_c_i_mx(n_do);
+
+			for (int i = 0; i < n_do; i++)
+			{
+				P_c_i.resize(n_ps[i], n_samples);
+				P_c_i_mx[i] = mxCreateDoubleMatrix(P_c_i.rows(), P_c_i.cols(), mxREAL);
+				p_P_c_i = mxGetPr(P_c_i_mx[i]);
+				Eigen::Map<Eigen::MatrixXd> map_P_c(p_P_c_i, P_c_i.rows(), P_c_i.cols());
+				map_P_c = P_c_i;
+				engPutVariable(ep, "P_c_i", P_c_i_mx[i]);
+
+				Eigen::MatrixXd P_i_p = obstacles[i].get_trajectory_covariance();
+				std::vector<Eigen::MatrixXd> xs_i_p = obstacles[i].get_trajectories();
+
+				i_mx = mxCreateDoubleScalar(i + 1);
+				engPutVariable(ep, "i", i_mx);
+
+				map_P_traj_i = P_i_p;
+				engPutVariable(ep, "P_i_flat", P_traj_i);
+				for (int ps = 0; ps < n_ps[i]; ps++)
+				{
+					ps_mx = mxCreateDoubleScalar(ps + 1);
+					engPutVariable(ep, "ps", ps_mx);
+
+					map_traj_i = xs_i_p[ps];
+
+					engPutVariable(ep, "X_i", traj_i);
+					engEvalString(ep, "inside_psbmpc_obstacle_plot");
+				}
+			}
+
+			Eigen::MatrixXd Pr_s_i_matrix(n_do, n_ps_max);
+			for (int i = 0; i < n_do; i++)
+			{
+				for (int ps = 0; ps < n_ps[i]; ps++)
+				{
+					Pr_s_i_matrix(i, ps) = obstacles[i].get_scenario_probabilities()(ps);
+				}
+			}
+			mxArray *total_cost_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
+			mxArray *cost_do_mx = mxCreateDoubleMatrix(n_do, pars.n_cbs, mxREAL);
+			mxArray *cost_colregs_mx = mxCreateDoubleMatrix(1, pars.n_cbs, mxREAL);
+			mxArray *h_do_i_ps_mx = mxCreateDoubleMatrix(n_do * n_ps_max, pars.n_cbs, mxREAL);
+			mxArray *h_so_j_mx = mxCreateDoubleMatrix(n_so, pars.n_cbs, mxREAL);
+			mxArray *cost_so_path_mx = mxCreateDoubleMatrix(2, pars.n_cbs, mxREAL);
+			mxArray *n_ps_copy_mx = mxCreateDoubleMatrix(1, n_do, mxREAL);
+			mxArray *cb_matrix_mx = mxCreateDoubleMatrix(2 * pars.n_M, pars.n_cbs, mxREAL);
+			mxArray *Pr_s_i_mx = mxCreateDoubleMatrix(n_do, n_ps_max, mxREAL);
+
+			double *ptr_total_cost = mxGetPr(total_cost_mx);
+			double *ptr_cost_do = mxGetPr(cost_do_mx);
+			double *ptr_cost_colregs = mxGetPr(cost_colregs_mx);
+			double *ptr_h_do_i_ps = mxGetPr(h_do_i_ps_mx);
+			double *ptr_h_so_j = mxGetPr(h_so_j_mx);
+			double *ptr_cost_so_path = mxGetPr(cost_so_path_mx);
+			double *ptr_n_ps_copy = mxGetPr(n_ps_copy_mx);
+			double *ptr_cb_matrix = mxGetPr(cb_matrix_mx);
+			double *ptr_Pr_s_i = mxGetPr(Pr_s_i_mx);
+
+			Eigen::Map<Eigen::MatrixXd> map_total_cost(ptr_total_cost, 1, pars.n_cbs);
+			Eigen::Map<Eigen::MatrixXd> map_cost_do(ptr_cost_do, n_do, pars.n_cbs);
+			Eigen::Map<Eigen::MatrixXd> map_cost_colregs(ptr_cost_colregs, 1, pars.n_cbs);
+			Eigen::Map<Eigen::MatrixXd> map_h_do_i_ps(ptr_h_do_i_ps, n_do * n_ps_max, pars.n_cbs);
+			Eigen::Map<Eigen::MatrixXd> map_h_so_j(ptr_h_so_j, n_so, pars.n_cbs);
+			Eigen::Map<Eigen::MatrixXd> map_cost_so_path(ptr_cost_so_path, 2, pars.n_cbs);
+			Eigen::Map<Eigen::MatrixXd> map_n_ps(ptr_n_ps_copy, 1, n_do);
+			Eigen::Map<Eigen::MatrixXd> map_cb_matrix(ptr_cb_matrix, 2 * pars.n_M, pars.n_cbs);
+			Eigen::Map<Eigen::MatrixXd> map_Pr_s_i(ptr_Pr_s_i, n_do, n_ps_max);
+
+			mxArray *n_do_copy_mx = mxCreateDoubleScalar(n_do), *n_so_copy_mx = mxCreateDoubleScalar(n_so), *opt_cb_index_mx(nullptr);
+
+			Eigen::MatrixXd cost_do_matrix(n_do, pars.n_cbs);
+			Eigen::MatrixXd cost_colregs_matrix(1, pars.n_cbs);
+			Eigen::MatrixXd h_do_i_ps_matrix(n_do * n_ps_max, pars.n_cbs);
+			Eigen::MatrixXd h_so_j_matrix(n_so, pars.n_cbs);
+			Eigen::MatrixXd cb_matrix(2 * pars.n_M, pars.n_cbs);
+			Eigen::MatrixXd cost_so_path_matrix(2, pars.n_cbs);
+			Eigen::MatrixXd total_cost_matrix(1, pars.n_cbs);
+
+			int curr_ps_index(0);
+			int min_index = 0;
+			// int thread_count = 1;
+
+			if (n_so == 0)
+			{
+				h_so_j_matrix.resize(1, pars.n_cbs);
+				h_so_j_matrix.setZero();
+			}
+#endif
+
+			double cost(0.0), h_do(0.0), h_colregs(0.0), h_so(0.0), h_path(0.0), max_cross_track_error(0.0);
+			Eigen::VectorXd h_do_i_ps, h_so_j;
+			Eigen::VectorXd cost_do(n_do);
+			min_cost = 1e12;
+			reset_control_behaviour();
+			for (int cb = 0; cb < pars.n_cbs; cb++)
+			{
+				cost = 0.0;
+				h_do = 0.0;
+				h_colregs = 0.0;
+				h_so = 0.0;
+				h_path = 0.0;
+
+#if ENABLE_PSBMPC_DEBUGGING
+				for (int M = 0; M < pars.n_M; M++)
+				{
+					cb_matrix(2 * M, cb) = offset_sequence(2 * M);
+					cb_matrix(2 * M + 1, cb) = RAD2DEG * offset_sequence(2 * M + 1);
+				}
+				curr_ps_index = 0;
+				// std::cout << "offset sequence counter = " << offset_sequence_counter.transpose() << std::endl;
+				// std::cout << "offset sequence = " << offset_sequence.transpose() << std::endl;
+#endif
+
+				ownship_ptr->predict_trajectory(
+					trajectory,
+					max_cross_track_error,
+					offset_sequence,
+					maneuver_times,
+					u_d, chi_d,
+					waypoints,
+					pars.prediction_method,
+					pars.guidance_method,
+					pars.T,
+					pars.dt);
+
+				for (int i = 0; i < n_do; i++)
+				{
+
+					P_c_i.resize(n_ps[i], n_samples); // P_c_i.setZero();
+					calculate_collision_probabilities(P_c_i, obstacles, i, pars.p_step_do * pars.dt, pars.p_step_do);
+
+#if ENABLE_PSBMPC_DEBUGGING
+					cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(h_do_i_ps, trajectory, P_c_i, obstacles, i, ownship_ptr->get_length());
+					h_do_i_ps_matrix.block(curr_ps_index, cb, n_ps[i], 1) = h_do_i_ps;
+					curr_ps_index += n_ps[i];
+					for (int ps = 0; ps < n_ps[i]; ps++)
+					{
+						// printf("Thread %d | i = %d | ps = %d | Cost cb_index %d : %.4f | cb : %.1f, %.1f \n", thread_count, i, ps, cb, h_do_i_ps(ps), offset_sequence(0), RAD2DEG * offset_sequence(1));
+						// thread_count += 1;
+					}
+#else
+					cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, P_c_i, obstacles, i, ownship_ptr->get_length());
+#endif
+
+//===============================================================================================================
+// MATLAB PLOTTING FOR DEBUGGING
+//===============================================================================================================
+#if ENABLE_PSBMPC_DEBUGGING
+					p_P_c_i = mxGetPr(P_c_i_mx[i]);
+					Eigen::Map<Eigen::MatrixXd> map_P_c_1(p_P_c_i, n_ps[i], P_c_i.cols());
+					map_P_c_1 = P_c_i;
+
+					i_mx = mxCreateDoubleScalar(i + 1);
+					engPutVariable(ep, "i", i_mx);
+
+					engPutVariable(ep, "P_c_i", P_c_i_mx[i]);
+					for (int ps = 0; ps < n_ps[i]; ps++)
+					{
+						ps_mx = mxCreateDoubleScalar(ps + 1);
+						engPutVariable(ep, "ps", ps_mx);
+						engEvalString(ep, "inside_psbmpc_upd_coll_probs_plot");
+					}
+#endif
+					//===============================================================================================================
+				}
+				if (n_do > 0)
+				{
+					h_do = cost_do.sum();
+				}
+
+				h_colregs = mpc_cost.calculate_colregs_violation_cost(trajectory, obstacles, offset_sequence);
+
+#if ENABLE_PSBMPC_DEBUGGING
+				h_so = mpc_cost.calculate_grounding_cost(h_so_j, trajectory, polygons, V_w, wind_direction);
+#else
+				h_so = mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
+#endif
+
+				h_path += mpc_cost.calculate_control_deviation_cost(offset_sequence, u_opt_last, chi_opt_last, max_cross_track_error);
+
+				cost = h_do + h_colregs + h_so + h_path;
+
+#if ENABLE_PSBMPC_DEBUGGING
+				if (n_do > 0)
+				{
+					cost_do_matrix.col(cb) = cost_do;
+				}
+				cost_colregs_matrix(0, cb) = h_colregs;
+				if (n_so > 0)
+				{
+					h_so_j_matrix.block(0, cb, n_so, 1) = h_so_j;
+				}
+				cost_so_path_matrix(0, cb) = h_so;
+				cost_so_path_matrix(1, cb) = h_path;
+				total_cost_matrix(cb) = cost;
+				if (cost < min_cost)
+				{
+					min_index = cb;
+				}
+#endif
+
+				if (cost < min_cost)
+				{
+					min_cost = cost;
+					opt_offset_sequence = offset_sequence;
+
+					assign_optimal_trajectory(predicted_trajectory);
+				}
+				increment_control_behaviour();
+
+//===============================================================================================================
+// MATLAB PLOTTING FOR DEBUGGING
+//===============================================================================================================
+#if ENABLE_PSBMPC_DEBUGGING
+				Eigen::Map<Eigen::MatrixXd> map_traj_1(p_traj_os, trajectory.rows(), trajectory.cols());
+				map_traj_1 = trajectory;
+
+				k_s = mxCreateDoubleScalar(n_samples);
+				engPutVariable(ep, "k", k_s);
+
+				engPutVariable(ep, "X", traj_os_mx);
+				engEvalString(ep, "inside_psbmpc_upd_ownship_plot");
+#endif
+				//===============================================================================================================
+			}
+//==================================================================
+// MATLAB PLOTTING FOR DEBUGGING AND TUNING
+//==================================================================
+#if ENABLE_PSBMPC_DEBUGGING
+			opt_cb_index_mx = mxCreateDoubleScalar(min_index + 1);
+			map_total_cost = total_cost_matrix;
+			map_cost_colregs = cost_colregs_matrix;
+			if (n_so > 0)
+			{
+				map_h_so_j = h_so_j_matrix;
+			}
+			if (n_do > 0)
+			{
+				map_cost_do = cost_do_matrix;
+				map_h_do_i_ps = h_do_i_ps_matrix;
+				map_Pr_s_i = Pr_s_i_matrix;
+			}
+			map_cost_so_path = cost_so_path_matrix;
+			map_n_ps = n_ps_matrix;
+			map_cb_matrix = cb_matrix;
+
+			mxArray *is_gpu_mx = mxCreateDoubleScalar(0);
+			engPutVariable(ep, "is_gpu", is_gpu_mx);
+			engPutVariable(ep, "h_so_j", h_so_j_mx);
+			engPutVariable(ep, "total_cost", total_cost_mx);
+			engPutVariable(ep, "cost_do", cost_do_mx);
+			engPutVariable(ep, "h_do_i_ps", h_do_i_ps_mx);
+			engPutVariable(ep, "Pr_s_i", Pr_s_i_mx);
+			engPutVariable(ep, "cost_colregs", cost_colregs_mx);
+			engPutVariable(ep, "cost_so_path", cost_so_path_mx);
+			engPutVariable(ep, "n_ps", n_ps_copy_mx);
+			engPutVariable(ep, "cb_matrix", cb_matrix_mx);
+			engPutVariable(ep, "n_do", n_do_copy_mx);
+			engPutVariable(ep, "n_so", n_so_copy_mx);
+			engPutVariable(ep, "opt_cb_index", opt_cb_index_mx);
+			engEvalString(ep, "psbmpc_cost_plotting");
+
+			mxDestroyArray(is_gpu_mx);
+			mxDestroyArray(total_cost_mx);
+			mxDestroyArray(cost_do_mx);
+			mxDestroyArray(cost_colregs_mx);
+			mxDestroyArray(h_do_i_ps_mx);
+			mxDestroyArray(h_so_j_mx);
+			mxDestroyArray(cost_so_path_mx);
+			mxDestroyArray(n_ps_copy_mx);
+			mxDestroyArray(cb_matrix_mx);
+			mxDestroyArray(n_do_copy_mx);
+			mxDestroyArray(n_so_copy_mx);
+			mxDestroyArray(opt_cb_index_mx);
+
+			engClose(ep);
+#endif
+			//==================================================================
+
+			u_opt = opt_offset_sequence(0);
+			u_opt_last = u_opt;
+			chi_opt = opt_offset_sequence(1);
+			chi_opt_last = chi_opt;
+
+			std::cout << "Optimal offset sequence : ";
+			for (int M = 0; M < pars.n_M; M++)
+			{
+				std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
+				if (M < pars.n_M - 1)
+					std::cout << ", ";
+			}
+			std::cout << std::endl;
+
+			std::cout << "Cost at optimum : " << min_cost << std::endl;
+
+			// Pybind11 compatability return
+			result_py.u_opt_py = u_opt;
+			result_py.chi_opt_py = chi_opt;
+			result_py.predicted_trajectory_py = predicted_trajectory;
+
+			return result_py;
+		}
+
+			
 		/****************************************************************************************
 			Private functions
 		****************************************************************************************/
