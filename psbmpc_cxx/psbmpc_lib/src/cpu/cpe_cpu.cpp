@@ -32,6 +32,8 @@ namespace PSBMPC_LIB
         *  Author   :
         *  Modified :
         *****************************************************************************************/
+        CPE::CPE(){}                     // Included for compilation purposes
+        
         CPE::CPE(
             const CPE_Method cpe_method, // In: Method to be used
             const int n_CE,              // In: Number of samples for the Cross-entropy method
