@@ -565,7 +565,7 @@ namespace PSBMPC_LIB
 			// u_opt, chi_opt and predicted_trajectory moved from method inputs, now used in the output instead of void
 			double u_opt;                          // Out: Optimal surge offset
 			double chi_opt;                        // Out: Optimal course offset
-			Eigen::MatrixXd predicted_trajectory; // Out: Predicted optimal ownship trajectory
+			Eigen::MatrixXd predicted_trajectory;  // Out: Predicted optimal ownship trajectory
 
 			optimal_offsets_results_py result_py;
 			int n_samples = std::round(pars.T / pars.dt);
