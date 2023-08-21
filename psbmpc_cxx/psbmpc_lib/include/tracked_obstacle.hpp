@@ -134,6 +134,10 @@ namespace PSBMPC_LIB
 
 		inline double get_Pr_CCEM() const { return this->Pr_CCEM; }
 
+		inline void set_Pr_WGW(const double &Pr_WGW) { this->Pr_WGW = Pr_WGW; }
+
+		inline void set_Pr_CCEM(const double &Pr_CCEM) { this->Pr_CCEM = Pr_CCEM; }
+
 		// KF related methods
 		inline void set_duration_tracked(const double duration_tracked) { this->duration_tracked = duration_tracked; }
 
