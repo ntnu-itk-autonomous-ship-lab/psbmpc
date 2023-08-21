@@ -138,9 +138,6 @@ namespace PSBMPC_LIB
 
 			// Pybind11 compatability overload to return optimal_offsets_results_py
 			optimal_offsets_results_py calculate_optimal_offsets_py(
-				double &u_opt,
-				double &chi_opt,
-				Eigen::MatrixXd &predicted_trajectory,
 				const double u_d,
 				const double chi_d,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
