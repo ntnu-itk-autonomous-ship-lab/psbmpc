@@ -550,9 +550,7 @@ namespace PSBMPC_LIB
 
 		//Pybind11 compatibility overload
 		optimal_offsets_results_py PSBMPC::calculate_optimal_offsets_py(
-			double &u_opt,                                 // In/out from/to Python: Optimal surge offset
-			double &chi_opt,                               // In/out from/to Python: Optimal course offset
-			Eigen::MatrixXd &predicted_trajectory,         // In/out from/to Python: Predicted optimal ownship trajectory
+
 			const double u_d,                              // In: Surge reference
 			const double chi_d,                            // In: Course reference
 			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Next waypoints
@@ -564,6 +562,11 @@ namespace PSBMPC_LIB
 			const bool disable                             // In: Disable the COLAV functionality or not
 		)
 		{
+			// u_opt, chi_opt and predicted_trajectory moved from method inputs, now used in the output instead of void
+			double u_opt;                          // Out: Optimal surge offset
+			double chi_opt;                        // Out: Optimal course offset
+			Eigen::MatrixXd predicted_trajectory; // Out: Predicted optimal ownship trajectory
+
 			optimal_offsets_results_py result_py;
 			int n_samples = std::round(pars.T / pars.dt);
 
