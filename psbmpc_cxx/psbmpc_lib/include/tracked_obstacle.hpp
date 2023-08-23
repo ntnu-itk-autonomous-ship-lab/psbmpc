@@ -127,8 +127,9 @@ namespace PSBMPC_LIB
 		inline double get_width() const { return this->w; };
 
 		inline Eigen::VectorXd get_scenario_probabilities() const { return this->Pr_s; }
-
-		inline void set_scenario_probabilities(const Eigen::VectorXd &Pr_s) { this->Pr_s = Pr_s; }
+		
+		// this->Pr_s = Pr_s / Pr_s.sum();
+		inline void set_scenario_probabilities(const Eigen::VectorXd &Pr_s) { this->Pr_s = Pr_s / Pr_s.sum(); }
 
 		inline double get_Pr_WGW() const { return this->Pr_WGW; }
 

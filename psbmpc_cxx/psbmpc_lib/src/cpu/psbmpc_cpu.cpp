@@ -550,7 +550,6 @@ namespace PSBMPC_LIB
 
 		//Pybind11 compatibility overload
 		optimal_offsets_results_py PSBMPC::calculate_optimal_offsets_py(
-
 			const double u_d,                              // In: Surge reference
 			const double chi_d,                            // In: Course reference
 			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Next waypoints
