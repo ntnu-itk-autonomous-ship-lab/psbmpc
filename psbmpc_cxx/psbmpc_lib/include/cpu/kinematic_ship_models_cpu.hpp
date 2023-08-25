@@ -54,11 +54,37 @@ namespace PSBMPC_LIB
 
 			Kinematic_Ship(const double l, const double w, const double T_U, const double T_chi, const double R_a, const double LOS_LD, const double LOS_K_i);
 
-			double get_length() const { return l; }
+			Kinematic_Ship(const Kinematic_Ship &other);
+			
+			inline double get_length() const { return l; };
 
-			double get_width() const { return w; }
+			inline double get_width() const { return w; };
 
-			inline int get_wp_counter() const { return wp_c_0; }
+			inline double get_T_U() const { return T_U; };
+
+			inline double get_T_chi() const { return T_chi; };
+
+			inline double get_R_a() const { return R_a; };
+
+			inline double get_LOS_LD() const { return LOS_LD; };
+
+			inline double get_LOS_K_i() const { return LOS_K_i; };
+
+			inline int get_wp_counter() const { return wp_c_0; };
+
+			inline void set_length(const double l) { this->l = l; };
+
+			inline void set_width(const double w) { this->w = w; };
+
+			inline void set_T_U(const double T_U) { this->T_U = T_U; };
+
+			inline void set_T_chi(const double T_chi) { this->T_chi = T_chi; };
+
+			inline void set_R_a(const double R_a) { this->R_a = R_a; };
+
+			inline void set_LOS_LD(const double LOS_LD) { this->LOS_LD = LOS_LD; };
+
+			inline void set_LOS_K_i(const double LOS_K_i) { this->LOS_K_i = LOS_K_i; };
 
 			inline void set_wp_counter(const int wp_c_0)
 			{

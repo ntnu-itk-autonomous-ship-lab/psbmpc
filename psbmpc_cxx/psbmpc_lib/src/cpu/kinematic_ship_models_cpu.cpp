@@ -80,6 +80,25 @@ namespace PSBMPC_LIB
 			wp_c_p = 0;
 		}
 
+		// Pybind11 compatability overload
+		Kinematic_Ship::Kinematic_Ship(const Kinematic_Ship &other)
+		{
+			this->l = other.l;
+			this->w = other.w;
+
+			this->T_U = other.T_U;
+			this->T_chi = other.T_chi;
+
+			this->e_int = other.e_int;
+			this->e_int_max = other.e_int_max;
+			this->R_a = other.R_a;
+			this->LOS_LD = other.LOS_LD;
+			this->LOS_K_i = other.LOS_K_i;
+
+			this->wp_c_0 = other.wp_c_0;
+			this->wp_c_p = other.wp_c_p;
+		}
+
 		/****************************************************************************************
 		 *  Name     : determine_active_waypoint_segment
 		 *  Function :
