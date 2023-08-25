@@ -147,6 +147,15 @@ namespace PSBMPC_LIB
 				const Static_Obstacles &polygons,
 				const Dynamic_Obstacles &obstacles,
 				const bool disable);
+
+			// Pybind11 compatability getter to return PSBMPC_Parameters
+			const PSBMPC_Parameters get_PSBMPC_Parameters() const 
+			{ 
+				PSBMPC_Parameters copyOfPars;
+				copyOfPars = pars;
+
+				return copyOfPars; 
+			}
 		};
 	}
 }
