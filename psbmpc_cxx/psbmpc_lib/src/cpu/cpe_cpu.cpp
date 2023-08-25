@@ -41,7 +41,7 @@ namespace PSBMPC_LIB
             const double alpha_n,        // In: CE method smoothing factor
             const double gate,           // In: CE method 1 - alpha_p confidense ellipse parameter
             const double rho,            // In: CE method ratio parameter for the required amount of elite samples
-            const double max_it,         // In: CE method max number of optimization iterations
+            const int max_it,            // In: CE method max number of optimization iterations
             const double q,              // In: MCSKF4D process noise variance
             const double r               // In: MCSKF4D measurement noise variance
             ) : method(cpe_method), n_CE(n_CE), n_MCSKF(n_MCSKF), generator(seed()), std_norm_pdf(std::normal_distribution<double>(0, 1)),

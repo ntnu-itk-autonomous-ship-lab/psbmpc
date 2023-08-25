@@ -191,7 +191,7 @@ namespace PSBMPC_LIB
 				const double alpha_n, 
 				const double gate, 
 				const double rho, 
-				const double max_it,
+				const int max_it,
 				const double q,
 				const double r);
 				
@@ -201,13 +201,45 @@ namespace PSBMPC_LIB
 
 			CPE& operator=(const CPE &rhs);
 
-			void set_method(const CPE_Method cpe_method) { if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); }};
+			void set_method(const CPE_Method cpe_method) { if (cpe_method >= CE && cpe_method <= MCSKF4D) { method = cpe_method;  resize_matrices(); } };
 
 			inline CPE_Method get_method() const { return method; };
 
 			void set_segment_discretization_time(const double dt_seg) { this->dt_seg = dt_seg; };
 
-			double get_segment_discretization_time() const { return dt_seg; };
+			inline double get_segment_discretization_time() const { return dt_seg; };
+
+			void set_n_CE(const int n_CE) { this->n_CE = n_CE; };
+
+			inline int get_n_CE() const { return n_CE; };
+
+			void set_n_MCSKF(const int n_MCSKF) { this->n_MCSKF = n_MCSKF; };
+
+			inline int get_n_MCSKF() const { return n_MCSKF; };
+
+			void set_alpha_n(const double alpha_n) { this->alpha_n = alpha_n; };
+
+			inline double get_alpha_n() const { return alpha_n; };
+
+			void set_gate(const double gate) { this->gate = gate; };
+
+			inline double get_gate() const { return gate; };
+
+			void set_rho(const double rho) { this->rho = rho; };
+
+			inline double get_rho() const { return rho; };
+
+			void set_max_it(const int max_it) { this->max_it = max_it; };
+
+			inline int get_max_it() const { return max_it; };
+
+			void set_q(const double q) { this->q = q; };
+
+			inline double get_q() const { return q; };
+			
+			void set_r(const double r) { this->r = r; };
+
+			inline double get_r() const { return r; };
 
 			void initialize(
 				const Eigen::VectorXd &xs_os, 
