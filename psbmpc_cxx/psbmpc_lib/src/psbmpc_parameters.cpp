@@ -122,12 +122,12 @@ namespace PSBMPC_LIB
 		case i_opar_chi_offsets:
 			chi_offsets_deg.resize(chi_offsets.size());
 			for (int j = 0; j < n_M; j++)
-					{
-						if (chi_offsets[j].size() > 0)
-						{
-							chi_offsets_deg[j] = chi_offsets[j]*RAD2DEG;
-						}
-					}
+			{
+				if (chi_offsets[j].size() > 0)
+				{
+					chi_offsets_deg[j] = chi_offsets[j] * RAD2DEG;
+				}
+			}
 			return chi_offsets_deg;
 		default:
 		{

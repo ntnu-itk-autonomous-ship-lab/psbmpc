@@ -151,6 +151,7 @@ namespace PSBMPC_LIB
 		void initialize_par_limits();
 
 		void initialize_pars();
+
 		void initialize_pars(
 			const std::vector<std::vector<double>> &u_offsets,
 			const std::vector<std::vector<double>> &chi_offsets,
@@ -166,6 +167,7 @@ namespace PSBMPC_LIB
 			initialize_pars();
 			initialize_par_limits();
 		}
+
 		PSBMPC_Parameters(
 			const std::vector<std::vector<double>> &u_offsets,
 			const std::vector<std::vector<double>> &chi_offsets,
