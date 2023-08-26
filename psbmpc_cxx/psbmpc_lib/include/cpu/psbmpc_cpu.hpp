@@ -40,7 +40,7 @@ namespace PSBMPC_LIB
 	namespace CPU
 	{
 		// Pybind11 compatability struct
-		// Struct used to return u_opt, chi_opt and predicted trajectory to Python
+		// Struct used to return u_opt, chi_opt and predicted_trajectory to Python
 		// Used as the return type of the calculate_optimal_offsets_py method
 		struct optimal_offsets_results_py
 		{
