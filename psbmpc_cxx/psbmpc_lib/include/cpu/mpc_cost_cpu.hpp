@@ -202,6 +202,8 @@ namespace PSBMPC_LIB
 				const Eigen::MatrixXd &ownship_trajectory,
 				const Eigen::MatrixXd &obstacle_trajectory,
 				const Eigen::VectorXd &offset_sequence,
+				const double &Pr_WGW,
+				const double &Pr_CCEM,
 				const int i)
 			{
 				colregs_violation_evaluators.at(i).reset();
@@ -227,7 +229,7 @@ namespace PSBMPC_LIB
 					bool so_violation = colregs_violation_evaluators.at(i).evaluate_SO_violation(d_0i_0);
 					bool gw_violation = colregs_violation_evaluators.at(i).evaluate_GW_violation(ownship_CPA_state, obstacle_CPA_state_vx_vy, d_cpa);
 					bool readily_apparant_violation = colregs_violation_evaluators.at(i).evaluate_readily_apparent_violation(offset_sequence[1], offset_sequence[0]);
-					return pars.kappa_SO * so_violation + pars.kappa_GW * gw_violation + pars.kappa_RA * readily_apparant_violation;
+					return pars.kappa_SO * so_violation * Pr_WGW + pars.kappa_GW * gw_violation * Pr_CCEM + pars.kappa_RA * readily_apparant_violation;
 				}
 				else
 				{
@@ -248,9 +250,11 @@ namespace PSBMPC_LIB
 
 					const auto trajs = obstacle.get_trajectories();
 					const auto probabilities = obstacle.get_scenario_probabilities();
+					const double Pr_WGW = obstacle.get_Pr_WGW();
+					const double Pr_CCEM = obstacle.get_Pr_CCEM();
 					for (size_t i = 0; i < trajs.size(); ++i)
 					{
-						total_cost += probabilities(i) * calculate_colregs_violation_cost(ownship_trajectory, trajs[i], offset_sequence, obstacle.get_ID());
+						total_cost += probabilities(i) * calculate_colregs_violation_cost(ownship_trajectory, trajs[i], offset_sequence, Pr_WGW, Pr_CCEM, obstacle.get_ID());
 					}
 				}
 				return total_cost;
