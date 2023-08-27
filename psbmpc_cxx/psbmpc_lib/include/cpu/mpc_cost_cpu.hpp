@@ -244,7 +244,7 @@ namespace PSBMPC_LIB
 				double total_cost = 0;
 				for (const auto &obstacle : obstacles)
 				{
-					//update_colregs_violation_node(ownship_trajectory.col(0), obstacle.get_trajectories()[0].col(0), obstacle.get_ID());
+					update_colregs_violation_node(ownship_trajectory.col(0), obstacle.get_trajectories()[0].col(0), obstacle.get_ID());
 
 					const auto trajs = obstacle.get_trajectories();
 					const auto probabilities = obstacle.get_scenario_probabilities();
