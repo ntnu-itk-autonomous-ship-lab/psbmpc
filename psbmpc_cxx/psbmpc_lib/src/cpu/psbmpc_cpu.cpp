@@ -550,22 +550,30 @@ namespace PSBMPC_LIB
 
 		//Pybind11 compatibility overload
 		optimal_offsets_results_py PSBMPC::calculate_optimal_offsets_py(
-			const double u_d,                              // In: Surge reference
-			const double chi_d,                            // In: Course reference
-			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Next waypoints
-			const Eigen::VectorXd &ownship_state,          // In: Current ship state
-			const double V_w,                              // In: Estimated wind speed
-			const Eigen::Vector2d &wind_direction,         // In: Unit vector in NE describing the estimated wind direction
-			const Static_Obstacles &polygons,              // In: Static obstacles parametrized as polygons
-			const Dynamic_Obstacles &obstacles,            // In: Dynamic obstacle information
-			const bool disable                             // In: Disable the COLAV functionality or not
+			const double u_d,                                // In: Surge reference
+			const double chi_d,                              // In: Course reference
+			const Eigen::Matrix<double, 2, -1> &waypoints,   // In: Next waypoints
+			const Eigen::VectorXd &ownship_state,            // In: Current ship state
+			const double V_w,                                // In: Estimated wind speed
+			const Eigen::Vector2d &wind_direction,           // In: Unit vector in NE describing the estimated wind direction
+			const std::vector<Eigen::MatrixXd> &polygons_py, // In: Static obstacles parametrized as polygons (from Python)
+			const Dynamic_Obstacles &obstacles,              // In: Dynamic obstacle information
+			const bool new_static_obstacle_data,             // In: Whether there is new Static_Obstacles data or not
+			const bool disable                               // In: Disable the COLAV functionality or not
 		)
 		{
 			// u_opt, chi_opt and predicted_trajectory moved from method inputs, now used in the output instead of void
 			double u_opt;                          // Out: Optimal surge offset
 			double chi_opt;                        // Out: Optimal course offset
 			Eigen::MatrixXd predicted_trajectory;  // Out: Predicted optimal ownship trajectory
-
+			
+			// Making the Python polygons compatible with the C++ codebase's Static_Obstacles
+			static Static_Obstacles polygons;
+			if (new_static_obstacle_data)
+			{
+				polygons = process_list_of_np_polygons(polygons_py);
+			}
+			
 			optimal_offsets_results_py result_py;
 			int n_samples = std::round(pars.T / pars.dt);
 
@@ -1286,5 +1294,29 @@ namespace PSBMPC_LIB
 			}
 		}
 
+		// Pybind11/colav simulator compatability method
+		Static_Obstacles PSBMPC::process_list_of_np_polygons(const std::vector<Eigen::MatrixXd>& polygons_py) 
+		{
+			polygon_2D boost_polygon;
+			Static_Obstacles boost_static_obstacles;
+
+			for (const Eigen::MatrixXd& polygon_py : polygons_py)
+			{
+				for (int i = 0; i < polygon_py.rows() - 1; ++i)
+				{
+					for (int j = 0; j < polygon_py.cols(); ++j)
+					{
+						// std::cout << "x: " << polygon_py(i, j) << "y: " << polygon_py(i + 1, j) << std::endl;
+						point_2D boost_point;
+						boost::geometry::assign_values(boost_point, polygon_py(i, j), polygon_py(i + 1, j));
+						boost::geometry::append(boost_polygon, boost_point);
+					}
+					++i;
+				}
+				boost_static_obstacles.push_back(boost_polygon);
+			}
+			// std::cout << "Number of static obstacles: " << boost_static_obstacles.size() << std::endl;
+			return boost_static_obstacles;
+		}
 	}
 }

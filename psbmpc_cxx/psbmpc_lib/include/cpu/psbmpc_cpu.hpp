@@ -144,8 +144,9 @@ namespace PSBMPC_LIB
 				const Eigen::VectorXd &ownship_state,
 				const double V_w,
 				const Eigen::Vector2d &wind_direction,
-				const Static_Obstacles &polygons,
+				const std::vector<Eigen::MatrixXd> &polygons_py,
 				const Dynamic_Obstacles &obstacles,
+				const bool new_static_obstacle_data,
 				const bool disable);
 
 			// Pybind11 compatability getter to return PSBMPC_Parameters
@@ -156,6 +157,9 @@ namespace PSBMPC_LIB
 
 				return copyOfPars; 
 			}
+
+			// Pybind11/colav simulator compatability method
+			Static_Obstacles process_list_of_np_polygons(const std::vector<Eigen::MatrixXd>& polygons_py);
 		};
 	}
 }
