@@ -200,8 +200,10 @@ namespace PSBMPC_LIB
 				break;
 			case i_dpar_d_safe:
 				// Limits on d_do_relevant depend on d_safe
+				// Limits on d_so_relevant depend on d_safe
 				d_safe = value;
 				dpar_low[i_dpar_d_do_relevant] = d_safe;
+				dpar_low[i_dpar_d_so_relevant] = d_safe;
 				break;
 			case i_dpar_d_do_relevant:
 				d_do_relevant = value;
@@ -339,6 +341,7 @@ namespace PSBMPC_LIB
 		dpar_low[i_dpar_dt] = 0.001;
 
 		dpar_low[i_dpar_d_do_relevant] = d_safe;
+		dpar_low[i_dpar_d_so_relevant] = d_safe;
 
 		dpar_high[i_dpar_K_chi] = 3.0;
 		dpar_high[i_dpar_K_dchi] = 3.0;
