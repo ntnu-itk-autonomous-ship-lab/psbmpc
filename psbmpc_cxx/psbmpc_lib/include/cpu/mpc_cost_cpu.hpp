@@ -814,12 +814,14 @@ namespace PSBMPC_LIB
 		{
 			int n_samples = std::round(pars.T / pars.dt);
 			int n_so = polygons.size();
-			double max_cost_g(0.0), cost_g(0.0);
+			double max_cost_g(0.0), cost_g(0.0); // d_0j_at_max_cost_g(0.0);
 
 			Eigen::Vector2d L_0j;
 			double d_0j(0.0), t(0.0), phi_j(0.0);
+			
+			double cost_g_of_d_safe(0.0), cost_g_der_of_d_safe(0.0), a(0.0), b(0.0);
 
-			for (int k = 0; k < n_samples; k += pars.p_step_grounding)
+			for (int k = 5; k < n_samples; k += pars.p_step_grounding) // Start at k != 0 to get more distinct values of cost_g for each trajectory
 			{
 				t = pars.dt * k;
 
@@ -838,16 +840,26 @@ namespace PSBMPC_LIB
 					}
 					else
 					{
-						cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-pars.G_4 * t);
+						cost_g_of_d_safe = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-pars.G_4 * t); // Using d_0j = d_safe to find a  
+						cost_g_der_of_d_safe = -pars.G_3 * (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-pars.G_4 * t); // The derivative of cost_g_of_d_safe
+
+						a = cost_g_der_of_d_safe; // a in y = a * x + b, 
+						b = cost_g_of_d_safe - a * pars.d_safe; // b in y = a * x + b <-> cost_g_of_d_safe  = a * d_safe + b
+						
+						cost_g = a * d_0j + b; // Linear cost function growth (a * d_0j) for d_0j < d_safe, b ensures a smooth transition between the exponential and linear area of the cost function
+
+						//cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-pars.G_4 * t); // Old cost function ("saturated", flat as a function of d_0j after d_0j < d_safe)
 					}
 
 					if (max_cost_g < cost_g)
 					{
+						// d_0j_at_max_cost_g = d_0j;
 						max_cost_g = cost_g;
 					}
 					// printf("t = %.2f | d_0j = %.6f | cost_g = %.6f | max_cost_g = %.6f\n", k * pars.dt, d_0j, cost_g, max_cost_g);
 				}
 			}
+			// std::cout << "d_0j when maximum grounding cost " << d_0j_at_max_cost_g << std::endl;
 			return max_cost_g;
 		}
 
