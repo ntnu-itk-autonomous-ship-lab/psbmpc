@@ -857,6 +857,7 @@ namespace PSBMPC_LIB
 					waypoints,
 					pars.prediction_method,
 					pars.guidance_method,
+					ownship_ptr->get_path_prediction_shape(),
 					pars.T,
 					pars.dt);
 

@@ -56,6 +56,9 @@ namespace PSBMPC_LIB
 
 			wp_c_0 = 0;
 			wp_c_p = 0;
+
+			// Path prediction shape
+			path_prediction_shape = SMOOTH;
 		}
 
 		Kinematic_Ship::Kinematic_Ship(
@@ -67,6 +70,33 @@ namespace PSBMPC_LIB
 			const double LOS_LD, // In: Ship lookahead distance parameter in LOS WP following
 			const double LOS_K_i // In: Ship integral gain parameter in LOS WP following
 			) : l(l), w(w), T_U(T_U), T_chi(T_chi), R_a(R_a), LOS_LD(LOS_LD), LOS_K_i(LOS_K_i)
+		{
+
+			/* l = 10.0;
+			w = 4.0;*/
+
+			// Guidance parameters
+			e_int = 0;
+			e_int_max = 20 * M_PI / 180.0; // Maximum integral correction in LOS guidance
+
+			wp_c_0 = 0;
+			wp_c_p = 0;
+
+			// Path prediction shape
+			path_prediction_shape = SMOOTH;
+		}
+
+		Kinematic_Ship::Kinematic_Ship(
+			const double l,		                              // In: Ship length
+			const double w,		                              // In: Ship width
+			const double T_U,	                              // In: Ship first order speed time constant
+			const double T_chi,	                              // In: Ship first order course time constant
+			const double R_a,	                              // In: Ship radius of acceptance parameter in WP following
+			const double LOS_LD,                              // In: Ship lookahead distance parameter in LOS WP following
+			const double LOS_K_i,                             // In: Ship integral gain parameter in LOS WP following
+			const Path_Prediction_Shape path_prediction_shape // In: Shape of the ship's predicted path
+			) : l(l), w(w), T_U(T_U), T_chi(T_chi), R_a(R_a), 
+				LOS_LD(LOS_LD), LOS_K_i(LOS_K_i), path_prediction_shape(path_prediction_shape)
 		{
 
 			/* l = 10.0;
@@ -97,6 +127,8 @@ namespace PSBMPC_LIB
 
 			this->wp_c_0 = other.wp_c_0;
 			this->wp_c_p = other.wp_c_p;
+
+			this->path_prediction_shape = other.path_prediction_shape;
 		}
 
 		/****************************************************************************************
@@ -581,6 +613,79 @@ namespace PSBMPC_LIB
 		}
 
 		void Kinematic_Ship::predict_trajectory(
+			Eigen::MatrixXd &trajectory,				       // In/out: Obstacle ship trajectory
+			double &max_cross_track_error,				       // In: Maximum absolute predicted cross track error
+			const Eigen::VectorXd &offset_sequence,		       // In: Sequence of offsets in the candidate control behavior
+			const Eigen::VectorXd &maneuver_times,		       // In: Time indices for each collision avoidance maneuver
+			const double u_d,							       // In: Surge reference
+			const double chi_d,							       // In: Course reference
+			const Eigen::Matrix<double, 2, -1> &waypoints,     // In: Obstacle waypoints
+			const Prediction_Method prediction_method,	       // In: Type of prediction method to be used, typically an explicit method
+			const Guidance_Method guidance_method,		       // In: Type of guidance to be used (equal to LOS here)
+			const Path_Prediction_Shape path_prediction_shape, // In: Type of prediction geometry to be used
+			const double T,								       // In: Prediction horizon
+			const double dt								       // In: Prediction time step
+		)
+		{
+			int n_samples = std::round(T / dt);
+
+			assert(trajectory.rows() == 4);
+			trajectory.conservativeResize(4, n_samples);
+
+			wp_c_p = wp_c_0;
+
+			int man_count = 0;
+			double u_m = 1, u_d_p = u_d;
+			double chi_m = 0, chi_d_p = chi_d, e_k(0.0);
+			Eigen::Vector4d xs = trajectory.col(0);
+			max_cross_track_error = 0.0;
+
+			for (int k = 0; k < n_samples; k++)
+			{
+				if (k == maneuver_times[man_count])
+				{
+					u_m = offset_sequence[2 * man_count];
+					if (u_m < 0.1)
+					{
+						chi_m = 0.0;
+					}
+					else
+					{
+						chi_m += offset_sequence[2 * man_count + 1];
+					}
+					if (man_count < (int)maneuver_times.size() - 1)
+						man_count += 1;
+				}
+
+				update_guidance_references(u_d_p, chi_d_p, e_k, waypoints, xs, dt, guidance_method);
+
+				switch (path_prediction_shape)
+				{
+				case LINEAR: // "Piecewise-linear" path
+					xs = predict(xs, u_m * u_d_p, CPU::wrap_angle_to_pmpi(chi_m), dt, prediction_method);
+					// std::cout << "Linear path_prediction_shape chosen" << std::endl;
+					break;
+				case SMOOTH: // The geometry which is used in the standard implementation of the PSB-MPC. 
+					xs = predict(xs, u_m * u_d_p, CPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
+					// std::cout << "SMOOTH path_prediction_shape chosen" << std::endl;
+					break;
+				default: // The Smooth prediction_geometry is set as the default behaviour
+					xs = predict(xs, u_m * u_d_p, CPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
+					// std::cout << "default (SMOOTH) path_prediction_shape chosen" << std::endl;
+					break;
+				}
+				
+				if (k < n_samples - 1)
+					trajectory.col(k + 1) = xs;
+
+				if (max_cross_track_error < abs(e_k))
+				{
+					max_cross_track_error = abs(e_k);
+				}
+			}
+		}
+
+		void Kinematic_Ship::predict_trajectory(
 			Eigen::MatrixXd &trajectory,				   // In/out: Obstacle ship trajectory
 			const double e_m,							   // In: Modifier to the LOS-guidance cross track error to cause a different path alignment
 			const double u_d,							   // In: Surge reference
@@ -652,6 +757,26 @@ namespace PSBMPC_LIB
 		}
 
 		Eigen::MatrixXd Kinematic_Ship::predict_trajectory_py(
+			Eigen::MatrixXd &trajectory,		               // In/out from/to Python: Obstacle ship trajectory
+			double &max_cross_track_error,				       // In: Maximum absolute predicted cross track error
+			const Eigen::VectorXd &offset_sequence,		       // In: Sequence of offsets in the candidate control behavior
+			const Eigen::VectorXd &maneuver_times,		       // In: Time indices for each collision avoidance maneuver
+			const double u_d,							       // In: Surge reference
+			const double chi_d,							       // In: Course reference
+			const Eigen::Matrix<double, 2, -1> &waypoints,     // In: Obstacle waypoints
+			const Prediction_Method prediction_method,	       // In: Type of prediction method to be used, typically an explicit method
+			const Guidance_Method guidance_method,		       // In: Type of guidance to be used (equal to LOS here)
+			const Path_Prediction_Shape path_prediction_shape, // In: Type of prediction geometry to be used
+			const double T,								       // In: Prediction horizon
+			const double dt								       // In: Prediction time step
+		)
+		{
+			// Coupled to initial overload number 3
+			predict_trajectory(trajectory, max_cross_track_error, offset_sequence, maneuver_times, u_d, chi_d, waypoints, prediction_method, guidance_method, path_prediction_shape, T, dt);
+			return trajectory;
+		}
+
+		Eigen::MatrixXd Kinematic_Ship::predict_trajectory_py(
 			Eigen::MatrixXd &trajectory,        		   // In/out from/to Python: Obstacle ship trajectory
 			const double e_m,							   // In: Modifier to the LOS-guidance cross track error to cause a different path alignment
 			const double u_d,							   // In: Surge reference
@@ -662,7 +787,7 @@ namespace PSBMPC_LIB
 			const double dt								   // In: Prediction time step
 		)
 		{
-			// Coupled to initial overload number 3
+			// Coupled to initial overload number 4
 			predict_trajectory(trajectory, e_m, u_d, chi_d, waypoints, prediction_method, T, dt);
 			return trajectory;
 		}

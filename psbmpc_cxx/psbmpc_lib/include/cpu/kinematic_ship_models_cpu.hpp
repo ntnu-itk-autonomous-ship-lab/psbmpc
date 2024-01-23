@@ -27,6 +27,13 @@
 
 namespace PSBMPC_LIB
 {
+
+	enum Path_Prediction_Shape
+	{
+		SMOOTH, // Standard implementation of the predicted paths in the PSB-MPC. The generated shapes resembles a U (for one seq. avoidance man.)
+		LINEAR  // "Piecewise-linear" prediction geometry. The generated shapes resembles a V (for one seq. avoidance man.)
+	};
+
 	namespace CPU
 	{
 		class Kinematic_Ship
@@ -47,12 +54,32 @@ namespace PSBMPC_LIB
 			// time and predicted time
 			int wp_c_0, wp_c_p;
 
+			// The shape of the predicted path for the ship
+			Path_Prediction_Shape path_prediction_shape;
+
 		public:
 			Kinematic_Ship();
 
 			//Kinematic_Ship(const Kinematic_Ship &other) = default;
 
-			Kinematic_Ship(const double l, const double w, const double T_U, const double T_chi, const double R_a, const double LOS_LD, const double LOS_K_i);
+			Kinematic_Ship(
+				const double l, 
+				const double w, 
+				const double T_U, 
+				const double T_chi, 
+				const double R_a, 
+				const double LOS_LD, 
+				const double LOS_K_i);
+
+			Kinematic_Ship(
+				const double l, 
+				const double w, 
+				const double T_U, 
+				const double T_chi, 
+				const double R_a, 
+				const double LOS_LD, 
+				const double LOS_K_i,
+				const Path_Prediction_Shape path_prediction_shape);
 
 			Kinematic_Ship(const Kinematic_Ship &other);
 			
@@ -71,6 +98,8 @@ namespace PSBMPC_LIB
 			inline double get_LOS_K_i() const { return LOS_K_i; };
 
 			inline int get_wp_counter() const { return wp_c_0; };
+
+			inline Path_Prediction_Shape get_path_prediction_shape() const { return path_prediction_shape; };
 
 			inline void set_length(const double l) { this->l = l; };
 
@@ -91,6 +120,8 @@ namespace PSBMPC_LIB
 				this->wp_c_0 = wp_c_0;
 				this->wp_c_p = wp_c_0;
 			}
+
+			inline void set_path_prediction_shape(const Path_Prediction_Shape path_prediction_shape) { this->path_prediction_shape = path_prediction_shape; };
 
 			void determine_active_waypoint_segment(const Eigen::Matrix<double, 2, -1> &waypoints, const Eigen::Vector4d &xs);
 
@@ -186,6 +217,20 @@ namespace PSBMPC_LIB
 				const double T,
 				const double dt);
 
+			void predict_trajectory(
+				Eigen::MatrixXd &trajectory,
+				double &max_cross_track_error,
+				const Eigen::VectorXd &offset_sequence,
+				const Eigen::VectorXd &maneuver_times,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const Path_Prediction_Shape path_prediction_shape,
+				const double T,
+				const double dt);
+
 			Eigen::MatrixXd predict_trajectory_py(
 				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
@@ -218,6 +263,20 @@ namespace PSBMPC_LIB
 				const double chi_d,
 				const Eigen::Matrix<double, 2, -1> &waypoints,
 				const Prediction_Method prediction_method,
+				const double T,
+				const double dt);
+			
+			Eigen::MatrixXd predict_trajectory_py(
+				Eigen::MatrixXd &trajectory,
+				double &max_cross_track_error,
+				const Eigen::VectorXd &offset_sequence,
+				const Eigen::VectorXd &maneuver_times,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Guidance_Method guidance_method,
+				const Path_Prediction_Shape path_prediction_shape,
 				const double T,
 				const double dt);
 		};
