@@ -41,8 +41,14 @@ namespace PSBMPC_LIB
 		// Max 3sigma cross-track standard deviation for the prediction scenario uncertainty
 		double r_ct;
 
-		// Cross track offsets in LOS-prediction for obstacles
+		// Cross track offsets in LOS-prediction for obstacles (used in the SMOOTH prediction)
 		Eigen::VectorXd ct_offsets;
+
+		// Course offsets in LOS-prediction for obstacles (used in the LINEAR prediction)
+		Eigen::VectorXd chi_offsets;
+
+		// Preset course offsets in LOS-prediction for obstacles (used in the LINEAR prediction, is set by chi_offsets is set by reading chi_offsets_params)
+		Eigen::VectorXd chi_offsets_params;
 
 		// Possible course_changes for an obstacle in the MROU prediction
 		Eigen::VectorXd course_changes;
@@ -58,6 +64,9 @@ namespace PSBMPC_LIB
 
 		// Prediction scenario trajectory covariance for obstacle i
 		Eigen::MatrixXd P_i_p;
+
+		// The shape of the predicted path for the ship
+		Path_Prediction_Shape path_prediction_shape;
 
 		/****************************************************************************************
 		 *  Name     : setup_mrou_obstacle_prediction_variables
@@ -226,7 +235,8 @@ namespace PSBMPC_LIB
 			const std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/Out: Dynamic obstacle information
 			const int i,						                             // In: Index of obstacle whose prediction to initialize
 			const Eigen::VectorXd &ownship_state,                            // In: Own-ship state, either [x, y, psi, u, v, r]^T or [x, y, chi, U]^T
-			const PSBMPC_Parameters &mpc_pars		                         // In: Calling PSBMPC parameters
+			const PSBMPC_Parameters &mpc_pars,		                         // In: Calling PSBMPC parameters
+			const Path_Prediction_Shape path_prediction_shape                // In: The shape of the predicted path for the ship
 		)
 		{
 			n_ps[i] = n_ps_LOS;
@@ -242,9 +252,17 @@ namespace PSBMPC_LIB
 			{
 				ct_offsets.resize(1);
 				ct_offsets(0) = 0.0;
+
+				chi_offsets.resize(1);
+				chi_offsets(0) = 0.0;
+
 				n_ps[i] = 1;
+
 				return;
 			}
+
+			chi_offsets.resize(n_ps_LOS);
+			chi_offsets = chi_offsets_params; // Predefined parameters from the init. of the Obstacle_Predictor class
 
 			double alpha(0.0), e(0.0);
 			// The obstacle has entered colregs/prediction range if its waypoint matrix is initialized with 2 columns (straight line)
@@ -448,7 +466,8 @@ namespace PSBMPC_LIB
 		void predict_independent_los_trajectories_py(
 			const std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/Out: Dynamic obstacle information
 			const int i,				                                     // In: Index of obstacle whose trajectories to predict
-			const PSBMPC_Parameters &mpc_pars		                         // In: Calling PSBMPC parameters
+			const PSBMPC_Parameters &mpc_pars,		                         // In: Calling PSBMPC parameters
+			const Path_Prediction_Shape path_prediction_shape                // In: The shape of the predicted path for the ship
 		)
 		{
 			int n_samples = std::round(mpc_pars.T / mpc_pars.dt);
@@ -479,7 +498,7 @@ namespace PSBMPC_LIB
 				trajectory.resize(4, n_samples);
 				trajectory.col(0) = xs_i_ps_k;
 
-				obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), xs_i_ps_k(3), xs_i_ps_k(2), waypoints, ERK1, mpc_pars.T, mpc_pars.dt);
+				obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), chi_offsets(ps), xs_i_ps_k(3), xs_i_ps_k(2), waypoints, ERK1, path_prediction_shape, mpc_pars.T, mpc_pars.dt);
 
 				// Predict covariance using MROU model
 				for (int k = 0; k < n_samples; k++)
@@ -536,7 +555,7 @@ namespace PSBMPC_LIB
 
 		Obstacle_Predictor()
 			//: n_ps_MROU(5), n_ps_LOS(5), r_ct(10.0), mrou(0.01, 0.0, 0.01, 0.1, 0.1)
-			: n_ps_MROU(5), n_ps_LOS(5), r_ct(25.0), mrou(0.1, 0.0, 0.1, 0.1, 0.1)
+			: n_ps_MROU(5), n_ps_LOS(5), r_ct(25.0), mrou(0.1, 0.0, 0.1, 0.1, 0.1), path_prediction_shape(SMOOTH)
 		{
 			if (n_ps_MROU == 3)
 			{
@@ -553,10 +572,12 @@ namespace PSBMPC_LIB
 				course_changes.resize(3);
 				course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 			}
+			chi_offsets_params.resize(5);
+			chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, 0 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
 		}
 
 		Obstacle_Predictor(const PSBMPC_Parameters &pars)
-			: n_ps_MROU(pars.n_do_ps), n_ps_LOS(pars.n_do_ps), r_ct(20.0), mrou(0.025, 0.0, 0.025, 0.1, 0.1)
+			: n_ps_MROU(pars.n_do_ps), n_ps_LOS(pars.n_do_ps), r_ct(20.0), mrou(0.025, 0.0, 0.025, 0.1, 0.1), path_prediction_shape(SMOOTH)
 		{
 			if (n_ps_MROU == 3)
 			{
@@ -573,6 +594,66 @@ namespace PSBMPC_LIB
 				course_changes.resize(3);
 				course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 			}
+
+			chi_offsets_params.resize(n_ps_LOS);
+			if (pars.n_do_ps == 1)
+			{
+				chi_offsets_params << 0;
+			}
+			else if (pars.n_do_ps == 2)
+			{
+				chi_offsets_params << -5 * DEG2RAD, 5 * DEG2RAD;
+			}
+			else if (pars.n_do_ps == 3)
+			{
+				chi_offsets_params << -30 * DEG2RAD, 0, 30 * DEG2RAD;
+			}
+			else if (pars.n_do_ps == 4)
+			{
+				chi_offsets_params << -20 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 20 * DEG2RAD;
+			}
+			else if (pars.n_do_ps == 5)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, 0 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else if (pars.n_do_ps == 6)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else // if (pars.n_do_ps == 7)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -5 * DEG2RAD, 0, 5 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+			}
+		}
+
+		Obstacle_Predictor(
+			const PSBMPC_Parameters &pars,                     // In: PSB-MPC Parameters
+			const double r_ct,                                 // In: Cross-track spacing between obstacle trajectories
+			const Path_Prediction_Shape path_prediction_shape, // In: The shape of the predicted path for the obstacle ship(s)
+			const Eigen::VectorXd chi_offsets_degrees          // In: Preset course offsets in LOS-prediction for obstacles
+			)
+			: n_ps_MROU(pars.n_do_ps), n_ps_LOS(pars.n_do_ps), r_ct(r_ct), mrou(0.025, 0.0, 0.025, 0.1, 0.1), 
+			path_prediction_shape(path_prediction_shape)
+		{
+			if (n_ps_MROU == 3)
+			{
+				course_changes.resize(1);
+				course_changes << 45 * DEG2RAD;
+			}
+			else if (n_ps_MROU == 5)
+			{
+				course_changes.resize(2);
+				course_changes << 45 * DEG2RAD, 90 * DEG2RAD;
+			}
+			else
+			{
+				course_changes.resize(3);
+				course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
+			}
+			// n_do_ps must equal the number of angles in chi_offsets_params, 
+			// that is the number of different paths which gets generated from chi_offsets
+			chi_offsets_params = chi_offsets_degrees * DEG2RAD; // Expected input in degrees
+			assert(chi_offsets_params.size() == pars.n_do_ps);
 		}
 
 		template <class MPC_Parameters>
@@ -585,7 +666,7 @@ namespace PSBMPC_LIB
 			const double gamma_y,
 			const MPC_Parameters &mpc_pars // In: Parameters of calling MPC (SB or PSB-MPC)
 			)
-			: n_ps_MROU(mpc_pars.n_do_ps), n_ps_LOS(mpc_pars.n_do_ps), r_ct(r_ct), mrou(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y)
+			: n_ps_MROU(mpc_pars.n_do_ps), n_ps_LOS(mpc_pars.n_do_ps), r_ct(r_ct), mrou(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y), path_prediction_shape(SMOOTH)
 		{
 			if (n_ps_MROU == 3)
 			{
@@ -602,6 +683,36 @@ namespace PSBMPC_LIB
 				course_changes.resize(3);
 				course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 			}
+
+			chi_offsets_params.resize(n_ps_LOS);
+			if (mpc_pars.n_do_ps == 1)
+			{
+				chi_offsets_params << 0;
+			}
+			else if (mpc_pars.n_do_ps == 2)
+			{
+				chi_offsets_params << -5 * DEG2RAD, 5 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps == 3)
+			{
+				chi_offsets_params << -30 * DEG2RAD, 0, 30 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps == 4)
+			{
+				chi_offsets_params << -20 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 20 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps == 5)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, 0 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps == 6)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else // if (pars.n_do_ps == 7)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -5 * DEG2RAD, 0, 5 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+			}
 		}
 
 		int get_n_ps_i(const int i) const { return n_ps[i]; }
@@ -613,7 +724,23 @@ namespace PSBMPC_LIB
 		int get_n_ps_MROU() const { return n_ps_MROU; }
 
 		void set_n_ps_MROU(const int n_ps_MROU) { this->n_ps_MROU = n_ps_MROU; }
+
+		inline void set_r_ct(const double r_ct) { this->r_ct = r_ct; }
+
+		inline double get_r_ct() const { return r_ct; }
+
+		void set_chi_offsets(const Eigen::VectorXd &chi_offsets_params_degrees) { 
+			this->chi_offsets_params = chi_offsets_params_degrees * DEG2RAD; 
+		}
+
+		Eigen::VectorXd get_chi_offsets() const { 
+			return chi_offsets_params * RAD2DEG; 
+		}
+
+		inline void set_path_prediction_shape(const Path_Prediction_Shape path_prediction_shape) { this->path_prediction_shape = path_prediction_shape; }
 		
+		inline Path_Prediction_Shape get_path_prediction_shape() const { return path_prediction_shape; }
+
 		/****************************************************************************************
 		 *  Name     : operator()
 		 *  Function : Initializes and predicts obstacle trajectories
@@ -732,7 +859,8 @@ namespace PSBMPC_LIB
 		std::vector<std::shared_ptr<Tracked_Obstacle>>& operator_py(
 			std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/out from/to Python: Dynamic obstacle information
 			const Eigen::VectorXd &ownship_state,                      // In: Own-ship state at the current time
-			const PSBMPC_Parameters &mpc_pars		                   // In: Calling PSBMPC parameters
+			const PSBMPC_Parameters &mpc_pars,		                   // In: Calling PSBMPC parameters
+			const Path_Prediction_Shape path_prediction_shape          // In: The shape of the predicted path for the ship
 		)
 		{
 			int i(0);
@@ -751,8 +879,8 @@ namespace PSBMPC_LIB
 					obstacle->set_waypoints(waypoints_i);
 				}
 
-				initialize_independent_los_prediction_py(obstacles, i, ownship_state, mpc_pars);
-				predict_independent_los_trajectories_py(obstacles, i, mpc_pars);
+				initialize_independent_los_prediction_py(obstacles, i, ownship_state, mpc_pars, path_prediction_shape);
+				predict_independent_los_trajectories_py(obstacles, i, mpc_pars, path_prediction_shape);
 
 				// Transfer obstacles to the tracked obstacle
 				obstacle->set_trajectories(xs_i_p);

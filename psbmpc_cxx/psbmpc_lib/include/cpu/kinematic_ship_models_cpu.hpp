@@ -231,6 +231,18 @@ namespace PSBMPC_LIB
 				const double T,
 				const double dt);
 
+			void predict_trajectory(
+				Eigen::MatrixXd &trajectory,
+				const double e_m,
+				const double chi_m,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Path_Prediction_Shape path_prediction_shape,
+				const double T,	
+				const double dt);	
+
 			Eigen::MatrixXd predict_trajectory_py(
 				Eigen::MatrixXd &trajectory,
 				const Eigen::VectorXd &offset_sequence,
@@ -278,6 +290,18 @@ namespace PSBMPC_LIB
 				const Guidance_Method guidance_method,
 				const Path_Prediction_Shape path_prediction_shape,
 				const double T,
+				const double dt);
+
+			Eigen::MatrixXd predict_trajectory_py(
+				Eigen::MatrixXd &trajectory,
+				const double e_m,
+				const double chi_m,
+				const double u_d,
+				const double chi_d,
+				const Eigen::Matrix<double, 2, -1> &waypoints,
+				const Prediction_Method prediction_method,
+				const Path_Prediction_Shape path_prediction_shape,
+				const double T,	
 				const double dt);
 		};
 

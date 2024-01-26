@@ -663,15 +663,12 @@ namespace PSBMPC_LIB
 				{
 				case LINEAR: // "Piecewise-linear" path
 					xs = predict(xs, u_m * u_d_p, CPU::wrap_angle_to_pmpi(chi_m), dt, prediction_method);
-					// std::cout << "Linear path_prediction_shape chosen" << std::endl;
 					break;
 				case SMOOTH: // The geometry which is used in the standard implementation of the PSB-MPC. 
 					xs = predict(xs, u_m * u_d_p, CPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
-					// std::cout << "SMOOTH path_prediction_shape chosen" << std::endl;
 					break;
 				default: // The Smooth prediction_geometry is set as the default behaviour
 					xs = predict(xs, u_m * u_d_p, CPU::wrap_angle_to_pmpi(chi_d_p + chi_m), dt, prediction_method);
-					// std::cout << "default (SMOOTH) path_prediction_shape chosen" << std::endl;
 					break;
 				}
 				
@@ -712,6 +709,53 @@ namespace PSBMPC_LIB
 				update_guidance_references(u_d_p, chi_d_p, e_m, waypoints, xs, dt);
 
 				xs = predict(xs, u_d_p, chi_d_p, dt, prediction_method);
+
+				if (k < n_samples - 1)
+					trajectory.col(k + 1) = xs;
+			}
+		}
+
+		void Kinematic_Ship::predict_trajectory(
+			Eigen::MatrixXd &trajectory,				       // In/out: Obstacle ship trajectory
+			const double e_m,							       // In: Modifier to the LOS-guidance cross track error to cause a different path alignment
+			const double chi_m,                                // In: Modifier to the course to cause a different path alignment
+			const double u_d,							       // In: Surge reference
+			const double chi_d,							       // In: Course reference
+			const Eigen::Matrix<double, 2, -1> &waypoints,     // In: Obstacle waypoints
+			const Prediction_Method prediction_method,	       // In: Type of prediction method to be used, typically an explicit method
+			const Path_Prediction_Shape path_prediction_shape, // In: Type of prediction geometry to be used
+			const double T,								       // In: Prediction horizon
+			const double dt								       // In: Prediction time step
+		)
+		{
+			int n_samples = std::round(T / dt);
+
+			assert(trajectory.rows() == 4);
+			trajectory.conservativeResize(4, n_samples);
+
+			wp_c_p = wp_c_0;
+
+			double u_d_p = u_d;
+			double chi_d_p = chi_d;
+			Eigen::Vector4d xs = trajectory.col(0);
+
+			for (int k = 0; k < n_samples; k++)
+			{	
+				switch (path_prediction_shape)
+				{
+					case LINEAR:
+						update_guidance_references(u_d_p, chi_d_p, 0, waypoints, xs, dt);
+						xs = predict(xs, u_d_p, chi_m, dt, prediction_method);
+						break;
+					case SMOOTH:
+						update_guidance_references(u_d_p, chi_d_p, e_m, waypoints, xs, dt);
+						xs = predict(xs, u_d_p, chi_d_p, dt, prediction_method);
+						break;
+					default:
+						update_guidance_references(u_d_p, chi_d_p, e_m, waypoints, xs, dt);
+						xs = predict(xs, u_d_p, chi_d_p, dt, prediction_method);
+						break;
+				}
 
 				if (k < n_samples - 1)
 					trajectory.col(k + 1) = xs;
@@ -789,6 +833,24 @@ namespace PSBMPC_LIB
 		{
 			// Coupled to initial overload number 4
 			predict_trajectory(trajectory, e_m, u_d, chi_d, waypoints, prediction_method, T, dt);
+			return trajectory;
+		}
+
+		Eigen::MatrixXd Kinematic_Ship::predict_trajectory_py(
+			Eigen::MatrixXd &trajectory,				       // In/out from/to Python: Obstacle ship trajectory
+			const double e_m,							       // In: Modifier to the LOS-guidance cross track error to cause a different path alignment
+			const double chi_m,                                // In: Modifier to the course to cause a different path alignment
+			const double u_d,							       // In: Surge reference
+			const double chi_d,							       // In: Course reference
+			const Eigen::Matrix<double, 2, -1> &waypoints,     // In: Obstacle waypoints
+			const Prediction_Method prediction_method,	       // In: Type of prediction method to be used, typically an explicit method
+			const Path_Prediction_Shape path_prediction_shape, // In: Type of prediction geometry to be used
+			const double T,								       // In: Prediction horizon
+			const double dt								       // In: Prediction time step
+		)
+		{
+			// Coupled to initial overload number 5
+			predict_trajectory(trajectory, e_m, chi_m, u_d, chi_d, waypoints, prediction_method, path_prediction_shape, T, dt);
 			return trajectory;
 		}
 
