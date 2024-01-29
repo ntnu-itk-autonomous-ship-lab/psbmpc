@@ -51,7 +51,7 @@ namespace PSBMPC_LIB
 		case i_ipar_p_step_grounding_SBMPC:
 			return p_step_grounding;
 		default:
-			// Throw
+			std::cout << "Index " << index << " is not a valid int parameter index." << std::endl;
 			return 0;
 		}
 	}
@@ -79,13 +79,13 @@ namespace PSBMPC_LIB
 		case i_dpar_K_coll_SBMPC:
 			return K_coll;
 		case i_dpar_phi_AH_SBMPC:
-			return phi_AH;
+			return phi_AH * RAD2DEG;
 		case i_dpar_phi_OT_SBMPC:
-			return phi_OT;
+			return phi_OT * RAD2DEG;
 		case i_dpar_phi_HO_SBMPC:
-			return phi_HO;
+			return phi_HO * RAD2DEG;
 		case i_dpar_phi_CR_SBMPC:
-			return phi_CR;
+			return phi_CR * RAD2DEG;
 		case i_dpar_kappa_SBMPC:
 			return kappa;
 		case i_dpar_kappa_TC_SBMPC:
@@ -121,7 +121,7 @@ namespace PSBMPC_LIB
 		case i_dpar_epsilon_rdp_SBMPC:
 			return epsilon_rdp;
 		default:
-			// Throw
+			std::cout << "Index " << index << " is not a valid double parameter index." << std::endl;
 			return 0.0;
 		}
 	}
@@ -130,18 +130,195 @@ namespace PSBMPC_LIB
 		const int index // In: Index of parameter to return (Must be of std::vector<Eigen::VectorXd> type)
 	) const
 	{
+		std::vector<Eigen::VectorXd> chi_offsets_deg;
 		switch (index)
 		{
 		case i_opar_u_offsets_SBMPC:
 			return u_offsets;
 		case i_opar_chi_offsets_SBMPC:
-			return chi_offsets;
+			chi_offsets_deg.resize(chi_offsets.size());
+			for (int j = 0; j < n_M; j++)
+			{
+				if (chi_offsets[j].size() > 0)
+				{
+					chi_offsets_deg[j] = chi_offsets[j] * RAD2DEG;
+				}
+			}
+			return chi_offsets_deg;
 		default:
 		{
-			// Throw
 			std::vector<Eigen::VectorXd> bs;
+			std::cout << "Index " << index << " is not a valid vector parameter index." << std::endl;
 			return bs;
 		}
+		}
+	}
+
+	/****************************************************************************************
+	 *  Name     : set_par
+	 *  Function : Sets parameter with index <index> to value <value>, given that it is inside
+	 *			  valid limits. Overloaded for different data types
+	 *  Author   :
+	 *  Modified :
+	 *****************************************************************************************/
+	void SBMPC_Parameters::set_par(
+		const int index, // In: Index of parameter to set
+		const int value	 // In: Value to set for parameter
+	)
+	{
+		switch (index)
+		{
+		case i_ipar_n_M_SBMPC:
+			n_M = value;
+			break; // Should here resize offset matrices to make this change legal
+		case i_ipar_n_do_ps_SBMPC:
+			n_do_ps = value;
+			break;
+		case i_ipar_p_step_opt_SBMPC:
+			p_step_opt = value;
+			break;
+		case i_ipar_p_step_grounding_SBMPC:
+			p_step_grounding = value;
+			break;
+		default:
+			std::cout << "Index " << index << " is not a valid int parameter index." << std::endl;
+			break;
+		}
+	}
+
+	void SBMPC_Parameters::set_par(
+		const int index,   // In: Index of parameter to set
+		const double value // In: Value to set for parameter
+	)
+	{
+		switch (index)
+		{
+		case i_dpar_T_SBMPC:
+			T = value;
+			break;
+		case i_dpar_dt_SBMPC:
+			dt = value;
+			break;
+		case i_dpar_t_ts_SBMPC:
+			t_ts = value;
+			break;
+		case i_dpar_d_safe_SBMPC:
+			d_safe = value;
+			break;
+		case i_dpar_d_close_SBMPC:
+			d_close = value;
+			break;
+		case i_dpar_d_do_relevant_SBMPC:
+			d_do_relevant = value;
+			break;
+		case i_dpar_d_so_relevant_SBMPC:
+			d_so_relevant = value;
+			break;
+		case i_dpar_K_coll_SBMPC:
+			K_coll = value;
+			break;
+		case i_dpar_phi_AH_SBMPC:
+			phi_AH = value * DEG2RAD;
+			break;
+		case i_dpar_phi_OT_SBMPC:
+			phi_OT = value * DEG2RAD;
+			break;
+		case i_dpar_phi_HO_SBMPC:
+			phi_HO = value * DEG2RAD;
+			break;
+		case i_dpar_phi_CR_SBMPC:
+			phi_CR = value * DEG2RAD;
+			break;
+		case i_dpar_kappa_SBMPC:
+			kappa = value;
+			break;
+		case i_dpar_kappa_TC_SBMPC:
+			kappa_TC = value;
+			break;
+		case i_dpar_K_u_SBMPC:
+			K_u = value;
+			break;
+		case i_dpar_K_du_SBMPC:
+			K_du = value;
+			break;
+		case i_dpar_K_chi_strb_SBMPC:
+			K_chi_strb = value;
+			break;
+		case i_dpar_K_dchi_strb_SBMPC:
+			K_dchi_strb = value;
+			break;
+		case i_dpar_K_chi_port_SBMPC:
+			K_chi_port = value;
+			break;
+		case i_dpar_K_dchi_port_SBMPC:
+			K_dchi_port = value;
+			break;
+		case i_dpar_K_sgn_SBMPC:
+			K_sgn = value;
+			break;
+		case i_dpar_T_sgn_SBMPC:
+			T_sgn = value;
+			break;
+		case i_dpar_q_SBMPC:
+			q = value;
+			break;
+		case i_dpar_p_SBMPC:
+			p = value;
+			break;
+		case i_dpar_G_1_SBMPC:
+			G_1 = value;
+			break;
+		case i_dpar_G_2_SBMPC:
+			G_2 = value;
+			break;
+		case i_dpar_G_3_SBMPC:
+			G_3 = value;
+			break;
+		case i_dpar_G_4_SBMPC:
+			G_4 = value;
+			break;
+		case i_dpar_epsilon_rdp_SBMPC:		
+			epsilon_rdp = value;
+			break;
+		default:
+			std::cout << "Index " << index << " is not a valid double parameter index." << std::endl;
+			break;
+		}
+	}
+
+	void SBMPC_Parameters::set_par(
+		const int index,						  // In: Index of parameter to set
+		const std::vector<Eigen::VectorXd> &value // In: Value to set for parameter
+	)
+	{
+		n_M = (int)value.size(); // Overrides the n_M value (changes if n_M is not set in accordance with value arg)
+		chi_offsets.resize(n_M);
+		u_offsets.resize(n_M);
+
+		switch (index)
+		{
+		case i_opar_u_offsets_SBMPC:
+			for (int j = 0; j < n_M; j++)
+			{
+				if (value[j].size() > 0)
+				{
+					u_offsets[j] = value[j];
+				}
+			}
+			break;
+		case i_opar_chi_offsets_SBMPC:
+			for (int j = 0; j < n_M; j++)
+			{
+				if (value[j].size() > 0)
+				{
+					chi_offsets[j] = value[j]*DEG2RAD;
+				}
+			}
+			break;
+		default:
+			std::vector<Eigen::VectorXd> bs;
+			std::cout << "Index " << index << " is not a valid vector parameter index." << std::endl;
+			break;
 		}
 	}
 
@@ -408,5 +585,4 @@ namespace PSBMPC_LIB
 
 		epsilon_rdp = dpars[i_dpar_epsilon_rdp_SBMPC];
 	}
-
 }

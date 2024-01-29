@@ -68,11 +68,12 @@ namespace PSBMPC_LIB
 		double K_chi_strb, K_dchi_strb;
 		double K_chi_port, K_dchi_port;
 		double K_sgn, T_sgn;
+		double q, p;
 		double G_1, G_2, G_3, G_4;
 		double epsilon_rdp;
-		double q, p;
 
 		void initialize_pars(const bool is_obstacle_sbmpc);
+		
 		void initialize_pars(
 			const std::vector<std::vector<double>> &u_offsets,
 			const std::vector<std::vector<double>> &chi_offsets,
@@ -82,7 +83,9 @@ namespace PSBMPC_LIB
 			const std::vector<double> &dpars);
 
 	public:
-		SBMPC_Parameters() {}
+		SBMPC_Parameters() {
+			initialize_pars(false);
+		}
 
 		SBMPC_Parameters(const bool is_obstacle_sbmpc) { initialize_pars(is_obstacle_sbmpc); }
 		SBMPC_Parameters(
@@ -107,6 +110,12 @@ namespace PSBMPC_LIB
 			if (guidance_method >= LOS && guidance_method <= CH)
 				this->guidance_method = guidance_method;
 		};
+
+		void set_par(const int index, const int value);
+
+		void set_par(const int index, const double value);
+
+		void set_par(const int index, const std::vector<Eigen::VectorXd> &value);
 
 		int get_ipar(const int index) const;
 
