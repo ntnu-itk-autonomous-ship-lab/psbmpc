@@ -22,6 +22,7 @@
 #pragma once
 
 #include "psbmpc_parameters.hpp"
+#include "sbmpc_parameters.hpp"
 #include "cpu/kinematic_ship_models_cpu.hpp"
 #include "cpu/utilities_cpu.hpp"
 #include "obstacle_manager.hpp"
@@ -656,6 +657,36 @@ namespace PSBMPC_LIB
 			assert(chi_offsets_params.size() == pars.n_do_ps);
 		}
 
+		Obstacle_Predictor(
+			const SBMPC_Parameters &pars,                      // In: SB-MPC Parameters
+			const double r_ct,                                 // In: Cross-track spacing between obstacle trajectories
+			const Path_Prediction_Shape path_prediction_shape, // In: The shape of the predicted path for the obstacle ship(s)
+			const Eigen::VectorXd chi_offsets_degrees          // In: Preset course offsets in LOS-prediction for obstacles
+			)
+			: n_ps_MROU(pars.n_do_ps), n_ps_LOS(pars.n_do_ps), r_ct(r_ct), mrou(0.025, 0.0, 0.025, 0.1, 0.1), 
+			path_prediction_shape(path_prediction_shape)
+		{
+			if (n_ps_MROU == 3)
+			{
+				course_changes.resize(1);
+				course_changes << 45 * DEG2RAD;
+			}
+			else if (n_ps_MROU == 5)
+			{
+				course_changes.resize(2);
+				course_changes << 45 * DEG2RAD, 90 * DEG2RAD;
+			}
+			else
+			{
+				course_changes.resize(3);
+				course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
+			}
+			// n_do_ps must equal the number of angles in chi_offsets_params, 
+			// that is the number of different paths which gets generated from chi_offsets
+			chi_offsets_params = chi_offsets_degrees * DEG2RAD; // Expected input in degrees
+			assert(chi_offsets_params.size() == pars.n_do_ps);
+		}
+
 		template <class MPC_Parameters>
 		Obstacle_Predictor(
 			const double r_ct,	  // In: Cross-track spacing between obstacle trajectories
@@ -855,11 +886,62 @@ namespace PSBMPC_LIB
 		}
 
 		//Pybind11 compatibility overload of operator() with three input arguments 
-		template <class PSBMPC_Parameters>
-		std::vector<std::shared_ptr<Tracked_Obstacle>>& operator_py(
+		std::vector<std::shared_ptr<Tracked_Obstacle>>& PSBMPC_operator_py(
 			std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/out from/to Python: Dynamic obstacle information
 			const Eigen::VectorXd &ownship_state,                      // In: Own-ship state at the current time
 			const PSBMPC_Parameters &mpc_pars,		                   // In: Calling PSBMPC parameters
+			const Path_Prediction_Shape path_prediction_shape          // In: The shape of the predicted path for the ship
+		)
+		{
+			int i(0);
+			Eigen::MatrixXd waypoints_i;
+			int n_do = obstacles.size();
+			n_ps.resize(n_do);
+			for (auto& obstacle : obstacles)
+			{
+				// Store the obstacle`s predicted waypoints if not done already
+				// (as straight line path if no other info is available)
+				if (obstacle->get_waypoints().cols() < 2)
+				{
+					waypoints_i.resize(2, 2);
+					waypoints_i.col(0) = obstacle->kf.get_state().block<2, 1>(0, 0);
+					waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacle->kf.get_state().block<2, 1>(2, 0);
+					obstacle->set_waypoints(waypoints_i);
+				}
+
+				initialize_independent_los_prediction_py(obstacles, i, ownship_state, mpc_pars, path_prediction_shape);
+				predict_independent_los_trajectories_py(obstacles, i, mpc_pars, path_prediction_shape);
+
+				// Transfer obstacles to the tracked obstacle
+				obstacle->set_trajectories(xs_i_p);
+				obstacle->set_mean_velocity_trajectories(v_ou_p_i);
+				obstacle->set_trajectory_covariance(P_i_p);
+
+				// Calculate scenario probabilities using intention model,
+				// or just set to be uniform
+				Eigen::VectorXd Pr_s_i(n_ps[i]);
+
+				// Uniform
+				for (int ps = 0; ps < n_ps[i]; ps++)
+				{
+					Pr_s_i(ps) = 0;
+				}
+				Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
+				// Pr_s_i(n_ps[i] - 1) = 1;
+				Pr_s_i = Pr_s_i / Pr_s_i.sum();
+
+				// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
+				obstacle->set_scenario_probabilities(Pr_s_i);
+				i = i + 1;
+			};
+			return obstacles;
+		}
+
+		//Pybind11 compatibility overload of operator() with three input arguments
+		std::vector<std::shared_ptr<Tracked_Obstacle>>& SBMPC_operator_py(
+			std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/out from/to Python: Dynamic obstacle information
+			const Eigen::VectorXd &ownship_state,                      // In: Own-ship state at the current time
+			const SBMPC_Parameters &mpc_pars,		                   // In: Calling PSBMPC parameters
 			const Path_Prediction_Shape path_prediction_shape          // In: The shape of the predicted path for the ship
 		)
 		{
