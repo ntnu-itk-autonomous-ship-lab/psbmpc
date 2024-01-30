@@ -339,6 +339,7 @@ namespace PSBMPC_LIB
 		{
 			n_cbs = 1;
 			n_M = 1;
+			n_do_ps = 5;
 
 			chi_offsets.resize(n_M);
 			u_offsets.resize(n_M);
@@ -392,6 +393,7 @@ namespace PSBMPC_LIB
 			t_ts = 35;
 
 			d_do_relevant = 1500;
+			d_so_relevant = 1500;
 			d_close = 1000;
 			d_safe = 50;
 			K_coll = 0.2;
@@ -404,11 +406,14 @@ namespace PSBMPC_LIB
 			K_u = 15;
 			K_du = 6;
 			K_chi_strb = 1.3;
-			K_chi_port = 1.6;
 			K_dchi_strb = 0.9;
+			K_chi_port = 1.6;
 			K_dchi_port = 1.2;
 			K_sgn = 8;
 			T_sgn = 4 * t_ts;
+
+			q = 4.0;
+			p = 1.0;
 
 			G_1 = 100.0;
 			G_2 = 5.0;
@@ -416,13 +421,12 @@ namespace PSBMPC_LIB
 			G_4 = 0.01;
 
 			epsilon_rdp = 2.0;
-			q = 4.0;
-			p = 1.0;
 		}
 		else // Tuning for Obstacle SB-MPC
 		{
 			n_cbs = 1;
 			n_M = 1;
+			n_do_ps = 5;
 
 			chi_offsets.resize(n_M);
 			u_offsets.resize(n_M);
@@ -476,6 +480,7 @@ namespace PSBMPC_LIB
 			t_ts = 50;
 
 			d_do_relevant = 1500;
+			d_so_relevant = 1500;
 			d_close = 1000;
 			d_safe = 50;
 			K_coll = 2.5;
