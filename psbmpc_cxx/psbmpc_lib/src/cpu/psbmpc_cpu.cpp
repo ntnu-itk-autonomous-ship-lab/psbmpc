@@ -1020,16 +1020,16 @@ namespace PSBMPC_LIB
 			chi_opt = opt_offset_sequence(1);
 			chi_opt_last = chi_opt;
 
-			std::cout << "Optimal offset sequence : ";
+			//std::cout << "Optimal offset sequence : "; // for debugging
 			for (int M = 0; M < pars.n_M; M++)
 			{
-				std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
+				//std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG; // for debugging
 				if (M < pars.n_M - 1)
 					std::cout << ", ";
 			}
-			std::cout << std::endl;
+			//std::cout << std::endl; // for debugging
 
-			std::cout << "Cost at optimum : " << min_cost << std::endl;
+			//std::cout << "Cost at optimum : " << min_cost << std::endl; // for debugging
 
 			// Pybind11 compatability return
 			result_py.u_opt_py = u_opt;
@@ -1229,7 +1229,7 @@ namespace PSBMPC_LIB
 				}
 			}
 
-			std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
+			//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 		}
 
 		/****************************************************************************************
