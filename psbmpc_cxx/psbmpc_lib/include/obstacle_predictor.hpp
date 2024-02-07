@@ -899,15 +899,11 @@ namespace PSBMPC_LIB
 			n_ps.resize(n_do);
 			for (auto& obstacle : obstacles)
 			{
-				// Store the obstacle`s predicted waypoints if not done already
-				// (as straight line path if no other info is available)
-				if (obstacle->get_waypoints().cols() < 2)
-				{
-					waypoints_i.resize(2, 2);
-					waypoints_i.col(0) = obstacle->kf.get_state().block<2, 1>(0, 0);
-					waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacle->kf.get_state().block<2, 1>(2, 0);
-					obstacle->set_waypoints(waypoints_i);
-				}
+				// Store the obstacle`s predicted waypoints as straight line path
+				waypoints_i.resize(2, 2);
+				waypoints_i.col(0) = obstacle->kf.get_state().block<2, 1>(0, 0);
+				waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacle->kf.get_state().block<2, 1>(2, 0);
+				obstacle->set_waypoints(waypoints_i);
 
 				initialize_independent_los_prediction_py(obstacles, i, ownship_state, mpc_pars, path_prediction_shape);
 				predict_independent_los_trajectories_py(obstacles, i, mpc_pars, path_prediction_shape);
@@ -951,15 +947,12 @@ namespace PSBMPC_LIB
 			n_ps.resize(n_do);
 			for (auto& obstacle : obstacles)
 			{
-				// Store the obstacle`s predicted waypoints if not done already
-				// (as straight line path if no other info is available)
-				if (obstacle->get_waypoints().cols() < 2)
-				{
-					waypoints_i.resize(2, 2);
-					waypoints_i.col(0) = obstacle->kf.get_state().block<2, 1>(0, 0);
-					waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacle->kf.get_state().block<2, 1>(2, 0);
-					obstacle->set_waypoints(waypoints_i);
-				}
+				// Store the obstacle`s predicted waypoints as straight line path
+				// A static var. could be used to change waypoints in a periodic manner
+				waypoints_i.resize(2, 2);
+				waypoints_i.col(0) = obstacle->kf.get_state().block<2, 1>(0, 0);
+				waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacle->kf.get_state().block<2, 1>(2, 0);
+				obstacle->set_waypoints(waypoints_i);
 
 				initialize_independent_los_prediction_py(obstacles, i, ownship_state, mpc_pars, path_prediction_shape);
 				predict_independent_los_trajectories_py(obstacles, i, mpc_pars, path_prediction_shape);
