@@ -880,5 +880,10 @@ namespace PSBMPC_LIB
                 return P_c_CE;
         }
 
+        // Pybind11 and colav_simulator compatibility. 
+        // Exposing the xoshiro256plus64 generator to the colav_simulator for testing purposes.
+        int CPE::generate() {
+            return generator();
+        }
     }
 }

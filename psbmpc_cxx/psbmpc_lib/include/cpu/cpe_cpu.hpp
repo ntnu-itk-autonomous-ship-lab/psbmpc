@@ -57,6 +57,9 @@ namespace PSBMPC_LIB
 			// real-time testing to ensure proper functionality.
 			std::random_device seed;
 
+			// Used to manually seed the generator from the colav_simulator (for reproducibility)
+			uint64_t seed_val;
+
 			xoshiro256plus64 generator;
 
 			std::normal_distribution<double> std_norm_pdf;
@@ -240,6 +243,12 @@ namespace PSBMPC_LIB
 			void set_r(const double r) { this->r = r; };
 
 			inline double get_r() const { return r; };
+
+			void set_seed(const uint64_t seed) { this->seed_val = seed; this->generator = xoshiro256plus64(seed_val); };
+
+			inline int get_seed() const { return seed_val; };
+
+			int generate();
 
 			void initialize(
 				const Eigen::VectorXd &xs_os, 
