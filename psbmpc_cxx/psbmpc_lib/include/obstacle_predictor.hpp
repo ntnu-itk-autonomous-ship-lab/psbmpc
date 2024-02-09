@@ -748,6 +748,8 @@ namespace PSBMPC_LIB
 
 		int get_n_ps_i(const int i) const { return n_ps[i]; }
 
+		void set_n_ps_i (const int i, const int n_ps_i) { this->n_ps[i] = n_ps_i; }
+
 		int get_n_ps_LOS() const { return n_ps_LOS; }
 
 		void set_n_ps_LOS(const int n_ps_LOS) { this->n_ps_LOS = n_ps_LOS; }
