@@ -620,7 +620,7 @@ namespace PSBMPC_LIB
 				mpc_cost.update_colregs_violation_node(ownship_state, obstacles[i].kf.get_state(), i);
 			}
 
-			setup_prediction(obstacles);
+			setup_prediction_ptr(obstacles);
 
 			Eigen::MatrixXd P_c_i;
 			P_c_i.setZero();
@@ -865,7 +865,7 @@ namespace PSBMPC_LIB
 				{
 
 					P_c_i.resize(n_ps[i], n_samples); // P_c_i.setZero();
-					calculate_collision_probabilities(P_c_i, obstacles, i, pars.p_step_do * pars.dt, pars.p_step_do);
+					calculate_collision_probabilities_ptr(P_c_i, obstacles, i, pars.p_step_do * pars.dt, pars.p_step_do);
 
 #if ENABLE_PSBMPC_DEBUGGING
 					cost_do(i) = mpc_cost.calculate_dynamic_obstacle_cost(h_do_i_ps, trajectory, P_c_i, obstacles, i, ownship_ptr->get_length());
@@ -1232,6 +1232,86 @@ namespace PSBMPC_LIB
 			//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 		}
 
+		void PSBMPC::setup_prediction_ptr(
+			const Dynamic_Obstacles &obstacles // In: Dynamic obstacle information
+		)
+		{
+			int n_do = obstacles.size();
+			n_ps.resize(n_do);
+			for (int i = 0; i < n_do; i++)
+			{
+				n_ps[i] = obstacles[i].get_scenario_probabilities().size();
+			}
+			//***********************************************************************************
+			// Own-ship prediction initialization
+			//***********************************************************************************
+			Eigen::VectorXd t_cpa(n_do), d_cpa(n_do);
+			Eigen::Vector2d p_cpa, v_0;
+			Eigen::Vector4d xs_0, xs_i_0;
+			if (trajectory.rows() == 4)
+			{
+				v_0(0) = trajectory(3, 0) * cos(trajectory(2, 0));
+				v_0(1) = trajectory(3, 0) * sin(trajectory(2, 0));
+			}
+			else
+			{
+				v_0(0) = trajectory(3, 0);
+				v_0(1) = trajectory(4, 0);
+				v_0 = CPU::rotate_vector_2D(v_0, trajectory(2, 0));
+			}
+			xs_0.block<2, 1>(0, 0) = trajectory.block<2, 1>(0, 0);
+			xs_0(2) = v_0(0);
+			xs_0(3) = v_0(1);
+			// First avoidance maneuver is always at t0
+			maneuver_times.setZero();
+
+			double t_cpa_min(0.0), d_safe_i(0.0);
+			std::vector<bool> maneuvered_by(n_do);
+			int index_closest(-1);
+			for (int M = 1; M < pars.n_M; M++)
+			{
+				// If a predicted collision occurs with the closest obstacle, avoidance maneuver
+				// M is taken right after the obstacle possibly maneuvers (modelled to be at t_0 + M * t_ts
+				// given that t_cpa > t_ts. If t_cpa < t_ts or n_do = 0, the subsequent maneuver is taken
+				// at t_{M-1} + t_ts + 1 anyways (simplification)
+				maneuver_times(M) = maneuver_times(M - 1) + std::round((pars.t_ts + 1) / pars.dt);
+
+				// Otherwise, find the closest obstacle (wrt t_cpa) that is a possible hazard
+				t_cpa_min = 1e10;
+				index_closest = -1;
+				for (int i = 0; i < n_do; i++)
+				{
+					xs_i_0 = obstacles[i].kf.get_state();
+					CPU::calculate_cpa(p_cpa, t_cpa(i), d_cpa(i), xs_0, xs_i_0);
+
+					d_safe_i = pars.d_safe + 0.5 * (ownship_ptr->get_length() + obstacles[i].get_length());
+					// For the current avoidance maneuver, determine which obstacle that should be
+					// considered, i.e. the closest obstacle that is not already passed (which means
+					// that the previous avoidance maneuver happened before CPA with this obstacle)
+					if (!maneuvered_by[i] && maneuver_times(M - 1) * pars.dt < t_cpa(i) && t_cpa(i) <= t_cpa_min && t_cpa(i) <= pars.T)
+					{
+						t_cpa_min = t_cpa(i);
+						index_closest = i;
+					}
+				}
+
+				if (index_closest != -1)
+				{
+					d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[index_closest].get_width());
+					// If no predicted collision,  avoidance maneuver M with the closest
+					// obstacle (that is not passed) is taken at t_cpa_min
+					if (d_cpa(index_closest) > d_safe_i)
+					{
+						// std::cout << "OS maneuver M = " << M << " at t = " << t_cpa(index_closest) << " wrt obstacle " << index_closest << std::endl;
+						maneuvered_by[index_closest] = true;
+						maneuver_times(M) = std::round(t_cpa(index_closest) / pars.dt);
+					}
+				}
+			}
+
+			//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
+		}
+
 		/****************************************************************************************
 		 *  Name     : calculate_collision_probabilities
 		 *  Function : Estimates collision probabilities for the own-ship and an obstacle i in
@@ -1253,6 +1333,31 @@ namespace PSBMPC_LIB
 
 			// Increase safety zone by half the max obstacle dimension and ownship length
 			double d_safe_i = pars.d_safe + 0.5 * (ownship.get_length() + obstacles[i].get_length());
+
+			int n_samples = P_i_p.cols();
+			// Non-optimal temporary row-vector storage solution
+			Eigen::Matrix<double, 1, -1> P_c_i_row(n_samples);
+			for (int ps = 0; ps < n_ps[i]; ps++)
+			{
+				cpe.estimate_over_trajectories(P_c_i_row, trajectory, xs_i_p[ps], P_i_p, d_safe_i, dt, p_step);
+
+				P_c_i.block(ps, 0, 1, P_c_i_row.cols()) = P_c_i_row;
+			}
+		}
+
+		void PSBMPC::calculate_collision_probabilities_ptr(
+			Eigen::MatrixXd &P_c_i,				// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
+			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
+			const int i,						// In: Index of obstacle
+			const double dt,					// In: Sample time for estimation
+			const int p_step					// In: Step between trajectory samples, matches the input prediction time step
+		)
+		{
+			Eigen::MatrixXd P_i_p = obstacles[i].get_trajectory_covariance();
+			std::vector<Eigen::MatrixXd> xs_i_p = obstacles[i].get_trajectories();
+
+			// Increase safety zone by half the max obstacle dimension and ownship length
+			double d_safe_i = pars.d_safe + 0.5 * (ownship_ptr->get_length() + obstacles[i].get_length());
 
 			int n_samples = P_i_p.cols();
 			// Non-optimal temporary row-vector storage solution

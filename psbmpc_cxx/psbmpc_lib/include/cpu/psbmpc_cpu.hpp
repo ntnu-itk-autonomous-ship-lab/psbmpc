@@ -85,9 +85,18 @@ namespace PSBMPC_LIB
 
 			void setup_prediction(const Dynamic_Obstacles &obstacles);
 
+			void setup_prediction_ptr(const Dynamic_Obstacles &obstacles);
+
 			void calculate_collision_probabilities(
 				Eigen::MatrixXd &P_c_i,
 				const Dynamic_Obstacles &obstacles,
+				const int i,
+				const double dt,
+				const int p_step);
+
+			void calculate_collision_probabilities_ptr(
+				Eigen::MatrixXd &P_c_i,
+				const Dynamic_Obstacles &obstacles, 
 				const int i,
 				const double dt,
 				const int p_step);
