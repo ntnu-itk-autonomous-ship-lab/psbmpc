@@ -138,6 +138,25 @@ namespace PSBMPC_LIB
 		}
 	}
 
+	bool PSBMPC_Parameters::get_bpar(
+		const int index // In: Index of parameter to return (Must be of bool type)
+	) const
+	{
+		switch(index)
+		{
+			case i_use_intention_model:
+				return use_intention_model;
+			case i_use_path_pruning_ownship:
+				return use_path_pruning_ownship;
+			case i_use_path_pruning_targetship:
+				return use_path_pruning_targetship;
+			case i_use_GPU:
+				return use_GPU;
+			default:
+				return false;
+		}
+	}
+
 	/****************************************************************************************
 	 *  Name     : set_par
 	 *  Function : Sets parameter with index <index> to value <value>, given that it is inside
@@ -304,6 +323,31 @@ namespace PSBMPC_LIB
 		}
 	}
 
+	void PSBMPC_Parameters::set_par(
+		const int index, // In: Index of parameter to set
+		const bool value // In: Value to set for parameter
+	)
+	{
+		switch(index)
+		{
+			case i_use_intention_model:
+				use_intention_model = value;
+				break;
+			case i_use_path_pruning_ownship:
+				use_path_pruning_ownship = value;
+				break;
+			case i_use_path_pruning_targetship:
+				use_path_pruning_targetship = value;
+				break;
+			case i_use_GPU:
+				use_GPU = value;
+				break;
+			default:
+				// Throw invalid index
+				break;
+		}
+	}
+
 	/****************************************************************************************
 		Private functions
 	****************************************************************************************/
@@ -459,6 +503,12 @@ namespace PSBMPC_LIB
 		G_4 = 1.0;
 
 		epsilon_rdp = 2.0;
+
+		// Boolean parameters used by the PSB-MPC interface in the colav-simulator
+		use_intention_model = false;
+		use_path_pruning_ownship = false;
+		use_path_pruning_targetship = false;
+		use_GPU = false;
 	}
 
 	void PSBMPC_Parameters::initialize_pars(
@@ -531,6 +581,12 @@ namespace PSBMPC_LIB
 		G_4 = dpars[i_dpar_G_4];
 
 		epsilon_rdp = dpars[i_dpar_epsilon_rdp];
+
+		// Boolean parameters used by the PSB-MPC interface in the colav-simulator
+		use_intention_model = false;
+		use_path_pruning_ownship = false;
+		use_path_pruning_targetship = false;
+		use_GPU = false;
 	}
 
 }

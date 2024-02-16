@@ -148,6 +148,9 @@ namespace PSBMPC_LIB
 		double G_1, G_2, G_3, G_4;
 		double epsilon_rdp;
 
+		// Boolean parameters used by the PSB-MPC interface in the colav-simulator
+		bool use_intention_model, use_path_pruning_ownship, use_path_pruning_targetship, use_GPU;
+
 		void initialize_par_limits();
 
 		void initialize_pars();
@@ -188,6 +191,8 @@ namespace PSBMPC_LIB
 
 		void set_par(const int index, const std::vector<Eigen::VectorXd> &value);
 
+		void set_par(const int index, const bool value);
+
 		inline void set_cpe_method(const CPE_Method cpe_method)
 		{
 			if (cpe_method >= CE && cpe_method <= MCSKF4D)
@@ -211,6 +216,8 @@ namespace PSBMPC_LIB
 		double get_dpar(const int index) const;
 
 		std::vector<Eigen::VectorXd> get_opar(const int index) const;
+
+		bool get_bpar(const int index) const;
 
 		inline CPE_Method get_cpe_method() const { return cpe_method; };
 

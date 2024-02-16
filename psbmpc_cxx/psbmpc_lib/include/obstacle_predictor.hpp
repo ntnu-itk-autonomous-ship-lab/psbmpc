@@ -818,10 +818,8 @@ namespace PSBMPC_LIB
 				// Uniform
 				for (int ps = 0; ps < n_ps[i]; ps++)
 				{
-					Pr_s_i(ps) = 0;
+					Pr_s_i(ps) = 1;
 				}
-				Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
-				// Pr_s_i(n_ps[i] - 1) = 1;
 				Pr_s_i = Pr_s_i / Pr_s_i.sum();
 
 				// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
@@ -876,10 +874,8 @@ namespace PSBMPC_LIB
 				// Uniform
 				for (int ps = 0; ps < n_ps[i]; ps++)
 				{
-					Pr_s_i(ps) = 0;
+					Pr_s_i(ps) = 1;
 				}
-				Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
-				// Pr_s_i(n_ps[i] - 1) = 1;
 				Pr_s_i = Pr_s_i / Pr_s_i.sum();
 
 				// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
@@ -922,10 +918,8 @@ namespace PSBMPC_LIB
 				// Uniform
 				for (int ps = 0; ps < n_ps[i]; ps++)
 				{
-					Pr_s_i(ps) = 0;
+					Pr_s_i(ps) = 1;
 				}
-				Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
-				// Pr_s_i(n_ps[i] - 1) = 1;
 				Pr_s_i = Pr_s_i / Pr_s_i.sum();
 
 				// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
@@ -971,10 +965,8 @@ namespace PSBMPC_LIB
 				// Uniform
 				for (int ps = 0; ps < n_ps[i]; ps++)
 				{
-					Pr_s_i(ps) = 0;
+					Pr_s_i(ps) = 1;
 				}
-				Pr_s_i((int)std::floor(n_ps[i] / 2)) = 1;
-				// Pr_s_i(n_ps[i] - 1) = 1;
 				Pr_s_i = Pr_s_i / Pr_s_i.sum();
 
 				// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;

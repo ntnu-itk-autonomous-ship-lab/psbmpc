@@ -67,3 +67,9 @@
 // Indices for offset/control behaviour parameters of type std::vector/Eigen::MatrixXd
 #define i_opar_u_offsets 0
 #define i_opar_chi_offsets 1
+
+// Indices for parameters of type bool (used in the colav-simulator)
+#define i_use_intention_model 0
+#define i_use_path_pruning_ownship 1
+#define i_use_path_pruning_targetship 2
+#define i_use_GPU 3
