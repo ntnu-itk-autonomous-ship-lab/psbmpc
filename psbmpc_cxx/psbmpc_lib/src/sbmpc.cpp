@@ -429,16 +429,16 @@ namespace PSBMPC_LIB
 			chi_opt_last = chi_opt;
 		}
 
-		std::cout << "Optimal offset sequence : ";
-		for (int M = 0; M < pars.n_M; M++)
-		{
-			std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
-			if (M < pars.n_M - 1)
-				std::cout << ", ";
-		}
-		std::cout << std::endl;
+		//std::cout << "Optimal offset sequence : ";
+		//for (int M = 0; M < pars.n_M; M++)
+		//{
+		//	std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
+		//	if (M < pars.n_M - 1)
+		//		std::cout << ", ";
+		/}
+		//std::cout << std::endl;
 
-		std::cout << "Cost at optimum : " << min_cost << std::endl;
+		//std::cout << "Cost at optimum : " << min_cost << std::endl;
 
 		// Pybind11 compatability return
 		result_py.u_opt_py = u_opt;
