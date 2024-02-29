@@ -435,7 +435,7 @@ namespace PSBMPC_LIB
 		//	std::cout << opt_offset_sequence(2 * M) << ", " << opt_offset_sequence(2 * M + 1) * RAD2DEG;
 		//	if (M < pars.n_M - 1)
 		//		std::cout << ", ";
-		/}
+		//}
 		//std::cout << std::endl;
 
 		//std::cout << "Cost at optimum : " << min_cost << std::endl;
