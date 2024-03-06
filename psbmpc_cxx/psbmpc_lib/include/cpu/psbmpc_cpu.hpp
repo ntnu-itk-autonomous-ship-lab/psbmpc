@@ -110,10 +110,15 @@ namespace PSBMPC_LIB
 
 			PSBMPC();
 			
-			PSBMPC(const Ownship &ownship, const CPE &cpe, const PSBMPC_Parameters &psbmpc_pars);
+			PSBMPC(
+				const Ownship &ownship, 
+				const CPE &cpe, 
+				const PSBMPC_Parameters &psbmpc_pars);
 
 			// Pybind11 compatibility overload with shared_ptr
-			PSBMPC(const std::shared_ptr<CPU::Kinematic_Ship> &ownship_ptr, const CPE &cpe, const PSBMPC_Parameters &psbmpc_pars);
+			PSBMPC(
+				const std::shared_ptr<CPU::Kinematic_Ship> &ownship_ptr, 
+				const CPE &cpe, const PSBMPC_Parameters &psbmpc_pars);
 
 			// Resets previous optimal offsets and predicted own-ship waypoint following
 			void reset()
@@ -168,7 +173,8 @@ namespace PSBMPC_LIB
 			}
 
 			// Pybind11/colav simulator compatability method
-			Static_Obstacles process_list_of_np_polygons(const std::vector<Eigen::MatrixXd>& polygons_py);
+			Static_Obstacles process_list_of_np_polygons(
+				const std::vector<Eigen::MatrixXd>& polygons_py);
 		};
 	}
 }
