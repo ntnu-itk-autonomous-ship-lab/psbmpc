@@ -737,6 +737,7 @@ namespace PSBMPC_LIB
 
 			double u_d_p = u_d;
 			double chi_d_p = chi_d;
+			double chi_m_p = chi_m;
 			Eigen::Vector4d xs = trajectory.col(0);
 
 			for (int k = 0; k < n_samples; k++)
@@ -744,8 +745,8 @@ namespace PSBMPC_LIB
 				switch (path_prediction_shape)
 				{
 					case LINEAR:
-						update_guidance_references(u_d_p, chi_d_p, 0, waypoints, xs, dt);
-						xs = predict(xs, u_d_p, chi_m, dt, prediction_method);
+						update_guidance_references(u_d_p, chi_m_p, 0, waypoints, xs, dt);
+						xs = predict(xs, u_d_p, chi_m + chi_d_p, dt, prediction_method);
 						break;
 					case SMOOTH:
 						update_guidance_references(u_d_p, chi_d_p, e_m, waypoints, xs, dt);

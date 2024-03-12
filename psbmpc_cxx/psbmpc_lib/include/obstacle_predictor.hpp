@@ -485,7 +485,7 @@ namespace PSBMPC_LIB
 
 			CPU::Obstacle_Ship obstacle_ship;
 
-			double chi_ps(0.0), t(0.0);
+			double chi_ps(0.0), t(0.0), chi_d_p_linear_pred_shape;
 			for (int ps = 0; ps < n_ps[i]; ps++)
 			{
 				xs_i_p[ps].resize(4, n_samples);
@@ -499,7 +499,19 @@ namespace PSBMPC_LIB
 				trajectory.resize(4, n_samples);
 				trajectory.col(0) = xs_i_ps_k;
 
-				obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), chi_offsets(ps), xs_i_ps_k(3), xs_i_ps_k(2), waypoints, ERK1, path_prediction_shape, mpc_pars.T, mpc_pars.dt);
+				if (ps == 0) 
+				{
+					chi_d_p_linear_pred_shape = xs_i_ps_k(2);
+				}
+
+				if (path_prediction_shape == LINEAR) 
+				{
+					obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), chi_offsets(ps), xs_i_ps_k(3), chi_d_p_linear_pred_shape, waypoints, ERK1, path_prediction_shape, mpc_pars.T, mpc_pars.dt);
+				}
+				else 
+				{
+					obstacle_ship.predict_trajectory(trajectory, ct_offsets(ps), chi_offsets(ps), xs_i_ps_k(3), xs_i_ps_k(2), waypoints, ERK1, path_prediction_shape, mpc_pars.T, mpc_pars.dt);
+				}
 
 				// Predict covariance using MROU model
 				for (int k = 0; k < n_samples; k++)
