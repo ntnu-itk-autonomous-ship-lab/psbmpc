@@ -933,7 +933,7 @@ namespace PSBMPC_LIB
 		std::vector<std::shared_ptr<Tracked_Obstacle>>& SBMPC_operator_py(
 			std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/out from/to Python: Dynamic obstacle information
 			const Eigen::VectorXd &ownship_state,                      // In: Own-ship state at the current time
-			const SBMPC_Parameters &mpc_pars,		                   // In: Calling PSBMPC parameters
+			const SBMPC_Parameters &mpc_pars,		                   // In: Calling SBMPC parameters
 			const Path_Prediction_Shape path_prediction_shape          // In: The shape of the predicted path for the ship
 		)
 		{
@@ -971,6 +971,58 @@ namespace PSBMPC_LIB
 
 				// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
 				obstacle->set_scenario_probabilities(Pr_s_i);
+				i = i + 1;
+			};
+			return obstacles;
+		}
+
+		//Pybind11 utility method for updating a single obstacle (only for the PSBMPC)
+		std::vector<std::shared_ptr<Tracked_Obstacle>>& single_obstacle_predictor_py(
+			std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/out from/to Python: Dynamic obstacle information
+			const int &obs_id,                                         // In: ID of obstacle to update
+			const Eigen::VectorXd &ownship_state,                      // In: Own-ship state at the current time
+			const PSBMPC_Parameters &mpc_pars,		                   // In: Calling PSBMPC parameters
+			const Path_Prediction_Shape path_prediction_shape          // In: The shape of the predicted path for the ship
+		)
+		{
+			int i(0);
+			Eigen::MatrixXd waypoints_i;
+			int n_do = obstacles.size();
+			n_ps.resize(n_do);
+			for (auto& obstacle : obstacles)
+			{
+				if (obstacle->get_ID() == obs_id)
+				{
+					// Store the obstacle`s predicted waypoints as straight line path
+					// A static var. could be used to change waypoints in a periodic manner
+					waypoints_i.resize(2, 2);
+					waypoints_i.col(0) = obstacle->kf.get_state().block<2, 1>(0, 0);
+					waypoints_i.col(1) = waypoints_i.col(0) + mpc_pars.T * obstacle->kf.get_state().block<2, 1>(2, 0);
+					obstacle->set_waypoints(waypoints_i);
+
+					initialize_independent_los_prediction_py(obstacles, i, ownship_state, mpc_pars, path_prediction_shape);
+					predict_independent_los_trajectories_py(obstacles, i, mpc_pars, path_prediction_shape);
+
+					// Transfer obstacles to the tracked obstacle
+					obstacle->set_trajectories(xs_i_p);
+					obstacle->set_mean_velocity_trajectories(v_ou_p_i);
+					obstacle->set_trajectory_covariance(P_i_p);
+
+					// Calculate scenario probabilities using intention model,
+					// or just set to be uniform
+					Eigen::VectorXd Pr_s_i(n_ps[i]);
+
+					// Uniform
+					for (int ps = 0; ps < n_ps[i]; ps++)
+					{
+						Pr_s_i(ps) = 1;
+					}
+					Pr_s_i = Pr_s_i / Pr_s_i.sum();
+
+					// std::cout << "Obstacle i = " << i << "Pr_s_i = " << Pr_s_i.transpose() << std::endl;
+					obstacle->set_scenario_probabilities(Pr_s_i);
+					break;
+				}
 				i = i + 1;
 			};
 			return obstacles;
