@@ -993,7 +993,8 @@ namespace PSBMPC_LIB
 			std::vector<std::shared_ptr<Tracked_Obstacle>> &obstacles, // In/out from/to Python: Dynamic obstacle information
 			const int &obs_id,                                         // In: ID of obstacle to update
 			const Eigen::VectorXd &ownship_state,                      // In: Own-ship state at the current time
-			const PSBMPC_Parameters &mpc_pars,		                   // In: Calling PSBMPC parameters
+			const PSBMPC_Parameters &mpc_pars,                         // In: Calling PSBMPC parameters
+			const double &r_ct, 		                               // In: Cross-track spacing between obstacle trajectories                
 			const Path_Prediction_Shape path_prediction_shape          // In: The shape of the predicted path for the ship
 		)
 		{
@@ -1001,6 +1002,8 @@ namespace PSBMPC_LIB
 			Eigen::MatrixXd waypoints_i;
 			int n_do = obstacles.size();
 			n_ps.resize(n_do);
+			double r_ct_original = this->r_ct; 
+			this->r_ct = r_ct;
 			for (auto& obstacle : obstacles)
 			{
 				if (obstacle->get_ID() == obs_id)
@@ -1037,6 +1040,7 @@ namespace PSBMPC_LIB
 				}
 				i = i + 1;
 			};
+			this->r_ct = r_ct_original;
 			return obstacles;
 		}
 	};
