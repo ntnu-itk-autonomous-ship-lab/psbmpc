@@ -59,18 +59,15 @@
 #define i_dpar_K_chi_port_SBMPC 18  // Course modification penalty parameter to port
 #define i_dpar_K_dchi_port_SBMPC 19 // Penalty parameter for course change between current (port) and previous course modification
 
-#define i_dpar_K_sgn_SBMPC 20 // Penalty parameter in the MPC chattering cost for change in sign of course modification between sequential avoidance maneuvers in a predicted own-ship trajectory
-#define i_dpar_T_sgn_SBMPC 21 // Time discounting factor for the chattering cost
+#define i_dpar_q_SBMPC 20 // Dynamic obstacle cost ad hoc risk penalty parameter
+#define i_dpar_p_SBMPC 21 // Dynamic obstacle cost ad hoc risk penalty parameter
 
-#define i_dpar_q_SBMPC 22 // Dynamic obstacle cost ad hoc risk penalty parameter
-#define i_dpar_p_SBMPC 23 // Dynamic obstacle cost ad hoc risk penalty parameter
+#define i_dpar_G_1_SBMPC 22 // Grounding cost penalty parameter
+#define i_dpar_G_2_SBMPC 23 // Grounding cost penalty parameter connected to non-zero wind speed
+#define i_dpar_G_3_SBMPC 24 // Grounding cost distance discount parameter
+#define i_dpar_G_4_SBMPC 25 // Grounding cost time discount parameter
 
-#define i_dpar_G_1_SBMPC 24 // Grounding cost penalty parameter
-#define i_dpar_G_2_SBMPC 25 // Grounding cost penalty parameter connected to non-zero wind speed
-#define i_dpar_G_3_SBMPC 26 // Grounding cost distance discount parameter
-#define i_dpar_G_4_SBMPC 27 // Grounding cost time discount parameter
-
-#define i_dpar_epsilon_rdp_SBMPC 28 // Ramer-Douglas-Peucker distance threshold parameter
+#define i_dpar_epsilon_rdp_SBMPC 26 // Ramer-Douglas-Peucker distance threshold parameter
 
 // Indices for offset/control behaviour parameters of type std::vector/Eigen::MatrixXd
 #define i_opar_u_offsets_SBMPC 0

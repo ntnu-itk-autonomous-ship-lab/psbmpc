@@ -67,7 +67,6 @@ namespace PSBMPC_LIB
 		double K_u, K_du;
 		double K_chi_strb, K_dchi_strb;
 		double K_chi_port, K_dchi_port;
-		double K_sgn, T_sgn;
 		double q, p;
 		double G_1, G_2, G_3, G_4;
 		double epsilon_rdp;

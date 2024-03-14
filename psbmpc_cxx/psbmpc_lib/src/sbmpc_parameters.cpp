@@ -102,10 +102,6 @@ namespace PSBMPC_LIB
 			return K_chi_port;
 		case i_dpar_K_dchi_port_SBMPC:
 			return K_dchi_port;
-		case i_dpar_K_sgn_SBMPC:
-			return K_sgn;
-		case i_dpar_T_sgn_SBMPC:
-			return T_sgn;
 		case i_dpar_q_SBMPC:
 			return q;
 		case i_dpar_p_SBMPC:
@@ -252,12 +248,6 @@ namespace PSBMPC_LIB
 			break;
 		case i_dpar_K_dchi_port_SBMPC:
 			K_dchi_port = value;
-			break;
-		case i_dpar_K_sgn_SBMPC:
-			K_sgn = value;
-			break;
-		case i_dpar_T_sgn_SBMPC:
-			T_sgn = value;
 			break;
 		case i_dpar_q_SBMPC:
 			q = value;
@@ -409,8 +399,6 @@ namespace PSBMPC_LIB
 			K_dchi_strb = 0.9;
 			K_chi_port = 1.6;
 			K_dchi_port = 1.2;
-			K_sgn = 8;
-			T_sgn = 4 * t_ts;
 
 			q = 4.0;
 			p = 1.0;
@@ -496,8 +484,6 @@ namespace PSBMPC_LIB
 			K_chi_port = 1.6;
 			K_dchi_strb = 0.9;
 			K_dchi_port = 1.2;
-			K_sgn = 8;
-			T_sgn = 4 * t_ts;
 
 			G_1 = 100.0;
 			G_2 = 5.0;
@@ -576,9 +562,6 @@ namespace PSBMPC_LIB
 		K_dchi_strb = dpars[i_dpar_K_dchi_strb_SBMPC];
 		K_chi_port = dpars[i_dpar_K_chi_port_SBMPC];
 		K_dchi_port = dpars[i_dpar_K_dchi_port_SBMPC];
-
-		K_sgn = dpars[i_dpar_K_sgn_SBMPC];
-		T_sgn = dpars[i_dpar_T_sgn_SBMPC];
 
 		q = dpars[i_dpar_q_SBMPC];
 		p = dpars[i_dpar_p_SBMPC];
