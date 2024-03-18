@@ -42,6 +42,11 @@ namespace PSBMPC_LIB
 			// Pre-allocated temporaries
 			//==============================================
 			float cost_cd, cost_ch, delta_t, h_so_j, h_so_j_k;
+			
+			float cost_g_of_d_safe = 0.0f;
+			float cost_g_der_of_d_safe = 0.0f;
+			float a_val = 0.0f;
+			float b_val = 0.0f;
 
 			// Dynamic obstacle cost related (do cost)
 			float cost_k, cost_do, cost_coll, l_i;
@@ -249,7 +254,14 @@ namespace PSBMPC_LIB
 				}
 				else
 				{
-					h_so_j_k = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-pars.G_4 * (float)k * pars.dt);
+					//h_so_j_k = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-pars.G_4 * (float)k * pars.dt);
+					cost_g_of_d_safe = (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w)* expf(-pars.G_4 * (float)k * pars.dt); // Using d_0j = d_safe to find a  
+					cost_g_der_of_d_safe = -pars.G_3 * (pars.G_1 + pars.G_2 * phi_j * fdata->V_w * fdata->V_w) * expf(-pars.G_4 * (float)k * pars.dt); // The derivative of cost_g_of_d_safe
+
+					a_val = cost_g_der_of_d_safe; // a in y = a * x + b, 
+					b_val = cost_g_of_d_safe - a_val * pars.d_safe; // b in y = a * x + b <-> cost_g_of_d_safe  = a * d_safe + b
+					
+					h_so_j_k = a_val * d_0j + b_val; // Linear cost function growth (a * d_0j) for d_0j < d_safe, b ensures a smooth transition between the exponential and linear area of the cost function
 				}
 
 				if (h_so_j < h_so_j_k)
