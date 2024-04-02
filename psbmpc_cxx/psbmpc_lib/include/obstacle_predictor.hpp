@@ -627,15 +627,46 @@ namespace PSBMPC_LIB
 			}
 			else if (pars.n_do_ps == 5)
 			{
-				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, 0 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, 0, 30 * DEG2RAD, 60 * DEG2RAD;
 			}
 			else if (pars.n_do_ps == 6)
 			{
 				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
 			}
-			else // if (pars.n_do_ps == 7)
+			else if (pars.n_do_ps == 7)
 			{
-				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -5 * DEG2RAD, 0, 5 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else if (pars.n_do_ps == 8)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else if (pars.n_do_ps == 9)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else if (pars.n_do_ps == 10)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else if (pars.n_do_ps == 11)
+			{
+				chi_offsets_params << -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD;
+			}
+			else if (pars.n_do_ps == 12)
+			{
+				chi_offsets_params << -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD;
+			}
+			else if (pars.n_do_ps == 13)
+			{
+				chi_offsets_params << -90 * DEG2RAD, -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD, 90 * DEG2RAD;
+			}
+			else if (pars.n_do_ps >= 14) 
+			{ // No point in predicting paths set to more than 90 degs (in the LINEAR case), as this means the path points backwards relative to the obstacle ship's direction
+				std::cout << "ERROR WARNING: n_do_ps set to larger than 13, n_ps_LOS overwritten to size 13 (13 is arbitrary can be changed to another desired value by changing the obstacle predictor code)" << std::endl;
+				n_ps_LOS = 13;
+				chi_offsets_params.resize(n_ps_LOS);
+				chi_offsets_params << -90 * DEG2RAD, -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD, 90 * DEG2RAD;
 			}
 		}
 
@@ -663,10 +694,77 @@ namespace PSBMPC_LIB
 				course_changes.resize(3);
 				course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 			}
-			// n_do_ps must equal the number of angles in chi_offsets_params, 
-			// that is the number of different paths which gets generated from chi_offsets
-			chi_offsets_params = chi_offsets_degrees * DEG2RAD; // Expected input in degrees
-			assert(chi_offsets_params.size() == pars.n_do_ps);
+
+			chi_offsets_params = chi_offsets_degrees * DEG2RAD; // Expected input in degrees, expected input of size equal to n_do_ps
+			
+			std::cout << "Here the chi_offsets_params.size() are: " << chi_offsets_params.size() << std::endl;
+			std::cout << "and the pars.n_do_ps is: " << pars.n_do_ps << std::endl;
+
+			if (chi_offsets_params.size() != pars.n_do_ps) 
+			{
+				std::cout << "WARNING (applies if LINEAR prediction shape is utilized for targets): Parameter mismatch - Number of elements (angles) in chi_offsets in targetship_params should equal n_do_ps." << std::endl;
+				std::cout << "Using a predefined chi_offsets of size == n_do_ps, instead of the chi_offsets defined by the input parameters." << std::endl;
+				chi_offsets_params.resize(pars.n_do_ps);
+				if (pars.n_do_ps == 1)
+				{
+					chi_offsets_params << 0;
+				}
+				else if (pars.n_do_ps == 2)
+				{
+					chi_offsets_params << -5 * DEG2RAD, 5 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 3)
+				{
+					chi_offsets_params << -30 * DEG2RAD, 0, 30 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 4)
+				{
+					chi_offsets_params << -20 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 20 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 5)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, 0, 30 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 6)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 7)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 8)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 9)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 10)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 11)
+				{
+					chi_offsets_params << -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 12)
+				{
+					chi_offsets_params << -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 13)
+				{
+					chi_offsets_params << -90 * DEG2RAD, -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD, 90 * DEG2RAD;
+				}
+				else if (pars.n_do_ps >= 14) 
+				{ // No point in predicting paths set to more than 90 degs (in the LINEAR case), as this means the path points backwards relative to the obstacle ship's direction
+					std::cout << "ERROR WARNING: n_do_ps was set to larger than 13, n_ps_LOS overwritten to size 13 (13 is arbitrary can be changed to another desired value by changing the obstacle predictor code)" << std::endl;
+					n_ps_LOS = 13;
+					chi_offsets_params.resize(n_ps_LOS);
+					chi_offsets_params << -90 * DEG2RAD, -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD, 90 * DEG2RAD;
+				}
+			}
 		}
 
 		Obstacle_Predictor(
@@ -693,10 +791,73 @@ namespace PSBMPC_LIB
 				course_changes.resize(3);
 				course_changes << 30 * DEG2RAD, 60 * DEG2RAD, 90 * DEG2RAD;
 			}
-			// n_do_ps must equal the number of angles in chi_offsets_params, 
-			// that is the number of different paths which gets generated from chi_offsets
-			chi_offsets_params = chi_offsets_degrees * DEG2RAD; // Expected input in degrees
-			assert(chi_offsets_params.size() == pars.n_do_ps);
+			
+			chi_offsets_params = chi_offsets_degrees * DEG2RAD; // Expected input in degrees, expected input of size equal to n_do_ps
+			if (chi_offsets_params.size() != pars.n_do_ps) 
+			{
+				std::cout << "WARNING (applies if LINEAR prediction shape is utilized for targets): Parameter mismatch - Number of elements (angles) in chi_offsets in targetship_params should equal n_do_ps." << std::endl;
+				std::cout << "Using a predefined chi_offsets of size == n_do_ps, instead of the chi_offsets defined by the input parameters." << std::endl;
+				chi_offsets_params.resize(pars.n_do_ps);
+				if (pars.n_do_ps == 1)
+				{
+					chi_offsets_params << 0;
+				}
+				else if (pars.n_do_ps == 2)
+				{
+					chi_offsets_params << -5 * DEG2RAD, 5 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 3)
+				{
+					chi_offsets_params << -30 * DEG2RAD, 0, 30 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 4)
+				{
+					chi_offsets_params << -20 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 20 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 5)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, 0, 30 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 6)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 7)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 8)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 9)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 10)
+				{
+					chi_offsets_params << -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 11)
+				{
+					chi_offsets_params << -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 12)
+				{
+					chi_offsets_params << -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD;
+				}
+				else if (pars.n_do_ps == 13)
+				{
+					chi_offsets_params << -90 * DEG2RAD, -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD, 90 * DEG2RAD;
+				}
+				else if (pars.n_do_ps >= 14) 
+				{ // No point in predicting paths set to more than 90 degs (in the LINEAR case), as this means the path points backwards relative to the obstacle ship's direction
+					std::cout << "ERROR WARNING: n_do_ps was set to larger than 13, n_ps_LOS overwritten to size 13 (13 is arbitrary can be changed to another desired value by changing the obstacle predictor code)" << std::endl;
+					n_ps_LOS = 13;
+					chi_offsets_params.resize(n_ps_LOS);
+					chi_offsets_params << -90 * DEG2RAD, -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD, 90 * DEG2RAD;
+				}
+			}
 		}
 
 		template <class MPC_Parameters>
@@ -746,15 +907,46 @@ namespace PSBMPC_LIB
 			}
 			else if (mpc_pars.n_do_ps == 5)
 			{
-				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, 0 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, 0, 30 * DEG2RAD, 60 * DEG2RAD;
 			}
 			else if (mpc_pars.n_do_ps == 6)
 			{
 				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
 			}
-			else // if (pars.n_do_ps == 7)
+			else if (mpc_pars.n_do_ps == 7)
 			{
-				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -5 * DEG2RAD, 0, 5 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps == 8)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps == 9)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps == 10)
+			{
+				chi_offsets_params << -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps == 11)
+			{
+				chi_offsets_params << -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps == 12)
+			{
+				chi_offsets_params << -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, -5 * DEG2RAD, 5 * DEG2RAD, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps == 13)
+			{
+				chi_offsets_params << -90 * DEG2RAD, -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD, 90 * DEG2RAD;
+			}
+			else if (mpc_pars.n_do_ps >= 14) 
+			{ // No point in predicting paths set to more than 90 degs (in the LINEAR case), as this means the path points backwards relative to the obstacle ship's direction
+				std::cout << "ERROR WARNING: n_do_ps set to larger than 13, n_ps_LOS overwritten to size 13 (13 is arbitrary can be changed to another desired value by changing the obstacle predictor code)" << std::endl;
+				n_ps_LOS = 13;
+				chi_offsets_params.resize(n_ps_LOS);
+				chi_offsets_params << -90 * DEG2RAD, -75 * DEG2RAD, -60 * DEG2RAD, -45 * DEG2RAD, -30 * DEG2RAD, -15 * DEG2RAD, 0, 15 * DEG2RAD, 30 * DEG2RAD, 45 * DEG2RAD, 60 * DEG2RAD, 75 * DEG2RAD, 90 * DEG2RAD;
 			}
 		}
 
