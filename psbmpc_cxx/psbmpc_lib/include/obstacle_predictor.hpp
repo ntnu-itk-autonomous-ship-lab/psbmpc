@@ -696,9 +696,6 @@ namespace PSBMPC_LIB
 			}
 
 			chi_offsets_params = chi_offsets_degrees * DEG2RAD; // Expected input in degrees, expected input of size equal to n_do_ps
-			
-			std::cout << "Here the chi_offsets_params.size() are: " << chi_offsets_params.size() << std::endl;
-			std::cout << "and the pars.n_do_ps is: " << pars.n_do_ps << std::endl;
 
 			if (chi_offsets_params.size() != pars.n_do_ps) 
 			{
