@@ -698,9 +698,12 @@ namespace PSBMPC_LIB
 			chi_offsets_params = chi_offsets_degrees * DEG2RAD; // Expected input in degrees, expected input of size equal to n_do_ps
 
 			if (chi_offsets_params.size() != pars.n_do_ps) 
-			{
-				std::cout << "WARNING (applies if LINEAR prediction shape is utilized for targets): Parameter mismatch - Number of elements (angles) in chi_offsets in targetship_params should equal n_do_ps." << std::endl;
-				std::cout << "Using a predefined chi_offsets of size == n_do_ps, instead of the chi_offsets defined by the input parameters." << std::endl;
+			{	
+				if (path_prediction_shape == LINEAR)
+				{
+					std::cout << "WARNING: Parameter mismatch - Number of elements (angles) in chi_offsets in targetship_params should equal n_do_ps." << std::endl;
+					std::cout << "Using a predefined chi_offsets of size == n_do_ps, instead of the chi_offsets defined by the input parameters." << std::endl;
+				}
 				chi_offsets_params.resize(pars.n_do_ps);
 				if (pars.n_do_ps == 1)
 				{
@@ -792,8 +795,11 @@ namespace PSBMPC_LIB
 			chi_offsets_params = chi_offsets_degrees * DEG2RAD; // Expected input in degrees, expected input of size equal to n_do_ps
 			if (chi_offsets_params.size() != pars.n_do_ps) 
 			{
-				std::cout << "WARNING (applies if LINEAR prediction shape is utilized for targets): Parameter mismatch - Number of elements (angles) in chi_offsets in targetship_params should equal n_do_ps." << std::endl;
-				std::cout << "Using a predefined chi_offsets of size == n_do_ps, instead of the chi_offsets defined by the input parameters." << std::endl;
+				if (path_prediction_shape == LINEAR)
+				{
+					std::cout << "WARNING: Parameter mismatch - Number of elements (angles) in chi_offsets in targetship_params should equal n_do_ps." << std::endl;
+					std::cout << "Using a predefined chi_offsets of size == n_do_ps, instead of the chi_offsets defined by the input parameters." << std::endl;
+				}
 				chi_offsets_params.resize(pars.n_do_ps);
 				if (pars.n_do_ps == 1)
 				{
