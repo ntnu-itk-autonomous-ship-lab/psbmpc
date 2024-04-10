@@ -180,6 +180,8 @@ namespace PSBMPC_LIB
             const int p_step                            // In: Step between trajectory samples, matches the input prediction time step
         )
         {
+            int effective_p_step; // Fixing the last for loop iteration by decreasing p_step, if necessary
+
             dt_seg = dt;
 
             n_samples_traj = xs_p.cols();
@@ -219,9 +221,11 @@ namespace PSBMPC_LIB
                         v_i_prev = xs_i_p.block<2, 1>(2, k - p_step);
                     }
 
-                    P_c_i(0, k) = CE_estimation(xs_p.block<2, 1>(0, k), xs_i_p.block<2, 1>(0, k), P_i_2D, v_os_prev, v_i_prev, dt * p_step);
+                    effective_p_step = std::min(p_step, n_samples_traj - k);
 
-                    P_c_i.block(0, k, 1, p_step) = P_c_i(0, k) * Eigen::MatrixXd::Ones(1, p_step);
+                    P_c_i(0, k) = CE_estimation(xs_p.block<2, 1>(0, k), xs_i_p.block<2, 1>(0, k), P_i_2D, v_os_prev, v_i_prev, dt * effective_p_step);
+
+                    P_c_i.block(0, k, 1, effective_p_step) = P_c_i(0, k) * Eigen::MatrixXd::Ones(1, effective_p_step);
 
                     break;
                 case MCSKF4D:

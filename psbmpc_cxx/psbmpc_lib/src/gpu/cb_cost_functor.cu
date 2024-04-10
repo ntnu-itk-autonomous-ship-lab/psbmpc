@@ -97,6 +97,8 @@ namespace PSBMPC_LIB
 				const int> &input_tuple				  // CPE object and COLREGS Violation Evaluator object index
 		)
 		{
+			int effective_p_step; // Fixing the last iteration by decreasing p_step, if necessary
+
 			h_so_j = 0.0f;
 			h_do_i_ps = 0.0f;
 			h_colregs_i_ps = 0.0f;
@@ -195,7 +197,9 @@ namespace PSBMPC_LIB
 
 					P_i_2D = reshape<16, 1, 4, 4>(P_i_p_seg.get_col(n_seg_samples - 1), 4, 4).get_block<2, 2>(0, 0, 2, 2);
 
-					P_c_i = cpe[os_do_ps_pair_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt * pars->p_step_do);
+					effective_p_step = std::min(p_step, n_samples - k);
+
+					P_c_i = cpe[os_do_ps_pair_index].CE_estimate(p_os, p_i, P_i_2D, v_os_prev, v_i_prev, pars->dt * effective_p_step);
 					break;
 				case MCSKF4D:
 					if (fmod(k, n_seg_samples - 1) == 0 && k > 0)
