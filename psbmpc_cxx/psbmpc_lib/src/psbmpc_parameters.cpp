@@ -44,8 +44,6 @@ namespace PSBMPC_LIB
 			return n_M;
 		case i_ipar_n_do_ps:
 			return n_do_ps;
-		case i_ipar_p_step_opt:
-			return p_step_opt;
 		case i_ipar_p_step_do:
 			return p_step_do;
 		case i_ipar_p_step_grounding:
@@ -68,6 +66,8 @@ namespace PSBMPC_LIB
 			return dt;
 		case i_dpar_t_ts:
 			return t_ts;
+		case i_dpar_T_track_loss_threshold:
+			return T_track_loss_threshold;
 		case i_dpar_d_safe:
 			return d_safe;
 		case i_dpar_d_do_relevant:
@@ -179,9 +179,6 @@ namespace PSBMPC_LIB
 			case i_ipar_n_do_ps:
 				n_do_ps = value;
 				break;
-			case i_ipar_p_step_opt:
-				p_step_opt = value;
-				break;
 			case i_ipar_p_step_do:
 				p_step_do = value;
 				break;
@@ -217,6 +214,9 @@ namespace PSBMPC_LIB
 			case i_dpar_t_ts:
 				t_ts = value;
 				break;
+			case i_dpar_T_track_loss_threshold:
+				T_track_loss_threshold = value;
+				break;	
 			case i_dpar_d_safe:
 				// Limits on d_do_relevant depend on d_safe
 				// Limits on d_so_relevant depend on d_safe
@@ -473,15 +473,15 @@ namespace PSBMPC_LIB
 		T = 120.0; // 220.0
 		dt = 5.0;
 
-		p_step_opt = 1;
 		p_step_do = 2;
 		p_step_grounding = 4;
 		if (prediction_method == ERK1)
 		{
 			dt = 1.0;
-			p_step_opt = 10;
 		}
 		t_ts = 60;
+
+		T_track_loss_threshold = 5.0;
 
 		d_so_relevant = 150;
 		d_do_relevant = 500;
@@ -526,7 +526,6 @@ namespace PSBMPC_LIB
 		n_do_ps = ipars[i_ipar_n_do_ps];
 		assert((int)u_offsets.size() > 0 && (int)chi_offsets.size() > 0 && n_M > 0 && n_do_ps > 0);
 
-		p_step_opt = ipars[i_ipar_p_step_opt];
 		p_step_do = ipars[i_ipar_p_step_do];
 		p_step_grounding = ipars[i_ipar_p_step_grounding];
 
@@ -557,6 +556,8 @@ namespace PSBMPC_LIB
 		T = dpars[i_dpar_T];
 		dt = dpars[i_dpar_dt];
 		t_ts = dpars[i_dpar_t_ts];
+
+		T_track_loss_threshold = dpars[i_dpar_T_track_loss_threshold];
 
 		d_safe = dpars[i_dpar_d_safe];
 		d_do_relevant = dpars[i_dpar_d_do_relevant];

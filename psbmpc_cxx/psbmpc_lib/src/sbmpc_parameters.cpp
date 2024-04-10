@@ -46,8 +46,6 @@ namespace PSBMPC_LIB
 			return n_M;
 		case i_ipar_n_do_ps_SBMPC:
 			return n_do_ps;
-		case i_ipar_p_step_opt_SBMPC:
-			return p_step_opt;
 		case i_ipar_p_step_grounding_SBMPC:
 			return p_step_grounding;
 		default:
@@ -68,6 +66,8 @@ namespace PSBMPC_LIB
 			return dt;
 		case i_dpar_t_ts_SBMPC:
 			return t_ts;
+		case i_dpar_T_track_loss_threshold_SBMPC:
+			return T_track_loss_threshold;
 		case i_dpar_d_safe_SBMPC:
 			return d_safe;
 		case i_dpar_d_close_SBMPC:
@@ -170,9 +170,6 @@ namespace PSBMPC_LIB
 		case i_ipar_n_do_ps_SBMPC:
 			n_do_ps = value;
 			break;
-		case i_ipar_p_step_opt_SBMPC:
-			p_step_opt = value;
-			break;
 		case i_ipar_p_step_grounding_SBMPC:
 			p_step_grounding = value;
 			break;
@@ -198,6 +195,9 @@ namespace PSBMPC_LIB
 		case i_dpar_t_ts_SBMPC:
 			t_ts = value;
 			break;
+		case i_dpar_T_track_loss_threshold_SBMPC:
+			T_track_loss_threshold = value;
+			break;	
 		case i_dpar_d_safe_SBMPC:
 			d_safe = value;
 			break;
@@ -373,14 +373,14 @@ namespace PSBMPC_LIB
 			T = 110.0;
 			dt = 5.0;
 
-			p_step_opt = 1;
 			p_step_grounding = 2;
 			if (prediction_method == ERK1)
 			{
 				dt = 0.5;
-				p_step_opt = 10;
 			}
 			t_ts = 35;
+
+			T_track_loss_threshold = 5.0;
 
 			d_do_relevant = 1500;
 			d_so_relevant = 1500;
@@ -458,12 +458,10 @@ namespace PSBMPC_LIB
 			T = 120.0;
 			dt = 5.0;
 
-			p_step_opt = 1;
 			p_step_grounding = 2;
 			if (prediction_method == ERK1)
 			{
 				dt = 0.5;
-				p_step_opt = 10;
 			}
 			t_ts = 50;
 
@@ -509,7 +507,6 @@ namespace PSBMPC_LIB
 		n_do_ps = ipars[i_ipar_n_do_ps_SBMPC];
 		assert((int)u_offsets.size() > 0 && (int)chi_offsets.size() > 0 && n_M > 0 && n_do_ps > 0);
 
-		p_step_opt = ipars[i_ipar_p_step_opt_SBMPC];
 		p_step_grounding = ipars[i_ipar_p_step_grounding_SBMPC];
 
 		this->n_cbs = 1;
@@ -538,6 +535,8 @@ namespace PSBMPC_LIB
 		T = dpars[i_dpar_T_SBMPC];
 		dt = dpars[i_dpar_dt_SBMPC];
 		t_ts = dpars[i_dpar_t_ts_SBMPC];
+
+		T_track_loss_threshold = dpars[i_dpar_T_track_loss_threshold_SBMPC];
 
 		d_safe = dpars[i_dpar_d_safe_SBMPC];
 		d_close = dpars[i_dpar_d_close_SBMPC];
