@@ -917,7 +917,7 @@ namespace PSBMPC_LIB
 	/****************************************************************************************
 	*  Name     : determine_colav_active
 	*  Function : Uses the freshly updated obstacles vector and the number of static
-	*			  obstacles to determine whether it is necessary to run the PSBMPC
+	*			  obstacles to determine whether it is necessary to run the SBMPC
 	*  Author   : Trym Tengesdal
 	*  Modified :
 	*****************************************************************************************/
@@ -964,27 +964,12 @@ namespace PSBMPC_LIB
 	*  Modified :
 	*****************************************************************************************/
 	void SBMPC::assign_optimal_trajectory(
-		Eigen::MatrixXd &optimal_trajectory // In/out: Optimal PSB-MPC trajectory
+		Eigen::MatrixXd &optimal_trajectory // In/out: Optimal SB-MPC trajectory
 	)
 	{
 		int n_samples = std::round(pars.T / pars.dt);
-		// Set current optimal x-y position trajectory, downsample if linear prediction was not used
-		if (false) //(pars.prediction_method > Linear)
-		{
-			int count = 0;
-			optimal_trajectory.resize(trajectory.rows(), n_samples / pars.p_step_opt);
-			for (int k = 0; k < n_samples; k += pars.p_step_opt)
-			{
-				optimal_trajectory.col(count) = trajectory.col(k);
-				if (count < std::round(n_samples / pars.p_step_opt) - 1)
-					count++;
-			}
-		}
-		else
-		{
-			optimal_trajectory.resize(trajectory.rows(), n_samples);
-			optimal_trajectory = trajectory.block(0, 0, trajectory.rows(), n_samples);
-		}
+		optimal_trajectory.resize(trajectory.rows(), n_samples);
+		optimal_trajectory = trajectory.block(0, 0, trajectory.rows(), n_samples);
 	}
 
 	// Pybind11/colav simulator compatability method

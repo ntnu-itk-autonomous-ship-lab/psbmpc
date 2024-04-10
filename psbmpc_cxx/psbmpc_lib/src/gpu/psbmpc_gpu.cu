@@ -1114,23 +1114,8 @@ namespace PSBMPC_LIB
 		)
 		{
 			int n_samples = std::round(pars.T / pars.dt);
-			// Set current optimal x-y position trajectory, downsample if linear prediction was not used
-			if (false) //(pars.prediction_method > Linear)
-			{
-				int count = 0;
-				optimal_trajectory.resize(trajectory.rows(), n_samples / pars.p_step_opt);
-				for (int k = 0; k < n_samples; k += pars.p_step_opt)
-				{
-					optimal_trajectory.col(count) = trajectory.col(k);
-					if (count < std::round(n_samples / pars.p_step_opt) - 1)
-						count++;
-				}
-			}
-			else
-			{
-				optimal_trajectory.resize(trajectory.rows(), n_samples);
-				optimal_trajectory = trajectory.block(0, 0, trajectory.rows(), n_samples);
-			}
+			optimal_trajectory.resize(trajectory.rows(), n_samples);
+			optimal_trajectory = trajectory.block(0, 0, trajectory.rows(), n_samples);
 		}
 
 		/****************************************************************************************
