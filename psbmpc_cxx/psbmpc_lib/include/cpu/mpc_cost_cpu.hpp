@@ -176,7 +176,11 @@ namespace PSBMPC_LIB
 				const double chi_m_last,
 				const double max_cross_track_error) const;
 
-			double calculate_grounding_cost(const Eigen::MatrixXd &trajectory, const Eigen::Matrix<double, 4, -1> &static_obstacles, const double ownship_length) const;
+			double calculate_grounding_cost(
+				const Eigen::MatrixXd &trajectory, 
+				const Eigen::Matrix<double, 4, -1> &static_obstacles, 
+				const double ownship_length) const;
+			
 			double calculate_grounding_cost(
 				const Eigen::MatrixXd &trajectory,
 				const Static_Obstacles &polygons,
@@ -900,6 +904,7 @@ namespace PSBMPC_LIB
 
 			Eigen::Vector2d L_0j;
 			double d_0j(0.0), t(0.0), phi_j(0.0);
+			double d_max_zero_g_cost(15.0);
 			
 			double cost_g_of_d_safe(0.0), cost_g_der_of_d_safe(0.0), a(0.0), b(0.0);
 			// double total_cost_g(0.0), average_cost_g(0.0);
@@ -917,11 +922,15 @@ namespace PSBMPC_LIB
 
 					phi_j = std::max(0.0, L_0j.dot(wind_direction));
 
-					if (d_0j >= pars.d_safe)
+					if (d_0j < d_max_zero_g_cost)
+					{
+						cost_g = 0;
+					}
+					else if (d_0j >= pars.d_safe && d_0j > d_max_zero_g_cost)
 					{
 						cost_g = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-(pars.G_3 * fabs(d_0j - pars.d_safe) + pars.G_4 * t));
 					}
-					else
+					else if (d_0j < pars.d_safe && d_0j > d_max_zero_g_cost)
 					{
 						cost_g_of_d_safe = (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-pars.G_4 * t); // Using d_0j = d_safe to find a  
 						cost_g_der_of_d_safe = -pars.G_3 * (pars.G_1 + pars.G_2 * phi_j * pow(V_w, 2)) * exp(-pars.G_4 * t); // The derivative of cost_g_of_d_safe
