@@ -401,8 +401,15 @@ namespace PSBMPC_LIB
 			{
 				cost_i(i) = mpc_cost.calculate_dynamic_obstacle_cost(trajectory, offset_sequence, maneuver_times, obstacles, tv, i, ownship_ptr->get_length());
 			}
-
-			cost += cost_i.maxCoeff();
+			
+			if (n_do > 0)
+			{
+				cost += cost_i.maxCoeff();
+			}
+			else
+			{
+				cost += 0.0;
+			}
 
 			cost += mpc_cost.calculate_grounding_cost(trajectory, polygons, V_w, wind_direction);
 
