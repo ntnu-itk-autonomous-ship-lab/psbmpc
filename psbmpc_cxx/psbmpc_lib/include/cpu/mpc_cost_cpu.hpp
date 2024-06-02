@@ -904,7 +904,7 @@ namespace PSBMPC_LIB
 
 			Eigen::Vector2d L_0j;
 			double d_0j(0.0), t(0.0), phi_j(0.0);
-			double d_max_zero_g_cost(15.0);
+			double d_max_zero_g_cost(35.0);
 			
 			double cost_g_of_d_safe(0.0), cost_g_der_of_d_safe(0.0), a(0.0), b(0.0);
 			// double total_cost_g(0.0), average_cost_g(0.0);
