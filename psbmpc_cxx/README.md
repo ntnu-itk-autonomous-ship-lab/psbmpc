@@ -1,5 +1,5 @@
 # PSB-MPC 1.0 C++
-This repository implements a library for the Probabilistic Scenario-based MPC [[2]](#2) in C++ and CUDA, one version for the CPU and another for the GPU (much faster). The algorithm is a new extended and improved version of the original one posed in [[1]](#1), which was implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3)). The library is located under **psbmpc_lib**.
+This repository implements a library for the Probabilistic Scenario-based MPC (PSB-MPC) [[2]](#2) in C++ and CUDA, one version for the CPU and another for the GPU (much faster). The algorithm is a new extended and improved version of the original one posed in [[1]](#1), which was implemented by Inger Hagen and Giorgio Kufoalor through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3)). The library is located under **psbmpc_lib**.
 
 The library heavily relies on cmake, which you can learn more about e.g. here: <https://cliutils.gitlab.io/modern-cmake/>
 
@@ -60,7 +60,7 @@ The generated executable file is then located in the build folder, which you can
 <a id="1">[1]</a>  Johansen, T. A., Perez, T., and Cristofaro, A., "Ship collision avoidance and COLREGS compliance using simulation-based control behavior selection with predictive hazard assessment" IEEE
 Transactions on Intelligent Transportation Systems, vol. 17, no. 12, pp. 3407-3422, Dec. 2016.
 
-<a id="2">[2]</a>  Tengesdal, T., Johansen, T. A., and Brekke, E. (2020). "Risk-based Maritime Autonomous Collision Avoidance Considering Obstacle Intentions." 2020 23rd International Conference on Information Fusion (FUSION), South Africa.
+<a id="2">[2]</a> Tengesdal, Trym and Rothmund, Sverre V. and Basso, Erlend A. and Johansen, Tor A. and Schmidt-Didlaukies, Henrik (2024). "Obstacle Intention Awareness in Automatic Collision Avoidance: Full Scale Experiments in Confined Waters." Field Robotics, vol. 4, no. 1, pp. 211-245, DOI: 10.55417/fr.2024007.
 
 <a id="3">[3]</a> Kufoalor, D. K. M., Wilthil, E., Hagen, I. B., Brekke E. F. and Johansen, T. A. (2019). "Autonomous COLREGSs-Compliant Decision Making using Maritime Radar Tracking and Model Predictive Control" 2019 18th European Control Conference (ECC).
 
