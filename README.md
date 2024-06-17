@@ -12,7 +12,7 @@ Lastly, **psbmpc_ros_package** is a ROS1 package for using the PSB-MPC in an aut
 If you are using the `PSB-MPC` in your work, please use the following citation:
 ```
 @article{Tengesdal2024fr,
-  author  = {Tengesdal, Trym and Rothmund, Sverre V. and Basso, Erlend A. and Johansen, Tor A. and Schmidt-Didlaukies, Henrik},
+  author  = {Tengesdal, Trym and Rothmund, Sverre V. and Basso, Erlend A. and Schmidt-Didlaukies, Henrik and Johansen, Tor A.},
   journal = {Field Robotics},
   title   = {Obstacle Intention Awareness in Automatic Collision Avoidance: Full Scale Experiments in Confined Waters},
   volume={4},
