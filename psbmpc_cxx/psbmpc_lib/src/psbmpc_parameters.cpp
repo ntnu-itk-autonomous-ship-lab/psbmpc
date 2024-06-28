@@ -21,6 +21,7 @@
 #include "psbmpc_parameters.hpp"
 #include "Eigen/Dense"
 #include <vector>
+#include <iostream>
 
 namespace PSBMPC_LIB
 {
@@ -290,36 +291,34 @@ namespace PSBMPC_LIB
 		const std::vector<Eigen::VectorXd> &value // In: Value to set for parameter
 	)
 	{
-		if ((int)value.size() == n_M)
+		n_M = (int)value.size(); // Overrides the n_M value (changes if n_M is not set in accordance with value arg)
+		chi_offsets.resize(n_M);
+		u_offsets.resize(n_M);
+
+		switch (index)
 		{
-			switch (index)
+		case i_opar_u_offsets:
+			for (int j = 0; j < n_M; j++)
 			{
-			case i_opar_u_offsets:
-				for (int j = 0; j < n_M; j++)
+				if (value[j].size() > 0)
 				{
-					if (value[j].size() > 0)
-					{
-						u_offsets[j] = value[j];
-					}
+					u_offsets[j] = value[j];
 				}
-				break;
-			case i_opar_chi_offsets:
-				for (int j = 0; j < n_M; j++)
-				{
-					if (value[j].size() > 0)
-					{
-						chi_offsets[j] = value[j]*DEG2RAD;
-					}
-				}
-				break;
-			default:
-				// Throw invalid index
-				break;
 			}
-		}
-		else
-		{
-			// Throw invalid value
+			break;
+		case i_opar_chi_offsets:
+			for (int j = 0; j < n_M; j++)
+			{
+				if (value[j].size() > 0)
+				{
+					chi_offsets[j] = value[j]*DEG2RAD;
+				}
+			}
+			break;
+		default:
+			std::vector<Eigen::VectorXd> bs;
+			std::cout << "Index " << index << " is not a valid vector parameter index." << std::endl;
+			break;
 		}
 	}
 
