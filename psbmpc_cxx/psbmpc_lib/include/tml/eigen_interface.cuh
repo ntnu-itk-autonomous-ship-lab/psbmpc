@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : eigen_interface.cuh
-*
-*  Function  : Header file for functions used to transfer data from Eigen objects to 
-*			   TML objects.
-*  
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include <thrust/device_vector.h>

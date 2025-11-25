@@ -1,23 +1,3 @@
-/****************************************************************************************
- *
- *  File name : cb_cost_functor.cu
- *
- *  Function  : Class functions for the control behaviour cost evaluation functors. Used in
- *			   the thrust framework for GPU calculations.
- *
- *	           ---------------------
- *
- *  Version 1.0
- *
- *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
- *  All rights reserved.
- *
- *  Author    : Trym Tengesdal
- *
- *  Modified  :
- *
- *****************************************************************************************/
-
 #include "psbmpc_defines.hpp"
 #include "gpu/cb_cost_functor.cuh"
 #include "gpu/cuda_obstacle.cuh"
@@ -78,14 +58,6 @@ namespace PSBMPC_LIB
 		//=======================================================================================
 		//  CB COST FUNCTOR 2 METHODS
 		//=======================================================================================
-		/****************************************************************************************
-		 *  Name     : operator()
-		 *  Function : Evaluates partial static and dynamic obstacle cost terms when following
-		 *			  the control behaviour given by the input tuple, in addition to determining
-		 *			  the COLREGS violation indicator in a certain scenario.
-		 *  Author   : Trym Tengesdal
-		 *  Modified :
-		 *****************************************************************************************/
 		__device__ thrust::tuple<float, float, float> CB_Cost_Functor_2::operator()(
 			const thrust::tuple<
 				const int,							  // Thread index

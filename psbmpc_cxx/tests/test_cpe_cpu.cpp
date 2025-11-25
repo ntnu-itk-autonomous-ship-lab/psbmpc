@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_cpe.cpp
-*
-*  Function  : Test file for the CPE class for PSB-MPC, using Matlab for 
-*			   visualization 
-*			   
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #include "cpu/cpe_cpu.hpp"
 #include "cpu/utilities_cpu.hpp"
 #if OWNSHIP_TYPE == 0

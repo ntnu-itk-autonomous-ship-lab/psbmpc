@@ -1,24 +1,3 @@
-/****************************************************************************************
-*
-*  File name : cuda_obstacle.cuh
-*
-*  Function  : Header file for the read-only obstacle class containing independent
-*			   prediction scenario trajectory data, used by the PSB-MPC in the
-*			   CUDA kernels / GPU threads.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include "psbmpc_defines.hpp"

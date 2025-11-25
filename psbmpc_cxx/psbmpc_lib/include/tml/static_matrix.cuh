@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : static_matrix.cuh
-*
-*  Function  : Header file for the fixed-matrices in Tryms (shitty) Matrix Library.
-*
-*  
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include <thrust/device_vector.h>

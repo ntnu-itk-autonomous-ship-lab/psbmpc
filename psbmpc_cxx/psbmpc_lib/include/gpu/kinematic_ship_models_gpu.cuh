@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : kinematic_ship_models_gpu.cuh
-*
-*  Function  : Header file for the GPU used simple kinematic model based obstacle ship,
-*			   used as base for the obstacle collision avoidance system.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include "psbmpc_defines.hpp"

@@ -1,23 +1,3 @@
-/****************************************************************************************
- *
- *  File name : test_psbmpc.cpp
- *
- *  Function  : Test file for the Probabilistic Scenario-based Model Predictive Control with anti-grounding
- *			   using Matlab for visualization
- *
- *	           ---------------------
- *
- *  Version 1.0
- *
- *  Copyright (C) 2020 Tom Daniel Grande, Trym Tengsedal NTNU Trondheim.
- *  All rights reserved.
- *
- *  Author    : Tom Daniel Grande, Trym Tengsedal
- *
- *  Modified  :
- *
- *****************************************************************************************/
-
 #include "cpu/psbmpc_cpu.hpp"
 #if USE_GPU_PSBMPC
 #include "gpu/psbmpc_gpu.cuh"

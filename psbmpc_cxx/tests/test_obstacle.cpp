@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_obstacle.cpp
-*
-*  Function  : Test file for the Obstacle class for PSB-MPC, using Matlab for 
-*			   visualization 
-*			   
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #include "tracked_obstacle.hpp"
 #include "sbmpc.hpp"
 #if OWNSHIP_TYPE == 0

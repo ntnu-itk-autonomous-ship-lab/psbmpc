@@ -1,24 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_tml_pdmatrix.cu
-*
-*  Function  : Test file for the PDMatrix class in TML meant for use in 
-*			   CUDA kernels, and other miscellaneous tests.
-*			   
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif

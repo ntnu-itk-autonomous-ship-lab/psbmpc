@@ -2,12 +2,12 @@
 
 This repository contains C++ implementations for the Scenario-based Model Predictive Control Algorithm (SB-MPC) [[1]](#1) and its probabilistic variant (PSB-MPC) described in <https://ieeexplore.ieee.org/abstract/document/10876006/>.
 
-The **psbmpc_cxx** implements the Probabilistic Scenario-based MPC [[2]](#2) in C++/CUDA, which is an extended and improved version of the original SB-MPC, with more focus on probabilistic risk assessment, and which allows any given number of avoidance maneuvers in the prediction horizon. Here, one version is implemented for the CPU (used for prototyping and testing mainly) and another for the GPU (which is meant to be used in real-time). Here, **psbmpc_ros_package** is a ROS1 package for using the PSB-MPC in an autonomous ship.
+The **psbmpc_cxx** implements the Probabilistic Scenario-based MPC [[2]](#2) in C++/CUDA, which is an extended and improved version of the original SB-MPC, with more focus on probabilistic risk assessment, and which allows any given number of avoidance maneuvers in the prediction horizon. Here, one version is implemented for the CPU (used for prototyping and testing mainly) and another for the GPU (which is meant to be used in real-time). See install instructions for the code under `psbmpc_cxx`. Here, **psbmpc_ros_package** is a ROS1 package for using the PSB-MPC in an autonomous ship.
 
 The **sbmpc_catkin_ws** contains the ROS-based colav implemented through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3)), where the original SB-MPC is implemented, in addition to a velocity obstacle algorithm.
 
 ## Citation
-If you are using algorithms from this repo in your work, please use the following citation:
+If you are using algorithms from this repo in your work, please use the following citation
 ```
 @article{Tengesdal2024fr,
   author  = {Tengesdal, Trym and Rothmund, Sverre V. and Basso, Erlend A. and Schmidt-Didlaukies, Henrik and Johansen, Tor A.},

@@ -1,22 +1,3 @@
-/****************************************************************************************
- *
- *  File name : psbmpc_parameters.cpp
- *
- *  Function  : Class function file for the PSB-MPC parameter class.
- *
- *	           ---------------------
- *
- *  Version 1.0
- *
- *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
- *  All rights reserved.
- *
- *  Author    : Trym Tengesdal
- *
- *  Modified  :
- *
- *****************************************************************************************/
-
 #include "psbmpc_defines.hpp"
 #include "psbmpc_parameters.hpp"
 #include "Eigen/Dense"
@@ -29,12 +10,6 @@ namespace PSBMPC_LIB
 	/****************************************************************************************
 		Public functions
 	****************************************************************************************/
-	/****************************************************************************************
-	 *  Name     : get_<type>par
-	 *  Function : Returns parameter with index <index>, "overloaded" for different data types
-	 *  Author   : Trym Tengesdal
-	 *  Modified :
-	 *****************************************************************************************/
 	int PSBMPC_Parameters::get_ipar(
 		const int index // In: Index of parameter to return (Must be of int type)
 	) const
@@ -158,13 +133,6 @@ namespace PSBMPC_LIB
 		}
 	}
 
-	/****************************************************************************************
-	 *  Name     : set_par
-	 *  Function : Sets parameter with index <index> to value <value>, given that it is inside
-	 *			  valid limits. Overloaded for different data types
-	 *  Author   : Trym Tengesdal
-	 *  Modified :
-	 *****************************************************************************************/
 	void PSBMPC_Parameters::set_par(
 		const int index, // In: Index of parameter to set
 		const int value	 // In: Value to set for parameter
@@ -350,12 +318,6 @@ namespace PSBMPC_LIB
 	/****************************************************************************************
 		Private functions
 	****************************************************************************************/
-	/****************************************************************************************
-	 *  Name     : initialize_par_limits
-	 *  Function : Sets initial low and high limits on tuning parameters
-	 *  Author   :
-	 *  Modified :
-	 *****************************************************************************************/
 	void PSBMPC_Parameters::initialize_par_limits()
 	{
 		ipar_low.resize(N_IPAR);
@@ -393,12 +355,6 @@ namespace PSBMPC_LIB
 		// std::cout << "d_par_high = " << dpar_high.transpose() << std::endl;
 	}
 
-	/****************************************************************************************
-	 *  Name     : initialize_pars
-	 *  Function : Sets initial values for PSBMPC tuning parameters, two overloads.
-	 *  Author   :
-	 *  Modified :
-	 *****************************************************************************************/
 	void PSBMPC_Parameters::initialize_pars()
 	{
 		n_cbs = 1;

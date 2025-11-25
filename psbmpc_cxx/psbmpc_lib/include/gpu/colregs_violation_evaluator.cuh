@@ -1,22 +1,3 @@
-/****************************************************************************************
- *
- *  File name : colregs_violation_evaluator.cuh
- *
- *  Function  : Header file for the COLREGS Violation Evaluator class, which keeps
- *              track of and calculates the COLREGS violation cost.
- *
- *            ---------------------
- *
- *  Version 1.0
- *
- *  Copyright (C) 2020 Sverre Velten Rothmund, Trym Tengesdal NTNU Trondheim.
- *  All rights reserved.
- *
- *  Author    : Sverre Velten Rothmund
- *
- *  Modified  :
- *
- *****************************************************************************************/
 #pragma once
 
 #include "psbmpc_parameters.hpp"

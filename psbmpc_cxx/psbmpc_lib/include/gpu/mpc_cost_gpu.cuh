@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : mpc_cost_gpu.cuh
-*
-*  Function  : Header file for the device compatible MPC Cost class (PSB/SB-MPC), which
-*              contains implementations for the COLAV MPC cost functions.
-*
-*            ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include "psbmpc_parameters.hpp"

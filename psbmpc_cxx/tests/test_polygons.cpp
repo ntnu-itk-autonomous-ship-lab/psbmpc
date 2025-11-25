@@ -1,22 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_polygons.cpp
-*
-*  Function  : Test file for the grounding hazard managers polygon handling.
-*			   
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2021 Trym Tengsedal NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengsedal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #include <iostream>
 #include <list>
 
