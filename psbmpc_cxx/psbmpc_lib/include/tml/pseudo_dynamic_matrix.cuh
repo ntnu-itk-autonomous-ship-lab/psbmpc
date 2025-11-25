@@ -1,24 +1,3 @@
-/****************************************************************************************
-*
-*  File name : pseudo_dynamic_matrix.cuh
-*
-*  Function  : Header file for the "dynamic" matrix class used in Tryms (shitty) Matrix 
-*			   Library, which has a compile-time set max number of rows and columns.
-*			   Abbreviated as PDMatrix.
-*  
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include <thrust/device_vector.h>

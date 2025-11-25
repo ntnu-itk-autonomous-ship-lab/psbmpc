@@ -1,24 +1,3 @@
-/****************************************************************************************
-*
-*  File name : utilities_gpu.cuh
-*
-*  Function  : Header file for all-purpose math functions which can/are used by multiple
-*			   device library files. Thus, do NOT add a function here if it belongs to one
-*			   distinct class. Overloads for tml type matrices.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include "psbmpc_defines.hpp"

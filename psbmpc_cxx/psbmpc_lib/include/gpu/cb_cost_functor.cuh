@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : cb_cost_functor.cuh
-*
-*  Function  : Header file for the control behaviour cost evaluation functors. Used in
-*			   the thrust framework for GPU calculations.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include "cb_cost_functor_structures.cuh"
@@ -39,7 +19,7 @@ namespace PSBMPC_LIB
 		*  Name     : CB_Cost_Functor_1
 		*  Function : Functor used to predict the own-ship trajectory
 		*			  following a certain control behaviour, and calculate the path related costs
-		*  Author   : Trym Tengesdal
+		*  Author   : 
 		*  Modified :
 		*****************************************************************************************/
 		class CB_Cost_Functor_1

@@ -1,23 +1,3 @@
-/****************************************************************************************
- *
- *  File name : cpe_gpu.cu
- *
- *  Function  : Class functions for the GPU collision probability estimator
- *
- *
- *            ---------------------
- *
- *  Version 1.0
- *
- *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
- *  All rights reserved.
- *
- *  Author    : Trym Tengesdal
- *
- *  Modified  :
- *
- *****************************************************************************************/
-
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
 #include <stdio.h>
@@ -28,12 +8,6 @@ namespace PSBMPC_LIB
     namespace GPU
     {
 
-        /****************************************************************************************
-         *  Name     : CPE
-         *  Function : Class constructor, initializes parameters and variables
-         *  Author   :
-         *  Modified :
-         *****************************************************************************************/
         __host__ CPE::CPE(
             const CPE_Method cpe_method, // In: Method to be used
             const double dt              // In: Outer object (MPC) time step
@@ -83,12 +57,6 @@ namespace PSBMPC_LIB
             assign_data(cpe_host);
         }
 
-        /****************************************************************************************
-         *  Name     : operator=
-         *  Function : Assignment operator
-         *  Author   :
-         *  Modified :
-         *****************************************************************************************/
         __host__ CPE &CPE::operator=(
             const CPE &other // In: Device side CPE to assign
         )
@@ -112,13 +80,6 @@ namespace PSBMPC_LIB
             return *this;
         }
 
-        /****************************************************************************************
-         *  Name     : initialize
-         *  Function : Sets up the initial values for the collision probability estimator before
-         *             before a new run
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __device__ void CPE::initialize(
             const TML::PDVector4f &xs_os, // In: Own-ship state vector
             const TML::PDVector4f &xs_i,  // In: Obstacle i state vector
@@ -155,12 +116,6 @@ namespace PSBMPC_LIB
         /****************************************************************************************
             Private functions
         ****************************************************************************************/
-        /****************************************************************************************
-         *  Name     : resize_matrices
-         *  Function :
-         *  Author   :
-         *  Modified :
-         *****************************************************************************************/
         __host__ __device__ void CPE::resize_matrices()
         {
             switch (method)
@@ -183,17 +138,6 @@ namespace PSBMPC_LIB
             }
         }
 
-        /****************************************************************************************
-         *  Name     : update_L
-         *  Function : Updates the lower triangular matrix L based on cholesky decomposition
-         *             formulas for the input matrix. For 2x2 and 4x4 matrices only, hence
-         *             why eigen is not used. Two overloads for CE and MCSKF4D, respectively.
-         *             Formulas:
-         *             L_jj = sqrt(A_jj - sum_k=0^j-1 (L_jk)^2)
-         *             L_ij = (1 / L_jj) * (A_jj) - sum_k=0^j-1 L_ik * L_jk)
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __host__ __device__ void CPE::update_L(
             const TML::Matrix2f &in // In: Matrix in consideration
         )
@@ -263,13 +207,6 @@ namespace PSBMPC_LIB
             }
         }
 
-        /****************************************************************************************
-         *  Name     : norm_pdf_log
-         *  Function : Calculates the logarithmic value of the multivariate normal distribution.
-         *             Only used by CE-method so-far.
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __device__ inline void CPE::norm_pdf_log(
             TML::PDMatrix<float, 1, MAX_N_CPE_SAMPLES> &result, // In/out: Resulting vector of pdf values
             const TML::Vector2d &mu,                            // In: Expectation of the MVN
@@ -293,13 +230,6 @@ namespace PSBMPC_LIB
             }
         }
 
-        /****************************************************************************************
-         *  Name     : generate_norm_dist_samples
-         *  Function : Generates samples from the MVN distribution with given mean and covariance.
-         *             Two overloads for CE and MCSKF4D, respectively.
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __device__ inline void CPE::generate_norm_dist_samples(
             const TML::Vector2f &mu,   // In: Expectation of the MVN
             const TML::Matrix2f &Sigma // In: Covariance of the MVN
@@ -342,12 +272,6 @@ namespace PSBMPC_LIB
             samples = L * samples + mu;
         }
 
-        /****************************************************************************************
-         *  Name     : calculate_roots_2nd_order
-         *  Function : Simple root calculation for a 2nd order polynomial Ax² + Bx + C = 0
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __host__ __device__ void CPE::calculate_roots_2nd_order()
         {
             complex_roots = false;
@@ -374,13 +298,6 @@ namespace PSBMPC_LIB
             }
         }
 
-        /****************************************************************************************
-         *  Name     : produce_MCS_estimate
-         *  Function : Uses Monte Carlo Simulation to produce a collision probability "measurement"
-         *             for the MCSKF4D method
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __device__ float CPE::produce_MCS_estimate(
             const TML::Vector4f &xs_i,     // In: Obstacle state vector
             const TML::Matrix4f &P_i,      // In: Obstacle covariance
@@ -407,14 +324,6 @@ namespace PSBMPC_LIB
             }
         }
 
-        /****************************************************************************************
-         *  Name     : determine_sample_validity_4D
-         *  Function : Determine if a sample is valid for use in estimation for the MCSKF4D.
-         *             See "On Collision Risk Assessment for Autonomous Ships Using Scenario-based"
-         *             MPC for more information.
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __host__ __device__ void CPE::determine_sample_validity_4D(
             const TML::Vector2d &p_os_cpa, // In: Position of own-ship at cpa
             const double t_cpa             // In: Time to cpa
@@ -453,24 +362,12 @@ namespace PSBMPC_LIB
             }
         }
 
-        /****************************************************************************************
-         *  Name     : MCSKF4D_estimation
-         *  Function : Collision probability estimation using Monte Carlo Simulation and
-         *             Kalman-filtering, considering the 4D obstacle uncertainty along piece-wise
-         *             linear segments of the vessel trajectories. See "Risk-based Autonomous
-         *             Maritime Collision Avoidance Considering Obstacle Intentions" for more info.
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __device__ float CPE::MCSKF4D_estimate(
             const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_os, // In: Own-ship states for the active segment
             const TML::PDMatrix<float, 4, MAX_N_SEG_SAMPLES> &xs_i,  // In: Obstacle i states for the active segment
             const TML::PDMatrix<float, 16, MAX_N_SEG_SAMPLES> &P_i   // In: Obstacle i covariance for the active segment
         )
         {
-            /*****************************************************
-             * Find linear segment representative state vectors
-             *****************************************************/
             n_seg_samples = xs_os.get_cols();
 
             if (n_seg_samples > 1)
@@ -513,10 +410,6 @@ namespace PSBMPC_LIB
             printf("p_os_cpa = %.2f, %.2f\n", p_os_cpa(0), p_os_cpa(1));
             printf("t_cpa = %.4f\n", t_cpa); */
 
-            /*****************************************************
-             * Generate Monte Carlo Simulation estimate of P_c
-             * for use in the Kalman-filter
-             *****************************************************/
             // Constrain the collision probability estimation to the interval [t_j-1, t_j],
             // which is of length dt_seg. This is done to only consider vessel positions on
             // their discretized trajectories, and not beyond that.
@@ -530,13 +423,6 @@ namespace PSBMPC_LIB
             }
             // printf("y_P_c_i = %.6f\n", y_P_c_i);
 
-            /*****************************************************
-             * Kalman-filtering for simple markov chain model
-             * P_c^i_k+1 = P_c^i_k + v^i_k
-             * y^i_k     = P_c^i_k + w^i_k
-             ******************************************************
-             * Update using measurement y_P_c
-             *****************************************************/
             K = var_P_c_p / (var_P_c_p + r);
 
             P_c_upd = P_c_p + K * (y_P_c_i - P_c_p);
@@ -546,9 +432,6 @@ namespace PSBMPC_LIB
 
             var_P_c_upd = (1.0f - K) * var_P_c_p;
 
-            /*****************************************************
-             * Predict
-             *****************************************************/
             P_c_p = P_c_upd;
             if (P_c_p > 1.0f)
                 P_c_p = 1.0f;
@@ -560,13 +443,6 @@ namespace PSBMPC_LIB
             return P_c_upd;
         }
 
-        /****************************************************************************************
-         *  Name     : determine_sample_validity_2D
-         *  Function : Determine valid samples for 2D collision probability estimation methods
-         *             (CE-method)
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __device__ void CPE::determine_sample_validity_2D(
             const TML::Vector2d &p_os // In: Own-ship position vector
         )
@@ -588,12 +464,6 @@ namespace PSBMPC_LIB
             }
         }
 
-        /****************************************************************************************
-         *  Name     : determine_best_performing_samples
-         *  Function : Determine the elite samples for the CE method for a given iteration
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __device__ void CPE::determine_best_performing_samples(
             const TML::Vector2d &p_os,   // In: Own-ship position vector
             const TML::Vector2d &p_i,    // In: Obstacle i position vector
@@ -624,13 +494,6 @@ namespace PSBMPC_LIB
             }
         }
 
-        /****************************************************************************************
-         *  Name     : update_importance_density
-         *  Function : Improves the current importance density in the Cross-Entropy iterative
-         *             optimization.
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __device__ void CPE::update_importance_density()
         {
             // Set previous importance density parameters to the old current ones
@@ -664,12 +527,6 @@ namespace PSBMPC_LIB
             P_CE = alpha_n * P_CE + (1.0f - alpha_n) * P_CE_prev;
         }
 
-        /****************************************************************************************
-         *  Name     : CE_estimate
-         *  Function : Collision probability estimation using the Cross-Entropy method
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __device__ float CPE::CE_estimate(
             const TML::Vector2f &p_os,      // In: Own-ship position vector
             const TML::Vector2f &p_i,       // In: Obstacle i position vector
@@ -680,9 +537,6 @@ namespace PSBMPC_LIB
         )
         {
             P_c_CE = 0.0f;
-            /******************************************************************************
-             * Check if it is necessary to perform estimation
-             ******************************************************************************/
             d_0i = (p_i - p_os).norm();
 
             if (P_i(0, 0) > P_i(1, 1))
@@ -702,9 +556,6 @@ namespace PSBMPC_LIB
                 return P_c_CE;
             }
 
-            /******************************************************************************
-             * Convergence dependent initialization prior to the run at time t_k
-             ******************************************************************************/
             sigma_inject = d_safe / 3.0f;
             if (converged_last)
             {
@@ -731,9 +582,6 @@ namespace PSBMPC_LIB
             printf("P_CE = %.1f, %.1f\n", P_CE(0, 0), P_CE(0, 1));
             printf("	   %.1f, %.1f\n", P_CE(1, 0), P_CE(1, 1)); */
 
-            /******************************************************************************
-             * Iterative optimization to find the near-optimal importance density
-             ******************************************************************************/
             P_i_inv = P_i;
             P_i_inv = P_i_inv.inverse();
             for (int it = 0; it < max_it; it++)
@@ -759,10 +607,6 @@ namespace PSBMPC_LIB
             mu_CE_last = mu_CE;
             P_CE_last = P_CE;
 
-            /******************************************************************************
-             * Estimate collision probability with samples from the final importance
-             * density from the optimization
-             ******************************************************************************/
             generate_norm_dist_samples(mu_CE, P_CE);
 
             determine_sample_validity_2D(p_os);
@@ -789,12 +633,6 @@ namespace PSBMPC_LIB
             return 0;
         }
 
-        /****************************************************************************************
-         *  Name     : assign_data
-         *  Function :
-         *  Author   : Trym Tengesdal
-         *  Modified :
-         *****************************************************************************************/
         __host__ __device__ void CPE::assign_data(
             const CPE &other // Device side CPE to copy over data/parameters from
         )

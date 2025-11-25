@@ -1,22 +1,3 @@
-/****************************************************************************************
- *
- *  File name : test_kf.cpp
- *
- *  Function  : Test file for the Kalman Filter (KF) class for PSB-MPC
- *
- *	           ---------------------
- *
- *  Version 1.0
- *
- *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
- *  All rights reserved.
- *
- *  Author    : Trym Tengesdal
- *
- *  Modified  :
- *
- *****************************************************************************************/
-
 #include "cpu/utilities_cpu.hpp"
 #include "kf.hpp"
 #include <iostream>

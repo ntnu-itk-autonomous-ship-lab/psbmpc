@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_cpe.cu
-*
-*  Function  : Test file for the CUDA-tailored CPE class for PSB-MPC, using Matlab for 
-*			   visualization 
-*			   
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #include "gpu/cpe_gpu.cuh"
 #include "gpu/utilities_gpu.cuh"
 #include "cpu/utilities_cpu.hpp"

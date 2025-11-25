@@ -1,23 +1,3 @@
-/****************************************************************************************
- *
- *  File name : kinematic_ship_models_cpu.cpp
- *
- *  Function  : Class functions for the CPU based kinematic ship model used in the obstacle
- *			   collision avoidance system predictions.
- *
- *	           ---------------------
- *
- *  Version 1.0
- *
- *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
- *  All rights reserved.
- *
- *  Author    : Trym Tengesdal
- *
- *  Modified  :
- *
- *****************************************************************************************/
-
 #include "cpu/utilities_cpu.hpp"
 #include "cpu/kinematic_ship_models_cpu.hpp"
 #include <vector>
@@ -27,12 +7,6 @@ namespace PSBMPC_LIB
 {
 	namespace CPU
 	{
-		/****************************************************************************************
-		 *  Name     : Kinematic_Ship
-		 *  Function : Class constructor
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		Kinematic_Ship::Kinematic_Ship()
 		{
 			l = 5.0; // milliAmpere dims
@@ -131,12 +105,6 @@ namespace PSBMPC_LIB
 			this->path_prediction_shape = other.path_prediction_shape;
 		}
 
-		/****************************************************************************************
-		 *  Name     : determine_active_waypoint_segment
-		 *  Function :
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		void Kinematic_Ship::determine_active_waypoint_segment(
 			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Waypoints to follow
 			const Eigen::Vector4d &xs					   // In: Ownship state
@@ -177,14 +145,6 @@ namespace PSBMPC_LIB
 			wp_c_p = wp_c_0;
 		}
 
-		/****************************************************************************************
-		 *  Name     : update_guidance_references
-		 *  Function : Two overloads, one general purpose function, and one specialized for LOS
-		 *			   where an artificial cross-track error is applied. Duplicate overloads for 
-		 *             pybind11 functionality.
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		void Kinematic_Ship::update_guidance_references(
 			double &u_d,								   // In/out: Surge reference
 			double &chi_d,								   // In/out: Course reference
@@ -452,13 +412,6 @@ namespace PSBMPC_LIB
 			return output;
 		}
 
-		/****************************************************************************************
-		 *  Name     : predict
-		 *  Function : Predicts obstacle state xs a number of dt units forward in time with the
-		 *			  chosen prediction method
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		Eigen::Vector4d Kinematic_Ship::predict(
 			const Eigen::Vector4d &xs_old,			  // In: State [x, y, chi, U] to predict forward
 			const double U_d,						  // In: Speed over ground (SOG) reference
@@ -496,13 +449,6 @@ namespace PSBMPC_LIB
 			return xs_new;
 		}
 
-		/****************************************************************************************
-		 *  Name     : predict_trajectory
-		 *  Function : Predicts the obstacle ship trajectory for a sequence of avoidance maneuvers
-		 *			  in the offset sequence, or for a cross track modifier to the original path.
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		void Kinematic_Ship::predict_trajectory(
 			Eigen::MatrixXd &trajectory,				   // In/out: Obstacle ship trajectory
 			const Eigen::VectorXd &offset_sequence,		   // In: Sequence of offsets in the candidate control behavior

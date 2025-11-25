@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_obstacle_predictor.cpp
-*
-*  Function  : Test file for the Mean-reverting Ornstein-Uhlenbeck process
-*			   class for PSB-MPC.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #include "cpu/psbmpc_cpu.hpp"
 #include <iostream>
 #include <vector>

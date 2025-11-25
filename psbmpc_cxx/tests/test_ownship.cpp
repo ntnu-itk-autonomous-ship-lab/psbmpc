@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_ownship.cu
-*
-*  Function  : Test file for the Ownship class for GPU PSB-MPC, using Matlab for
-*			   visualization
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #if USE_GPU_PSBMPC
 #if OWNSHIP_TYPE == 0
 #include "gpu/kinematic_ship_models_gpu.cuh"

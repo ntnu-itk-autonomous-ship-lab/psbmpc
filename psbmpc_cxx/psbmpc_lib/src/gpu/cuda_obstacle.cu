@@ -1,24 +1,3 @@
-/****************************************************************************************
-*
-*  File name : cuda_obstacle.cu
-*
-*  Function  : Cuda obstacle class functions. Derived class of base Obstacle class,
-*		  	   used in the PSB-MPC GPU CB_Cost_Functor computation.
-*
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #include "gpu/cuda_obstacle.cuh"
 #include "gpu/utilities_gpu.cuh"
 #include <iostream>
@@ -27,12 +6,6 @@ namespace PSBMPC_LIB
 {
 	namespace GPU
 	{
-		/****************************************************************************************
-		*  Name     : Cuda_Obstacle
-		*  Function : Copy constructor. Overloaded for two derived obstacle types.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
 		__host__ Cuda_Obstacle::Cuda_Obstacle(
 			const Cuda_Obstacle &co // In: Obstacle to copy
 		)
@@ -47,13 +20,6 @@ namespace PSBMPC_LIB
 			assign_data(to);
 		}
 
-		/****************************************************************************************
-		*  Name     : operator=
-		*  Function : Overloaded for two derived obstacle types. NOTE: Should only be used
-		*			  when the lhs is uninitialized.
-		*  Author   : Trym Tengesdal
-		*  Modified :
-		*****************************************************************************************/
 		__host__ Cuda_Obstacle &Cuda_Obstacle::operator=(
 			const Cuda_Obstacle &rhs // In: Rhs to assign
 		)
@@ -77,15 +43,6 @@ namespace PSBMPC_LIB
 			return *this;
 		}
 
-		/****************************************************************************************
-		*  Private functions
-		*****************************************************************************************/
-		/****************************************************************************************
-		*  Name     : assign_data
-		*  Function :
-		*  Author   :
-		*  Modified :
-		*****************************************************************************************/
 		__host__ void Cuda_Obstacle::assign_data(
 			const Cuda_Obstacle &co // In: Cuda_Obstacle whose data to assign to *this
 		)

@@ -1,24 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_psbmpc_cost_class.cpp
-*
-*  Function  : Test file for the Probabilistic Scenario-based Model Predictive Control 
-*			   cost function class.
-*			   
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengsedal NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengsedal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
-
 #include "cpu/psbmpc_cpu.hpp"
 #include "gpu/mpc_cost_gpu.cuh"
 #include "cpu/utilities_cpu.hpp"

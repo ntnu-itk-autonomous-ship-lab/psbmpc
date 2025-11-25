@@ -1,22 +1,3 @@
-/****************************************************************************************
-*
-*  File name : cb_cost_functor_structures.cuh
-*
-*  Function  : Header file for the data/parameter structures used in the control behaviour
-*			   cost functor. Used in the thrust framework for GPU calculations.
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include "grounding_hazard_manager.hpp"

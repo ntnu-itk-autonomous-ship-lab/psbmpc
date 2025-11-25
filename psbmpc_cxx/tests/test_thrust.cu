@@ -1,22 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_thrust.cu
-*
-*  Function  : Test file for the thrust library functionality
-*			   
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #include <iostream>
 #include <Eigen/Dense>
 #include <random>

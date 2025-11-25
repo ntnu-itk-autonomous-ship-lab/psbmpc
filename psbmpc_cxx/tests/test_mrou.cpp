@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_mrou.cpp
-*
-*  Function  : Test file for the Mean-reverting Ornstein-Uhlenbeck process 
-*			   class for PSB-MPC.
-*			   
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #include "cpu/utilities_cpu.hpp"
 #include "mrou.hpp"
 #include <iostream>

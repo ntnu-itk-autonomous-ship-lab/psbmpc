@@ -1,27 +1,3 @@
-/****************************************************************************************
-*
-*  File name : cpe_gpu.cuh
-*
-*  Function  : Header file for the Collision Probability Estimator (CPE).
-*			   The module estimates the collision probability wrt all nearby
-*			   obstacles. The module assumes that the own-ship uncertainty is negligible
-*  			   compared to that of the obstacles. If this is not the case, then a
-*			   linear transformationcan be used to "gather" both vessel's 
-*			   uncertainty in one RV.
-* 			   Different implementation from the CPU variant due to different
-*			   platforms/hardware. 
-*            ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
 
 #pragma once
 

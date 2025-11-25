@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : psbmpc.cuh
-*
-*  Function  : Header file for Probabilistic Scenario-based Model Predictive Control,
-*			   slightly modified for this GPU-implementation.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include "psbmpc_defines.hpp"

@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_prng.cpp
-*
-*  Function  : Test file for different pseudo random number generators, which could be 
-*              used in the Collision Probability Estimator
-*			   
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #include <iostream>
 #include <random>
 #include <chrono>

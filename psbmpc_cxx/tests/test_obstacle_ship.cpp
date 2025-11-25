@@ -1,23 +1,3 @@
-/****************************************************************************************
-*
-*  File name : test_obstacle_ship.cpp
-*
-*  Function  : Test file for the Obstacle_Ship class for PSB-MPC, using Matlab for
-*			   visualization.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #if USE_GPU_PSBMPC
 #include "gpu/kinematic_ship_models_gpu.cuh"
 #else

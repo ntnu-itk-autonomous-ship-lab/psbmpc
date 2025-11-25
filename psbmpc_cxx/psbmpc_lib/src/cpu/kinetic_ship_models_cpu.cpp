@@ -1,24 +1,3 @@
-/****************************************************************************************
- *
- *  File name : kinetic_ship_models_cpu.cpp
- *
- *  Function  : Class functions for the CPU used kinetic ship models: The base class,
- *			   Telemetron and MilliAmpere(unfinished).
- *
- *
- *	           ---------------------
- *
- *  Version 1.0
- *
- *  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
- *  All rights reserved.
- *
- *  Author    : Trym Tengesdal
- *
- *  Modified  :
- *
- *****************************************************************************************/
-
 #include "cpu/utilities_cpu.hpp"
 #include "cpu/kinetic_ship_models_cpu.hpp"
 #include <vector>
@@ -28,12 +7,6 @@ namespace PSBMPC_LIB
 {
 	namespace CPU
 	{
-		/****************************************************************************************
-		 *  Name     : Ship_Base_3DOF
-		 *  Function : Class constructor
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		Kinetic_Ship_Base_3DOF::Kinetic_Ship_Base_3DOF()
 		{
 			tau = Eigen::Vector3d::Zero();
@@ -53,12 +26,6 @@ namespace PSBMPC_LIB
 			// The model parameters are derived class dependent, and therefore set in the derived class constructors
 		}
 
-		/****************************************************************************************
-		 *  Name     : determine_active_waypoint_segment
-		 *  Function :
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::determine_active_waypoint_segment(
 			const Eigen::Matrix<double, 2, -1> &waypoints, // In: Waypoints to follow
 			const Eigen::Matrix<double, 6, 1> &xs		   // In: Ownship state
@@ -99,12 +66,6 @@ namespace PSBMPC_LIB
 			wp_c_p = wp_c_0;
 		}
 
-		/****************************************************************************************
-		 *  Name     : update_guidance_references
-		 *  Function :
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::update_guidance_references(
 			double &u_d,								   // In/out: Surge reference
 			double &chi_d,								   // In/out: Course reference
@@ -267,13 +228,6 @@ namespace PSBMPC_LIB
 				Private functions
 		*****************************************************************************************/
 
-		/****************************************************************************************
-		 *  Name     : Cvv
-		 *  Function : Calculates the "coriolis vector" for the 3DOF surface vessel based on
-		 *			  Fossen 2011. Use the equations for C_RB and C_A in Section 7.1
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::update_Cvv(
 			const Eigen::Vector3d &nu // In: BODY velocity vector nu = [u, v, r]^T
 		)
@@ -301,13 +255,6 @@ namespace PSBMPC_LIB
 			Cvv(2) = -c13 * nu(0) - c23 * nu(1);
 		}
 
-		/****************************************************************************************
-		 *  Name     : Dvv
-		 *  Function : Calculates the "damping vector" for the 3DOF surface vessel based on
-		 *			  Fossen 2011
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		void Kinetic_Ship_Base_3DOF::update_Dvv(
 			const Eigen::Vector3d &nu // In: BODY velocity vector nu = [u, v, r]^T
 		)
@@ -322,12 +269,6 @@ namespace PSBMPC_LIB
 		//=======================================================================================
 		// Telemetron class methods
 		//=======================================================================================
-		/****************************************************************************************
-		 *  Name     : Telemetron
-		 *  Function : Class constructor
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		Telemetron::Telemetron()
 		{
 			// Model parameters
@@ -383,12 +324,6 @@ namespace PSBMPC_LIB
 			r_max = 0.34 * DEG2RAD; // [rad/s] default max yaw rate
 		}
 
-		/****************************************************************************************
-		 *  Name     : update_ctrl_input
-		 *  Function :
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		void Telemetron::update_ctrl_input(
 			const double u_d,					  // In: Surge reference
 			const double psi_d,					  // In: Heading (taken equal to course reference due to assumed zero crab angle and side slip) reference
@@ -419,14 +354,6 @@ namespace PSBMPC_LIB
 			tau[2] = l_r * Fy;
 		}
 
-		/****************************************************************************************
-		 *  Name     : predict
-		 *  Function : Predicts ownship state xs a number of dt units forward in time with the
-		 *			  chosen prediction method. Overloaded depending on if the input vector
-		 *			  is updated or not.
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		Eigen::Matrix<double, 6, 1> Telemetron::predict(
 			const Eigen::Matrix<double, 6, 1> &xs_old, // In: State to predict forward
 			const double dt,						   // In: Time step
@@ -480,13 +407,6 @@ namespace PSBMPC_LIB
 			return predict(xs_old, dt, prediction_method);
 		}
 
-		/****************************************************************************************
-		 *  Name     : predict_trajectory
-		 *  Function : Predicts the ownship trajectory for a sequence of avoidance maneuvers in the
-		 *			  offset sequence.
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		void Telemetron::predict_trajectory(
 			Eigen::MatrixXd &trajectory,				   // In/out: Own-ship trajectory
 			const Eigen::VectorXd &offset_sequence,		   // In: Sequence of offsets in the candidate control behavior

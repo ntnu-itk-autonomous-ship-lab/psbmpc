@@ -1,25 +1,3 @@
-/****************************************************************************************
-*
-*  File name : tml.cuh
-*
-*  Function  : Header file for a simple Tryms Matrix Library (TML)
-*			   used inside the Cuda kernels for the PSB-MPC GPU calculations. Can contain 
-*			   any normal data type such as double, float, int, bool etc. 
-*			   The implementation is based on CRTP. Storage is row-major.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim. 
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  : 
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include <thrust/device_vector.h>

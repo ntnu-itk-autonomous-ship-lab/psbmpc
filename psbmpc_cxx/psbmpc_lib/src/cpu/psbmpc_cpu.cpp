@@ -1,22 +1,3 @@
-/****************************************************************************************
- *
- *  File name : psbmpc_cpu.cpp
- *
- *  Function  : Class functions for Probabilistic Scenario-based Model Predictive Control
- *			   on the CPU
- *	           ---------------------
- *
- *  Version 1.0
- *
- *  Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
- *  All rights reserved.
- *
- *  Author    : Trym Tengesdal
- *
- *  Modified  :
- *
- *****************************************************************************************/
-
 #include "cpu/utilities_cpu.hpp"
 #include "cpu/psbmpc_cpu.hpp"
 
@@ -34,12 +15,6 @@ namespace PSBMPC_LIB
 	namespace CPU
 	{
 
-		/****************************************************************************************
-		 *  Name     : PSBMPC
-		 *  Function : Class constructor, initializes parameters and variables
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		PSBMPC::PSBMPC()
 			: u_opt_last(1.0), chi_opt_last(0.0), min_cost(1e12)
 		{
@@ -75,12 +50,6 @@ namespace PSBMPC_LIB
 			offset_sequence.resize(2 * pars.n_M);
 			maneuver_times.resize(pars.n_M);
 		}
-		/****************************************************************************************
-		 *  Name     : calculate_optimal_offsets
-		 *  Function : W/static obstacles parametrized as polygons
-		 *  Author   : Trym Tengesdal & Tom Daniel Grande
-		 *  Modified :
-		 *****************************************************************************************/
 		void PSBMPC::calculate_optimal_offsets(
 			double &u_opt,								   // In/out: Optimal surge offset
 			double &chi_opt,							   // In/out: Optimal course offset
@@ -1043,13 +1012,6 @@ namespace PSBMPC_LIB
 		/****************************************************************************************
 			Private functions
 		****************************************************************************************/
-		/****************************************************************************************
-		 *  Name     : determine_colav_active
-		 *  Function : Uses the freshly updated obstacles vector and the number of static
-		 *			  obstacles to determine whether it is necessary to run the PSBMPC
-		 *  Author   : Trym Tengesdal
-		 *  Modified :
-		 *****************************************************************************************/
 		bool PSBMPC::determine_colav_active(
 			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
 			const int n_so,						// In: Number of static obstacles
@@ -1086,13 +1048,6 @@ namespace PSBMPC_LIB
 			return colav_active;
 		}
 
-		/****************************************************************************************
-		 *  Name     : reset_control_behavior
-		 *  Function : Sets the offset sequence back to the initial starting point, i.e. the
-		 *			  leftmost branch of the control behavior tree
-		 *  Author   : Trym Tengesdal
-		 *  Modified :
-		 *****************************************************************************************/
 		void PSBMPC::reset_control_behaviour()
 		{
 			offset_sequence_counter.setZero();
@@ -1103,13 +1058,6 @@ namespace PSBMPC_LIB
 			}
 		}
 
-		/****************************************************************************************
-		 *  Name     : increment_control_behavior
-		 *  Function : Increments the control behavior counter and changes the offset sequence
-		 *			  accordingly. Backpropagation is used for the incrementation
-		 *  Author   : Trym Tengesdal
-		 *  Modified :
-		 *****************************************************************************************/
 		void PSBMPC::increment_control_behaviour()
 		{
 			for (int M = pars.n_M - 1; M > -1; M--)
@@ -1144,14 +1092,6 @@ namespace PSBMPC_LIB
 			}
 		}
 
-		/****************************************************************************************
-		 *  Name     : setup_prediction
-		 *  Function : Sets up the own-ship maneuvering times and number of prediction scenarios
-		 *			  for each obstacle based on the current situation, and predicts
-		 *			  independent obstacle trajectories using the predictor class.
-		 *  Author   : Trym Tengesdal
-		 *  Modified :
-		 *****************************************************************************************/
 		void PSBMPC::setup_prediction(
 			const Dynamic_Obstacles &obstacles // In: Dynamic obstacle information
 		)
@@ -1312,14 +1252,6 @@ namespace PSBMPC_LIB
 			//std::cout << "Ownship maneuver times = " << maneuver_times.transpose() << std::endl;
 		}
 
-		/****************************************************************************************
-		 *  Name     : calculate_collision_probabilities
-		 *  Function : Estimates collision probabilities for the own-ship and an obstacle i in
-		 *			  consideration. Can use a larger sample time than used in predicting
-		 *			  the vessel trajectories.
-		 *  Author   : Trym Tengesdal
-		 *  Modified :
-		 *****************************************************************************************/
 		void PSBMPC::calculate_collision_probabilities(
 			Eigen::MatrixXd &P_c_i,				// In/out: Predicted obstacle collision probabilities for all prediction scenarios, n_ps[i] x n_samples
 			const Dynamic_Obstacles &obstacles, // In: Dynamic obstacle information
@@ -1370,12 +1302,6 @@ namespace PSBMPC_LIB
 			}
 		}
 
-		/****************************************************************************************
-		 *  Name     : assign_optimal_trajectory
-		 *  Function : Set the optimal trajectory to the current predicted trajectory
-		 *  Author   :
-		 *  Modified :
-		 *****************************************************************************************/
 		void PSBMPC::assign_optimal_trajectory(
 			Eigen::MatrixXd &optimal_trajectory // In/out: Optimal PSB-MPC trajectory
 		)

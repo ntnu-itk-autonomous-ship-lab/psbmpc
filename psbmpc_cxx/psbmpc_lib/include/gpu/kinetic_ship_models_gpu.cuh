@@ -1,27 +1,3 @@
-/****************************************************************************************
-*
-*  File name : kinetic_ship_models_gpu.cuh
-*
-*  Function  : Header file for the GPU used kinetic ship model(s).
-*			   Facilitates Guidance, Navigation and Control (GNC) of a surface vessel
-*			   Uses mainly Eigen for matrix functionality.
-*
-*			   Implements a base Ship class, on which (atm) 2 derived variants are
-*			   implemented.
-*
-*	           ---------------------
-*
-*  Version 1.0
-*
-*  Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
-*  All rights reserved.
-*
-*  Author    : Trym Tengesdal
-*
-*  Modified  :
-*
-*****************************************************************************************/
-
 #pragma once
 
 #include "psbmpc_defines.hpp"
