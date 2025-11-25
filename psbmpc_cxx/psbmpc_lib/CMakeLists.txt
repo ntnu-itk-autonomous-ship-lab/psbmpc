@@ -1,16 +1,3 @@
-#======================================================================
-# This CMakeLists.txt creates and installs the PSB-MPC library target.
-# ---------------------------------------------------------------------
-
-# Version 1.0
-
-# Copyright (C) 2021 Trym Tengesdal, NTNU Trondheim.
-# All rights reserved.
-
-# Author 	: Trym Tengesdal
-
-# Modified 	:
-#======================================================================
 cmake_minimum_required(VERSION 3.17.3)
 
 include(GNUInstallDirs)

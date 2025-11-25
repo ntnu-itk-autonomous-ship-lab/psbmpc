@@ -1,19 +1,3 @@
-#======================================================================
-# This CMakeLists.txt creates the target for use in testing PSB-MPC
-# functionality. Almost every module of the PSB-MPC lib can be tested,
-# by uncommenting the module test file you want to select.
-
-# ---------------------------------------------------------------------
-
-# Version 1.0
-
-# Copyright (C) 2020 Trym Tengesdal, NTNU Trondheim.
-# All rights reserved.
-
-# Author 	: Trym Tengesdal
-
-# Modified 	:
-#======================================================================
 cmake_minimum_required(VERSION 3.17.3)
 
 # Pure host side test files
