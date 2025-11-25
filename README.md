@@ -1,6 +1,6 @@
 # psbmpc
 
-This repository contains branches of different Collision Avoidance (COLAV) algorithms, based on the Probabilistic Scenario-based Model Predictive Control Algorithm (PSB-MPC), having its origins from [[1]](#1).
+This repository contains branches of different Collision Avoidance (COLAV) algorithms, based on the Probabilistic Scenario-based Model Predictive Control Algorithm (PSB-MPC) in <https://ieeexplore.ieee.org/abstract/document/10876006/>, having its origins from [[1]](#1).
 
 The **psbmpc_cxx** implements the Probabilistic Scenario-based MPC [[2]](#2) in C/C++, which is an extended and improved version of the original SB-MPC, with more focus on probabilistic risk assessment, and which allows any given number of avoidance maneuvers in the prediction horizon. Here, one version is implemented for the CPU (used for prototyping and testing mainly) and another for the GPU (which is meant to be used in real-time). Here, **psbmpc_ros_package** is a ROS1 package for using the PSB-MPC in an autonomous ship.
 
