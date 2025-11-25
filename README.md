@@ -1,13 +1,13 @@
 # psbmpc
 
-This repository contains branches of different Collision Avoidance (COLAV) algorithms, based on the Probabilistic Scenario-based Model Predictive Control Algorithm (PSB-MPC) in <https://ieeexplore.ieee.org/abstract/document/10876006/>, having its origins from [[1]](#1).
+This repository contains C++ implementations for the Scenario-based Model Predictive Control Algorithm (SB-MPC) [[1]](#1) and its probabilistic variant (PSB-MPC) described in <https://ieeexplore.ieee.org/abstract/document/10876006/>.
 
-The **psbmpc_cxx** implements the Probabilistic Scenario-based MPC [[2]](#2) in C/C++, which is an extended and improved version of the original SB-MPC, with more focus on probabilistic risk assessment, and which allows any given number of avoidance maneuvers in the prediction horizon. Here, one version is implemented for the CPU (used for prototyping and testing mainly) and another for the GPU (which is meant to be used in real-time). Here, **psbmpc_ros_package** is a ROS1 package for using the PSB-MPC in an autonomous ship.
+The **psbmpc_cxx** implements the Probabilistic Scenario-based MPC [[2]](#2) in C++/CUDA, which is an extended and improved version of the original SB-MPC, with more focus on probabilistic risk assessment, and which allows any given number of avoidance maneuvers in the prediction horizon. Here, one version is implemented for the CPU (used for prototyping and testing mainly) and another for the GPU (which is meant to be used in real-time). Here, **psbmpc_ros_package** is a ROS1 package for using the PSB-MPC in an autonomous ship.
 
 The **sbmpc_catkin_ws** contains the ROS-based colav implemented through the Autosea project (with added robustness against obstacle track loss etc. [[3]](#3)), where the original SB-MPC is implemented, in addition to a velocity obstacle algorithm.
 
 ## Citation
-If you are using the `PSB-MPC` in your work, please use the following citation:
+If you are using algorithms from this repo in your work, please use the following citation:
 ```
 @article{Tengesdal2024fr,
   author  = {Tengesdal, Trym and Rothmund, Sverre V. and Basso, Erlend A. and Schmidt-Didlaukies, Henrik and Johansen, Tor A.},
@@ -20,6 +20,20 @@ If you are using the `PSB-MPC` in your work, please use the following citation:
   doi     = {10.55417/fr.2024007},
 }
 ```
+for the PSB-MPC, and 
+```
+@article{Johansen2016,
+  author={Johansen, Tor Arne and Perez, Tristan and Cristofaro, Andrea},
+  journal={IEEE Transactions on Intelligent Transportation Systems}, 
+  title={Ship Collision Avoidance and COLREGS Compliance Using Simulation-Based Control Behavior Selection With Predictive Hazard Assessment}, 
+  year={2016},
+  volume={17},
+  number={12},
+  pages={3407-3422},
+  keywords={Marine vehicles;Collision avoidance;Trajectory;Hazards;Propulsion;Optimization;Oceans;Autonomous ships;collision avoidance;control systems;hazard;safety;trajectory optimization},
+  doi={10.1109/TITS.2016.2551780}}
+```
+for the original SB-MPC.
 
 ## Git Workflow
 
