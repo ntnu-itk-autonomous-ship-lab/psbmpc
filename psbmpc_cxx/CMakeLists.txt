@@ -56,5 +56,5 @@ else()
 endif()
 
 add_subdirectory(psbmpc_lib)
-
+add_subdirectory(examples)
 add_subdirectory(tests)

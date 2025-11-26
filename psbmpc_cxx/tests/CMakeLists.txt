@@ -1,35 +1,43 @@
 cmake_minimum_required(VERSION 3.17.3)
 
-# Pure host side test files
-add_executable(tester test_psbmpc.cpp)
-#add_executable(tester test_psbmpc_new_cost.cpp)
-#add_executable(tester test_psbmpc_grounding.cpp)
-#add_executable(tester test_ownship.cpp)
-#add_executable(tester test_obstacle_ship.cpp)
-#add_executable(tester test_obstacle.cpp)
-#add_executable(tester test_obstacle_predictor.cpp)
-#add_executable(tester test_cpe_cpu.cpp)
-#add_executable(tester test_mrou.cpp)
-#add_executable(tester test_kf.cpp)
-#add_executable(tester test_prng.cpp)
-#add_executable(tester test_psbmpc_cost_class.cpp)
-#add_executable(tester test_read_shapefile.cpp)
-#add_executable(tester test_polygons.cpp)
+include(FetchContent)
+FetchContent_Declare(
+googletest
+# Googletest commit to use. Should be updated regularly.
+URL https://github.com/google/googletest/archive/5376968f6948923e2411081fd9372e71a59d8e77.zip
+)
+FetchContent_MakeAvailable(googletest)
+enable_testing()
 
-# Test files specific to the GPU-version of the PSBMPC
-#add_executable(tester test_cpe_gpu.cu)
-#add_executable(tester test_thrust.cu)
-#add_executable(tester test_tml.cu)
-#add_executable(tester test_tml_pdmatrix.cu)
+set(CPP_TEST_SOURCES
+  test_kf.cpp
+  test_prng.cpp
+  test_mrou.cpp
+  test_ownship.cpp
+  test_obstacle.cpp
+  test_obstacle_ship.cpp
+  test_obstacle_predictor.cpp
+  test_cpe_cpu.cpp
+  test_psbmpc_cost_class.cpp
+  test_read_shapefile.cpp
+)
 
-target_link_libraries(tester PRIVATE PSBMPC)
+add_executable(${PROJECT_NAME}_cpu_tests ${CPP_TEST_SOURCES})
+target_link_libraries(${PROJECT_NAME}_cpu_tests PRIVATE PSBMPC gtest_main)
+add_test(NAME ${PROJECT_NAME}_cpu_tests COMMAND ${PROJECT_NAME}_cpu_tests)
 
-# target_compile_options(tester
-#  	PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -O3>
-# 	PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: -Xptxas -O3>)
+function(add_cuda_test TEST_NAME SOURCE_FILE)
+  add_executable(${TEST_NAME} ${SOURCE_FILE})
+  target_link_libraries(${TEST_NAME} PRIVATE PSBMPC gtest_main)
+  set_target_properties(${TEST_NAME} PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+  add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+endfunction()
 
 if (USE_GPU_PSBMPC)
-	set_target_properties(tester PROPERTIES
-		CUDA_SEPARABLE_COMPILATION ON
-		CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+  add_cuda_test(test_cpe_gpu test_cpe_gpu.cu)
+  add_cuda_test(test_thrust test_thrust.cu)
+  add_cuda_test(test_tml test_tml.cu)
+  add_cuda_test(test_tml_pdmatrix test_tml_pdmatrix.cu)
 endif()

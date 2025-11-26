@@ -109,7 +109,7 @@ private:
   }
 
   /****************************************************************************************
-   *  Name     : initialize_independent_prediction (MROU and LOS)
+   *  Name     : initialize_independent_mrou_prediction (MROU and LOS)
    *  Function : Sets up independent obstacle prediction.
    *  Author   : Trym Tengesdal
    *  Modified :
@@ -277,8 +277,9 @@ private:
   /****************************************************************************************
    *  Name     : predict_independent_mrou_trajectories
    *  Function : More refined obstacle prediction with avoidance-like
-   * trajectories, including the straight-line trajectory Author   : Trym
-   * Tengesdal Modified :
+   * trajectories, including the straight-line trajectory
+   * Author   : Trym Tengesdal
+   * Modified :
    *****************************************************************************************/
   template <class MPC_Parameters>
   void predict_independent_mrou_trajectories(
@@ -543,8 +544,8 @@ public:
 
   Obstacle_Predictor()
       //: n_ps_MROU(5), n_ps_LOS(5), r_ct(10.0), mrou(0.01, 0.0, 0.01, 0.1, 0.1)
-      : n_ps_MROU(5), n_ps_LOS(5), r_ct(25.0), mrou(0.1, 0.0, 0.1, 0.1, 0.1),
-        path_prediction_shape(SMOOTH) {
+      : n_ps_MROU(5), n_ps_LOS(5), r_ct(25.0), path_prediction_shape(SMOOTH),
+        mrou(0.1, 0.0, 0.1, 0.1, 0.1) {
     if (n_ps_MROU == 3) {
       course_changes.resize(1);
       course_changes << 45 * DEG2RAD;
@@ -562,7 +563,7 @@ public:
 
   Obstacle_Predictor(const PSBMPC_Parameters &pars)
       : n_ps_MROU(pars.n_do_ps), n_ps_LOS(pars.n_do_ps), r_ct(20.0),
-        mrou(0.025, 0.0, 0.025, 0.1, 0.1), path_prediction_shape(SMOOTH) {
+        path_prediction_shape(SMOOTH), mrou(0.025, 0.0, 0.025, 0.1, 0.1) {
     if (n_ps_MROU == 3) {
       course_changes.resize(1);
       course_changes << 45 * DEG2RAD;
@@ -644,8 +645,8 @@ public:
                                                 // LOS-prediction for obstacles
       )
       : n_ps_MROU(pars.n_do_ps), n_ps_LOS(pars.n_do_ps), r_ct(r_ct),
-        mrou(0.025, 0.0, 0.025, 0.1, 0.1),
-        path_prediction_shape(path_prediction_shape) {
+        path_prediction_shape(path_prediction_shape),
+        mrou(0.025, 0.0, 0.025, 0.1, 0.1) {
     if (n_ps_MROU == 3) {
       course_changes.resize(1);
       course_changes << 45 * DEG2RAD;
@@ -746,8 +747,8 @@ public:
                                                 // LOS-prediction for obstacles
       )
       : n_ps_MROU(pars.n_do_ps), n_ps_LOS(pars.n_do_ps), r_ct(r_ct),
-        mrou(0.025, 0.0, 0.025, 0.1, 0.1),
-        path_prediction_shape(path_prediction_shape) {
+        path_prediction_shape(path_prediction_shape),
+        mrou(0.025, 0.0, 0.025, 0.1, 0.1) {
     if (n_ps_MROU == 3) {
       course_changes.resize(1);
       course_changes << 45 * DEG2RAD;
@@ -848,8 +849,8 @@ public:
           &mpc_pars // In: Parameters of calling MPC (SB or PSB-MPC)
       )
       : n_ps_MROU(mpc_pars.n_do_ps), n_ps_LOS(mpc_pars.n_do_ps), r_ct(r_ct),
-        mrou(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y),
-        path_prediction_shape(SMOOTH) {
+        path_prediction_shape(SMOOTH),
+        mrou(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y) {
     if (n_ps_MROU == 3) {
       course_changes.resize(1);
       course_changes << 45 * DEG2RAD;
