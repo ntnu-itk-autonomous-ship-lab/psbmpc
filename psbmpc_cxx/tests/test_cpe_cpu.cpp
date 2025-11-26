@@ -1,263 +1,282 @@
 #include "cpu/cpe_cpu.hpp"
 #include "cpu/utilities_cpu.hpp"
 #if OWNSHIP_TYPE == 0
-	#include "cpu/kinematic_ship_models_cpu.hpp"
+#include "cpu/kinematic_ship_models_cpu.hpp"
 #else
-	#include "cpu/kinetic_ship_models_cpu.hpp"
+#include "cpu/kinetic_ship_models_cpu.hpp"
 #endif
 #include "mrou.hpp"
 
-#include <iostream>
-#include <vector>
-#include <memory>
-#include <chrono>
 #include <Eigen/Dense>
+#include <chrono>
+#include <gtest/gtest.h>
+#include <iostream>
+#include <memory>
+#include <vector>
+#if ENABLE_TEST_FILE_PLOTTING
 #include <engine.h>
-
 #define BUFSIZE 1000000
+#endif
 
-int main(){
-	// Matlab engine setup
-	Engine *ep = engOpen(NULL);
-	if (ep == NULL)
-	{
-		std::cout << "engine start failed!" << std::endl;
-	}
-	char buffer[BUFSIZE+1];
-	
-	//*****************************************************************************************************************
-	// Own-ship prediction setup
-	//*****************************************************************************************************************
+TEST(CPECPUTest, CollisionProbabilityEstimation) {
+#if ENABLE_TEST_FILE_PLOTTING
+  // Matlab engine setup
+  Engine *ep = engOpen(NULL);
+  if (ep == NULL) {
+    std::cout << "engine start failed!" << std::endl;
+  }
+  char buffer[BUFSIZE + 1];
+#endif
 
-	Eigen::Matrix<double, 6, 1> xs_os_0;
-	xs_os_0 << 0, 0, 0, 6, 0, 0;
+  //*****************************************************************************************************************
+  // Own-ship prediction setup
+  //*****************************************************************************************************************
 
-	double T = 100; double dt = 0.5;
+  Eigen::Matrix<double, 6, 1> xs_os_0;
+  xs_os_0 << 0, 0, 0, 6, 0, 0;
 
-	double u_d = 6.0; double chi_d = 0.0;
+  double T = 100;
+  double dt = 0.5;
 
-	Eigen::VectorXd offset_sequence(6);
-	Eigen::Vector3d maneuver_times;
-	offset_sequence << 1, -90 * M_PI / 180.0, 1, -30 * M_PI / 180.0, 1, 0;
-	offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0;
-	maneuver_times << 0, 100, 150;
+  double u_d = 6.0;
+  double chi_d = 0.0;
 
-	std::unique_ptr<PSBMPC_LIB::CPU::Ownship> asv(new PSBMPC_LIB::CPU::Ownship()); 
+  Eigen::VectorXd offset_sequence(6);
+  Eigen::Vector3d maneuver_times;
+  offset_sequence << 1, -90 * M_PI / 180.0, 1, -30 * M_PI / 180.0, 1, 0;
+  offset_sequence << 1, 0 * M_PI / 180.0, 1, 0 * M_PI / 180.0, 1,
+      0 * M_PI / 180.0;
+  maneuver_times << 0, 100, 150;
 
-	int n_samples = std::round(T / dt);
-	std::cout << "n_samples = " << n_samples << std::endl;
+  std::unique_ptr<PSBMPC_LIB::CPU::Ownship> asv(new PSBMPC_LIB::CPU::Ownship());
 
-	Eigen::MatrixXd trajectory; 
-	Eigen::Matrix<double, 2, -1> waypoints;
+  int n_samples = std::round(T / dt);
+  std::cout << "n_samples = " << n_samples << std::endl;
 
-	#if OWNSHIP_TYPE == 0
-		trajectory.resize(4, n_samples);
-		trajectory.col(0) = xs_os_0.block<4, 1>(0, 0);
-	#else
-		trajectory.resize(6, n_samples);
-		trajectory.col(0) = xs_os_0;
-	#endif
+  Eigen::MatrixXd trajectory;
+  Eigen::Matrix<double, 2, -1> waypoints;
 
-	waypoints.resize(2, 2); 
-	//waypoints << 0, 200, 200, 0,    0, 300, 1000,
-	//			 0, -50,  -200, -200,  0, 300, 0;
-	waypoints << 0, 1000,
-				 0, 0;
+#if OWNSHIP_TYPE == 0
+  trajectory.resize(4, n_samples);
+  trajectory.col(0) = xs_os_0.block<4, 1>(0, 0);
+#else
+  trajectory.resize(6, n_samples);
+  trajectory.col(0) = xs_os_0;
+#endif
 
-	//*****************************************************************************************************************
-	// Obstacle prediction setup
-	//*****************************************************************************************************************
+  waypoints.resize(2, 2);
+  // waypoints << 0, 200, 200, 0,    0, 300, 1000,
+  //			 0, -50,  -200, -200,  0, 300, 0;
+  waypoints << 0, 1000, 0, 0;
 
-	double sigma_x(0.8), sigma_xy(0),sigma_y(0.8), gamma_x(0.1), gamma_y(0.1);
+  //*****************************************************************************************************************
+  // Obstacle prediction setup
+  //*****************************************************************************************************************
 
-	Eigen::Vector4d xs_0;
-	xs_0 << 75, 75, -2, 0;
+  double sigma_x(0.8), sigma_xy(0), sigma_y(0.8), gamma_x(0.1), gamma_y(0.1);
 
-	Eigen::Matrix4d P_0;
-	P_0 << 100, 0, 0, 0,
-			0, 100, 0, 0,
-			0, 0, 0.025, 0,
-			0, 0, 0, 0.025;
+  Eigen::Vector4d xs_0;
+  xs_0 << 75, 75, -2, 0;
 
-	// Predicted state for each prediction scenario: n_ps x n x n_samples, where n = 4
-	std::vector<Eigen::MatrixXd> xs_p;
+  Eigen::Matrix4d P_0;
+  P_0 << 100, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0.025, 0, 0, 0, 0, 0.025;
 
-	// Mean predicted velocity for the obstacle (MROU): n_ps x n x n_samples, where n = 4
-	std::vector<Eigen::MatrixXd> v_p;
+  // Predicted state for each prediction scenario: n_ps x n x n_samples, where n
+  // = 4
+  std::vector<Eigen::MatrixXd> xs_p;
 
-	// Predicted covariance for each prediction scenario: n*n x n_samples, i.e. the covariance is flattened for each time step
-	Eigen::MatrixXd P_p; 
+  // Mean predicted velocity for the obstacle (MROU): n_ps x n x n_samples,
+  // where n = 4
+  std::vector<Eigen::MatrixXd> v_p;
 
-	std::unique_ptr<PSBMPC_LIB::MROU> mrou(new PSBMPC_LIB::MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
+  // Predicted covariance for each prediction scenario: n*n x n_samples, i.e.
+  // the covariance is flattened for each time step
+  Eigen::MatrixXd P_p;
 
-	// n_ps = 1
-	xs_p.resize(1); xs_p[0].resize(4, n_samples);
-	xs_p[0].col(0) = xs_0;
-	P_p.resize(16, n_samples);
-	P_p.col(0) = PSBMPC_LIB::CPU::flatten(P_0);
+  std::unique_ptr<PSBMPC_LIB::MROU> mrou(
+      new PSBMPC_LIB::MROU(sigma_x, sigma_xy, sigma_y, gamma_x, gamma_y));
 
-	v_p.resize(1); v_p[0].resize(2, n_samples);
-	
-	int n_ps = xs_p.size();
+  // n_ps = 1
+  xs_p.resize(1);
+  xs_p[0].resize(4, n_samples);
+  xs_p[0].col(0) = xs_0;
+  P_p.resize(16, n_samples);
+  P_p.col(0) = PSBMPC_LIB::CPU::flatten(P_0);
 
-	Eigen::Vector2d v_0, v;
-	v_0 << -2, 0;
-	v_p[0].col(0) = v_0;
+  v_p.resize(1);
+  v_p[0].resize(2, n_samples);
 
-	Eigen::VectorXd turn_times(1);
-	turn_times << 300;
+  int n_ps = xs_p.size();
 
-	int tt_count = 0;
-	double chi = 0; 
-	v = v_0;
-	for(int k = 0; k < n_samples; k++)
-	{
-		if (k == turn_times(tt_count))
-		{
-			chi = atan2(v(1), v(0));
-			v(0) = v.norm() * cos(chi + 30 * M_PI / 180.0);
-			v(1) = v.norm() * sin(chi + 30 * M_PI / 180.0);
-			v(0) = -2.0; v(1) = 1.0;
-			if (tt_count < turn_times.size() - 1) tt_count += 1;
-		}
-		if (k < n_samples - 1)	v_p[0].col(k + 1) = v;
-	}
+  Eigen::Vector2d v_0, v;
+  v_0 << -2, 0;
+  v_p[0].col(0) = v_0;
 
-	//*****************************************************************************************************************
-	// Collision Probability Estimator setup
-	//*****************************************************************************************************************
-	double d_safe = 50;
+  Eigen::VectorXd turn_times(1);
+  turn_times << 300;
 
-	Eigen::MatrixXd P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
-	Eigen::Matrix<double, 1, -1> P_c_i_temp(1, n_samples);
-	std::unique_ptr<PSBMPC_LIB::CPU::CPE> cpe(new PSBMPC_LIB::CPU::CPE(PSBMPC_LIB::CE));
+  int tt_count = 0;
+  double chi = 0;
+  v = v_0;
+  for (int k = 0; k < n_samples; k++) {
+    if (k == turn_times(tt_count)) {
+      chi = atan2(v(1), v(0));
+      v(0) = v.norm() * cos(chi + 30 * M_PI / 180.0);
+      v(1) = v.norm() * sin(chi + 30 * M_PI / 180.0);
+      v(0) = -2.0;
+      v(1) = 1.0;
+      if (tt_count < turn_times.size() - 1)
+        tt_count += 1;
+    }
+    if (k < n_samples - 1)
+      v_p[0].col(k + 1) = v;
+  }
 
-	//*****************************************************************************************************************
-	// Prediction
-	//*****************************************************************************************************************
+  //*****************************************************************************************************************
+  // Collision Probability Estimator setup
+  //*****************************************************************************************************************
+  double d_safe = 50;
 
-	asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d, chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS, T, dt);
+  Eigen::MatrixXd P_c_i_CE(n_ps, n_samples), P_c_i_MCSKF(n_ps, n_samples);
+  Eigen::Matrix<double, 1, -1> P_c_i_temp(1, n_samples);
+  std::unique_ptr<PSBMPC_LIB::CPU::CPE> cpe(
+      new PSBMPC_LIB::CPU::CPE(PSBMPC_LIB::CE));
 
-	double t = 0;
+  //*****************************************************************************************************************
+  // Prediction
+  //*****************************************************************************************************************
 
-	for (int ps = 0; ps < n_ps; ps++)
-	{
-		//=======================================================================================
-		// MROU Prediction
-		//=======================================================================================
-		for (int k = 0; k < n_samples; k++)
-		{
-			t = (k + 1) * dt;
-			if (k < n_samples - 1)
-			{
-				xs_p[ps].col(k + 1) = mrou->predict_state(xs_p[ps].col(k), v_p[ps].col(k), dt);
-				P_p.col(k + 1) = PSBMPC_LIB::CPU::flatten(mrou->predict_covariance(P_0, t));
-			}
-		}
-		//=======================================================================================
-		// CE Estimation
-		//=======================================================================================
-		int p_step = 1;
-		cpe->set_method(PSBMPC_LIB::CE);
+  asv->predict_trajectory(trajectory, offset_sequence, maneuver_times, u_d,
+                          chi_d, waypoints, PSBMPC_LIB::ERK1, PSBMPC_LIB::LOS,
+                          T, dt);
 
-		auto start = std::chrono::system_clock::now();
+  double t = 0;
 
-		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, dt, p_step);
-		P_c_i_CE.row(ps) = P_c_i_temp;
+  for (int ps = 0; ps < n_ps; ps++) {
+    //=======================================================================================
+    // MROU Prediction
+    //=======================================================================================
+    for (int k = 0; k < n_samples; k++) {
+      t = (k + 1) * dt;
+      if (k < n_samples - 1) {
+        xs_p[ps].col(k + 1) =
+            mrou->predict_state(xs_p[ps].col(k), v_p[ps].col(k), dt);
+        P_p.col(k + 1) =
+            PSBMPC_LIB::CPU::flatten(mrou->predict_covariance(P_0, t));
+      }
+    }
+    //=======================================================================================
+    // CE Estimation
+    //=======================================================================================
+    int p_step = 1;
+    cpe->set_method(PSBMPC_LIB::CE);
 
-		auto end = std::chrono::system_clock::now();
-    	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    auto start = std::chrono::system_clock::now();
 
-		std::cout << "CE time usage one trajectory pair : " << elapsed.count() << " milliseconds" << std::endl;
-		
-		//=======================================================================================
-		// MCSKF4D Estimation
-		//=======================================================================================
-		cpe->set_method(PSBMPC_LIB::MCSKF4D);
+    cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p,
+                                    d_safe, dt, p_step);
+    P_c_i_CE.row(ps) = P_c_i_temp;
 
-		start = std::chrono::system_clock::now();
-		
-		cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p, d_safe, dt, p_step);
-		P_c_i_MCSKF.row(ps) = P_c_i_temp;
+    auto end = std::chrono::system_clock::now();
+    auto elapsed =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-		end = std::chrono::system_clock::now();
-    	elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "CE time usage one trajectory pair : " << elapsed.count()
+              << " milliseconds" << std::endl;
 
-		std::cout << "MCSKF4D time usage one trajectory pair : " << elapsed.count() << " milliseconds" << std::endl;
-	}
+    //=======================================================================================
+    // MCSKF4D Estimation
+    //=======================================================================================
+    cpe->set_method(PSBMPC_LIB::MCSKF4D);
 
-	//*****************************************************************************************************************
-	// Send data to matlab
-	//*****************************************************************************************************************
-	mxArray *traj_os_mx = mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
-	mxArray *wps_mx = mxCreateDoubleMatrix(2, 7, mxREAL);
+    start = std::chrono::system_clock::now();
 
-	double *p_traj_os = mxGetPr(traj_os_mx);
-	double *p_wps = mxGetPr(wps_mx);
+    cpe->estimate_over_trajectories(P_c_i_temp, trajectory, xs_p[ps], P_p,
+                                    d_safe, dt, p_step);
+    P_c_i_MCSKF.row(ps) = P_c_i_temp;
 
-	mxArray *traj_i_mx = mxCreateDoubleMatrix(4, n_samples, mxREAL);
-	mxArray *v_traj_i_mx = mxCreateDoubleMatrix(2, n_samples, mxREAL);
-	mxArray *P_traj_i_mx = mxCreateDoubleMatrix(16, n_samples, mxREAL);
+    end = std::chrono::system_clock::now();
+    elapsed =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-	double *p_traj_i = mxGetPr(traj_i_mx);
-	double *p_v_traj_i = mxGetPr(v_traj_i_mx);
-	double *p_P_traj_i = mxGetPr(P_traj_i_mx);
+    std::cout << "MCSKF4D time usage one trajectory pair : " << elapsed.count()
+              << " milliseconds" << std::endl;
+  }
 
-	mxArray *Pcoll_CE = mxCreateDoubleMatrix(1, n_samples, mxREAL);
-	mxArray *Pcoll_MCSKF = mxCreateDoubleMatrix(1, n_samples, mxREAL);
+#if ENABLE_TEST_FILE_PLOTTING
+  //*****************************************************************************************************************
+  // Send data to matlab
+  //*****************************************************************************************************************
+  mxArray *traj_os_mx =
+      mxCreateDoubleMatrix(trajectory.rows(), n_samples, mxREAL);
+  mxArray *wps_mx = mxCreateDoubleMatrix(2, 7, mxREAL);
 
-	double *p_CE = mxGetPr(Pcoll_CE);
-	double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
+  double *p_traj_os = mxGetPr(traj_os_mx);
+  double *p_wps = mxGetPr(wps_mx);
 
-	Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os, trajectory.rows(), n_samples);
-	map_traj_os = trajectory;
+  mxArray *traj_i_mx = mxCreateDoubleMatrix(4, n_samples, mxREAL);
+  mxArray *v_traj_i_mx = mxCreateDoubleMatrix(2, n_samples, mxREAL);
+  mxArray *P_traj_i_mx = mxCreateDoubleMatrix(16, n_samples, mxREAL);
 
-	Eigen::Map<Eigen::MatrixXd> map_wps(p_wps, 2, 2);
-	map_wps = waypoints;
+  double *p_traj_i = mxGetPr(traj_i_mx);
+  double *p_v_traj_i = mxGetPr(v_traj_i_mx);
+  double *p_P_traj_i = mxGetPr(P_traj_i_mx);
 
-	Eigen::Map<Eigen::MatrixXd> map_traj_i(p_traj_i, 4, n_samples);
-	map_traj_i = xs_p[0];
+  mxArray *Pcoll_CE = mxCreateDoubleMatrix(1, n_samples, mxREAL);
+  mxArray *Pcoll_MCSKF = mxCreateDoubleMatrix(1, n_samples, mxREAL);
 
-	Eigen::Map<Eigen::MatrixXd> map_v_traj_i(p_v_traj_i, 2, n_samples);
-	map_v_traj_i = v_p[0];
+  double *p_CE = mxGetPr(Pcoll_CE);
+  double *p_MCSKF = mxGetPr(Pcoll_MCSKF);
 
-	Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
-	map_P_traj_i = P_p;
+  Eigen::Map<Eigen::MatrixXd> map_traj_os(p_traj_os, trajectory.rows(),
+                                          n_samples);
+  map_traj_os = trajectory;
 
-	Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, 1, n_samples);
-	map_Pcoll_CE = P_c_i_CE;
+  Eigen::Map<Eigen::MatrixXd> map_wps(p_wps, 2, 2);
+  map_wps = waypoints;
 
-	Eigen::Map<Eigen::MatrixXd> map_Pcoll_MCSKF(p_MCSKF, 1, n_samples);
-	map_Pcoll_MCSKF = P_c_i_MCSKF;
+  Eigen::Map<Eigen::MatrixXd> map_traj_i(p_traj_i, 4, n_samples);
+  map_traj_i = xs_p[0];
 
-	buffer[BUFSIZE] = '\0';
-	engOutputBuffer(ep, buffer, BUFSIZE);
+  Eigen::Map<Eigen::MatrixXd> map_v_traj_i(p_v_traj_i, 2, n_samples);
+  map_v_traj_i = v_p[0];
 
-	engPutVariable(ep, "X", traj_os_mx);
-	engPutVariable(ep, "WPs", wps_mx);
+  Eigen::Map<Eigen::MatrixXd> map_P_traj_i(p_P_traj_i, 16, n_samples);
+  map_P_traj_i = P_p;
 
-	engPutVariable(ep, "X_i", traj_i_mx);
-	engPutVariable(ep, "v", v_traj_i_mx);
-	engPutVariable(ep, "P_flat", P_traj_i_mx);
+  Eigen::Map<Eigen::MatrixXd> map_Pcoll_CE(p_CE, 1, n_samples);
+  map_Pcoll_CE = P_c_i_CE;
 
-	engPutVariable(ep, "P_c_CE", Pcoll_CE);
-	engPutVariable(ep, "P_c_MCSKF", Pcoll_MCSKF);
-	engEvalString(ep, "test_cpe_plot");
-	
-	//save_matrix_to_file(P_c_i_CE[0]);
-	//save_matrix_to_file(P_c_i_MCSKF[0]);
+  Eigen::Map<Eigen::MatrixXd> map_Pcoll_MCSKF(p_MCSKF, 1, n_samples);
+  map_Pcoll_MCSKF = P_c_i_MCSKF;
 
-	printf("%s", buffer);
-	mxDestroyArray(traj_os_mx);
-	mxDestroyArray(wps_mx);
+  buffer[BUFSIZE] = '\0';
+  engOutputBuffer(ep, buffer, BUFSIZE);
 
-	mxDestroyArray(traj_i_mx);
-	mxDestroyArray(v_traj_i_mx);
-	mxDestroyArray(P_traj_i_mx);
+  engPutVariable(ep, "X", traj_os_mx);
+  engPutVariable(ep, "WPs", wps_mx);
 
-	mxDestroyArray(Pcoll_CE);
-	mxDestroyArray(Pcoll_MCSKF);
-	engClose(ep);
+  engPutVariable(ep, "X_i", traj_i_mx);
+  engPutVariable(ep, "v", v_traj_i_mx);
+  engPutVariable(ep, "P_flat", P_traj_i_mx);
 
-	return 0;
+  engPutVariable(ep, "P_c_CE", Pcoll_CE);
+  engPutVariable(ep, "P_c_MCSKF", Pcoll_MCSKF);
+  engEvalString(ep, "test_cpe_plot");
+
+  // save_matrix_to_file(P_c_i_CE[0]);
+  // save_matrix_to_file(P_c_i_MCSKF[0]);
+
+  printf("%s", buffer);
+  mxDestroyArray(traj_os_mx);
+  mxDestroyArray(wps_mx);
+
+  mxDestroyArray(traj_i_mx);
+  mxDestroyArray(v_traj_i_mx);
+  mxDestroyArray(P_traj_i_mx);
+
+  mxDestroyArray(Pcoll_CE);
+  mxDestroyArray(Pcoll_MCSKF);
+  engClose(ep);
+#endif
 }

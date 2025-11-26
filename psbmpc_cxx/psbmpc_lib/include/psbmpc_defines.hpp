@@ -17,7 +17,9 @@
 #define VX 2
 #define VY 3
 
+#ifndef M_PI
 #define M_PI 3.14159265358979323846
+#endif
 
 #define DEG2RAD M_PI / 180.0f
 #define RAD2DEG 180.0f / M_PI
