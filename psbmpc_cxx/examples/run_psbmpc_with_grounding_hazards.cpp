@@ -261,16 +261,19 @@ int main() {
   Eigen::Vector2d lla_origin;
   lla_origin << 63.4389029083, 10.39908278; // piren
   std::filesystem::path test_file_path(__FILE__);
-  std::filesystem::path test_dir = test_file_path.parent_path();
-  std::filesystem::path shapefile_path =
-      test_dir / "grounding_hazard_data" / "charts" / "land" / "land.shp";
+  std::filesystem::path root_dir = test_file_path.parent_path().parent_path();
+  std::filesystem::path shapefile_path = root_dir / "tests" /
+                                         "grounding_hazard_data" / "charts" /
+                                         "land" / "land.shp";
   std::string filename = shapefile_path.string();
   PSBMPC_LIB::Grounding_Hazard_Manager grounding_hazard_manager(
       filename, equatorial_radius, flattening_factor, utm_zone, true,
       lla_origin, "local_NED", psbmpc.pars);
 
-  std::string other_polygons_filename = "../tests/grounding_hazard_data/"
-                                        "piren_frame_psbmpc_polygons_trd.csv";
+  std::filesystem::path other_polygons_path =
+      root_dir / "tests" / "grounding_hazard_data" /
+      "piren_frame_psbmpc_polygons_trd.csv";
+  std::string other_polygons_filename = other_polygons_path.string();
   if (other_polygons_filename != "") {
     grounding_hazard_manager.read_other_polygons(other_polygons_filename, true,
                                                  false);
